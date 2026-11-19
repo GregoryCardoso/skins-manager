@@ -1,0 +1,12 @@
+{
+  "name": "skins-manager",
+  "version": "1.0.0",
+  "private": true,
+  "description": "App local de inventário e giro de itens de CS2",
+  "scripts": {
+    "start": "npm --prefix backend run start",
+    "dev:backend": "npm --prefix backend run dev",
+    "test": "npm --prefix backend test",
+    "install:all": "npm install && npm --prefix backend install"
+  }
+}
