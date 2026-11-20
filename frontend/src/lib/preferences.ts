@@ -1,39 +1,49 @@
-import type { Language, ResolvedTheme, Theme } from '@/types/api';
+import type { Language, ResolvedTheme, Theme, ThemeChoice } from '@/types/api';
 
 export const THEME_STORAGE_KEY = 'sm.theme';
 export const LANGUAGE_STORAGE_KEY = 'sm.language';
-export const THEMES: readonly Theme[] = ['SYSTEM', 'LIGHT', 'DARK'];
+// Só dois estados na interface (D112). 'SYSTEM' do banco = sem preferência.
+export const THEME_CHOICES: readonly ThemeChoice[] = ['LIGHT', 'DARK'];
 export const LANGUAGES: readonly Language[] = ['pt-BR', 'en'];
 // Idioma do HTML pré-gerado pelo export estático.
 export const DEFAULT_LANGUAGE: Language = 'pt-BR';
 
-export function isTheme(value: unknown): value is Theme {
-  return typeof value === 'string' && (THEMES as readonly string[]).includes(value);
+export function isThemeChoice(value: unknown): value is ThemeChoice {
+  return typeof value === 'string' && (THEME_CHOICES as readonly string[]).includes(value);
 }
 
 export function isLanguage(value: unknown): value is Language {
   return typeof value === 'string' && (LANGUAGES as readonly string[]).includes(value);
 }
 
-export function resolveTheme(theme: Theme, systemPrefersDark: boolean): ResolvedTheme {
-  if (theme === 'LIGHT') return 'light';
-  if (theme === 'DARK') return 'dark';
-  return systemPrefersDark ? 'dark' : 'light';
+// Tema efetivo: a escolha salva vale sempre; sem escolha ('SYSTEM', ausente ou inválido),
+// usa o tema do sistema operacional lido uma vez, como valor inicial.
+export function effectiveTheme(saved: Theme | string | null | undefined, systemPrefersDark: boolean): ThemeChoice {
+  if (isThemeChoice(saved)) return saved;
+  return systemPrefersDark ? 'DARK' : 'LIGHT';
 }
 
-// Ciclo do botão: Sistema -> Claro -> Escuro -> Sistema.
-export function nextTheme(theme: Theme): Theme {
-  if (theme === 'SYSTEM') return 'LIGHT';
-  if (theme === 'LIGHT') return 'DARK';
-  return 'SYSTEM';
+export function toResolvedTheme(choice: ThemeChoice): ResolvedTheme {
+  return choice === 'DARK' ? 'dark' : 'light';
+}
+
+// Botão de dois estados: Claro <-> Escuro.
+export function nextTheme(theme: ThemeChoice): ThemeChoice {
+  return theme === 'LIGHT' ? 'DARK' : 'LIGHT';
 }
 
 export interface CachedPreferences {
-  theme?: Theme;
+  theme?: ThemeChoice;
   language?: Language;
 }
 
-type StorageLike = Pick<Storage, 'getItem' | 'setItem'>;
+// theme: null = remover a escolha do cache (o banco diz "sem preferência").
+export interface CachedPreferencesPatch {
+  theme?: ThemeChoice | null;
+  language?: Language;
+}
+
+type StorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 
 function defaultStorage(): StorageLike | null {
   try {
@@ -43,13 +53,14 @@ function defaultStorage(): StorageLike | null {
   }
 }
 
+// 'SYSTEM' antigo no cache é ignorado (= sem preferência).
 export function readCachedPreferences(storage: StorageLike | null = defaultStorage()): CachedPreferences {
   const result: CachedPreferences = {};
   if (!storage) return result;
   try {
     const theme = storage.getItem(THEME_STORAGE_KEY);
     const language = storage.getItem(LANGUAGE_STORAGE_KEY);
-    if (isTheme(theme)) result.theme = theme;
+    if (isThemeChoice(theme)) result.theme = theme;
     if (isLanguage(language)) result.language = language;
   } catch {
     // localStorage indisponível: segue sem cache.
@@ -58,12 +69,13 @@ export function readCachedPreferences(storage: StorageLike | null = defaultStora
 }
 
 export function writeCachedPreferences(
-  prefs: CachedPreferences,
+  prefs: CachedPreferencesPatch,
   storage: StorageLike | null = defaultStorage(),
 ): void {
   if (!storage) return;
   try {
-    if (prefs.theme) storage.setItem(THEME_STORAGE_KEY, prefs.theme);
+    if (prefs.theme === null) storage.removeItem(THEME_STORAGE_KEY);
+    else if (prefs.theme) storage.setItem(THEME_STORAGE_KEY, prefs.theme);
     if (prefs.language) storage.setItem(LANGUAGE_STORAGE_KEY, prefs.language);
   } catch {
     // Sem permissão/espaço: o banco continua sendo a fonte da verdade.
@@ -72,7 +84,7 @@ export function writeCachedPreferences(
 
 export interface BootstrapEnv {
   doc?: { documentElement: { setAttribute(n: string, v: string): void; classList: { add(c: string): void; remove(c: string): void }; style: { colorScheme: string } } };
-  storage?: StorageLike | null;
+  storage?: Pick<Storage, 'getItem' | 'setItem'> | null;
   matchMedia?: ((query: string) => { matches: boolean }) | null;
   setTimeoutFn?: (fn: () => void, ms: number) => unknown;
 }
@@ -84,32 +96,35 @@ export function bootstrapPreferences(env?: BootstrapEnv): void {
     const e = env || {};
     const doc = e.doc || document;
     const root = doc.documentElement;
-    let storage: StorageLike | null = null;
+    let storage: Pick<Storage, 'getItem' | 'setItem'> | null = null;
     try {
       storage = e.storage !== undefined ? e.storage : localStorage;
     } catch {
       storage = null;
     }
-    let theme = 'SYSTEM';
+    // null = sem escolha salva (inclui 'SYSTEM' antigo): usa o tema do sistema.
+    let theme: string | null = null;
     let language = 'pt-BR';
     try {
       if (storage) {
         const t = storage.getItem('sm.theme');
         const l = storage.getItem('sm.language');
-        if (t === 'SYSTEM' || t === 'LIGHT' || t === 'DARK') theme = t;
+        if (t === 'LIGHT' || t === 'DARK') theme = t;
         if (l === 'pt-BR' || l === 'en') language = l;
       }
     } catch {
       // ignora
     }
     let dark = false;
-    try {
-      const mm = e.matchMedia !== undefined ? e.matchMedia : window.matchMedia.bind(window);
-      dark = !!mm && mm('(prefers-color-scheme: dark)').matches;
-    } catch {
-      // ignora
+    if (theme === null) {
+      try {
+        const mm = e.matchMedia !== undefined ? e.matchMedia : window.matchMedia.bind(window);
+        dark = !!mm && mm('(prefers-color-scheme: dark)').matches;
+      } catch {
+        // ignora
+      }
     }
-    const resolved = theme === 'DARK' || (theme === 'SYSTEM' && dark) ? 'dark' : 'light';
+    const resolved = theme === 'DARK' || (theme === null && dark) ? 'dark' : 'light';
     root.setAttribute('data-theme', resolved);
     root.style.colorScheme = resolved;
     root.setAttribute('lang', language);

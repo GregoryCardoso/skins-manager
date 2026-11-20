@@ -29,7 +29,9 @@ const CATALOG_MIN_ROWS = Object.freeze({ SKINS: 1000, STICKERS: 1000, CRATES: 10
 const CATALOG_MAX_SKIPPED_RATIO = 0.1;
 const CATALOG_SNAPSHOT_PATH = path.join(__dirname, '..', '..', 'data', 'seed', 'catalog.json');
 
-// Preferências pessoais (D83).
+// Preferências pessoais (D83). 'SYSTEM' (padrão da migração v2) significa "sem preferência" (D112):
+// a interface só oferece LIGHT/DARK e usa o tema do sistema operacional como valor inicial.
+// Continua aceito por compatibilidade com bancos que já o têm salvo; nenhuma migração é necessária.
 const THEMES = Object.freeze(['SYSTEM', 'LIGHT', 'DARK']);
 const LANGUAGES = Object.freeze(['pt-BR', 'en']);
 

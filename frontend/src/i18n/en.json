@@ -22,7 +22,6 @@
   },
   "theme": {
     "label": "Theme",
-    "SYSTEM": "System",
     "LIGHT": "Light",
     "DARK": "Dark",
     "switchTo": "Theme: {current}. Click to switch to {next}."

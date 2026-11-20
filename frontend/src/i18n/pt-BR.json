@@ -22,7 +22,6 @@
   },
   "theme": {
     "label": "Tema",
-    "SYSTEM": "Sistema",
     "LIGHT": "Claro",
     "DARK": "Escuro",
     "switchTo": "Tema: {current}. Clique para mudar para {next}."

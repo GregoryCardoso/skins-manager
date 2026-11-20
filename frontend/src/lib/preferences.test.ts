@@ -2,22 +2,31 @@ import { describe, expect, test, vi } from 'vitest';
 import {
   bootstrapPreferences,
   bootstrapScript,
+  effectiveTheme,
+  isThemeChoice,
   nextTheme,
   readCachedPreferences,
-  resolveTheme,
+  toResolvedTheme,
   writeCachedPreferences,
 } from './preferences';
 
 function fakeStorage(initial: Record<string, string> = {}) {
-  const data = { ...initial };
+  const data: Record<string, string> = { ...initial };
   return {
     data,
     getItem: (k: string) => (k in data ? data[k] : null),
     setItem: (k: string, v: string) => {
       data[k] = v;
     },
+    removeItem: (k: string) => {
+      delete data[k];
+    },
   };
 }
+
+const throwing = () => {
+  throw new Error('x');
+};
 
 function fakeDoc() {
   const attrs: Record<string, string> = {};
@@ -32,19 +41,31 @@ function fakeDoc() {
   return { attrs, classes, doc: { documentElement } };
 }
 
-describe('resolveTheme / nextTheme', () => {
-  test('resolveTheme', () => {
-    expect(resolveTheme('LIGHT', true)).toBe('light');
-    expect(resolveTheme('LIGHT', false)).toBe('light');
-    expect(resolveTheme('DARK', true)).toBe('dark');
-    expect(resolveTheme('DARK', false)).toBe('dark');
-    expect(resolveTheme('SYSTEM', true)).toBe('dark');
-    expect(resolveTheme('SYSTEM', false)).toBe('light');
+describe('effectiveTheme / nextTheme (D112: só Claro e Escuro)', () => {
+  test('a escolha salva vale sempre, qualquer que seja o tema do sistema', () => {
+    expect(effectiveTheme('LIGHT', true)).toBe('LIGHT');
+    expect(effectiveTheme('LIGHT', false)).toBe('LIGHT');
+    expect(effectiveTheme('DARK', true)).toBe('DARK');
+    expect(effectiveTheme('DARK', false)).toBe('DARK');
   });
-  test('ciclo Sistema -> Claro -> Escuro -> Sistema', () => {
-    expect(nextTheme('SYSTEM')).toBe('LIGHT');
+  test('sem preferência (SYSTEM antigo, ausente, nulo ou inválido) usa o tema do sistema', () => {
+    for (const saved of ['SYSTEM', undefined, null, '', 'dark', 'PURPLE']) {
+      expect(effectiveTheme(saved, true)).toBe('DARK');
+      expect(effectiveTheme(saved, false)).toBe('LIGHT');
+    }
+  });
+  test('alterna Claro <-> Escuro, sem estado "Sistema"', () => {
     expect(nextTheme('LIGHT')).toBe('DARK');
-    expect(nextTheme('DARK')).toBe('SYSTEM');
+    expect(nextTheme('DARK')).toBe('LIGHT');
+    expect(nextTheme(nextTheme('LIGHT'))).toBe('LIGHT');
+  });
+  test('toResolvedTheme e isThemeChoice', () => {
+    expect(toResolvedTheme('LIGHT')).toBe('light');
+    expect(toResolvedTheme('DARK')).toBe('dark');
+    expect(isThemeChoice('LIGHT')).toBe(true);
+    expect(isThemeChoice('DARK')).toBe(true);
+    expect(isThemeChoice('SYSTEM')).toBe(false);
+    expect(isThemeChoice(undefined)).toBe(false);
   });
 });
 
@@ -55,13 +76,22 @@ describe('cache', () => {
     expect(readCachedPreferences(fakeStorage())).toEqual({});
     expect(readCachedPreferences(null)).toEqual({});
   });
+  test('SYSTEM antigo no cache é ignorado (= sem preferência)', () => {
+    expect(readCachedPreferences(fakeStorage({ 'sm.theme': 'SYSTEM', 'sm.language': 'en' }))).toEqual({ language: 'en' });
+  });
+  test('theme null remove a escolha do cache', () => {
+    const s = fakeStorage({ 'sm.theme': 'DARK', 'sm.language': 'en' });
+    writeCachedPreferences({ theme: null }, s);
+    expect(s.data).toEqual({ 'sm.language': 'en' });
+  });
   test('storage que lança não quebra', () => {
-    const boom = { getItem: () => { throw new Error('x'); }, setItem: () => { throw new Error('x'); } };
+    const boom = { getItem: throwing, setItem: throwing, removeItem: throwing };
     expect(readCachedPreferences(boom)).toEqual({});
     expect(() => writeCachedPreferences({ theme: 'DARK' }, boom)).not.toThrow();
+    expect(() => writeCachedPreferences({ theme: null }, boom)).not.toThrow();
   });
   test('getItem que lança só em um campo ainda devolve objeto vazio sem lançar', () => {
-    const boom = { getItem: (k: string) => { if (k === 'sm.language') throw new Error('x'); return 'DARK'; }, setItem: () => {} };
+    const boom = { getItem: (k: string) => { if (k === 'sm.language') throw new Error('x'); return 'DARK'; }, setItem: () => {}, removeItem: () => {} };
     expect(() => readCachedPreferences(boom)).not.toThrow();
   });
   test('grava tema e idioma; storage null não lança', () => {
@@ -107,14 +137,32 @@ describe('bootstrapPreferences', () => {
     expect(classes.has('i18n-pending')).toBe(false);
   });
 
-  test('grava colorScheme igual ao tema resolvido (SYSTEM claro)', () => {
+  test('escolha salva ignora o tema do sistema', () => {
+    const a = fakeDoc();
+    bootstrapPreferences({ doc: a.doc, storage: fakeStorage({ 'sm.theme': 'LIGHT' }), matchMedia: () => ({ matches: true }) });
+    expect(a.attrs['data-theme']).toBe('light');
+    const b = fakeDoc();
+    bootstrapPreferences({ doc: b.doc, storage: fakeStorage({ 'sm.theme': 'DARK' }), matchMedia: () => ({ matches: false }) });
+    expect(b.attrs['data-theme']).toBe('dark');
+  });
+
+  test('SYSTEM antigo no cache = sem preferência: segue o sistema', () => {
+    const a = fakeDoc();
+    bootstrapPreferences({ doc: a.doc, storage: fakeStorage({ 'sm.theme': 'SYSTEM' }), matchMedia: () => ({ matches: true }) });
+    expect(a.attrs['data-theme']).toBe('dark');
+    const b = fakeDoc();
+    bootstrapPreferences({ doc: b.doc, storage: fakeStorage({ 'sm.theme': 'SYSTEM' }), matchMedia: () => ({ matches: false }) });
+    expect(b.attrs['data-theme']).toBe('light');
+  });
+
+  test('grava colorScheme igual ao tema resolvido (sem preferência, sistema claro)', () => {
     const { attrs, doc } = fakeDoc();
     bootstrapPreferences({ doc, storage: fakeStorage(), matchMedia: () => ({ matches: false }) });
     expect(attrs['data-theme']).toBe('light');
     expect(doc.documentElement.style.colorScheme).toBe('light');
   });
 
-  test('valores inválidos em cache caem no padrão (SYSTEM / pt-BR)', () => {
+  test('valores inválidos em cache caem no padrão (tema do sistema / pt-BR)', () => {
     const { attrs, classes, doc } = fakeDoc();
     bootstrapPreferences({
       doc, storage: fakeStorage({ 'sm.theme': 'PURPLE', 'sm.language': 'fr' }), matchMedia: () => ({ matches: true }),

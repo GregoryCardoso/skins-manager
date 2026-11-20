@@ -3,11 +3,12 @@
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useT, useTLoose } from '@/i18n/I18nProvider';
 import { LANGUAGES, nextTheme } from '@/lib/preferences';
-import type { Language, Theme } from '@/types/api';
+import type { Language, ThemeChoice } from '@/types/api';
 import styles from './HeaderControls.module.css';
 import { usePreferences } from './PreferencesProvider';
 
-const THEME_ICONS: Record<Theme, string> = { SYSTEM: '◐', LIGHT: '☀', DARK: '☾' };
+// Dois estados (D112): sol = Claro, lua = Escuro.
+const THEME_ICONS: Record<ThemeChoice, string> = { LIGHT: '☀', DARK: '☾' };
 
 export default function HeaderControls() {
   const { theme, language, saveError, setTheme, setLanguage } = usePreferences();

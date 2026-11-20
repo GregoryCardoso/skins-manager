@@ -5,21 +5,24 @@ import {
   DEFAULT_LANGUAGE,
   LANGUAGE_STORAGE_KEY,
   THEME_STORAGE_KEY,
+  effectiveTheme,
+  isThemeChoice,
   readCachedPreferences,
-  resolveTheme,
+  toResolvedTheme,
   writeCachedPreferences,
 } from '@/lib/preferences';
 import { getSettings, updateFxRate, updatePreferences } from '@/services/api';
-import type { Language, Theme } from '@/types/api';
+import type { Language, ThemeChoice } from '@/types/api';
 
 interface PreferencesContextValue {
-  theme: Theme;
+  // Tema exibido (D112): a escolha salva ou, sem escolha, o do sistema lido ao abrir o app.
+  theme: ThemeChoice;
   language: Language;
   // Falso até o cache ser lido (o estado inicial é o do HTML pré-gerado, para evitar erro de hidratação).
   ready: boolean;
   // Último erro ao salvar a preferência no servidor (null = ok).
   saveError: unknown;
-  setTheme: (theme: Theme) => void;
+  setTheme: (theme: ThemeChoice) => void;
   setLanguage: (language: Language) => void;
   // Cotação USD→BRL (D107): null = não definida (ou ainda não carregada).
   usdBrlRate: number | null;
@@ -32,9 +35,8 @@ interface PreferencesContextValue {
 const PreferencesContext = createContext<PreferencesContextValue | null>(null);
 
 export function PreferencesProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>('SYSTEM');
+  const [theme, setThemeState] = useState<ThemeChoice>('LIGHT');
   const [language, setLanguageState] = useState<Language>(DEFAULT_LANGUAGE);
-  const [systemDark, setSystemDark] = useState(false);
   const [ready, setReady] = useState(false);
   const [saveError, setSaveError] = useState<unknown>(null);
   const [usdBrlRate, setUsdBrlRate] = useState<number | null>(null);
@@ -42,15 +44,17 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const touched = useRef({ theme: false, language: false });
 
   useEffect(() => {
+    // Tema do sistema lido uma vez, só como valor inicial; o app não acompanha mudanças do Windows (D112).
+    let systemDark = false;
+    try {
+      systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    } catch {
+      // sem matchMedia: claro
+    }
     const cached = readCachedPreferences();
-    if (cached.theme) setThemeState(cached.theme);
+    setThemeState(effectiveTheme(cached.theme, systemDark));
     if (cached.language) setLanguageState(cached.language);
-    const media = window.matchMedia('(prefers-color-scheme: dark)');
-    setSystemDark(media.matches);
     setReady(true);
-
-    const onMediaChange = (event: MediaQueryListEvent) => setSystemDark(event.matches);
-    media.addEventListener('change', onMediaChange);
 
     const onStorage = (event: StorageEvent) => {
       if (event.key !== THEME_STORAGE_KEY && event.key !== LANGUAGE_STORAGE_KEY) return;
@@ -64,10 +68,11 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     getSettings(controller.signal)
       .then((settings) => {
         setUsdBrlRate(settings.usdBrlRate);
-        if (!touched.current.theme) setThemeState(settings.theme);
+        // 'SYSTEM' no banco (padrão ou valor antigo) = sem preferência: tema do sistema e cache limpo.
+        if (!touched.current.theme) setThemeState(effectiveTheme(settings.theme, systemDark));
         if (!touched.current.language) setLanguageState(settings.language);
         writeCachedPreferences({
-          theme: touched.current.theme ? undefined : settings.theme,
+          theme: touched.current.theme ? undefined : isThemeChoice(settings.theme) ? settings.theme : null,
           language: touched.current.language ? undefined : settings.language,
         });
       })
@@ -77,21 +82,20 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
 
     return () => {
       controller.abort();
-      media.removeEventListener('change', onMediaChange);
       window.removeEventListener('storage', onStorage);
     };
   }, []);
 
   useEffect(() => {
     if (!ready) return;
-    const resolved = resolveTheme(theme, systemDark);
+    const resolved = toResolvedTheme(theme);
     const root = document.documentElement;
     root.setAttribute('data-theme', resolved);
     root.style.colorScheme = resolved;
     root.setAttribute('lang', language);
-  }, [ready, theme, language, systemDark]);
+  }, [ready, theme, language]);
 
-  const save = useCallback((patch: { theme?: Theme; language?: Language }) => {
+  const save = useCallback((patch: { theme?: ThemeChoice; language?: Language }) => {
     writeCachedPreferences(patch);
     updatePreferences(patch)
       .then(() => setSaveError(null))
@@ -99,7 +103,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const setTheme = useCallback(
-    (next: Theme) => {
+    (next: ThemeChoice) => {
       touched.current.theme = true;
       setThemeState(next);
       save({ theme: next });

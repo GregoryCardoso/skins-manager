@@ -1,4 +1,8 @@
+// Valor gravado no banco. 'SYSTEM' (padrão da migração v2) = "sem preferência": vale o tema do sistema
+// operacional como valor inicial. A interface só oferece Claro/Escuro e nunca envia 'SYSTEM' (D112).
 export type Theme = 'SYSTEM' | 'LIGHT' | 'DARK';
+// Tema escolhido/exibido na interface.
+export type ThemeChoice = 'LIGHT' | 'DARK';
 export type Language = 'pt-BR' | 'en';
 export type ResolvedTheme = 'light' | 'dark';
 
@@ -33,7 +37,7 @@ export interface Settings {
   updatedAt: string | null;
 }
 export interface PreferencesPatch {
-  theme?: Theme;
+  theme?: ThemeChoice;
   language?: Language;
 }
 
