@@ -67,6 +67,22 @@ describe('config/env', () => {
     expect(env.slowItemDays).toBe(21);
   });
 
+  describe('P4 — SLOW_ITEM_DAYS mínimo 8 (D41)', () => {
+    test('SLOW_ITEM_DAYS=7 lança com a mensagem de D41', () => {
+      expect(() => loadEnvWith({ SLOW_ITEM_DAYS: '7' })).toThrow(
+        new Error('Variável de ambiente SLOW_ITEM_DAYS inválida: deve ser um inteiro maior ou igual a 8 (recebido "7").')
+      );
+    });
+
+    test('SLOW_ITEM_DAYS=8 aceito', () => {
+      expect(loadEnvWith({ SLOW_ITEM_DAYS: '8' }).slowItemDays).toBe(8);
+    });
+
+    test('SLOW_ITEM_DAYS ausente → 21', () => {
+      expect(loadEnvWith({}).slowItemDays).toBe(21);
+    });
+  });
+
   test('não expõe taxas no env (só as 4 chaves)', () => {
     const env = loadEnvWith({});
     expect(Object.keys(env).sort()).toEqual(['corsOrigin', 'dbPath', 'port', 'slowItemDays']);

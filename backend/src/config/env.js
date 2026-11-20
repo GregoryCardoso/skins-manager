@@ -14,6 +14,19 @@ function parsePositiveInt(name, raw, fallback) {
   return Number(text);
 }
 
+const MIN_SLOW_ITEM_DAYS = 8;
+
+function parseSlowItemDays(raw) {
+  const text = raw === undefined ? '' : String(raw).trim();
+  if (text === '') return 21;
+  if (!/^\d+$/.test(text) || Number(text) < MIN_SLOW_ITEM_DAYS) {
+    throw new Error(
+      `Variável de ambiente SLOW_ITEM_DAYS inválida: deve ser um inteiro maior ou igual a ${MIN_SLOW_ITEM_DAYS} (recebido "${raw}").`
+    );
+  }
+  return Number(text);
+}
+
 function nonEmpty(value, fallback) {
   return value !== undefined && value.trim() !== '' ? value.trim() : fallback;
 }
@@ -28,7 +41,7 @@ function loadEnv(source = process.env) {
     port: parsePositiveInt('PORT', source.PORT, 3001),
     dbPath: resolveDbPath(nonEmpty(source.DB_PATH, DEFAULT_DB_PATH)),
     corsOrigin: nonEmpty(source.CORS_ORIGIN, 'http://localhost:3000'),
-    slowItemDays: parsePositiveInt('SLOW_ITEM_DAYS', source.SLOW_ITEM_DAYS, 21),
+    slowItemDays: parseSlowItemDays(source.SLOW_ITEM_DAYS),
   });
 }
 
