@@ -1,3 +1,4 @@
+// O servidor escuta só em 127.0.0.1 (D135), então os bloqueadores também.
 // Sobe server.js como processo filho com a porta já ocupada e confere a saída amigável.
 const net = require('net');
 const path = require('path');
@@ -12,7 +13,7 @@ jest.setTimeout(20000);
 function listen(server, port) {
   return new Promise((resolve, reject) => {
     server.once('error', reject);
-    server.listen(port, () => resolve(server.address().port));
+    server.listen(port, '127.0.0.1', () => resolve(server.address().port));
   });
 }
 
@@ -85,5 +86,51 @@ describe('server.js - porta em uso (EADDRINUSE)', () => {
     const probe = net.createServer();
     await expect(listen(probe, port)).resolves.toBe(port);
     await close(probe);
+  });
+});
+
+describe('server.js - banco de versão futura (T45)', () => {
+  const fs = require('fs');
+  const os = require('os');
+  const Database = require('better-sqlite3');
+
+  test('mensagem em português, sem stack, código 1', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sm-future-'));
+    const dbPath = path.join(dir, 'future.sqlite');
+    const db = new Database(dbPath);
+    db.pragma('user_version = 9999');
+    db.close();
+    try {
+      const result = await new Promise((resolve) => {
+        const child = spawn(process.execPath, [SERVER], {
+          cwd: BACKEND_DIR,
+          env: { ...process.env, PORT: '3999', DB_PATH: dbPath },
+          stdio: ['ignore', 'pipe', 'pipe'],
+          windowsHide: true,
+        });
+        let stderr = '';
+        child.stderr.on('data', (c) => { stderr += c; });
+        child.on('exit', (code) => resolve({ code, stderr }));
+      });
+      expect(result.code).toBe(1);
+      expect(result.stderr).toContain('versão mais nova do Skins Manager (v9999;');
+      expect(result.stderr).not.toMatch(/\n\s+at /);
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('server.js - escuta só em 127.0.0.1 (D135)', () => {
+  test('ocupar 127.0.0.1:porta basta para dar EADDRINUSE', async () => {
+    const blocker = net.createServer();
+    const port = await new Promise((resolve) => blocker.listen(0, '127.0.0.1', () => resolve(blocker.address().port)));
+    try {
+      const result = await runServer(port);
+      expect(result.code).toBe(1);
+      expect(result.stderr).toContain(`A porta ${port} já está em uso`);
+    } finally {
+      await close(blocker);
+    }
   });
 });

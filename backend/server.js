@@ -1,16 +1,37 @@
-const env = require('./src/config/env');
-const { getDb, closeDb } = require('./src/config/database');
-const app = require('./src/app');
-const { syncBundledCatalog } = require('./src/services/catalogService');
+const path = require('path');
+const fs = require('fs');
 
-getDb();
-// Importa o catálogo embutido (offline) se for mais novo que o gravado; nunca derruba o servidor (D81).
-syncBundledCatalog();
+const HOST = '127.0.0.1'; // D135: só a própria máquina acessa o app.
 
-const server = app.listen(env.port, (err) => {
+function fatal(message) {
+  console.error(message);
+  process.exit(1);
+}
+
+let env;
+let closeDb;
+let app;
+try {
+  env = require('./src/config/env');
+  ({ closeDb } = require('./src/config/database'));
+  const { getDb } = require('./src/config/database');
+  app = require('./src/app');
+  const { syncBundledCatalog } = require('./src/services/catalogService');
+  getDb();
+  // Importa o catálogo embutido (offline) se for mais novo que o gravado; nunca derruba o servidor (D81).
+  syncBundledCatalog();
+} catch (err) {
+  // T45: mensagem em português, sem stack trace.
+  fatal(`Não foi possível iniciar o Skins Manager: ${err && err.message ? err.message : err}`);
+}
+
+const hasUi = fs.existsSync(path.join(app.locals.staticDir, 'index.html'));
+
+const server = app.listen(env.port, HOST, (err) => {
   // Express 5 passa o erro do listen para este callback; o handler 'error' abaixo cuida dele.
   if (err) return;
-  console.log(`Skins Manager API rodando em http://localhost:${env.port}`);
+  if (hasUi) console.log(`Skins Manager rodando em http://localhost:${env.port}`);
+  else console.log(`Skins Manager API rodando em http://localhost:${env.port}/api (interface não compilada)`);
 });
 
 server.on('error', (err) => {

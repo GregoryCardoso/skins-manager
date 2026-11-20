@@ -14,7 +14,9 @@ function latestVersion(migrations) {
 function assertSupportedVersion(db, migrations) {
   const current = db.pragma('user_version', { simple: true });
   if (current > latestVersion(migrations)) {
-    throw new Error('Este banco foi criado por uma versão mais nova do Skins Manager. Atualize o app.');
+    throw new Error(
+      `O banco de dados foi criado por uma versão mais nova do Skins Manager (v${current}; este app conhece até v${latestVersion(migrations)}). Atualize o app.`
+    );
   }
   return current;
 }

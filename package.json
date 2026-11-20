@@ -4,15 +4,26 @@
   "private": true,
   "description": "App local de inventário e giro de itens de CS2",
   "scripts": {
-    "start": "npm --prefix backend run start",
+    "dev": "concurrently -k -n backend,frontend -c blue,green \"npm:dev:backend\" \"npm:dev:frontend\"",
+    "dev:demo": "concurrently -k -n backend,frontend -c blue,green \"npm:dev:backend:demo\" \"npm:dev:frontend\"",
+    "build": "npm --prefix frontend run build",
+    "start": "npm run build && npm run serve",
+    "serve": "npm --prefix backend run start",
+    "test": "npm --prefix backend test && npm --prefix frontend test",
     "dev:backend": "npm --prefix backend run dev",
-    "test": "npm --prefix backend test",
-    "install:all": "npm install && npm --prefix backend install && npm --prefix frontend install",
-    "catalog:snapshot": "npm --prefix backend run catalog:snapshot",
     "dev:frontend": "npm --prefix frontend run dev",
+    "dev:backend:demo": "npm --prefix backend run dev:demo",
+    "install:all": "npm install && npm --prefix backend install && npm --prefix frontend install",
     "build:frontend": "npm --prefix frontend run build",
     "test:frontend": "npm --prefix frontend test",
-    "seed:dev": "npm --prefix backend run seed:dev",
-    "dev:backend:demo": "npm --prefix backend run dev:demo"
+    "test:backend": "npm --prefix backend test",
+    "catalog:snapshot": "npm --prefix backend run catalog:snapshot",
+    "seed:dev": "npm --prefix backend run seed:dev"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.7"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

@@ -25,9 +25,11 @@ describe('API_BASE_URL', () => {
     if (original === undefined) delete process.env.NEXT_PUBLIC_API_URL;
     else process.env.NEXT_PUBLIC_API_URL = original;
     vi.resetModules();
+    vi.unstubAllEnvs();
   });
 
-  async function loadBase(value: string | undefined) {
+  async function loadBase(value: string | undefined, nodeEnv?: string) {
+    if (nodeEnv !== undefined) vi.stubEnv('NODE_ENV', nodeEnv);
     if (value === undefined) delete process.env.NEXT_PUBLIC_API_URL;
     else process.env.NEXT_PUBLIC_API_URL = value;
     vi.resetModules();
@@ -35,6 +37,14 @@ describe('API_BASE_URL', () => {
   }
 
   test('padrão sem variável', async () => expect(await loadBase(undefined)).toBe('http://localhost:3001/api'));
+  test('em production o padrão é /api (mesma origem)', async () => {
+    expect(await loadBase(undefined, 'production')).toBe('/api');
+    expect(await loadBase('', 'production')).toBe('/api');
+  });
+  test('em development o padrão é a porta 3001', async () =>
+    expect(await loadBase(undefined, 'development')).toBe('http://localhost:3001/api'));
+  test('a variável sobrescreve em production', async () =>
+    expect(await loadBase('http://h:1/api', 'production')).toBe('http://h:1/api'));
   test('variável vazia usa o padrão', async () => expect(await loadBase('')).toBe('http://localhost:3001/api'));
   test('sem barra final', async () => expect(await loadBase('http://h:1/api')).toBe('http://h:1/api'));
   test('com barra(s) final(is) removida(s)', async () => {
