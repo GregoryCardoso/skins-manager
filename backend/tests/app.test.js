@@ -1,31 +1,14 @@
 const request = require('supertest');
 const app = require('../src/app');
+const { createApp } = require('../src/app');
 const { getDb, closeDb } = require('../src/config/database');
 const Store = require('../src/models/Store');
 const Setting = require('../src/models/Setting');
 
 afterAll(() => closeDb());
 
-describe('smoke', () => {
-  test('GET /api/health', async () => {
-    const res = await request(app).get('/api/health');
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data.status).toBe('ok');
-  });
-
-  test('404 padronizado', async () => {
-    const res = await request(app).get('/api/nada');
-    expect(res.status).toBe(404);
-    expect(res.body.error.code).toBe('NOT_FOUND');
-  });
-
-  test('JSON malformado -> 400', async () => {
-    const res = await request(app).post('/api/health').set('Content-Type', 'application/json').send('{bad');
-    expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('INVALID_JSON');
-  });
-
+// Health, 404 e JSON malformado já são cobertos em tests/middlewares/errorHandler.test.js (T7).
+describe('app', () => {
   test('banco e seed', () => {
     expect(getDb().pragma('user_version', { simple: true })).toBe(1);
     expect(getDb().pragma('foreign_keys', { simple: true })).toBe(1);
@@ -33,5 +16,16 @@ describe('smoke', () => {
     expect(Store.findPrimary().name).toBe('CSFloat');
     expect(Store.findAll().find((s) => s.name === 'CSMoney').saleFeeRate).toBeNull();
     expect(Setting.get().usdBrlRate).toBeNull();
+  });
+
+  test('T8: sem cabeçalho X-Powered-By', async () => {
+    const res = await request(app).get('/api/health');
+    expect(res.headers['x-powered-by']).toBeUndefined();
+  });
+
+  test('createApp({ now }) usa o relógio injetado (health)', async () => {
+    const fixed = createApp({ now: () => new Date('2026-11-19T15:00:00.000Z') });
+    const res = await request(fixed).get('/api/health');
+    expect(res.body.data.timestamp).toBe('2026-11-19T15:00:00.000Z');
   });
 });

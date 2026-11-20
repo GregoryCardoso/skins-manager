@@ -85,9 +85,16 @@ describe('errorHandler (app de teste)', () => {
     expect(res.body).toEqual({ success: false, error: { code: 'CONFLICT', message: 'falhou async' } });
   });
 
+  test('code SQLITE_CONSTRAINT* sem status → 409 CONSTRAINT_VIOLATION (D48)', async () => {
+    const a = buildApp((next) => next(Object.assign(new Error('x'), { code: 'SQLITE_CONSTRAINT_CHECK' })));
+    const res = await request(a).get('/boom');
+    expect(res.status).toBe(409);
+    expectErrorShape(res.body, 'CONSTRAINT_VIOLATION');
+  });
+
   test('status fora de 4xx/5xx ou code não-string → 500', async () => {
     const a1 = buildApp((next) => next(Object.assign(new Error('x'), { status: 200, code: 'OK' })));
-    const a3 = buildApp((next) => next(Object.assign(new Error('x'), { code: 'SQLITE_CONSTRAINT' })));
+    const a3 = buildApp((next) => next(Object.assign(new Error('x'), { code: 123 })));
     for (const a of [a1, a3]) {
       const res = await request(a).get('/boom');
       expect(res.status).toBe(500);

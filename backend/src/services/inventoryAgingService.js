@@ -2,11 +2,12 @@
 
 // Tempo no inventário (2.6): dias inteiros, faixas, ordenação e filtro de parados.
 const env = require('../config/env');
+const { MIN_SLOW_ITEM_DAYS } = require('../config/constants');
 const { ValidationError } = require('../errors/AppError');
+const { parseDate } = require('./dateUtils');
 
 const DAY_MS = 86400000;
 const FAST_DAYS = 7;
-const MIN_SLOW_ITEM_DAYS = 8;
 
 const SP_FORMAT = new Intl.DateTimeFormat('en-CA', {
   timeZone: 'America/Sao_Paulo',
@@ -15,12 +16,11 @@ const SP_FORMAT = new Intl.DateTimeFormat('en-CA', {
   day: '2-digit',
 });
 
-function toDate(value, label = 'Data') {
-  const date = value instanceof Date ? value : new Date(value);
-  if (value === null || value === undefined || Number.isNaN(date.getTime())) {
-    throw new ValidationError(`${label} inválida.`, 'INVALID_DATE');
+// Erro de programação (como D46): dias inválidos nunca devem virar uma faixa por acidente (T18).
+function assertDays(days) {
+  if (!Number.isInteger(days) || days < 0) {
+    throw new Error(`Quantidade de dias inválida: deve ser um inteiro maior ou igual a 0 (recebido ${days}).`);
   }
-  return date;
 }
 
 function assertSlowItemDays(slowItemDays) {
@@ -30,12 +30,13 @@ function assertSlowItemDays(slowItemDays) {
 }
 
 function daysBetween(start, end) {
-  const ms = toDate(end, 'Data final').getTime() - toDate(start, 'Data inicial').getTime();
+  const ms = parseDate(end, 'Data final').getTime() - parseDate(start, 'Data inicial').getTime();
   return Math.max(0, Math.floor(ms / DAY_MS));
 }
 
 function classifyStock(days, slowItemDays = env.slowItemDays) {
   assertSlowItemDays(slowItemDays);
+  assertDays(days);
   if (days <= FAST_DAYS) return 'RECENTE';
   if (days <= slowItemDays) return 'EM_GIRO';
   return 'AGARRADO';
@@ -43,6 +44,7 @@ function classifyStock(days, slowItemDays = env.slowItemDays) {
 
 function classifyTurnaround(days, slowItemDays = env.slowItemDays) {
   assertSlowItemDays(slowItemDays);
+  assertDays(days);
   if (days <= FAST_DAYS) return 'GIRO_RAPIDO';
   if (days <= slowItemDays) return 'GIRO_NORMAL';
   return 'DEMOROU_VENDER';
@@ -50,13 +52,21 @@ function classifyTurnaround(days, slowItemDays = env.slowItemDays) {
 
 // "YYYY-MM-DD" do instante em America/Sao_Paulo.
 function toSaoPauloDate(dateOrIso) {
-  return SP_FORMAT.format(toDate(dateOrIso));
+  return SP_FORMAT.format(parseDate(dateOrIso));
+}
+
+// Recusa datas em dia posterior ao de `now` em America/Sao_Paulo (D53, P8).
+function assertNotFutureDay(date, now = new Date(), { code, message }) {
+  if (toSaoPauloDate(date) > toSaoPauloDate(now)) {
+    throw new ValidationError(message, code);
+  }
 }
 
 function assertAcquiredAtNotFuture(acquiredAt, now = new Date()) {
-  if (toSaoPauloDate(acquiredAt) > toSaoPauloDate(now)) {
-    throw new ValidationError('A data de aquisição não pode ser futura.', 'ACQUIRED_AT_IN_FUTURE');
-  }
+  assertNotFutureDay(acquiredAt, now, {
+    code: 'ACQUIRED_AT_IN_FUTURE',
+    message: 'A data de aquisição não pode ser futura.',
+  });
 }
 
 function getAging(item, { slowItemDays = env.slowItemDays, now = new Date() } = {}) {
@@ -80,14 +90,16 @@ function sortBy(items, valueOf, order) {
     .map((entry) => entry.item);
 }
 
+// Mais antigo = maior idade; ordena pelo instante exato de aquisição (T21), não por dias inteiros.
 function sortByAge(items, order = 'desc', now = new Date()) {
-  return sortBy(items, (item) => daysBetween(item.acquiredAt, now), order);
+  const nowMs = parseDate(now, 'Data atual').getTime();
+  return sortBy(items, (item) => nowMs - parseDate(item.acquiredAt, 'Data de aquisição').getTime(), order);
 }
 
 // Itens sem soldAt (em estoque) vão sempre para o fim.
 function sortByTurnaround(items, order = 'asc') {
-  const sold = items.filter((item) => item.soldAt);
-  const unsold = items.filter((item) => !item.soldAt);
+  const sold = items.filter((item) => item.status === 'VENDIDO');
+  const unsold = items.filter((item) => item.status !== 'VENDIDO');
   return [...sortBy(sold, (item) => daysBetween(item.acquiredAt, item.soldAt), order), ...sortBy(unsold, () => 0, 'asc')];
 }
 
@@ -103,6 +115,7 @@ module.exports = {
   classifyStock,
   classifyTurnaround,
   toSaoPauloDate,
+  assertNotFutureDay,
   assertAcquiredAtNotFuture,
   getAging,
   sortByAge,

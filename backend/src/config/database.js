@@ -12,17 +12,23 @@ function openDatabase(dbPath) {
   if (!inMemory) fs.mkdirSync(path.dirname(dbPath), { recursive: true });
 
   const db = new Database(dbPath);
-  db.pragma('foreign_keys = ON');
-  if (!inMemory) db.pragma('journal_mode = WAL');
+  try {
+    db.pragma('foreign_keys = ON');
+    if (!inMemory) db.pragma('journal_mode = WAL');
 
-  const version = db.pragma('user_version', { simple: true });
-  if (version < SCHEMA_VERSION) {
-    db.transaction(() => {
-      db.exec(SCHEMA_SQL);
-      db.pragma(`user_version = ${SCHEMA_VERSION}`);
-    })();
+    const version = db.pragma('user_version', { simple: true });
+    if (version < SCHEMA_VERSION) {
+      db.transaction(() => {
+        db.exec(SCHEMA_SQL);
+        db.pragma(`user_version = ${SCHEMA_VERSION}`);
+      })();
+    }
+    runSeed(db);
+  } catch (err) {
+    // Libera o handle (no Windows ele trava o arquivo .sqlite) e propaga o erro original.
+    db.close();
+    throw err;
   }
-  runSeed(db);
   return db;
 }
 

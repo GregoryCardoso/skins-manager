@@ -1,16 +1,8 @@
 'use strict';
 
-const { ValidationError } = require('../errors/AppError');
+const { parseDate } = require('./dateUtils');
 
 const MIN_MS = 60000;
-
-function parseDate(value, label) {
-  const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    throw new ValidationError(`${label} inválida.`, 'INVALID_DATE');
-  }
-  return date;
-}
 
 // "2d 14h 20min restantes", omitindo unidades zeradas à esquerda; nunca "0min" enquanto bloqueado.
 function formatRemaining(remainingMs) {

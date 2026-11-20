@@ -15,4 +15,18 @@ class ValidationError extends AppError {
   }
 }
 
-module.exports = { AppError, ValidationError };
+class NotFoundError extends AppError {
+  constructor(message, code = 'NOT_FOUND') {
+    super(404, code, message);
+    this.name = 'NotFoundError';
+  }
+}
+
+class ConflictError extends AppError {
+  constructor(message, code = 'CONFLICT') {
+    super(409, code, message);
+    this.name = 'ConflictError';
+  }
+}
+
+module.exports = { AppError, ValidationError, NotFoundError, ConflictError };

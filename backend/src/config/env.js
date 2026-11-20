@@ -1,20 +1,19 @@
 const path = require('path');
 const dotenv = require('dotenv');
+const { MIN_SLOW_ITEM_DAYS } = require('./constants');
 
 dotenv.config({ path: path.join(__dirname, '..', '..', '.env'), quiet: true });
 
 const DEFAULT_DB_PATH = path.join(__dirname, '..', '..', 'data', 'inventory.sqlite');
 
-function parsePositiveInt(name, raw, fallback) {
+function parsePort(raw, fallback) {
   if (raw === undefined || String(raw).trim() === '') return fallback;
   const text = String(raw).trim();
-  if (!/^\d+$/.test(text) || Number(text) <= 0) {
-    throw new Error(`Variável de ambiente ${name} inválida: deve ser um inteiro maior que 0 (recebido "${raw}").`);
+  if (!/^\d+$/.test(text) || Number(text) < 1 || Number(text) > 65535) {
+    throw new Error(`Variável de ambiente PORT inválida: deve ser um inteiro entre 1 e 65535 (recebido "${raw}").`);
   }
   return Number(text);
 }
-
-const MIN_SLOW_ITEM_DAYS = 8;
 
 function parseSlowItemDays(raw) {
   const text = raw === undefined ? '' : String(raw).trim();
@@ -38,7 +37,7 @@ function resolveDbPath(value) {
 
 function loadEnv(source = process.env) {
   return Object.freeze({
-    port: parsePositiveInt('PORT', source.PORT, 3001),
+    port: parsePort(source.PORT, 3001),
     dbPath: resolveDbPath(nonEmpty(source.DB_PATH, DEFAULT_DB_PATH)),
     corsOrigin: nonEmpty(source.CORS_ORIGIN, 'http://localhost:3000'),
     slowItemDays: parseSlowItemDays(source.SLOW_ITEM_DAYS),

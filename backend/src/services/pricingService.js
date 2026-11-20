@@ -4,17 +4,13 @@
 // Usa SOMENTE a taxa de venda: taxa de saque e cotação efetiva não entram aqui (2.8).
 const { ValidationError } = require('../errors/AppError');
 const { getSaleFeeStrategy, saleFeeParamsFromStore, assertSaleFeeParams, MAX_PRICE_SEARCH_ITERATIONS } = require('./fees');
-const { convertCents } = require('./currencyService');
-
-const WARNING_FEES = 'taxas não configuradas';
-const WARNING_FX = 'cotação não configurada';
-
-const validRate = (rate) => typeof rate === 'number' && Number.isFinite(rate) && rate > 0;
+const { convertCents, isValidFxRate } = require('./currencyService');
+const { WARNING_FEES, WARNING_FX } = require('./warnings');
 
 // Menor preço (centavos) cujo líquido >= custo; parte da estimativa e ajusta centavo a centavo. Mínimo 1.
 function findMinSalePriceCents(costCents, params) {
-  if (!Number.isInteger(costCents) || costCents < 0) {
-    throw new ValidationError('Custo deve ser um inteiro de centavos maior ou igual a 0.');
+  if (!Number.isSafeInteger(costCents) || costCents < 0) {
+    throw new ValidationError('Custo deve ser um inteiro de centavos maior ou igual a 0.', 'INVALID_AMOUNT');
   }
   assertSaleFeeParams(params);
   const strategy = getSaleFeeStrategy(params.feeType);
@@ -40,7 +36,7 @@ function minPriceForStore({ costCents, costCurrency, costFxRate, store, settings
   if (costCurrency !== store.currency) {
     const usdBrlRate = settings ? settings.usdBrlRate : null;
     const needed = costCurrency === 'BRL' ? costFxRate : usdBrlRate;
-    if (!validRate(needed)) return { ...base, minPriceCents: null, warning: WARNING_FX };
+    if (!isValidFxRate(needed)) return { ...base, minPriceCents: null, warning: WARNING_FX };
     costInStoreCurrency = convertCents(
       costCents, costCurrency, store.currency, { fromFxRate: costFxRate, toFxRate: usdBrlRate }, 'CEIL'
     );
@@ -63,8 +59,8 @@ function minPricesForItem({ item, stores, settings }) {
 }
 
 function computeSale({ salePriceCents, store }) {
-  if (!Number.isInteger(salePriceCents) || salePriceCents <= 0) {
-    throw new ValidationError('Preço de venda deve ser um inteiro de centavos maior que 0.');
+  if (!Number.isSafeInteger(salePriceCents) || salePriceCents <= 0) {
+    throw new ValidationError('Preço de venda deve ser um inteiro de centavos maior que 0.', 'INVALID_AMOUNT');
   }
   const params = saleFeeParamsFromStore(store);
   if (!params) {

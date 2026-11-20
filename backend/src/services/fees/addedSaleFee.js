@@ -14,7 +14,10 @@ function net(grossCents, params) {
   assertSaleFeeParams(params);
   if (buyerPays(0, params) > grossCents) return grossCents - fee(0, params);
   const ppm = Math.round(params.rate * 1e6);
-  let r = Math.max(0, Math.floor(((grossCents - params.fixedFeeCents) * 1e6) / (1e6 + ppm)));
+  // Estimativa inicial: pelo percentual ou, se a taxa mínima domina, por g - minFee - fixa (T19).
+  const byRate = Math.floor(((grossCents - params.fixedFeeCents) * 1e6) / (1e6 + ppm));
+  const byMin = grossCents - (params.minFeeCents ?? 0) - params.fixedFeeCents;
+  let r = Math.max(0, Math.min(byRate, byMin));
   let steps = 0;
   const step = () => {
     steps += 1;

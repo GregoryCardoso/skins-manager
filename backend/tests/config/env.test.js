@@ -54,8 +54,13 @@ describe('config/env', () => {
     expect(() => loadEnvWith({ SLOW_ITEM_DAYS: value })).toThrow(/SLOW_ITEM_DAYS/);
   });
 
-  test.each(['0', '-1', 'abc'])('PORT=%s lança erro', (value) => {
+  test.each(['0', '-1', 'abc', '70000', '65536'])('PORT=%s lança erro', (value) => {
     expect(() => loadEnvWith({ PORT: value })).toThrow(/PORT/);
+  });
+
+  test('PORT nos limites 1 e 65535 é aceito (T2)', () => {
+    expect(loadEnvWith({ PORT: '1' }).port).toBe(1);
+    expect(loadEnvWith({ PORT: '65535' }).port).toBe(65535);
   });
 
   test('objeto exportado é imutável', () => {

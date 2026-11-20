@@ -62,14 +62,17 @@ describe('config/database', () => {
     expect(fs.existsSync(path.dirname(dbPath))).toBe(false);
 
     const db1 = openDatabase(dbPath);
-    expect(fs.existsSync(dbPath)).toBe(true);
-    expect(db1.pragma('journal_mode', { simple: true })).toBe('wal');
-    expect(db1.pragma('foreign_keys', { simple: true })).toBe(1);
-    db1.prepare(
-      "INSERT INTO stores (name, currency, created_at, updated_at) VALUES ('Persistida', 'USD', 'x', 'x')"
-    ).run();
-    db1.prepare('UPDATE settings SET usd_brl_rate = 5.5 WHERE id = 1').run();
-    db1.close();
+    try {
+      expect(fs.existsSync(dbPath)).toBe(true);
+      expect(db1.pragma('journal_mode', { simple: true })).toBe('wal');
+      expect(db1.pragma('foreign_keys', { simple: true })).toBe(1);
+      db1.prepare(
+        "INSERT INTO stores (name, currency, created_at, updated_at) VALUES ('Persistida', 'USD', 'x', 'x')"
+      ).run();
+      db1.prepare('UPDATE settings SET usd_brl_rate = 5.5 WHERE id = 1').run();
+    } finally {
+      db1.close();
+    }
 
     const db2 = openDatabase(dbPath);
     try {
@@ -82,6 +85,29 @@ describe('config/database', () => {
     } finally {
       db2.close();
     }
+  });
+
+  test('T3: se o seed lançar, o handle é fechado (arquivo liberado) e o erro original é relançado', () => {
+    const dbPath = path.join(tmpRoot, 'falha', 'seed-falha.sqlite');
+    let thrown;
+    jest.isolateModules(() => {
+      jest.doMock('../../src/config/seed', () => ({
+        runSeed: () => {
+          throw new Error('seed quebrou');
+        },
+      }));
+      const isolated = require('../../src/config/database');
+      try {
+        isolated.openDatabase(dbPath);
+      } catch (err) {
+        thrown = err;
+      }
+    });
+    jest.dontMock('../../src/config/seed');
+    expect(thrown).toEqual(new Error('seed quebrou'));
+    // No Windows, um handle aberto faria o rmSync lançar EBUSY.
+    expect(() => fs.rmSync(path.dirname(dbPath), { recursive: true, force: true })).not.toThrow();
+    expect(fs.existsSync(dbPath)).toBe(false);
   });
 
   test(':memory: não usa WAL', () => {

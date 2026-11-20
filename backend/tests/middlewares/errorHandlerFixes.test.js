@@ -163,6 +163,14 @@ describe('errorHandler - AppError/ValidationError e 4xx genéricos', () => {
     expect(res.body).toEqual({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Nome é obrigatório' } });
   });
 
+  test('violação real de CHECK do SQLite → 409 CONSTRAINT_VIOLATION (sem 500)', async () => {
+    freshDb();
+    const a = buildApp((req, res) => res.status(201).json({ success: true, data: Item.create(req.body) }));
+    const res = await request(a).post('/r').send(wonSkin({ acquisitionType: 'COMPRA', purchaseStoreId: null }));
+    expect(res.status).toBe(409);
+    expect(res.body).toEqual({ success: false, error: { code: 'CONSTRAINT_VIOLATION', message: expect.any(String) } });
+  });
+
   test('UNKNOWN_FIELD vindo do model (fluxo real) → 400 e nada gravado', async () => {
     freshDb();
     const a = buildApp((req, res) => res.status(201).json({ success: true, data: Item.create(req.body) }));

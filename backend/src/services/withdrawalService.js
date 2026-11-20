@@ -4,13 +4,10 @@
 // Usado somente em saques e no lucro real; nunca no preço mínimo por item.
 const { ValidationError } = require('../errors/AppError');
 const { applyRateRounding, roundCents } = require('./fees/rounding');
+const { isValidFxRate } = require('./currencyService');
+const { WARNING_FEES, WARNING_FX, WARNING_BELOW_FEE } = require('./warnings');
 
 const EFFECTIVE_RATE_SAMPLE = 5;
-const WARNING_FEES = 'taxas não configuradas';
-const WARNING_FX = 'cotação não configurada';
-const WARNING_BELOW_FEE = 'valor menor que a taxa';
-
-const validRate = (rate) => typeof rate === 'number' && Number.isFinite(rate) && rate > 0;
 
 function computeWithdrawalFee(amountStoreCents, store) {
   if (store.withdrawalFeeRate == null) return null;
@@ -21,11 +18,17 @@ function computeWithdrawalFee(amountStoreCents, store) {
 function effectiveRate(recentWithdrawals, storeId) {
   const sorted = (recentWithdrawals || [])
     .filter((w) => w && Number.isFinite(w.amountStoreCents) && w.amountStoreCents > 0)
+    .filter((w) => Number.isFinite(w.amountBrlCents) && w.amountBrlCents > 0)
     .filter((w) => storeId === undefined || storeId === null || w.storeId === storeId)
+    .map((w) => ({ w, time: Date.parse(w.withdrawnAt) }))
     .sort((a, b) => {
-      if (a.withdrawnAt !== b.withdrawnAt) return a.withdrawnAt < b.withdrawnAt ? 1 : -1;
-      return (b.id ?? 0) - (a.id ?? 0);
+      // Datas inválidas (NaN) vão para o fim da lista.
+      const ta = Number.isNaN(a.time) ? -Infinity : a.time;
+      const tb = Number.isNaN(b.time) ? -Infinity : b.time;
+      if (ta !== tb) return tb > ta ? 1 : -1;
+      return (b.w.id ?? 0) - (a.w.id ?? 0);
     })
+    .map(({ w }) => w)
     .slice(0, EFFECTIVE_RATE_SAMPLE);
   if (sorted.length === 0) return null;
   const sum = sorted.reduce((acc, w) => acc + w.amountBrlCents / w.amountStoreCents, 0);
@@ -34,7 +37,8 @@ function effectiveRate(recentWithdrawals, storeId) {
 
 // Estimativa de BRL para um valor na loja que permite saque (sem validações de entrada).
 function estimateWithdrawable(amountStoreCents, store, settings, recentWithdrawals) {
-  const rate = effectiveRate(recentWithdrawals, store.id);
+  // Sem store.id não dá para isolar os saques da loja: lista vazia (cai em taxa + cotação) (T17).
+  const rate = store.id == null ? null : effectiveRate(recentWithdrawals, store.id);
   if (rate !== null) {
     return {
       method: 'EFFECTIVE_RATE',
@@ -65,14 +69,14 @@ function estimateWithdrawable(amountStoreCents, store, settings, recentWithdrawa
     return result;
   }
   const usdBrlRate = settings ? settings.usdBrlRate : null;
-  if (!validRate(usdBrlRate)) return { ...result, warning: WARNING_FX };
+  if (!isValidFxRate(usdBrlRate)) return { ...result, warning: WARNING_FX };
   result.estimatedBrlCents = roundCents(result.netStoreCents * usdBrlRate, 'FLOOR');
   return result;
 }
 
 function simulateWithdrawal({ amountStoreCents, store, settings, recentWithdrawals }) {
-  if (!Number.isInteger(amountStoreCents) || amountStoreCents <= 0) {
-    throw new ValidationError('Valor do saque deve ser um inteiro de centavos maior que 0.');
+  if (!Number.isSafeInteger(amountStoreCents) || amountStoreCents <= 0) {
+    throw new ValidationError('Valor do saque deve ser um inteiro de centavos maior que 0.', 'INVALID_AMOUNT');
   }
   if (!store.allowsWithdrawal) {
     throw new ValidationError('Esta loja não permite saque.', 'WITHDRAWAL_NOT_ALLOWED');
@@ -81,8 +85,8 @@ function simulateWithdrawal({ amountStoreCents, store, settings, recentWithdrawa
 }
 
 function estimateBalanceBrl({ balanceCents, store, settings, recentWithdrawals }) {
-  if (!Number.isInteger(balanceCents) || balanceCents < 0) {
-    throw new ValidationError('Saldo deve ser um inteiro de centavos maior ou igual a 0.');
+  if (!Number.isSafeInteger(balanceCents) || balanceCents < 0) {
+    throw new ValidationError('Saldo deve ser um inteiro de centavos maior ou igual a 0.', 'INVALID_AMOUNT');
   }
   const withdrawable = Boolean(store.allowsWithdrawal);
   if (balanceCents === 0) return { estimatedBrlCents: 0, withdrawable, warning: null };
@@ -92,7 +96,7 @@ function estimateBalanceBrl({ balanceCents, store, settings, recentWithdrawals }
   }
   if (store.currency === 'BRL') return { estimatedBrlCents: balanceCents, withdrawable, warning: null };
   const usdBrlRate = settings ? settings.usdBrlRate : null;
-  if (!validRate(usdBrlRate)) return { estimatedBrlCents: null, withdrawable, warning: WARNING_FX };
+  if (!isValidFxRate(usdBrlRate)) return { estimatedBrlCents: null, withdrawable, warning: WARNING_FX };
   return { estimatedBrlCents: roundCents(balanceCents * usdBrlRate, 'FLOOR'), withdrawable, warning: null };
 }
 

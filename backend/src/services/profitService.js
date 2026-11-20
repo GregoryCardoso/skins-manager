@@ -1,13 +1,11 @@
 'use strict';
 
 // Lucro da venda (2.5) e lucro real (2.10).
-const { toUsdCents } = require('./currencyService');
+const { toUsdCents, isValidFxRate } = require('./currencyService');
 const { roundCents } = require('./fees/rounding');
 const { estimateBalanceBrl } = require('./withdrawalService');
+const { WARNING_FX } = require('./warnings');
 
-const WARNING_FX = 'cotação não configurada';
-
-const validRate = (rate) => typeof rate === 'number' && Number.isFinite(rate) && rate > 0;
 const sumOf = (values) => values.reduce((acc, v) => acc + v, 0);
 const addNullable = (a, b) => (a === null || b === null ? null : a + b);
 
@@ -27,7 +25,7 @@ function estimateStockBrl(stockItems, usdBrlRate) {
       total += item.purchasePriceCents;
     } else if (item.purchasePriceCents === 0) {
       continue;
-    } else if (validRate(usdBrlRate)) {
+    } else if (isValidFxRate(usdBrlRate)) {
       total += roundCents(item.purchasePriceCents * usdBrlRate, 'ROUND');
     } else {
       return { totalBrlCents: null, warning: WARNING_FX };
@@ -36,7 +34,12 @@ function estimateStockBrl(stockItems, usdBrlRate) {
   return { totalBrlCents: total, warning: null };
 }
 
-function computeRealProfit({ deposits = [], withdrawals = [], platformBalances = [], stockItems = [], settings = {} }) {
+function computeRealProfit(input = {}) {
+  const deposits = input.deposits ?? [];
+  const withdrawals = input.withdrawals ?? [];
+  const platformBalances = input.platformBalances ?? [];
+  const stockItems = input.stockItems ?? [];
+  const settings = input.settings ?? {};
   const usdBrlRate = settings ? settings.usdBrlRate : null;
   const warnings = [];
 
@@ -75,7 +78,7 @@ function computeRealProfit({ deposits = [], withdrawals = [], platformBalances =
       : withdrawalsBrlCents + withdrawableBalanceBrlCents + stockEstimatedBrlCents - depositsBrlCents;
   const realProfitBrlCents = addNullable(withdrawableRealProfitBrlCents, nonWithdrawableBalanceBrlCents);
 
-  const toApproxUsd = (brl) => (brl === null || !validRate(usdBrlRate) ? null : toUsdCents(brl, 'BRL', usdBrlRate));
+  const toApproxUsd = (brl) => (brl === null || !isValidFxRate(usdBrlRate) ? null : toUsdCents(brl, 'BRL', usdBrlRate));
 
   return {
     depositsBrlCents,

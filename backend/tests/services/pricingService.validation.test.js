@@ -108,7 +108,7 @@ describe('PRICE_SEARCH_LIMIT', () => {
   }, 10000);
 
   test('findMinSalePriceCents: custo enorme com params reais não estoura (estimativa já é boa)', () => {
-    const cost = 1e12;
+    const cost = 1e10; // 1e12 estouraria o limite de inteiro seguro de applyRateRounding (T22)
     const min = findMinSalePriceCents(cost, CSF);
     expect(deducted.net(min, CSF)).toBeGreaterThanOrEqual(cost);
     expect(deducted.net(min - 1, CSF)).toBeLessThan(cost);

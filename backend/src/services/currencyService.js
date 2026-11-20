@@ -12,9 +12,14 @@ function assertCurrency(currency) {
   }
 }
 
+// Cotação válida: número finito > 0 ("BRL por 1 USD").
+function isValidFxRate(fxRate) {
+  return typeof fxRate === 'number' && Number.isFinite(fxRate) && fxRate > 0;
+}
+
 function assertRate(fxRate) {
-  if (typeof fxRate !== 'number' || !Number.isFinite(fxRate) || fxRate <= 0) {
-    throw new ValidationError('Cotação USD→BRL não informada.', 'FX_RATE_REQUIRED');
+  if (!isValidFxRate(fxRate)) {
+    throw new ValidationError('Cotação USD→BRL ausente ou inválida.', 'FX_RATE_REQUIRED');
   }
 }
 
@@ -40,4 +45,4 @@ function convertCents(amountCents, fromCurrency, toCurrency, { fromFxRate, toFxR
   return fromUsdCents(usd, toCurrency, toFxRate, mode);
 }
 
-module.exports = { CURRENCIES, toUsdCents, fromUsdCents, convertCents };
+module.exports = { CURRENCIES, isValidFxRate, toUsdCents, fromUsdCents, convertCents };
