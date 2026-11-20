@@ -158,3 +158,37 @@ describe('toItemView', () => {
     expect(view.aging).toEqual({ turnaroundDays: 4, turnaroundBucket: 'GIRO_RAPIDO' });
   });
 });
+
+describe('MAX_AMOUNT_CENTS nas funções puras (D50/D63)', () => {
+  const MAX = 1e10;
+  const item = { acquiredAt: '2026-11-01T00:00:00.000Z', tradeUnlockAt: null };
+
+  test('buildItemRecord: no teto passa; acima dá INVALID_AMOUNT', () => {
+    const ctx = { store: csfloat(), settings: SETTINGS, now: NOW };
+    expect(buildItemRecord(base({ purchasePriceCents: MAX }), ctx).purchasePriceCents).toBe(MAX);
+    expect(codeOf(() => buildItemRecord(base({ purchasePriceCents: MAX + 1 }), ctx))).toBe('INVALID_AMOUNT');
+  });
+
+  test('buildItemRecord na edição: valor legado acima do teto não travado se o preço não foi informado', () => {
+    const existing = { ...base(), purchaseCurrency: 'USD', status: 'EM_ESTOQUE' };
+    const ctx = { store: csfloat(), settings: SETTINGS, now: NOW, existing };
+    expect(buildItemRecord(base({ purchasePriceCents: 9e15 }), { ...ctx, priceInformed: false }).purchasePriceCents).toBe(9e15);
+    expect(codeOf(() => buildItemRecord(base({ purchasePriceCents: 9e15 }), { ...ctx, priceInformed: true }))).toBe('INVALID_AMOUNT');
+  });
+
+  test('buildSaleRecord: acima do teto dá INVALID_AMOUNT; no teto passa', () => {
+    const ctx = { store: csfloat(), settings: SETTINGS, now: NOW };
+    const input = (p) => ({ salePriceCents: p, soldAt: '2026-11-10T12:00:00.000Z' });
+    expect(codeOf(() => buildSaleRecord(item, input(MAX + 1), ctx))).toBe('INVALID_AMOUNT');
+    expect(buildSaleRecord(item, input(MAX), ctx).record.salePriceCents).toBe(MAX);
+  });
+
+  test('GANHEI com troca de moeda e sem preço informado: custo 0 e sem PURCHASE_PRICE_REQUIRED', () => {
+    const existing = { ...base(), purchaseCurrency: 'BRL', status: 'EM_ESTOQUE' };
+    const r = buildItemRecord(
+      base({ acquisitionType: 'GANHEI', purchaseStoreId: null, purchasePriceCents: 0 }),
+      { store: null, settings: SETTINGS, now: NOW, existing, priceInformed: false }
+    );
+    expect(r).toMatchObject({ purchasePriceCents: 0, purchaseCurrency: 'USD' });
+  });
+});

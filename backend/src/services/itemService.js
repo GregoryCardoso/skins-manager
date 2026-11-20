@@ -6,6 +6,8 @@ const env = require('../config/env');
 const Item = require('../models/Item');
 const Store = require('../models/Store');
 const Setting = require('../models/Setting');
+const { runInTransaction } = require('../models/modelHelpers');
+const { MAX_AMOUNT_CENTS } = require('../config/constants');
 const { ValidationError, NotFoundError, ConflictError } = require('../errors/AppError');
 const { isValidFxRate } = require('./currencyService');
 const { parseDate, toIso, formatDateTimeBr } = require('./dateUtils');
@@ -36,6 +38,7 @@ const SALE_FIELDS_NULL = {
 };
 
 const isNil = (v) => v === null || v === undefined;
+const hasKey = (obj, key) => Object.prototype.hasOwnProperty.call(obj, key);
 
 function optionalText(value) {
   if (isNil(value)) return null;
@@ -64,29 +67,54 @@ function resolveCurrencyAndFx(store, informedFx, settings) {
 }
 
 // Monta o registro de aquisição/atributos a partir do estado já mesclado. `existing` só na edição.
-function buildItemRecord(merged, { store = null, settings = null, now = new Date(), existing = null } = {}) {
+function buildItemRecord(merged, { store = null, settings = null, now = new Date(), existing = null, priceInformed = true, body = null } = {}) {
   const name = isNil(merged.name) ? '' : String(merged.name).trim();
   if (name === '') throw new ValidationError('O nome do item é obrigatório.', 'REQUIRED_FIELD');
 
   if (!ACQUISITION_TYPES.includes(merged.acquisitionType)) {
     throw new ValidationError('Tipo de aquisição inválido.', 'INVALID_ACQUISITION_TYPE');
   }
-  const isPurchase = merged.acquisitionType === 'COMPRA';
-  if (isPurchase && isNil(merged.purchaseStoreId)) {
-    throw new ValidationError('Informe a loja da compra.', 'PURCHASE_STORE_REQUIRED');
-  }
-  if (isPurchase && isNil(merged.purchasePriceCents)) {
-    throw new ValidationError('Informe o preço da compra.', 'PURCHASE_PRICE_REQUIRED');
-  }
-  const purchasePriceCents = isNil(merged.purchasePriceCents) ? 0 : merged.purchasePriceCents;
-  if (!Number.isSafeInteger(purchasePriceCents) || purchasePriceCents < 0) {
-    throw new ValidationError('O preço deve ser um inteiro de centavos maior ou igual a 0.', 'INVALID_AMOUNT');
-  }
+  const isGanhei = merged.acquisitionType === 'GANHEI';
   if (!isNil(merged.purchaseStoreId) && !store) {
     throw new ValidationError('Loja não encontrada.', 'STORE_NOT_FOUND');
   }
   const purchaseStoreId = isNil(merged.purchaseStoreId) ? null : merged.purchaseStoreId;
-  const { currency, fxRate } = resolveCurrencyAndFx(purchaseStoreId === null ? null : store, merged.fxRateAtPurchase, settings);
+
+  let purchasePriceCents = 0;
+  let currency = 'USD';
+  let fxRate = null;
+  if (isGanhei) {
+    // GANHEI: custo fixo US$ 0,00, sem cotação; a loja é só informativa (D65).
+    if (body && hasKey(body, 'purchasePriceCents')) {
+      throw new ValidationError('Item ganho tem custo fixo US$ 0,00; não informe preço de compra.', 'GANHEI_COST_NOT_ALLOWED');
+    }
+    if (body && hasKey(body, 'fxRateAtPurchase')) {
+      throw new ValidationError('Item ganho não usa cotação.', 'FX_RATE_NOT_ALLOWED');
+    }
+  } else {
+    if (isNil(merged.purchaseStoreId)) {
+      throw new ValidationError('Informe a loja da compra.', 'PURCHASE_STORE_REQUIRED');
+    }
+    if (isNil(merged.purchasePriceCents)) {
+      throw new ValidationError('Informe o preço da compra.', 'PURCHASE_PRICE_REQUIRED');
+    }
+    purchasePriceCents = merged.purchasePriceCents;
+    if (!Number.isSafeInteger(purchasePriceCents) || purchasePriceCents < 0) {
+      throw new ValidationError('O preço deve ser um inteiro de centavos maior ou igual a 0.', 'INVALID_AMOUNT');
+    }
+    // O teto vale só para o valor que entra (D63); item legado acima do teto continua editável em outros campos.
+    if (priceInformed && purchasePriceCents > MAX_AMOUNT_CENTS) {
+      throw new ValidationError('O valor excede o máximo permitido.', 'INVALID_AMOUNT');
+    }
+    // Moeda diferente da gravada: o preço antigo não vale na nova moeda (I1).
+    if (existing && !priceInformed && store.currency !== existing.purchaseCurrency) {
+      throw new ValidationError(
+        'Ao trocar para uma loja de outra moeda, informe o preço na nova moeda.',
+        'PURCHASE_PRICE_REQUIRED'
+      );
+    }
+    ({ currency, fxRate } = resolveCurrencyAndFx(store, merged.fxRateAtPurchase, settings));
+  }
 
   const attrs = normalizeAttributes({
     category: merged.category,
@@ -102,6 +130,9 @@ function buildItemRecord(merged, { store = null, settings = null, now = new Date
   if (acquiredChanged) assertAcquiredAtNotFuture(acquiredAtIso, now);
 
   const tradeUnlockAt = isNil(merged.tradeUnlockAt) ? null : toIso(merged.tradeUnlockAt, 'Data de liberação da troca');
+  if (existing && existing.status === 'VENDIDO' && getTradeLockStatus(tradeUnlockAt, new Date(existing.soldAt)).isLocked) {
+    throw new ConflictError(`Item em trade lock até ${formatDateTimeBr(tradeUnlockAt)}`, 'ITEM_TRADE_LOCKED');
+  }
 
   if (existing && existing.status === 'VENDIDO' && Date.parse(existing.soldAt) < Date.parse(acquiredAtIso)) {
     throw new ValidationError('A data de venda não pode ser anterior à data de compra.', 'SOLD_BEFORE_ACQUIRED');
@@ -138,6 +169,9 @@ function buildSaleRecord(item, input, { store, settings = null, now = new Date()
     );
   }
 
+  if (Number.isSafeInteger(input.salePriceCents) && input.salePriceCents > MAX_AMOUNT_CENTS) {
+    throw new ValidationError('O valor excede o máximo permitido.', 'INVALID_AMOUNT');
+  }
   const { netReceivedCents, feeCents, snapshot } = computeSale({ salePriceCents: input.salePriceCents, store });
   const { currency, fxRate } = resolveCurrencyAndFx(store, input.fxRateAtSale, settings);
 
@@ -179,6 +213,11 @@ function loadContext() {
   return { items, stores: Store.findAll(), settings: Setting.get(), statsIndex: buildStatsIndex(items) };
 }
 
+// Grava e monta a resposta na mesma transação: se a montagem falhar, nada é gravado.
+function inTransaction(fn) {
+  return runInTransaction(fn);
+}
+
 function viewOf(item, { now, slowItemDays }) {
   const { stores, settings, statsIndex } = loadContext();
   return toItemView(item, { stores, settings, statsIndex, now, slowItemDays });
@@ -213,9 +252,8 @@ function getItem(id, ctx = {}) {
 function createItem(input, ctx = {}) {
   const { now = new Date(), slowItemDays = env.slowItemDays } = ctx;
   const store = isNil(input.purchaseStoreId) ? null : getStoreOrFail(input.purchaseStoreId);
-  const record = buildItemRecord(input, { store, settings: Setting.get(), now });
-  const created = Item.create(record);
-  return viewOf(created, { now, slowItemDays });
+  const record = buildItemRecord(input, { store, settings: Setting.get(), now, body: input });
+  return inTransaction(() => viewOf(Item.create(record), { now, slowItemDays }));
 }
 
 function updateItem(id, partial, ctx = {}) {
@@ -227,8 +265,14 @@ function updateItem(id, partial, ctx = {}) {
     merged.fxRateAtPurchase = partial.fxRateAtPurchase ?? null;
   }
   const store = isNil(merged.purchaseStoreId) ? null : getStoreOrFail(merged.purchaseStoreId);
-  const record = buildItemRecord(merged, { store, settings: Setting.get(), now, existing });
-  return viewOf(Item.update(id, record), { now, slowItemDays });
+  const priceInformed = !isNil(partial.purchasePriceCents);
+  // GANHEI -> COMPRA: preço e loja precisam vir no mesmo PATCH (D65).
+  if (merged.acquisitionType === 'COMPRA' && existing.acquisitionType === 'GANHEI') {
+    if (!priceInformed) throw new ValidationError('Informe o preço da compra.', 'PURCHASE_PRICE_REQUIRED');
+    if (isNil(partial.purchaseStoreId)) throw new ValidationError('Informe a loja da compra.', 'PURCHASE_STORE_REQUIRED');
+  }
+  const record = buildItemRecord(merged, { store, settings: Setting.get(), now, existing, priceInformed, body: partial });
+  return inTransaction(() => viewOf(Item.update(id, record), { now, slowItemDays }));
 }
 
 function deleteItem(id) {
@@ -242,8 +286,7 @@ function sellItem(id, input, ctx = {}) {
   if (item.status !== 'EM_ESTOQUE') throw new ConflictError('Item já vendido.', 'ITEM_ALREADY_SOLD');
   const store = getStoreOrFail(input.saleStoreId);
   const { record, sale } = buildSaleRecord(item, input, { store, settings: Setting.get(), now });
-  const updated = Item.update(id, record);
-  const view = viewOf(updated, { now, slowItemDays });
+  const view = inTransaction(() => viewOf(Item.update(id, record), { now, slowItemDays }));
   return { item: view, sale: { ...sale, saleProfitUsdCents: view.saleProfitUsdCents } };
 }
 
@@ -251,7 +294,7 @@ function unsellItem(id, ctx = {}) {
   const { now = new Date(), slowItemDays = env.slowItemDays } = ctx;
   const item = findOrFail(id);
   if (item.status !== 'VENDIDO') throw new ConflictError('Item não está vendido.', 'ITEM_NOT_SOLD');
-  return viewOf(Item.update(id, buildUnsellPatch()), { now, slowItemDays });
+  return inTransaction(() => viewOf(Item.update(id, buildUnsellPatch()), { now, slowItemDays }));
 }
 
 function getItemStats({ name, category, variant, exterior }) {

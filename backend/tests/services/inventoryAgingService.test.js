@@ -181,3 +181,19 @@ describe('inventoryAgingService — P8 (aquisição futura, America/Sao_Paulo)',
     expect(() => assertAcquiredAtNotFuture('2026-11-21T03:00:00Z', now)).toThrow(code);
   });
 });
+
+describe('assertNotFutureDay com anos < 1000 (comparação numérica)', () => {
+  const { assertNotFutureDay, toSaoPauloDate } = require('../../src/services/inventoryAgingService');
+  const opts = { code: 'X', message: 'm' };
+  const now = new Date('2026-11-19T15:00:00.000Z');
+  test.each(['0999-06-01T00:00:00Z', '0100-01-01T00:00:00Z'])('%s é passado', (d) => {
+    expect(() => assertNotFutureDay(new Date(d), now, opts)).not.toThrow();
+  });
+  test('dia seguinte em São Paulo continua futuro; mesmo dia civil passa', () => {
+    expect(() => assertNotFutureDay(new Date('2026-11-20T03:00:00Z'), now, opts)).toThrow();
+    expect(() => assertNotFutureDay(new Date('2026-11-20T02:59:00Z'), now, opts)).not.toThrow();
+  });
+  test('toSaoPauloDate devolve ano com 4 dígitos', () => {
+    expect(toSaoPauloDate(new Date('0999-06-01T12:00:00Z'))).toBe('0999-06-01');
+  });
+});

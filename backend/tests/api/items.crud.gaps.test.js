@@ -39,10 +39,13 @@ describe('POST /api/items (lacunas)', () => {
     expectError(await post(purchaseBody({ acquisitionType: undefined })), 400, 'REQUIRED_FIELD');
   });
 
-  test('GANHEI: preço nulo explícito -> 0; preço informado é mantido; loja opcional define a moeda', async () => {
+  test('GANHEI: purchasePriceCents no corpo (null, 0 ou valor) -> GANHEI_COST_NOT_ALLOWED; loja opcional não define a moeda', async () => {
     const won = { name: 'Case', category: 'CAIXA', acquisitionType: 'GANHEI', acquiredAt: '2026-11-10T12:00:00.000Z' };
-    expect((await createItemViaApi(app, { ...won, purchasePriceCents: null })).purchasePriceCents).toBe(0);
-    expect((await createItemViaApi(app, { ...won, purchasePriceCents: 500 })).purchasePriceCents).toBe(500);
+    for (const purchasePriceCents of [null, 0, 500]) {
+      const res = await post({ ...won, purchasePriceCents });
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe('GANHEI_COST_NOT_ALLOWED');
+    }
     const withStore = await createItemViaApi(app, { ...won, purchaseStoreId: storeId('CSFloat') });
     expect(withStore).toMatchObject({ purchaseStoreId: storeId('CSFloat'), purchaseCurrency: 'USD', purchasePriceCents: 0 });
   });
@@ -111,10 +114,10 @@ describe('PATCH /api/items/:id (lacunas)', () => {
     expect(ok.body.data).toMatchObject({ status: 'VENDIDO', aging: { turnaroundDays: 0, turnaroundBucket: 'GIRO_RAPIDO' } });
   });
 
-  test('item vendido: trocar COMPRA -> GANHEI sem preço zera o custo e recalcula o lucro', async () => {
+  test('item vendido: trocar COMPRA -> GANHEI zera o custo e recalcula o lucro', async () => {
     const item = await createItemViaApi(app);
     await sell(item.id);
-    const res = await patch(item.id, { acquisitionType: 'GANHEI', purchaseStoreId: null, purchasePriceCents: null });
+    const res = await patch(item.id, { acquisitionType: 'GANHEI', purchaseStoreId: null });
     expect(res.status).toBe(200);
     expect(res.body.data).toMatchObject({ purchasePriceCents: 0, purchaseCurrency: 'USD', saleProfitUsdCents: 122, netReceivedCents: 122 });
   });
@@ -122,9 +125,9 @@ describe('PATCH /api/items/:id (lacunas)', () => {
   test('cotação de compra informada no PATCH vence a salva; trocar para loja USD com cotação -> FX_RATE_NOT_ALLOWED', async () => {
     Setting.update({ usdBrlRate: 5 });
     const item = await createItemViaApi(app);
-    const res = await patch(item.id, { purchaseStoreId: storeId('Steam'), fxRateAtPurchase: 5.4 });
+    const res = await patch(item.id, { purchaseStoreId: storeId('Steam'), purchasePriceCents: 500, fxRateAtPurchase: 5.4 });
     expect(res.body.data).toMatchObject({ purchaseCurrency: 'BRL', fxRateAtPurchase: 5.4 });
-    expectError(await patch(item.id, { purchaseStoreId: storeId('CSFloat'), fxRateAtPurchase: 5.4 }), 400, 'FX_RATE_NOT_ALLOWED');
+    expectError(await patch(item.id, { purchaseStoreId: storeId('CSFloat'), purchasePriceCents: 100, fxRateAtPurchase: 5.4 }), 400, 'FX_RATE_NOT_ALLOWED');
   });
 
   test('tipos inválidos no PATCH -> INVALID_FIELD; name nulo -> REQUIRED_FIELD', async () => {

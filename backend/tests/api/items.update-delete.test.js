@@ -28,12 +28,12 @@ describe('PATCH /api/items/:id', () => {
   test('trocar CSFloat -> Steam recalcula moeda e cotação; Steam -> CSFloat zera a cotação', async () => {
     Setting.update({ usdBrlRate: 5 });
     const item = await createItemViaApi(app);
-    const toSteam = await patch(item.id, { purchaseStoreId: storeId('Steam') });
-    expect(toSteam.body.data).toMatchObject({ purchaseCurrency: 'BRL', fxRateAtPurchase: 5 });
+    const toSteam = await patch(item.id, { purchaseStoreId: storeId('Steam'), purchasePriceCents: 500 });
+    expect(toSteam.body.data).toMatchObject({ purchaseCurrency: 'BRL', fxRateAtPurchase: 5, purchasePriceCents: 500 });
     Setting.update({ usdBrlRate: 6 });
     const same = await patch(item.id, { purchasePriceCents: 200 });
     expect(same.body.data.fxRateAtPurchase).toBe(5); // mesma loja mantém a cotação gravada
-    const back = await patch(item.id, { purchaseStoreId: storeId('CSFloat') });
+    const back = await patch(item.id, { purchaseStoreId: storeId('CSFloat'), purchasePriceCents: 100 });
     expect(back.body.data).toMatchObject({ purchaseCurrency: 'USD', fxRateAtPurchase: null });
   });
 
@@ -70,11 +70,15 @@ describe('PATCH /api/items/:id', () => {
       expectError(await patch(item.id, { acquiredAt: '2026-11-19T12:00:00.000Z' }), 400, 'SOLD_BEFORE_ACQUIRED');
     });
 
-    test('PATCH não verifica trade lock de novo', async () => {
+    test('PATCH de tradeUnlockAt posterior ao soldAt -> 409 ITEM_TRADE_LOCKED; igual ao soldAt é aceito', async () => {
       const item = await createItemViaApi(app);
-      await sellItem(item.id);
+      await sellItem(item.id); // soldAt 2026-11-18T12:00Z = 09:00 em Brasília
       const res = await patch(item.id, { tradeUnlockAt: '2026-11-19T14:00:00.000Z' });
-      expect(res.status).toBe(200);
+      expectError(res, 409, 'ITEM_TRADE_LOCKED');
+      expect(res.body.error.message).toBe('Item em trade lock até 19/11/2026 11:00');
+      expect((await request(app).get(`/api/items/${item.id}`)).body.data.tradeUnlockAt).toBeNull();
+      const equal = await patch(item.id, { tradeUnlockAt: '2026-11-18T12:00:00.000Z' });
+      expect(equal.status).toBe(200);
     });
 
     const LOCKED = ['salePriceCents', 'soldAt', 'saleStoreId', 'netReceivedCents', 'status', 'saleCurrency', 'fxRateAtSale'];

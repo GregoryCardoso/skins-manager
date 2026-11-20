@@ -39,6 +39,7 @@ function errorHandler(err, req, res, next) {
 
   // Salvaguarda: o service deve impedir a violação antes; se escapar, é conflito e não erro interno.
   if (err && typeof err.code === 'string' && err.code.startsWith('SQLITE_CONSTRAINT')) {
+    console.error(err);
     return res.status(409).json({
       success: false,
       error: { code: 'CONSTRAINT_VIOLATION', message: 'A operação viola uma restrição de integridade dos dados.' },

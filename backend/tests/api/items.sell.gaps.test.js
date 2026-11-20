@@ -90,13 +90,14 @@ describe('trade lock na venda (D59 revisada, exemplos da D56)', () => {
     expectError(await sell(item.id, sellBody({ salePriceCents: 0 })), 409, 'ITEM_TRADE_LOCKED');
   });
 
-  test('desfazer e vender de novo passa pela regra (PATCH de tradeUnlockAt em vendido não revalida)', async () => {
+  test('desfazer e vender de novo passa pela regra (PATCH de tradeUnlockAt em vendido revalida)', async () => {
     const item = await createItemViaApi(app);
     expect((await sell(item.id, sellBody())).status).toBe(200);
+    const refused = await request(app).patch(`/api/items/${item.id}`).send({ tradeUnlockAt: '2026-11-18T13:00:00.000Z' });
+    expectError(refused, 409, 'ITEM_TRADE_LOCKED');
+    expect((await request(app).post(`/api/items/${item.id}/unsell`)).status).toBe(200);
     const patched = await request(app).patch(`/api/items/${item.id}`).send({ tradeUnlockAt: '2026-11-18T13:00:00.000Z' });
     expect(patched.status).toBe(200);
-    expect(patched.body.data.status).toBe('VENDIDO');
-    expect((await request(app).post(`/api/items/${item.id}/unsell`)).status).toBe(200);
     const res = await sell(item.id, sellBody());
     expectError(res, 409, 'ITEM_TRADE_LOCKED');
     expect(res.body.error.message).toBe('Item em trade lock até 18/11/2026 10:00');

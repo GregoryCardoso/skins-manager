@@ -1,5 +1,6 @@
 // Utilitários de mapeamento camelCase <-> snake_case. Sem regra de negócio.
 const { ValidationError } = require('../errors/AppError');
+const { getDb } = require('../config/database');
 
 function toSnake(name) {
   return name.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`);
@@ -64,4 +65,9 @@ function updateRow(db, table, id, data, allowedFields, extra = {}) {
   return db.prepare(sql).run(...values, id).changes;
 }
 
-module.exports = { mapRow, insertRow, updateRow, toSnake, toCamel };
+// Executa `fn` numa transação: se lançar, desfaz tudo.
+function runInTransaction(fn) {
+  return getDb().transaction(fn)();
+}
+
+module.exports = { runInTransaction, mapRow, insertRow, updateRow, toSnake, toCamel };

@@ -99,6 +99,7 @@ describe('T12 / T13 / T14', () => {
       WARNING_FEES: 'taxas não configuradas',
       WARNING_FX: 'cotação não configurada',
       WARNING_BELOW_FEE: 'valor menor que a taxa',
+      WARNING_PRICE_OVERFLOW: 'valor alto demais para calcular o preço mínimo',
     });
   });
 

@@ -1,5 +1,6 @@
 const { ValidationError } = require('../errors/AppError');
-const { CATEGORIES, VARIANTS, EXTERIORS } = require('../services/itemAttributesService');
+const { MAX_AMOUNT_CENTS, MAX_NAME_LENGTH, MAX_ORIGIN_DETAIL_LENGTH } = require('../config/constants');
+const { CATEGORIES, VARIANTS, EXTERIORS, isWeaponCategory, assertWeaponAttributesAllowed } = require('../services/itemAttributesService');
 
 // Validação de FORMA (tipos JSON, campos permitidos, query). Regras semânticas ficam nos services.
 
@@ -9,7 +10,7 @@ const INTEGER = 'integer';
 
 // Campos de aquisição/atributos (POST e PATCH). `required`: obrigatório no POST e não anulável no PATCH.
 const ACQUISITION_FIELDS = {
-  name: { type: STRING, required: true },
+  name: { type: STRING, required: true, maxLength: MAX_NAME_LENGTH },
   category: { type: STRING, required: true },
   acquisitionType: { type: STRING, required: true },
   variant: { type: STRING },
@@ -19,9 +20,9 @@ const ACQUISITION_FIELDS = {
   phase: { type: STRING },
   inspectLink: { type: STRING },
   assetId: { type: STRING },
-  originDetail: { type: STRING },
+  originDetail: { type: STRING, maxLength: MAX_ORIGIN_DETAIL_LENGTH },
   purchaseStoreId: { type: INTEGER },
-  purchasePriceCents: { type: NUMBER },
+  purchasePriceCents: { type: NUMBER, cents: true },
   fxRateAtPurchase: { type: NUMBER },
   acquiredAt: { type: STRING, notNullable: true },
   tradeUnlockAt: { type: STRING },
@@ -29,7 +30,7 @@ const ACQUISITION_FIELDS = {
 
 const SALE_FIELDS = {
   saleStoreId: { type: INTEGER, required: true },
-  salePriceCents: { type: NUMBER, required: true },
+  salePriceCents: { type: NUMBER, required: true, cents: true },
   soldAt: { type: STRING, required: true },
   fxRateAtSale: { type: NUMBER },
 };
@@ -78,6 +79,12 @@ function checkBody(body, spec, mode) {
     if (!matchesType(value, rule.type)) {
       const expected = { [STRING]: 'texto', [NUMBER]: 'número', [INTEGER]: 'número inteiro' }[rule.type];
       throw fail(`O campo ${key} deve ser ${expected}.`, 'INVALID_FIELD');
+    }
+    if (rule.cents && value > MAX_AMOUNT_CENTS) {
+      throw fail(`O campo ${key} excede o valor máximo permitido (${MAX_AMOUNT_CENTS} centavos).`, 'INVALID_AMOUNT');
+    }
+    if (rule.maxLength && value.trim().length > rule.maxLength) {
+      throw fail(`O campo ${key} deve ter no máximo ${rule.maxLength} caracteres.`, 'FIELD_TOO_LONG');
     }
   }
 }
@@ -149,11 +156,19 @@ const validateStatsQuery = wrap((req) => {
   const category = queryValue(q, 'category', CATEGORIES);
   if (name === undefined || name.trim() === '') throw fail('O parâmetro name é obrigatório.', 'INVALID_QUERY');
   if (category === undefined) throw fail('O parâmetro category é obrigatório.', 'INVALID_QUERY');
+  const isWeapon = isWeaponCategory(category);
+  const informedVariant = queryValue(q, 'variant', VARIANTS);
+  const exterior = queryValue(q, 'exterior', EXTERIORS);
+  const floatValue = queryValue(q, 'floatValue');
+  const paintSeed = queryValue(q, 'paintSeed');
+  const phase = queryValue(q, 'phase');
+  assertWeaponAttributesAllowed(category, { variant: informedVariant, exterior, floatValue, paintSeed, phase });
   req.validatedQuery = {
     name,
     category,
-    variant: queryValue(q, 'variant', VARIANTS),
-    exterior: queryValue(q, 'exterior', EXTERIORS),
+    // SKIN/FACA/LUVA sem variant caem em NORMAL (mesma regra do cadastro).
+    variant: informedVariant ?? (isWeapon ? 'NORMAL' : undefined),
+    exterior,
   };
 });
 

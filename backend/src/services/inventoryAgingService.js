@@ -50,14 +50,27 @@ function classifyTurnaround(days, slowItemDays = env.slowItemDays) {
   return 'DEMOROU_VENDER';
 }
 
-// "YYYY-MM-DD" do instante em America/Sao_Paulo.
+// Dia civil { year, month, day } (números) do instante em America/Sao_Paulo.
+function toSaoPauloDay(dateOrIso) {
+  const parts = Object.fromEntries(SP_FORMAT.formatToParts(parseDate(dateOrIso)).map((p) => [p.type, Number(p.value)]));
+  return { year: parts.year, month: parts.month, day: parts.day };
+}
+
+// Comparação numérica de dias civis (ano, mês, dia): negativo, 0 ou positivo.
+function compareDays(a, b) {
+  return a.year - b.year || a.month - b.month || a.day - b.day;
+}
+
+// "YYYY-MM-DD" (ano com 4 dígitos) do instante em America/Sao_Paulo; só para exibição, nunca para comparar.
 function toSaoPauloDate(dateOrIso) {
-  return SP_FORMAT.format(parseDate(dateOrIso));
+  const { year, month, day } = toSaoPauloDay(dateOrIso);
+  const pad = (n, size) => String(n).padStart(size, '0');
+  return `${pad(year, 4)}-${pad(month, 2)}-${pad(day, 2)}`;
 }
 
 // Recusa datas em dia posterior ao de `now` em America/Sao_Paulo (D53, P8).
 function assertNotFutureDay(date, now = new Date(), { code, message }) {
-  if (toSaoPauloDate(date) > toSaoPauloDate(now)) {
+  if (compareDays(toSaoPauloDay(date), toSaoPauloDay(now)) > 0) {
     throw new ValidationError(message, code);
   }
 }

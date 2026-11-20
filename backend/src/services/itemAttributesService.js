@@ -13,6 +13,17 @@ function isWeaponCategory(category) {
   return WEAPON_CATEGORIES.includes(category);
 }
 
+// Única regra de "atributos de arma só valem para SKIN, FACA e LUVA" (cadastro, edição e consultas).
+function assertWeaponAttributesAllowed(category, attrs = {}) {
+  if (isWeaponCategory(category)) return;
+  const { variant, floatValue, exterior, paintSeed, phase } = attrs;
+  const trimmedPhase = typeof phase === 'string' ? phase.trim() : phase;
+  const phaseValue = trimmedPhase === '' ? null : trimmedPhase;
+  if ([variant, floatValue, exterior, paintSeed, phaseValue].some((v) => !isNil(v))) {
+    throw new ValidationError('Atributos de arma só valem para SKIN, FACA e LUVA.', 'ATTRIBUTES_NOT_ALLOWED');
+  }
+}
+
 function deriveExterior(floatValue) {
   if (isNil(floatValue)) return null;
   if (typeof floatValue !== 'number' || !Number.isFinite(floatValue) || floatValue < 0 || floatValue > 1) {
@@ -33,9 +44,7 @@ function normalizeAttributes({ category, variant, floatValue, exterior, paintSee
   const phaseValue = trimmedPhase === '' ? null : trimmedPhase;
 
   if (!isWeaponCategory(category)) {
-    if ([variant, floatValue, exterior, paintSeed, phaseValue].some((v) => !isNil(v))) {
-      throw new ValidationError('Atributos de arma só valem para SKIN, FACA e LUVA.', 'ATTRIBUTES_NOT_ALLOWED');
-    }
+    assertWeaponAttributesAllowed(category, { variant, floatValue, exterior, paintSeed, phase: phaseValue });
     return { variant: null, floatValue: null, exterior: null, paintSeed: null, phase: null };
   }
 
@@ -74,4 +83,4 @@ function normalizeAttributes({ category, variant, floatValue, exterior, paintSee
   };
 }
 
-module.exports = { CATEGORIES, WEAPON_CATEGORIES, VARIANTS, EXTERIORS, isWeaponCategory, deriveExterior, normalizeAttributes };
+module.exports = { CATEGORIES, WEAPON_CATEGORIES, VARIANTS, EXTERIORS, isWeaponCategory, assertWeaponAttributesAllowed, deriveExterior, normalizeAttributes };
