@@ -9,9 +9,9 @@ const { CAT, importCatalogFixture } = require('./catalog');
 const NOW = new Date('2026-11-19T15:00:00.000Z');
 
 // `catalog: true` importa o catálogo de fixture no banco atual (D86); por padrão o catálogo fica como está.
-function makeApp(now = NOW, { fetchFn, catalog = false } = {}) {
+function makeApp(now = NOW, { fetchFn, catalogValidation, catalog = false } = {}) {
   if (catalog) importCatalogFixture();
-  return createApp({ now: () => new Date(now.getTime()), fetchFn });
+  return createApp({ now: () => new Date(now.getTime()), fetchFn, catalogValidation });
 }
 
 // App com o catálogo de fixture já importado (testes de itens).

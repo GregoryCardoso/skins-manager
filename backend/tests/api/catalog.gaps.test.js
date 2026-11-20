@@ -164,9 +164,7 @@ describe('POST /api/catalog/refresh: bordas', () => {
     expect(res.body.data.meta.catalogUpdatedAt).toBe(NOW.toISOString());
   });
 
-  // Observação (ver relatório): o upsert grava name_pt_br = null quando o pt-BR vem em 404, apagando traduções já
-  // gravadas. Como nenhuma fonte hospeda pt-BR hoje, a gravidade é baixa; o teste fixa o comportamento desejável.
-  test.failing('refresh com pt-BR em 404 não apaga traduções que já estavam gravadas', async () => {
+  test('refresh com pt-BR em 404 não apaga traduções que já estavam gravadas', async () => {
     importCatalogFixture();
     const app = makeApp(NOW, { fetchFn: fixtureFetch(Object.fromEntries(FILES.map((f) => [`pt-BR/${f}.json`, status(404)]))) });
     await request(app).post('/api/catalog/refresh').send({});

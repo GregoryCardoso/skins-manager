@@ -71,7 +71,7 @@ function resolveCurrencyAndFx(store, informedFx, settings) {
 
 // --- Identidade do item: catálogo obrigatório, nome canônico e categoria derivada (D78) -----------
 
-const WEAPON_ATTRIBUTE_KEYS = ['variant', 'floatValue', 'exterior', 'paintSeed'];
+const WEAPON_ATTRIBUTE_KEYS = ['variant', 'floatValue', 'exterior', 'paintSeed', 'phase'];
 
 function derivedFieldError() {
   return new ValidationError(
@@ -128,7 +128,8 @@ function resolveItemIdentity({ body, existing = null, catalogEntry = null, freeN
   else if (existing) category = existing.category;
   else throw new ValidationError('O campo category é obrigatório.', 'REQUIRED_FIELD');
   if (!CATEGORIES.includes(category)) throw new ValidationError('Categoria inválida.', 'INVALID_CATEGORY');
-  const phase = bodyPhase !== undefined ? bodyPhase : storedPhase;
+  // A fase gravada só vale em categoria de arma; fora dela é limpa (T35). Fase enviada segue as regras.
+  const phase = bodyPhase !== undefined ? bodyPhase : isWeaponCategory(category) ? storedPhase : null;
 
   if (CATALOG_CATEGORIES.includes(category)) {
     // (3) CATALOG_ITEM_REQUIRED. No PATCH só passa o item que já era legado, sem mexer na identidade (D82).
@@ -157,7 +158,8 @@ function resolveItemIdentity({ body, existing = null, catalogEntry = null, freeN
 function lookupFreeNameMatch(body, existing) {
   const catalogId = hasKey(body, 'catalogId') ? body.catalogId : existing && existing.catalogId;
   if (!isNil(catalogId)) return null;
-  if (existing && !hasKey(body, 'name') && !hasKey(body, 'category')) return null;
+  const linkChanged = existing && hasKey(body, 'catalogId') && body.catalogId !== existing.catalogId;
+  if (existing && !hasKey(body, 'name') && !hasKey(body, 'category') && !linkChanged) return null;
   let category = null;
   if (hasKey(body, 'category')) category = body.category;
   else if (existing) category = existing.category;
@@ -405,6 +407,8 @@ function updateItem(id, partial, ctx = {}) {
     body: partial, existing, catalogEntry, freeNameCatalogMatch: lookupFreeNameMatch(partial, existing),
   });
   const merged = { ...existing, ...partial, name: identity.name, category: identity.category, phase: identity.phase };
+  // Novo float sem exterior no corpo: o exterior gravado é descartado e derivado de novo do float.
+  if (hasKey(partial, 'floatValue') && !hasKey(partial, 'exterior')) merged.exterior = null;
   // T35 (a): categoria sem atributos de arma limpa os atributos que não vieram no corpo (D73).
   if (!isWeaponCategory(identity.category)) {
     for (const key of WEAPON_ATTRIBUTE_KEYS) if (!hasKey(partial, key)) merged[key] = null;

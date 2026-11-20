@@ -278,9 +278,7 @@ describe('PATCH: troca de catalogId (bordas)', () => {
 });
 
 describe('PATCH: catalogId null e nome livre (bordas)', () => {
-  // BUG (baixa gravidade, ver relatório): lookupFreeNameMatch (itemService.js) pula a checagem quando o corpo só tem
-  // catalogId: null, então o item vira PASSE_BATALHA livre com nome que existe no catálogo (contraria D78 item 1).
-  test.failing('catalogId null em entrada PASSE_BATALHA do catálogo mantendo o nome -> CATALOG_ITEM_REQUIRED (D78 item 1)', async () => {
+  test('catalogId null em entrada PASSE_BATALHA do catálogo mantendo o nome -> CATALOG_ITEM_REQUIRED (D78 item 1)', async () => {
     const item = await createItemViaApi(app, won({ catalogId: CAT.BATTLE_PASS_RIPTIDE }));
     const res = await patch(item.id, { catalogId: null });
     // D78 item 1: PASSE_BATALHA de nome livre cujo nome existe no catálogo -> CATALOG_ITEM_REQUIRED.

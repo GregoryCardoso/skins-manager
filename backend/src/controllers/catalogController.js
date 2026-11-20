@@ -15,7 +15,7 @@ function getById(req, res) {
 }
 
 async function refresh(req, res) {
-  const data = await catalogService.refreshCatalog({ fetchFn: req.app.locals.fetchFn, now: req.app.locals.now() });
+  const data = await catalogService.refreshCatalog({ fetchFn: req.app.locals.fetchFn, now: req.app.locals.now(), validation: req.app.locals.catalogValidation });
   ok(res, data);
 }
 

@@ -38,6 +38,12 @@ function normalizeSearchText(text) {
     .trim();
 }
 
+// Texto de busca: nome em inglês + tradução (quando existe e difere).
+function buildSearchText(nameKey, namePtBr) {
+  const ptKey = namePtBr ? normalizeSearchText(namePtBr) : '';
+  return ptKey && ptKey !== nameKey ? `${nameKey} ${ptKey}` : nameKey;
+}
+
 const isNonEmptyString = (v) => typeof v === 'string' && v.trim().length > 0;
 
 function validId(id) {
@@ -61,7 +67,6 @@ function floatOrNull(v) {
 function baseRow(entry, { source, category, namePtBr }) {
   const name = entry.name.trim();
   const nameKey = normalizeSearchText(name);
-  const ptKey = namePtBr ? normalizeSearchText(namePtBr) : '';
   return {
     id: entry.id,
     source,
@@ -69,7 +74,7 @@ function baseRow(entry, { source, category, namePtBr }) {
     name,
     namePtBr: namePtBr || null,
     nameKey,
-    searchText: ptKey && ptKey !== nameKey ? `${nameKey} ${ptKey}` : nameKey,
+    searchText: buildSearchText(nameKey, namePtBr),
     imageUrl: isNonEmptyString(entry.image) ? entry.image : null,
     minFloat: null,
     maxFloat: null,
@@ -160,6 +165,7 @@ function mapCatalog({ en, ptBr } = {}) {
 module.exports = {
   SOURCES,
   normalizeSearchText,
+  buildSearchText,
   mapSkins,
   mapStickers,
   mapCrates,

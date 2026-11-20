@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const {
   CATALOG_BASE_URL, CATALOG_LANGUAGES, CATALOG_FILES, CATALOG_FETCH_TIMEOUT_MS, CATALOG_SEARCH_DEFAULT_LIMIT,
-  CATALOG_SEARCH_MAX_LIMIT, CATALOG_ID_MAX_LENGTH, CATALOG_SNAPSHOT_PATH,
+  CATALOG_SEARCH_MAX_LIMIT, CATALOG_ID_MAX_LENGTH, CATALOG_SNAPSHOT_PATH, CATALOG_MIN_ROWS, CATALOG_MAX_SKIPPED_RATIO,
 } = require('../config/constants');
 const CatalogItem = require('../models/CatalogItem');
 const Item = require('../models/Item');
@@ -13,7 +13,7 @@ const Setting = require('../models/Setting');
 const { runInTransaction } = require('../models/modelHelpers');
 const { ValidationError, NotFoundError, ConflictError, UpstreamError } = require('../errors/AppError');
 const { CATEGORIES, CATALOG_CATEGORIES } = require('./itemAttributesService');
-const { SOURCES, normalizeSearchText, mapCatalog } = require('./catalog/csgoApiAdapter');
+const { SOURCES, normalizeSearchText, buildSearchText, mapCatalog } = require('./catalog/csgoApiAdapter');
 
 const SNAPSHOT_FORMAT_VERSION = 1;
 const SNAPSHOT_SOURCE_URL = 'https://github.com/ByMykel/CSGO-API';
@@ -23,6 +23,17 @@ const SNAPSHOT_COLUMNS = Object.freeze([
 ]);
 const ID_PATTERN = /^[A-Za-z0-9_-]+$/;
 const MIN_QUERY_LENGTH = 2;
+
+// Validação do conteúdo baixado (T36). Sobrescrevível por chamada (`validation`) e, nos testes, por
+// `setDefaultCatalogValidation` (fixtures pequenas).
+const STRICT_VALIDATION = Object.freeze({
+  minRows: CATALOG_MIN_ROWS, maxSkippedRatio: CATALOG_MAX_SKIPPED_RATIO, requireSkinShape: true,
+});
+let defaultValidation = STRICT_VALIDATION;
+
+function setDefaultCatalogValidation(validation = null) {
+  defaultValidation = validation ? { ...STRICT_VALIDATION, ...validation } : STRICT_VALIDATION;
+}
 
 let refreshInProgress = false;
 
@@ -134,7 +145,31 @@ async function fetchJson(fetchFn, url, { signal, optional }) {
 }
 
 // Baixa os arquivos de todos os idiomas e mapeia. Tudo ou nada: qualquer falha lança e nada é gravado.
-async function downloadCatalog({ fetchFn = globalThis.fetch, timeoutMs = CATALOG_FETCH_TIMEOUT_MS } = {}) {
+function invalidDownload(detail) {
+  return new UpstreamError(`O catálogo baixado parece incompleto ou inválido (${detail}).`, 'CATALOG_INVALID_FORMAT');
+}
+
+// Valida o resultado do mapeamento do `en` antes de aceitar o refresh (tudo ou nada).
+function validateDownloadedCatalog({ rows, skipped }, validation = defaultValidation) {
+  const { minRows, maxSkippedRatio, requireSkinShape } = { ...STRICT_VALIDATION, ...validation };
+  if (rows.length === 0) throw invalidDownload('nenhum item');
+  const counts = Object.fromEntries(SOURCES.map((s) => [s, 0]));
+  for (const row of rows) counts[row.source] += 1;
+  for (const source of SOURCES) {
+    const min = (minRows && minRows[source]) || 0;
+    if (counts[source] < min) throw invalidDownload(`${source} tem ${counts[source]} itens, mínimo ${min}`);
+  }
+  const ratio = skipped / (rows.length + skipped);
+  if (ratio > maxSkippedRatio) throw invalidDownload(`${skipped} entradas ignoradas`);
+  if (requireSkinShape) {
+    const skins = rows.filter((r) => r.source === 'SKINS');
+    if (!skins.some((r) => r.category === 'FACA')) throw invalidDownload('SKINS sem facas');
+    if (!skins.some((r) => r.category === 'LUVA')) throw invalidDownload('SKINS sem luvas');
+    if (!skins.some((r) => r.minFloat !== null && r.maxFloat !== null)) throw invalidDownload('SKINS sem faixa de float');
+  }
+}
+
+async function downloadCatalog({ fetchFn = globalThis.fetch, timeoutMs = CATALOG_FETCH_TIMEOUT_MS, validation } = {}) {
   if (typeof fetchFn !== 'function') {
     throw new UpstreamError('Não foi possível baixar o catálogo. Verifique a conexão com a internet.', 'CATALOG_FETCH_FAILED');
   }
@@ -166,10 +201,9 @@ async function downloadCatalog({ fetchFn = globalThis.fetch, timeoutMs = CATALOG
     const data = { en: {}, 'pt-BR': {} };
     for (const { lang, source, json } of results) if (json !== null) data[lang][source] = json;
     const mapped = mapCatalog({ en: data.en, ptBr: data['pt-BR'] });
-    if (mapped.rows.length === 0) {
-      throw new UpstreamError('O catálogo baixado está vazio ou em formato inválido.', 'CATALOG_INVALID_FORMAT');
-    }
-    return mapped;
+    validateDownloadedCatalog(mapped, validation || defaultValidation);
+    // Fontes sem pt-BR (404): o refresh preserva as traduções já gravadas.
+    return { ...mapped, ptBrMissing: SOURCES.filter((s) => !data['pt-BR'][s]) };
   } finally {
     clearTimeout(timer);
   }
@@ -184,13 +218,27 @@ function writeCatalog(rows, { now, catalogUpdatedAt }) {
   });
 }
 
-async function refreshCatalog({ fetchFn = globalThis.fetch, now = new Date(), timeoutMs } = {}) {
+// Linhas de fontes sem pt-BR herdam a tradução gravada; o texto de busca é recalculado junto.
+function keepStoredTranslations(rows, ptBrMissing) {
+  const missing = rows.filter((r) => ptBrMissing.includes(r.source) && !r.namePtBr);
+  if (missing.length === 0) return;
+  const stored = new Map(CatalogItem.findByIds(missing.map((r) => r.id)).map((r) => [r.id, r.namePtBr]));
+  for (const row of missing) {
+    const namePtBr = stored.get(row.id);
+    if (!namePtBr) continue;
+    row.namePtBr = namePtBr;
+    row.searchText = buildSearchText(row.nameKey, namePtBr);
+  }
+}
+
+async function refreshCatalog({ fetchFn = globalThis.fetch, now = new Date(), timeoutMs, validation } = {}) {
   if (refreshInProgress) {
     throw new ConflictError('Já existe uma atualização do catálogo em andamento.', 'CATALOG_REFRESH_IN_PROGRESS');
   }
   refreshInProgress = true;
   try {
-    const { rows, skipped } = await downloadCatalog({ fetchFn, timeoutMs });
+    const { rows, skipped, ptBrMissing } = await downloadCatalog({ fetchFn, timeoutMs, validation });
+    keepStoredTranslations(rows, ptBrMissing);
     writeCatalog(rows, { now, catalogUpdatedAt: now.toISOString() });
     const linkedLegacyItems = linkLegacyItems({ now });
     return { ...getCatalogStatus(), skipped, linkedLegacyItems };
@@ -232,7 +280,7 @@ function parseSnapshot(json) {
   let data = json;
   if (typeof json === 'string') {
     try {
-      data = JSON.parse(json);
+      data = JSON.parse(json.replace(/^\uFEFF/, ''));
     } catch (err) {
       throw invalidSnapshot('JSON malformado');
     }
@@ -362,6 +410,8 @@ module.exports = {
   findExactMatch,
   getCatalogStatus,
   downloadCatalog,
+  validateDownloadedCatalog,
+  setDefaultCatalogValidation,
   refreshCatalog,
   parseSnapshot,
   serializeSnapshot,

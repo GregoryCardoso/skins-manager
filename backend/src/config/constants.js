@@ -24,6 +24,9 @@ const CATALOG_FETCH_TIMEOUT_MS = 120000;
 const CATALOG_SEARCH_DEFAULT_LIMIT = 20;
 const CATALOG_SEARCH_MAX_LIMIT = 50;
 const CATALOG_ID_MAX_LENGTH = 100;
+// Validação do conteúdo baixado (T36): mínimos conservadores por fonte (snapshot real: 2246/11907/485/78/63).
+const CATALOG_MIN_ROWS = Object.freeze({ SKINS: 1000, STICKERS: 1000, CRATES: 100, KEYCHAINS: 10, AGENTS: 10 });
+const CATALOG_MAX_SKIPPED_RATIO = 0.1;
 const CATALOG_SNAPSHOT_PATH = path.join(__dirname, '..', '..', 'data', 'seed', 'catalog.json');
 
 // Preferências pessoais (D83).
@@ -43,6 +46,8 @@ module.exports = Object.freeze({
   CATALOG_SEARCH_DEFAULT_LIMIT,
   CATALOG_SEARCH_MAX_LIMIT,
   CATALOG_ID_MAX_LENGTH,
+  CATALOG_MIN_ROWS,
+  CATALOG_MAX_SKIPPED_RATIO,
   CATALOG_SNAPSHOT_PATH,
   THEMES,
   LANGUAGES,
