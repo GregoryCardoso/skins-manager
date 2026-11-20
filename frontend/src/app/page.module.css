@@ -1,0 +1,19 @@
+.titleRow { display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap; }
+.titleRow h1 { margin-bottom: 0.75rem; }
+.count { color: var(--text-muted); }
+.muted { color: var(--text-muted); }
+.dim { opacity: 0.6; transition: opacity 0.15s; }
+.error {
+  color: var(--danger); background: var(--danger-bg); border: 1px solid var(--danger); border-radius: 8px;
+  padding: 0.5rem 1rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+}
+.error p { margin: 0; }
+.empty {
+  text-align: center; padding: 2.5rem 1rem; color: var(--text-muted); background: var(--surface);
+  border: 1px dashed var(--border); border-radius: 10px;
+}
+.retry {
+  font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; padding: 0.35rem 0.8rem; cursor: pointer;
+}
+.retry:hover { border-color: var(--accent); }

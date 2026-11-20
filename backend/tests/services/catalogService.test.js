@@ -172,7 +172,7 @@ describe('refreshCatalog', () => {
 describe('snapshot', () => {
   test('serializeSnapshot -> parseSnapshot: ida e volta', () => {
     const rows = [
-      row('b-2', 'Segundo', { namePtBr: 'Segunda Opção', minFloat: 0.1, maxFloat: 0.5, hasStattrak: 1, phase: 'Phase 1', rarity: 'Covert', imageUrl: 'http://x/y.png' }),
+      row('b-2', 'Segundo', { namePtBr: 'Segunda Opção', minFloat: 0.1, maxFloat: 0.5, hasStattrak: 1, phase: 'Phase 1', rarity: 'Covert', imageUrl: 'https://x/y.png' }),
       row('a-1', '★ Primeiro'),
     ];
     const text = svc.serializeSnapshot(rows, { now: NOW });
@@ -186,7 +186,7 @@ describe('snapshot', () => {
       expect.objectContaining({ id: 'a-1', name: '★ Primeiro', nameKey: 'primeiro', searchText: 'primeiro', namePtBr: null }),
       expect.objectContaining({
         id: 'b-2', namePtBr: 'Segunda Opção', nameKey: 'segundo', searchText: 'segundo segunda opcao', minFloat: 0.1, maxFloat: 0.5,
-        hasStattrak: 1, hasSouvenir: 0, phase: 'Phase 1', rarity: 'Covert', imageUrl: 'http://x/y.png',
+        hasStattrak: 1, hasSouvenir: 0, phase: 'Phase 1', rarity: 'Covert', imageUrl: 'https://x/y.png',
       }),
     ]);
     // aceita também o objeto já convertido

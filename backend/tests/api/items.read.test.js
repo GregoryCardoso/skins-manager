@@ -49,7 +49,7 @@ describe('GET /api/items/:id', () => {
     const after = (await get(`/api/items/${item.id}`)).body.data.minPrices;
     expect(after).toEqual(before);
     for (const entry of after) {
-      expect(Object.keys(entry).sort()).toEqual(['currency', 'minPriceCents', 'storeId', 'storeName', 'warning', 'warningCode']);
+      expect(Object.keys(entry).sort()).toEqual(['approx', 'currency', 'minPriceCents', 'storeId', 'storeName', 'warning', 'warningCode']);
       expect(Object.keys(entry).some((k) => /sac|withdraw/i.test(k))).toBe(false);
     }
     Store.update(storeId('Steam'), { isActive: false });

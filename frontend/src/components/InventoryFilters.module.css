@@ -1,0 +1,18 @@
+.bar {
+  display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; margin-bottom: 1rem;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 0.75rem 1rem;
+}
+.field { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.8rem; color: var(--text-muted); }
+.field select {
+  font: inherit; font-size: 0.95rem; color: var(--text); background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; padding: 0.35rem 0.5rem;
+}
+.check { display: flex; align-items: center; gap: 0.4rem; padding-bottom: 0.4rem; cursor: pointer; }
+.check input:disabled + span { opacity: 0.5; }
+.actions { display: flex; gap: 0.5rem; margin-left: auto; }
+.button {
+  font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; padding: 0.35rem 0.8rem; cursor: pointer;
+}
+.button:hover:not(:disabled) { border-color: var(--accent); }
+.button:disabled { opacity: 0.6; cursor: progress; }

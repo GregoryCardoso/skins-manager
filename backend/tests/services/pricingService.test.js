@@ -32,7 +32,7 @@ describe('Testes obrigatórios da CSFloat — preço mínimo (C5–C7)', () => {
     ['C7', 0, 1],
   ])('%s: minPricesForItem (loja CSFloat do seed) custo %i USD → %i', (_id, cost, expected) => {
     const result = minPricesForItem({ item: usdItem({ purchasePriceCents: cost }), stores: [csfloat()], settings: SETTINGS });
-    expect(result).toEqual([{ storeId: 1, storeName: 'CSFloat', currency: 'USD', minPriceCents: expected, warning: null, warningCode: null }]);
+    expect(result).toEqual([{ storeId: 1, storeName: 'CSFloat', currency: 'USD', minPriceCents: expected, approx: { currency: 'BRL', cents: expected * 5 }, warning: null, warningCode: null }]);
   });
 });
 
@@ -44,7 +44,7 @@ describe('C8 — taxa de venda nula → null + "taxas não configuradas"', () =>
     expect(seeded.saleFeeRate).toBeNull();
     const result = minPriceForStore({ costCents: 100, costCurrency: 'USD', costFxRate: null, store: seeded, settings: SETTINGS });
     expect(result).toEqual({
-      storeId: seeded.id, storeName: 'CSMoney', currency: 'USD', minPriceCents: null, warning: 'taxas não configuradas', warningCode: 'FEES_NOT_CONFIGURED',
+      storeId: seeded.id, storeName: 'CSMoney', currency: 'USD', minPriceCents: null, approx: null, warning: 'taxas não configuradas', warningCode: 'FEES_NOT_CONFIGURED',
     });
   });
 
@@ -99,7 +99,7 @@ describe('C9–C11 — taxa de saque não afeta o mínimo (D32)', () => {
       const result = minPricesForItem({ item, stores: [csfloat(), steam(), csmoney()], settings: SETTINGS });
       expect(result).toHaveLength(3);
       for (const entry of result) {
-        expect(Object.keys(entry).sort()).toEqual(['currency', 'minPriceCents', 'storeId', 'storeName', 'warning', 'warningCode']);
+        expect(Object.keys(entry).sort()).toEqual(['approx', 'currency', 'minPriceCents', 'storeId', 'storeName', 'warning', 'warningCode']);
         for (const key of Object.keys(entry)) expect(key).not.toMatch(/sac|withdraw/i);
       }
     }
@@ -119,7 +119,7 @@ describe('pricingService — demais casos', () => {
 
   test('item USD 1000 + Steam com usdBrlRate 5.0 → custo 5000 BRL → 5750', () => {
     const r = minPricesForItem({ item: usdItem({ purchasePriceCents: 1000 }), stores: [steam()], settings: SETTINGS });
-    expect(r[0]).toEqual({ storeId: 2, storeName: 'Steam', currency: 'BRL', minPriceCents: 5750, warning: null, warningCode: null });
+    expect(r[0]).toEqual({ storeId: 2, storeName: 'Steam', currency: 'BRL', minPriceCents: 5750, approx: { currency: 'USD', cents: 1150 }, warning: null, warningCode: null });
   });
 
   test('usdBrlRate nulo → Steam null + "cotação não configurada"', () => {

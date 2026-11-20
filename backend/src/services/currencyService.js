@@ -45,4 +45,12 @@ function convertCents(amountCents, fromCurrency, toCurrency, { fromFxRate, toFxR
   return fromUsdCents(usd, toCurrency, toFxRate, mode);
 }
 
-module.exports = { CURRENCIES, isValidFxRate, toUsdCents, fromUsdCents, convertCents };
+// Valor aproximado na outra moeda, só para exibição (2.11, D101). Nunca é gravado. null sem valor ou sem cotação válida.
+function approxCounterpart(cents, currency, usdBrlRate) {
+  if (!Number.isSafeInteger(cents) || !isValidFxRate(usdBrlRate)) return null;
+  if (currency === 'USD') return { currency: 'BRL', cents: fromUsdCents(cents, 'BRL', usdBrlRate, 'ROUND') };
+  if (currency === 'BRL') return { currency: 'USD', cents: toUsdCents(cents, 'BRL', usdBrlRate, 'ROUND') };
+  return null;
+}
+
+module.exports = { CURRENCIES, approxCounterpart, isValidFxRate, toUsdCents, fromUsdCents, convertCents };

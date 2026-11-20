@@ -60,6 +60,20 @@ function buildNameMap(raw) {
   return map;
 }
 
+// T37 (D102): só URLs https:// viram imagem; qualquer outra coisa vira null (sem erro).
+function toSafeImageUrl(value) {
+  if (typeof value !== 'string') return null;
+  const text = value.trim();
+  if (text === '') return null;
+  let url;
+  try {
+    url = new URL(text);
+  } catch (err) {
+    return null;
+  }
+  return url.protocol === 'https:' && url.hostname !== '' ? text : null;
+}
+
 function floatOrNull(v) {
   return typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 1 ? v : null;
 }
@@ -75,7 +89,7 @@ function baseRow(entry, { source, category, namePtBr }) {
     namePtBr: namePtBr || null,
     nameKey,
     searchText: buildSearchText(nameKey, namePtBr),
-    imageUrl: isNonEmptyString(entry.image) ? entry.image : null,
+    imageUrl: toSafeImageUrl(entry.image),
     minFloat: null,
     maxFloat: null,
     hasStattrak: 0,
@@ -166,6 +180,7 @@ module.exports = {
   SOURCES,
   normalizeSearchText,
   buildSearchText,
+  toSafeImageUrl,
   mapSkins,
   mapStickers,
   mapCrates,

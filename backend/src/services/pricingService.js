@@ -4,7 +4,7 @@
 // Usa SOMENTE a taxa de venda: taxa de saque e cotação efetiva não entram aqui (2.8).
 const { ValidationError } = require('../errors/AppError');
 const { getSaleFeeStrategy, saleFeeParamsFromStore, assertSaleFeeParams, MAX_PRICE_SEARCH_ITERATIONS } = require('./fees');
-const { convertCents, isValidFxRate } = require('./currencyService');
+const { convertCents, isValidFxRate, approxCounterpart } = require('./currencyService');
 const { WARNINGS } = require('./warnings');
 
 // Menor preço (centavos) cujo líquido >= custo; parte da estimativa e ajusta centavo a centavo. Mínimo 1.
@@ -28,7 +28,7 @@ function findMinSalePriceCents(costCents, params) {
 }
 
 // `warning` (texto) + `warningCode` (D83); sem aviso, ambos null.
-const noPrice = (base, w) => ({ ...base, minPriceCents: null, warning: w.text, warningCode: w.code });
+const noPrice = (base, w) => ({ ...base, minPriceCents: null, approx: null, warning: w.text, warningCode: w.code });
 
 function minPriceForStore({ costCents, costCurrency, costFxRate, store, settings }) {
   const base = { storeId: store.id, storeName: store.name, currency: store.currency };
@@ -46,7 +46,9 @@ function minPriceForStore({ costCents, costCurrency, costFxRate, store, settings
         costCents, costCurrency, store.currency, { fromFxRate: costFxRate, toFxRate: usdBrlRate }, 'CEIL'
       );
     }
-    return { ...base, minPriceCents: findMinSalePriceCents(costInStoreCurrency, params), warning: null, warningCode: null };
+    const minPriceCents = findMinSalePriceCents(costInStoreCurrency, params);
+    const approx = approxCounterpart(minPriceCents, store.currency, settings ? settings.usdBrlRate : null);
+    return { ...base, minPriceCents, approx, warning: null, warningCode: null };
   } catch (err) {
     if (err instanceof ValidationError && (err.code === 'INVALID_AMOUNT' || err.code === 'PRICE_SEARCH_LIMIT')) {
       return noPrice(base, WARNINGS.PRICE_OVERFLOW);

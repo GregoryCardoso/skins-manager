@@ -1,0 +1,10 @@
+.cell { display: flex; flex-direction: column; gap: 0.3rem; min-width: 11rem; }
+.primary { display: flex; flex-direction: column; }
+.primaryValue { font-size: 1.05rem; font-weight: 700; }
+.value { font-size: 0.85rem; font-weight: 600; }
+.approx { font-size: 0.78rem; color: var(--text-muted); font-weight: 400; opacity: 0.85; }
+.store { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; margin-right: 0.4rem; }
+.others { display: flex; flex-direction: column; gap: 0.15rem; border-top: 1px dashed var(--border); padding-top: 0.25rem; }
+.other { font-size: 0.85rem; }
+.warning { color: var(--warning); font-size: 0.8rem; }
+.muted { color: var(--text-muted); }

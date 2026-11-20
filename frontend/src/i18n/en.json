@@ -1,6 +1,21 @@
 {
-  "common": { "appName": "Skins Manager", "loading": "Loading...", "retry": "Try again", "none": "—" },
-  "nav": { "inventory": "Inventory", "sales": "Sales", "main": "Main navigation" },
+  "common": {
+    "appName": "Skins Manager",
+    "loading": "Loading...",
+    "retry": "Try again",
+    "none": "—",
+    "dayCount": {
+      "one": "{count} day",
+      "other": "{count} days"
+    },
+    "approx": "≈ {value}",
+    "refresh": "Refresh"
+  },
+  "nav": {
+    "inventory": "Inventory",
+    "sales": "Sales",
+    "main": "Main navigation"
+  },
   "header": {
     "preferenceNotSaved": "Preference not saved on the server: {reason}",
     "controls": "Preferences"
@@ -12,10 +27,13 @@
     "DARK": "Dark",
     "switchTo": "Theme: {current}. Click to switch to {next}."
   },
-  "language": { "label": "Language", "pt-BR": "Português (Brasil)", "en": "English" },
+  "language": {
+    "label": "Language",
+    "pt-BR": "Português (Brasil)",
+    "en": "English"
+  },
   "pages": {
     "inventoryTitle": "Inventory",
-    "inventoryPlaceholder": "The items table arrives in step 4B.2.",
     "salesTitle": "Sales",
     "salesPlaceholder": "The sales page arrives in step 4B.4.",
     "notFoundTitle": "Page not found",
@@ -120,5 +138,125 @@
     "FX_NOT_CONFIGURED": "The dollar exchange rate is not configured.",
     "BELOW_FEE": "The price is below the minimum needed to cover the fee.",
     "PRICE_OVERFLOW": "The calculated price exceeds the supported limit."
+  },
+  "inventory": {
+    "title": "Inventory",
+    "count": "{count} items",
+    "refresh": "Refresh",
+    "empty": "No items in the inventory.",
+    "emptyFiltered": "No items match these filters.",
+    "clearFilters": "Clear filters",
+    "loadError": "Could not load the items: {reason}",
+    "columns": {
+      "image": "Image",
+      "item": "Item",
+      "store": "Purchase store",
+      "cost": "Cost",
+      "days": "Days",
+      "tradeLock": "Trade lock",
+      "minPrice": "Minimum price (net)",
+      "actions": "Actions"
+    },
+    "primaryStore": "Primary store",
+    "otherStores": "Other stores",
+    "noPrice": "No active stores",
+    "ganhei": "Received",
+    "informativeStore": "Store: {store}",
+    "legacy": "Not linked to the catalog",
+    "sold": "Sold",
+    "turnaround": "Sold in {days}",
+    "inspect": "Inspect",
+    "inspectInvalid": "Invalid inspect link"
+  },
+  "filters": {
+    "label": "Inventory filters",
+    "status": "Status",
+    "statusAll": "All",
+    "category": "Category",
+    "categoryAll": "All",
+    "stagnantOnly": "Stagnant only (over {days} days)",
+    "order": "Order by age",
+    "orderDesc": "Oldest first",
+    "orderAsc": "Newest first"
+  },
+  "tradeLock": {
+    "locked": "Trade lock",
+    "released": "Released",
+    "remaining": "{time} left",
+    "until": "Unlocks on {date}",
+    "units": {
+      "d": "d",
+      "h": "h",
+      "min": "min"
+    }
+  },
+  "enums": {
+    "category": {
+      "SKIN": "Skin",
+      "FACA": "Knife",
+      "LUVA": "Gloves",
+      "CAIXA": "Case",
+      "CAPSULA": "Capsule",
+      "STICKER": "Sticker",
+      "PINGENTE": "Charm",
+      "PERSONAGEM": "Agent",
+      "PASSE_BATALHA": "Battle pass",
+      "OUTRO": "Other"
+    },
+    "variant": {
+      "NORMAL": "Normal",
+      "STATTRAK": "StatTrak™",
+      "SOUVENIR": "Souvenir"
+    },
+    "exterior": {
+      "FN": "Factory New",
+      "MW": "Minimal Wear",
+      "FT": "Field-Tested",
+      "WW": "Well-Worn",
+      "BS": "Battle-Scarred"
+    },
+    "exteriorShort": {
+      "FN": "FN",
+      "MW": "MW",
+      "FT": "FT",
+      "WW": "WW",
+      "BS": "BS"
+    },
+    "acquisitionType": {
+      "GANHEI": "Received",
+      "COMPRA": "Purchase"
+    },
+    "status": {
+      "EM_ESTOQUE": "In stock",
+      "VENDIDO": "Sold"
+    },
+    "agingBucket": {
+      "RECENTE": "Recent",
+      "EM_GIRO": "Moving",
+      "AGARRADO": "Stagnant"
+    },
+    "turnaroundBucket": {
+      "GIRO_RAPIDO": "Fast turnover",
+      "GIRO_NORMAL": "Normal turnover",
+      "DEMOROU_VENDER": "Slow to sell"
+    }
+  },
+  "statusIndicator": {
+    "online": "Online",
+    "offline": "Offline",
+    "checking": "Checking",
+    "catalog": "Catalog: {total}",
+    "details": "Show system details",
+    "close": "Close"
+  },
+  "fx": {
+    "label": "USD→BRL rate",
+    "value": "US$ 1 = {rate}",
+    "notSet": "Rate not set",
+    "edit": "Edit",
+    "save": "Save",
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "invalidInput": "Enter a number greater than zero (e.g. 5.40)."
   }
 }

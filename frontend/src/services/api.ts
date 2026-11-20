@@ -2,8 +2,11 @@ import type {
   CatalogRefreshResult,
   CatalogStatus,
   HealthStatus,
+  ItemList,
+  ItemListQuery,
   PreferencesPatch,
   Settings,
+  Store,
 } from '@/types/api';
 
 const DEFAULT_API_URL = 'http://localhost:3001/api';
@@ -109,3 +112,21 @@ export const getCatalogStatus = (signal?: AbortSignal) =>
 // O backend aborta o download em 120 s; o cliente espera um pouco mais.
 export const refreshCatalog = () =>
   request<CatalogRefreshResult>('POST', '/catalog/refresh', { body: {}, timeoutMs: 150000 });
+
+// Sempre ordena por idade (D105); `order` só é enviado junto com `sortBy`; `stagnantOnly` só quando verdadeiro.
+export const listItems = (query: ItemListQuery, signal?: AbortSignal) =>
+  request<ItemList>('GET', '/items', {
+    signal,
+    query: {
+      status: query.status,
+      category: query.category,
+      stagnantOnly: query.stagnantOnly ? 'true' : undefined,
+      sortBy: 'age',
+      order: query.order,
+    },
+  });
+
+export const listStores = (signal?: AbortSignal) => request<Store[]>('GET', '/stores', { signal });
+
+export const updateFxRate = (usdBrlRate: number) =>
+  request<Settings>('PUT', '/settings/fx-rate', { body: { usdBrlRate } });

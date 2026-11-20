@@ -13,7 +13,7 @@ const Setting = require('../models/Setting');
 const { runInTransaction } = require('../models/modelHelpers');
 const { ValidationError, NotFoundError, ConflictError, UpstreamError } = require('../errors/AppError');
 const { CATEGORIES, CATALOG_CATEGORIES } = require('./itemAttributesService');
-const { SOURCES, normalizeSearchText, buildSearchText, mapCatalog } = require('./catalog/csgoApiAdapter');
+const { SOURCES, normalizeSearchText, buildSearchText, toSafeImageUrl, mapCatalog } = require('./catalog/csgoApiAdapter');
 
 const SNAPSHOT_FORMAT_VERSION = 1;
 const SNAPSHOT_SOURCE_URL = 'https://github.com/ByMykel/CSGO-API';
@@ -49,7 +49,7 @@ function toCatalogView(row) {
     category: row.category,
     name: row.name,
     namePtBr: row.namePtBr,
-    imageUrl: row.imageUrl,
+    imageUrl: toSafeImageUrl(row.imageUrl),
     minFloat: row.minFloat,
     maxFloat: row.maxFloat,
     hasStattrak: row.hasStattrak,
@@ -304,7 +304,7 @@ function parseSnapshot(json) {
     return {
       id, source, category, name, namePtBr, nameKey,
       searchText: ptKey && ptKey !== nameKey ? `${nameKey} ${ptKey}` : nameKey,
-      imageUrl, minFloat, maxFloat, hasStattrak, hasSouvenir, phase, rarity,
+      imageUrl: toSafeImageUrl(imageUrl), minFloat, maxFloat, hasStattrak, hasSouvenir, phase, rarity,
     };
   });
   return { generatedAt: data.generatedAt, rows };

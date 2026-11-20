@@ -11,6 +11,8 @@
     "catalog:snapshot": "npm --prefix backend run catalog:snapshot",
     "dev:frontend": "npm --prefix frontend run dev",
     "build:frontend": "npm --prefix frontend run build",
-    "test:frontend": "npm --prefix frontend test"
+    "test:frontend": "npm --prefix frontend test",
+    "seed:dev": "npm --prefix backend run seed:dev",
+    "dev:backend:demo": "npm --prefix backend run dev:demo"
   }
 }

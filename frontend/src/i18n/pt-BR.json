@@ -1,6 +1,21 @@
 {
-  "common": { "appName": "Skins Manager", "loading": "Carregando...", "retry": "Tentar novamente", "none": "—" },
-  "nav": { "inventory": "Inventário", "sales": "Vendas", "main": "Navegação principal" },
+  "common": {
+    "appName": "Skins Manager",
+    "loading": "Carregando...",
+    "retry": "Tentar novamente",
+    "none": "—",
+    "dayCount": {
+      "one": "{count} dia",
+      "other": "{count} dias"
+    },
+    "approx": "≈ {value}",
+    "refresh": "Atualizar"
+  },
+  "nav": {
+    "inventory": "Inventário",
+    "sales": "Vendas",
+    "main": "Navegação principal"
+  },
   "header": {
     "preferenceNotSaved": "Preferência não salva no servidor: {reason}",
     "controls": "Preferências"
@@ -12,10 +27,13 @@
     "DARK": "Escuro",
     "switchTo": "Tema: {current}. Clique para mudar para {next}."
   },
-  "language": { "label": "Idioma", "pt-BR": "Português (Brasil)", "en": "English" },
+  "language": {
+    "label": "Idioma",
+    "pt-BR": "Português (Brasil)",
+    "en": "English"
+  },
   "pages": {
     "inventoryTitle": "Inventário",
-    "inventoryPlaceholder": "A tabela de itens chega na etapa 4B.2.",
     "salesTitle": "Vendas",
     "salesPlaceholder": "A página de vendas chega na etapa 4B.4.",
     "notFoundTitle": "Página não encontrada",
@@ -120,5 +138,125 @@
     "FX_NOT_CONFIGURED": "A cotação do dólar não está configurada.",
     "BELOW_FEE": "O preço está abaixo do mínimo para cobrir a taxa.",
     "PRICE_OVERFLOW": "O preço calculado excede o limite suportado."
+  },
+  "inventory": {
+    "title": "Inventário",
+    "count": "{count} itens",
+    "refresh": "Atualizar",
+    "empty": "Nenhum item no inventário.",
+    "emptyFiltered": "Nenhum item com estes filtros.",
+    "clearFilters": "Limpar filtros",
+    "loadError": "Não foi possível carregar os itens: {reason}",
+    "columns": {
+      "image": "Imagem",
+      "item": "Item",
+      "store": "Loja de compra",
+      "cost": "Custo",
+      "days": "Dias",
+      "tradeLock": "Trade lock",
+      "minPrice": "Preço mínimo (no saldo)",
+      "actions": "Ações"
+    },
+    "primaryStore": "Loja principal",
+    "otherStores": "Outras lojas",
+    "noPrice": "Sem lojas ativas",
+    "ganhei": "Ganhei",
+    "informativeStore": "Loja: {store}",
+    "legacy": "Sem vínculo com o catálogo",
+    "sold": "Vendido",
+    "turnaround": "Vendido em {days}",
+    "inspect": "Inspecionar",
+    "inspectInvalid": "Link de inspeção inválido"
+  },
+  "filters": {
+    "label": "Filtros do inventário",
+    "status": "Situação",
+    "statusAll": "Todos",
+    "category": "Categoria",
+    "categoryAll": "Todas",
+    "stagnantOnly": "Só agarrados (mais de {days} dias)",
+    "order": "Ordem por idade",
+    "orderDesc": "Mais antigos primeiro",
+    "orderAsc": "Mais novos primeiro"
+  },
+  "tradeLock": {
+    "locked": "Trade lock",
+    "released": "Liberado",
+    "remaining": "{time} restantes",
+    "until": "Liberação em {date}",
+    "units": {
+      "d": "d",
+      "h": "h",
+      "min": "min"
+    }
+  },
+  "enums": {
+    "category": {
+      "SKIN": "Skin",
+      "FACA": "Faca",
+      "LUVA": "Luva",
+      "CAIXA": "Caixa",
+      "CAPSULA": "Cápsula",
+      "STICKER": "Adesivo",
+      "PINGENTE": "Pingente",
+      "PERSONAGEM": "Personagem",
+      "PASSE_BATALHA": "Passe de batalha",
+      "OUTRO": "Outro"
+    },
+    "variant": {
+      "NORMAL": "Normal",
+      "STATTRAK": "StatTrak™",
+      "SOUVENIR": "Souvenir"
+    },
+    "exterior": {
+      "FN": "Nova de fábrica",
+      "MW": "Pouco usada",
+      "FT": "Testada em campo",
+      "WW": "Bem desgastada",
+      "BS": "Veterana de guerra"
+    },
+    "exteriorShort": {
+      "FN": "FN",
+      "MW": "MW",
+      "FT": "FT",
+      "WW": "WW",
+      "BS": "BS"
+    },
+    "acquisitionType": {
+      "GANHEI": "Ganhei",
+      "COMPRA": "Compra"
+    },
+    "status": {
+      "EM_ESTOQUE": "Em estoque",
+      "VENDIDO": "Vendidos"
+    },
+    "agingBucket": {
+      "RECENTE": "Recente",
+      "EM_GIRO": "Em giro",
+      "AGARRADO": "Agarrado"
+    },
+    "turnaroundBucket": {
+      "GIRO_RAPIDO": "Giro rápido",
+      "GIRO_NORMAL": "Giro normal",
+      "DEMOROU_VENDER": "Demorou para vender"
+    }
+  },
+  "statusIndicator": {
+    "online": "Online",
+    "offline": "Offline",
+    "checking": "Verificando",
+    "catalog": "Catálogo: {total}",
+    "details": "Ver detalhes do sistema",
+    "close": "Fechar"
+  },
+  "fx": {
+    "label": "Cotação USD→BRL",
+    "value": "US$ 1 = {rate}",
+    "notSet": "Cotação não definida",
+    "edit": "Editar",
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "saving": "Salvando...",
+    "invalidInput": "Digite um número maior que zero (ex.: 5,40)."
   }
 }

@@ -1,0 +1,9 @@
+.badge {
+  display: inline-block; font-size: 0.72rem; font-weight: 600; line-height: 1.2; white-space: nowrap;
+  padding: 0.12rem 0.45rem; border-radius: 999px; border: 1px solid var(--border);
+}
+.neutral { color: var(--text-muted); background: var(--surface-alt); }
+.info { color: var(--info); border-color: var(--info); background: transparent; }
+.success { color: var(--success); border-color: var(--success); background: transparent; }
+.warning { color: var(--warning); border-color: var(--warning); background: var(--warning-bg); }
+.danger { color: var(--danger); border-color: var(--danger); background: var(--danger-bg); }

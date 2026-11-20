@@ -5,7 +5,7 @@ import { usePreferences } from '@/components/PreferencesProvider';
 import type { Language } from '@/types/api';
 import en from './en.json';
 import ptBR from './pt-BR.json';
-import { translate, type MessageKey, type TranslateParams } from './translate';
+import { translate, translatePlural, type MessageKey, type TranslateParams } from './translate';
 
 const DICTIONARIES: Record<Language, unknown> = { 'pt-BR': ptBR, en };
 
@@ -17,6 +17,8 @@ interface I18nContextValue {
   t: Translator;
   // Para chaves montadas dinamicamente (ex.: `errors.${code}`).
   tLoose: LooseTranslator;
+  // Plural por Intl.PluralRules: `key` aponta para um objeto com `one` e `other`.
+  tPlural: (key: string, count: number, params?: TranslateParams) => string;
 }
 
 const I18nContext = createContext<I18nContextValue | null>(null);
@@ -27,7 +29,9 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const value = useMemo<I18nContextValue>(() => {
     const messages = DICTIONARIES[language];
     const tLoose: LooseTranslator = (key, params) => translate(messages, key, params);
-    return { language, t: tLoose as Translator, tLoose };
+    const tPlural = (key: string, count: number, params?: TranslateParams) =>
+      translatePlural(messages, key, count, language, params);
+    return { language, t: tLoose as Translator, tLoose, tPlural };
   }, [language]);
 
   // Depois de renderizar no idioma certo, mostra a página (ver script de bootstrap).
@@ -46,4 +50,5 @@ function useI18n(): I18nContextValue {
 
 export const useT = (): Translator => useI18n().t;
 export const useTLoose = (): LooseTranslator => useI18n().tLoose;
-export const useLanguage = (): Language => useI18n().language;
+export const useTPlural = (): I18nContextValue['tPlural'] => useI18n().tPlural;
+export const useLanguage =(): Language => useI18n().language;
