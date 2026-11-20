@@ -69,7 +69,7 @@ describe('GET /api/items/:id', () => {
     await createItemViaApi(app, purchaseBody({ floatValue: 0.2 }));
     const res = await get('/api/items/stats?name=ak-47%20%7C%20REDLINE&category=SKIN&variant=NORMAL&exterior=FT');
     expect(res.status).toBe(200);
-    expect(res.body.data).toMatchObject({ key: 'ak-47 | redline|SKIN|NORMAL|FT', soldCount: 0, avgPurchaseCostUsdCents: 100 });
+    expect(res.body.data).toMatchObject({ key: 'ak-47 | redline|SKIN|NORMAL|FT|', soldCount: 0, avgPurchaseCostUsdCents: 100 });
     const empty = await get('/api/items/stats?name=nada&category=SKIN');
     expect(empty.body.data).toMatchObject({ soldCount: 0, avgPurchaseCostUsdCents: null, avgProfitUsdCents: null });
     expectError(await get('/api/items/stats?category=SKIN'), 400, 'INVALID_QUERY');

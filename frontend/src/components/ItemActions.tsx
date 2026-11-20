@@ -12,13 +12,14 @@ interface Props {
   onSell: (item: ItemView) => void;
   onUnsell: (item: ItemView) => void;
   onDelete: (item: ItemView) => void;
+  onHistory?: (item: ItemView) => void;
   // Ação extra no fim (ex.: "Inspecionar").
   children?: ReactNode;
 }
 
 // Botões por situação do item (D118): EM_ESTOQUE -> Editar, Vender, Excluir; VENDIDO -> Editar, Desfazer venda, Excluir.
 // "Vender" fica desabilitado em trade lock (D74); o backend continua sendo a fonte da regra.
-export default function ItemActions({ item, onEdit, onSell, onUnsell, onDelete, children }: Props) {
+export default function ItemActions({ item, onEdit, onSell, onUnsell, onDelete, onHistory, children }: Props) {
   const t = useT();
   const locale = useLanguage();
   const sold = item.status === 'VENDIDO';
@@ -40,6 +41,9 @@ export default function ItemActions({ item, onEdit, onSell, onUnsell, onDelete, 
       <button type="button" className={`${styles.button} ${styles.danger}`} onClick={() => onDelete(item)}>
         {t('inventory.actions.delete')}
       </button>
+      {onHistory && (
+        <button type="button" className={styles.button} onClick={() => onHistory(item)}>{t('inventory.actions.history')}</button>
+      )}
       {children}
     </div>
   );

@@ -15,6 +15,7 @@ import { ApiRequestError, getSaleQuote, sellItem } from '@/services/api';
 import type { ItemView, Store } from '@/types/api';
 import { Badge } from './badges';
 import FormField from './FormField';
+import ItemHistoryBox from './ItemHistoryBox';
 import styles from './forms.module.css';
 import Modal from './Modal';
 import { usePreferences } from './PreferencesProvider';
@@ -205,6 +206,8 @@ export default function SellItemModal({ item, stores, onClose, onSold, onGone }:
           {reference.kind === 'inactive' && <span className={styles.muted}>{t('sellForm.noRefInactive')}</span>}
           {reference.kind === 'price' && needsFx(store) && <span className={styles.muted}>{t('sellForm.refUsesSavedRate')}</span>}
         </div>
+
+        <ItemHistoryBox stats={item.stats} compact />
 
         <FormField
           label={t('sellForm.netReceived', { currency })}

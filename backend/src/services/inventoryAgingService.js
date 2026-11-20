@@ -117,6 +117,39 @@ function sortByTurnaround(items, order = 'asc') {
   return [...sortBy(sold, (item) => daysBetween(item.acquiredAt, item.soldAt), order), ...sortBy(unsold, () => 0, 'asc')];
 }
 
+// "YYYY-MM-DD" -> { year, month, day } numéricos; undefined/null -> null.
+function parseDayString(value) {
+  if (value === undefined || value === null) return null;
+  const [year, month, day] = String(value).split('-').map(Number);
+  return { year, month, day };
+}
+
+// O dia civil (America/Sao_Paulo) do instante está dentro de [from, to] (inclusivos; cada lado opcional).
+function isWithinSaoPauloDays(dateIso, { from, to } = {}) {
+  const day = toSaoPauloDay(dateIso);
+  const f = parseDayString(from);
+  const t = parseDayString(to);
+  if (f && compareDays(day, f) < 0) return false;
+  if (t && compareDays(day, t) > 0) return false;
+  return true;
+}
+
+function filterSoldInPeriod(items, { soldFrom, soldTo } = {}) {
+  return items.filter(
+    (item) => item.status === 'VENDIDO' && isWithinSaoPauloDays(item.soldAt, { from: soldFrom, to: soldTo })
+  );
+}
+
+// Instante exato da venda; desempate por id ASC; itens sem soldAt vão ao fim; não muta.
+function sortBySoldAt(items, order = 'desc') {
+  const sold = items.filter((item) => item.status === 'VENDIDO');
+  const unsold = items.filter((item) => item.status !== 'VENDIDO');
+  return [
+    ...sortBy(sold, (item) => parseDate(item.soldAt, 'Data de venda').getTime(), order),
+    ...sortBy(unsold, () => 0, 'asc'),
+  ];
+}
+
 function filterStagnant(items, slowItemDays = env.slowItemDays, now = new Date()) {
   return items.filter(
     (item) =>
@@ -134,5 +167,8 @@ module.exports = {
   getAging,
   sortByAge,
   sortByTurnaround,
+  sortBySoldAt,
+  isWithinSaoPauloDays,
+  filterSoldInPeriod,
   filterStagnant,
 };

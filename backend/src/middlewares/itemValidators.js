@@ -193,12 +193,52 @@ const validateStatsQuery = wrap((req) => {
     // SKIN/FACA/LUVA sem variant caem em NORMAL (mesma regra do cadastro).
     variant: informedVariant ?? (isWeapon ? 'NORMAL' : undefined),
     exterior,
+    phase,
+  };
+});
+
+function dayParam(q, key) {
+  const raw = queryValue(q, key);
+  if (raw === undefined) return undefined;
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw);
+  if (m) {
+    const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
+    const date = new Date(Date.UTC(y, mo - 1, d));
+    if (date.getUTCFullYear() === y && date.getUTCMonth() === mo - 1 && date.getUTCDate() === d) return raw;
+  }
+  throw fail(`Valor inválido para ${key}.`, 'INVALID_QUERY', { field: key });
+}
+
+const validateSalesQuery = wrap((req) => {
+  const q = req.query;
+  const rawStore = queryValue(q, 'saleStoreId');
+  if (rawStore !== undefined && !/^[1-9]\d{0,14}$/.test(rawStore)) {
+    throw fail('Valor inválido para saleStoreId.', 'INVALID_QUERY', { field: 'saleStoreId' });
+  }
+  const soldFrom = dayParam(q, 'soldFrom');
+  const soldTo = dayParam(q, 'soldTo');
+  if (soldFrom !== undefined && soldTo !== undefined && soldFrom > soldTo) {
+    throw fail('soldFrom não pode ser posterior a soldTo.', 'INVALID_QUERY', { field: 'soldTo' });
+  }
+  const sortBy = queryValue(q, 'sortBy', ['turnaround', 'soldAt']);
+  const order = queryValue(q, 'order', ['asc', 'desc']);
+  if (order !== undefined && sortBy === undefined) {
+    throw fail('order só pode ser usado junto com sortBy.', 'INVALID_QUERY', { field: 'order' });
+  }
+  const effectiveSort = sortBy ?? 'soldAt';
+  req.validatedQuery = {
+    saleStoreId: rawStore === undefined ? undefined : Number(rawStore),
+    soldFrom,
+    soldTo,
+    sortBy: effectiveSort,
+    order: order ?? (effectiveSort === 'turnaround' ? 'asc' : 'desc'),
   };
 });
 
 module.exports = {
   validateItemQuery,
   validateStatsQuery,
+  validateSalesQuery,
   validateCreateItemBody,
   validateUpdateItemBody,
   validateSellBody,

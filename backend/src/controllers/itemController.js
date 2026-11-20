@@ -7,6 +7,10 @@ function list(req, res) {
   ok(res, itemService.listItems(req.validatedQuery, ctx(req)));
 }
 
+function sales(req, res) {
+  ok(res, itemService.listSales(req.validatedQuery, ctx(req)));
+}
+
 function stats(req, res) {
   ok(res, itemService.getItemStats(req.validatedQuery));
 }
@@ -35,4 +39,4 @@ function unsell(req, res) {
   ok(res, itemService.unsellItem(req.params.id, ctx(req)));
 }
 
-module.exports = { list, stats, getById, create, update, remove, sell, unsell };
+module.exports = { list, sales, stats, getById, create, update, remove, sell, unsell };

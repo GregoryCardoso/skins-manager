@@ -46,7 +46,8 @@ export function makeItem(overrides: Partial<ItemView> = {}): ItemView {
     aging: { daysInInventory: 9, agingBucket: 'EM_GIRO' },
     minPrices: [],
     saleProfitUsdCents: null,
-    stats: { soldCount: 0, avgDaysToSell: null, avgPurchaseCostUsdCents: null, avgSalePriceUsdCents: null, avgProfitUsdCents: null },
+    saleInfo: null,
+    stats: { unitCount: 1, soldWithFxCount: 0, soldCount: 0, avgDaysToSell: null, avgPurchaseCostUsdCents: null, avgSalePriceUsdCents: null, avgProfitUsdCents: null },
     ...overrides,
   };
 }

@@ -12,6 +12,8 @@ import type {
   ItemView,
   PreferencesPatch,
   SaleQuote,
+  SalesList,
+  SalesQuery,
   SellBody,
   SellResult,
   Settings,
@@ -150,6 +152,19 @@ export const listItems = (query: ItemListQuery, signal?: AbortSignal) =>
       category: query.category,
       stagnantOnly: query.stagnantOnly ? 'true' : undefined,
       sortBy: 'age',
+      order: query.order,
+    },
+  });
+
+// `order` só é enviado junto com `sortBy` (que aqui é sempre enviado).
+export const listSales = (query: SalesQuery, signal?: AbortSignal) =>
+  request<SalesList>('GET', '/items/sales', {
+    signal,
+    query: {
+      saleStoreId: query.saleStoreId,
+      soldFrom: query.soldFrom,
+      soldTo: query.soldTo,
+      sortBy: query.sortBy,
       order: query.order,
     },
   });

@@ -185,7 +185,8 @@ export function applyCatalogChoice(state: ItemFormState, choice: CatalogChoice):
     name: choice.name,
     category: choice.category,
     variant: weapon ? (keepVariant ? state.variant : 'NORMAL') : '',
-    phase: choice.phase ?? (weapon ? state.phase : ''),
+    // Trocar de item limpa a fase anterior (igual ao backend); reescolher o mesmo item a mantém (T68).
+    phase: choice.phase ?? (weapon && state.catalog?.id === choice.id ? state.phase : ''),
   };
 }
 

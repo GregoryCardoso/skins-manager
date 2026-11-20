@@ -44,7 +44,6 @@
   "pages": {
     "inventoryTitle": "Inventário",
     "salesTitle": "Vendas",
-    "salesPlaceholder": "A página de vendas chega na etapa 4B.4.",
     "notFoundTitle": "Página não encontrada",
     "notFoundText": "O endereço acessado não existe.",
     "backHome": "Voltar ao inventário"
@@ -183,7 +182,8 @@
       "sell": "Vender",
       "unsell": "Desfazer venda",
       "delete": "Excluir",
-      "lockedHint": "Em trade lock até {date}"
+      "lockedHint": "Em trade lock até {date}",
+      "history": "Histórico"
     },
     "itemGone": "Este item não existe mais (talvez tenha sido excluído em outra aba). A lista foi atualizada."
   },
@@ -394,5 +394,87 @@
     "FIELD_TOO_LONG": "Máximo de {max} caracteres.",
     "UNKNOWN_FIELD": "Campo desconhecido: {field}.",
     "INVALID_AMOUNT": "O valor máximo permitido é {max}."
+  },
+  "sales": {
+    "title": "Vendas",
+    "count": {
+      "one": "{count} venda",
+      "other": "{count} vendas"
+    },
+    "refresh": "Atualizar",
+    "empty": "Nenhuma venda registrada.",
+    "emptyFiltered": "Nenhuma venda neste período/loja.",
+    "clearFilters": "Limpar filtros",
+    "loadError": "Não foi possível carregar as vendas: {reason}",
+    "manualNet": "(informado)",
+    "fxBadge": "cotação",
+    "fxTitle": "Lucro calculado com a cotação gravada. Venda: {sale} · Compra: {purchase}",
+    "saleRateNote": "cotação da venda {rate}",
+    "columns": {
+      "image": "Imagem",
+      "item": "Item",
+      "purchaseStore": "Loja de compra",
+      "saleStore": "Loja de venda",
+      "cost": "Custo",
+      "salePrice": "Preço de venda",
+      "netReceived": "Líquido",
+      "profit": "Lucro",
+      "soldAt": "Data da venda",
+      "days": "Giro",
+      "actions": "Ações"
+    }
+  },
+  "salesFilters": {
+    "label": "Filtros das vendas",
+    "store": "Loja de venda",
+    "storeAll": "Todas",
+    "period": "Período",
+    "inactive": "inativa",
+    "periods": {
+      "ALL": "Tudo",
+      "LAST_7": "Últimos 7 dias",
+      "LAST_30": "Últimos 30 dias",
+      "LAST_90": "Últimos 90 dias",
+      "THIS_MONTH": "Este mês",
+      "LAST_MONTH": "Mês passado",
+      "THIS_YEAR": "Este ano",
+      "CUSTOM": "Personalizado"
+    },
+    "from": "De",
+    "to": "Até",
+    "sort": "Ordenar por",
+    "sortSoldAtDesc": "Data da venda: mais recentes",
+    "sortSoldAtAsc": "Data da venda: mais antigas",
+    "sortTurnaroundAsc": "Giro: mais rápidos primeiro",
+    "sortTurnaroundDesc": "Giro: mais lentos primeiro",
+    "invalidRange": "A data inicial não pode ser posterior à final."
+  },
+  "salesSummary": {
+    "label": "Resumo do período",
+    "sales": "Vendas",
+    "totalSold": "Total vendido",
+    "totalNet": "Total líquido recebido",
+    "totalProfit": "Lucro total",
+    "avgTurnaround": "Giro médio",
+    "avgTurnaroundValue": "{days} dias",
+    "usdNote": "Valores em US$ com a cotação gravada de cada venda.",
+    "profitTitle": "Líquido {net} − custo {cost}"
+  },
+  "history": {
+    "heading": "Histórico do item",
+    "title": "Histórico: {name}",
+    "soldCount": "Vendidas",
+    "avgDaysToSell": "Tempo médio até vender",
+    "avgPurchaseCost": "Custo médio",
+    "avgCostUnits": {
+      "one": "de {count} unidade",
+      "other": "de {count} unidades"
+    },
+    "avgSalePrice": "Preço médio de venda",
+    "avgProfit": "Lucro médio",
+    "none": "Nenhuma venda deste item ainda",
+    "fxNote": "{count} de {total} vendas usaram cotação USD→BRL gravada",
+    "keyNote": "Mesmo nome, categoria, variante, exterior e fase.",
+    "daysValue": "{days} dias"
   }
 }

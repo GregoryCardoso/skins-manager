@@ -97,6 +97,23 @@ describe('cadastro com catálogo', () => {
   });
 });
 
+describe('troca de item do catálogo (T68)', () => {
+  const FADE: CatalogChoice = { ...DOPPLER, id: 'skin-karambit-fade', phase: null };
+
+  test('Doppler Phase 2 -> Fade limpa a fase e o cadastro não envia fase', () => {
+    const s = applyCatalogChoice(applyCatalogChoice(initialCreateState(ctx), DOPPLER), FADE);
+    expect(s.phase).toBe('');
+    const r = buildCreateBody({ ...s, priceText: '10' }, ctx);
+    expect(r.ok && 'phase' in r.body).toBe(false);
+  });
+
+  test('fase livre digitada some ao trocar de item e fica ao reescolher o mesmo', () => {
+    const typed = { ...applyCatalogChoice(initialCreateState(ctx), FADE), phase: 'Ruby' };
+    expect(applyCatalogChoice(typed, FADE).phase).toBe('Ruby');
+    expect(applyCatalogChoice(typed, AK).phase).toBe('');
+  });
+});
+
 describe('troca de loja de compra', () => {
   test('mudar de moeda limpa o preço e pré-preenche a cotação em BRL', () => {
     let s = applyCatalogChoice(initialCreateState(ctx), AK);
@@ -178,6 +195,14 @@ describe('edição (PATCH só com o que mudou)', () => {
     const r = edit((s) => Object.assign(s, applyCatalogChoice(s, DOPPLER)));
     expect(r.ok && r.body.catalogId).toBe('skin-karambit-doppler-p2');
     expect(r.ok && 'phase' in r.body).toBe(false);
+  });
+
+  test('T68: trocar Doppler (fase travada) por Fade limpa a fase na edição', () => {
+    const FADE: CatalogChoice = { ...DOPPLER, id: 'skin-karambit-fade', phase: null };
+    const doppler = makeItem({ catalogId: DOPPLER.id, category: 'FACA', phase: 'Phase 2' });
+    const r = edit((s) => Object.assign(s, applyCatalogChoice(s, FADE)), doppler);
+    expect(r.ok && r.body.catalogId).toBe('skin-karambit-fade');
+    expect(r.ok && r.body.phase).toBeNull();
   });
 
   test('item legado fica intacto sem escolher catálogo; vincular envia catalogId', () => {

@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import en from './en.json';
 import ptBR from './pt-BR.json';
+import { SALES_PERIODS } from '../lib/salesQuery';
 
 function get(node: unknown, key: string): unknown {
   return key.split('.').reduce<unknown>((acc, part) => (acc && typeof acc === 'object' ? (acc as Record<string, unknown>)[part] : undefined), node);
@@ -70,5 +71,43 @@ describe.each([['pt-BR', ptBR], ['en', en]])('chaves da 4B.2 em %s', (_name, dic
     expect(get(dict, 'statusIndicator.catalog')).toContain('{total}');
     expect(get(dict, 'fx.value')).toContain('{rate}');
     expect(get(dict, 'inventory.count')).toContain('{count}');
+  });
+});
+
+const SALES_KEYS = [
+  'inventory.actions.history',
+  ...['title', 'count.one', 'count.other', 'refresh', 'empty', 'emptyFiltered', 'clearFilters', 'loadError', 'manualNet', 'fxBadge', 'fxTitle', 'saleRateNote'].map((k) => `sales.${k}`),
+  ...['image', 'item', 'purchaseStore', 'saleStore', 'cost', 'salePrice', 'netReceived', 'profit', 'soldAt', 'days', 'actions'].map((k) => `sales.columns.${k}`),
+  ...['label', 'store', 'storeAll', 'inactive', 'period', 'from', 'to', 'sort', 'sortSoldAtDesc', 'sortSoldAtAsc', 'sortTurnaroundAsc', 'sortTurnaroundDesc', 'invalidRange'].map((k) => `salesFilters.${k}`),
+  ...['ALL', 'LAST_7', 'LAST_30', 'LAST_90', 'THIS_MONTH', 'LAST_MONTH', 'THIS_YEAR', 'CUSTOM'].map((k) => `salesFilters.periods.${k}`),
+  ...['label', 'sales', 'totalSold', 'totalNet', 'totalProfit', 'avgTurnaround', 'avgTurnaroundValue', 'usdNote', 'profitTitle'].map((k) => `salesSummary.${k}`),
+  ...['heading', 'title', 'soldCount', 'avgDaysToSell', 'avgPurchaseCost', 'avgCostUnits.one', 'avgCostUnits.other', 'avgSalePrice', 'avgProfit', 'none', 'fxNote', 'keyNote', 'daysValue'].map((k) => `history.${k}`),
+];
+
+describe.each([['pt-BR', ptBR], ['en', en]])('chaves da 4B.4 em %s', (_name, dict) => {
+  test('existem e não estão vazias', () => {
+    for (const key of SALES_KEYS) {
+      const text = get(dict, key);
+      expect(typeof text, key).toBe('string');
+      expect((text as string).trim(), key).not.toBe('');
+    }
+  });
+
+  test('periods cobre exatamente os presets', () => {
+    expect(Object.keys(get(dict, 'salesFilters.periods') as object).sort()).toEqual([...SALES_PERIODS].sort());
+  });
+
+  test('placeholders esperados e sem o placeholder antigo', () => {
+    expect(get(dict, 'history.title')).toContain('{name}');
+    expect(get(dict, 'history.fxNote')).toContain('{count}');
+    expect(get(dict, 'history.fxNote')).toContain('{total}');
+    for (const form of ['one', 'other']) {
+      expect(get(dict, `history.avgCostUnits.${form}`)).toContain('{count}');
+      expect(get(dict, `sales.count.${form}`)).toContain('{count}');
+    }
+    expect(get(dict, 'sales.fxTitle')).toContain('{sale}');
+    expect(get(dict, 'sales.fxTitle')).toContain('{purchase}');
+    expect(get(dict, 'sales.saleRateNote')).toContain('{rate}');
+    expect(get(dict, 'pages.salesPlaceholder')).toBeUndefined();
   });
 });

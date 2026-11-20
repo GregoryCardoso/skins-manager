@@ -17,11 +17,11 @@ const {
 const catalogService = require('./catalogService');
 const { getTradeLockStatus } = require('./tradeLockService');
 const {
-  getAging, assertAcquiredAtNotFuture, assertNotFutureDay, filterStagnant, sortByAge, sortByTurnaround,
+  getAging, assertAcquiredAtNotFuture, assertNotFutureDay, filterStagnant, sortByAge, sortByTurnaround, sortBySoldAt, filterSoldInPeriod,
 } = require('./inventoryAgingService');
 const { minPricesForItem, resolveSaleNet } = require('./pricingService');
-const { computeSaleProfitUsdCents } = require('./profitService');
-const { buildStatsIndex, buildStatsKey, computeStats } = require('./itemStatsService');
+const { computeSaleProfitUsdCents, buildSaleInfo } = require('./profitService');
+const { buildStatsIndex, buildStatsKey, computeStats, computeSalesSummary } = require('./itemStatsService');
 const { getStoreOrFail } = require('./storeService');
 
 const ACQUISITION_TYPES = ['GANHEI', 'COMPRA'];
@@ -353,6 +353,7 @@ function toItemView(
     aging: getAging(item, { slowItemDays, now }),
     minPrices: inStock ? minPricesForItem({ item, stores, settings }) : null,
     saleProfitUsdCents: computeSaleProfitUsdCents(item),
+    saleInfo: buildSaleInfo(item, settings ? settings.usdBrlRate : null),
     stats: statsIndex.get(buildStatsKey(item)) ?? computeStats([item]),
   };
 }
@@ -394,6 +395,29 @@ function listItems(query = {}, { now = new Date(), slowItemDays = env.slowItemDa
   return {
     items: items.map((item) => toItemView(item, { stores, settings, statsIndex, catalogById, now, slowItemDays })),
     meta: { count: items.length, slowItemDays, usdBrlRate: settings.usdBrlRate, generatedAt: now.toISOString() },
+  };
+}
+
+// Vendas (D124/D127): lista filtrada/ordenada + resumo sobre o mesmo conjunto. Estatísticas usam todos os itens.
+function listSales(query = {}, { now = new Date(), slowItemDays = env.slowItemDays } = {}) {
+  const { items: all, stores, settings, statsIndex, catalogById } = loadContext();
+  let items = all.filter((i) => i.status === 'VENDIDO');
+  if (!isNil(query.saleStoreId)) items = items.filter((i) => i.saleStoreId === query.saleStoreId);
+  items = filterSoldInPeriod(items, { soldFrom: query.soldFrom, soldTo: query.soldTo });
+  const sortKey = query.sortBy ?? 'soldAt';
+  if (sortKey === 'turnaround') items = sortByTurnaround(items, query.order ?? 'asc');
+  else items = sortBySoldAt(items, query.order ?? 'desc');
+  return {
+    items: items.map((item) => toItemView(item, { stores, settings, statsIndex, catalogById, now, slowItemDays })),
+    summary: computeSalesSummary(items, { usdBrlRate: settings.usdBrlRate }),
+    meta: {
+      count: items.length,
+      slowItemDays,
+      usdBrlRate: settings.usdBrlRate,
+      generatedAt: now.toISOString(),
+      soldFrom: query.soldFrom ?? null,
+      soldTo: query.soldTo ?? null,
+    },
   };
 }
 
@@ -471,8 +495,8 @@ function unsellItem(id, ctx = {}) {
   return inTransaction(() => viewOf(Item.update(id, buildUnsellPatch()), { now, slowItemDays }));
 }
 
-function getItemStats({ name, category, variant, exterior }) {
-  const key = buildStatsKey({ name, category, variant, exterior });
+function getItemStats({ name, category, variant, exterior, phase }) {
+  const key = buildStatsKey({ name, category, variant, exterior, phase });
   const group = Item.findAll().filter((item) => buildStatsKey(item) === key);
   return { key, ...computeStats(group) };
 }
@@ -484,6 +508,7 @@ module.exports = {
   buildUnsellPatch,
   toItemView,
   listItems,
+  listSales,
   getItem,
   createItem,
   updateItem,

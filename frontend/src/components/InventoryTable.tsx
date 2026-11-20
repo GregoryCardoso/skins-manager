@@ -17,6 +17,7 @@ interface Props {
   onSell: (item: ItemView) => void;
   onUnsell: (item: ItemView) => void;
   onDelete: (item: ItemView) => void;
+  onHistory: (item: ItemView) => void;
 }
 
 const BUCKET_TONES: Record<string, BadgeTone> = {
@@ -139,7 +140,7 @@ function InspectAction({ link }: { link: string | null }) {
   );
 }
 
-export default function InventoryTable({ items, stores, onEdit, onSell, onUnsell, onDelete }: Props) {
+export default function InventoryTable({ items, stores, onEdit, onSell, onUnsell, onDelete, onHistory }: Props) {
   const t = useT();
   const locale = useLanguage();
 
@@ -177,7 +178,7 @@ export default function InventoryTable({ items, stores, onEdit, onSell, onUnsell
                     : <MinPriceCell minPrices={item.minPrices} stores={stores} />}
                 </td>
                 <td>
-                  <ItemActions item={item} onEdit={onEdit} onSell={onSell} onUnsell={onUnsell} onDelete={onDelete}>
+                  <ItemActions item={item} onEdit={onEdit} onSell={onSell} onUnsell={onUnsell} onDelete={onDelete} onHistory={onHistory}>
                     <InspectAction link={item.inspectLink} />
                   </ItemActions>
                 </td>

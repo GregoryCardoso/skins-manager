@@ -97,11 +97,28 @@ export interface CatalogSummary {
 }
 
 export interface ItemStats {
+  unitCount: number;
+  soldWithFxCount: number;
   soldCount: number;
   avgDaysToSell: number | null;
   avgPurchaseCostUsdCents: number | null;
   avgSalePriceUsdCents: number | null;
   avgProfitUsdCents: number | null;
+}
+
+// Valores da venda em USD (cotação gravada de cada lado) e "≈ R$" pela cotação atual (D125).
+export interface SaleInfo {
+  salePriceUsdCents: number;
+  netReceivedUsdCents: number;
+  purchaseCostUsdCents: number;
+  fxUsed: { sale: number | null; purchase: number | null };
+  usesRecordedFx: boolean;
+  approxBrl: {
+    salePrice: number | null;
+    netReceived: number | null;
+    purchaseCost: number | null;
+    profit: number | null;
+  };
 }
 
 export interface ItemView {
@@ -138,6 +155,7 @@ export interface ItemView {
   aging: Aging;
   minPrices: MinPrice[] | null;
   saleProfitUsdCents: number | null;
+  saleInfo: SaleInfo | null;
   stats: ItemStats;
 }
 
@@ -156,6 +174,35 @@ export interface ItemListQuery {
   status?: ItemStatus;
   category?: Category;
   stagnantOnly?: boolean;
+  order: 'asc' | 'desc';
+}
+
+// --- Vendas (4B.4, D124) ---
+
+export interface SalesSummary {
+  count: number;
+  totalSalePriceUsdCents: number;
+  totalNetReceivedUsdCents: number;
+  totalPurchaseCostUsdCents: number;
+  totalProfitUsdCents: number;
+  avgTurnaroundDays: number | null;
+  soldWithFxCount: number;
+  approxBrl: { totalSalePrice: number | null; totalNetReceived: number | null; totalProfit: number | null };
+}
+
+export interface SalesList {
+  items: ItemView[];
+  summary: SalesSummary;
+  meta: ItemListMeta & { soldFrom: string | null; soldTo: string | null };
+}
+
+export type SalesSortBy = 'soldAt' | 'turnaround';
+
+export interface SalesQuery {
+  saleStoreId?: number;
+  soldFrom?: string;
+  soldTo?: string;
+  sortBy: SalesSortBy;
   order: 'asc' | 'desc';
 }
 

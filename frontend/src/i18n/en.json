@@ -44,7 +44,6 @@
   "pages": {
     "inventoryTitle": "Inventory",
     "salesTitle": "Sales",
-    "salesPlaceholder": "The sales page arrives in step 4B.4.",
     "notFoundTitle": "Page not found",
     "notFoundText": "The requested address does not exist.",
     "backHome": "Back to inventory"
@@ -183,7 +182,8 @@
       "sell": "Sell",
       "unsell": "Undo sale",
       "delete": "Delete",
-      "lockedHint": "Trade locked until {date}"
+      "lockedHint": "Trade locked until {date}",
+      "history": "History"
     },
     "itemGone": "This item no longer exists (it may have been deleted in another tab). The list was refreshed."
   },
@@ -394,5 +394,87 @@
     "FIELD_TOO_LONG": "Maximum of {max} characters.",
     "UNKNOWN_FIELD": "Unknown field: {field}.",
     "INVALID_AMOUNT": "The maximum allowed amount is {max}."
+  },
+  "sales": {
+    "title": "Sales",
+    "count": {
+      "one": "{count} sale",
+      "other": "{count} sales"
+    },
+    "refresh": "Refresh",
+    "empty": "No sales recorded.",
+    "emptyFiltered": "No sales in this period/store.",
+    "clearFilters": "Clear filters",
+    "loadError": "Could not load sales: {reason}",
+    "manualNet": "(entered)",
+    "fxBadge": "rate",
+    "fxTitle": "Profit computed with the recorded rate. Sale: {sale} · Purchase: {purchase}",
+    "saleRateNote": "sale rate {rate}",
+    "columns": {
+      "image": "Image",
+      "item": "Item",
+      "purchaseStore": "Purchase store",
+      "saleStore": "Sale store",
+      "cost": "Cost",
+      "salePrice": "Sale price",
+      "netReceived": "Net",
+      "profit": "Profit",
+      "soldAt": "Sale date",
+      "days": "Turnaround",
+      "actions": "Actions"
+    }
+  },
+  "salesFilters": {
+    "label": "Sales filters",
+    "store": "Sale store",
+    "storeAll": "All",
+    "period": "Period",
+    "inactive": "inactive",
+    "periods": {
+      "ALL": "All time",
+      "LAST_7": "Last 7 days",
+      "LAST_30": "Last 30 days",
+      "LAST_90": "Last 90 days",
+      "THIS_MONTH": "This month",
+      "LAST_MONTH": "Last month",
+      "THIS_YEAR": "This year",
+      "CUSTOM": "Custom"
+    },
+    "from": "From",
+    "to": "To",
+    "sort": "Sort by",
+    "sortSoldAtDesc": "Sale date: newest first",
+    "sortSoldAtAsc": "Sale date: oldest first",
+    "sortTurnaroundAsc": "Turnaround: fastest first",
+    "sortTurnaroundDesc": "Turnaround: slowest first",
+    "invalidRange": "The start date cannot be after the end date."
+  },
+  "salesSummary": {
+    "label": "Period summary",
+    "sales": "Sales",
+    "totalSold": "Total sold",
+    "totalNet": "Total net received",
+    "totalProfit": "Total profit",
+    "avgTurnaround": "Average turnaround",
+    "avgTurnaroundValue": "{days} days",
+    "usdNote": "Amounts in US$ using the rate recorded on each sale.",
+    "profitTitle": "Net {net} − cost {cost}"
+  },
+  "history": {
+    "heading": "Item history",
+    "title": "History: {name}",
+    "soldCount": "Sold",
+    "avgDaysToSell": "Average time to sell",
+    "avgPurchaseCost": "Average cost",
+    "avgCostUnits": {
+      "one": "of {count} unit",
+      "other": "of {count} units"
+    },
+    "avgSalePrice": "Average sale price",
+    "avgProfit": "Average profit",
+    "none": "No sales of this item yet",
+    "fxNote": "{count} of {total} sales used a recorded USD→BRL rate",
+    "keyNote": "Same name, category, variant, exterior and phase.",
+    "daysValue": "{days} days"
   }
 }

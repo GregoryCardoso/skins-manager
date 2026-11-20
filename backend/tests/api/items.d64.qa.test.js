@@ -213,7 +213,7 @@ describe('D64.6 GET /api/items/stats', () => {
   test('SKIN com STATTRAK -> 200 com a variant na chave', async () => {
     const res = await stats({ name: '  AK-47  |  Redline ', category: 'SKIN', variant: 'STATTRAK' });
     expect(res.status).toBe(200);
-    expect(res.body.data.key).toBe('ak-47 | redline|SKIN|STATTRAK|');
+    expect(res.body.data.key).toBe('ak-47 | redline|SKIN|STATTRAK||');
   });
 
   test.each([
@@ -232,11 +232,11 @@ describe('D64.6 GET /api/items/stats', () => {
   test('CAIXA sem variant: chave sem NORMAL', async () => {
     const res = await stats({ name: 'Caixa Kilowatt', category: 'CAIXA' });
     expect(res.status).toBe(200);
-    expect(res.body.data.key).toBe('caixa kilowatt|CAIXA||');
+    expect(res.body.data.key).toBe('caixa kilowatt|CAIXA|||');
   });
 
   test('SKIN sem variant: chave com NORMAL', async () => {
     const res = await stats({ name: 'X', category: 'SKIN' });
-    expect(res.body.data.key).toBe('x|SKIN|NORMAL|');
+    expect(res.body.data.key).toBe('x|SKIN|NORMAL||');
   });
 });

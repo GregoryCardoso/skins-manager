@@ -1,7 +1,7 @@
 'use strict';
 
 // Lucro da venda (2.5) e lucro real (2.10).
-const { toUsdCents, isValidFxRate } = require('./currencyService');
+const { toUsdCents, isValidFxRate, approxCounterpart } = require('./currencyService');
 const { roundCents } = require('./fees/rounding');
 const { estimateBalanceBrl } = require('./withdrawalService');
 const { WARNING_FX } = require('./warnings');
@@ -15,6 +15,35 @@ function computeSaleProfitUsdCents(item) {
   const net = toUsdCents(item.netReceivedCents, item.saleCurrency, item.fxRateAtSale);
   const cost = toUsdCents(item.purchasePriceCents, item.purchaseCurrency, item.fxRateAtPurchase);
   return net - cost;
+}
+
+// Valores da venda em USD (cotação gravada de cada lado, 2.9) e "≈ R$" pela cotação atual (D125); null se não vendido.
+function buildSaleInfo(item, usdBrlRate = null) {
+  if (item.status !== 'VENDIDO') return null;
+  const salePriceUsdCents = toUsdCents(item.salePriceCents, item.saleCurrency, item.fxRateAtSale);
+  const netReceivedUsdCents = toUsdCents(item.netReceivedCents, item.saleCurrency, item.fxRateAtSale);
+  const purchaseCostUsdCents = toUsdCents(item.purchasePriceCents, item.purchaseCurrency, item.fxRateAtPurchase);
+  const fxUsed = {
+    sale: item.saleCurrency === 'BRL' ? item.fxRateAtSale : null,
+    purchase: item.purchaseCurrency === 'BRL' ? item.fxRateAtPurchase : null,
+  };
+  const approx = (cents) => {
+    const r = approxCounterpart(cents, 'USD', usdBrlRate);
+    return r ? r.cents : null;
+  };
+  return {
+    salePriceUsdCents,
+    netReceivedUsdCents,
+    purchaseCostUsdCents,
+    fxUsed,
+    usesRecordedFx: fxUsed.sale !== null || fxUsed.purchase !== null,
+    approxBrl: {
+      salePrice: approx(salePriceUsdCents),
+      netReceived: approx(netReceivedUsdCents),
+      purchaseCost: approx(purchaseCostUsdCents),
+      profit: approx(netReceivedUsdCents - purchaseCostUsdCents),
+    },
+  };
 }
 
 // Estoque pelo custo (P1): BRL nominal; USD × cotação das configurações.
@@ -101,4 +130,4 @@ function computeRealProfit(input = {}) {
   };
 }
 
-module.exports = { computeSaleProfitUsdCents, computeRealProfit };
+module.exports = { computeSaleProfitUsdCents, buildSaleInfo, computeRealProfit };

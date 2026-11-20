@@ -1,0 +1,12 @@
+.box { display: flex; flex-direction: column; gap: 0.6rem; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 0.6rem 1rem; margin: 0; }
+.compact .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.3rem 0.8rem; font-size: 0.85rem; }
+.cell { display: flex; flex-direction: column; gap: 0.1rem; }
+.cell dt { font-size: 0.78rem; color: var(--text-muted); }
+.cell dd { margin: 0; font-weight: 600; }
+.sub { font-size: 0.78rem; font-weight: 400; color: var(--text-muted); }
+.negative { color: var(--danger); }
+.none { margin: 0; color: var(--text-muted); }
+.note { margin: 0; font-size: 0.8rem; color: var(--text-muted); }
+.compact { padding: 0.5rem 0.7rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-alt); }
+.title { margin: 0; font-size: 0.85rem; color: var(--text-muted); }

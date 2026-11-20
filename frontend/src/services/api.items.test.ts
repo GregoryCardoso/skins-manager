@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import {
-  ApiRequestError, createItem, deleteItem, getItem, getSaleQuote, request, searchCatalog, sellItem, unsellItem, updateItem,
+  ApiRequestError, createItem, deleteItem, getItem, getSaleQuote, listSales, request, searchCatalog, sellItem, unsellItem, updateItem,
 } from './api';
 
 function respond(body: unknown, status = 200): Response {
@@ -103,5 +103,30 @@ describe('searchCatalog', () => {
     await searchCatalog(' ak ', { category: 'SKIN', limit: 20 });
     expect(Object.fromEntries(call(fn).url.searchParams)).toEqual({ q: 'ak', category: 'SKIN', limit: '20' });
     expect(call(fn).url.pathname).toBe('/api/catalog/search');
+  });
+});
+
+describe('listSales (4B.4)', () => {
+  test('envia sortBy e order e só os filtros presentes', async () => {
+    const fn = stubFetch({ success: true, data: { items: [], summary: {}, meta: {} } });
+    await listSales({ sortBy: 'soldAt', order: 'desc' });
+    expect(String(fn.mock.calls[0][0])).toMatch(/\/items\/sales\?sortBy=soldAt&order=desc$/);
+    await listSales({ saleStoreId: 2, soldFrom: '2026-11-01', soldTo: '2026-11-19', sortBy: 'turnaround', order: 'asc' });
+    const url = new URL(String(fn.mock.calls[1][0]));
+    expect(url.pathname).toBe('/api/items/sales');
+    expect(Object.fromEntries(url.searchParams)).toEqual({
+      saleStoreId: '2', soldFrom: '2026-11-01', soldTo: '2026-11-19', sortBy: 'turnaround', order: 'asc',
+    });
+  });
+});
+
+describe('listSales: query sem campos vazios (QA 4B.4)', () => {
+  test('omite filtros ausentes e não envia order sem querer', async () => {
+    const fn = stubFetch({ success: true, data: { items: [], summary: {}, meta: {} } });
+    await listSales({ sortBy: 'turnaround', order: 'asc', soldFrom: '2026-11-01' });
+    const url = new URL(String(fn.mock.calls[0][0]));
+    expect(Object.fromEntries(url.searchParams)).toEqual({ soldFrom: '2026-11-01', sortBy: 'turnaround', order: 'asc' });
+    expect(url.searchParams.has('saleStoreId')).toBe(false);
+    expect(url.searchParams.has('soldTo')).toBe(false);
   });
 });

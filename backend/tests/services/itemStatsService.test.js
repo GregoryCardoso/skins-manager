@@ -32,11 +32,20 @@ describe('itemStatsService — chave', () => {
     expect(buildStatsKey({ ...base, variant: 'STATTRAK' })).not.toBe(k);
     expect(buildStatsKey({ ...base, exterior: 'MW' })).not.toBe(k);
     expect(buildStatsKey({ ...base, category: 'FACA' })).not.toBe(k);
+    expect(buildStatsKey({ ...base, phase: 'Ruby' })).not.toBe(k);
+  });
+
+  test('fase entra na chave (Q8): normalizada; ausente forma grupo próprio', () => {
+    const knife = { name: 'Karambit | Doppler', category: 'FACA', variant: 'NORMAL', exterior: 'FN' };
+    expect(buildStatsKey({ ...knife, phase: ' Ruby ' })).toBe(buildStatsKey({ ...knife, phase: 'ruby' }));
+    expect(buildStatsKey({ ...knife, phase: 'Ruby' })).not.toBe(buildStatsKey({ ...knife, phase: 'Phase 2' }));
+    expect(buildStatsKey({ ...knife, phase: null })).not.toBe(buildStatsKey({ ...knife, phase: 'Ruby' }));
+    expect(buildStatsKey({ ...knife, phase: null })).toBe(buildStatsKey(knife));
   });
 
   test('variant/exterior nulos viram vazio', () => {
     expect(buildStatsKey({ name: 'Caixa Revolution', category: 'CAIXA', variant: null, exterior: null })).toBe(
-      'caixa revolution|CAIXA||'
+      'caixa revolution|CAIXA|||'
     );
   });
 });
@@ -44,6 +53,8 @@ describe('itemStatsService — chave', () => {
 describe('itemStatsService.computeStats', () => {
   test('P3: só itens em estoque (100 e 200) → soldCount 0, avgPurchaseCost 150, demais null', () => {
     expect(computeStats([inStock(100), inStock(200)])).toEqual({
+      unitCount: 2,
+      soldWithFxCount: 0,
       soldCount: 0,
       avgDaysToSell: null,
       avgPurchaseCostUsdCents: 150,
@@ -54,13 +65,15 @@ describe('itemStatsService.computeStats', () => {
 
   test('lista vazia → avgPurchaseCost null', () => {
     expect(computeStats([])).toEqual({
-      soldCount: 0, avgDaysToSell: null, avgPurchaseCostUsdCents: null, avgSalePriceUsdCents: null, avgProfitUsdCents: null,
+      unitCount: 0, soldWithFxCount: 0, soldCount: 0, avgDaysToSell: null, avgPurchaseCostUsdCents: null, avgSalePriceUsdCents: null, avgProfitUsdCents: null,
     });
   });
 
   test('P3: 2 vendidos (100/300, 3 e 4 dias) + 1 em estoque (200)', () => {
     const items = [soldUsd(100, 200, 190, 3), soldUsd(300, 500, 480, 4), inStock(200)];
     expect(computeStats(items)).toEqual({
+      unitCount: 3,
+      soldWithFxCount: 0,
       soldCount: 2,
       avgDaysToSell: 3.5,
       avgPurchaseCostUsdCents: 200, // (100 + 300 + 200) / 3

@@ -7,6 +7,7 @@ const router = Router();
 
 router.get('/', v.validateItemQuery, controller.list);
 router.get('/stats', v.validateStatsQuery, controller.stats); // antes de /:id
+router.get('/sales', v.validateSalesQuery, controller.sales); // antes de /:id
 router.post('/', v.validateCreateItemBody, controller.create);
 router.get('/:id', validateIdParam, controller.getById);
 router.patch('/:id', validateIdParam, v.validateUpdateItemBody, controller.update);
