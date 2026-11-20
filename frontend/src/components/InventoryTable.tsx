@@ -5,6 +5,7 @@ import { formatDate, formatFloat, formatMoney, formatRemaining, remainingToText 
 import { isHttpsLink, isSafeInspectLink } from '@/lib/safeUrl';
 import type { ItemView, Store } from '@/types/api';
 import { Badge, type BadgeTone } from './badges';
+import ItemActions from './ItemActions';
 import ItemImage from './ItemImage';
 import styles from './InventoryTable.module.css';
 import MinPriceCell from './MinPriceCell';
@@ -12,6 +13,10 @@ import MinPriceCell from './MinPriceCell';
 interface Props {
   items: ItemView[];
   stores: Store[];
+  onEdit: (item: ItemView) => void;
+  onSell: (item: ItemView) => void;
+  onUnsell: (item: ItemView) => void;
+  onDelete: (item: ItemView) => void;
 }
 
 const BUCKET_TONES: Record<string, BadgeTone> = {
@@ -117,7 +122,7 @@ function TradeLockCell({ item }: { item: ItemView }) {
 
 function InspectAction({ link }: { link: string | null }) {
   const t = useT();
-  if (!link) return <span className={styles.muted}>{t('common.none')}</span>;
+  if (!link) return null;
   if (!isSafeInspectLink(link)) {
     return <span className={styles.muted} title={t('inventory.inspectInvalid')}>{t('inventory.inspectInvalid')}</span>;
   }
@@ -134,7 +139,7 @@ function InspectAction({ link }: { link: string | null }) {
   );
 }
 
-export default function InventoryTable({ items, stores }: Props) {
+export default function InventoryTable({ items, stores, onEdit, onSell, onUnsell, onDelete }: Props) {
   const t = useT();
   const locale = useLanguage();
 
@@ -171,7 +176,11 @@ export default function InventoryTable({ items, stores }: Props) {
                     ? <span className={styles.muted}>{t('common.none')}</span>
                     : <MinPriceCell minPrices={item.minPrices} stores={stores} />}
                 </td>
-                <td><InspectAction link={item.inspectLink} /></td>
+                <td>
+                  <ItemActions item={item} onEdit={onEdit} onSell={onSell} onUnsell={onUnsell} onDelete={onDelete}>
+                    <InspectAction link={item.inspectLink} />
+                  </ItemActions>
+                </td>
               </tr>
             );
           })}

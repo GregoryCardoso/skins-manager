@@ -1,10 +1,19 @@
 import type {
+  Category,
   CatalogRefreshResult,
+  CatalogSearchResult,
   CatalogStatus,
+  ErrorParams,
   HealthStatus,
+  ItemCreateBody,
   ItemList,
   ItemListQuery,
+  ItemPatchBody,
+  ItemView,
   PreferencesPatch,
+  SaleQuote,
+  SellBody,
+  SellResult,
   Settings,
   Store,
 } from '@/types/api';
@@ -16,13 +25,29 @@ export const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || DEFAULT_API_URL)
 export class ApiRequestError extends Error {
   readonly code: string;
   readonly status: number;
+  // Campo da API a que o erro se refere e valores para interpolar a mensagem (D113).
+  readonly field?: string;
+  readonly params?: ErrorParams;
 
-  constructor(code: string, message: string, status = 0) {
+  constructor(code: string, message: string, status = 0, extra: { field?: unknown; params?: unknown } = {}) {
     super(message);
     this.name = 'ApiRequestError';
     this.code = code;
     this.status = status;
+    if (typeof extra.field === 'string' && extra.field !== '') this.field = extra.field;
+    const params = sanitizeParams(extra.params);
+    if (params) this.params = params;
   }
+}
+
+// Só mantém valores string/number; qualquer outro tipo é ignorado.
+function sanitizeParams(value: unknown): ErrorParams | undefined {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return undefined;
+  const out: ErrorParams = {};
+  for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
+    if (typeof item === 'string' || (typeof item === 'number' && Number.isFinite(item))) out[key] = item;
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
 }
 
 type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
@@ -87,12 +112,15 @@ export async function request<T>(method: Method, path: string, options: RequestO
     if (payload === null || typeof payload !== 'object' || typeof (payload as { success?: unknown }).success !== 'boolean') {
       throw new ApiRequestError('INVALID_RESPONSE', 'Resposta inválida do servidor', response.status);
     }
-    const envelope = payload as { success: boolean; data?: unknown; error?: { code?: unknown; message?: unknown } };
+    const envelope = payload as { success: boolean; data?: unknown; error?: { code?: unknown; message?: unknown; field?: unknown; params?: unknown } };
     if (envelope.success) return envelope.data as T;
 
     const code = typeof envelope.error?.code === 'string' ? envelope.error.code : 'UNKNOWN';
     const message = typeof envelope.error?.message === 'string' ? envelope.error.message : '';
-    throw new ApiRequestError(code, message, response.status);
+    throw new ApiRequestError(code, message, response.status, {
+      field: envelope.error?.field,
+      params: envelope.error?.params,
+    });
   } finally {
     clearTimeout(timer);
     signal?.removeEventListener('abort', onAbort);
@@ -130,3 +158,36 @@ export const listStores = (signal?: AbortSignal) => request<Store[]>('GET', '/st
 
 export const updateFxRate = (usdBrlRate: number) =>
   request<Settings>('PUT', '/settings/fx-rate', { body: { usdBrlRate } });
+
+export const getItem = (id: number, signal?: AbortSignal) => request<ItemView>('GET', `/items/${id}`, { signal });
+
+export const createItem = (body: ItemCreateBody) => request<ItemView>('POST', '/items', { body });
+
+export const updateItem = (id: number, body: ItemPatchBody) => request<ItemView>('PATCH', `/items/${id}`, { body });
+
+export const deleteItem = (id: number) => request<{ id: number }>('DELETE', `/items/${id}`);
+
+export const sellItem = (id: number, body: SellBody) => request<SellResult>('POST', `/items/${id}/sell`, { body });
+
+export const unsellItem = (id: number) => request<ItemView>('POST', `/items/${id}/unsell`, { body: {} });
+
+// Prévia do líquido da venda (D122): só calcula, não grava.
+export const getSaleQuote = (storeId: number, salePriceCents: number, signal?: AbortSignal) =>
+  request<SaleQuote>('GET', `/stores/${storeId}/sale-quote`, { signal, query: { salePriceCents } });
+
+export const MIN_CATALOG_QUERY_LENGTH = 2;
+
+// Busca com menos de 2 caracteres não chama a API (o backend recusaria).
+export async function searchCatalog(
+  q: string,
+  options: { category?: Category; limit?: number; signal?: AbortSignal } = {},
+): Promise<CatalogSearchResult> {
+  const text = q.trim();
+  if (text.length < MIN_CATALOG_QUERY_LENGTH) {
+    return { items: [], meta: { catalogUpdatedAt: null, total: 0 } };
+  }
+  return request<CatalogSearchResult>('GET', '/catalog/search', {
+    signal: options.signal,
+    query: { q: text, category: options.category, limit: options.limit },
+  });
+}

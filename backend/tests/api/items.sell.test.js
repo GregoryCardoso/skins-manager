@@ -25,7 +25,7 @@ describe('POST /api/items/:id/sell', () => {
     const item = await createItemViaApi(app);
     const res = await sell(item.id, sellBody());
     expect(res.status).toBe(200);
-    expect(res.body.data.sale).toEqual({ netReceivedCents: 122, feeCents: 3, saleProfitUsdCents: 22 });
+    expect(res.body.data.sale).toEqual({ netReceivedCents: 122, feeCents: 3, saleProfitUsdCents: 22, netReceivedManual: false });
     expect(res.body.data).not.toHaveProperty('warnings');
     expect(res.body.data.item).toMatchObject({
       status: 'VENDIDO', saleStoreId: storeId('CSFloat'), salePriceCents: 125, saleCurrency: 'USD', fxRateAtSale: null,
@@ -101,7 +101,7 @@ describe('POST /api/items/:id/sell', () => {
     for (const key of ['saleStoreId', 'salePriceCents', 'soldAt']) {
       expectError(await sell(item.id, sellBody({ [key]: undefined })), 400, 'REQUIRED_FIELD');
     }
-    expectError(await sell(item.id, sellBody({ netReceivedCents: 1 })), 400, 'UNKNOWN_FIELD');
+    expectError(await sell(item.id, sellBody({ netReceivedManual: true })), 400, 'UNKNOWN_FIELD');
     expectError(await sell(item.id, sellBody({ salePriceCents: '125' })), 400, 'INVALID_FIELD');
   });
 

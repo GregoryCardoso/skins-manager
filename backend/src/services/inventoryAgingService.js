@@ -69,9 +69,9 @@ function toSaoPauloDate(dateOrIso) {
 }
 
 // Recusa datas em dia posterior ao de `now` em America/Sao_Paulo (D53, P8).
-function assertNotFutureDay(date, now = new Date(), { code, message }) {
+function assertNotFutureDay(date, now = new Date(), { code, message, field }) {
   if (compareDays(toSaoPauloDay(date), toSaoPauloDay(now)) > 0) {
-    throw new ValidationError(message, code);
+    throw new ValidationError(message, code, field ? { field } : undefined);
   }
 }
 
@@ -79,6 +79,7 @@ function assertAcquiredAtNotFuture(acquiredAt, now = new Date()) {
   assertNotFutureDay(acquiredAt, now, {
     code: 'ACQUIRED_AT_IN_FUTURE',
     message: 'A data de aquisição não pode ser futura.',
+    field: 'acquiredAt',
   });
 }
 

@@ -73,7 +73,7 @@ function minPricesForItem({ item, stores, settings }) {
 
 function computeSale({ salePriceCents, store }) {
   if (!Number.isSafeInteger(salePriceCents) || salePriceCents <= 0) {
-    throw new ValidationError('Preço de venda deve ser um inteiro de centavos maior que 0.', 'INVALID_AMOUNT');
+    throw new ValidationError('Preço de venda deve ser um inteiro de centavos maior que 0.', 'INVALID_AMOUNT', { field: 'salePriceCents' });
   }
   const params = saleFeeParamsFromStore(store);
   if (!params) {
@@ -82,7 +82,7 @@ function computeSale({ salePriceCents, store }) {
   assertSaleFeeParams(params);
   const netReceivedCents = getSaleFeeStrategy(params.feeType).net(salePriceCents, params);
   if (netReceivedCents < 0) {
-    throw new ValidationError('O preço de venda é menor que a taxa da loja (valor líquido negativo).', 'NET_RECEIVED_NEGATIVE');
+    throw new ValidationError('O preço de venda é menor que a taxa da loja (valor líquido negativo).', 'NET_RECEIVED_NEGATIVE', { field: 'salePriceCents' });
   }
   return {
     netReceivedCents,
@@ -97,4 +97,55 @@ function computeSale({ salePriceCents, store }) {
   };
 }
 
-module.exports = { findMinSalePriceCents, minPriceForStore, minPricesForItem, computeSale };
+const EMPTY_SNAPSHOT = Object.freeze({
+  saleFeeTypeApplied: null,
+  saleFeeRateApplied: null,
+  saleFeeRoundingApplied: null,
+  saleMinFeeCentsApplied: null,
+  saleFixedFeeCentsApplied: null,
+});
+
+// Líquido da venda (D122). Informado (`netReceivedCents`) prevalece sobre o cálculo: 0 < líquido <= preço, em
+// qualquer tipo de taxa. Snapshot = regras da loja se configuradas; senão todo nulo.
+// Sem líquido informado: cálculo normal (loja sem taxa -> FEES_NOT_CONFIGURED no campo do líquido).
+function resolveSaleNet({ salePriceCents, store, netReceivedCents = null }) {
+  if (!Number.isSafeInteger(salePriceCents) || salePriceCents <= 0) {
+    throw new ValidationError('Preço de venda deve ser um inteiro de centavos maior que 0.', 'INVALID_AMOUNT', { field: 'salePriceCents' });
+  }
+  const params = saleFeeParamsFromStore(store);
+  const informed = netReceivedCents !== null && netReceivedCents !== undefined;
+  if (!informed) {
+    if (!params) {
+      throw new ValidationError(
+        'Taxas não configuradas para esta loja: informe o líquido recebido.',
+        'FEES_NOT_CONFIGURED',
+        { field: 'netReceivedCents' }
+      );
+    }
+    return { ...computeSale({ salePriceCents, store }), netReceivedManual: false };
+  }
+  if (!Number.isSafeInteger(netReceivedCents) || netReceivedCents <= 0) {
+    throw new ValidationError('O líquido recebido deve ser maior que zero.', 'INVALID_AMOUNT', { field: 'netReceivedCents' });
+  }
+  if (netReceivedCents > salePriceCents) {
+    throw new ValidationError(
+      'O líquido recebido não pode ser maior que o preço de venda.',
+      'NET_RECEIVED_ABOVE_PRICE',
+      { field: 'netReceivedCents' }
+    );
+  }
+  let snapshot = { ...EMPTY_SNAPSHOT };
+  if (params) {
+    assertSaleFeeParams(params);
+    snapshot = {
+      saleFeeTypeApplied: params.feeType,
+      saleFeeRateApplied: params.rate,
+      saleFeeRoundingApplied: params.rounding,
+      saleMinFeeCentsApplied: params.minFeeCents,
+      saleFixedFeeCentsApplied: params.fixedFeeCents,
+    };
+  }
+  return { netReceivedCents, feeCents: salePriceCents - netReceivedCents, snapshot, netReceivedManual: true };
+}
+
+module.exports = { findMinSalePriceCents, minPriceForStore, minPricesForItem, computeSale, resolveSaleNet };

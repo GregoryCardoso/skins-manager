@@ -78,7 +78,9 @@ const LIKE_ESCAPE = '\\';
 const escapeLike = (text) => text.replace(/[\\%_]/g, (c) => LIKE_ESCAPE + c);
 
 // Cada token precisa aparecer em search_text (LIKE com ESCAPE, `%`, `_` e `\` literais).
-function search({ tokens, category, limit }) {
+// `dedupe` (D115): colapsa entradas funcionalmente idênticas (categoria, nome, fase, faixa de float, StatTrak/Souvenir);
+// o representante tem imagem primeiro e depois o menor id. `total` conta grupos.
+function search({ tokens, category, limit, dedupe = false }) {
   const conditions = tokens.map(() => `search_text LIKE ? ESCAPE '${LIKE_ESCAPE}'`);
   const params = tokens.map((t) => `%${escapeLike(t)}%`);
   if (category !== undefined) {
@@ -87,16 +89,28 @@ function search({ tokens, category, limit }) {
   }
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
   const db = getDb();
-  const total = db.prepare(`SELECT COUNT(*) AS n FROM catalog_items ${where}`).get(...params).n;
   const first = tokens.length ? `${escapeLike(tokens[0])}%` : '%';
+  const order = `ORDER BY (CASE WHEN name_key LIKE ? ESCAPE '${LIKE_ESCAPE}' THEN 0 ELSE 1 END), length(name), name, id`;
+
+  if (!dedupe) {
+    const total = db.prepare(`SELECT COUNT(*) AS n FROM catalog_items ${where}`).get(...params).n;
+    const rows = db.prepare(`SELECT * FROM catalog_items ${where} ${order} LIMIT ?`).all(...params, first, limit).map(mapItem);
+    return { rows, total };
+  }
+
+  const ranked = `
+    WITH ranked AS (
+      SELECT *, ROW_NUMBER() OVER (
+        PARTITION BY category, name_key, COALESCE(phase, ''), min_float, max_float, has_stattrak, has_souvenir
+        ORDER BY (image_url IS NULL), id
+      ) AS rn
+      FROM catalog_items ${where}
+    )`;
+  const total = db.prepare(`${ranked} SELECT COUNT(*) AS n FROM ranked WHERE rn = 1`).get(...params).n;
   const rows = db
-    .prepare(
-      `SELECT * FROM catalog_items ${where}
-       ORDER BY (CASE WHEN name_key LIKE ? ESCAPE '${LIKE_ESCAPE}' THEN 0 ELSE 1 END), length(name), name, id
-       LIMIT ?`
-    )
+    .prepare(`${ranked} SELECT * FROM ranked WHERE rn = 1 ${order} LIMIT ?`)
     .all(...params, first, limit)
-    .map(mapItem);
+    .map(({ rn, ...row }) => mapItem(row));
   return { rows, total };
 }
 

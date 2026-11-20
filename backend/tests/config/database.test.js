@@ -41,9 +41,9 @@ describe('config/database', () => {
     expect(() => closeDb()).not.toThrow();
   });
 
-  test('user_version = 2 e foreign_keys = 1', () => {
+  test('user_version = 3 e foreign_keys = 1', () => {
     const db = getDb();
-    expect(db.pragma('user_version', { simple: true })).toBe(2);
+    expect(db.pragma('user_version', { simple: true })).toBe(3);
     expect(db.pragma('foreign_keys', { simple: true })).toBe(1);
   });
 
@@ -76,7 +76,7 @@ describe('config/database', () => {
 
     const db2 = openDatabase(dbPath);
     try {
-      expect(db2.pragma('user_version', { simple: true })).toBe(2);
+      expect(db2.pragma('user_version', { simple: true })).toBe(3);
       expect(db2.pragma('foreign_keys', { simple: true })).toBe(1);
       const names = db2.prepare('SELECT name FROM stores ORDER BY id').all().map((r) => r.name);
       expect(names).toEqual(['CSFloat', 'Steam', 'CSMoney', 'Persistida']);

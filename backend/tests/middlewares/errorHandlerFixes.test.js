@@ -201,3 +201,17 @@ describe('errorHandler - AppError/ValidationError e 4xx genéricos', () => {
     expect(errorSpy).toHaveBeenCalled();
   });
 });
+
+describe('field e params (D113)', () => {
+  const { AppError, ValidationError } = require('../../src/errors/AppError');
+  const run = (err) => {
+    const res = { headersSent: false, status: jest.fn().mockReturnThis(), json: jest.fn() };
+    require('../../src/middlewares/errorHandler').errorHandler(err, {}, res, jest.fn());
+    return res.json.mock.calls[0][0];
+  };
+
+  test('inclui field e params só quando presentes', () => {
+    expect(run(new ValidationError('m', 'X', { field: 'f', params: { a: 1 } })).error).toEqual({ code: 'X', message: 'm', field: 'f', params: { a: 1 } });
+    expect(run(new AppError(400, 'X', 'm')).error).toEqual({ code: 'X', message: 'm' });
+  });
+});

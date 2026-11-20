@@ -24,19 +24,19 @@ function parseIsoString(value) {
 }
 
 // Aceita Date ou string ISO 8601 com Z/offset; qualquer outra coisa -> INVALID_DATE.
-function parseDate(value, label = 'Data') {
+function parseDate(value, label = 'Data', extra) {
   let date = null;
   if (value instanceof Date) date = value;
   else if (typeof value === 'string') date = parseIsoString(value);
   if (!date || Number.isNaN(date.getTime())) {
-    throw new ValidationError(`${label} inválida.`, 'INVALID_DATE');
+    throw new ValidationError(`${label} inválida.`, 'INVALID_DATE', extra);
   }
   return date;
 }
 
 // ISO 8601 em UTC (D7).
-function toIso(value, label = 'Data') {
-  return parseDate(value, label).toISOString();
+function toIso(value, label = 'Data', extra) {
+  return parseDate(value, label, extra).toISOString();
 }
 
 const SP_DATE_TIME = new Intl.DateTimeFormat('pt-BR', {

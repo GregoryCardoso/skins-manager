@@ -17,3 +17,14 @@
   border-radius: 6px; padding: 0.35rem 0.8rem; cursor: pointer;
 }
 .retry:hover { border-color: var(--accent); }
+
+.newItem {
+  font: inherit; color: var(--accent-text); background: var(--accent); border: 1px solid var(--accent);
+  border-radius: 6px; padding: 0.35rem 0.9rem; cursor: pointer; margin-left: auto;
+}
+.newItem:hover { filter: brightness(1.1); }
+.notice {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+  color: var(--text); background: var(--surface); border: 1px solid var(--success); border-radius: 8px;
+  padding: 0.5rem 1rem; margin-bottom: 1rem;
+}

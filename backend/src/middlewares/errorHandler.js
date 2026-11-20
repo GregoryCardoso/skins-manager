@@ -18,10 +18,10 @@ function errorHandler(err, req, res, next) {
 
   const status = Number.isInteger(err && err.status) && err.status >= 400 && err.status < 600 ? err.status : null;
   if (status && err.code && typeof err.code === 'string') {
-    return res.status(status).json({
-      success: false,
-      error: { code: err.code, message: err.message || 'Erro' },
-    });
+    const error = { code: err.code, message: err.message || 'Erro' };
+    if (typeof err.field === 'string') error.field = err.field;
+    if (err.params && typeof err.params === 'object') error.params = err.params;
+    return res.status(status).json({ success: false, error });
   }
 
   if (status && status < 500) {

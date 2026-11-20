@@ -7,6 +7,9 @@ const MAX_AMOUNT_CENTS = 1e10;
 // Limites de texto (após trim).
 const MAX_NAME_LENGTH = 200;
 const MAX_ORIGIN_DETAIL_LENGTH = 200;
+const MAX_INSPECT_LINK_LENGTH = 2048; // T30 (D114)
+const MAX_ASSET_ID_LENGTH = 64;
+const MAX_PHASE_LENGTH = 100;
 const MAX_NOTE_LENGTH = 500; // note de deposits/withdrawals (Etapa 7); sem validador nesta etapa
 
 // Catálogo de itens (D70, D80, D81).
@@ -40,6 +43,9 @@ module.exports = Object.freeze({
   MAX_AMOUNT_CENTS,
   MAX_NAME_LENGTH,
   MAX_ORIGIN_DETAIL_LENGTH,
+  MAX_INSPECT_LINK_LENGTH,
+  MAX_ASSET_ID_LENGTH,
+  MAX_PHASE_LENGTH,
   MAX_NOTE_LENGTH,
   CATALOG_BASE_URL,
   CATALOG_LANGUAGES,

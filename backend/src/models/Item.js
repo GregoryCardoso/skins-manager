@@ -6,11 +6,13 @@ const FIELDS = [
   'acquisitionType', 'originDetail', 'purchaseStoreId', 'purchasePriceCents', 'purchaseCurrency',
   'fxRateAtPurchase', 'acquiredAt', 'tradeUnlockAt', 'status', 'saleStoreId', 'salePriceCents',
   'saleCurrency', 'fxRateAtSale', 'saleFeeTypeApplied', 'saleFeeRateApplied', 'saleFeeRoundingApplied',
-  'saleMinFeeCentsApplied', 'saleFixedFeeCentsApplied', 'netReceivedCents', 'soldAt',
+  'saleMinFeeCentsApplied', 'saleFixedFeeCentsApplied', 'netReceivedCents', 'netReceivedManual', 'soldAt',
 ];
+const BOOLEAN_FIELDS = ['netReceivedManual'];
+const toItem = (row) => mapRow(row, BOOLEAN_FIELDS);
 
 function findById(id) {
-  return mapRow(getDb().prepare('SELECT * FROM items WHERE id = ?').get(id));
+  return toItem(getDb().prepare('SELECT * FROM items WHERE id = ?').get(id));
 }
 
 function create(data) {
@@ -31,7 +33,7 @@ function findAll({ status, category } = {}) {
     params.push(category);
   }
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
-  return getDb().prepare(`SELECT * FROM items ${where} ORDER BY id ASC`).all(...params).map((r) => mapRow(r));
+  return getDb().prepare(`SELECT * FROM items ${where} ORDER BY id ASC`).all(...params).map(toItem);
 }
 
 // Itens sem vínculo com o catálogo nas categorias que o exigem (D82).
@@ -41,7 +43,7 @@ function findLegacy(catalogCategories) {
   return getDb()
     .prepare(`SELECT * FROM items WHERE catalog_id IS NULL AND category IN (${marks}) ORDER BY id ASC`)
     .all(...catalogCategories)
-    .map((r) => mapRow(r));
+    .map(toItem);
 }
 
 function update(id, partial = {}) {

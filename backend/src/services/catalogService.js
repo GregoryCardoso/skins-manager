@@ -77,6 +77,7 @@ function searchCatalog({ q, category, limit } = {}) {
     tokens: normalized.split(' '),
     category: isNil(category) ? undefined : category,
     limit: finalLimit,
+    dedupe: true, // D115
   });
   return { items: rows.map(toCatalogView), meta: { catalogUpdatedAt: Setting.get().catalogUpdatedAt, total } };
 }

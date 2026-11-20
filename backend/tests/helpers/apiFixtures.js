@@ -41,9 +41,19 @@ async function createItemViaApi(app, body = purchaseBody()) {
   return res.body.data;
 }
 
-function expectError(res, status, code) {
+// `extra` opcional: { field, params } (D113). `undefined` = não confere; `null` = deve estar ausente; outro valor = igual.
+// Nunca aceita chaves além de code, message, field e params.
+function expectError(res, status, code, extra = {}) {
   expect(res.status).toBe(status);
-  expect(res.body).toEqual({ success: false, error: { code, message: expect.any(String) } });
+  expect(res.body.success).toBe(false);
+  const error = res.body.error;
+  expect(Object.keys(error).every((k) => ['code', 'message', 'field', 'params'].includes(k))).toBe(true);
+  expect(error.code).toBe(code);
+  expect(typeof error.message).toBe('string');
+  for (const key of ['field', 'params']) {
+    if (extra[key] === null) expect(error).not.toHaveProperty(key);
+    else if (extra[key] !== undefined) expect(error[key]).toEqual(extra[key]);
+  }
   expect(res.body.error.message.length).toBeGreaterThan(0);
 }
 

@@ -6,9 +6,13 @@ export type ThemeChoice = 'LIGHT' | 'DARK';
 export type Language = 'pt-BR' | 'en';
 export type ResolvedTheme = 'light' | 'dark';
 
+export type ErrorParams = Record<string, string | number>;
+
 export interface ApiErrorBody {
   code: string;
   message: string;
+  field?: string;
+  params?: ErrorParams;
 }
 export type ApiEnvelope<T> = { success: true; data: T } | { success: false; error: ApiErrorBody };
 
@@ -128,6 +132,7 @@ export interface ItemView {
   saleCurrency: Currency | null;
   fxRateAtSale: number | null;
   netReceivedCents: number | null;
+  netReceivedManual: boolean;
   soldAt: string | null;
   tradeLock: TradeLock;
   aging: Aging;
@@ -154,11 +159,86 @@ export interface ItemListQuery {
   order: 'asc' | 'desc';
 }
 
+export type SaleFeeType = 'DEDUCTED' | 'ADDED';
+
 export interface Store {
   id: number;
   name: string;
   currency: Currency;
   isActive: boolean;
   isPrimary: boolean;
+  saleFeeType: SaleFeeType | null;
   saleFeesConfigured: boolean;
+}
+
+// --- Catálogo (busca do formulário, D115) ---
+
+export interface CatalogItem {
+  id: string;
+  source: CatalogSource;
+  category: Category;
+  name: string;
+  namePtBr: string | null;
+  imageUrl: string | null;
+  minFloat: number | null;
+  maxFloat: number | null;
+  hasStattrak: boolean;
+  hasSouvenir: boolean;
+  phase: string | null;
+  rarity: string | null;
+}
+
+export interface CatalogSearchResult {
+  items: CatalogItem[];
+  meta: { catalogUpdatedAt: string | null; total: number };
+}
+
+// --- Corpos de cadastro, edição e venda (D116, D117, D122) ---
+
+// Só os campos presentes são enviados (o backend distingue ausente de null).
+export interface ItemCreateBody {
+  catalogId?: string;
+  name?: string;
+  category?: Category;
+  acquisitionType: AcquisitionType;
+  variant?: Variant | null;
+  floatValue?: number | null;
+  exterior?: Exterior | null;
+  paintSeed?: number | null;
+  phase?: string | null;
+  inspectLink?: string | null;
+  assetId?: string | null;
+  originDetail?: string | null;
+  purchaseStoreId?: number | null;
+  purchasePriceCents?: number;
+  fxRateAtPurchase?: number | null;
+  acquiredAt?: string;
+  tradeUnlockAt?: string | null;
+}
+export type ItemPatchBody = Partial<ItemCreateBody>;
+
+export interface SellBody {
+  saleStoreId: number;
+  salePriceCents: number;
+  soldAt: string;
+  fxRateAtSale?: number;
+  netReceivedCents?: number;
+}
+
+export interface SellResult {
+  item: ItemView;
+  sale: {
+    netReceivedCents: number;
+    feeCents: number;
+    saleProfitUsdCents: number | null;
+    netReceivedManual: boolean;
+  };
+}
+
+export interface SaleQuote {
+  storeId: number;
+  currency: Currency;
+  salePriceCents: number;
+  feeCents: number;
+  netReceivedCents: number;
 }

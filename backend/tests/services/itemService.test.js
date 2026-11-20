@@ -71,11 +71,11 @@ describe('buildSaleRecord', () => {
 
   test('CSFloat 125 -> 122 e snapshot; sem campo warnings', () => {
     const { record, sale } = buildSaleRecord(item, input(), ctx());
-    expect(sale).toEqual({ netReceivedCents: 122, feeCents: 3 });
+    expect(sale).toEqual({ netReceivedCents: 122, feeCents: 3, netReceivedManual: false });
     expect(record).toEqual({
       status: 'VENDIDO', saleStoreId: 1, salePriceCents: 125, saleCurrency: 'USD', fxRateAtSale: null,
       saleFeeTypeApplied: 'DEDUCTED', saleFeeRateApplied: 0.02, saleFeeRoundingApplied: 'CEIL',
-      saleMinFeeCentsApplied: null, saleFixedFeeCentsApplied: 0, netReceivedCents: 122,
+      saleMinFeeCentsApplied: null, saleFixedFeeCentsApplied: 0, netReceivedCents: 122, netReceivedManual: false,
       soldAt: '2026-11-18T12:00:00.000Z',
     });
   });
@@ -121,15 +121,17 @@ describe('buildSaleRecord', () => {
 });
 
 describe('buildUnsellPatch', () => {
-  test('status EM_ESTOQUE e os 11 campos de venda null', () => {
+  test('status EM_ESTOQUE, os 11 campos de venda null e netReceivedManual false (D122)', () => {
     const patch = buildUnsellPatch();
     const { status, ...rest } = patch;
     expect(status).toBe('EM_ESTOQUE');
     expect(Object.keys(rest).sort()).toEqual([
-      'fxRateAtSale', 'netReceivedCents', 'saleCurrency', 'saleFeeRateApplied', 'saleFeeRoundingApplied',
+      'fxRateAtSale', 'netReceivedCents', 'netReceivedManual', 'saleCurrency', 'saleFeeRateApplied', 'saleFeeRoundingApplied',
       'saleFeeTypeApplied', 'saleFixedFeeCentsApplied', 'saleMinFeeCentsApplied', 'salePriceCents', 'saleStoreId', 'soldAt',
     ]);
-    expect(Object.values(rest).every((v) => v === null)).toBe(true);
+    expect(patch.netReceivedManual).toBe(false);
+    const { netReceivedManual, ...nulls } = rest;
+    expect(Object.values(nulls).every((v) => v === null)).toBe(true);
   });
 });
 

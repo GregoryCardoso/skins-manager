@@ -84,7 +84,8 @@ describe('v1 com dados -> v2', () => {
       expect(after).toHaveLength(before.items.length);
       after.forEach((row, i) => {
         const old = before.items[i];
-        const { catalog_id: catalogId, ...rest } = row;
+        const { catalog_id: catalogId, net_received_manual: manual, ...rest } = row;
+        expect(manual).toBe(0);
         expect(catalogId).toBeNull();
         if (old.acquisition_type === 'GANHEI') {
           // Só custo, moeda e cotação mudam; o resto (inclusive venda e updated_at) fica igual.
@@ -158,7 +159,7 @@ describe('falha na própria v2', () => {
     expect(() => openDatabase(dbPath, { migrations: [v001, failingV2], now: new Date('2026-11-20T09:00:00.000Z') })).toThrow();
     const db = openDatabase(dbPath, { now: new Date('2026-11-20T09:05:00.000Z') });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(2);
+      expect(db.pragma('user_version', { simple: true })).toBe(3);
       expect(db.prepare("SELECT purchase_price_cents AS c FROM items WHERE name = 'Ganhei BRL com cotação'").get().c).toBe(0);
       expect(db.prepare('SELECT COUNT(*) AS n FROM items').get().n).toBe(5);
     } finally {
@@ -180,7 +181,7 @@ describe('idempotência', () => {
     for (let i = 0; i < 3; i += 1) {
       const db = openDatabase(dbPath, { now: new Date(`2026-11-2${i + 1}T08:00:00.000Z`) });
       snapshots.push(JSON.stringify([dump(db, 'items'), dump(db, 'stores'), dump(db, 'settings')]));
-      expect(db.pragma('user_version', { simple: true })).toBe(2);
+      expect(db.pragma('user_version', { simple: true })).toBe(3);
       db.close();
     }
     expect(new Set(snapshots).size).toBe(1);
@@ -190,8 +191,8 @@ describe('idempotência', () => {
   test('runMigrations repetido em memória: segunda chamada aplica nada', () => {
     const db = openDatabase(':memory:', { migrations: [v001] });
     try {
-      expect(runMigrations(db, MIGRATIONS)).toMatchObject({ from: 1, to: 2, applied: [2], backupPath: null });
-      expect(runMigrations(db, MIGRATIONS)).toMatchObject({ from: 2, to: 2, applied: [], backupPath: null });
+      expect(runMigrations(db, MIGRATIONS)).toMatchObject({ from: 1, to: 3, applied: [2, 3], backupPath: null });
+      expect(runMigrations(db, MIGRATIONS)).toMatchObject({ from: 3, to: 3, applied: [], backupPath: null });
     } finally {
       db.close();
     }
