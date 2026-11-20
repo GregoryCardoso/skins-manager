@@ -1,0 +1,9 @@
+.header {
+  display: flex; align-items: center; gap: 1.5rem; padding: 0.75rem 1.5rem; flex-wrap: wrap;
+  background: var(--surface); border-bottom: 1px solid var(--border);
+}
+.brand { font-weight: 700; font-size: 1.1rem; }
+.nav { display: flex; gap: 0.25rem; flex: 1; }
+.link, .active { padding: 0.35rem 0.8rem; border-radius: 6px; text-decoration: none; color: var(--text-muted); }
+.link:hover { color: var(--text); background: var(--surface-alt); }
+.active { color: var(--accent-text); background: var(--accent); font-weight: 600; }

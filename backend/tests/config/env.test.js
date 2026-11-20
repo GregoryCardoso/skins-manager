@@ -33,7 +33,7 @@ describe('config/env', () => {
     const env = loadEnvWith({});
     expect(env.port).toBe(3001);
     expect(env.slowItemDays).toBe(21);
-    expect(env.corsOrigin).toBe('http://localhost:3000');
+    expect(env.corsOrigin).toEqual(['http://localhost:3000', 'http://127.0.0.1:3000']);
     expect(path.normalize(env.dbPath)).toBe(path.join(__dirname, '..', '..', 'data', 'inventory.sqlite'));
   });
 
@@ -41,13 +41,18 @@ describe('config/env', () => {
     const env = loadEnvWith({ PORT: '', DB_PATH: '  ', CORS_ORIGIN: '', SLOW_ITEM_DAYS: '' });
     expect(env.port).toBe(3001);
     expect(env.slowItemDays).toBe(21);
-    expect(env.corsOrigin).toBe('http://localhost:3000');
+    expect(env.corsOrigin).toEqual(['http://localhost:3000', 'http://127.0.0.1:3000']);
     expect(env.dbPath).toMatch(/inventory\.sqlite$/);
   });
 
   test('lê valores válidos das variáveis', () => {
     const env = loadEnvWith({ PORT: '4000', DB_PATH: ':memory:', CORS_ORIGIN: 'http://x:1', SLOW_ITEM_DAYS: '30' });
-    expect(env).toEqual({ port: 4000, dbPath: ':memory:', corsOrigin: 'http://x:1', slowItemDays: 30 });
+    expect(env).toEqual({ port: 4000, dbPath: ':memory:', corsOrigin: ['http://x:1'], slowItemDays: 30 });
+  });
+
+  test('CORS_ORIGIN aceita lista separada por vírgula (com espaços e barra final)', () => {
+    const env = loadEnvWith({ CORS_ORIGIN: ' http://a:1/ , http://b:2,, ' });
+    expect(env.corsOrigin).toEqual(['http://a:1', 'http://b:2']);
   });
 
   test.each(['0', '-1', '1.5', 'abc'])('SLOW_ITEM_DAYS=%s lança erro', (value) => {

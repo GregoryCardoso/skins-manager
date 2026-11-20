@@ -7,7 +7,10 @@
     "start": "npm --prefix backend run start",
     "dev:backend": "npm --prefix backend run dev",
     "test": "npm --prefix backend test",
-    "install:all": "npm install && npm --prefix backend install",
-    "catalog:snapshot": "npm --prefix backend run catalog:snapshot"
+    "install:all": "npm install && npm --prefix backend install && npm --prefix frontend install",
+    "catalog:snapshot": "npm --prefix backend run catalog:snapshot",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "build:frontend": "npm --prefix frontend run build",
+    "test:frontend": "npm --prefix frontend test"
   }
 }

@@ -30,6 +30,17 @@ function nonEmpty(value, fallback) {
   return value !== undefined && value.trim() !== '' ? value.trim() : fallback;
 }
 
+const DEFAULT_CORS_ORIGINS = ['http://localhost:3000', 'http://127.0.0.1:3000'];
+
+// CORS_ORIGIN aceita uma lista separada por vírgula; vazio/ausente usa as duas origens locais do frontend (D100).
+function parseCorsOrigins(raw) {
+  const list = nonEmpty(raw, '')
+    .split(',')
+    .map((origin) => origin.trim().replace(/\/+$/, ''))
+    .filter((origin) => origin !== '');
+  return list.length > 0 ? list : [...DEFAULT_CORS_ORIGINS];
+}
+
 function resolveDbPath(value) {
   if (value === ':memory:') return value;
   return path.resolve(path.join(__dirname, '..', '..'), value);
@@ -39,7 +50,7 @@ function loadEnv(source = process.env) {
   return Object.freeze({
     port: parsePort(source.PORT, 3001),
     dbPath: resolveDbPath(nonEmpty(source.DB_PATH, DEFAULT_DB_PATH)),
-    corsOrigin: nonEmpty(source.CORS_ORIGIN, 'http://localhost:3000'),
+    corsOrigin: Object.freeze(parseCorsOrigins(source.CORS_ORIGIN)),
     slowItemDays: parseSlowItemDays(source.SLOW_ITEM_DAYS),
   });
 }

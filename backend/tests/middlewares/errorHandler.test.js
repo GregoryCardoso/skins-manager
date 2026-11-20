@@ -46,9 +46,85 @@ describe('errorHandler (app real)', () => {
     expectErrorShape(res.body, 'INVALID_JSON');
   });
 
-  test('CORS libera a origem configurada', async () => {
-    const res = await request(app).get('/api/health').set('Origin', 'http://localhost:3000');
-    expect(res.headers['access-control-allow-origin']).toBe('http://localhost:3000');
+  test.each(['http://localhost:3000', 'http://127.0.0.1:3000'])('CORS libera a origem %s', async (origin) => {
+    const res = await request(app).get('/api/health').set('Origin', origin);
+    expect(res.headers['access-control-allow-origin']).toBe(origin);
+  });
+
+  test('CORS não libera origem não permitida', async () => {
+    const res = await request(app).get('/api/health').set('Origin', 'http://evil.example:3000');
+    expect(res.status).toBe(200);
+    expect(res.headers['access-control-allow-origin']).toBeUndefined();
+  });
+
+  test('CORS responde ao preflight PATCH com JSON para 127.0.0.1', async () => {
+    const res = await request(app).options('/api/settings')
+      .set('Origin', 'http://127.0.0.1:3000')
+      .set('Access-Control-Request-Method', 'PATCH')
+      .set('Access-Control-Request-Headers', 'content-type');
+    expect(res.headers['access-control-allow-origin']).toBe('http://127.0.0.1:3000');
+    expect(res.headers['access-control-allow-methods']).toMatch(/PATCH/);
+  });
+
+  test.each(['http://localhost:3000', 'http://127.0.0.1:3000'])('preflight PATCH com Content-Type para %s', async (origin) => {
+    const res = await request(app).options('/api/settings')
+      .set('Origin', origin)
+      .set('Access-Control-Request-Method', 'PATCH')
+      .set('Access-Control-Request-Headers', 'content-type');
+    expect(res.status).toBe(204);
+    expect(res.headers['access-control-allow-origin']).toBe(origin);
+    expect(res.headers['access-control-allow-methods']).toMatch(/PATCH/);
+    expect(res.headers['access-control-allow-headers']).toMatch(/content-type/i);
+  });
+
+  test('preflight de origem não permitida não recebe Allow-Origin', async () => {
+    const res = await request(app).options('/api/settings')
+      .set('Origin', 'http://evil.example:3000')
+      .set('Access-Control-Request-Method', 'PATCH');
+    expect(res.headers['access-control-allow-origin']).toBeUndefined();
+  });
+
+  test('sem cabeçalho Origin não há Allow-Origin e a resposta é normal', async () => {
+    const res = await request(app).get('/api/health');
+    expect(res.status).toBe(200);
+    expect(res.headers['access-control-allow-origin']).toBeUndefined();
+  });
+
+  test('porta/esquema diferentes não são aceitos', async () => {
+    for (const origin of ['http://localhost:3001', 'https://localhost:3000', 'http://localhost']) {
+      const res = await request(app).get('/api/health').set('Origin', origin);
+      expect(res.headers['access-control-allow-origin']).toBeUndefined();
+    }
+  });
+});
+
+describe('CORS com CORS_ORIGIN em lista (app real recarregado)', () => {
+  function loadAppWith(corsOrigin) {
+    const previous = process.env.CORS_ORIGIN;
+    process.env.CORS_ORIGIN = corsOrigin;
+    let loaded;
+    jest.isolateModules(() => {
+      loaded = require('../../src/app');
+    });
+    process.env.CORS_ORIGIN = previous;
+    return loaded;
+  }
+
+  test('lista com espaços, barra final e itens vazios', async () => {
+    const a = loadAppWith(' http://a.test:1/ , http://b.test:2,, ');
+    for (const origin of ['http://a.test:1', 'http://b.test:2']) {
+      const res = await request(a).get('/api/health').set('Origin', origin);
+      expect(res.headers['access-control-allow-origin']).toBe(origin);
+    }
+    // com lista explícita, as origens padrão deixam de valer
+    const res = await request(a).get('/api/health').set('Origin', 'http://localhost:3000');
+    expect(res.headers['access-control-allow-origin']).toBeUndefined();
+  });
+
+  test('só vírgulas/espaços cai no padrão', async () => {
+    const a = loadAppWith(' , ,');
+    const res = await request(a).get('/api/health').set('Origin', 'http://127.0.0.1:3000');
+    expect(res.headers['access-control-allow-origin']).toBe('http://127.0.0.1:3000');
   });
 });
 
