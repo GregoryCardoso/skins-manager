@@ -94,8 +94,14 @@ describe('T12 / T13 / T14', () => {
     for (const v of [0, -1, NaN, Infinity, '5', null, undefined]) expect(isValidFxRate(v)).toBe(false);
   });
 
-  test('warnings.js exporta só os textos (sem aviso de trade lock)', () => {
+  test('warnings.js exporta textos e pares texto/código (sem aviso de trade lock) (D83)', () => {
     expect(warnings).toEqual({
+      WARNINGS: {
+        FEES_NOT_CONFIGURED: { code: 'FEES_NOT_CONFIGURED', text: 'taxas não configuradas' },
+        FX_NOT_CONFIGURED: { code: 'FX_NOT_CONFIGURED', text: 'cotação não configurada' },
+        BELOW_FEE: { code: 'BELOW_FEE', text: 'valor menor que a taxa' },
+        PRICE_OVERFLOW: { code: 'PRICE_OVERFLOW', text: 'valor alto demais para calcular o preço mínimo' },
+      },
       WARNING_FEES: 'taxas não configuradas',
       WARNING_FX: 'cotação não configurada',
       WARNING_BELOW_FEE: 'valor menor que a taxa',

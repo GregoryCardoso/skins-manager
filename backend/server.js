@@ -1,8 +1,11 @@
 const env = require('./src/config/env');
 const { getDb, closeDb } = require('./src/config/database');
 const app = require('./src/app');
+const { syncBundledCatalog } = require('./src/services/catalogService');
 
 getDb();
+// Importa o catálogo embutido (offline) se for mais novo que o gravado; nunca derruba o servidor (D81).
+syncBundledCatalog();
 
 const server = app.listen(env.port, (err) => {
   // Express 5 passa o erro do listen para este callback; o handler 'error' abaixo cuida dele.

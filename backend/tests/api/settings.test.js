@@ -1,6 +1,7 @@
 const request = require('supertest');
 const { closeDb } = require('../../src/config/database');
 const { freshDb } = require('../helpers/fixtures');
+const { importCatalogFixture } = require('../helpers/catalog');
 const { makeApp, storeId, purchaseBody, createItemViaApi, expectError } = require('../helpers/apiFixtures');
 
 let app;
@@ -14,7 +15,9 @@ describe('/api/settings', () => {
   test('GET inicial sem id (T1)', async () => {
     const res = await request(app).get('/api/settings');
     expect(res.status).toBe(200);
-    expect(res.body.data).toEqual({ usdBrlRate: null, usdBrlRateUpdatedAt: null, updatedAt: expect.any(String) });
+    expect(res.body.data).toEqual({
+      usdBrlRate: null, usdBrlRateUpdatedAt: null, catalogUpdatedAt: null, theme: 'SYSTEM', language: 'pt-BR', updatedAt: expect.any(String),
+    });
     expect(res.body.data).not.toHaveProperty('id');
   });
 
@@ -24,6 +27,7 @@ describe('/api/settings', () => {
     expect(res.body.data).toEqual({
       usdBrlRate: 5.25,
       usdBrlRateUpdatedAt: '2026-11-19T15:00:00.000Z',
+      catalogUpdatedAt: null, theme: 'SYSTEM', language: 'pt-BR',
       updatedAt: '2026-11-19T15:00:00.000Z',
     });
     expect((await request(app).get('/api/settings')).body.data.usdBrlRate).toBe(5.25);
@@ -47,7 +51,75 @@ describe('/api/settings', () => {
     expectError(await request(app).put('/api/settings').send({ usdBrlRate: 5 }), 404, 'NOT_FOUND');
   });
 
+  describe('PATCH /api/settings (preferências, D83)', () => {
+    const patch = (body) => request(app).patch('/api/settings').send(body);
+
+    test('GET inicial traz theme SYSTEM, language pt-BR e catalogUpdatedAt nulo', async () => {
+      const res = await request(app).get('/api/settings');
+      expect(res.body.data).toMatchObject({ theme: 'SYSTEM', language: 'pt-BR', catalogUpdatedAt: null });
+    });
+
+    test.each([
+      [{ theme: 'DARK' }, { theme: 'DARK', language: 'pt-BR' }],
+      [{ theme: 'LIGHT' }, { theme: 'LIGHT', language: 'pt-BR' }],
+      [{ language: 'en' }, { theme: 'SYSTEM', language: 'en' }],
+      [{ theme: 'DARK', language: 'en' }, { theme: 'DARK', language: 'en' }],
+    ])('%j grava e responde Settings completo', async (body, expected) => {
+      const res = await patch(body);
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data).toEqual({
+        usdBrlRate: null, usdBrlRateUpdatedAt: null, catalogUpdatedAt: null, ...expected, updatedAt: '2026-11-19T15:00:00.000Z',
+      });
+      expect((await request(app).get('/api/settings')).body.data).toMatchObject(expected);
+    });
+
+    test('um campo não apaga o outro, nem a cotação', async () => {
+      await request(app).put('/api/settings/fx-rate').send({ usdBrlRate: 5.5 });
+      await patch({ theme: 'DARK' });
+      const res = await patch({ language: 'en' });
+      expect(res.body.data).toMatchObject({ theme: 'DARK', language: 'en', usdBrlRate: 5.5 });
+    });
+
+    test('{} e corpos que não são objeto -> INVALID_BODY', async () => {
+      expectError(await patch({}), 400, 'INVALID_BODY');
+      expectError(await patch([{ theme: 'DARK' }]), 400, 'INVALID_BODY');
+      expectError(await patch('texto'), 400, 'INVALID_BODY');
+    });
+
+    test('outras chaves (usdBrlRate, catalogUpdatedAt, foo) -> UNKNOWN_FIELD e nada muda', async () => {
+      expectError(await patch({ usdBrlRate: 5 }), 400, 'UNKNOWN_FIELD');
+      expectError(await patch({ catalogUpdatedAt: '2026-01-01T00:00:00.000Z' }), 400, 'UNKNOWN_FIELD');
+      expectError(await patch({ theme: 'DARK', foo: 1 }), 400, 'UNKNOWN_FIELD');
+      expect((await request(app).get('/api/settings')).body.data).toMatchObject({ theme: 'SYSTEM', usdBrlRate: null, catalogUpdatedAt: null });
+    });
+
+    test.each([[null], [1], [true], [['DARK']], [{}]])('theme %j -> INVALID_FIELD', async (theme) => {
+      expectError(await patch({ theme }), 400, 'INVALID_FIELD');
+    });
+
+    test('language não string -> INVALID_FIELD', async () => {
+      expectError(await patch({ language: null }), 400, 'INVALID_FIELD');
+      expectError(await patch({ language: 5 }), 400, 'INVALID_FIELD');
+    });
+
+    test('valor fora da lista -> INVALID_THEME / INVALID_LANGUAGE', async () => {
+      expectError(await patch({ theme: 'BLUE' }), 400, 'INVALID_THEME');
+      expectError(await patch({ theme: 'dark' }), 400, 'INVALID_THEME');
+      expectError(await patch({ language: 'es' }), 400, 'INVALID_LANGUAGE');
+      expectError(await patch({ theme: 'DARK', language: 'es' }), 400, 'INVALID_LANGUAGE');
+      expect((await request(app).get('/api/settings')).body.data).toMatchObject({ theme: 'SYSTEM', language: 'pt-BR' });
+    });
+
+    test('PUT /fx-rate continua funcionando e não mexe nas preferências', async () => {
+      await patch({ theme: 'DARK', language: 'en' });
+      const res = await request(app).put('/api/settings/fx-rate').send({ usdBrlRate: 5 });
+      expect(res.body.data).toMatchObject({ usdBrlRate: 5, theme: 'DARK', language: 'en' });
+    });
+  });
+
   describe('integração com itens', () => {
+    beforeEach(() => importCatalogFixture());
     const steamBuy = () => purchaseBody({ purchaseStoreId: storeId('Steam'), purchasePriceCents: 1000 });
 
     test('Steam sem cotação -> FX_RATE_REQUIRED; depois do PUT usa a cotação; nova cotação não muda o item gravado', async () => {
@@ -63,10 +135,10 @@ describe('/api/settings', () => {
     test('minPrices Steam de item USD passa de "cotação não configurada" a valor após o PUT', async () => {
       const item = await createItemViaApi(app, purchaseBody({ purchasePriceCents: 1000 }));
       const steamBefore = item.minPrices.find((m) => m.storeName === 'Steam');
-      expect(steamBefore).toMatchObject({ minPriceCents: null, warning: 'cotação não configurada' });
+      expect(steamBefore).toMatchObject({ minPriceCents: null, warning: 'cotação não configurada', warningCode: 'FX_NOT_CONFIGURED' });
       await request(app).put('/api/settings/fx-rate').send({ usdBrlRate: 5 });
       const after = (await request(app).get(`/api/items/${item.id}`)).body.data;
-      expect(after.minPrices.find((m) => m.storeName === 'Steam')).toMatchObject({ minPriceCents: 5750, warning: null });
+      expect(after.minPrices.find((m) => m.storeName === 'Steam')).toMatchObject({ minPriceCents: 5750, warning: null, warningCode: null });
     });
   });
 });

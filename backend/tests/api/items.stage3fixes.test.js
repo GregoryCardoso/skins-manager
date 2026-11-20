@@ -7,12 +7,12 @@ const { MAX_AMOUNT_CENTS } = require('../../src/config/constants');
 const { errorHandler } = require('../../src/middlewares/errorHandler');
 const { WARNING_PRICE_OVERFLOW } = require('../../src/services/warnings');
 const { freshDb } = require('../helpers/fixtures');
-const { makeApp, storeId, purchaseBody, createItemViaApi, expectError } = require('../helpers/apiFixtures');
+const { CAT, makeCatalogApp, storeId, purchaseBody, createItemViaApi, expectError } = require('../helpers/apiFixtures');
 
 let app;
 beforeEach(() => {
   freshDb();
-  app = makeApp();
+  app = makeCatalogApp();
 });
 afterEach(() => jest.restoreAllMocks());
 afterAll(() => closeDb());
@@ -97,7 +97,7 @@ describe('I2: teto de centavos e leitura resiliente', () => {
     test('PATCH: erro na montagem não altera o item', async () => {
       const item = await createItemViaApi(app);
       const spy = failView();
-      expect((await patch(item.id, { name: 'Outro' })).status).toBe(500);
+      expect((await patch(item.id, { originDetail: 'Outro' })).status).toBe(500);
       spy.mockRestore();
       expect((await request(app).get(`/api/items/${item.id}`)).body.data.name).toBe('AK-47 | Redline');
     });
@@ -119,7 +119,7 @@ describe('I2: teto de centavos e leitura resiliente', () => {
 
 describe('limites de texto (FIELD_TOO_LONG)', () => {
   test('name e originDetail: 200 passa, 201 recusa (após trim)', async () => {
-    const ok = await request(app).post('/api/items').send(purchaseBody({ name: `  ${'a'.repeat(200)}  `, originDetail: 'b'.repeat(200) }));
+    const ok = await request(app).post('/api/items').send(purchaseBody({ catalogId: undefined, category: 'OUTRO', name: `  ${'a'.repeat(200)}  `, originDetail: 'b'.repeat(200) }));
     expect(ok.status).toBe(201);
     const longName = await request(app).post('/api/items').send(purchaseBody({ name: 'a'.repeat(201) }));
     expectError(longName, 400, 'FIELD_TOO_LONG');

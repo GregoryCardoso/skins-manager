@@ -3,12 +3,12 @@ const { closeDb } = require('../../src/config/database');
 const Store = require('../../src/models/Store');
 const Setting = require('../../src/models/Setting');
 const { freshDb } = require('../helpers/fixtures');
-const { makeApp, storeId, purchaseBody, createItemViaApi, expectError } = require('../helpers/apiFixtures');
+const { CAT, makeCatalogApp, storeId, purchaseBody, createItemViaApi, expectError } = require('../helpers/apiFixtures');
 
 let app;
 beforeEach(() => {
   freshDb();
-  app = makeApp();
+  app = makeCatalogApp();
 });
 afterAll(() => closeDb());
 
@@ -16,7 +16,7 @@ const post = (body) => request(app).post('/api/items').send(body);
 
 describe('POST /api/items', () => {
   test('GANHEI sem loja e sem preço -> USD, 0, acquiredAt = now (Q6)', async () => {
-    const res = await post({ name: 'Case', category: 'CAIXA', acquisitionType: 'GANHEI' });
+    const res = await post({ catalogId: CAT.CASE_REVOLVER, acquisitionType: 'GANHEI' });
     expect(res.status).toBe(201);
     expect(res.body.data).toMatchObject({
       purchasePriceCents: 0, purchaseCurrency: 'USD', fxRateAtPurchase: null, purchaseStoreId: null,
@@ -60,7 +60,7 @@ describe('POST /api/items', () => {
     expectError(await post(purchaseBody({ status: 'VENDIDO' })), 400, 'UNKNOWN_FIELD');
     expectError(await post(purchaseBody({ netReceivedCents: 1 })), 400, 'UNKNOWN_FIELD');
     expectError(await post(purchaseBody({ purchaseCurrency: 'BRL' })), 400, 'UNKNOWN_FIELD');
-    expectError(await post(purchaseBody({ name: undefined })), 400, 'REQUIRED_FIELD');
+    expectError(await post(purchaseBody({ catalogId: undefined })), 400, 'REQUIRED_FIELD');
     expectError(await post(purchaseBody({ name: 5 })), 400, 'INVALID_FIELD');
     expectError(await post([1]), 400, 'INVALID_BODY');
   });
@@ -72,10 +72,10 @@ describe('POST /api/items', () => {
 
   test('atributos inválidos', async () => {
     expectError(await post(purchaseBody({ floatValue: 0.1, exterior: 'FN' })), 400, 'EXTERIOR_MISMATCH');
-    expectError(await post(purchaseBody({ category: 'CAIXA', floatValue: 0.1 })), 400, 'ATTRIBUTES_NOT_ALLOWED');
-    expectError(await post(purchaseBody({ category: 'LUVA', variant: 'STATTRAK' })), 400, 'INVALID_VARIANT');
-    expectError(await post(purchaseBody({ category: 'FACA', variant: 'SOUVENIR' })), 400, 'INVALID_VARIANT');
-    expectError(await post(purchaseBody({ category: 'XYZ' })), 400, 'INVALID_CATEGORY');
+    expectError(await post(purchaseBody({ catalogId: CAT.CASE_REVOLVER, floatValue: 0.1 })), 400, 'ATTRIBUTES_NOT_ALLOWED');
+    expectError(await post(purchaseBody({ catalogId: CAT.SPORT_GLOVES_PANDORA, variant: 'STATTRAK' })), 400, 'INVALID_VARIANT');
+    expectError(await post(purchaseBody({ catalogId: CAT.KARAMBIT_FADE, variant: 'SOUVENIR' })), 400, 'INVALID_VARIANT');
+    expectError(await post(purchaseBody({ catalogId: undefined, name: 'X', category: 'XYZ' })), 400, 'INVALID_CATEGORY');
     expectError(await post(purchaseBody({ acquisitionType: 'X' })), 400, 'INVALID_ACQUISITION_TYPE');
   });
 

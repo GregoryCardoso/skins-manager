@@ -4,6 +4,9 @@ const { ValidationError } = require('../errors/AppError');
 
 const CATEGORIES = ['SKIN', 'FACA', 'LUVA', 'CAIXA', 'CAPSULA', 'STICKER', 'PINGENTE', 'PERSONAGEM', 'PASSE_BATALHA', 'OUTRO'];
 const WEAPON_CATEGORIES = ['SKIN', 'FACA', 'LUVA'];
+// D78: categorias que exigem item do catálogo e categorias de nome livre.
+const CATALOG_CATEGORIES = ['SKIN', 'FACA', 'LUVA', 'CAIXA', 'CAPSULA', 'STICKER', 'PINGENTE', 'PERSONAGEM'];
+const FREE_NAME_CATEGORIES = ['OUTRO', 'PASSE_BATALHA'];
 const VARIANTS = ['NORMAL', 'STATTRAK', 'SOUVENIR'];
 const EXTERIORS = ['FN', 'MW', 'FT', 'WW', 'BS'];
 
@@ -34,6 +37,24 @@ function deriveExterior(floatValue) {
   if (floatValue < 0.38) return 'FT';
   if (floatValue < 0.45) return 'WW';
   return 'BS';
+}
+
+// 0.1 -> "0,10"; 0.065 -> "0,065" (até 4 casas, no mínimo 2).
+function formatFloatRange(value) {
+  const text = String(Number(value.toFixed(4)));
+  const [int, dec = ''] = text.split('.');
+  return `${int},${dec.padEnd(2, '0')}`;
+}
+
+// Faixa de float do catálogo (limites inclusivos). Sem faixa completa ou sem float, não checa.
+function assertFloatInCatalogRange(floatValue, { minFloat, maxFloat } = {}) {
+  if (isNil(floatValue) || isNil(minFloat) || isNil(maxFloat)) return;
+  if (floatValue < minFloat || floatValue > maxFloat) {
+    throw new ValidationError(
+      `O float deste item deve estar entre ${formatFloatRange(minFloat)} e ${formatFloatRange(maxFloat)}.`,
+      'FLOAT_OUT_OF_RANGE'
+    );
+  }
 }
 
 function normalizeAttributes({ category, variant, floatValue, exterior, paintSeed, phase } = {}) {
@@ -83,4 +104,7 @@ function normalizeAttributes({ category, variant, floatValue, exterior, paintSee
   };
 }
 
-module.exports = { CATEGORIES, WEAPON_CATEGORIES, VARIANTS, EXTERIORS, isWeaponCategory, assertWeaponAttributesAllowed, deriveExterior, normalizeAttributes };
+module.exports = {
+  CATEGORIES, WEAPON_CATEGORIES, CATALOG_CATEGORIES, FREE_NAME_CATEGORIES, VARIANTS, EXTERIORS, isWeaponCategory,
+  assertFloatInCatalogRange, assertWeaponAttributesAllowed, deriveExterior, normalizeAttributes,
+};

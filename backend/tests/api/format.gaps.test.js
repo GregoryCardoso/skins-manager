@@ -2,18 +2,18 @@
 const request = require('supertest');
 const { closeDb } = require('../../src/config/database');
 const { freshDb } = require('../helpers/fixtures');
-const { makeApp, createItemViaApi, expectError } = require('../helpers/apiFixtures');
+const { CAT, makeCatalogApp, createItemViaApi, expectError } = require('../helpers/apiFixtures');
 
 let app;
 beforeEach(() => {
   freshDb();
-  app = makeApp();
+  app = makeCatalogApp();
 });
 afterAll(() => closeDb());
 
 const ID_ROUTES = [
   ['get', (id) => `/api/items/${id}`, undefined],
-  ['patch', (id) => `/api/items/${id}`, { name: 'x' }],
+  ['patch', (id) => `/api/items/${id}`, { originDetail: 'x' }],
   ['delete', (id) => `/api/items/${id}`, undefined],
   ['post', (id) => `/api/items/${id}/sell`, { saleStoreId: 1, salePriceCents: 125, soldAt: '2026-11-18T12:00:00.000Z' }],
   ['post', (id) => `/api/items/${id}/unsell`, undefined],
@@ -67,7 +67,7 @@ describe('formato de sucesso e cabeçalhos', () => {
       await request(app).get('/api/items/stats?name=x&category=SKIN'),
       await request(app).get('/api/stores'),
       await request(app).get('/api/settings'),
-      await request(app).patch(`/api/items/${item.id}`).send({ name: 'y' }),
+      await request(app).patch(`/api/items/${item.id}`).send({ originDetail: 'y' }),
     ];
     for (const res of responses) {
       expect(res.status).toBe(200);

@@ -2,12 +2,12 @@
 const request = require('supertest');
 const { closeDb } = require('../../src/config/database');
 const { freshDb } = require('../helpers/fixtures');
-const { makeApp, storeId, purchaseBody, createItemViaApi, expectError } = require('../helpers/apiFixtures');
+const { CAT, makeCatalogApp, storeId, purchaseBody, createItemViaApi, expectError } = require('../helpers/apiFixtures');
 
 let app;
 beforeEach(() => {
   freshDb();
-  app = makeApp();
+  app = makeCatalogApp();
 });
 afterAll(() => closeDb());
 
@@ -34,7 +34,7 @@ describe('GET /api/items: padrões e combinações', () => {
 
   test('stagnantOnly exclui item vendido antigo e combina com sortBy=age asc e category', async () => {
     const old1 = await createItemViaApi(app, purchaseBody({ acquiredAt: daysAgo(40) }));
-    const old2 = await createItemViaApi(app, purchaseBody({ acquiredAt: daysAgo(25), category: 'CAIXA' }));
+    const old2 = await createItemViaApi(app, purchaseBody({ acquiredAt: daysAgo(25), catalogId: CAT.CASE_REVOLVER }));
     const soldOld = await createItemViaApi(app, purchaseBody({ acquiredAt: daysAgo(50) }));
     await createItemViaApi(app, purchaseBody({ acquiredAt: daysAgo(21) }));
     expect((await sellAt(soldOld.id, daysAgo(1))).status).toBe(200);
@@ -105,7 +105,7 @@ describe('SLOW_ITEM_DAYS customizado (30) aplicado pela API', () => {
     try {
       const theApp = isolated.app;
       const make = async (n) => {
-        const res = await request(theApp).post('/api/items').send(purchaseBody({ acquiredAt: daysAgo(n), purchaseStoreId: undefined, acquisitionType: 'GANHEI', purchasePriceCents: undefined }));
+        const res = await request(theApp).post('/api/items').send(purchaseBody({ acquiredAt: daysAgo(n), catalogId: undefined, name: 'Livre', category: 'OUTRO', purchaseStoreId: undefined, acquisitionType: 'GANHEI', purchasePriceCents: undefined }));
         expect(res.status).toBe(201);
         return res.body.data;
       };

@@ -2,12 +2,12 @@ const request = require('supertest');
 const { closeDb } = require('../../src/config/database');
 const Setting = require('../../src/models/Setting');
 const { freshDb } = require('../helpers/fixtures');
-const { makeApp, storeId, purchaseBody, createItemViaApi, expectError } = require('../helpers/apiFixtures');
+const { CAT, makeCatalogApp, storeId, purchaseBody, createItemViaApi, expectError } = require('../helpers/apiFixtures');
 
 let app;
 beforeEach(() => {
   freshDb();
-  app = makeApp();
+  app = makeCatalogApp();
 });
 afterAll(() => closeDb());
 
@@ -20,9 +20,11 @@ const sellItem = (id, body = {}) =>
 describe('PATCH /api/items/:id', () => {
   test('parcial altera só o enviado e null limpa opcionais', async () => {
     const item = await createItemViaApi(app, purchaseBody({ originDetail: 'drop' }));
-    const res = await patch(item.id, { name: 'M4A4 | Howl', originDetail: null });
+    const res = await patch(item.id, { acquiredAt: '2026-11-11T12:00:00.000Z', originDetail: null });
     expect(res.status).toBe(200);
-    expect(res.body.data).toMatchObject({ name: 'M4A4 | Howl', originDetail: null, purchasePriceCents: 100 });
+    expect(res.body.data).toMatchObject({
+      name: 'AK-47 | Redline', acquiredAt: '2026-11-11T12:00:00.000Z', originDetail: null, purchasePriceCents: 100,
+    });
   });
 
   test('trocar CSFloat -> Steam recalcula moeda e cotação; Steam -> CSFloat zera a cotação', async () => {
@@ -37,12 +39,78 @@ describe('PATCH /api/items/:id', () => {
     expect(back.body.data).toMatchObject({ purchaseCurrency: 'USD', fxRateAtPurchase: null });
   });
 
-  test('SKIN -> CAIXA sem limpar variant -> ATTRIBUTES_NOT_ALLOWED; limpando funciona', async () => {
-    const item = await createItemViaApi(app, purchaseBody({ floatValue: 0.2 }));
-    expectError(await patch(item.id, { category: 'CAIXA' }), 400, 'ATTRIBUTES_NOT_ALLOWED');
-    const ok = await patch(item.id, { category: 'CAIXA', variant: null, floatValue: null, exterior: null });
+  test('T35 (a): SKIN -> CAIXA pelo catálogo limpa os atributos de arma ausentes do corpo', async () => {
+    const item = await createItemViaApi(app, purchaseBody({ floatValue: 0.2, paintSeed: 5, variant: 'STATTRAK' }));
+    expect(item).toMatchObject({ variant: 'STATTRAK', exterior: 'FT' });
+    const ok = await patch(item.id, { catalogId: CAT.CASE_REVOLVER });
     expect(ok.status).toBe(200);
-    expect(ok.body.data).toMatchObject({ category: 'CAIXA', variant: null, exterior: null });
+    expect(ok.body.data).toMatchObject({
+      catalogId: CAT.CASE_REVOLVER, name: 'Revolver Case', category: 'CAIXA',
+      variant: null, floatValue: null, exterior: null, paintSeed: null, phase: null,
+    });
+  });
+
+  test('T35 (a): atributo de arma não nulo enviado com categoria sem atributos -> ATTRIBUTES_NOT_ALLOWED', async () => {
+    const item = await createItemViaApi(app, purchaseBody({ floatValue: 0.2 }));
+    expectError(await patch(item.id, { catalogId: CAT.CASE_REVOLVER, floatValue: 0.1 }), 400, 'ATTRIBUTES_NOT_ALLOWED');
+    expectError(await patch(item.id, { catalogId: CAT.CASE_REVOLVER, variant: 'NORMAL' }), 400, 'ATTRIBUTES_NOT_ALLOWED');
+    const ok = await patch(item.id, { catalogId: CAT.CASE_REVOLVER, variant: null, floatValue: null });
+    expect(ok.status).toBe(200);
+  });
+
+  test('T35 (a): CAIXA -> SKIN usa variant NORMAL por padrão; troca entre armas não limpa nada', async () => {
+    const box = await createItemViaApi(app, purchaseBody({ catalogId: CAT.CASE_REVOLVER }));
+    const skin = await patch(box.id, { catalogId: CAT.AK_REDLINE });
+    expect(skin.body.data).toMatchObject({ category: 'SKIN', variant: 'NORMAL', floatValue: null });
+    const withFloat = await createItemViaApi(app, purchaseBody({ variant: 'STATTRAK', floatValue: 0.2 }));
+    const other = await patch(withFloat.id, { catalogId: CAT.M4A1S_PRINTSTREAM });
+    expect(other.body.data).toMatchObject({ name: 'M4A1-S | Printstream', variant: 'STATTRAK', floatValue: 0.2, exterior: 'FT' });
+  });
+
+  test('T35 (a): SKIN STATTRAK -> LUVA -> INVALID_VARIANT', async () => {
+    const item = await createItemViaApi(app, purchaseBody({ variant: 'STATTRAK' }));
+    expectError(await patch(item.id, { catalogId: CAT.SPORT_GLOVES_PANDORA }), 400, 'INVALID_VARIANT');
+  });
+
+  test('T33: GANHEI com loja gravada -> COMPRA só com preço; sem loja -> PURCHASE_STORE_REQUIRED; sem preço -> PURCHASE_PRICE_REQUIRED', async () => {
+    const won = await createItemViaApi(app, { catalogId: CAT.AK_REDLINE, acquisitionType: 'GANHEI', purchaseStoreId: storeId('CSFloat') });
+    expectError(await patch(won.id, { acquisitionType: 'COMPRA' }), 400, 'PURCHASE_PRICE_REQUIRED');
+    const res = await patch(won.id, { acquisitionType: 'COMPRA', purchasePriceCents: 100 });
+    expect(res.status).toBe(200);
+    expect(res.body.data).toMatchObject({
+      acquisitionType: 'COMPRA', purchaseStoreId: storeId('CSFloat'), purchasePriceCents: 100, purchaseCurrency: 'USD', fxRateAtPurchase: null,
+    });
+    const noStore = await createItemViaApi(app, { catalogId: CAT.AK_REDLINE, acquisitionType: 'GANHEI' });
+    expectError(await patch(noStore.id, { acquisitionType: 'COMPRA', purchasePriceCents: 100 }), 400, 'PURCHASE_STORE_REQUIRED');
+  });
+
+  test('T33: GANHEI com Steam gravada -> COMPRA em BRL exige cotação (informada ou salva); loja nova no corpo prevalece', async () => {
+    const won = await createItemViaApi(app, { catalogId: CAT.AK_REDLINE, acquisitionType: 'GANHEI', purchaseStoreId: storeId('Steam') });
+    expectError(await patch(won.id, { acquisitionType: 'COMPRA', purchasePriceCents: 500 }), 400, 'FX_RATE_REQUIRED');
+    Setting.update({ usdBrlRate: 5 });
+    const brl = await patch(won.id, { acquisitionType: 'COMPRA', purchasePriceCents: 500 });
+    expect(brl.body.data).toMatchObject({ purchaseStoreId: storeId('Steam'), purchaseCurrency: 'BRL', fxRateAtPurchase: 5 });
+
+    const other = await createItemViaApi(app, { catalogId: CAT.AK_REDLINE, acquisitionType: 'GANHEI', purchaseStoreId: storeId('Steam') });
+    const usd = await patch(other.id, { acquisitionType: 'COMPRA', purchasePriceCents: 100, purchaseStoreId: storeId('CSFloat') });
+    expect(usd.body.data).toMatchObject({ purchaseStoreId: storeId('CSFloat'), purchaseCurrency: 'USD', fxRateAtPurchase: null });
+  });
+
+  test('T35 (b): fxRateAtPurchase null em GANHEI é aceito (POST, PATCH e COMPRA -> GANHEI); valor não nulo é recusado', async () => {
+    const created = await createItemViaApi(app, { catalogId: CAT.AK_REDLINE, acquisitionType: 'GANHEI', fxRateAtPurchase: null });
+    expect(created).toMatchObject({ fxRateAtPurchase: null, purchaseCurrency: 'USD' });
+    expect((await patch(created.id, { fxRateAtPurchase: null })).status).toBe(200);
+    expectError(await patch(created.id, { fxRateAtPurchase: 5 }), 400, 'FX_RATE_NOT_ALLOWED');
+    const bought = await createItemViaApi(app);
+    const toWon = await patch(bought.id, { acquisitionType: 'GANHEI', fxRateAtPurchase: null });
+    expect(toWon.status).toBe(200);
+    expect(toWon.body.data).toMatchObject({ acquisitionType: 'GANHEI', purchasePriceCents: 0, purchaseCurrency: 'USD', fxRateAtPurchase: null });
+    expectError(await request(app).post('/api/items').send({ catalogId: CAT.AK_REDLINE, acquisitionType: 'GANHEI', fxRateAtPurchase: 5 }), 400, 'FX_RATE_NOT_ALLOWED');
+  });
+
+  test('GANHEI: purchasePriceCents null continua GANHEI_COST_NOT_ALLOWED', async () => {
+    const won = await createItemViaApi(app, { catalogId: CAT.AK_REDLINE, acquisitionType: 'GANHEI' });
+    expectError(await patch(won.id, { purchasePriceCents: null }), 400, 'GANHEI_COST_NOT_ALLOWED');
   });
 
   test('COMPRA com purchaseStoreId null; acquiredAt null; corpo vazio', async () => {

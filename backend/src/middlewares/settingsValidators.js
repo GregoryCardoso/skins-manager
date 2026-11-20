@@ -17,4 +17,19 @@ function validateFxRateBody(req, res, next) {
   return next();
 }
 
-module.exports = { validateFxRateBody };
+// PATCH /api/settings (D83): só `theme` e `language`; os valores permitidos são checados no service.
+const PREFERENCE_KEYS = ['theme', 'language'];
+
+function validatePreferencesBody(req, res, next) {
+  const body = req.body;
+  if (body === null || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).length === 0) {
+    return next(new ValidationError('Informe ao menos theme ou language em um objeto JSON.', 'INVALID_BODY'));
+  }
+  const unknown = Object.keys(body).find((k) => !PREFERENCE_KEYS.includes(k));
+  if (unknown) return next(new ValidationError(`Campo desconhecido: ${unknown}`, 'UNKNOWN_FIELD'));
+  const invalid = Object.keys(body).find((k) => typeof body[k] !== 'string');
+  if (invalid) return next(new ValidationError(`O campo ${invalid} deve ser texto.`, 'INVALID_FIELD'));
+  return next();
+}
+
+module.exports = { validateFxRateBody, validatePreferencesBody };

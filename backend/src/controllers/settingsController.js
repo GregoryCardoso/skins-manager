@@ -9,4 +9,9 @@ function updateFxRate(req, res) {
   res.json({ success: true, data });
 }
 
-module.exports = { get, updateFxRate };
+function updatePreferences(req, res) {
+  const data = settingsService.updatePreferences(req.body, { now: req.app.locals.now() });
+  res.json({ success: true, data });
+}
+
+module.exports = { get, updateFxRate, updatePreferences };

@@ -4,12 +4,12 @@ const { closeDb, getDb } = require('../../src/config/database');
 const Setting = require('../../src/models/Setting');
 const { MAX_AMOUNT_CENTS } = require('../../src/config/constants');
 const { freshDb } = require('../helpers/fixtures');
-const { makeApp, storeId, purchaseBody, createItemViaApi, expectError } = require('../helpers/apiFixtures');
+const { CAT, makeCatalogApp, storeId, purchaseBody, createItemViaApi, expectError } = require('../helpers/apiFixtures');
 
 let app;
 beforeEach(() => {
   freshDb();
-  app = makeApp(); // 2026-11-19T15:00:00Z = 12:00 BRT
+  app = makeCatalogApp(); // 2026-11-19T15:00:00Z = 12:00 BRT
 });
 afterAll(() => closeDb());
 
@@ -31,15 +31,15 @@ describe('D64.1 teto de valor com item legado', () => {
     getDb().prepare('UPDATE items SET purchase_price_cents = ? WHERE id = ?').run(LEGACY, id);
   });
 
-  test('PATCH só de name: 200 e preserva o valor legado', async () => {
-    const res = await patch(id, { name: 'Renomeado' });
+  test('PATCH só de originDetail: 200 e preserva o valor legado', async () => {
+    const res = await patch(id, { originDetail: 'detalhe' });
     expect(res.status).toBe(200);
-    expect(res.body.data).toMatchObject({ name: 'Renomeado', purchasePriceCents: LEGACY });
+    expect(res.body.data).toMatchObject({ originDetail: 'detalhe', purchasePriceCents: LEGACY });
     expect(rawRow(id).purchase_price_cents).toBe(LEGACY);
   });
 
   test('PATCH que reenvia o mesmo preço legado acima do teto: 400 INVALID_AMOUNT e nada muda', async () => {
-    expectError(await patch(id, { name: 'Outro', purchasePriceCents: LEGACY }), 400, 'INVALID_AMOUNT');
+    expectError(await patch(id, { originDetail: 'Outro', purchasePriceCents: LEGACY }), 400, 'INVALID_AMOUNT');
     expect(rawRow(id)).toMatchObject({ name: 'AK-47 | Redline', purchase_price_cents: LEGACY });
   });
 
@@ -102,7 +102,7 @@ describe('D64.2 fronteira do dia civil BRT pela API', () => {
   });
 
   test('relógio às 23:30 BRT (UTC já no dia 20): mesmas fronteiras no acquiredAt e no soldAt', async () => {
-    app = makeApp(new Date('2026-11-20T02:30:00Z'));
+    app = makeCatalogApp(new Date('2026-11-20T02:30:00Z'));
     expect((await post(purchaseBody({ acquiredAt: '2026-11-20T02:59:59.999Z' }))).status).toBe(201);
     expectError(await post(purchaseBody({ acquiredAt: '2026-11-20T03:00:00Z' })), 400, 'ACQUIRED_AT_IN_FUTURE');
     const item = await createItemViaApi(app);
@@ -145,8 +145,8 @@ describe('D64.3 item que vira GANHEI no PATCH', () => {
   });
 
   test('GANHEI já existente: PATCH comum mantém custo 0 e reenviar GANHEI também', async () => {
-    const won = await createItemViaApi(app, { name: 'Caixa', category: 'CAIXA', acquisitionType: 'GANHEI', acquiredAt: '2026-11-10T12:00:00Z' });
-    const res = await patch(won.id, { name: 'Renomeado', originDetail: 'drop' });
+    const won = await createItemViaApi(app, { catalogId: CAT.CASE_REVOLVER, acquisitionType: 'GANHEI', acquiredAt: '2026-11-10T12:00:00Z' });
+    const res = await patch(won.id, { originDetail: 'drop' });
     expect(res.status).toBe(200);
     expect(res.body.data.purchasePriceCents).toBe(0);
     const again = await patch(won.id, { acquisitionType: 'GANHEI' });
@@ -155,7 +155,7 @@ describe('D64.3 item que vira GANHEI no PATCH', () => {
   });
 
   test('GANHEI com loja BRL: loja só informativa, USD, sem cotação e sem FX_RATE_REQUIRED (POST e PATCH)', async () => {
-    const body = { name: 'Caixa', category: 'CAIXA', acquisitionType: 'GANHEI', acquiredAt: '2026-11-10T12:00:00Z' };
+    const body = { catalogId: CAT.CASE_REVOLVER, acquisitionType: 'GANHEI', acquiredAt: '2026-11-10T12:00:00Z' };
     const created = await post({ ...body, purchaseStoreId: storeId('Steam') });
     expect(created.status).toBe(201);
     expect(created.body.data).toMatchObject({
@@ -184,7 +184,7 @@ describe('D64.3 item que vira GANHEI no PATCH', () => {
   });
 
   test('GANHEI trocando para loja BRL: custo continua 0 USD (D65)', async () => {
-    const won = await createItemViaApi(app, { name: 'Caixa', category: 'CAIXA', acquisitionType: 'GANHEI', acquiredAt: '2026-11-10T12:00:00Z' });
+    const won = await createItemViaApi(app, { catalogId: CAT.CASE_REVOLVER, acquisitionType: 'GANHEI', acquiredAt: '2026-11-10T12:00:00Z' });
     const res = await patch(won.id, { purchaseStoreId: storeId('Steam') });
     expect(res.status).toBe(200);
     expect(res.body.data).toMatchObject({ purchaseCurrency: 'USD', purchasePriceCents: 0 });

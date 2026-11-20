@@ -3,12 +3,12 @@ const { closeDb } = require('../../src/config/database');
 const Store = require('../../src/models/Store');
 const Setting = require('../../src/models/Setting');
 const { freshDb } = require('../helpers/fixtures');
-const { makeApp, storeId, purchaseBody, createItemViaApi, expectError } = require('../helpers/apiFixtures');
+const { CAT, makeCatalogApp, storeId, purchaseBody, createItemViaApi, expectError } = require('../helpers/apiFixtures');
 
 let app;
 beforeEach(() => {
   freshDb();
-  app = makeApp();
+  app = makeCatalogApp();
 });
 afterAll(() => closeDb());
 

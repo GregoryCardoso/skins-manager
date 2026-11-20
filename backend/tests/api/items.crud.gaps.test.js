@@ -3,12 +3,12 @@ const request = require('supertest');
 const { closeDb } = require('../../src/config/database');
 const Setting = require('../../src/models/Setting');
 const { freshDb } = require('../helpers/fixtures');
-const { makeApp, storeId, purchaseBody, createItemViaApi, expectError } = require('../helpers/apiFixtures');
+const { CAT, makeCatalogApp, storeId, purchaseBody, createItemViaApi, expectError } = require('../helpers/apiFixtures');
 
 let app;
 beforeEach(() => {
   freshDb();
-  app = makeApp();
+  app = makeCatalogApp();
 });
 afterAll(() => closeDb());
 
@@ -33,14 +33,17 @@ describe('POST /api/items (lacunas)', () => {
   });
 
   test('nome só com espaços ou nulo -> REQUIRED_FIELD', async () => {
-    expectError(await post(purchaseBody({ name: '   ' })), 400, 'REQUIRED_FIELD');
-    expectError(await post(purchaseBody({ name: null })), 400, 'REQUIRED_FIELD');
-    expectError(await post(purchaseBody({ category: null })), 400, 'REQUIRED_FIELD');
+    const free = (o = {}) => purchaseBody({ catalogId: undefined, category: 'OUTRO', ...o });
+    expectError(await post(free({ name: '   ' })), 400, 'REQUIRED_FIELD');
+    expectError(await post(free({ name: null })), 400, 'REQUIRED_FIELD');
+    expectError(await post(free({ name: undefined })), 400, 'REQUIRED_FIELD');
+    expectError(await post(purchaseBody({ catalogId: undefined, name: 'X', category: null })), 400, 'INVALID_CATEGORY');
+    expectError(await post(purchaseBody({ catalogId: undefined, name: 'X', category: undefined })), 400, 'REQUIRED_FIELD');
     expectError(await post(purchaseBody({ acquisitionType: undefined })), 400, 'REQUIRED_FIELD');
   });
 
   test('GANHEI: purchasePriceCents no corpo (null, 0 ou valor) -> GANHEI_COST_NOT_ALLOWED; loja opcional não define a moeda', async () => {
-    const won = { name: 'Case', category: 'CAIXA', acquisitionType: 'GANHEI', acquiredAt: '2026-11-10T12:00:00.000Z' };
+    const won = { catalogId: CAT.CASE_REVOLVER, acquisitionType: 'GANHEI', acquiredAt: '2026-11-10T12:00:00.000Z' };
     for (const purchasePriceCents of [null, 0, 500]) {
       const res = await post({ ...won, purchasePriceCents });
       expect(res.status).toBe(400);
@@ -51,7 +54,7 @@ describe('POST /api/items (lacunas)', () => {
   });
 
   test('GANHEI sem preço: preço mínimo CSFloat = 1 (custo 0 não é mínimo 0, D25)', async () => {
-    const item = await createItemViaApi(app, { name: 'Case', category: 'CAIXA', acquisitionType: 'GANHEI' });
+    const item = await createItemViaApi(app, { catalogId: CAT.CASE_REVOLVER, acquisitionType: 'GANHEI' });
     expect(item.minPrices.find((m) => m.storeName === 'CSFloat').minPriceCents).toBe(1);
   });
 
@@ -72,12 +75,12 @@ describe('POST /api/items (lacunas)', () => {
     expectError(await post(purchaseBody({ paintSeed: 1001 })), 400, 'INVALID_PAINT_SEED');
     expectError(await post(purchaseBody({ paintSeed: 1.5 })), 400, 'INVALID_PAINT_SEED');
     expectError(await post(purchaseBody({ exterior: 'XX' })), 400, 'INVALID_EXTERIOR');
-    expect((await post(purchaseBody({ floatValue: 1, paintSeed: 1000 }))).body.data).toMatchObject({ exterior: 'BS', paintSeed: 1000 });
-    expect((await post(purchaseBody({ floatValue: 0, paintSeed: 0 }))).body.data).toMatchObject({ exterior: 'FN', paintSeed: 0 });
+    expect((await post(purchaseBody({ catalogId: CAT.BAYONET_BLUE_STEEL_A, floatValue: 1, paintSeed: 1000 }))).body.data).toMatchObject({ exterior: 'BS', paintSeed: 1000 });
+    expect((await post(purchaseBody({ catalogId: CAT.BAYONET_BLUE_STEEL_A, floatValue: 0, paintSeed: 0 }))).body.data).toMatchObject({ exterior: 'FN', paintSeed: 0 });
   });
 
   test('ID inexistente de loja em GANHEI -> STORE_NOT_FOUND', async () => {
-    expectError(await post({ name: 'Case', category: 'CAIXA', acquisitionType: 'GANHEI', purchaseStoreId: 999 }), 400, 'STORE_NOT_FOUND');
+    expectError(await post({ catalogId: CAT.CASE_REVOLVER, acquisitionType: 'GANHEI', purchaseStoreId: 999 }), 400, 'STORE_NOT_FOUND');
   });
 
   test('erro de validação não grava nada', async () => {
@@ -134,8 +137,12 @@ describe('PATCH /api/items/:id (lacunas)', () => {
     const item = await createItemViaApi(app);
     expectError(await patch(item.id, { purchasePriceCents: '50' }), 400, 'INVALID_FIELD');
     expectError(await patch(item.id, { purchaseStoreId: 1.5 }), 400, 'INVALID_FIELD');
-    expectError(await patch(item.id, { name: null }), 400, 'REQUIRED_FIELD');
-    expectError(await patch(item.id, { name: '  ' }), 400, 'REQUIRED_FIELD');
+    // Item do catálogo: o nome é derivado (D78); item de nome livre: obrigatório.
+    expectError(await patch(item.id, { name: null }), 400, 'CATALOG_DERIVED_FIELD');
+    expectError(await patch(item.id, { name: '  ' }), 400, 'CATALOG_DERIVED_FIELD');
+    const free = await createItemViaApi(app, purchaseBody({ catalogId: undefined, name: 'Livre', category: 'OUTRO' }));
+    expectError(await patch(free.id, { name: null }), 400, 'REQUIRED_FIELD');
+    expectError(await patch(free.id, { name: '  ' }), 400, 'REQUIRED_FIELD');
   });
 });
 

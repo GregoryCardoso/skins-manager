@@ -2,19 +2,19 @@
 const request = require('supertest');
 const { freshDb } = require('../helpers/fixtures');
 const { closeDb } = require('../../src/config/database');
-const { makeApp, createItemViaApi, expectError } = require('../helpers/apiFixtures');
+const { CAT, makeCatalogApp, createItemViaApi, expectError } = require('../helpers/apiFixtures');
 const { assertWeaponAttributesAllowed } = require('../../src/services/itemAttributesService');
 
 let app;
 beforeEach(() => {
   freshDb();
-  app = makeApp();
+  app = makeCatalogApp();
 });
 afterAll(() => closeDb());
 
 const post = (body) => request(app).post('/api/items').send(body);
 const patch = (id, body) => request(app).patch(`/api/items/${id}`).send(body);
-const box = (o = {}) => ({ name: 'Caixa', category: 'CAIXA', acquisitionType: 'GANHEI', acquiredAt: '2026-11-10T12:00:00.000Z', ...o });
+const box = (o = {}) => ({ catalogId: CAT.CASE_REVOLVER, acquisitionType: 'GANHEI', acquiredAt: '2026-11-10T12:00:00.000Z', ...o });
 const stats = (q) => request(app).get('/api/items/stats').query(q);
 
 describe('D65 atributos de arma: função única', () => {

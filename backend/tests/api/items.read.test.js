@@ -3,12 +3,12 @@ const { closeDb } = require('../../src/config/database');
 const Store = require('../../src/models/Store');
 const Withdrawal = require('../../src/models/Withdrawal');
 const { freshDb } = require('../helpers/fixtures');
-const { makeApp, storeId, purchaseBody, createItemViaApi, expectError } = require('../helpers/apiFixtures');
+const { CAT, makeCatalogApp, storeId, purchaseBody, createItemViaApi, expectError } = require('../helpers/apiFixtures');
 
 let app;
 beforeEach(() => {
   freshDb();
-  app = makeApp();
+  app = makeCatalogApp();
 });
 afterAll(() => closeDb());
 
@@ -32,8 +32,8 @@ describe('GET /api/items/:id', () => {
 
   test('minPrices: CSFloat 100 -> 103, custo 0 -> 1, CSMoney e Steam sem configuração', async () => {
     const item = await createItemViaApi(app, purchaseBody());
-    expect(minOf(item, 'CSFloat')).toMatchObject({ minPriceCents: 103, warning: null, currency: 'USD' });
-    expect(minOf(item, 'CSMoney')).toMatchObject({ minPriceCents: null, warning: 'taxas não configuradas' });
+    expect(minOf(item, 'CSFloat')).toMatchObject({ minPriceCents: 103, warning: null, warningCode: null, currency: 'USD' });
+    expect(minOf(item, 'CSMoney')).toMatchObject({ minPriceCents: null, warning: 'taxas não configuradas', warningCode: 'FEES_NOT_CONFIGURED' });
     expect(minOf(item, 'Steam')).toMatchObject({ minPriceCents: null, warning: 'cotação não configurada' });
     const zero = await createItemViaApi(app, purchaseBody({ purchasePriceCents: 0 }));
     expect(minOf(zero, 'CSFloat').minPriceCents).toBe(1);
@@ -49,7 +49,7 @@ describe('GET /api/items/:id', () => {
     const after = (await get(`/api/items/${item.id}`)).body.data.minPrices;
     expect(after).toEqual(before);
     for (const entry of after) {
-      expect(Object.keys(entry).sort()).toEqual(['currency', 'minPriceCents', 'storeId', 'storeName', 'warning']);
+      expect(Object.keys(entry).sort()).toEqual(['currency', 'minPriceCents', 'storeId', 'storeName', 'warning', 'warningCode']);
       expect(Object.keys(entry).some((k) => /sac|withdraw/i.test(k))).toBe(false);
     }
     Store.update(storeId('Steam'), { isActive: false });
@@ -57,9 +57,9 @@ describe('GET /api/items/:id', () => {
     expect(filtered.minPrices.map((m) => m.storeName)).toEqual(['CSFloat', 'CSMoney']);
   });
 
-  test('aging e stats por chave normalizada', async () => {
-    const a = await createItemViaApi(app, purchaseBody({ name: '  AK-47 |  Redline ', floatValue: 0.2 }));
-    await createItemViaApi(app, purchaseBody({ name: 'ak-47 | redline', floatValue: 0.3, purchasePriceCents: 300 }));
+  test('aging e stats por chave (o nome canônico vem do catálogo)', async () => {
+    const a = await createItemViaApi(app, purchaseBody({ floatValue: 0.2 }));
+    await createItemViaApi(app, purchaseBody({ floatValue: 0.3, purchasePriceCents: 300 }));
     const view = (await get(`/api/items/${a.id}`)).body.data;
     expect(view.aging).toEqual({ daysInInventory: 9, agingBucket: 'EM_GIRO' });
     expect(view.stats).toMatchObject({ soldCount: 0, avgPurchaseCostUsdCents: 200, avgDaysToSell: null });

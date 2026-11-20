@@ -2,6 +2,7 @@
 const request = require('supertest');
 const { closeDb } = require('../../src/config/database');
 const { freshDb } = require('../helpers/fixtures');
+const { importCatalogFixture } = require('../helpers/catalog');
 const { makeApp, storeId, purchaseBody, createItemViaApi, expectError } = require('../helpers/apiFixtures');
 
 let app;
@@ -18,7 +19,7 @@ describe('PUT /api/settings/fx-rate (lacunas)', () => {
   test('GET no formato padrão; updatedAt inicial é ISO', async () => {
     const body = await getSettings();
     expect(Object.keys(body).sort()).toEqual(['data', 'success']);
-    expect(Object.keys(body.data).sort()).toEqual(['updatedAt', 'usdBrlRate', 'usdBrlRateUpdatedAt']);
+    expect(Object.keys(body.data).sort()).toEqual(['catalogUpdatedAt', 'language', 'theme', 'updatedAt', 'usdBrlRate', 'usdBrlRateUpdatedAt']);
     expect(new Date(body.data.updatedAt).toISOString()).toBe(body.data.updatedAt);
   });
 
@@ -58,18 +59,25 @@ describe('PUT /api/settings/fx-rate (lacunas)', () => {
     const res = await put({ usdBrlRate: 5.5 }, later);
     expect(res.body).toEqual({
       success: true,
-      data: { usdBrlRate: 5.5, usdBrlRateUpdatedAt: '2026-11-20T10:00:00.000Z', updatedAt: '2026-11-20T10:00:00.000Z' },
+      data: {
+        usdBrlRate: 5.5, usdBrlRateUpdatedAt: '2026-11-20T10:00:00.000Z', catalogUpdatedAt: null,
+        theme: 'SYSTEM', language: 'pt-BR', updatedAt: '2026-11-20T10:00:00.000Z',
+      },
     });
   });
 
   test('outras rotas de configurações não existem', async () => {
     expectError(await request(app).get('/api/settings/fx-rate'), 404, 'NOT_FOUND');
-    expectError(await request(app).patch('/api/settings').send({ usdBrlRate: 5 }), 404, 'NOT_FOUND');
+    // PATCH /api/settings existe desde a Etapa 4A (D83), mas só aceita theme e language.
+    expectError(await request(app).patch('/api/settings').send({ usdBrlRate: 5 }), 400, 'UNKNOWN_FIELD');
+    expectError(await request(app).patch('/api/settings/fx-rate').send({ usdBrlRate: 5 }), 404, 'NOT_FOUND');
     expectError(await request(app).post('/api/settings/fx-rate').send({ usdBrlRate: 5 }), 404, 'NOT_FOUND');
   });
 });
 
 describe('integração settings <-> itens (lacunas)', () => {
+  beforeEach(() => importCatalogFixture());
+
   test('meta.usdBrlRate da listagem reflete a cotação salva', async () => {
     expect((await request(app).get('/api/items')).body.data.meta.usdBrlRate).toBeNull();
     await put({ usdBrlRate: 5.25 });

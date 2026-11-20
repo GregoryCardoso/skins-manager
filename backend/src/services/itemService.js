@@ -7,11 +7,14 @@ const Item = require('../models/Item');
 const Store = require('../models/Store');
 const Setting = require('../models/Setting');
 const { runInTransaction } = require('../models/modelHelpers');
-const { MAX_AMOUNT_CENTS } = require('../config/constants');
+const { MAX_AMOUNT_CENTS, MAX_NAME_LENGTH } = require('../config/constants');
 const { ValidationError, NotFoundError, ConflictError } = require('../errors/AppError');
 const { isValidFxRate } = require('./currencyService');
 const { parseDate, toIso, formatDateTimeBr } = require('./dateUtils');
-const { normalizeAttributes } = require('./itemAttributesService');
+const {
+  CATEGORIES, CATALOG_CATEGORIES, isWeaponCategory, normalizeAttributes, assertFloatInCatalogRange,
+} = require('./itemAttributesService');
+const catalogService = require('./catalogService');
 const { getTradeLockStatus } = require('./tradeLockService');
 const {
   getAging, assertAcquiredAtNotFuture, assertNotFutureDay, filterStagnant, sortByAge, sortByTurnaround,
@@ -66,6 +69,114 @@ function resolveCurrencyAndFx(store, informedFx, settings) {
   return { currency, fxRate: saved };
 }
 
+// --- Identidade do item: catálogo obrigatório, nome canônico e categoria derivada (D78) -----------
+
+const WEAPON_ATTRIBUTE_KEYS = ['variant', 'floatValue', 'exterior', 'paintSeed'];
+
+function derivedFieldError() {
+  return new ValidationError(
+    'Nome e categoria vêm do catálogo; não os envie junto com o item do catálogo.',
+    'CATALOG_DERIVED_FIELD'
+  );
+}
+
+// Função pura. `body` é o corpo da requisição (POST completo ou PATCH parcial); `existing`, o item gravado
+// (só no PATCH); `catalogEntry`, a entrada do catálogo do `catalogId` resultante (ou `null` se não existe);
+// `freeNameCatalogMatch`, a entrada PASSE_BATALHA do catálogo com o mesmo nome (ou `null`).
+// Devolve { catalogId, name, category, phase, phaseLocked }; `phase` é o valor a usar no item mesclado.
+function resolveItemIdentity({ body, existing = null, catalogEntry = null, freeNameCatalogMatch = null }) {
+  const hasCatalogKey = hasKey(body, 'catalogId');
+  let resultCatalogId = null;
+  if (hasCatalogKey) resultCatalogId = body.catalogId;
+  else if (existing) resultCatalogId = existing.catalogId;
+  const catalogChanged = existing ? hasCatalogKey && body.catalogId !== existing.catalogId : true;
+  const bodyPhase = hasKey(body, 'phase') ? body.phase : undefined;
+  const storedPhase = existing ? existing.phase : null;
+
+  if (!isNil(resultCatalogId)) {
+    // (1) CATALOG_DERIVED_FIELD
+    if (hasKey(body, 'name') || hasKey(body, 'category')) throw derivedFieldError();
+    if (!catalogEntry) {
+      // (2) CATALOG_ITEM_NOT_FOUND, só quando o vínculo muda; entrada que sumiu não invalida o item gravado.
+      if (catalogChanged) throw new ValidationError('Item do catálogo não encontrado.', 'CATALOG_ITEM_NOT_FOUND');
+      return {
+        catalogId: resultCatalogId,
+        name: existing.name,
+        category: existing.category,
+        phase: bodyPhase !== undefined ? bodyPhase : storedPhase,
+        phaseLocked: false,
+      };
+    }
+    const phaseLocked = !isNil(catalogEntry.phase);
+    if (phaseLocked && bodyPhase !== undefined) throw derivedFieldError();
+    let phase;
+    if (phaseLocked) phase = catalogEntry.phase;
+    else if (bodyPhase !== undefined) phase = bodyPhase;
+    else phase = catalogChanged ? null : storedPhase; // a fase antiga não é herdada ao trocar de item
+    return {
+      catalogId: resultCatalogId,
+      name: catalogChanged ? catalogEntry.name : existing.name,
+      category: catalogChanged ? catalogEntry.category : existing.category,
+      phase,
+      phaseLocked,
+    };
+  }
+
+  // Sem vínculo com o catálogo.
+  let category;
+  if (hasKey(body, 'category')) category = body.category;
+  else if (existing) category = existing.category;
+  else throw new ValidationError('O campo category é obrigatório.', 'REQUIRED_FIELD');
+  if (!CATEGORIES.includes(category)) throw new ValidationError('Categoria inválida.', 'INVALID_CATEGORY');
+  const phase = bodyPhase !== undefined ? bodyPhase : storedPhase;
+
+  if (CATALOG_CATEGORIES.includes(category)) {
+    // (3) CATALOG_ITEM_REQUIRED. No PATCH só passa o item que já era legado, sem mexer na identidade (D82).
+    const untouchedLegacy =
+      existing && isNil(existing.catalogId) && !['name', 'category', 'catalogId'].some((k) => hasKey(body, k));
+    if (!untouchedLegacy) throw new ValidationError('Escolha o item no catálogo.', 'CATALOG_ITEM_REQUIRED');
+    return { catalogId: null, name: existing.name, category: existing.category, phase, phaseLocked: false };
+  }
+
+  // Categoria de nome livre (OUTRO, PASSE_BATALHA). (4) REQUIRED_FIELD do nome.
+  let name;
+  if (hasKey(body, 'name')) name = body.name;
+  else if (existing) name = existing.name;
+  const trimmed = isNil(name) ? '' : String(name).trim();
+  if (trimmed === '') throw new ValidationError('O nome do item é obrigatório.', 'REQUIRED_FIELD');
+  if (trimmed.length > MAX_NAME_LENGTH) {
+    throw new ValidationError(`O campo name deve ter no máximo ${MAX_NAME_LENGTH} caracteres.`, 'FIELD_TOO_LONG');
+  }
+  if (category === 'PASSE_BATALHA' && freeNameCatalogMatch) {
+    throw new ValidationError('Este item existe no catálogo: selecione-o na busca.', 'CATALOG_ITEM_REQUIRED');
+  }
+  return { catalogId: null, name: trimmed, category, phase, phaseLocked: false };
+}
+
+// Procura no catálogo o PASSE_BATALHA de nome livre (D78). Só quando a identidade está sendo definida.
+function lookupFreeNameMatch(body, existing) {
+  const catalogId = hasKey(body, 'catalogId') ? body.catalogId : existing && existing.catalogId;
+  if (!isNil(catalogId)) return null;
+  if (existing && !hasKey(body, 'name') && !hasKey(body, 'category')) return null;
+  let category = null;
+  if (hasKey(body, 'category')) category = body.category;
+  else if (existing) category = existing.category;
+  if (category !== 'PASSE_BATALHA') return null;
+  let name = null;
+  if (hasKey(body, 'name')) name = body.name;
+  else if (existing) name = existing.name;
+  if (typeof name !== 'string' || name.trim() === '') return null;
+  return catalogService.findExactMatch({ name, category });
+}
+
+// Entrada do catálogo do `catalogId` resultante (ou `null`).
+function loadCatalogEntry(body, existing) {
+  let id = null;
+  if (hasKey(body, 'catalogId')) id = body.catalogId;
+  else if (existing) id = existing.catalogId;
+  return isNil(id) ? null : catalogService.getCatalogItem(id);
+}
+
 // Monta o registro de aquisição/atributos a partir do estado já mesclado. `existing` só na edição.
 function buildItemRecord(merged, { store = null, settings = null, now = new Date(), existing = null, priceInformed = true, body = null } = {}) {
   const name = isNil(merged.name) ? '' : String(merged.name).trim();
@@ -88,7 +199,8 @@ function buildItemRecord(merged, { store = null, settings = null, now = new Date
     if (body && hasKey(body, 'purchasePriceCents')) {
       throw new ValidationError('Item ganho tem custo fixo US$ 0,00; não informe preço de compra.', 'GANHEI_COST_NOT_ALLOWED');
     }
-    if (body && hasKey(body, 'fxRateAtPurchase')) {
+    // `fxRateAtPurchase: null` equivale a "sem cotação" e é aceito (T35 b, D73).
+    if (body && hasKey(body, 'fxRateAtPurchase') && !isNil(body.fxRateAtPurchase)) {
       throw new ValidationError('Item ganho não usa cotação.', 'FX_RATE_NOT_ALLOWED');
     }
   } else {
@@ -194,10 +306,31 @@ function buildUnsellPatch() {
   return { status: 'EM_ESTOQUE', ...SALE_FIELDS_NULL };
 }
 
-function toItemView(item, { stores, settings, statsIndex, now = new Date(), slowItemDays = env.slowItemDays }) {
+function toCatalogSummary(entry) {
+  if (!entry) return null;
+  return {
+    id: entry.id,
+    name: entry.name,
+    namePtBr: entry.namePtBr,
+    imageUrl: entry.imageUrl,
+    minFloat: entry.minFloat,
+    maxFloat: entry.maxFloat,
+    hasStattrak: entry.hasStattrak,
+    hasSouvenir: entry.hasSouvenir,
+    phase: entry.phase,
+  };
+}
+
+function toItemView(
+  item,
+  { stores, settings, statsIndex, catalogById = new Map(), now = new Date(), slowItemDays = env.slowItemDays }
+) {
   const inStock = item.status === 'EM_ESTOQUE';
   return {
     ...item,
+    // Legado: sem vínculo com o catálogo numa categoria que o exige (D82).
+    isLegacy: isNil(item.catalogId) && CATALOG_CATEGORIES.includes(item.category),
+    catalog: isNil(item.catalogId) ? null : toCatalogSummary(catalogById.get(item.catalogId)),
     tradeLock: getTradeLockStatus(item.tradeUnlockAt, now),
     aging: getAging(item, { slowItemDays, now }),
     minPrices: inStock ? minPricesForItem({ item, stores, settings }) : null,
@@ -210,7 +343,9 @@ function toItemView(item, { stores, settings, statsIndex, now = new Date(), slow
 
 function loadContext() {
   const items = Item.findAll();
-  return { items, stores: Store.findAll(), settings: Setting.get(), statsIndex: buildStatsIndex(items) };
+  const catalogIds = items.map((i) => i.catalogId).filter((id) => !isNil(id));
+  const catalogById = new Map(catalogService.getCatalogItemsByIds(catalogIds).map((c) => [c.id, c]));
+  return { items, stores: Store.findAll(), settings: Setting.get(), statsIndex: buildStatsIndex(items), catalogById };
 }
 
 // Grava e monta a resposta na mesma transação: se a montagem falhar, nada é gravado.
@@ -219,8 +354,8 @@ function inTransaction(fn) {
 }
 
 function viewOf(item, { now, slowItemDays }) {
-  const { stores, settings, statsIndex } = loadContext();
-  return toItemView(item, { stores, settings, statsIndex, now, slowItemDays });
+  const { stores, settings, statsIndex, catalogById } = loadContext();
+  return toItemView(item, { stores, settings, statsIndex, catalogById, now, slowItemDays });
 }
 
 function findOrFail(id) {
@@ -230,7 +365,7 @@ function findOrFail(id) {
 }
 
 function listItems(query = {}, { now = new Date(), slowItemDays = env.slowItemDays } = {}) {
-  const { items: all, stores, settings, statsIndex } = loadContext();
+  const { items: all, stores, settings, statsIndex, catalogById } = loadContext();
   let items = all;
   if (query.status) items = items.filter((i) => i.status === query.status);
   if (query.category) items = items.filter((i) => i.category === query.category);
@@ -239,7 +374,7 @@ function listItems(query = {}, { now = new Date(), slowItemDays = env.slowItemDa
   else if (query.sortBy === 'turnaround') items = sortByTurnaround(items, query.order ?? 'asc');
 
   return {
-    items: items.map((item) => toItemView(item, { stores, settings, statsIndex, now, slowItemDays })),
+    items: items.map((item) => toItemView(item, { stores, settings, statsIndex, catalogById, now, slowItemDays })),
     meta: { count: items.length, slowItemDays, usdBrlRate: settings.usdBrlRate, generatedAt: now.toISOString() },
   };
 }
@@ -251,28 +386,47 @@ function getItem(id, ctx = {}) {
 
 function createItem(input, ctx = {}) {
   const { now = new Date(), slowItemDays = env.slowItemDays } = ctx;
+  const catalogEntry = loadCatalogEntry(input, null);
+  const identity = resolveItemIdentity({
+    body: input, catalogEntry, freeNameCatalogMatch: lookupFreeNameMatch(input, null),
+  });
+  const merged = { ...input, name: identity.name, category: identity.category, phase: identity.phase };
   const store = isNil(input.purchaseStoreId) ? null : getStoreOrFail(input.purchaseStoreId);
-  const record = buildItemRecord(input, { store, settings: Setting.get(), now, body: input });
-  return inTransaction(() => viewOf(Item.create(record), { now, slowItemDays }));
+  const record = buildItemRecord(merged, { store, settings: Setting.get(), now, body: input });
+  if (catalogEntry) assertFloatInCatalogRange(record.floatValue, catalogEntry);
+  return inTransaction(() => viewOf(Item.create({ ...record, catalogId: identity.catalogId }), { now, slowItemDays }));
 }
 
 function updateItem(id, partial, ctx = {}) {
   const { now = new Date(), slowItemDays = env.slowItemDays } = ctx;
   const existing = findOrFail(id);
-  const merged = { ...existing, ...partial };
+  const catalogEntry = loadCatalogEntry(partial, existing);
+  const identity = resolveItemIdentity({
+    body: partial, existing, catalogEntry, freeNameCatalogMatch: lookupFreeNameMatch(partial, existing),
+  });
+  const merged = { ...existing, ...partial, name: identity.name, category: identity.category, phase: identity.phase };
+  // T35 (a): categoria sem atributos de arma limpa os atributos que não vieram no corpo (D73).
+  if (!isWeaponCategory(identity.category)) {
+    for (const key of WEAPON_ATTRIBUTE_KEYS) if (!hasKey(partial, key)) merged[key] = null;
+  }
   // Trocar a loja de compra recalcula moeda e cotação; mesma loja mantém a cotação gravada (D52).
   if (partial.purchaseStoreId !== undefined && partial.purchaseStoreId !== existing.purchaseStoreId) {
     merged.fxRateAtPurchase = partial.fxRateAtPurchase ?? null;
   }
   const store = isNil(merged.purchaseStoreId) ? null : getStoreOrFail(merged.purchaseStoreId);
   const priceInformed = !isNil(partial.purchasePriceCents);
-  // GANHEI -> COMPRA: preço e loja precisam vir no mesmo PATCH (D65).
+  // GANHEI -> COMPRA: preço no mesmo PATCH; a loja pode ser a já gravada (T33, D73).
   if (merged.acquisitionType === 'COMPRA' && existing.acquisitionType === 'GANHEI') {
     if (!priceInformed) throw new ValidationError('Informe o preço da compra.', 'PURCHASE_PRICE_REQUIRED');
-    if (isNil(partial.purchaseStoreId)) throw new ValidationError('Informe a loja da compra.', 'PURCHASE_STORE_REQUIRED');
+    if (isNil(merged.purchaseStoreId)) throw new ValidationError('Informe a loja da compra.', 'PURCHASE_STORE_REQUIRED');
   }
   const record = buildItemRecord(merged, { store, settings: Setting.get(), now, existing, priceInformed, body: partial });
-  return inTransaction(() => viewOf(Item.update(id, record), { now, slowItemDays }));
+  // Faixa de float do catálogo: ao trocar o item do catálogo ou o float (limites inclusivos).
+  const catalogChanged = hasKey(partial, 'catalogId') && partial.catalogId !== existing.catalogId;
+  if (catalogEntry && (catalogChanged || hasKey(partial, 'floatValue'))) {
+    assertFloatInCatalogRange(record.floatValue, catalogEntry);
+  }
+  return inTransaction(() => viewOf(Item.update(id, { ...record, catalogId: identity.catalogId }), { now, slowItemDays }));
 }
 
 function deleteItem(id) {
@@ -304,6 +458,7 @@ function getItemStats({ name, category, variant, exterior }) {
 }
 
 module.exports = {
+  resolveItemIdentity,
   buildItemRecord,
   buildSaleRecord,
   buildUnsellPatch,

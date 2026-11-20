@@ -1,0 +1,11 @@
+[
+  {"id":"crate-case","name":"Revolver Case","type":"Case","image":"https://img.test/case.png"},
+  {"id":"crate-souvenir","name":"Dust 2 Souvenir Package","type":"Souvenir","image":"https://img.test/souvenir.png"},
+  {"id":"crate-sticker-capsule","name":"Katowice 2014 Legends","type":"Sticker Capsule","image":"https://img.test/capsule.png"},
+  {"id":"crate-autograph","name":"Katowice 2014 Autograph Capsule","type":"Autograph Capsule","image":"https://img.test/autograph.png"},
+  {"id":"crate-patch","name":"Patch Capsule","type":"Patch Capsule","image":"https://img.test/patch.png"},
+  {"id":"crate-pins","name":"Collectible Pins Capsule Series 1","type":"Pins","image":"https://img.test/pins.png"},
+  {"id":"crate-music","name":"Music Kit Box","type":"Music Kit Box","image":"https://img.test/music.png"},
+  {"id":"crate-graffiti","name":"Community Graffiti Box 1","type":"Graffiti","image":"https://img.test/graffiti.png"},
+  {"id":"crate-null","name":"Gift Package","type":null,"image":"https://img.test/gift.png"}
+]

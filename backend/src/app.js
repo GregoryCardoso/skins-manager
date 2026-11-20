@@ -4,11 +4,13 @@ const env = require('./config/env');
 const routes = require('./routes');
 const { errorHandler, notFoundHandler } = require('./middlewares/errorHandler');
 
-// Fábrica do app; `now` é o relógio injetável usado pelos controllers (D51).
-function createApp({ now = () => new Date() } = {}) {
+// Fábrica do app; `now` é o relógio injetável usado pelos controllers (D51) e `fetchFn` a rede injetável
+// (D70; `undefined` = fetch global do Node).
+function createApp({ now = () => new Date(), fetchFn } = {}) {
   const app = express();
   app.disable('x-powered-by');
   app.locals.now = now;
+  app.locals.fetchFn = fetchFn;
 
   app.use(cors({ origin: env.corsOrigin }));
   app.use(express.json());

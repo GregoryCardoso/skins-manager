@@ -4,11 +4,19 @@
 const request = require('supertest');
 const { createApp } = require('../../src/app');
 const { storeIdByName } = require('./fixtures');
+const { CAT, importCatalogFixture } = require('./catalog');
 
 const NOW = new Date('2026-11-19T15:00:00.000Z');
 
-function makeApp(now = NOW) {
-  return createApp({ now: () => new Date(now.getTime()) });
+// `catalog: true` importa o catálogo de fixture no banco atual (D86); por padrão o catálogo fica como está.
+function makeApp(now = NOW, { fetchFn, catalog = false } = {}) {
+  if (catalog) importCatalogFixture();
+  return createApp({ now: () => new Date(now.getTime()), fetchFn });
+}
+
+// App com o catálogo de fixture já importado (testes de itens).
+function makeCatalogApp(now = NOW, options = {}) {
+  return makeApp(now, { ...options, catalog: true });
 }
 
 function storeId(name) {
@@ -18,8 +26,7 @@ function storeId(name) {
 // Corpo mínimo de COMPRA de uma skin na CSFloat (USD, 100 centavos).
 function purchaseBody(overrides = {}) {
   return {
-    name: 'AK-47 | Redline',
-    category: 'SKIN',
+    catalogId: CAT.AK_REDLINE, // nome e categoria vêm do catálogo (D78)
     acquisitionType: 'COMPRA',
     purchaseStoreId: storeId('CSFloat'),
     purchasePriceCents: 100,
@@ -40,4 +47,4 @@ function expectError(res, status, code) {
   expect(res.body.error.message.length).toBeGreaterThan(0);
 }
 
-module.exports = { NOW, makeApp, storeId, purchaseBody, createItemViaApi, expectError };
+module.exports = { CAT, NOW, makeApp, makeCatalogApp, storeId, purchaseBody, createItemViaApi, expectError };

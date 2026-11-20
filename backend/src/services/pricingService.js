@@ -5,7 +5,7 @@
 const { ValidationError } = require('../errors/AppError');
 const { getSaleFeeStrategy, saleFeeParamsFromStore, assertSaleFeeParams, MAX_PRICE_SEARCH_ITERATIONS } = require('./fees');
 const { convertCents, isValidFxRate } = require('./currencyService');
-const { WARNING_FEES, WARNING_FX, WARNING_PRICE_OVERFLOW } = require('./warnings');
+const { WARNINGS } = require('./warnings');
 
 // Menor preço (centavos) cujo líquido >= custo; parte da estimativa e ajusta centavo a centavo. Mínimo 1.
 function findMinSalePriceCents(costCents, params) {
@@ -27,10 +27,13 @@ function findMinSalePriceCents(costCents, params) {
   return gross;
 }
 
+// `warning` (texto) + `warningCode` (D83); sem aviso, ambos null.
+const noPrice = (base, w) => ({ ...base, minPriceCents: null, warning: w.text, warningCode: w.code });
+
 function minPriceForStore({ costCents, costCurrency, costFxRate, store, settings }) {
   const base = { storeId: store.id, storeName: store.name, currency: store.currency };
   const params = saleFeeParamsFromStore(store);
-  if (!params) return { ...base, minPriceCents: null, warning: WARNING_FEES };
+  if (!params) return noPrice(base, WARNINGS.FEES_NOT_CONFIGURED);
 
   // Leitura nunca falha por causa de um item: valor fora do suportado vira minPriceCents null + aviso.
   try {
@@ -38,15 +41,15 @@ function minPriceForStore({ costCents, costCurrency, costFxRate, store, settings
     if (costCurrency !== store.currency) {
       const usdBrlRate = settings ? settings.usdBrlRate : null;
       const needed = costCurrency === 'BRL' ? costFxRate : usdBrlRate;
-      if (!isValidFxRate(needed)) return { ...base, minPriceCents: null, warning: WARNING_FX };
+      if (!isValidFxRate(needed)) return noPrice(base, WARNINGS.FX_NOT_CONFIGURED);
       costInStoreCurrency = convertCents(
         costCents, costCurrency, store.currency, { fromFxRate: costFxRate, toFxRate: usdBrlRate }, 'CEIL'
       );
     }
-    return { ...base, minPriceCents: findMinSalePriceCents(costInStoreCurrency, params), warning: null };
+    return { ...base, minPriceCents: findMinSalePriceCents(costInStoreCurrency, params), warning: null, warningCode: null };
   } catch (err) {
     if (err instanceof ValidationError && (err.code === 'INVALID_AMOUNT' || err.code === 'PRICE_SEARCH_LIMIT')) {
-      return { ...base, minPriceCents: null, warning: WARNING_PRICE_OVERFLOW };
+      return noPrice(base, WARNINGS.PRICE_OVERFLOW);
     }
     throw err;
   }

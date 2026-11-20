@@ -3,18 +3,18 @@ const request = require('supertest');
 const Setting = require('../../src/models/Setting');
 const { freshDb } = require('../helpers/fixtures');
 const { closeDb } = require('../../src/config/database');
-const { makeApp, storeId, purchaseBody, createItemViaApi, expectError } = require('../helpers/apiFixtures');
+const { CAT, makeCatalogApp, storeId, purchaseBody, createItemViaApi, expectError } = require('../helpers/apiFixtures');
 
 let app;
 beforeEach(() => {
   freshDb();
-  app = makeApp();
+  app = makeCatalogApp();
 });
 afterAll(() => closeDb());
 
 const post = (body) => request(app).post('/api/items').send(body);
 const patch = (id, body) => request(app).patch(`/api/items/${id}`).send(body);
-const won = (o = {}) => ({ name: 'Caixa', category: 'CAIXA', acquisitionType: 'GANHEI', acquiredAt: '2026-11-10T12:00:00.000Z', ...o });
+const won = (o = {}) => ({ catalogId: CAT.CASE_REVOLVER, acquisitionType: 'GANHEI', acquiredAt: '2026-11-10T12:00:00.000Z', ...o });
 
 describe('D65 GANHEI: custo fixo US$ 0,00', () => {
   test('POST sem preço: custo 0, USD, cotação null', async () => {
@@ -66,7 +66,7 @@ describe('D65 GANHEI: custo fixo US$ 0,00', () => {
 });
 
 describe('D65 GANHEI -> COMPRA', () => {
-  const winItem = () => createItemViaApi(app, won({ name: 'AK-47 | Redline', category: 'SKIN' }));
+  const winItem = () => createItemViaApi(app, won({ catalogId: CAT.AK_REDLINE }));
 
   test('sem preço: PURCHASE_PRICE_REQUIRED; sem loja: PURCHASE_STORE_REQUIRED', async () => {
     const item = await winItem();
@@ -76,9 +76,15 @@ describe('D65 GANHEI -> COMPRA', () => {
     expectError(await patch(item.id, { acquisitionType: 'COMPRA', purchaseStoreId: storeId('CSFloat'), purchasePriceCents: null }), 400, 'PURCHASE_PRICE_REQUIRED');
   });
 
-  test('mesmo com loja já gravada, a loja precisa vir no mesmo PATCH', async () => {
-    const item = await createItemViaApi(app, won({ purchaseStoreId: storeId('CSFloat'), name: 'X', category: 'SKIN' }));
-    expectError(await patch(item.id, { acquisitionType: 'COMPRA', purchasePriceCents: 100 }), 400, 'PURCHASE_STORE_REQUIRED');
+  test('T33 (D73): a loja já gravada vale como loja de compra; sem loja gravada nem enviada -> PURCHASE_STORE_REQUIRED', async () => {
+    const item = await createItemViaApi(app, won({ purchaseStoreId: storeId('CSFloat'), catalogId: CAT.AK_REDLINE }));
+    const res = await patch(item.id, { acquisitionType: 'COMPRA', purchasePriceCents: 100 });
+    expect(res.status).toBe(200);
+    expect(res.body.data).toMatchObject({
+      acquisitionType: 'COMPRA', purchaseStoreId: storeId('CSFloat'), purchasePriceCents: 100, purchaseCurrency: 'USD',
+    });
+    const noStore = await winItem();
+    expectError(await patch(noStore.id, { acquisitionType: 'COMPRA', purchasePriceCents: 100 }), 400, 'PURCHASE_STORE_REQUIRED');
   });
 
   test('loja USD com preço: COMPRA em USD', async () => {
@@ -103,7 +109,7 @@ describe('D65 GANHEI -> COMPRA', () => {
 
 describe('D65 GANHEI vendido e preço mínimo', () => {
   test('lucro = netReceived num GANHEI vendido', async () => {
-    const item = await createItemViaApi(app, won({ name: 'AK-47 | Redline', category: 'SKIN' }));
+    const item = await createItemViaApi(app, won({ catalogId: CAT.AK_REDLINE }));
     const sold = await request(app)
       .post(`/api/items/${item.id}/sell`)
       .send({ saleStoreId: storeId('CSFloat'), salePriceCents: 125, soldAt: '2026-11-18T12:00:00.000Z' });

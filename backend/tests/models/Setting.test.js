@@ -10,7 +10,7 @@ describe('models/Setting', () => {
     const s = Setting.get();
     expect(s).toMatchObject({ usdBrlRate: null, usdBrlRateUpdatedAt: null });
     expect(typeof s.updatedAt).toBe('string');
-    expect(Object.keys(s).sort()).toEqual(['updatedAt', 'usdBrlRate', 'usdBrlRateUpdatedAt']);
+    expect(Object.keys(s).sort()).toEqual(['catalogUpdatedAt', 'language', 'theme', 'updatedAt', 'usdBrlRate', 'usdBrlRateUpdatedAt']);
   });
 
   test('update grava cotação, preserva campos não enviados e muda updatedAt', () => {
@@ -20,7 +20,8 @@ describe('models/Setting', () => {
       jest.setSystemTime(new Date('2026-06-02T00:00:00.000Z'));
       const s = Setting.update({ usdBrlRate: 5.3 });
       expect(s).toEqual({
-        usdBrlRate: 5.3, usdBrlRateUpdatedAt: '2026-06-01T00:00:00.000Z', updatedAt: '2026-06-02T00:00:00.000Z',
+        usdBrlRate: 5.3, usdBrlRateUpdatedAt: '2026-06-01T00:00:00.000Z', catalogUpdatedAt: null, theme: 'SYSTEM', language: 'pt-BR',
+        updatedAt: '2026-06-02T00:00:00.000Z',
       });
     } finally {
       jest.useRealTimers();

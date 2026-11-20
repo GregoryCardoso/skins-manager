@@ -29,4 +29,12 @@ class ConflictError extends AppError {
   }
 }
 
-module.exports = { AppError, ValidationError, NotFoundError, ConflictError };
+// Falha de um serviço externo (502 Bad Gateway), ex.: download do catálogo.
+class UpstreamError extends AppError {
+  constructor(message, code = 'UPSTREAM_ERROR') {
+    super(502, code, message);
+    this.name = 'UpstreamError';
+  }
+}
+
+module.exports = { AppError, ValidationError, NotFoundError, ConflictError, UpstreamError };

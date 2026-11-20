@@ -1,0 +1,23 @@
+{"formatVersion":1,"generatedAt":"2026-11-01T00:00:00.000Z","source":"https://github.com/ByMykel/CSGO-API","counts":{"SKINS":12,"STICKERS":2,"CRATES":5,"KEYCHAINS":1,"AGENTS":1},"columns":["id","source","category","name","namePtBr","imageUrl","minFloat","maxFloat","hasStattrak","hasSouvenir","phase","rarity"],"rows":[
+["agent-4613","AGENTS","PERSONAGEM","Bloody Darryl The Strapped | The Professionals",null,"https://img.test/agent-4613.png",null,null,0,0,null,null],
+["crate-dust2-souvenir","CRATES","CAIXA","Dust 2 Souvenir Package",null,"https://img.test/crate-dust2-souvenir.png",null,null,0,0,null,null],
+["crate-kato14-legends","CRATES","CAPSULA","Katowice 2014 Legends",null,"https://img.test/crate-kato14-legends.png",null,null,0,0,null,null],
+["crate-music-kit-box","CRATES","OUTRO","Music Kit Box",null,"https://img.test/crate-music-kit-box.png",null,null,0,0,null,null],
+["crate-revolver","CRATES","CAIXA","Revolver Case","Caixa Revolver","https://img.test/crate-revolver.png",null,null,0,0,null,null],
+["crate-riptide-pass","CRATES","PASSE_BATALHA","Operation Riptide Access Pass",null,"https://img.test/crate-riptide-pass.png",null,null,0,0,null,null],
+["keychain-lil-ava","KEYCHAINS","PINGENTE","Charm | Lil' Ava","Pingente | Lil' Ava","https://img.test/keychain-lil-ava.png",null,null,0,0,null,null],
+["skin-ak-redline","SKINS","SKIN","AK-47 | Redline","AK-47 | Linha Vermelha","https://img.test/skin-ak-redline.png",0.1,0.7,1,0,null,"Classified"],
+["skin-awp-dlore","SKINS","SKIN","AWP | Dragon Lore",null,"https://img.test/skin-awp-dlore.png",0,0.7,1,1,null,"Covert"],
+["skin-bayonet-bluesteel-a","SKINS","FACA","★ Bayonet | Blue Steel",null,"https://img.test/skin-bayonet-bluesteel-a.png",0,1,1,0,null,null],
+["skin-bayonet-bluesteel-b","SKINS","FACA","★ Bayonet | Blue Steel",null,"https://img.test/skin-bayonet-bluesteel-b.png",0,1,1,0,null,null],
+["skin-deagle-ddpat","SKINS","SKIN","Desert Eagle | Urban DDPAT",null,"https://img.test/skin-deagle-ddpat.png",0.06,0.8,0,1,null,"Industrial Grade"],
+["skin-glock-sem-faixa","SKINS","SKIN","Glock-18 | Sem Faixa",null,"https://img.test/skin-glock-sem-faixa.png",null,null,0,0,null,null],
+["skin-karambit-doppler-p1","SKINS","FACA","★ Karambit | Doppler",null,"https://img.test/skin-karambit-doppler-p1.png",0,0.08,1,0,"Phase 1","Covert"],
+["skin-karambit-doppler-p2","SKINS","FACA","★ Karambit | Doppler",null,"https://img.test/skin-karambit-doppler-p2.png",0,0.08,1,0,"Phase 2","Covert"],
+["skin-karambit-fade","SKINS","FACA","★ Karambit | Fade",null,"https://img.test/skin-karambit-fade.png",0,0.08,1,0,null,"Covert"],
+["skin-karambit-vanilla","SKINS","FACA","★ Karambit","★ Faca Karambit","https://img.test/skin-karambit-vanilla.png",null,null,1,0,null,"Covert"],
+["skin-m4a1s-printstream","SKINS","SKIN","M4A1-S | Printstream",null,"https://img.test/skin-m4a1s-printstream.png",0,0.8,1,0,null,"Covert"],
+["skin-sport-gloves-pandora","SKINS","LUVA","★ Sport Gloves | Pandora's Box",null,"https://img.test/skin-sport-gloves-pandora.png",0.06,0.8,0,0,null,"Extraordinary"],
+["sticker-crown-foil","STICKERS","STICKER","Sticker | Crown (Foil)",null,"https://img.test/sticker-crown-foil.png",null,null,0,0,null,"Remarkable"],
+["sticker-titan-kato14","STICKERS","STICKER","Sticker | Titan | Katowice 2014","Adesivo | Titan | Katowice 2014","https://img.test/sticker-titan-kato14.png",null,null,0,0,null,"High Grade"]
+]}

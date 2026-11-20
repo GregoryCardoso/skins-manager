@@ -2,12 +2,12 @@
 const request = require('supertest');
 const { closeDb } = require('../../src/config/database');
 const { freshDb } = require('../helpers/fixtures');
-const { makeApp, purchaseBody, createItemViaApi, expectError, storeId } = require('../helpers/apiFixtures');
+const { CAT, makeCatalogApp, purchaseBody, createItemViaApi, expectError, storeId } = require('../helpers/apiFixtures');
 
 let app;
 beforeEach(() => {
   freshDb();
-  app = makeApp();
+  app = makeCatalogApp();
 });
 afterAll(() => closeDb());
 

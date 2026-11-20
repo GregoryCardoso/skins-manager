@@ -4,12 +4,12 @@ const { closeDb } = require('../../src/config/database');
 const Store = require('../../src/models/Store');
 const Setting = require('../../src/models/Setting');
 const { freshDb } = require('../helpers/fixtures');
-const { makeApp, storeId, purchaseBody, createItemViaApi, expectError } = require('../helpers/apiFixtures');
+const { CAT, makeCatalogApp, storeId, purchaseBody, createItemViaApi, expectError } = require('../helpers/apiFixtures');
 
 let app;
 beforeEach(() => {
   freshDb();
-  app = makeApp();
+  app = makeCatalogApp();
 });
 afterAll(() => closeDb());
 
@@ -107,7 +107,7 @@ describe('trade lock na venda (D59 revisada, exemplos da D56)', () => {
 
 describe('soldAt no futuro: o "hoje" é o dia de São Paulo, não o dia UTC (D53)', () => {
   // now = 2026-11-20T01:00Z = 19/11 22:00 em Brasília (dia UTC já é 20).
-  const lateApp = () => makeApp(new Date('2026-11-20T01:00:00.000Z'));
+  const lateApp = () => makeCatalogApp(new Date('2026-11-20T01:00:00.000Z'));
 
   test('23:59 BRT do dia 19 aceito; 00:00 BRT do dia 20 recusado mesmo sendo o mesmo dia UTC de now', async () => {
     const theApp = lateApp();
@@ -181,7 +181,7 @@ describe('snapshot das taxas, netReceived e lucro (D18, D31)', () => {
   });
 
   test('GANHEI sem preço (custo 0): lucro = líquido', async () => {
-    const item = await createItemViaApi(app, { name: 'Case', category: 'CAIXA', acquisitionType: 'GANHEI', acquiredAt: '2026-11-10T12:00:00.000Z' });
+    const item = await createItemViaApi(app, { catalogId: CAT.CASE_REVOLVER, acquisitionType: 'GANHEI', acquiredAt: '2026-11-10T12:00:00.000Z' });
     const res = await sell(item.id, sellBody());
     expect(res.body.data.sale).toEqual({ netReceivedCents: 122, feeCents: 3, saleProfitUsdCents: 122 });
   });

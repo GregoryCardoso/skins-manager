@@ -6,12 +6,12 @@ const { MAX_AMOUNT_CENTS } = require('../../src/config/constants');
 const { errorHandler } = require('../../src/middlewares/errorHandler');
 const { WARNING_PRICE_OVERFLOW } = require('../../src/services/warnings');
 const { freshDb } = require('../helpers/fixtures');
-const { makeApp, storeId, purchaseBody, createItemViaApi, expectError } = require('../helpers/apiFixtures');
+const { CAT, makeCatalogApp, storeId, purchaseBody, createItemViaApi, expectError } = require('../helpers/apiFixtures');
 
 let app;
 beforeEach(() => {
   freshDb();
-  app = makeApp();
+  app = makeCatalogApp();
 });
 afterEach(() => jest.restoreAllMocks());
 afterAll(() => closeDb());
@@ -68,7 +68,7 @@ describe('I1 (QA): troca de moeda no PATCH', () => {
 
   test('GANHEI sem loja (USD) -> COMPRA na Steam sem preço: PURCHASE_PRICE_REQUIRED', async () => {
     Setting.update({ usdBrlRate: 5 });
-    const won = await createItemViaApi(app, { name: 'Caixa X', category: 'CAIXA', acquisitionType: 'GANHEI', acquiredAt: '2026-11-10T12:00:00Z' });
+    const won = await createItemViaApi(app, { catalogId: CAT.CASE_REVOLVER, acquisitionType: 'GANHEI', acquiredAt: '2026-11-10T12:00:00Z' });
     expect(won.purchasePriceCents).toBe(0);
     const res = await patch(won.id, { acquisitionType: 'COMPRA', purchaseStoreId: storeId('Steam') });
     expectError(res, 400, 'PURCHASE_PRICE_REQUIRED');
@@ -77,9 +77,9 @@ describe('I1 (QA): troca de moeda no PATCH', () => {
   test('PATCH sem mexer em loja num item BRL não exige preço', async () => {
     Setting.update({ usdBrlRate: 5 });
     const brl = await createItemViaApi(app, purchaseBody({ purchaseStoreId: storeId('Steam'), purchasePriceCents: 500 }));
-    const res = await patch(brl.id, { name: 'Renomeado' });
+    const res = await patch(brl.id, { originDetail: 'Renomeado' });
     expect(res.status).toBe(200);
-    expect(res.body.data).toMatchObject({ name: 'Renomeado', purchaseCurrency: 'BRL', purchasePriceCents: 500 });
+    expect(res.body.data).toMatchObject({ originDetail: 'Renomeado', purchaseCurrency: 'BRL', purchasePriceCents: 500 });
   });
 });
 
@@ -144,7 +144,7 @@ describe('I2 (QA): leitura resiliente com valores gigantes gravados direto no ba
   test('GET /api/items: o item gigante tem minPriceCents null + aviso e os demais itens seguem normais', async () => {
     Setting.update({ usdBrlRate: 5 });
     const big = await createItemViaApi(app);
-    const normal = await createItemViaApi(app, purchaseBody({ name: 'M4A4 | Howl' }));
+    const normal = await createItemViaApi(app, purchaseBody({ catalogId: CAT.M4A1S_PRINTSTREAM }));
     getDb().prepare('UPDATE items SET purchase_price_cents = ? WHERE id = ?').run(9e15, big.id);
     const res = await request(app).get('/api/items');
     expect(res.status).toBe(200);
@@ -158,7 +158,7 @@ describe('I2 (QA): leitura resiliente com valores gigantes gravados direto no ba
   test('PATCH de outro campo num item gigante responde 200 (resposta de escrita também é resiliente)', async () => {
     const big = await createItemViaApi(app);
     getDb().prepare('UPDATE items SET purchase_price_cents = ? WHERE id = ?').run(9e15, big.id);
-    const res = await patch(big.id, { name: 'Renomeado' });
+    const res = await patch(big.id, { originDetail: 'Renomeado' });
     expect(res.status).toBe(200);
     expect(rawRow(big.id).purchase_price_cents).toBe(9e15);
   });
@@ -176,7 +176,7 @@ describe('I2 (QA): erros de regra não gravam nada', () => {
     const item = await createItemViaApi(app);
     expect((await sell(item.id)).status).toBe(200);
     const before = rawRow(item.id);
-    expectError(await patch(item.id, { tradeUnlockAt: '2026-11-19T00:00:00Z', name: 'X' }), 409, 'ITEM_TRADE_LOCKED');
+    expectError(await patch(item.id, { tradeUnlockAt: '2026-11-19T00:00:00Z', originDetail: 'X' }), 409, 'ITEM_TRADE_LOCKED');
     expectError(await patch(item.id, { acquiredAt: '2026-11-19T00:00:00Z' }), 400, 'SOLD_BEFORE_ACQUIRED');
     expectError(await patch(item.id, { purchaseStoreId: storeId('Steam') }), 400, 'PURCHASE_PRICE_REQUIRED');
     expect(rawRow(item.id)).toEqual(before);
@@ -266,7 +266,7 @@ describe('B1 (QA): formato de data', () => {
     async (acquiredAt) => {
       const res = await request(app)
         .post('/api/items')
-        .send({ name: 'Caixa', category: 'CAIXA', acquisitionType: 'GANHEI', acquiredAt });
+        .send({ catalogId: CAT.CASE_REVOLVER, acquisitionType: 'GANHEI', acquiredAt });
       expect(res.status).toBe(201);
       expect(res.body.data.acquiredAt).toBe(new Date(acquiredAt).toISOString());
     }
@@ -320,9 +320,9 @@ describe('I3 (QA): PATCH de item vendido x trade lock', () => {
 
   test('PATCH que não mexe em tradeUnlockAt num item vendido funciona (com tradeUnlockAt == soldAt gravado)', async () => {
     const item = await soldItem(purchaseBody({ tradeUnlockAt: SOLD_AT }));
-    const res = await patch(item.id, { name: 'Novo nome', originDetail: 'detalhe' });
+    const res = await patch(item.id, { originDetail: 'detalhe' });
     expect(res.status).toBe(200);
-    expect(res.body.data).toMatchObject({ name: 'Novo nome', status: 'VENDIDO', tradeUnlockAt: SOLD_AT, soldAt: SOLD_AT });
+    expect(res.body.data).toMatchObject({ originDetail: 'detalhe', status: 'VENDIDO', tradeUnlockAt: SOLD_AT, soldAt: SOLD_AT });
   });
 
   test('item em estoque aceita tradeUnlockAt no futuro (regra só vale para vendido)', async () => {
@@ -334,7 +334,8 @@ describe('I3 (QA): PATCH de item vendido x trade lock', () => {
 
 // ---------------------------------------------------------------- FIELD_TOO_LONG
 describe('FIELD_TOO_LONG (QA)', () => {
-  const post = (o) => request(app).post('/api/items').send(purchaseBody(o));
+  // Nome livre só existe em OUTRO/PASSE_BATALHA (D78); com catálogo o nome é derivado.
+  const post = (o) => request(app).post('/api/items').send(purchaseBody({ catalogId: undefined, category: 'OUTRO', name: 'Livre', ...o }));
 
   test('201 caracteres com espaços nas pontas que somem no trim: aceito; gravado sem espaços', async () => {
     const res = await post({ name: ` ${'a'.repeat(200)}   `, originDetail: `\t${'b'.repeat(200)}\n` });
@@ -348,7 +349,7 @@ describe('FIELD_TOO_LONG (QA)', () => {
   });
 
   test('PATCH: name e originDetail com exatamente 200 aceitos', async () => {
-    const item = await createItemViaApi(app);
+    const item = await createItemViaApi(app, purchaseBody({ catalogId: undefined, category: 'OUTRO', name: 'Livre' }));
     const res = await patch(item.id, { name: 'n'.repeat(200), originDetail: 'o'.repeat(200) });
     expect(res.status).toBe(200);
   });
@@ -392,17 +393,20 @@ describe('GET /api/items/stats (QA): variant padrão com dados reais', () => {
     expect(st.body.data.avgPurchaseCostUsdCents).toBe(100);
   });
 
-  test.each(['FACA', 'LUVA'])('%s sem variant encontra item cadastrado sem variant', async (category) => {
-    const item = await createItemViaApi(app, purchaseBody({ name: 'Item X', category }));
+  test.each([['FACA', CAT.KARAMBIT_FADE, '★ Karambit | Fade'], ['LUVA', CAT.SPORT_GLOVES_PANDORA, "★ Sport Gloves | Pandora's Box"]])(
+    '%s sem variant encontra item cadastrado sem variant',
+    async (category, catalogId, name) => {
+    const item = await createItemViaApi(app, purchaseBody({ catalogId }));
     expect((await sell(item.id)).status).toBe(200);
-    const res = await request(app).get('/api/items/stats').query({ name: 'Item X', category });
+    const res = await request(app).get('/api/items/stats').query({ name, category });
     expect(res.body.data.soldCount).toBe(1);
-  });
+    }
+  );
 
   test('CAIXA sem variant encontra item CAIXA (chave sem variant)', async () => {
-    const item = await createItemViaApi(app, purchaseBody({ name: 'Caixa Kilowatt', category: 'CAIXA' }));
+    const item = await createItemViaApi(app, purchaseBody({ catalogId: CAT.CASE_REVOLVER }));
     expect((await sell(item.id)).status).toBe(200);
-    const res = await request(app).get('/api/items/stats').query({ name: 'Caixa Kilowatt', category: 'CAIXA' });
+    const res = await request(app).get('/api/items/stats').query({ name: 'Revolver Case', category: 'CAIXA' });
     expect(res.status).toBe(200);
     expect(res.body.data.soldCount).toBe(1);
     expect(res.body.data.key).not.toContain('NORMAL');

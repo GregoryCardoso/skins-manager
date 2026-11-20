@@ -1,5 +1,7 @@
 const { ValidationError } = require('../errors/AppError');
-const { MAX_AMOUNT_CENTS, MAX_NAME_LENGTH, MAX_ORIGIN_DETAIL_LENGTH } = require('../config/constants');
+const {
+  MAX_AMOUNT_CENTS, MAX_NAME_LENGTH, MAX_ORIGIN_DETAIL_LENGTH, CATALOG_ID_MAX_LENGTH,
+} = require('../config/constants');
 const { CATEGORIES, VARIANTS, EXTERIORS, isWeaponCategory, assertWeaponAttributesAllowed } = require('../services/itemAttributesService');
 
 // Validação de FORMA (tipos JSON, campos permitidos, query). Regras semânticas ficam nos services.
@@ -8,10 +10,14 @@ const STRING = 'string';
 const NUMBER = 'number';
 const INTEGER = 'integer';
 
+const CATALOG_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
+
 // Campos de aquisição/atributos (POST e PATCH). `required`: obrigatório no POST e não anulável no PATCH.
+// `name` e `category` não são `required` aqui: a obrigatoriedade depende do `catalogId` e é do service (D78, D84).
 const ACQUISITION_FIELDS = {
-  name: { type: STRING, required: true, maxLength: MAX_NAME_LENGTH },
-  category: { type: STRING, required: true },
+  catalogId: { type: STRING, catalogId: true },
+  name: { type: STRING, maxLength: MAX_NAME_LENGTH },
+  category: { type: STRING },
   acquisitionType: { type: STRING, required: true },
   variant: { type: STRING },
   floatValue: { type: NUMBER },
@@ -82,6 +88,12 @@ function checkBody(body, spec, mode) {
     }
     if (rule.cents && value > MAX_AMOUNT_CENTS) {
       throw fail(`O campo ${key} excede o valor máximo permitido (${MAX_AMOUNT_CENTS} centavos).`, 'INVALID_AMOUNT');
+    }
+    if (rule.catalogId) {
+      if (value.length > CATALOG_ID_MAX_LENGTH) {
+        throw fail(`O campo ${key} deve ter no máximo ${CATALOG_ID_MAX_LENGTH} caracteres.`, 'FIELD_TOO_LONG');
+      }
+      if (!CATALOG_ID_PATTERN.test(value)) throw fail(`O campo ${key} é inválido.`, 'INVALID_FIELD');
     }
     if (rule.maxLength && value.trim().length > rule.maxLength) {
       throw fail(`O campo ${key} deve ter no máximo ${rule.maxLength} caracteres.`, 'FIELD_TOO_LONG');

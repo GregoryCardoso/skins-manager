@@ -1,12 +1,12 @@
 const request = require('supertest');
 const { closeDb } = require('../../src/config/database');
 const { freshDb } = require('../helpers/fixtures');
-const { makeApp, storeId, purchaseBody, createItemViaApi, expectError } = require('../helpers/apiFixtures');
+const { CAT, makeCatalogApp, storeId, purchaseBody, createItemViaApi, expectError } = require('../helpers/apiFixtures');
 
 let app;
 beforeEach(() => {
   freshDb();
-  app = makeApp();
+  app = makeCatalogApp();
 });
 afterAll(() => closeDb());
 
@@ -19,7 +19,7 @@ async function seed() {
   const a = await createItemViaApi(app, purchaseBody({ acquiredAt: daysAgo(7) }));
   const b = await createItemViaApi(app, purchaseBody({ acquiredAt: daysAgo(8) }));
   const c = await createItemViaApi(app, purchaseBody({ acquiredAt: daysAgo(21) }));
-  const d = await createItemViaApi(app, purchaseBody({ acquiredAt: daysAgo(22), category: 'CAIXA' }));
+  const d = await createItemViaApi(app, purchaseBody({ acquiredAt: daysAgo(22), catalogId: CAT.CASE_REVOLVER }));
   return { a, b, c, d };
 }
 
