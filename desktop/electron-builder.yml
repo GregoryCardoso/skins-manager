@@ -56,9 +56,10 @@ nsis:
 portable:
   artifactName: SkinsManager-Portable-${version}.${ext}
 
-# Fonte da atualização automática (electron-updater, D181) e destino do `npm run desktop:release` (D182).
-# releaseType: draft -> o release nasce como rascunho no GitHub; o usuário revisa e publica.
-# O `dist` usa --publish never e nunca publica.
+# Fonte da atualização automática (electron-updater, D181): vai para resources/app-update.yml.
+# O electron-builder nunca publica (dist e release usam --publish never): com os alvos nsis e portable em paralelo,
+# cada um criava o seu rascunho. O `npm run desktop:release` (D182) cria UM rascunho e envia todos os arquivos
+# (scripts/lib/githubRelease.js).
 publish:
   provider: github
   owner: GregoryCardoso

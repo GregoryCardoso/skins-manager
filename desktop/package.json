@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "description": "Skins Manager em janela própria (Electron)",
+  "author": "Gregory Cardoso",
   "main": "src/main.js",
   "scripts": {
     "stage": "node scripts/stageApp.js",

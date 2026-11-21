@@ -3,12 +3,16 @@
 // Publicação de um release no GitHub como RASCUNHO (D182). Uso: npm run desktop:release (pela raiz).
 // Exige GH_TOKEN na variável de ambiente da sessão (nunca grava o token em arquivo nem o imprime):
 //   PowerShell:  $env:GH_TOKEN = "ghp_..."; npm run desktop:release
-// Etapas: testes (backend, frontend, desktop) -> stage -> electron-builder --publish always (releaseType: draft).
+// Etapas: testes (backend, frontend, desktop) -> stage -> electron-builder --publish never (só empacota) ->
+// cria UM rascunho v<versão> e envia Setup, .blockmap, Portable e latest.yml (scripts/lib/githubRelease.js).
+// Não usamos --publish always: os alvos nsis e portable publicavam em paralelo e cada um criava o seu rascunho.
 const path = require('path');
 const { spawnSync } = require('child_process');
+const githubRelease = require('./lib/githubRelease');
 
 const ROOT_DIR = path.join(__dirname, '..', '..');
 const DESKTOP_DIR = path.join(__dirname, '..');
+const DIST_DIR = path.join(DESKTOP_DIR, 'dist');
 
 function checkReleaseEnv(env) {
   const token = env && typeof env.GH_TOKEN === 'string' ? env.GH_TOKEN.trim() : '';
@@ -23,7 +27,7 @@ function checkReleaseEnv(env) {
       ].join('\n'),
     };
   }
-  return { ok: true };
+  return { ok: true, token };
 }
 
 function run(label, command, args, cwd) {
@@ -36,7 +40,7 @@ function run(label, command, args, cwd) {
   }
 }
 
-function main() {
+async function main() {
   const check = checkReleaseEnv(process.env);
   if (!check.ok) {
     console.error(check.message);
@@ -44,8 +48,24 @@ function main() {
   }
   run('Testes (backend, frontend e desktop)', 'npm', ['run', 'test:all'], ROOT_DIR);
   run('Montando o app (stage)', 'node', ['scripts/stageApp.js'], DESKTOP_DIR);
-  run('Empacotando e publicando o rascunho no GitHub', 'npx', ['electron-builder', '--win', '--x64', '--publish', 'always'], DESKTOP_DIR);
-  console.log('\nRascunho criado no GitHub. Revise as notas e os arquivos (Setup, Portable, latest.yml, .blockmap) e publique.');
+  run('Empacotando (instalador e portátil, sem publicar)', 'npx', ['electron-builder', '--win', '--x64', '--publish', 'never'], DESKTOP_DIR);
+
+  // versão lida na hora (o require ficaria em cache se o script mudasse a versão antes)
+  const { version } = JSON.parse(require('fs').readFileSync(path.join(DESKTOP_DIR, 'package.json'), 'utf8'));
+  console.log(`\n==> Criando o rascunho v${version} no GitHub e enviando os arquivos`);
+  try {
+    const result = await githubRelease.publishRelease({
+      version,
+      distDir: DIST_DIR,
+      client: githubRelease.createGitHubClient(check.token),
+    });
+    console.log(`\nRascunho ${result.tag} criado com ${result.assets.length} arquivos: ${result.assets.join(', ')}.`);
+    if (result.url) console.log(result.url);
+    console.log('Revise as notas e os arquivos no GitHub e publique.');
+  } catch (err) {
+    console.error(`\n${err.message}`);
+    process.exit(1);
+  }
 }
 
 if (require.main === module) main();
