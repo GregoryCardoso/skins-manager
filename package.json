@@ -21,6 +21,8 @@
     "seed:dev": "npm --prefix backend run seed:dev",
     "desktop:install": "npm --prefix desktop install",
     "desktop:stage": "npm --prefix desktop run stage",
+    "desktop:dist": "npm --prefix desktop run dist",
+    "version:set": "node scripts/setVersion.js",
     "desktop:dev": "npm --prefix desktop run dev",
     "test:desktop": "npm --prefix desktop test",
     "test:all": "npm test && npm run test:desktop"

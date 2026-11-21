@@ -43,7 +43,7 @@ describe('resolveAppRoot / resolveAppPaths', () => {
     expect(resolveAppPaths(root).frontendIndex).toBe(path.join(root, 'frontend', 'out', 'index.html'));
   });
 
-  test('empacotado usa <resources>/app', () => {
-    expect(resolveAppRoot({ isPackaged: true, resourcesPath: path.join('/res'), desktopDir: '/x' })).toBe(path.join('/res', 'app'));
+  test('empacotado usa <resources>/skins-manager', () => {
+    expect(resolveAppRoot({ isPackaged: true, resourcesPath: path.join('/res'), desktopDir: '/x' })).toBe(path.join('/res', 'skins-manager'));
   });
 });

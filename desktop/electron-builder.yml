@@ -1,0 +1,63 @@
+# Empacotamento do Skins Manager desktop (D180). Gera, em desktop/dist/, o instalador NSIS e o portátil.
+# Rode pela raiz: npm run desktop:dist (faz o stage e depois o electron-builder).
+appId: io.github.gregorycardoso.skinsmanager
+productName: Skins Manager
+copyright: Todos os direitos reservados
+
+directories:
+  output: dist
+  buildResources: build # se existir build/icon.png, o electron-builder o usa sozinho (ver build/LEIA-ME.md)
+
+# No asar vai só o código do Electron (src/). O backend e o frontend ficam fora dele, em extraResources.
+asar: true
+files:
+  - package.json
+  - src/**/*
+
+# desktop/.stage -> <instalação>\resources\skins-manager\{backend, frontend}.
+# Não pode se chamar "app": o Electron carregaria resources\app em vez do app.asar.
+extraResources:
+  - from: .stage
+    to: skins-manager
+    filter:
+      - "**/*"
+      - "!deps.json"
+      # binários do better-sqlite3 de outras plataformas (só win32-x64 é usado)
+      - "!**/better-sqlite3/prebuilds/*"
+      # sobras da compilação local (.vcxproj, config.gypi, obj/): não são usadas e citam o caminho da máquina de build
+      - "!**/better-sqlite3/build/**"
+      - "**/better-sqlite3/prebuilds/win32-x64.node"
+
+# O better-sqlite3 já foi preparado no stage (scripts/stageApp.js).
+npmRebuild: false
+nodeGypRebuild: false
+buildDependenciesFromSource: false
+
+win:
+  target:
+    - target: nsis
+      arch: x64
+    - target: portable
+      arch: x64
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowElevation: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: Skins Manager
+  language: "1046"
+  # Desinstalar nunca apaga %APPDATA%\SkinsManager (dados, backups, logs).
+  deleteAppDataOnUninstall: false
+  artifactName: SkinsManager-Setup-${version}.${ext}
+
+portable:
+  artifactName: SkinsManager-Portable-${version}.${ext}
+
+# Só configurado; nada é publicado por aqui (a publicação e a atualização automática ficam para 7.5 e D182).
+publish:
+  provider: github
+  owner: GregoryCardoso
+  repo: skins-manager

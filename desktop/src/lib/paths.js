@@ -4,6 +4,7 @@
 const path = require('path');
 const os = require('os');
 
+const PACKAGED_APP_DIR_NAME = 'skins-manager'; // igual ao `to` de extraResources em electron-builder.yml
 const APP_DIR_NAME = 'SkinsManager'; // igual a backend/src/config/paths.js (D171)
 
 // %APPDATA%\SkinsManager (Windows) ou ~/.skins-manager (só desenvolvimento fora do Windows).
@@ -28,9 +29,9 @@ function resolveDataPaths(dataDir) {
   };
 }
 
-// Onde estão o backend e o frontend: `desktop/.stage` em desenvolvimento, `<resources>/app` empacotado (7.4).
+// Onde estão o backend e o frontend: `desktop/.stage` em desenvolvimento, `<resources>/skins-manager` empacotado (7.4; não pode ser `app`, que o Electron carregaria no lugar do app.asar).
 function resolveAppRoot({ isPackaged, resourcesPath, desktopDir }) {
-  return isPackaged ? path.join(resourcesPath, 'app') : path.join(desktopDir, '.stage');
+  return isPackaged ? path.join(resourcesPath, PACKAGED_APP_DIR_NAME) : path.join(desktopDir, '.stage');
 }
 
 function resolveAppPaths(appRoot) {
@@ -42,4 +43,4 @@ function resolveAppPaths(appRoot) {
   };
 }
 
-module.exports = { resolveDataDir, resolveDataPaths, resolveAppRoot, resolveAppPaths, APP_DIR_NAME };
+module.exports = { resolveDataDir, resolveDataPaths, resolveAppRoot, resolveAppPaths, APP_DIR_NAME, PACKAGED_APP_DIR_NAME };
