@@ -1,11 +1,21 @@
 // Fixtures dos testes (não é arquivo de teste nem entra no app).
 import type { ItemView, Store } from '@/types/api';
 
+// Loja completa com padrões; os testes sobrescrevem só o que importa.
+export function makeStore(overrides: Partial<Store> = {}): Store {
+  return {
+    id: 1, name: 'Loja', currency: 'USD', isActive: true, isPrimary: false, saleFeeType: null, saleFeeRate: null,
+    saleFeeRounding: 'CEIL', saleMinFeeCents: null, saleFixedFeeCents: 0, allowsWithdrawal: false,
+    withdrawalFeeRate: null, withdrawalFixedFeeCents: 0, createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z', saleFeesConfigured: false, inUse: false, ...overrides,
+  };
+}
+
 export const STORES: Store[] = [
-  { id: 1, name: 'CSFloat', currency: 'USD', isActive: true, isPrimary: true, saleFeeType: 'DEDUCTED', saleFeesConfigured: true },
-  { id: 2, name: 'Steam', currency: 'BRL', isActive: true, isPrimary: false, saleFeeType: 'ADDED', saleFeesConfigured: true },
-  { id: 3, name: 'CSMoney', currency: 'USD', isActive: true, isPrimary: false, saleFeeType: null, saleFeesConfigured: false },
-  { id: 4, name: 'Antiga', currency: 'USD', isActive: false, isPrimary: false, saleFeeType: 'DEDUCTED', saleFeesConfigured: true },
+  makeStore({ id: 1, name: 'CSFloat', isPrimary: true, saleFeeType: 'DEDUCTED', saleFeeRate: 0.02, saleFeesConfigured: true }),
+  makeStore({ id: 2, name: 'Steam', currency: 'BRL', saleFeeType: 'ADDED', saleFeeRate: 0.15, saleFeesConfigured: true }),
+  makeStore({ id: 3, name: 'CSMoney' }),
+  makeStore({ id: 4, name: 'Antiga', isActive: false, saleFeeType: 'DEDUCTED', saleFeeRate: 0.02, saleFeesConfigured: true }),
 ];
 
 export function makeItem(overrides: Partial<ItemView> = {}): ItemView {

@@ -24,7 +24,8 @@
   "nav": {
     "inventory": "Inventory",
     "sales": "Sales",
-    "main": "Main navigation"
+    "main": "Main navigation",
+    "stores": "Stores"
   },
   "header": {
     "preferenceNotSaved": "Preference not saved on the server: {reason}",
@@ -140,7 +141,13 @@
     "INVALID_RESPONSE": "The server replied in an unexpected format. Check that port 3001 belongs to the app backend.",
     "ABORTED": "Operation cancelled.",
     "UNKNOWN": "Unknown error.",
-    "NET_RECEIVED_ABOVE_PRICE": "The net received cannot be greater than the sale price."
+    "NET_RECEIVED_ABOVE_PRICE": "The net received cannot be greater than the sale price.",
+    "STORE_NAME_TAKEN": "A store with this name already exists.",
+    "STORE_CURRENCY_LOCKED": "The currency cannot change: the store was already used in items or transactions.",
+    "STORE_IN_USE": "The store was already used and can only be deactivated.",
+    "PRIMARY_STORE_REQUIRED": "There must always be a primary store. Choose another primary store first.",
+    "PRIMARY_STORE_INACTIVE": "The primary store cannot be inactive. Choose another primary store first.",
+    "SALE_FEE_INCOMPLETE": "Fill in the sale fee type and rate together, or leave both empty."
   },
   "warnings": {
     "FEES_NOT_CONFIGURED": "The store fees are not configured.",
@@ -386,7 +393,18 @@
     "salePriceCents": "Sale price",
     "soldAt": "Sale date",
     "fxRateAtSale": "Sale rate",
-    "netReceivedCents": "Net received"
+    "netReceivedCents": "Net received",
+    "saleFeeType": "Sale fee type",
+    "saleFeeRate": "Sale fee",
+    "saleFeeRounding": "Rounding",
+    "saleMinFeeCents": "Minimum fee",
+    "saleFixedFeeCents": "Fixed sale fee",
+    "allowsWithdrawal": "Allows withdrawal",
+    "withdrawalFeeRate": "Withdrawal fee",
+    "withdrawalFixedFeeCents": "Fixed withdrawal fee",
+    "isActive": "Active",
+    "isPrimary": "Primary",
+    "currency": "Currency"
   },
   "errorDetails": {
     "ITEM_TRADE_LOCKED": "Item trade locked until {date}.",
@@ -476,5 +494,100 @@
     "fxNote": "{count} of {total} sales used a recorded USD→BRL rate",
     "keyNote": "Same name, category, variant, exterior and phase.",
     "daysValue": "{days} days"
+  },
+  "stores": {
+    "title": "Stores",
+    "count": {
+      "one": "{count} store",
+      "other": "{count} stores"
+    },
+    "new": "New store",
+    "feeChangeNote": "Fee changes apply to future sales; sales already recorded do not change.",
+    "empty": "No stores yet.",
+    "loadError": "Could not load the stores: {reason}",
+    "storeGone": "The store no longer exists. The list was refreshed.",
+    "activated": "Store \"{name}\" activated.",
+    "deactivated": "Store \"{name}\" deactivated.",
+    "madePrimary": "\"{name}\" is now the primary store.",
+    "deleted": "Store \"{name}\" deleted.",
+    "deleteTitle": "Delete store",
+    "deleteMessage": "Delete the store \"{name}\"? This cannot be undone.",
+    "confirmDelete": "Delete"
+  },
+  "storesTable": {
+    "columns": {
+      "name": "Store",
+      "currency": "Currency",
+      "status": "Status",
+      "saleFee": "Sale fee",
+      "rounding": "Rounding",
+      "minFixed": "Minimum / fixed",
+      "withdrawal": "Withdrawal",
+      "actions": "Actions"
+    },
+    "primary": "Primary",
+    "active": "Active",
+    "inactive": "Inactive",
+    "feesNotConfigured": "fees not configured",
+    "feeDeducted": "{rate}% deducted",
+    "feeAdded": "{rate}% added",
+    "minFee": "min. {value}",
+    "fixedFee": "fixed {value}",
+    "withdrawalNo": "No",
+    "withdrawalYes": "Yes, {detail}",
+    "withdrawalRateUnknown": "fee not configured",
+    "actions": {
+      "edit": "Edit",
+      "activate": "Activate",
+      "deactivate": "Deactivate",
+      "makePrimary": "Make primary",
+      "delete": "Delete"
+    },
+    "reasons": {
+      "primaryNeeded": "Choose another primary store first.",
+      "inUse": "Store in use, it can only be deactivated.",
+      "alreadyPrimary": "Already the primary store.",
+      "activateFirst": "Activate the store first."
+    }
+  },
+  "storeForm": {
+    "createTitle": "New store",
+    "editTitle": "Edit store: {name}",
+    "name": "Name",
+    "currency": "Currency",
+    "currencyLocked": "The currency cannot change: the store was already used.",
+    "feeChangeNote": "Fee changes apply to future sales; sales already recorded do not change.",
+    "saleFeeSection": "Sale fee",
+    "saleFeeType": "Fee type",
+    "notConfigured": "Not configured",
+    "feeType": {
+      "DEDUCTED": "Deducted from the price",
+      "ADDED": "Added to the price"
+    },
+    "saleFeeRate": "Rate (%)",
+    "percentHint": "In %, for example 2.5. Empty = not configured.",
+    "saleFeeRounding": "Rounding",
+    "rounding": {
+      "CEIL": "Round up",
+      "ROUND": "Nearest",
+      "FLOOR": "Round down"
+    },
+    "saleMinFee": "Minimum fee ({currency})",
+    "saleFixedFee": "Fixed sale fee ({currency})",
+    "emptyIsNone": "Empty = no minimum.",
+    "emptyIsZero": "Empty = 0.",
+    "withdrawalSection": "Withdrawal",
+    "allowsWithdrawal": "Allows withdrawal",
+    "withdrawalOffHint": "Without withdrawal, the withdrawal fees stay saved but are not used.",
+    "withdrawalFeeRate": "Withdrawal fee (%)",
+    "withdrawalFixedFee": "Fixed withdrawal fee ({currency})",
+    "isActive": "Active store",
+    "primaryCannotDeactivate": "The primary store cannot be deactivated. Choose another primary store first.",
+    "isPrimary": "Set as primary store",
+    "invalidRate": "Enter a percentage from 0 up to below 100 (for example 2.5).",
+    "invalidMoney": "Enter an amount with at most 2 decimal places (for example 0.30).",
+    "nameRequired": "Enter the store name.",
+    "created": "Store \"{name}\" created.",
+    "updated": "Store \"{name}\" updated."
   }
 }

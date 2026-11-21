@@ -10,7 +10,7 @@ import {
 } from './itemForm';
 import { formatCentsInput, parseDecimalInput, parseFloatInput, parseIntegerInput, parseMoneyToCents } from './numberInput';
 import { applySaleStore, buildSellBody, initialSellState, type SellContext } from './sellForm';
-import { STORES, makeItem } from './testFixtures';
+import { STORES, makeItem, makeStore } from './testFixtures';
 
 const ctx: FormContext = { stores: STORES, usdBrlRate: 5.4, language: 'pt-BR', now: new Date(2026, 10, 20, 12, 0) };
 const sctx: SellContext = { stores: STORES, usdBrlRate: 5.4, language: 'pt-BR' };
@@ -133,7 +133,7 @@ describe('troca de loja e cotação por moeda', () => {
   });
 
   test('BRL -> BRL mantém preço e a cotação editada', () => {
-    const brl2: typeof STORES = [...STORES, { id: 9, name: 'Outra BRL', currency: 'BRL', isActive: true, isPrimary: false, saleFeeType: 'DEDUCTED', saleFeesConfigured: true }];
+    const brl2: typeof STORES = [...STORES, makeStore({ id: 9, name: 'Outra BRL', currency: 'BRL', saleFeeType: 'DEDUCTED', saleFeeRate: 0.02, saleFeesConfigured: true })];
     const c2: FormContext = { ...ctx, stores: brl2 };
     let s = applyPurchaseStore(initialCreateState(c2), 2, c2);
     s.priceText = '7,00';

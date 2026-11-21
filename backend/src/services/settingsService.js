@@ -13,7 +13,11 @@ function updateFxRate(usdBrlRate, { now = new Date() } = {}) {
   if (!isValidFxRate(usdBrlRate)) {
     throw new ValidationError('Cotação USD→BRL inválida: informe um número maior que zero.', 'INVALID_FX_RATE');
   }
-  Setting.update({ usdBrlRate, usdBrlRateUpdatedAt: now.toISOString() }, { now });
+  // Edição manual: origem MANUAL e sem data de PTAX (D143, D147).
+  Setting.update(
+    { usdBrlRate, usdBrlRateUpdatedAt: now.toISOString(), usdBrlRateSource: 'MANUAL', ptaxQuotedAt: null },
+    { now }
+  );
   return getSettings();
 }
 

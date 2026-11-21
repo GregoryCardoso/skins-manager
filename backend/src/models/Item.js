@@ -15,9 +15,9 @@ function findById(id) {
   return toItem(getDb().prepare('SELECT * FROM items WHERE id = ?').get(id));
 }
 
-function create(data) {
-  const now = new Date().toISOString();
-  const id = insertRow(getDb(), 'items', data, FIELDS, { created_at: now, updated_at: now });
+function create(data, { now = new Date() } = {}) {
+  const stamp = now.toISOString();
+  const id = insertRow(getDb(), 'items', data, FIELDS, { created_at: stamp, updated_at: stamp });
   return findById(Number(id));
 }
 
@@ -46,8 +46,8 @@ function findLegacy(catalogCategories) {
     .map(toItem);
 }
 
-function update(id, partial = {}) {
-  const changes = updateRow(getDb(), 'items', id, partial, FIELDS, { updated_at: new Date().toISOString() });
+function update(id, partial = {}, { now = new Date() } = {}) {
+  const changes = updateRow(getDb(), 'items', id, partial, FIELDS, { updated_at: now.toISOString() });
   return changes === 0 ? null : findById(id);
 }
 

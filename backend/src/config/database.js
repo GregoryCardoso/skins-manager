@@ -74,7 +74,7 @@ function openDatabase(dbPath, { migrations = MIGRATIONS, now = new Date() } = {}
     if (!inMemory) db.pragma('journal_mode = WAL');
 
     runMigrations(db, migrations, { dbPath, now });
-    runSeed(db);
+    runSeed(db, now);
   } catch (err) {
     // Libera o handle (no Windows ele trava o arquivo .sqlite) e propaga o erro original.
     db.close();

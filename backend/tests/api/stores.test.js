@@ -36,7 +36,7 @@ describe('GET /api/stores', () => {
     expectError(await request(app).get('/api/stores?activeOnly=x'), 400, 'INVALID_QUERY');
   });
 
-  test('POST /api/stores não existe nesta etapa', async () => {
-    expectError(await request(app).post('/api/stores').send({ name: 'X' }), 404, 'NOT_FOUND');
+  test('POST /api/stores sem currency é recusado pelo validador', async () => {
+    expectError(await request(app).post('/api/stores').send({ name: 'X' }), 400, 'REQUIRED_FIELD', { field: 'currency' });
   });
 });

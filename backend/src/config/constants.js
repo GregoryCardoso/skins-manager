@@ -10,6 +10,9 @@ const MAX_ORIGIN_DETAIL_LENGTH = 200;
 const MAX_INSPECT_LINK_LENGTH = 2048; // T30 (D114)
 const MAX_ASSET_ID_LENGTH = 64;
 const MAX_PHASE_LENGTH = 100;
+const MAX_STORE_NAME_LENGTH = 50; // D145
+// Casas decimais máximas das taxas percentuais de loja (0.025 = 2,5%); a tela usa % com até 4 casas.
+const RATE_MAX_DECIMALS = 6;
 const MAX_NOTE_LENGTH = 500; // note de deposits/withdrawals (Etapa 7); sem validador nesta etapa
 
 // Catálogo de itens (D70, D80, D81).
@@ -47,6 +50,8 @@ module.exports = Object.freeze({
   MAX_ASSET_ID_LENGTH,
   MAX_PHASE_LENGTH,
   MAX_NOTE_LENGTH,
+  MAX_STORE_NAME_LENGTH,
+  RATE_MAX_DECIMALS,
   CATALOG_BASE_URL,
   CATALOG_LANGUAGES,
   CATALOG_FILES,

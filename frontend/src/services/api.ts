@@ -18,6 +18,8 @@ import type {
   SellResult,
   Settings,
   Store,
+  StoreCreateBody,
+  StorePatchBody,
 } from '@/types/api';
 
 // Build de produção: o backend serve a interface na mesma origem (D134); em desenvolvimento a API fica na 3001.
@@ -171,6 +173,14 @@ export const listSales = (query: SalesQuery, signal?: AbortSignal) =>
   });
 
 export const listStores = (signal?: AbortSignal) => request<Store[]>('GET', '/stores', { signal });
+
+export const getStore = (id: number, signal?: AbortSignal) => request<Store>('GET', `/stores/${id}`, { signal });
+
+export const createStore = (body: StoreCreateBody) => request<Store>('POST', '/stores', { body });
+
+export const updateStore = (id: number, body: StorePatchBody) => request<Store>('PATCH', `/stores/${id}`, { body });
+
+export const deleteStore = (id: number) => request<{ id: number }>('DELETE', `/stores/${id}`);
 
 export const updateFxRate = (usdBrlRate: number) =>
   request<Settings>('PUT', '/settings/fx-rate', { body: { usdBrlRate } });

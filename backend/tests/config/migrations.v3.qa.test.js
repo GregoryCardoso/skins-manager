@@ -73,7 +73,7 @@ test('idempotência: reabrir não migra de novo, não cria outro backup e não a
   db.close();
   db = openDatabase(dbPath, { now: new Date('2026-11-21T12:00:00.000Z') });
   try {
-    expect(db.pragma('user_version', { simple: true })).toBe(3);
+    expect(db.pragma('user_version', { simple: true })).toBe(4);
     expect(db.prepare('SELECT * FROM items ORDER BY id').all()).toEqual(first);
   } finally {
     db.close();

@@ -381,7 +381,7 @@ function matchLegacyItem(item, candidates) {
 }
 
 // Vincula legados ao catálogo (nome + categoria). Nunca lança; devolve a quantidade vinculada.
-function linkLegacyItems() {
+function linkLegacyItems({ now = new Date() } = {}) {
   try {
     return runInTransaction(() => {
       let linked = 0;
@@ -391,7 +391,7 @@ function linkLegacyItems() {
         if (!match) continue;
         const patch = { catalogId: match.id, name: match.name };
         if (!isNil(match.phase)) patch.phase = match.phase;
-        Item.update(item.id, patch);
+        Item.update(item.id, patch, { now });
         linked += 1;
       }
       return linked;

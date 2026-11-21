@@ -23,4 +23,54 @@ function validateSaleQuoteQuery(req, res, next) {
   return next();
 }
 
-module.exports = { validateStoreQuery, validateSaleQuoteQuery };
+// Forma do corpo de POST/PATCH (D156). Valores e regras de negócio ficam no storeService.
+const STRING = 'string';
+const NUMBER = 'number';
+const BOOLEAN = 'boolean';
+// tipo esperado e se aceita null
+const BODY_FIELDS = Object.freeze({
+  name: { type: STRING, nullable: false },
+  currency: { type: STRING, nullable: false },
+  saleFeeType: { type: STRING, nullable: true },
+  saleFeeRate: { type: NUMBER, nullable: true },
+  saleFeeRounding: { type: STRING, nullable: false },
+  saleMinFeeCents: { type: NUMBER, nullable: true },
+  saleFixedFeeCents: { type: NUMBER, nullable: false },
+  allowsWithdrawal: { type: BOOLEAN, nullable: false },
+  withdrawalFeeRate: { type: NUMBER, nullable: true },
+  withdrawalFixedFeeCents: { type: NUMBER, nullable: false },
+  isActive: { type: BOOLEAN, nullable: false },
+  isPrimary: { type: BOOLEAN, nullable: false },
+});
+
+function checkBodyShape(body, { requireKeys }) {
+  if (body === null || typeof body !== 'object' || Array.isArray(body)) {
+    return new ValidationError('O corpo da requisição deve ser um objeto JSON.', 'INVALID_BODY');
+  }
+  const keys = Object.keys(body);
+  const unknown = keys.find((k) => !Object.prototype.hasOwnProperty.call(BODY_FIELDS, k));
+  if (unknown) return new ValidationError(`Campo desconhecido: ${unknown}`, 'UNKNOWN_FIELD', { field: unknown });
+  if (requireKeys) {
+    for (const key of ['name', 'currency']) {
+      if (body[key] === undefined) {
+        return new ValidationError(`O campo ${key} é obrigatório.`, 'REQUIRED_FIELD', { field: key });
+      }
+    }
+  } else if (keys.length === 0) {
+    return new ValidationError('Informe ao menos um campo para alterar.', 'INVALID_BODY');
+  }
+  for (const key of keys) {
+    const value = body[key];
+    if (value === undefined) continue;
+    const rule = BODY_FIELDS[key];
+    if (value === null ? !rule.nullable : typeof value !== rule.type) {
+      return new ValidationError(`O campo ${key} tem um tipo inválido.`, 'INVALID_FIELD', { field: key });
+    }
+  }
+  return null;
+}
+
+const validateStoreCreateBody = (req, res, next) => next(checkBodyShape(req.body, { requireKeys: true }) || undefined);
+const validateStorePatchBody = (req, res, next) => next(checkBodyShape(req.body, { requireKeys: false }) || undefined);
+
+module.exports = { validateStoreQuery, validateSaleQuoteQuery, validateStoreCreateBody, validateStorePatchBody };

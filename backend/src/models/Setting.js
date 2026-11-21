@@ -1,7 +1,7 @@
 const { getDb } = require('../config/database');
 const { mapRow, updateRow } = require('./modelHelpers');
 
-const FIELDS = ['usdBrlRate', 'usdBrlRateUpdatedAt', 'catalogUpdatedAt', 'theme', 'language'];
+const FIELDS = ['usdBrlRate', 'usdBrlRateUpdatedAt', 'usdBrlRateSource', 'ptaxQuotedAt', 'catalogUpdatedAt', 'theme', 'language'];
 
 // Só as colunas do contrato (sem `id`, linha única).
 function get() {

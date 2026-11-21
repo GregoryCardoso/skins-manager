@@ -1,0 +1,64 @@
+import { describe, expect, test } from 'vitest';
+import {
+  buildStoreCreateBody, buildStorePatchBody, initialStoreFormState, percentTextToRate, rateToPercentText,
+  storeFormFromStore, validateStoreForm,
+} from './storeForm';
+import { makeStore } from './testFixtures';
+
+describe('percentTextToRate / rateToPercentText', () => {
+  test.each([
+    ['2,5', 'pt-BR', 0.025], ['15', 'pt-BR', 0.15], ['0,5', 'pt-BR', 0.005], ['2.5', 'en', 0.025], ['0', 'pt-BR', 0],
+  ])('%s (%s) -> %s e volta', (text, lang, rate) => {
+    expect(percentTextToRate(text, lang)).toEqual({ ok: true, rate });
+    expect(percentTextToRate(rateToPercentText(rate, lang), lang)).toEqual({ ok: true, rate });
+  });
+
+  test('vazio vira null; inválido, negativo e >= 100 viram erro', () => {
+    expect(percentTextToRate('  ', 'pt-BR')).toEqual({ ok: true, rate: null });
+    for (const bad of ['abc', '-1', '100', '100,5', '99,99999', '1,2,3']) expect(percentTextToRate(bad, 'pt-BR')).toEqual({ ok: false });
+  });
+
+  test('texto sem erro de arredondamento e por idioma', () => {
+    expect(rateToPercentText(0.025, 'pt-BR')).toBe('2,5');
+    expect(rateToPercentText(0.025, 'en')).toBe('2.5');
+    expect(rateToPercentText(0.15, 'pt-BR')).toBe('15');
+    expect(rateToPercentText(null, 'pt-BR')).toBe('');
+  });
+});
+
+describe('formulário de loja', () => {
+  const base = { ...initialStoreFormState(), name: ' Nova ', currency: 'BRL' as const };
+
+  test('corpo de criação: vazio = null nas anuláveis e 0 nas fixas', () => {
+    expect(buildStoreCreateBody(base, 'pt-BR')).toEqual({
+      name: 'Nova', currency: 'BRL', saleFeeType: null, saleFeeRate: null, saleFeeRounding: 'CEIL', saleMinFeeCents: null,
+      saleFixedFeeCents: 0, allowsWithdrawal: false, withdrawalFeeRate: null, withdrawalFixedFeeCents: 0, isActive: true, isPrimary: false,
+    });
+  });
+
+  test('converte percentuais e centavos digitados', () => {
+    const body = buildStoreCreateBody(
+      { ...base, saleFeeType: 'ADDED', saleFeeRateText: '2,5', saleMinFeeText: '0,30', saleFixedFeeText: '1' }, 'pt-BR',
+    );
+    expect(body).toMatchObject({ saleFeeType: 'ADDED', saleFeeRate: 0.025, saleMinFeeCents: 30, saleFixedFeeCents: 100 });
+  });
+
+  test('validação local', () => {
+    expect(validateStoreForm(base, 'pt-BR')).toEqual({});
+    expect(validateStoreForm({ ...base, name: ' ', saleFeeRateText: 'x', saleMinFeeText: '1,234', withdrawalFixedFeeText: '-1' }, 'pt-BR')).toEqual({
+      name: 'storeForm.nameRequired', saleFeeRate: 'storeForm.invalidRate', saleMinFeeCents: 'storeForm.invalidMoney',
+      withdrawalFixedFeeCents: 'storeForm.invalidMoney',
+    });
+  });
+
+  test('PATCH envia só o que mudou; ida e volta sem mudar não envia nada', () => {
+    const store = makeStore({
+      id: 5, name: 'Steam', currency: 'BRL', saleFeeType: 'ADDED', saleFeeRate: 0.15, saleMinFeeCents: 30, saleFixedFeeCents: 5,
+      withdrawalFeeRate: 0.025, withdrawalFixedFeeCents: 0, allowsWithdrawal: true,
+    });
+    const state = storeFormFromStore(store, 'pt-BR');
+    expect(buildStorePatchBody(state, store, 'pt-BR')).toEqual({});
+    expect(buildStorePatchBody({ ...state, saleFeeRateText: '16' }, store, 'pt-BR')).toEqual({ saleFeeRate: 0.16 });
+    expect(buildStorePatchBody({ ...state, saleMinFeeText: '' }, store, 'pt-BR')).toEqual({ saleMinFeeCents: null });
+  });
+});

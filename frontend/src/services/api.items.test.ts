@@ -130,3 +130,20 @@ describe('listSales: query sem campos vazios (QA 4B.4)', () => {
     expect(url.searchParams.has('soldTo')).toBe(false);
   });
 });
+
+describe('API de lojas (D156)', () => {
+  test('getStore, createStore, updateStore e deleteStore: método, caminho e corpo', async () => {
+    const { getStore, createStore, updateStore, deleteStore } = await import('./api');
+    const fn = stubFetch();
+    await getStore(3);
+    await createStore({
+      name: 'X', currency: 'USD', saleFeeType: null, saleFeeRate: null, saleFeeRounding: 'CEIL', saleMinFeeCents: null,
+      saleFixedFeeCents: 0, allowsWithdrawal: false, withdrawalFeeRate: null, withdrawalFixedFeeCents: 0, isActive: true, isPrimary: false,
+    });
+    await updateStore(3, { isPrimary: true });
+    await deleteStore(3);
+    const calls = fn.mock.calls.map(([url, init]) => [String((init as RequestInit).method), String(url).replace(/^.*\/api/, '')]);
+    expect(calls).toEqual([['GET', '/stores/3'], ['POST', '/stores'], ['PATCH', '/stores/3'], ['DELETE', '/stores/3']]);
+    expect(JSON.parse(String((fn.mock.calls[2][1] as RequestInit).body))).toEqual({ isPrimary: true });
+  });
+});

@@ -208,6 +208,9 @@ export interface SalesQuery {
 
 export type SaleFeeType = 'DEDUCTED' | 'ADDED';
 
+export type SaleFeeRounding = 'CEIL' | 'ROUND' | 'FLOOR';
+
+// Loja completa (D156). Taxas percentuais em fração (0.025 = 2,5%); valores em centavos da moeda da loja.
 export interface Store {
   id: number;
   name: string;
@@ -215,8 +218,36 @@ export interface Store {
   isActive: boolean;
   isPrimary: boolean;
   saleFeeType: SaleFeeType | null;
+  saleFeeRate: number | null;
+  saleFeeRounding: SaleFeeRounding;
+  saleMinFeeCents: number | null;
+  saleFixedFeeCents: number;
+  allowsWithdrawal: boolean;
+  withdrawalFeeRate: number | null;
+  withdrawalFixedFeeCents: number;
+  createdAt: string;
+  updatedAt: string;
   saleFeesConfigured: boolean;
+  // Loja já usada em itens, aportes, saques ou saldos: a moeda fica travada e ela não pode ser excluída.
+  inUse: boolean;
 }
+
+export interface StoreCreateBody {
+  name: string;
+  currency: Currency;
+  saleFeeType: SaleFeeType | null;
+  saleFeeRate: number | null;
+  saleFeeRounding: SaleFeeRounding;
+  saleMinFeeCents: number | null;
+  saleFixedFeeCents: number;
+  allowsWithdrawal: boolean;
+  withdrawalFeeRate: number | null;
+  withdrawalFixedFeeCents: number;
+  isActive: boolean;
+  isPrimary: boolean;
+}
+
+export type StorePatchBody = Partial<StoreCreateBody>;
 
 // --- Catálogo (busca do formulário, D115) ---
 

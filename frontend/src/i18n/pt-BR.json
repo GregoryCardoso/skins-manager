@@ -24,7 +24,8 @@
   "nav": {
     "inventory": "Inventário",
     "sales": "Vendas",
-    "main": "Navegação principal"
+    "main": "Navegação principal",
+    "stores": "Lojas"
   },
   "header": {
     "preferenceNotSaved": "Preferência não salva no servidor: {reason}",
@@ -140,7 +141,13 @@
     "INVALID_RESPONSE": "O servidor respondeu em um formato inesperado. Verifique se a porta 3001 pertence ao backend do app.",
     "ABORTED": "Operação cancelada.",
     "UNKNOWN": "Erro desconhecido.",
-    "NET_RECEIVED_ABOVE_PRICE": "O líquido recebido não pode ser maior que o preço de venda."
+    "NET_RECEIVED_ABOVE_PRICE": "O líquido recebido não pode ser maior que o preço de venda.",
+    "STORE_NAME_TAKEN": "Já existe uma loja com este nome.",
+    "STORE_CURRENCY_LOCKED": "A moeda não pode mudar: a loja já foi usada em itens ou movimentações.",
+    "STORE_IN_USE": "A loja já foi usada e só pode ser desativada.",
+    "PRIMARY_STORE_REQUIRED": "Sempre deve haver uma loja principal. Escolha outra loja como principal antes.",
+    "PRIMARY_STORE_INACTIVE": "A loja principal não pode ficar inativa. Escolha outra loja principal antes.",
+    "SALE_FEE_INCOMPLETE": "Informe o tipo e a taxa de venda juntos, ou deixe os dois vazios."
   },
   "warnings": {
     "FEES_NOT_CONFIGURED": "As taxas da loja não estão configuradas.",
@@ -386,7 +393,18 @@
     "salePriceCents": "Preço de venda",
     "soldAt": "Data da venda",
     "fxRateAtSale": "Cotação da venda",
-    "netReceivedCents": "Líquido recebido"
+    "netReceivedCents": "Líquido recebido",
+    "saleFeeType": "Tipo da taxa de venda",
+    "saleFeeRate": "Taxa de venda",
+    "saleFeeRounding": "Arredondamento",
+    "saleMinFeeCents": "Taxa mínima",
+    "saleFixedFeeCents": "Taxa fixa de venda",
+    "allowsWithdrawal": "Permite saque",
+    "withdrawalFeeRate": "Taxa de saque",
+    "withdrawalFixedFeeCents": "Taxa fixa de saque",
+    "isActive": "Ativa",
+    "isPrimary": "Principal",
+    "currency": "Moeda"
   },
   "errorDetails": {
     "ITEM_TRADE_LOCKED": "Item em trade lock até {date}.",
@@ -476,5 +494,100 @@
     "fxNote": "{count} de {total} vendas usaram cotação USD→BRL gravada",
     "keyNote": "Mesmo nome, categoria, variante, exterior e fase.",
     "daysValue": "{days} dias"
+  },
+  "stores": {
+    "title": "Lojas",
+    "count": {
+      "one": "{count} loja",
+      "other": "{count} lojas"
+    },
+    "new": "Nova loja",
+    "feeChangeNote": "Mudanças de taxa valem para as próximas vendas; vendas já registradas não mudam.",
+    "empty": "Nenhuma loja cadastrada.",
+    "loadError": "Não foi possível carregar as lojas: {reason}",
+    "storeGone": "A loja não existe mais. A lista foi atualizada.",
+    "activated": "Loja \"{name}\" ativada.",
+    "deactivated": "Loja \"{name}\" desativada.",
+    "madePrimary": "\"{name}\" agora é a loja principal.",
+    "deleted": "Loja \"{name}\" excluída.",
+    "deleteTitle": "Excluir loja",
+    "deleteMessage": "Excluir a loja \"{name}\"? Esta ação não pode ser desfeita.",
+    "confirmDelete": "Excluir"
+  },
+  "storesTable": {
+    "columns": {
+      "name": "Loja",
+      "currency": "Moeda",
+      "status": "Situação",
+      "saleFee": "Taxa de venda",
+      "rounding": "Arredondamento",
+      "minFixed": "Mínima / fixa",
+      "withdrawal": "Saque",
+      "actions": "Ações"
+    },
+    "primary": "Principal",
+    "active": "Ativa",
+    "inactive": "Inativa",
+    "feesNotConfigured": "taxas não configuradas",
+    "feeDeducted": "{rate}% descontada",
+    "feeAdded": "{rate}% somada",
+    "minFee": "mín. {value}",
+    "fixedFee": "fixa {value}",
+    "withdrawalNo": "Não",
+    "withdrawalYes": "Sim, {detail}",
+    "withdrawalRateUnknown": "taxa não configurada",
+    "actions": {
+      "edit": "Editar",
+      "activate": "Ativar",
+      "deactivate": "Desativar",
+      "makePrimary": "Tornar principal",
+      "delete": "Excluir"
+    },
+    "reasons": {
+      "primaryNeeded": "Escolha outra loja principal antes.",
+      "inUse": "Loja em uso, só pode ser desativada.",
+      "alreadyPrimary": "Já é a loja principal.",
+      "activateFirst": "Ative a loja antes."
+    }
+  },
+  "storeForm": {
+    "createTitle": "Nova loja",
+    "editTitle": "Editar loja: {name}",
+    "name": "Nome",
+    "currency": "Moeda",
+    "currencyLocked": "A moeda não pode mudar: a loja já foi usada.",
+    "feeChangeNote": "Mudanças de taxa valem para as próximas vendas; vendas já registradas não mudam.",
+    "saleFeeSection": "Taxa de venda",
+    "saleFeeType": "Tipo da taxa",
+    "notConfigured": "Não configurada",
+    "feeType": {
+      "DEDUCTED": "Descontada do preço",
+      "ADDED": "Somada ao preço"
+    },
+    "saleFeeRate": "Taxa (%)",
+    "percentHint": "Em %, por exemplo 2,5. Vazio = não configurada.",
+    "saleFeeRounding": "Arredondamento",
+    "rounding": {
+      "CEIL": "Para cima",
+      "ROUND": "Mais próximo",
+      "FLOOR": "Para baixo"
+    },
+    "saleMinFee": "Taxa mínima ({currency})",
+    "saleFixedFee": "Taxa fixa de venda ({currency})",
+    "emptyIsNone": "Vazio = sem mínimo.",
+    "emptyIsZero": "Vazio = 0.",
+    "withdrawalSection": "Saque",
+    "allowsWithdrawal": "Permite saque",
+    "withdrawalOffHint": "Sem saque, as taxas de saque ficam guardadas, mas não são usadas.",
+    "withdrawalFeeRate": "Taxa de saque (%)",
+    "withdrawalFixedFee": "Taxa fixa de saque ({currency})",
+    "isActive": "Loja ativa",
+    "primaryCannotDeactivate": "A loja principal não pode ser desativada. Escolha outra principal antes.",
+    "isPrimary": "Definir como loja principal",
+    "invalidRate": "Informe um percentual de 0 até menos de 100 (por exemplo 2,5).",
+    "invalidMoney": "Informe um valor com no máximo 2 casas decimais (por exemplo 0,30).",
+    "nameRequired": "Informe o nome da loja.",
+    "created": "Loja \"{name}\" criada.",
+    "updated": "Loja \"{name}\" atualizada."
   }
 }

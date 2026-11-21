@@ -436,7 +436,7 @@ function createItem(input, ctx = {}) {
   const store = isNil(input.purchaseStoreId) ? null : getStoreOrFail(input.purchaseStoreId, { field: 'purchaseStoreId' });
   const record = buildItemRecord(merged, { store, settings: Setting.get(), now, body: input });
   if (catalogEntry) assertFloatInCatalogRange(record.floatValue, catalogEntry);
-  return inTransaction(() => viewOf(Item.create({ ...record, catalogId: identity.catalogId }), { now, slowItemDays }));
+  return inTransaction(() => viewOf(Item.create({ ...record, catalogId: identity.catalogId }, { now }), { now, slowItemDays }));
 }
 
 function updateItem(id, partial, ctx = {}) {
@@ -470,7 +470,7 @@ function updateItem(id, partial, ctx = {}) {
   if (catalogEntry && (catalogChanged || hasKey(partial, 'floatValue'))) {
     assertFloatInCatalogRange(record.floatValue, catalogEntry);
   }
-  return inTransaction(() => viewOf(Item.update(id, { ...record, catalogId: identity.catalogId }), { now, slowItemDays }));
+  return inTransaction(() => viewOf(Item.update(id, { ...record, catalogId: identity.catalogId }, { now }), { now, slowItemDays }));
 }
 
 function deleteItem(id) {
@@ -484,7 +484,7 @@ function sellItem(id, input, ctx = {}) {
   if (item.status !== 'EM_ESTOQUE') throw new ConflictError('Item já vendido.', 'ITEM_ALREADY_SOLD');
   const store = getStoreOrFail(input.saleStoreId, { field: 'saleStoreId' });
   const { record, sale } = buildSaleRecord(item, input, { store, settings: Setting.get(), now });
-  const view = inTransaction(() => viewOf(Item.update(id, record), { now, slowItemDays }));
+  const view = inTransaction(() => viewOf(Item.update(id, record, { now }), { now, slowItemDays }));
   return { item: view, sale: { ...sale, saleProfitUsdCents: view.saleProfitUsdCents } };
 }
 
@@ -492,7 +492,7 @@ function unsellItem(id, ctx = {}) {
   const { now = new Date(), slowItemDays = env.slowItemDays } = ctx;
   const item = findOrFail(id);
   if (item.status !== 'VENDIDO') throw new ConflictError('Item não está vendido.', 'ITEM_NOT_SOLD');
-  return inTransaction(() => viewOf(Item.update(id, buildUnsellPatch()), { now, slowItemDays }));
+  return inTransaction(() => viewOf(Item.update(id, buildUnsellPatch(), { now }), { now, slowItemDays }));
 }
 
 function getItemStats({ name, category, variant, exterior, phase }) {

@@ -21,7 +21,7 @@ export function formatDecimalInput(value: number, language: string): string {
 }
 
 // Normaliza o texto digitado para o formato "1234.56" (ponto decimal), sem validar o resto.
-function normalizeNumberText(text: string, language: string): string {
+export function normalizeNumberText(text: string, language: string): string {
   const raw = text.trim().replace(/\s+/g, '');
   if (language === 'pt-BR') return raw.includes(',') ? raw.replace(/\./g, '').replace(',', '.') : raw;
   return raw.includes('.') ? raw.replace(/,/g, '') : raw.replace(',', '.');
