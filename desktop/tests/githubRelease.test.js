@@ -15,6 +15,7 @@ const {
 } = require('../scripts/lib/githubRelease');
 
 const VERSION = '1.0.1';
+const SHA = 'b'.repeat(40);
 const TOKEN = 'ghp_SEGREDO_NAO_PODE_VAZAR_123456';
 
 let distDir;
@@ -102,11 +103,11 @@ describe('publishRelease', () => {
   test('cria a release UMA única vez e envia os quatro arquivos para ela', async () => {
     writeDist();
     const client = fakeClient();
-    const result = await publishRelease({ version: VERSION, distDir, client, log: () => {} });
+    const result = await publishRelease({ version: VERSION, distDir, client, targetCommitish: SHA, log: () => {} });
 
     const creates = client.calls.filter((c) => c[0] === 'create');
     expect(creates).toHaveLength(1);
-    expect(creates[0][1]).toEqual({ tag: 'v1.0.1', name: '1.0.1' });
+    expect(creates[0][1]).toEqual({ tag: 'v1.0.1', name: '1.0.1', targetCommitish: SHA });
     const uploads = client.calls.filter((c) => c[0] === 'upload');
     expect(uploads.map((c) => c[2])).toEqual(releaseAssetNames(VERSION));
     expect(uploads.every((c) => c[1] === 42)).toBe(true);
@@ -179,14 +180,49 @@ describe('createGitHubClient (requisição falsa)', () => {
   test('cria rascunho em api.github.com com o token só no cabeçalho', async () => {
     const { requestFn, requests } = fakeRequest([{ status: 201, body: '{"id":7}' }]);
     const client = createGitHubClient(TOKEN, { requestFn });
-    await expect(client.createDraftRelease({ tag: 'v1.0.1', name: '1.0.1' })).resolves.toEqual({ id: 7 });
+    await expect(client.createDraftRelease({ tag: 'v1.0.1', name: '1.0.1', targetCommitish: SHA })).resolves.toEqual({ id: 7 });
     const [{ options, body }] = requests;
     expect(options.host).toBe('api.github.com');
     expect(options.method).toBe('POST');
     expect(options.path).toBe('/repos/GregoryCardoso/skins-manager/releases');
     expect(options.headers.Authorization).toBe(`Bearer ${TOKEN}`);
     expect(options.path).not.toContain(TOKEN);
-    expect(JSON.parse(body)).toEqual({ tag_name: 'v1.0.1', name: '1.0.1', draft: true, prerelease: false });
+    expect(JSON.parse(body)).toEqual({
+      tag_name: 'v1.0.1',
+      name: '1.0.1',
+      draft: true,
+      prerelease: false,
+      target_commitish: SHA,
+    });
+  });
+
+  test('sem targetCommitish o corpo não leva target_commitish', async () => {
+    const { requestFn, requests } = fakeRequest([{ status: 201, body: '{"id":7}' }]);
+    await createGitHubClient(TOKEN, { requestFn }).createDraftRelease({ tag: 'v1.0.1', name: '1.0.1' });
+    expect(JSON.parse(requests[0].body)).not.toHaveProperty('target_commitish');
+  });
+
+  test('listReleases pagina até a página vir incompleta', async () => {
+    const full = JSON.stringify(Array.from({ length: 100 }, (_, i) => ({ tag_name: `v0.0.${i}` })));
+    const { requestFn, requests } = fakeRequest([
+      { status: 200, body: full },
+      { status: 200, body: JSON.stringify([{ tag_name: 'v1.0.1', draft: true }]) },
+    ]);
+    const list = await createGitHubClient(TOKEN, { requestFn }).listReleases();
+    expect(list).toHaveLength(101);
+    expect(requests.map((r) => r.options.path)).toEqual([
+      '/repos/GregoryCardoso/skins-manager/releases?per_page=100&page=1',
+      '/repos/GregoryCardoso/skins-manager/releases?per_page=100&page=2',
+    ]);
+  });
+
+  test('listReleases para numa página vazia (depois de uma cheia) e devolve [] se a primeira vier vazia', async () => {
+    const full = JSON.stringify(Array.from({ length: 100 }, (_, i) => ({ tag_name: `v0.0.${i}` })));
+    const a = fakeRequest([{ status: 200, body: full }, { status: 200, body: '[]' }]);
+    expect(await createGitHubClient(TOKEN, { requestFn: a.requestFn }).listReleases()).toHaveLength(100);
+    expect(a.requests).toHaveLength(2);
+    const b = fakeRequest([{ status: 200, body: '[]' }]);
+    expect(await createGitHubClient(TOKEN, { requestFn: b.requestFn }).listReleases()).toEqual([]);
   });
 
   test('envia o arquivo para uploads.github.com com o nome na query e o tamanho', async () => {

@@ -157,8 +157,10 @@ describe('backendSupervisor', () => {
     children[0].postMessage = () => {}; // backend travado: não responde ao shutdown
     const stopping = supervisor.stop();
     fire(3000);
-    await stopping;
     expect(children[0].killed).toBe(true);
+    fire(1000); // espera curta pela saída do processo morto (sem evento de saída aqui)
+    await stopping;
+    expect(supervisor.getState()).toBe('idle');
   });
 
   test('stop sem processo resolve na hora', async () => {

@@ -1,0 +1,62 @@
+name: "Relatar bug / Report a bug"
+description: "Algo não funciona como esperado. / Something does not work as expected."
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **PT-BR:** Obrigado por avisar. **Não anexe o arquivo de backup** (ele contém seus dados pessoais). Anexe trechos da pasta `logs\` só se for realmente necessário e depois de conferir que não há dados pessoais.
+
+        **EN:** Thanks for reporting. **Do not attach the backup file** (it contains your personal data). Attach excerpts from the `logs\` folder only if really needed, after checking they hold no personal data.
+  - type: input
+    id: app_version
+    attributes:
+      label: "Versão do app / App version"
+      description: "Em Configurações → Sobre. / In Settings → About."
+      placeholder: "1.0.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: usage_mode
+    attributes:
+      label: "Forma de uso / How you run it"
+      options:
+        - "Instalador (Setup) / Installer (Setup)"
+        - "Portátil / Portable"
+        - "Código-fonte (start-app.bat) / Source code (start-app.bat)"
+    validations:
+      required: true
+  - type: input
+    id: windows_version
+    attributes:
+      label: "Versão do Windows / Windows version"
+      placeholder: "Windows 11 23H2"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: "Passos para reproduzir / Steps to reproduce"
+      placeholder: "1. ...\n2. ...\n3. ..."
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: "O que você esperava / What you expected"
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: "O que aconteceu / What happened"
+    validations:
+      required: true
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: "Prints / Screenshots"
+      description: "Arraste imagens para cá. Esconda dados pessoais. / Drag images here. Hide personal data."
+    validations:
+      required: false

@@ -2,6 +2,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { needsBuild, isAppRunning, waitForHealth } = require('../../../scripts/startHelpers');
+const HEALTHY = { ok: true, json: async () => ({ success: true, data: { app: 'skins-manager' } }) };
 
 describe('needsBuild', () => {
   let frontendDir;
@@ -39,7 +40,7 @@ describe('needsBuild', () => {
 
 describe('isAppRunning', () => {
   test('true quando /api/health responde ok', async () => {
-    const fetchFn = jest.fn().mockResolvedValue({ ok: true });
+    const fetchFn = jest.fn().mockResolvedValue(HEALTHY);
     expect(await isAppRunning({ port: 3001, fetchFn })).toBe(true);
     expect(fetchFn.mock.calls[0][0]).toBe('http://127.0.0.1:3001/api/health');
   });
@@ -60,7 +61,7 @@ describe('waitForHealth', () => {
     const fetchFn = jest.fn()
       .mockRejectedValueOnce(new Error('down'))
       .mockRejectedValueOnce(new Error('down'))
-      .mockResolvedValue({ ok: true });
+      .mockResolvedValue(HEALTHY);
     expect(await waitForHealth({ port: 1, fetchFn, ...clock() })).toBe(true);
     expect(fetchFn).toHaveBeenCalledTimes(3);
   });

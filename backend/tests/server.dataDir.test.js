@@ -141,10 +141,20 @@ describe('server.js - pasta de dados (7.2)', () => {
   test('segunda instância em modo browser: mensagem com a porta da primeira; não migra nem cria banco', async () => {
     makeLegacy();
     fs.mkdirSync(dataDir, { recursive: true });
-    fs.writeFileSync(path.join(dataDir, 'skins-manager.lock'), JSON.stringify({ pid: process.pid, port: 3001, mode: 'browser' })); // pid vivo: o do jest
+    // pid vivo (o do jest) e uma porta que responde como Skins Manager. Sem startedAt a trava é sondada (D173):
+    // por isso a porta é de um servidor falso nosso, nunca a 3001 (que pode ter o app real aberto na máquina).
+    const fake = http.createServer((req, res) => {
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ success: true, data: { status: 'ok', app: 'skins-manager' } }));
+    });
+    await new Promise((resolve) => fake.listen(0, '127.0.0.1', resolve));
+    const fakePort = fake.address().port;
+    fs.writeFileSync(path.join(dataDir, 'skins-manager.lock'), JSON.stringify({ pid: process.pid, port: fakePort, mode: 'browser' }));
     const r = start(await freePort());
-    expect(await r.exit).toBe(1);
-    expect(r.stderr).toContain('start-app.bat em http://localhost:3001');
+    const exitCode = await r.exit;
+    await new Promise((resolve) => fake.close(resolve));
+    expect(exitCode).toBe(1);
+    expect(r.stderr).toContain(`start-app.bat em http://localhost:${fakePort}`);
     expect(r.stdout).not.toContain('[order]'); // nem chegou à migração
     expect(fs.existsSync(path.join(dataDir, 'inventory.sqlite'))).toBe(false);
     expect(fs.existsSync(path.join(legacyDir, 'LEIA-ME-DADOS-MOVIDOS.txt'))).toBe(false);

@@ -210,6 +210,39 @@ describe('fluxo do instalador', () => {
     expect(calls).toEqual([['stopBackend'], ['quitAndInstall', false, true]]);
   });
 
+  test('quitAndInstall lançando depois do stopBackend: religa o backend e mostra o erro', async () => {
+    const restartBackend = jest.fn(async () => {});
+    const { deps, autoUpdater, dialogs, calls } = makeDeps({ deps: { restartBackend } });
+    autoUpdater.quitAndInstall.mockImplementation(() => {
+      throw new Error('instalador indisponível');
+    });
+    autoUpdater.checkForUpdates.mockResolvedValue(AVAILABLE);
+    dialogs.showUpdateAvailable.mockResolvedValue('download');
+    dialogs.showUpdateReady.mockResolvedValue('restart');
+    await createUpdater(deps).check({ manual: true });
+    await flush();
+    expect(calls).toEqual([['stopBackend']]);
+    expect(restartBackend).toHaveBeenCalledTimes(1);
+    expect(dialogs.showUpdateError).toHaveBeenCalledWith(expect.objectContaining({ reason: 'instalador indisponível', language: 'pt-BR' }));
+    expect(deps.logger.error).toHaveBeenCalledWith(expect.stringContaining('instalador indisponível'));
+  });
+
+  test('religar o backend também falhando: o erro ainda é mostrado', async () => {
+    const restartBackend = jest.fn(async () => {
+      throw new Error('sem supervisor');
+    });
+    const { deps, autoUpdater, dialogs } = makeDeps({ deps: { restartBackend } });
+    autoUpdater.quitAndInstall.mockImplementation(() => {
+      throw new Error('falhou');
+    });
+    autoUpdater.checkForUpdates.mockResolvedValue(AVAILABLE);
+    dialogs.showUpdateAvailable.mockResolvedValue('download');
+    dialogs.showUpdateReady.mockResolvedValue('restart');
+    await createUpdater(deps).check({ manual: true });
+    await flush();
+    expect(dialogs.showUpdateError).toHaveBeenCalledTimes(1);
+  });
+
   test('o reinício espera o stopBackend terminar (assíncrono)', async () => {
     const order = [];
     let release;

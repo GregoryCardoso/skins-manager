@@ -171,4 +171,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { isExcluded, copyBackend, copyFrontend, lockHash, hasNapiPrebuild, stage, STAGE_DIR };
+module.exports = { npmCliPath, isExcluded, copyBackend, copyFrontend, lockHash, hasNapiPrebuild, stage, STAGE_DIR };

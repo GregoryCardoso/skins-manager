@@ -66,6 +66,7 @@ function createUpdater({
   getParent = () => null,
   getWindow = () => null,
   stopBackend = async () => {},
+  restartBackend = async () => {},
   logger = { info() {}, error() {} },
   env = process.env,
   loadAutoUpdater = () => require('electron-updater').autoUpdater,
@@ -111,7 +112,18 @@ function createUpdater({
   async function restartNow() {
     logger.info('Reiniciando para instalar a atualização.');
     await stopBackend(); // shutdown normal do backend (D177) antes de o instalador substituir os arquivos
-    getAutoUpdater().quitAndInstall(false, true);
+    try {
+      getAutoUpdater().quitAndInstall(false, true);
+    } catch (err) {
+      // O app continua aberto: sem o backend ele ficaria inutilizável. Religa e avisa.
+      logger.error(`Falha ao reiniciar para instalar: ${errText(err)}`);
+      try {
+        await restartBackend();
+      } catch (restartErr) {
+        logger.error(`Falha ao religar o backend: ${errText(restartErr)}`);
+      }
+      await dialogs.showUpdateError({ parent: getParent(), language: await getLanguage(), reason: errText(err) });
+    }
   }
 
   async function askRestart(language) {

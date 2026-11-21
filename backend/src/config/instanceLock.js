@@ -5,8 +5,12 @@
 const fs = require('fs');
 const path = require('path');
 const { AppError } = require('../errors/AppError');
+const { APP_NAME } = require('./appInfo');
 
 const LOCK_FILE_NAME = 'skins-manager.lock';
+// Uma trava recém-criada pode ser de uma instância ainda subindo (migração, banco, listen): não é sondada.
+const STARTUP_GRACE_MS = 30 * 1000;
+const PROBE_TIMEOUT_MS = 1000;
 
 // Pura. `content`: texto do arquivo; `isAlive(pid)`: injetada. Devolve { stale: true } ou { stale: false, info }.
 function assessExistingLock(content, isAlive) {
@@ -27,6 +31,54 @@ function isProcessAlive(pid) {
   } catch (err) {
     return Boolean(err && err.code === 'EPERM');
   }
+}
+
+// Pergunta à porta gravada na trava se quem responde é o Skins Manager (só 127.0.0.1, timeout curto).
+// O PID pode ter sido reaproveitado por outro programa depois de queda ou falta de energia.
+async function probeSkinsManager(info, { fetchFn = fetch, timeoutMs = PROBE_TIMEOUT_MS } = {}) {
+  if (!info || !Number.isInteger(info.port) || info.port <= 0 || info.port > 65535) return false;
+  try {
+    const res = await fetchFn(`http://127.0.0.1:${info.port}/api/health`, { signal: AbortSignal.timeout(timeoutMs) });
+    if (!res || !res.ok) return false;
+    const body = await res.json();
+    return Boolean(body && body.data && body.data.app === APP_NAME);
+  } catch (err) {
+    return false;
+  }
+}
+
+// Remove a trava cujo PID está vivo mas que não é mais o Skins Manager (PID reaproveitado).
+// Trava ilegível ou de PID morto fica para o acquireLock tratar. Devolve true se removeu.
+async function removeStaleLockByProbe(dataDir, { isAlive = isProcessAlive, probe = probeSkinsManager, now = new Date(), pid = process.pid } = {}) {
+  const lockPath = path.join(dataDir, LOCK_FILE_NAME);
+  let info;
+  try {
+    info = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
+  } catch (err) {
+    return false;
+  }
+  if (info === null || typeof info !== 'object' || !Number.isInteger(info.pid) || info.pid <= 0) return false;
+  if (info.pid === pid || !isAlive(info.pid)) return false;
+  const startedMs = Date.parse(info.startedAt);
+  const ageMs = now.getTime() - startedMs;
+  // idade negativa (relógio do Windows voltou) não protege a trava: ela é sondada
+  if (Number.isFinite(ageMs) && ageMs >= 0 && ageMs < STARTUP_GRACE_MS) return false;
+  if (await probe(info)) return false;
+  fs.rmSync(lockPath, { force: true });
+  return true;
+}
+
+// Versão assíncrona: primeiro descarta a trava de PID reaproveitado, depois adquire normalmente.
+async function acquireLockVerified(dataDir, options = {}) {
+  fs.mkdirSync(dataDir, { recursive: true });
+  await removeStaleLockByProbe(dataDir, {
+    isAlive: options.isAlive,
+    probe: options.probe,
+    now: options.now,
+    pid: options.pid,
+  });
+  const { probe, ...rest } = options;
+  return acquireLock(dataDir, rest);
 }
 
 function lockedMessage(info) {
@@ -76,4 +128,4 @@ function acquireLock(dataDir, { pid = process.pid, port, mode = 'browser', versi
   throw new AppError(409, 'DATA_DIR_LOCKED', 'Não foi possível obter a trava da pasta de dados. Tente de novo.');
 }
 
-module.exports = { acquireLock, assessExistingLock, isProcessAlive, LOCK_FILE_NAME };
+module.exports = { acquireLock, acquireLockVerified, removeStaleLockByProbe, probeSkinsManager, STARTUP_GRACE_MS, assessExistingLock, isProcessAlive, LOCK_FILE_NAME };

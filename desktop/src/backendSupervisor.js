@@ -8,6 +8,8 @@ const restartPolicy = require('./lib/restartPolicy');
 
 const READY_TIMEOUT_MS = 60 * 1000;
 const STOP_TIMEOUT_MS = 3000;
+// Depois do kill forçado, espera a saída por até 1 s (a porta e a trava ficam com o processo antigo até ele sair).
+const KILL_WAIT_MS = 1000;
 
 // handlers: onReady({ port, version, restarted }), onRestarting({ attempt, delayMs }),
 //           onStartupFailure({ code, message }), onGaveUp({ crashes }).
@@ -23,6 +25,7 @@ function createBackendSupervisor({
   clearTimeoutFn = clearTimeout,
   readyTimeoutMs = READY_TIMEOUT_MS,
   stopTimeoutMs = STOP_TIMEOUT_MS,
+  killWaitMs = KILL_WAIT_MS,
   baseEnv = process.env,
 }) {
   let state = 'idle'; // idle | starting | running | restarting | failed | stopping
@@ -174,12 +177,19 @@ function createBackendSupervisor({
             } catch (err) {
               // já saiu
             }
-            // Sem garantia do evento de saída; libera o chamador de qualquer forma.
+            // Espera a saída por até killWaitMs (sem garantia do evento) e então libera o chamador.
             child = null;
-            state = 'idle';
-            const waiters = stopWaiters;
-            stopWaiters = [];
-            waiters.forEach((done) => done());
+            let released = false;
+            const release = () => {
+              if (released) return;
+              released = true;
+              state = 'idle';
+              const waiters = stopWaiters;
+              stopWaiters = [];
+              waiters.forEach((done) => done());
+            };
+            target.on('exit', release);
+            setTimeoutFn(release, killWaitMs);
           }
         }, stopTimeoutMs);
       });

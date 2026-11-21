@@ -1,0 +1,30 @@
+name: "Sugerir funcionalidade / Feature request"
+description: "Uma ideia para melhorar o app. / An idea to improve the app."
+title: "[Sugestão] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **PT-BR:** Obrigado pela sugestão. Pull requests não são aceitos no momento; sugestões chegam por aqui.
+
+        **EN:** Thanks for the suggestion. Pull requests are not accepted at the moment; suggestions come through here.
+  - type: textarea
+    id: problem
+    attributes:
+      label: "Qual problema você quer resolver? / What problem do you want to solve?"
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: "Proposta / Proposal"
+      description: "Como você imaginaria isso funcionando? / How would you imagine it working?"
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: "Alternativas consideradas / Alternatives considered"
+    validations:
+      required: false

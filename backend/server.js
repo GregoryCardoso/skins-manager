@@ -34,43 +34,48 @@ let env;
 let closeDb;
 let app;
 let lock = null;
-try {
-  env = require('./src/config/env');
-  // Ordem (D172, D173): trava da pasta de dados, migração legada, banco, listen.
-  if (env.dbPath !== ':memory:') {
-    const { acquireLock } = require('./src/config/instanceLock');
-    const { APP_VERSION } = require('./src/config/appInfo');
-    lock = acquireLock(path.dirname(env.dbPath), {
-      port: env.port,
-      mode: process.env.SKINS_MANAGER_MODE === 'desktop' ? 'desktop' : 'browser',
-      version: APP_VERSION,
-    });
-    process.on('exit', () => lock.release());
-    try {
-      require('./src/config/legacyDataMigration').runLegacyMigration({ dbPathIsDefault: env.dbPathIsDefault, dbPath: env.dbPath });
-    } catch (err) {
-      if (err && typeof err === 'object' && !err.code) err.code = 'LEGACY_MIGRATION_FAILED';
-      throw err;
+// Assíncrona só por causa da checagem da trava (D173); a ordem continua: trava, migração, banco, listen.
+async function init() {
+  try {
+    env = require('./src/config/env');
+    // Ordem (D172, D173): trava da pasta de dados, migração legada, banco, listen.
+    if (env.dbPath !== ':memory:') {
+      const { acquireLockVerified } = require('./src/config/instanceLock');
+      const { APP_VERSION } = require('./src/config/appInfo');
+      lock = await acquireLockVerified(path.dirname(env.dbPath), {
+        port: env.port,
+        mode: process.env.SKINS_MANAGER_MODE === 'desktop' ? 'desktop' : 'browser',
+        version: APP_VERSION,
+      });
+      process.on('exit', () => lock.release());
+      try {
+        require('./src/config/legacyDataMigration').runLegacyMigration({ dbPathIsDefault: env.dbPathIsDefault, dbPath: env.dbPath });
+      } catch (err) {
+        if (err && typeof err === 'object' && !err.code) err.code = 'LEGACY_MIGRATION_FAILED';
+        throw err;
+      }
     }
+    ({ closeDb } = require('./src/config/database'));
+    const { getDb } = require('./src/config/database');
+    app = require('./src/app');
+    const { syncBundledCatalog } = require('./src/services/catalogService');
+    getDb();
+    // Importa o catálogo embutido (offline) se for mais novo que o gravado; nunca derruba o servidor (D81).
+    syncBundledCatalog();
+  } catch (err) {
+    // T45: mensagem em português, sem stack trace.
+    if (lock) lock.release();
+    fatal(
+      `Não foi possível iniciar o Skins Manager: ${err && err.message ? err.message : err}`,
+      startupErrorCode(err)
+    );
   }
-  ({ closeDb } = require('./src/config/database'));
-  const { getDb } = require('./src/config/database');
-  app = require('./src/app');
-  const { syncBundledCatalog } = require('./src/services/catalogService');
-  getDb();
-  // Importa o catálogo embutido (offline) se for mais novo que o gravado; nunca derruba o servidor (D81).
-  syncBundledCatalog();
-} catch (err) {
-  // T45: mensagem em português, sem stack trace.
-  if (lock) lock.release();
-  fatal(
-    `Não foi possível iniciar o Skins Manager: ${err && err.message ? err.message : err}`,
-    startupErrorCode(err)
-  );
 }
 
 let server = null;
-if (app) startServer();
+init().then(() => {
+  if (app) startServer();
+});
 
 function startServer() {
   const hasUi = fs.existsSync(path.join(app.locals.staticDir, 'index.html'));

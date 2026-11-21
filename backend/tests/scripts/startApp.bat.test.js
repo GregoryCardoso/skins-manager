@@ -41,6 +41,13 @@ describe('start-app.bat', () => {
     expect(bat).toMatch(/start "" \/b node "scripts\\openWhenReady\.js"/);
   });
 
+  test('app já aberto: avisa quando a trava é do app desktop antes de abrir o navegador', () => {
+    expect(bat).toMatch(/startHelpers\.js" desktop-lock/);
+    expect(bat).toContain('echo O Skins Manager já está aberto pelo app desktop.');
+    expect(bat.indexOf('desktop-lock')).toBeLessThan(bat.indexOf('openWhenReady.js"'));
+    expect(bat.indexOf('desktop-lock')).toBeGreaterThan(bat.indexOf('startHelpers.js" running'));
+  });
+
   test('erro ao subir o servidor pausa a janela', () => {
     const after = bat.slice(bat.indexOf('call npm.cmd run serve'));
     expect(after).toMatch(/if errorlevel 1 \(/);

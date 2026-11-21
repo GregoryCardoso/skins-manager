@@ -2,10 +2,13 @@
 // Uso pela linha de comando:
 //   node scripts/startHelpers.js running      -> exit 0 se o app já responde em /api/health, 1 se não
 //   node scripts/startHelpers.js needs-build  -> exit 0 se a interface precisa ser compilada, 1 se está em dia
+//   node scripts/startHelpers.js desktop-lock -> exit 0 se a trava da pasta de dados é do app desktop, 1 se não
 const fs = require('fs');
 const path = require('path');
 
 const ROOT_DIR = path.join(__dirname, '..');
+const APP_NAME = 'skins-manager'; // `data.app` do /api/health (backend/src/config/appInfo.js)
+const LOCK_FILE_NAME = 'skins-manager.lock'; // mesmo nome de backend/src/config/instanceLock.js
 const FRONTEND_DIR = path.join(ROOT_DIR, 'frontend');
 // Entradas que, se mais novas que o build, exigem recompilar.
 const SOURCE_ENTRIES = ['src', 'public', 'next.config.ts', 'package.json', 'tsconfig.json'];
@@ -44,7 +47,10 @@ function healthUrl(port) {
 async function checkHealth({ port, fetchFn = fetch, timeoutMs = 1500 }) {
   try {
     const res = await fetchFn(healthUrl(port), { signal: AbortSignal.timeout(timeoutMs) });
-    return Boolean(res && res.ok);
+    if (!res || !res.ok) return false;
+    // outro programa na mesma porta também responde 200: só vale o Skins Manager
+    const body = await res.json();
+    return Boolean(body && body.data && body.data.app === APP_NAME);
   } catch (err) {
     return false;
   }
@@ -82,11 +88,44 @@ function resolvePort() {
   }
 }
 
+// Pasta de dados = a do banco configurado (a mesma onde o backend grava a trava).
+function resolveDataDir() {
+  try {
+    const { dbPath } = require(path.join(ROOT_DIR, 'backend', 'src', 'config', 'env'));
+    if (dbPath && dbPath !== ':memory:') return path.dirname(dbPath);
+  } catch (err) {
+    // sem dependências instaladas: cai no padrão abaixo
+  }
+  try {
+    return require(path.join(ROOT_DIR, 'backend', 'src', 'config', 'paths')).resolveDefaultDataDir();
+  } catch (err) {
+    return null;
+  }
+}
+
+// Lê a trava da pasta de dados; null se não existe ou está ilegível.
+function readLockInfo(dataDir, fsImpl = fs) {
+  if (!dataDir) return null;
+  try {
+    const info = JSON.parse(fsImpl.readFileSync(path.join(dataDir, LOCK_FILE_NAME), 'utf8'));
+    return info !== null && typeof info === 'object' ? info : null;
+  } catch (err) {
+    return null;
+  }
+}
+
+// true se a trava existe e foi criada pelo app desktop.
+function isDesktopLock(dataDir, fsImpl = fs) {
+  const info = readLockInfo(dataDir, fsImpl);
+  return Boolean(info && info.mode === 'desktop');
+}
+
 async function main(argv) {
   const command = argv[2];
   if (command === 'running') return (await isAppRunning({ port: resolvePort() })) ? 0 : 1;
   if (command === 'needs-build') return needsBuild() ? 0 : 1;
-  console.error('Uso: node scripts/startHelpers.js <running|needs-build>');
+  if (command === 'desktop-lock') return isDesktopLock(resolveDataDir()) ? 0 : 1;
+  console.error('Uso: node scripts/startHelpers.js <running|needs-build|desktop-lock>');
   return 2;
 }
 
@@ -94,4 +133,4 @@ if (require.main === module) {
   main(process.argv).then((code) => process.exit(code));
 }
 
-module.exports = { needsBuild, isAppRunning, waitForHealth, healthUrl, resolvePort };
+module.exports = { readLockInfo, isDesktopLock, resolveDataDir, LOCK_FILE_NAME, needsBuild, isAppRunning, waitForHealth, healthUrl, resolvePort };

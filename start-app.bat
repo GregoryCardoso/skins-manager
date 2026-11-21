@@ -20,10 +20,16 @@ if %NODE_MAJOR% LSS 20 (
   exit /b 1
 )
 
-REM Se o app já estiver rodando, só abre o navegador.
+REM Se o app já estiver rodando, só abre o navegador (e avisa se quem o mantém é o app desktop).
 node "scripts\startHelpers.js" running
 if not errorlevel 1 (
-  echo O Skins Manager já está aberto. Abrindo o navegador...
+  node "scripts\startHelpers.js" desktop-lock
+  if not errorlevel 1 (
+    echo O Skins Manager já está aberto pelo app desktop.
+    echo Abrindo o navegador nele...
+  ) else (
+    echo O Skins Manager já está aberto. Abrindo o navegador...
+  )
   node "scripts\openWhenReady.js"
   exit /b 0
 )

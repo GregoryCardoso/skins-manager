@@ -230,6 +230,10 @@ if (!app.requestSingleInstanceLock()) {
       stopBackend: async () => {
         if (supervisor) await supervisor.stop();
       },
+      // religa o backend se o reinício para instalar falhar (a janela continua aberta)
+      restartBackend: async () => {
+        if (supervisor) supervisor.start({ port: appPort });
+      },
     });
     registerIpc({
       getAppOrigin,

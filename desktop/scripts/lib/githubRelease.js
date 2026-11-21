@@ -12,6 +12,8 @@ const OWNER = 'GregoryCardoso';
 const REPO = 'skins-manager';
 const API_HOST = 'api.github.com';
 const UPLOADS_HOST = 'uploads.github.com';
+const PER_PAGE = 100;
+const MAX_LIST_PAGES = 50;
 
 /** Nomes dos arquivos da versão, na ordem de envio (mesmos `artifactName` do electron-builder.yml). */
 function releaseAssetNames(version) {
@@ -107,11 +109,21 @@ function createGitHubClient(token, { requestFn = https.request, fsImpl = fs } = 
 
   return {
     // Com o token, a listagem inclui os rascunhos (que não aparecem em /releases/tags/<tag>).
-    listReleases() {
-      return send({ host: API_HOST, method: 'GET', pathname: `/repos/${OWNER}/${REPO}/releases?per_page=100` });
+    // Pagina até a página vir incompleta ou vazia (mais de 100 releases não escondem uma tag repetida).
+    async listReleases() {
+      const all = [];
+      for (let page = 1; page <= MAX_LIST_PAGES; page += 1) {
+        const items = await send({ host: API_HOST, method: 'GET', pathname: `/repos/${OWNER}/${REPO}/releases?per_page=${PER_PAGE}&page=${page}` });
+        if (!Array.isArray(items) || items.length === 0) break;
+        all.push(...items);
+        if (items.length < PER_PAGE) break;
+      }
+      return all;
     },
-    createDraftRelease({ tag, name }) {
-      const body = JSON.stringify({ tag_name: tag, name, draft: true, prerelease: false });
+    createDraftRelease({ tag, name, targetCommitish }) {
+      const payload = { tag_name: tag, name, draft: true, prerelease: false };
+      if (targetCommitish) payload.target_commitish = targetCommitish; // SHA testado, não a ponta do branch padrão
+      const body = JSON.stringify(payload);
       return send({
         host: API_HOST,
         method: 'POST',
@@ -136,7 +148,7 @@ function createGitHubClient(token, { requestFn = https.request, fsImpl = fs } = 
  * Cria UM rascunho `v<version>` e envia todos os arquivos para ele.
  * Recusa (sem criar nada) se faltar arquivo ou se já existir release/rascunho com a mesma tag.
  */
-async function publishRelease({ version, distDir, client, log = console.log, fsImpl = fs }) {
+async function publishRelease({ version, distDir, client, targetCommitish, log = console.log, fsImpl = fs }) {
   const tag = `v${version}`;
   const collected = collectReleaseAssets(distDir, version, fsImpl);
   if (!collected.ok) throw new Error(`${collected.message} Nada foi publicado.`);
@@ -150,7 +162,7 @@ async function publishRelease({ version, distDir, client, log = console.log, fsI
     );
   }
 
-  const release = await client.createDraftRelease({ tag, name: version });
+  const release = await client.createDraftRelease({ tag, name: version, targetCommitish });
   log(`Rascunho ${tag} criado.`);
   for (const asset of collected.assets) {
     log(`Enviando ${asset.name} (${(asset.size / 1024 / 1024).toFixed(1)} MB)...`);

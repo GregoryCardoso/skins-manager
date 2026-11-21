@@ -3,6 +3,7 @@ const os = require('os');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const { needsBuild, isAppRunning, waitForHealth, healthUrl } = require('../../../scripts/startHelpers');
+const HEALTHY = { ok: true, json: async () => ({ success: true, data: { app: 'skins-manager' } }) };
 
 describe('needsBuild - bordas', () => {
   let fe;
@@ -112,7 +113,7 @@ describe('isAppRunning / waitForHealth - bordas', () => {
   });
 
   test('passa um AbortSignal para o fetch', async () => {
-    const fetchFn = jest.fn().mockResolvedValue({ ok: true });
+    const fetchFn = jest.fn().mockResolvedValue(HEALTHY);
     await isAppRunning({ port: 1, fetchFn });
     expect(fetchFn.mock.calls[0][1].signal).toBeDefined();
   });
@@ -133,7 +134,7 @@ describe('isAppRunning / waitForHealth - bordas', () => {
 
   test('sucesso na primeira tentativa não dorme', async () => {
     const sleep = jest.fn();
-    const fetchFn = jest.fn().mockResolvedValue({ ok: true });
+    const fetchFn = jest.fn().mockResolvedValue(HEALTHY);
     expect(await waitForHealth({ port: 1, fetchFn, now: () => 0, sleep })).toBe(true);
     expect(sleep).not.toHaveBeenCalled();
   });
@@ -142,7 +143,7 @@ describe('isAppRunning / waitForHealth - bordas', () => {
     const fetchFn = jest.fn()
       .mockResolvedValueOnce({ ok: false })
       .mockResolvedValueOnce({ ok: false })
-      .mockResolvedValue({ ok: true });
+      .mockResolvedValue(HEALTHY);
     expect(await waitForHealth({ port: 1, fetchFn, timeoutMs: 1000, intervalMs: 500, ...clock() })).toBe(true);
   });
 });
