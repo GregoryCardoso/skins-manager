@@ -38,18 +38,25 @@ describe('selectBackupsToDelete', () => {
 describe('assessBackupFile', () => {
   const tables = ['stores', 'items', 'settings', 'deposits', 'withdrawals', 'store_balances'];
   const SKMG = 1397444935;
+  const { REQUIRED_COLUMNS } = require('../../src/services/backupService');
+  const columns = Object.fromEntries(Object.entries(REQUIRED_COLUMNS).map(([t, c]) => [t, [...c, 'extra']]));
+  test('items sem status é recusado (BACKUP_INVALID_FILE)', () => {
+    const noStatus = { ...columns, items: columns.items.filter((c) => c !== 'status') };
+    expect(assessBackupFile({ userVersion: 5, applicationId: SKMG, tables, columns: noStatus }, 5).code).toBe('BACKUP_INVALID_FILE');
+    expect(assessBackupFile({ userVersion: 5, applicationId: SKMG, tables }, 5).code).toBe('BACKUP_INVALID_FILE');
+  });
   test('aceita v4 com SKMG e v3 sem marca', () => {
-    expect(assessBackupFile({ userVersion: 4, applicationId: SKMG, tables }, 4).accepted).toBe(true);
-    expect(assessBackupFile({ userVersion: 3, applicationId: 0, tables }, 4).accepted).toBe(true);
+    expect(assessBackupFile({ userVersion: 4, applicationId: SKMG, tables, columns }, 4).accepted).toBe(true);
+    expect(assessBackupFile({ userVersion: 3, applicationId: 0, tables, columns }, 4).accepted).toBe(true);
   });
   test('recusa casos inválidos', () => {
-    expect(assessBackupFile({ userVersion: 0, applicationId: 0, tables }, 4).code).toBe('BACKUP_INVALID_FILE');
-    expect(assessBackupFile({ userVersion: 3, applicationId: 5, tables }, 4).code).toBe('BACKUP_INVALID_FILE');
-    expect(assessBackupFile({ userVersion: 4, applicationId: 0, tables }, 4).code).toBe('BACKUP_INVALID_FILE');
+    expect(assessBackupFile({ userVersion: 0, applicationId: 0, tables, columns }, 4).code).toBe('BACKUP_INVALID_FILE');
+    expect(assessBackupFile({ userVersion: 3, applicationId: 5, tables, columns }, 4).code).toBe('BACKUP_INVALID_FILE');
+    expect(assessBackupFile({ userVersion: 4, applicationId: 0, tables, columns }, 4).code).toBe('BACKUP_INVALID_FILE');
     expect(assessBackupFile({ userVersion: 3, applicationId: 0, tables: ['items'] }, 4).code).toBe('BACKUP_INVALID_FILE');
   });
   test('versão futura', () => {
-    expect(assessBackupFile({ userVersion: 9, applicationId: SKMG, tables }, 4)).toEqual({
+    expect(assessBackupFile({ userVersion: 9, applicationId: SKMG, tables, columns }, 4)).toEqual({
       accepted: false,
       code: 'BACKUP_NEWER_VERSION',
       params: { fileVersion: 9, appVersion: 4 },

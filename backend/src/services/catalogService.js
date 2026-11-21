@@ -13,6 +13,7 @@ const Setting = require('../models/Setting');
 const { runInTransaction } = require('../models/modelHelpers');
 const { ValidationError, NotFoundError, ConflictError, UpstreamError } = require('../errors/AppError');
 const { CATEGORIES, CATALOG_CATEGORIES } = require('./itemAttributesService');
+const { readLimitedText } = require('./fxRates/fxHttp');
 const { SOURCES, normalizeSearchText, buildSearchText, toSafeImageUrl, mapCatalog } = require('./catalog/csgoApiAdapter');
 
 const SNAPSHOT_FORMAT_VERSION = 1;
@@ -124,33 +125,6 @@ function tooLarge() {
   return new UpstreamError('O catálogo baixado é grande demais.', 'CATALOG_INVALID_FORMAT');
 }
 
-// Lê o corpo respeitando o teto de bytes (T36): confere o content-length e conta os bytes do stream.
-// Sem corpo legível como texto devolve null (o chamador tenta `json()`).
-async function readLimitedText(response, maxBytes = CATALOG_MAX_FILE_BYTES) {
-  const header = response.headers && typeof response.headers.get === 'function' ? response.headers.get('content-length') : null;
-  if (header !== null && header !== undefined && Number(header) > maxBytes) throw tooLarge();
-  if (response.body && typeof response.body.getReader === 'function') {
-    const reader = response.body.getReader();
-    const chunks = [];
-    let total = 0;
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      total += value.byteLength;
-      if (total > maxBytes) {
-        await reader.cancel().catch(() => {});
-        throw tooLarge();
-      }
-      chunks.push(Buffer.from(value));
-    }
-    return Buffer.concat(chunks).toString('utf8');
-  }
-  if (typeof response.text !== 'function') return null;
-  const text = await response.text();
-  if (Buffer.byteLength(text, 'utf8') > maxBytes) throw tooLarge();
-  return text;
-}
-
 async function fetchJson(fetchFn, url, { signal, optional }) {
   let response;
   let text;
@@ -164,7 +138,8 @@ async function fetchJson(fetchFn, url, { signal, optional }) {
         'CATALOG_FETCH_FAILED'
       );
     }
-    text = await readLimitedText(response);
+    // Corpo com teto de bytes (T36, T80a): leitura compartilhada com as cotações; o erro é do catálogo.
+    text = await readLimitedText(response, CATALOG_MAX_FILE_BYTES, tooLarge);
     if (text === null) return await response.json();
   } catch (err) {
     if (err instanceof UpstreamError) throw err;

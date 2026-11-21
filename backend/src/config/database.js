@@ -56,6 +56,36 @@ function pruneAutoBackups(dir, prefix, keep = AUTO_BACKUP_KEEP) {
   }
 }
 
+// T79: apaga de `tmp/` os temporários de exportar/importar (export-*.sqlite, import-*.sqlite e seus -wal/-shm) com mais
+// de `maxAgeMs` (1 h) que sobraram de um processo que caiu. Arquivos recentes ou fora do padrão ficam.
+// Nunca lança: arquivo travado (Windows) só gera log.
+const STALE_TMP_PATTERN = /^(export|import)-.+\.sqlite(-wal|-shm)?$/;
+const STALE_TMP_MAX_AGE_MS = 60 * 60 * 1000;
+
+function cleanStaleTempFiles(dbPath, now = new Date(), maxAgeMs = STALE_TMP_MAX_AGE_MS) {
+  const dir = path.join(path.dirname(dbPath), 'tmp');
+  let names;
+  try {
+    names = fs.readdirSync(dir);
+  } catch (err) {
+    return 0; // pasta inexistente: nada a limpar
+  }
+  let removed = 0;
+  for (const name of names) {
+    if (!STALE_TMP_PATTERN.test(name)) continue;
+    try {
+      const filePath = path.join(dir, name);
+      const stat = fs.statSync(filePath);
+      if (!stat.isFile() || now.getTime() - stat.mtimeMs <= maxAgeMs) continue;
+      fs.rmSync(filePath, { force: true });
+      removed += 1;
+    } catch (err) {
+      console.error(`Não foi possível apagar o temporário antigo ${name}: ${err && err.message ? err.message : err}`);
+    }
+  }
+  return removed;
+}
+
 // Cópia consistente do banco antes de migrar (VACUUM INTO). Não roda dentro de transação.
 function backupBeforeMigrating(db, dbPath, fromVersion, now) {
   const dir = path.join(path.dirname(dbPath), 'backups');
@@ -116,6 +146,7 @@ function openDatabase(dbPath, { migrations = MIGRATIONS, now = new Date(), skipM
 
     runMigrations(db, migrations, { dbPath, now, skipBackup: skipMigrationBackup });
     runSeed(db, now);
+    if (!inMemory) cleanStaleTempFiles(dbPath, now);
   } catch (err) {
     // Libera o handle (no Windows ele trava o arquivo .sqlite) e propaga o erro original.
     db.close();
@@ -148,6 +179,16 @@ function exportDatabaseTo(targetPath) {
   getDb().exec(`VACUUM INTO ${sqlQuote(targetPath)}`);
 }
 
+// Colunas de cada tabela: { tabela: [colunas] } (pragma_table_info).
+function readColumns(db) {
+  const columns = {};
+  const stmt = db.prepare('SELECT name FROM pragma_table_info(?)');
+  for (const { name } of db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all()) {
+    columns[name] = stmt.all(name).map((row) => row.name);
+  }
+  return columns;
+}
+
 // Lê um arquivo SQLite sem tocar no banco do app (D151, passo 3). Lança se o arquivo não for um banco legível.
 function inspectDatabaseFile(filePath) {
   const db = new Database(filePath, { readonly: true, fileMustExist: true });
@@ -159,6 +200,7 @@ function inspectDatabaseFile(filePath) {
       userVersion: db.pragma('user_version', { simple: true }),
       applicationId: db.pragma('application_id', { simple: true }),
       tables: db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all().map((row) => row.name),
+      columns: readColumns(db),
     };
   } finally {
     db.close();
@@ -224,5 +266,6 @@ module.exports = {
   replaceDatabaseFile,
   restoreDatabaseFile,
   pruneAutoBackups,
+  cleanStaleTempFiles,
   sqlQuote,
 };

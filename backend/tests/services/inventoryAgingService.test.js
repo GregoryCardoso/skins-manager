@@ -53,9 +53,10 @@ describe('inventoryAgingService — faixas de estoque (slow = 21)', () => {
     expect(getAging(stock(1, 31), { thresholds: { fastTurnoverDays: 7, slowItemDays: 30 }, now: NOW }).agingBucket).toBe('AGARRADO');
   });
 
-  test('padrão slowItemDays vem do env (21)', () => {
-    expect(classifyStock(21)).toBe('EM_GIRO');
-    expect(classifyStock(22)).toBe('AGARRADO');
+  test('T81: sem thresholds lança Error de programação (não lê o banco nem o .env)', () => {
+    expect(() => classifyStock(21)).toThrow(Error);
+    expect(() => getAging(stock(1, 3), { now: NOW })).toThrow(Error);
+    expect(() => filterStagnant([], undefined, NOW)).toThrow(Error);
   });
 
   test('acquiredAt minutos após now no mesmo dia → 0 dias (RECENTE)', () => {
@@ -121,10 +122,8 @@ describe('inventoryAgingService — limites configuráveis (D159)', () => {
     expect(classifyStock(31, th)).toBe('AGARRADO');
   });
 
-  test('sem limites explícitos usa 7 e o .env (21)', () => {
-    expect(classifyStock(7)).toBe('RECENTE');
-    expect(classifyStock(21)).toBe('EM_GIRO');
-    expect(classifyTurnaround(22)).toBe('DEMOROU_VENDER');
+  test('T81: classifyTurnaround sem limites lança', () => {
+    expect(() => classifyTurnaround(22)).toThrow(Error);
   });
 
   describe('resolveAgingThresholds (salvaguarda de leitura)', () => {

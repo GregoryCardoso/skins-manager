@@ -1,5 +1,5 @@
 const { ValidationError } = require('../errors/AppError');
-const { isPlainObject, requireJsonContentType } = require('./validationHelpers');
+const { isPlainObject, rejectUnknownFields, requireJsonContentType } = require('./validationHelpers');
 const { CATALOG_SEARCH_DEFAULT_LIMIT, CATALOG_SEARCH_MAX_LIMIT, CATALOG_ID_MAX_LENGTH } = require('../config/constants');
 const { CATEGORIES } = require('../services/itemAttributesService');
 const { normalizeSearchText } = require('../services/catalog/csgoApiAdapter');
@@ -45,8 +45,11 @@ function validateRefreshBody(req, res, next) {
   if (!isPlainObject(body)) {
     return next(new ValidationError('O corpo da requisição deve ser um objeto JSON.', 'INVALID_BODY'));
   }
-  const extra = Object.keys(body)[0];
-  if (extra) return next(new ValidationError(`Campo desconhecido: ${extra}`, 'UNKNOWN_FIELD'));
+  try {
+    rejectUnknownFields(body, []);
+  } catch (err) {
+    return next(err);
+  }
   return next();
 }
 

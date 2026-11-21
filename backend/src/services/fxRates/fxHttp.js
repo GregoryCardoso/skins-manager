@@ -30,14 +30,13 @@ function invalidResponse(source, detail) {
   });
 }
 
-// Lê o corpo respeitando o teto de bytes; aceita respostas com stream, `text()` ou só `json()`.
-async function readBodyText(response, source, maxBytes = FX_MAX_RESPONSE_BYTES) {
+// Lê o corpo respeitando o teto de bytes: confere o content-length e conta os bytes do stream (T80a).
+// Compartilhado com o catálogo; cada chamador passa o seu erro em `tooLarge` (função que devolve o Error).
+// Sem corpo legível como texto (nem stream nem `text()`) devolve null: o chamador tenta `json()`.
+async function readLimitedText(response, maxBytes, tooLarge) {
   const header =
     response.headers && typeof response.headers.get === 'function' ? response.headers.get('content-length') : null;
-  if (header !== null && header !== undefined && Number(header) > maxBytes) {
-    throw invalidResponse(source, 'resposta grande demais');
-  }
-  let text;
+  if (header !== null && header !== undefined && Number(header) > maxBytes) throw tooLarge();
   if (response.body && typeof response.body.getReader === 'function') {
     const reader = response.body.getReader();
     const chunks = [];
@@ -48,19 +47,27 @@ async function readBodyText(response, source, maxBytes = FX_MAX_RESPONSE_BYTES) 
       total += value.byteLength;
       if (total > maxBytes) {
         await reader.cancel().catch(() => {});
-        throw invalidResponse(source, 'resposta grande demais');
+        throw tooLarge();
       }
       chunks.push(Buffer.from(value));
     }
-    text = Buffer.concat(chunks).toString('utf8');
-  } else if (typeof response.text === 'function') {
-    text = await response.text();
-  } else if (typeof response.json === 'function') {
-    text = JSON.stringify(await response.json());
-  } else {
-    throw fetchFailed(source);
+    return Buffer.concat(chunks).toString('utf8');
   }
-  if (Buffer.byteLength(text, 'utf8') > maxBytes) throw invalidResponse(source, 'resposta grande demais');
+  if (typeof response.text !== 'function') return null;
+  const text = await response.text();
+  if (Buffer.byteLength(text, 'utf8') > maxBytes) throw tooLarge();
+  return text;
+}
+
+// Lê o corpo das fontes de cotação; aceita respostas com stream, `text()` ou só `json()`.
+async function readBodyText(response, source, maxBytes = FX_MAX_RESPONSE_BYTES) {
+  const tooLarge = () => invalidResponse(source, 'resposta grande demais');
+  let text = await readLimitedText(response, maxBytes, tooLarge);
+  if (text === null) {
+    if (typeof response.json !== 'function') throw fetchFailed(source);
+    text = JSON.stringify(await response.json());
+    if (Buffer.byteLength(text, 'utf8') > maxBytes) throw tooLarge();
+  }
   return text;
 }
 
@@ -123,4 +130,4 @@ async function fetchJson(url, { fetchFn, source, callTimeoutMs, totalSignal }) {
   }
 }
 
-module.exports = { fetchJson, fetchFailed, rateLimited, invalidResponse, readBodyText, runWithDeadline };
+module.exports = { fetchJson, fetchFailed, rateLimited, invalidResponse, readBodyText, readLimitedText, runWithDeadline };

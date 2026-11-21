@@ -154,7 +154,7 @@
     "INVALID_FAST_TURNOVER_DAYS": "Fast turnover must be a whole number from 1 to 364 days.",
     "INVALID_SLOW_ITEM_DAYS": "The stagnant limit must be a whole number from 2 to 365 days.",
     "AGING_THRESHOLDS_ORDER": "Fast turnover must be lower than the stagnant limit.",
-    "BACKUP_BUSY": "An update is in progress (catalog or exchange rate). Wait for it to finish and try again.",
+    "BACKUP_BUSY": "An operation is in progress (catalog, exchange rate or export). Wait for it to finish and try again.",
     "BACKUP_UNAVAILABLE": "Backup is not available: the database is in memory.",
     "BACKUP_INVALID_FILE": "This file is not a Skins Manager backup.",
     "BACKUP_CORRUPTED": "The backup file is corrupted and was not imported.",
@@ -427,6 +427,8 @@
     "currency": "Currency"
   },
   "errorDetails": {
+    "INVALID_RATE": "The rate must be at least 0% and below 100%, with at most {maxDecimals} decimal places in the percentage.",
+    "PAYLOAD_TOO_LARGE": "The file exceeds the {maxMb} MB limit.",
     "ITEM_TRADE_LOCKED": "Item trade locked until {date}.",
     "FLOAT_OUT_OF_RANGE": "This item's float must be between {min} and {max}.",
     "FIELD_TOO_LONG": "Maximum of {max} characters.",
@@ -613,6 +615,7 @@
     "isActive": "Active store",
     "primaryCannotDeactivate": "The primary store cannot be deactivated. Choose another primary store first.",
     "isPrimary": "Set as primary store",
+    "roundedNote": "The percentage has more decimal places than allowed (4) and will be rounded when saving.",
     "invalidRate": "Enter a percentage from 0 up to below 100 (for example 2.5).",
     "invalidMoney": "Enter an amount with at most 2 decimal places (for example 0.30).",
     "nameRequired": "Enter the store name.",

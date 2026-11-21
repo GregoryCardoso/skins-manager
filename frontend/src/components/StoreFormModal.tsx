@@ -5,7 +5,7 @@ import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
 import { resolveErrorTarget } from '@/lib/formErrors';
 import {
-  buildStoreCreateBody, buildStorePatchBody, initialStoreFormState, storeFormFromStore, validateStoreForm,
+  buildStoreCreateBody, buildStorePatchBody, initialStoreFormState, storeFormFromStore, storeFormRounds, validateStoreForm,
   type StoreFormState,
 } from '@/lib/storeForm';
 import { ApiRequestError, createStore, updateStore } from '@/services/api';
@@ -107,6 +107,7 @@ export default function StoreFormModal({ store, onClose, onSaved, onGone }: Prop
       <form className={styles.form} onSubmit={submit} noValidate>
         {topError && <div className={styles.topError} role="alert">{topError}</div>}
         <div className={styles.note} role="note">{t('storeForm.feeChangeNote')}</div>
+        {storeFormRounds(state, language) && <div className={styles.note} role="status">{t('storeForm.roundedNote')}</div>}
 
         <div className={styles.grid}>
           <FormField label={t('storeForm.name')} error={errors.name}>

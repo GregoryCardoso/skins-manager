@@ -5,7 +5,8 @@ import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
 import { formatInteger } from '@/lib/format';
 import { saveBlobAs } from '@/lib/download';
-import { exportBackup, importBackup } from '@/services/api';
+import { BACKUP_MAX_BYTES, isBackupTooLarge } from '@/lib/backupFile';
+import { ApiRequestError, exportBackup, importBackup } from '@/services/api';
 import type { BackupImportResult } from '@/types/api';
 import ConfirmDialog from './ConfirmDialog';
 import styles from './settings.module.css';
@@ -25,6 +26,7 @@ export default function BackupSettings() {
   const [confirming, setConfirming] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState<unknown>(null);
+  const [pickError, setPickError] = useState<unknown>(null);
   const [result, setResult] = useState<BackupImportResult | null>(null);
 
   useEffect(() => {
@@ -48,9 +50,20 @@ export default function BackupSettings() {
 
   const onPickFile = (event: ChangeEvent<HTMLInputElement>) => {
     const picked = event.target.files?.[0] ?? null;
-    setFile(picked);
     setImportError(null);
     setResult(null);
+    // T83: arquivo acima do limite nem é enviado.
+    if (picked !== null && isBackupTooLarge(picked.size)) {
+      setFile(null);
+      setConfirming(false);
+      setPickError(
+        new ApiRequestError('PAYLOAD_TOO_LARGE', '', 413, { params: { maxBytes: BACKUP_MAX_BYTES } }),
+      );
+      if (fileInput.current) fileInput.current.value = '';
+      return;
+    }
+    setPickError(null);
+    setFile(picked);
     setConfirming(picked !== null);
   };
 
@@ -101,6 +114,7 @@ export default function BackupSettings() {
           {importing ? t('settings.backup.importing') : t('settings.backup.import')}
         </button>
       </div>
+      {pickError !== null && <p className={styles.error} role="alert">{errorMessageFor(pickError, tLoose, locale)}</p>}
       {result && (
         <div role="status">
           <p className={styles.ok}>

@@ -3,7 +3,8 @@
 import type { Currency, SaleFeeRounding, SaleFeeType, Store, StoreCreateBody, StorePatchBody } from '@/types/api';
 import { formatCentsInput, normalizeNumberText, parseMoneyToCents } from './numberInput';
 
-export type RateParse = { ok: true; rate: number | null } | { ok: false };
+// `rounded: true` só aparece quando o percentual digitado tinha mais casas do que o aceito (T85) e foi arredondado.
+export type RateParse = { ok: true; rate: number | null; rounded?: true } | { ok: false };
 
 // "2,5" -> 0.025. Vazio -> null (não configurado). Inválido, negativo ou >= 100 -> { ok: false }.
 // `Math.round(p·1e4)/1e6` evita erro de ponto flutuante (2,5 * 0.01 = 0.025000000000000001).
@@ -14,7 +15,17 @@ export function percentTextToRate(text: string, language: string): RateParse {
   const percent = Number(normalized);
   if (!Number.isFinite(percent) || percent >= 100) return { ok: false };
   const rate = Math.round(percent * 1e4) / 1e6;
-  return rate >= 1 ? { ok: false } : { ok: true, rate };
+  if (rate >= 1) return { ok: false };
+  const scaled = percent * 1e4;
+  return Math.abs(scaled - Math.round(scaled)) > 1e-6 ? { ok: true, rate, rounded: true } : { ok: true, rate };
+}
+
+// Algum percentual do formulário (venda ou saque) será arredondado ao salvar.
+export function storeFormRounds(state: Pick<StoreFormState, 'saleFeeRateText' | 'withdrawalFeeRateText'>, language: string): boolean {
+  return [state.saleFeeRateText, state.withdrawalFeeRateText].some((text) => {
+    const parsed = percentTextToRate(text, language);
+    return parsed.ok && parsed.rounded === true;
+  });
 }
 
 // 0.025 -> "2,5" (até 4 casas no percentual, sem separador de milhar). null -> "".

@@ -31,12 +31,7 @@ function resolveAgingThresholds({ fastSaved = null, slowSaved = null, envSlowIte
   return { fastTurnoverDays: slowItemDays - 1, slowItemDays, adjusted: true };
 }
 
-function defaultThresholds() {
-  const { fastTurnoverDays, slowItemDays } = resolveAgingThresholds();
-  return { fastTurnoverDays, slowItemDays };
-}
-
-// Erro de programação: os limites chegam validados (1 <= F < S <= 365).
+// Erro de programação: os limites são obrigatórios e chegam validados (1 <= F < S <= 365).
 function assertThresholds(thresholds) {
   const { fastTurnoverDays: f, slowItemDays: s } = thresholds ?? {};
   if (!Number.isInteger(f) || !Number.isInteger(s) || f < 1 || f >= s || s > MAX_SLOW_ITEM_DAYS) {
@@ -51,7 +46,7 @@ function daysBetween(start, end) {
   return Math.max(0, Math.floor(ms / DAY_MS));
 }
 
-function classifyStock(days, thresholds = defaultThresholds()) {
+function classifyStock(days, thresholds) {
   assertThresholds(thresholds);
   assertDays(days);
   if (days <= thresholds.fastTurnoverDays) return 'RECENTE';
@@ -59,7 +54,7 @@ function classifyStock(days, thresholds = defaultThresholds()) {
   return 'AGARRADO';
 }
 
-function classifyTurnaround(days, thresholds = defaultThresholds()) {
+function classifyTurnaround(days, thresholds) {
   assertThresholds(thresholds);
   assertDays(days);
   if (days <= thresholds.fastTurnoverDays) return 'GIRO_RAPIDO';
@@ -118,7 +113,8 @@ function assertAcquiredAtNotFuture(acquiredAt, now = new Date()) {
   });
 }
 
-function getAging(item, { thresholds = defaultThresholds(), now = new Date() } = {}) {
+function getAging(item, { thresholds, now = new Date() } = {}) {
+  assertThresholds(thresholds); // T81: obrigatório, nunca lê o banco
   if (item.status === 'VENDIDO') {
     const turnaroundDays = turnaroundDaysOf(item);
     return {
@@ -199,7 +195,8 @@ function sortBySoldAt(items, order = 'desc') {
 }
 
 // Só em estoque, liberado e `AGARRADO` pelos dias à venda; item em trade lock nunca entra (D160).
-function filterStagnant(items, thresholds = defaultThresholds(), now = new Date()) {
+function filterStagnant(items, thresholds, now = new Date()) {
+  assertThresholds(thresholds);
   return items.filter(
     (item) =>
       item.status === 'EM_ESTOQUE' &&

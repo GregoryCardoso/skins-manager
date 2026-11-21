@@ -1,6 +1,6 @@
 const { ValidationError } = require('../errors/AppError');
 const { MAX_AMOUNT_CENTS } = require('../config/constants');
-const { isPlainObject } = require('./validationHelpers');
+const { isPlainObject, rejectUnknownFields } = require('./validationHelpers');
 
 function validateStoreQuery(req, res, next) {
   const raw = req.query.activeOnly;
@@ -49,8 +49,11 @@ function checkBodyShape(body, { requireKeys }) {
     return new ValidationError('O corpo da requisição deve ser um objeto JSON.', 'INVALID_BODY');
   }
   const keys = Object.keys(body);
-  const unknown = keys.find((k) => !Object.prototype.hasOwnProperty.call(BODY_FIELDS, k));
-  if (unknown) return new ValidationError(`Campo desconhecido: ${unknown}`, 'UNKNOWN_FIELD', { field: unknown });
+  try {
+    rejectUnknownFields(body, BODY_FIELDS);
+  } catch (err) {
+    return err;
+  }
   if (requireKeys) {
     for (const key of ['name', 'currency']) {
       if (body[key] === undefined) {

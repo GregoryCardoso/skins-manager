@@ -154,7 +154,7 @@
     "INVALID_FAST_TURNOVER_DAYS": "O giro rápido deve ser um número inteiro de 1 a 364 dias.",
     "INVALID_SLOW_ITEM_DAYS": "O limite de agarrado deve ser um número inteiro de 2 a 365 dias.",
     "AGING_THRESHOLDS_ORDER": "O giro rápido deve ser menor que o limite de agarrado.",
-    "BACKUP_BUSY": "Há uma atualização em andamento (catálogo ou cotação). Aguarde terminar e tente de novo.",
+    "BACKUP_BUSY": "Há uma operação em andamento (catálogo, cotação ou exportação). Aguarde terminar e tente de novo.",
     "BACKUP_UNAVAILABLE": "O backup não está disponível: o banco está em memória.",
     "BACKUP_INVALID_FILE": "Este arquivo não é um backup do Skins Manager.",
     "BACKUP_CORRUPTED": "O arquivo de backup está corrompido e não foi importado.",
@@ -427,6 +427,8 @@
     "currency": "Moeda"
   },
   "errorDetails": {
+    "INVALID_RATE": "A taxa deve ser maior ou igual a 0% e menor que 100%, com no máximo {maxDecimals} casas decimais no percentual.",
+    "PAYLOAD_TOO_LARGE": "O arquivo excede o limite de {maxMb} MB.",
     "ITEM_TRADE_LOCKED": "Item em trade lock até {date}.",
     "FLOAT_OUT_OF_RANGE": "O float deste item deve estar entre {min} e {max}.",
     "FIELD_TOO_LONG": "Máximo de {max} caracteres.",
@@ -613,6 +615,7 @@
     "isActive": "Loja ativa",
     "primaryCannotDeactivate": "A loja principal não pode ser desativada. Escolha outra principal antes.",
     "isPrimary": "Definir como loja principal",
+    "roundedNote": "O percentual tem mais casas decimais do que o aceito (4) e será arredondado ao salvar.",
     "invalidRate": "Informe um percentual de 0 até menos de 100 (por exemplo 2,5).",
     "invalidMoney": "Informe um valor com no máximo 2 casas decimais (por exemplo 0,30).",
     "nameRequired": "Informe o nome da loja.",

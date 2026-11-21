@@ -345,7 +345,7 @@ function toCatalogSummary(entry) {
 
 function toItemView(
   item,
-  { stores, settings, statsIndex, catalogById = new Map(), now = new Date(), thresholds = getAgingThresholds() }
+  { stores, settings, statsIndex, catalogById = new Map(), now = new Date(), thresholds }
 ) {
   const inStock = item.status === 'EM_ESTOQUE';
   return {

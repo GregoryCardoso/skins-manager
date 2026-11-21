@@ -20,6 +20,15 @@ const Store = require('../models/Store');
 
 const SQLITE_SIGNATURE = Buffer.from('SQLite format 3\0', 'latin1');
 const REQUIRED_TABLES = Object.freeze(['stores', 'items', 'settings', 'deposits', 'withdrawals', 'store_balances']);
+// Colunas mínimas por tabela, só da v1 (existem em todas as versões: as migrações posteriores só acrescentam).
+const REQUIRED_COLUMNS = Object.freeze({
+  stores: ['id', 'name', 'currency', 'is_active', 'is_primary', 'created_at', 'updated_at'],
+  items: ['id', 'name', 'category', 'acquisition_type', 'purchase_price_cents', 'purchase_currency', 'acquired_at', 'status', 'created_at', 'updated_at'],
+  settings: ['id', 'usd_brl_rate', 'updated_at'],
+  deposits: ['id', 'amount_brl_cents', 'deposited_at'],
+  withdrawals: ['id', 'amount_brl_cents', 'withdrawn_at'],
+  store_balances: ['id', 'store_id', 'balance_cents', 'recorded_at'],
+});
 const EXPORT_CONTENT_TYPE = 'application/vnd.sqlite3';
 const pad = (n, size = 2) => String(n).padStart(size, '0');
 
@@ -32,7 +41,7 @@ function buildExportFileName(schemaVersion, now) {
   return `skins-manager-backup-v${schemaVersion}-${date}-${time}.sqlite`;
 }
 
-// Avalia o arquivo inspecionado (D151, passo 4). `info`: { userVersion, applicationId, tables }.
+// Avalia o arquivo inspecionado (D151, passo 4). `info`: { userVersion, applicationId, tables, columns }.
 // Devolve { accepted: true } ou { accepted: false, code, params? }.
 function assessBackupFile(info, latestVersion) {
   const invalid = { accepted: false, code: 'BACKUP_INVALID_FILE' };
@@ -44,6 +53,11 @@ function assessBackupFile(info, latestVersion) {
     return { accepted: false, code: 'BACKUP_NEWER_VERSION', params: { fileVersion: userVersion, appVersion: latestVersion } };
   }
   if (REQUIRED_TABLES.some((table) => !tables.includes(table))) return invalid;
+  const columns = info.columns && typeof info.columns === 'object' ? info.columns : {};
+  for (const [table, required] of Object.entries(REQUIRED_COLUMNS)) {
+    const present = Array.isArray(columns[table]) ? columns[table] : [];
+    if (required.some((column) => !present.includes(column))) return invalid;
+  }
   if (userVersion >= 4 && applicationId !== SQLITE_APPLICATION_ID) return invalid;
   return { accepted: true };
 }
@@ -61,8 +75,11 @@ const BUSY_CHECKS = Object.freeze([
 ]);
 
 function isBackupBusy() {
-  return BUSY_CHECKS.some((check) => check());
+  return exportInProgress || BUSY_CHECKS.some((check) => check());
 }
+
+// Uma exportação por vez (e nenhuma importação durante ela). Liberada em `cleanup` (fim, erro ou aborto).
+let exportInProgress = false;
 
 // --- Infraestrutura de arquivos -----------------------------------------------------------------
 
@@ -95,20 +112,39 @@ function tempFilePath(prefix) {
 // Gera a cópia temporária. O chamador envia `filePath` e chama `cleanup()` ao fim (também se o cliente abortar).
 function createExport({ now = new Date() } = {}) {
   ensureFileDatabase();
-  const filePath = tempFilePath('export');
+  if (exportInProgress) {
+    throw new ConflictError('Já existe uma exportação em andamento. Aguarde terminar e tente de novo.', 'BACKUP_BUSY');
+  }
+  exportInProgress = true;
+  let released = false;
+  const release = () => {
+    if (!released) {
+      released = true;
+      exportInProgress = false;
+    }
+  };
+  let filePath;
   try {
+    filePath = tempFilePath('export');
     DatabaseFile.exportTo(filePath);
+    return {
+      filePath,
+      fileName: buildExportFileName(DatabaseFile.getSchemaVersion(), now),
+      contentType: EXPORT_CONTENT_TYPE,
+      sizeBytes: fs.statSync(filePath).size,
+      cleanup: () => {
+        try {
+          removeQuietly(filePath);
+        } finally {
+          release();
+        }
+      },
+    };
   } catch (err) {
-    removeQuietly(filePath);
+    if (filePath) removeQuietly(filePath);
+    release();
     throw err;
   }
-  return {
-    filePath,
-    fileName: buildExportFileName(DatabaseFile.getSchemaVersion(), now),
-    contentType: EXPORT_CONTENT_TYPE,
-    sizeBytes: fs.statSync(filePath).size,
-    cleanup: () => removeQuietly(filePath),
-  };
 }
 
 // --- Importar (D151) ----------------------------------------------------------------------------
@@ -156,7 +192,7 @@ function importBackup(buffer, { now = new Date() } = {}) {
   ensureFileDatabase();
   // 1. Operação longa em andamento.
   if (isBackupBusy()) {
-    throw new ConflictError('Há uma atualização em andamento (catálogo ou cotação). Aguarde terminar e tente de novo.', 'BACKUP_BUSY');
+    throw new ConflictError('Há uma operação em andamento (catálogo, cotação ou exportação). Aguarde terminar e tente de novo.', 'BACKUP_BUSY');
   }
   // 2. Assinatura SQLite.
   if (!hasSqliteSignature(buffer)) {
@@ -226,6 +262,7 @@ module.exports = {
   buildExportFileName,
   selectBackupsToDelete,
   assessBackupFile,
+  REQUIRED_COLUMNS,
   hasSqliteSignature,
   isBackupBusy,
   createExport,

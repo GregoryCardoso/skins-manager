@@ -66,6 +66,8 @@ interface RequestOptions {
   rawBody?: { data: Blob; contentType: string };
   timeoutMs?: number;
   signal?: AbortSignal;
+  // Resposta de sucesso que não é o envelope JSON (download de backup): lida aqui; erros continuam em JSON.
+  readOk?: (response: Response) => Promise<unknown>;
 }
 
 function buildUrl(path: string, query?: RequestOptions['query']): string {
@@ -78,7 +80,7 @@ function buildUrl(path: string, query?: RequestOptions['query']): string {
 }
 
 export async function request<T>(method: Method, path: string, options: RequestOptions = {}): Promise<T> {
-  const { query, body, rawBody, timeoutMs = 15000, signal } = options;
+  const { query, body, rawBody, timeoutMs = 15000, signal, readOk } = options;
   const controller = new AbortController();
   let timedOut = false;
   const timer = setTimeout(() => {
@@ -111,6 +113,16 @@ export async function request<T>(method: Method, path: string, options: RequestO
     }
 
     if (response.status === 204) return undefined as T;
+
+    if (readOk && response.ok) {
+      try {
+        return (await readOk(response)) as T;
+      } catch {
+        if (timedOut) throw new ApiRequestError('TIMEOUT', 'Tempo esgotado', 0);
+        if (signal?.aborted) throw new ApiRequestError('ABORTED', 'Requisição cancelada', 0);
+        throw new ApiRequestError('NETWORK_ERROR', 'Falha de rede', 0);
+      }
+    }
 
     let payload: unknown;
     try {
@@ -252,52 +264,15 @@ export function fileNameFromContentDisposition(header: string | null | undefined
 }
 
 // Baixa o backup como Blob (erros continuam em JSON, então o corpo só é lido como arquivo no sucesso).
-export async function exportBackup(signal?: AbortSignal): Promise<{ blob: Blob; fileName: string }> {
-  const controller = new AbortController();
-  let timedOut = false;
-  const timer = setTimeout(() => {
-    timedOut = true;
-    controller.abort();
-  }, 120000);
-  const onAbort = () => controller.abort();
-  if (signal) {
-    if (signal.aborted) controller.abort();
-    else signal.addEventListener('abort', onAbort, { once: true });
-  }
-  try {
-    let response: Response;
-    try {
-      response = await fetch(buildUrl('/backup/export'), { method: 'GET', signal: controller.signal });
-    } catch {
-      if (timedOut) throw new ApiRequestError('TIMEOUT', 'Tempo esgotado', 0);
-      if (signal?.aborted) throw new ApiRequestError('ABORTED', 'Requisição cancelada', 0);
-      throw new ApiRequestError('NETWORK_ERROR', 'Falha de rede', 0);
-    }
-    if (!response.ok) {
-      let payload: unknown;
-      try {
-        payload = await response.json();
-      } catch {
-        throw new ApiRequestError('INVALID_RESPONSE', 'Resposta inválida do servidor', response.status);
-      }
-      const err = (payload as { error?: { code?: unknown; message?: unknown; field?: unknown; params?: unknown } } | null)?.error;
-      const code = typeof err?.code === 'string' ? err.code : 'UNKNOWN';
-      const message = typeof err?.message === 'string' ? err.message : '';
-      throw new ApiRequestError(code, message, response.status, { field: err?.field, params: err?.params });
-    }
-    let blob: Blob;
-    try {
-      blob = await response.blob();
-    } catch {
-      if (timedOut) throw new ApiRequestError('TIMEOUT', 'Tempo esgotado', 0);
-      throw new ApiRequestError('NETWORK_ERROR', 'Falha de rede', 0);
-    }
-    return { blob, fileName: fileNameFromContentDisposition(response.headers.get('Content-Disposition')) };
-  } finally {
-    clearTimeout(timer);
-    signal?.removeEventListener('abort', onAbort);
-  }
-}
+export const exportBackup = (signal?: AbortSignal) =>
+  request<{ blob: Blob; fileName: string }>('GET', '/backup/export', {
+    signal,
+    timeoutMs: 120000,
+    readOk: async (response) => ({
+      blob: await response.blob(),
+      fileName: fileNameFromContentDisposition(response.headers.get('Content-Disposition')),
+    }),
+  });
 
 // Envia o arquivo escolhido como corpo binário (Content-Type obrigatório: application/octet-stream).
 export const importBackup = (file: Blob) =>

@@ -144,6 +144,11 @@ describe('buildUnsellPatch', () => {
 });
 
 describe('toItemView', () => {
+  test('T81: sem thresholds lança Error de programação', () => {
+    const item = { id: 1, status: 'EM_ESTOQUE', acquiredAt: '2026-01-01T00:00:00.000Z', tradeUnlockAt: null };
+    expect(() => toItemView(item, { stores: [], settings: null, statsIndex: buildStatsIndex([item]), now: NOW })).toThrow(Error);
+  });
+
   const stores = [csfloat(), steam(), csmoney()];
 
   test('item em estoque: tradeLock, aging, minPrices, stats', () => {

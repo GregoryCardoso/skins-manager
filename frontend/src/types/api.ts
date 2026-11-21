@@ -54,7 +54,7 @@ export interface Settings {
   fastTurnoverDaysDefault: number;
   slowItemDaysDefault: number;
   agingThresholdsAdjusted: boolean;
-  updatedAt: string | null;
+  updatedAt: string;
 }
 export interface PreferencesPatch {
   theme?: ThemeChoice;
