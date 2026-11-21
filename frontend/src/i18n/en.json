@@ -156,7 +156,13 @@
     "PTAX_REFRESH_IN_PROGRESS": "A rate update is already in progress.",
     "INVALID_FAST_TURNOVER_DAYS": "Fast turnover must be a whole number from 1 to 364 days.",
     "INVALID_SLOW_ITEM_DAYS": "The stagnant limit must be a whole number from 2 to 365 days.",
-    "AGING_THRESHOLDS_ORDER": "Fast turnover must be lower than the stagnant limit."
+    "AGING_THRESHOLDS_ORDER": "Fast turnover must be lower than the stagnant limit.",
+    "BACKUP_BUSY": "An update is in progress (catalog or exchange rate). Wait for it to finish and try again.",
+    "BACKUP_UNAVAILABLE": "Backup is not available: the database is in memory.",
+    "BACKUP_INVALID_FILE": "This file is not a Skins Manager backup.",
+    "BACKUP_CORRUPTED": "The backup file is corrupted and was not imported.",
+    "BACKUP_NEWER_VERSION": "This backup was created by a newer version of Skins Manager. Update the app.",
+    "BACKUP_IMPORT_FAILED": "Could not import the backup. Your previous data was preserved."
   },
   "warnings": {
     "FEES_NOT_CONFIGURED": "The store fees are not configured.",
@@ -426,7 +432,8 @@
     "FIELD_TOO_LONG": "Maximum of {max} characters.",
     "UNKNOWN_FIELD": "Unknown field: {field}.",
     "INVALID_AMOUNT": "The maximum allowed amount is {max}.",
-    "AGING_THRESHOLDS_ORDER": "Fast turnover ({fast} days) must be lower than the stagnant limit ({slow} days)."
+    "AGING_THRESHOLDS_ORDER": "Fast turnover ({fast} days) must be lower than the stagnant limit ({slow} days).",
+    "BACKUP_NEWER_VERSION": "This backup uses data version {fileVersion}, but this app only knows up to {appVersion}. Update the app."
   },
   "sales": {
     "title": "Sales",
@@ -651,6 +658,26 @@
     },
     "catalog": {
       "title": "Item catalog"
+    },
+    "backup": {
+      "title": "Backup",
+      "intro": "Export a copy of all your data or restore a copy made earlier.",
+      "exportWarning": "The exported file contains all your personal data (items, amounts, stores and settings). Keep it somewhere safe and do not share it.",
+      "export": "Export backup",
+      "exporting": "Creating the backup...",
+      "exported": "Backup saved as {file}.",
+      "import": "Import backup",
+      "importing": "Importing...",
+      "chooseFile": "Choose backup file",
+      "selectedFile": "Chosen file: {file}",
+      "confirmTitle": "Import backup?",
+      "confirmMessage": "This replaces ALL current data with the data in \"{file}\". A copy of your current data will be saved first, in the backups folder.",
+      "confirmButton": "Replace my data",
+      "importDone": "Backup imported: {items} items and {stores} stores. Copy of the previous data: {backup}.",
+      "migrated": "Your data was updated from version {from} to {to}.",
+      "reloading": "The page will reload in a moment...",
+      "reloadNow": "Reload now",
+      "retention": "Automatic backups are kept in the backups folder, next to the database. The 10 most recent of each kind are kept (before importing and before updating the app)."
     },
     "loadError": "Could not load the settings: {reason}"
   }

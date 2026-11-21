@@ -156,7 +156,13 @@
     "PTAX_REFRESH_IN_PROGRESS": "Já existe uma atualização da cotação em andamento.",
     "INVALID_FAST_TURNOVER_DAYS": "O giro rápido deve ser um número inteiro de 1 a 364 dias.",
     "INVALID_SLOW_ITEM_DAYS": "O limite de agarrado deve ser um número inteiro de 2 a 365 dias.",
-    "AGING_THRESHOLDS_ORDER": "O giro rápido deve ser menor que o limite de agarrado."
+    "AGING_THRESHOLDS_ORDER": "O giro rápido deve ser menor que o limite de agarrado.",
+    "BACKUP_BUSY": "Há uma atualização em andamento (catálogo ou cotação). Aguarde terminar e tente de novo.",
+    "BACKUP_UNAVAILABLE": "O backup não está disponível: o banco está em memória.",
+    "BACKUP_INVALID_FILE": "Este arquivo não é um backup do Skins Manager.",
+    "BACKUP_CORRUPTED": "O arquivo de backup está corrompido e não foi importado.",
+    "BACKUP_NEWER_VERSION": "Este backup foi criado por uma versão mais nova do Skins Manager. Atualize o app.",
+    "BACKUP_IMPORT_FAILED": "Não foi possível importar o backup. Seus dados anteriores foram preservados."
   },
   "warnings": {
     "FEES_NOT_CONFIGURED": "As taxas da loja não estão configuradas.",
@@ -426,7 +432,8 @@
     "FIELD_TOO_LONG": "Máximo de {max} caracteres.",
     "UNKNOWN_FIELD": "Campo desconhecido: {field}.",
     "INVALID_AMOUNT": "O valor máximo permitido é {max}.",
-    "AGING_THRESHOLDS_ORDER": "O giro rápido ({fast} dias) deve ser menor que o limite de agarrado ({slow} dias)."
+    "AGING_THRESHOLDS_ORDER": "O giro rápido ({fast} dias) deve ser menor que o limite de agarrado ({slow} dias).",
+    "BACKUP_NEWER_VERSION": "Este backup é da versão de dados {fileVersion}, mas este app só conhece até a {appVersion}. Atualize o app."
   },
   "sales": {
     "title": "Vendas",
@@ -651,6 +658,26 @@
     },
     "catalog": {
       "title": "Catálogo de itens"
+    },
+    "backup": {
+      "title": "Backup",
+      "intro": "Exporte uma cópia de todos os seus dados ou restaure uma cópia feita antes.",
+      "exportWarning": "O arquivo exportado contém todos os seus dados pessoais (itens, valores, lojas e configurações). Guarde-o em um lugar seguro e não o compartilhe.",
+      "export": "Exportar backup",
+      "exporting": "Gerando o backup...",
+      "exported": "Backup salvo como {file}.",
+      "import": "Importar backup",
+      "importing": "Importando...",
+      "chooseFile": "Escolher arquivo de backup",
+      "selectedFile": "Arquivo escolhido: {file}",
+      "confirmTitle": "Importar backup?",
+      "confirmMessage": "Isto substitui TODOS os dados atuais pelos do arquivo \"{file}\". Uma cópia dos dados atuais será salva antes, na pasta de backups.",
+      "confirmButton": "Substituir meus dados",
+      "importDone": "Backup importado: {items} itens e {stores} lojas. Cópia dos dados anteriores: {backup}.",
+      "migrated": "Os dados foram atualizados da versão {from} para a {to}.",
+      "reloading": "A página será recarregada em instantes...",
+      "reloadNow": "Recarregar agora",
+      "retention": "Os backups automáticos ficam na pasta backups, ao lado do banco de dados. São mantidos os 10 mais recentes de cada tipo (antes de importar e antes de atualizar o app)."
     },
     "loadError": "Não foi possível carregar as configurações: {reason}"
   }

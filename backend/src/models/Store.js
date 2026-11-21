@@ -74,4 +74,8 @@ function clearPrimary({ now = new Date() } = {}) {
     .run(now.toISOString()).changes;
 }
 
-module.exports = { create, findById, findAll, findPrimary, findByName, findUsedIds, isInUse, clearPrimary, update, remove };
+function countAll() {
+  return getDb().prepare('SELECT COUNT(*) AS n FROM stores').get().n;
+}
+
+module.exports = { countAll, create, findById, findAll, findPrimary, findByName, findUsedIds, isInUse, clearPrimary, update, remove };

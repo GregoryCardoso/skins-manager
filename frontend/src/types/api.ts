@@ -345,3 +345,12 @@ export interface SaleQuote {
   feeCents: number;
   netReceivedCents: number;
 }
+
+// Resposta de POST /backup/import (D151).
+export interface BackupImportResult {
+  fileVersion: number;
+  schemaVersion: number;
+  migrationsApplied: number[];
+  preImportBackupFile: string;
+  counts: { items: number; stores: number };
+}

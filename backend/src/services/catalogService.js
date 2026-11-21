@@ -37,6 +37,10 @@ function setDefaultCatalogValidation(validation = null) {
 
 let refreshInProgress = false;
 
+function isCatalogRefreshInProgress() {
+  return refreshInProgress;
+}
+
 const isNil = (v) => v === null || v === undefined;
 
 // --- Visão pública ------------------------------------------------------------------------------
@@ -414,6 +418,7 @@ module.exports = {
   validateDownloadedCatalog,
   setDefaultCatalogValidation,
   refreshCatalog,
+  isCatalogRefreshInProgress,
   parseSnapshot,
   serializeSnapshot,
   importSnapshot,

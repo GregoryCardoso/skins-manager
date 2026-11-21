@@ -29,6 +29,10 @@ export function errorDetailParams(
       return typeof p.fastTurnoverDays === 'number' && typeof p.slowItemDays === 'number'
         ? { fast: p.fastTurnoverDays, slow: p.slowItemDays }
         : null;
+    case 'BACKUP_NEWER_VERSION':
+      return typeof p.fileVersion === 'number' && typeof p.appVersion === 'number'
+        ? { fileVersion: p.fileVersion, appVersion: p.appVersion }
+        : null;
     case 'UNKNOWN_FIELD': {
       if (!error.field) return null;
       const label = t(`fields.${error.field}`);

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import AgingSettings from '@/components/AgingSettings';
+import BackupSettings from '@/components/BackupSettings';
 import CatalogSettings from '@/components/CatalogSettings';
 import FxRateSettings from '@/components/FxRateSettings';
 import PreferencesSettings from '@/components/PreferencesSettings';
@@ -52,6 +53,7 @@ export default function SettingsPage() {
       <PreferencesSettings />
       {settings && <AgingSettings settings={settings} onSaved={setSettings} />}
       <CatalogSettings />
+      <BackupSettings />
     </>
   );
 }

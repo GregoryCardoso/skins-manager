@@ -55,4 +55,8 @@ function remove(id) {
   return getDb().prepare('DELETE FROM items WHERE id = ?').run(id).changes > 0;
 }
 
-module.exports = { create, findById, findAll, findLegacy, update, remove };
+function countAll() {
+  return getDb().prepare('SELECT COUNT(*) AS n FROM items').get().n;
+}
+
+module.exports = { countAll, create, findById, findAll, findLegacy, update, remove };

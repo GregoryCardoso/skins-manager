@@ -1,4 +1,5 @@
 import type {
+  BackupImportResult,
   Category,
   CatalogRefreshResult,
   CatalogSearchResult,
@@ -61,6 +62,8 @@ type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 interface RequestOptions {
   query?: Record<string, string | number | boolean | null | undefined>;
   body?: unknown;
+  // Corpo binário (importação de backup): enviado como está, com o Content-Type informado.
+  rawBody?: { data: Blob; contentType: string };
   timeoutMs?: number;
   signal?: AbortSignal;
 }
@@ -75,7 +78,7 @@ function buildUrl(path: string, query?: RequestOptions['query']): string {
 }
 
 export async function request<T>(method: Method, path: string, options: RequestOptions = {}): Promise<T> {
-  const { query, body, timeoutMs = 15000, signal } = options;
+  const { query, body, rawBody, timeoutMs = 15000, signal } = options;
   const controller = new AbortController();
   let timedOut = false;
   const timer = setTimeout(() => {
@@ -89,7 +92,10 @@ export async function request<T>(method: Method, path: string, options: RequestO
   }
 
   const init: RequestInit = { method, signal: controller.signal };
-  if (body !== undefined) {
+  if (rawBody !== undefined) {
+    init.headers = { 'Content-Type': rawBody.contentType };
+    init.body = rawBody.data;
+  } else if (body !== undefined) {
     init.headers = { 'Content-Type': 'application/json' };
     init.body = JSON.stringify(body);
   }
@@ -222,3 +228,79 @@ export async function searchCatalog(
     query: { q: text, category: options.category, limit: options.limit },
   });
 }
+
+// --- Backup (D150, D151) ----------------------------------------------------------------------
+
+const DEFAULT_BACKUP_FILE_NAME = 'skins-manager-backup.sqlite';
+
+// Nome do arquivo no cabeçalho Content-Disposition (aceita filename*=UTF-8''...); só o nome base, sem caminho.
+export function fileNameFromContentDisposition(header: string | null | undefined): string {
+  if (!header) return DEFAULT_BACKUP_FILE_NAME;
+  const extended = /filename\*\s*=\s*UTF-8''([^;]+)/i.exec(header);
+  const plain = /filename\s*=\s*"([^"]*)"|filename\s*=\s*([^;]+)/i.exec(header);
+  let raw = extended ? extended[1].trim() : plain ? (plain[1] ?? plain[2] ?? '').trim() : '';
+  if (extended) {
+    try {
+      raw = decodeURIComponent(raw);
+    } catch {
+      raw = '';
+    }
+  }
+  const base = raw.split(/[\\/]/).pop() ?? '';
+  return base.trim() === '' ? DEFAULT_BACKUP_FILE_NAME : base.trim();
+}
+
+// Baixa o backup como Blob (erros continuam em JSON, então o corpo só é lido como arquivo no sucesso).
+export async function exportBackup(signal?: AbortSignal): Promise<{ blob: Blob; fileName: string }> {
+  const controller = new AbortController();
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, 120000);
+  const onAbort = () => controller.abort();
+  if (signal) {
+    if (signal.aborted) controller.abort();
+    else signal.addEventListener('abort', onAbort, { once: true });
+  }
+  try {
+    let response: Response;
+    try {
+      response = await fetch(buildUrl('/backup/export'), { method: 'GET', signal: controller.signal });
+    } catch {
+      if (timedOut) throw new ApiRequestError('TIMEOUT', 'Tempo esgotado', 0);
+      if (signal?.aborted) throw new ApiRequestError('ABORTED', 'Requisição cancelada', 0);
+      throw new ApiRequestError('NETWORK_ERROR', 'Falha de rede', 0);
+    }
+    if (!response.ok) {
+      let payload: unknown;
+      try {
+        payload = await response.json();
+      } catch {
+        throw new ApiRequestError('INVALID_RESPONSE', 'Resposta inválida do servidor', response.status);
+      }
+      const err = (payload as { error?: { code?: unknown; message?: unknown; field?: unknown; params?: unknown } } | null)?.error;
+      const code = typeof err?.code === 'string' ? err.code : 'UNKNOWN';
+      const message = typeof err?.message === 'string' ? err.message : '';
+      throw new ApiRequestError(code, message, response.status, { field: err?.field, params: err?.params });
+    }
+    let blob: Blob;
+    try {
+      blob = await response.blob();
+    } catch {
+      if (timedOut) throw new ApiRequestError('TIMEOUT', 'Tempo esgotado', 0);
+      throw new ApiRequestError('NETWORK_ERROR', 'Falha de rede', 0);
+    }
+    return { blob, fileName: fileNameFromContentDisposition(response.headers.get('Content-Disposition')) };
+  } finally {
+    clearTimeout(timer);
+    signal?.removeEventListener('abort', onAbort);
+  }
+}
+
+// Envia o arquivo escolhido como corpo binário (Content-Type obrigatório: application/octet-stream).
+export const importBackup = (file: Blob) =>
+  request<BackupImportResult>('POST', '/backup/import', {
+    rawBody: { data: file, contentType: 'application/octet-stream' },
+    timeoutMs: 120000,
+  });

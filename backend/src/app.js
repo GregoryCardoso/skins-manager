@@ -10,15 +10,16 @@ const { errorHandler, notFoundHandler } = require('./middlewares/errorHandler');
 // (D70; `undefined` = fetch global do Node). `staticDir` é a pasta do frontend exportado (D134).
 const DEFAULT_STATIC_DIR = path.join(__dirname, '..', '..', 'frontend', 'out');
 
-function createApp({ now = () => new Date(), fetchFn, catalogValidation, staticDir = DEFAULT_STATIC_DIR } = {}) {
+function createApp({ now = () => new Date(), fetchFn, catalogValidation, staticDir = DEFAULT_STATIC_DIR, backupMaxBytes } = {}) {
   const app = express();
   app.disable('x-powered-by');
   app.locals.now = now;
   app.locals.fetchFn = fetchFn;
   app.locals.staticDir = staticDir;
+  app.locals.backupMaxBytes = backupMaxBytes; // `undefined` = BACKUP_MAX_BYTES (D151)
   app.locals.catalogValidation = catalogValidation; // `undefined` = padrão do service (T36)
 
-  app.use(cors({ origin: env.corsOrigin }));
+  app.use(cors({ origin: env.corsOrigin, exposedHeaders: ['Content-Disposition'] }));
   app.use(express.json());
 
   app.use('/api', routes);
