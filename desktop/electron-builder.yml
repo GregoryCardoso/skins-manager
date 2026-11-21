@@ -56,8 +56,11 @@ nsis:
 portable:
   artifactName: SkinsManager-Portable-${version}.${ext}
 
-# Só configurado; nada é publicado por aqui (a publicação e a atualização automática ficam para 7.5 e D182).
+# Fonte da atualização automática (electron-updater, D181) e destino do `npm run desktop:release` (D182).
+# releaseType: draft -> o release nasce como rascunho no GitHub; o usuário revisa e publica.
+# O `dist` usa --publish never e nunca publica.
 publish:
   provider: github
   owner: GregoryCardoso
   repo: skins-manager
+  releaseType: draft

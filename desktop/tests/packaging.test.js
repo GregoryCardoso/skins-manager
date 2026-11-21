@@ -56,7 +56,7 @@ describe('electron-builder.yml (parseado)', () => {
   });
 
   test('publish aponta para o repositório e o dist não publica', () => {
-    expect(cfg.publish).toEqual({ provider: 'github', owner: 'GregoryCardoso', repo: 'skins-manager' });
+    expect(cfg.publish).toEqual({ provider: 'github', owner: 'GregoryCardoso', repo: 'skins-manager', releaseType: 'draft' });
     expect(pkg.scripts.dist).toMatch(/--publish never/);
     expect(pkg.scripts.dist).toMatch(/--x64/);
     expect(rootPkg.scripts['desktop:dist']).toMatch(/desktop/);

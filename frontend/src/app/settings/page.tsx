@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import AboutSettings from '@/components/AboutSettings';
 import AgingSettings from '@/components/AgingSettings';
 import BackupSettings from '@/components/BackupSettings';
 import CatalogSettings from '@/components/CatalogSettings';
@@ -59,6 +60,7 @@ export default function SettingsPage() {
       {settings && <AgingSettings settings={settings} onSaved={setSettings} />}
       <CatalogSettings />
       <BackupSettings />
+      <AboutSettings />
     </>
   );
 }

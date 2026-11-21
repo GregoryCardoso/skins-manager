@@ -13,6 +13,7 @@ const { createBackendSupervisor } = require('./backendSupervisor');
 const windowSetup = require('./window');
 const dialogs = require('./dialogs');
 const { registerIpc } = require('./ipc');
+const { createUpdater } = require('./updater');
 const { normalizeLanguage, DEFAULT_LANGUAGE } = require('./i18n');
 
 const APP_USER_MODEL_ID = 'io.github.gregorycardoso.skinsmanager';
@@ -46,6 +47,7 @@ function writeMain(level, text) {
 
 let mainWindow = null;
 let supervisor = null;
+let updater = null;
 let appOrigin = null;
 let appPort = null;
 let pageLoaded = false; // a interface (não a tela de carregamento) já foi carregada
@@ -217,10 +219,30 @@ if (!app.requestSingleInstanceLock()) {
     Menu.setApplicationMenu(null);
     windowSetup.installSessionSecurity();
     windowSetup.installGlobalGuards({ getAppOrigin, logger });
+    updater = createUpdater({
+      app,
+      shell,
+      dialogs,
+      logger,
+      getLanguage: () => refreshLanguage(appPort),
+      getParent: parentWindow,
+      getWindow: () => mainWindow,
+      stopBackend: async () => {
+        if (supervisor) await supervisor.stop();
+      },
+    });
     registerIpc({
       getAppOrigin,
-      getAppInfo: () => ({ isDesktop: true, version: app.getVersion(), electron: process.versions.electron, port: appPort }),
+      getAppInfo: () => ({
+        isDesktop: true,
+        version: app.getVersion(),
+        mode: updater.mode, // installer | portable | dev
+        electron: process.versions.electron,
+        port: appPort,
+      }),
+      checkForUpdates: () => updater.check({ manual: true }),
     });
+    updater.scheduleAutoCheck();
 
     startup().catch((err) => {
       logger.error(`Falha na inicialização: ${err && err.stack ? err.stack : err}`);
@@ -239,6 +261,9 @@ if (!app.requestSingleInstanceLock()) {
     supervisor
       .stop()
       .catch((err) => logger.error(`Erro ao encerrar o backend: ${err && err.message ? err.message : err}`))
-      .finally(() => app.quit());
+      .finally(() => {
+        if (updater) updater.installPendingOnQuit(); // "instalar ao fechar o app" (D181)
+        app.quit();
+      });
   });
 }

@@ -93,4 +93,74 @@ function showRenderGone({ parent, language }) {
   });
 }
 
-module.exports = { showStartFailure, showAlreadyOpen, showNoFreePort, showCrashLoop, showStageMissing, showRenderGone };
+function withNotes(language, detail, notes) {
+  return notes ? `${detail}
+
+${translate(language, 'update.notes')}
+${notes}` : detail;
+}
+
+// Primeira confirmação (D181): baixar e instalar ou adiar. Fechar o diálogo = "Agora não".
+function showUpdateAvailable({ parent, language, version, current, notes }) {
+  return ask({
+    parent,
+    language,
+    type: 'info',
+    titleKey: 'update.availableTitle',
+    message: translate(language, 'update.availableMessage', { version, current }),
+    detail: withNotes(language, translate(language, 'update.availableDetail'), notes),
+    buttons: [
+      { id: 'download', label: translate(language, 'update.download') },
+      { id: 'later', label: translate(language, 'update.later') },
+    ],
+  });
+}
+
+// Segunda confirmação: reiniciar agora ou instalar ao fechar. Fechar o diálogo = "instalar ao fechar".
+function showUpdateReady({ parent, language, version }) {
+  return ask({
+    parent,
+    language,
+    type: 'info',
+    titleKey: 'update.readyTitle',
+    message: translate(language, 'update.readyMessage', { version }),
+    detail: translate(language, 'update.readyDetail'),
+    buttons: [
+      { id: 'restart', label: translate(language, 'update.restartNow') },
+      { id: 'on-quit', label: translate(language, 'update.installOnQuit') },
+    ],
+  });
+}
+
+function showUpdateError({ parent, language, reason }) {
+  return ask({
+    parent,
+    language,
+    titleKey: 'update.errorTitle',
+    message: translate(language, 'update.errorMessage'),
+    detail: reason,
+    buttons: [{ id: 'close', label: translate(language, 'common.close') }],
+  });
+}
+
+// Portátil: só avisa e oferece abrir a página de download.
+function showPortableUpdate({ parent, language, version, current, notes }) {
+  return ask({
+    parent,
+    language,
+    type: 'info',
+    titleKey: 'update.portableTitle',
+    message: translate(language, 'update.portableMessage', { version, current }),
+    detail: withNotes(language, translate(language, 'update.portableDetail'), notes),
+    buttons: [
+      { id: 'open', label: translate(language, 'update.openDownloadPage') },
+      { id: 'close', label: translate(language, 'common.close') },
+    ],
+  });
+}
+
+module.exports = {
+  showUpdateAvailable,
+  showUpdateReady,
+  showUpdateError,
+  showPortableUpdate, showStartFailure, showAlreadyOpen, showNoFreePort, showCrashLoop, showStageMissing, showRenderGone };

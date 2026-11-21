@@ -216,12 +216,12 @@ describe('IPC desktop:getAppInfo', () => {
 });
 
 describe('preload', () => {
-  test('expõe somente isDesktop e getAppInfo, sem vazar ipcRenderer ou require', () => {
+  test('expõe somente isDesktop, getAppInfo e checkForUpdates, sem vazar ipcRenderer ou require', () => {
     jest.isolateModules(() => {
       require('../src/preload');
     });
     const api = mockState.exposed.skinsDesktop;
-    expect(Object.keys(api).sort()).toEqual(['getAppInfo', 'isDesktop']);
+    expect(Object.keys(api).sort()).toEqual(['checkForUpdates', 'getAppInfo', 'isDesktop']);
     expect(api.isDesktop).toBe(true);
     expect(api.getAppInfo()).toBe('invoked');
     expect(Object.keys(mockState.exposed)).toEqual(['skinsDesktop']);

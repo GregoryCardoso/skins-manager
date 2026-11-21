@@ -695,6 +695,25 @@
       "copyFailed": "Não foi possível copiar. Selecione o caminho e copie manualmente.",
       "retention": "Os backups automáticos ficam na pasta de backups, dentro da pasta de dados do app. São mantidos os 10 mais recentes de cada tipo (antes de importar e antes de atualizar o app)."
     },
+    "about": {
+      "title": "Sobre",
+      "version": "Skins Manager versão {version}",
+      "versionUnknown": "Versão não disponível (servidor sem resposta).",
+      "modeInstaller": "instalador",
+      "modePortable": "portátil",
+      "check": "Verificar atualizações",
+      "checking": "Verificando...",
+      "upToDate": "Você já está na versão mais recente.",
+      "available": "Versão {version} disponível. Responda à janela que se abriu para baixar e instalar.",
+      "availablePortable": "Versão {version} disponível. Use a janela que se abriu para abrir a página de download.",
+      "ready": "A versão {version} já foi baixada e aguarda a instalação.",
+      "busy": "Já existe uma verificação ou atualização em andamento.",
+      "disabled": "A verificação de atualizações não está disponível neste modo (desenvolvimento).",
+      "error": "Não foi possível verificar as atualizações. Confira a conexão com a internet e tente de novo.",
+      "noteInstaller": "A verificação também acontece sozinha ao abrir o app. Nada é baixado ou instalado sem a sua confirmação.",
+      "notePortable": "A versão portátil não se atualiza sozinha: o app só avisa e abre a página de download.",
+      "manualUpdate": "Atualize pelo Git (git pull) ou baixe o código novo."
+    },
     "loadError": "Não foi possível carregar as configurações: {reason}"
   }
 }

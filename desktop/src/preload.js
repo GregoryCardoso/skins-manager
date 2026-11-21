@@ -6,4 +6,5 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('skinsDesktop', {
   isDesktop: true,
   getAppInfo: () => ipcRenderer.invoke('desktop:getAppInfo'),
+  checkForUpdates: () => ipcRenderer.invoke('desktop:checkForUpdates'),
 });

@@ -695,6 +695,25 @@
       "copyFailed": "Could not copy. Select the path and copy it manually.",
       "retention": "Automatic backups are kept in the backups folder, inside the app's data folder. The 10 most recent of each kind are kept (before importing and before updating the app)."
     },
+    "about": {
+      "title": "About",
+      "version": "Skins Manager version {version}",
+      "versionUnknown": "Version not available (server not responding).",
+      "modeInstaller": "installer",
+      "modePortable": "portable",
+      "check": "Check for updates",
+      "checking": "Checking...",
+      "upToDate": "You are on the latest version.",
+      "available": "Version {version} is available. Answer the window that opened to download and install it.",
+      "availablePortable": "Version {version} is available. Use the window that opened to open the download page.",
+      "ready": "Version {version} was already downloaded and is waiting to be installed.",
+      "busy": "A check or update is already in progress.",
+      "disabled": "Update checking is not available in this mode (development).",
+      "error": "Could not check for updates. Check your internet connection and try again.",
+      "noteInstaller": "The check also runs by itself when the app opens. Nothing is downloaded or installed without your confirmation.",
+      "notePortable": "The portable version does not update itself: the app only notifies you and opens the download page.",
+      "manualUpdate": "Update through Git (git pull) or download the new code."
+    },
     "loadError": "Could not load the settings: {reason}"
   }
 }

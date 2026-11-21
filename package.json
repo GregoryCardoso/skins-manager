@@ -22,6 +22,7 @@
     "desktop:install": "npm --prefix desktop install",
     "desktop:stage": "npm --prefix desktop run stage",
     "desktop:dist": "npm --prefix desktop run dist",
+    "desktop:release": "npm --prefix desktop run release",
     "version:set": "node scripts/setVersion.js",
     "desktop:dev": "npm --prefix desktop run dev",
     "test:desktop": "npm --prefix desktop test",
