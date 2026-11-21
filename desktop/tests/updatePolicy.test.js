@@ -6,6 +6,10 @@ const {
   isValidReleaseUrl,
   evaluateLatestRelease,
   formatReleaseNotes,
+  limitReleaseNotes,
+  releaseByTagApiUrl,
+  extractReleaseBody,
+  MAX_NOTES_CHARS,
   LATEST_RELEASE_API_URL,
   MAX_RESPONSE_BYTES,
   REQUEST_TIMEOUT_MS,
@@ -192,10 +196,77 @@ describe('formatReleaseNotes', () => {
   test('CRLF e linhas em branco em excesso são normalizados', () => {
     expect(formatReleaseNotes('a\r\n\r\n\r\n\r\nb')).toBe('a\n\nb');
   });
-  test('limita a 1500 caracteres com reticências', () => {
-    const out = formatReleaseNotes('x'.repeat(5000));
-    expect(out.length).toBe(1503);
-    expect(out.endsWith('...')).toBe(true);
-    expect(formatReleaseNotes('x'.repeat(1500))).toBe('x'.repeat(1500));
+  test('limita a 20 000 caracteres (D191), sem quebrar o texto que cabe', () => {
+    expect(formatReleaseNotes('x'.repeat(20000))).toBe('x'.repeat(20000));
+    const out = formatReleaseNotes('x'.repeat(25000));
+    expect(out.length).toBe(20001);
+    expect(out.endsWith('…')).toBe(true);
+  });
+  test('comentários HTML (marcadores de idioma) saem junto com as tags', () => {
+    expect(formatReleaseNotes('<!-- pt-BR -->\nOlá\n<!-- en -->\nHello')).toBe('Olá\n\nHello');
+  });
+});
+
+describe('limitReleaseNotes', () => {
+  test('texto que cabe passa; não texto vira vazio', () => {
+    expect(limitReleaseNotes('abc')).toBe('abc');
+    expect(limitReleaseNotes(null)).toBe('');
+    expect(limitReleaseNotes(42)).toBe('');
+  });
+  test('corta no último fim de linha antes do limite e acrescenta reticências', () => {
+    expect(limitReleaseNotes('aaaa\nbbbb\ncccc', 12)).toBe('aaaa\nbbbb…');
+  });
+  test('sem quebra de linha, corta no limite', () => {
+    expect(limitReleaseNotes('x'.repeat(30), 10)).toBe(`${'x'.repeat(10)}…`);
+  });
+  test('o padrão é 20 000', () => {
+    expect(MAX_NOTES_CHARS).toBe(20000);
+    expect(limitReleaseNotes('a\n'.repeat(15000)).length).toBeLessThanOrEqual(20001);
+  });
+});
+
+describe('releaseByTagApiUrl', () => {
+  test('monta a URL da API pela tag', () => {
+    expect(releaseByTagApiUrl('1.1.0')).toBe('https://api.github.com/repos/GregoryCardoso/skins-manager/releases/tags/v1.1.0');
+    expect(releaseByTagApiUrl('1.1.0-beta.1')).toContain('/tags/v1.1.0-beta.1');
+  });
+  test.each([['1.1.0/../../x'], ['x'], ['1.1'], [''], [null], [undefined], [11]])('versão inválida %j: sem URL', (version) => {
+    expect(releaseByTagApiUrl(version)).toBeNull();
+  });
+});
+
+describe('extractReleaseBody', () => {
+  const ok = { tag_name: 'v1.1.0', body: '## Novo', draft: false, prerelease: false };
+  test('release válida devolve o corpo', () => {
+    expect(extractReleaseBody(ok, '1.1.0')).toBe('## Novo');
+    expect(extractReleaseBody({ tag_name: 'v1.1.0', body: '' }, '1.1.0')).toBe('');
+  });
+  test.each([
+    ['tag diferente', { ...ok, tag_name: 'v1.2.0' }],
+    ['tag sem v', { ...ok, tag_name: '1.1.0' }],
+    ['rascunho', { ...ok, draft: true }],
+    ['pré-release', { ...ok, prerelease: true }],
+    ['body nulo', { ...ok, body: null }],
+    ['body não texto', { ...ok, body: 7 }],
+    ['sem body', { tag_name: 'v1.1.0' }],
+    ['array', []],
+    ['texto', 'x'],
+    ['null', null],
+  ])('%s: null', (_n, json) => {
+    expect(extractReleaseBody(json, '1.1.0')).toBeNull();
+  });
+  test('versão inválida: null', () => {
+    expect(extractReleaseBody(ok, 'abc')).toBeNull();
+    expect(extractReleaseBody(ok, undefined)).toBeNull();
+  });
+});
+
+describe('formatReleaseNotes: entidades do HTML do feed', () => {
+  const { formatReleaseNotes: format } = require('../src/lib/updatePolicy');
+  test('decodifica as entidades comuns sem reinterpretar HTML', () => {
+    expect(format('<p>Lucro &amp; vendas: &quot;novo&quot; &lt;b&gt; it&#39;s&nbsp;ok</p>')).toBe('Lucro & vendas: "novo" <b> it\'s ok');
+  });
+  test('&amp;lt; vira o texto &lt; (decodifica uma vez só)', () => {
+    expect(format('a &amp;lt; b')).toBe('a &lt; b');
   });
 });

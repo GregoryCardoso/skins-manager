@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import AppHeader from '@/components/AppHeader';
+import DesktopUpdateHost from '@/components/DesktopUpdateHost';
 import { PreferencesProvider } from '@/components/PreferencesProvider';
 import { I18nProvider } from '@/i18n/I18nProvider';
 import { bootstrapScript } from '@/lib/preferences';
@@ -22,6 +23,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <I18nProvider>
             <AppHeader />
             <main>{children}</main>
+            <DesktopUpdateHost />
           </I18nProvider>
         </PreferencesProvider>
       </body>

@@ -5,6 +5,7 @@
 const REPO_OWNER = 'GregoryCardoso';
 const REPO_NAME = 'skins-manager';
 const LATEST_RELEASE_API_URL = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/latest`;
+const RELEASE_BY_TAG_API_PREFIX = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/tags/`;
 const RELEASE_URL_PREFIX = `https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/`;
 const MAX_RESPONSE_BYTES = 256 * 1024;
 const REQUEST_TIMEOUT_MS = 10 * 1000;
@@ -91,10 +92,34 @@ function evaluateLatestRelease(json, currentVersion) {
   };
 }
 
-const MAX_NOTES_CHARS = 1500;
+const MAX_NOTES_CHARS = 20000;
 
-// Notas da versão em texto simples para o diálogo: aceita string (markdown/HTML) ou a lista do electron-updater
-// ([{ version, note }]); tira tags HTML e limita o tamanho.
+// Corta as notas em `max` caracteres, no último fim de linha antes do limite, e acrescenta "…" (D191).
+function limitReleaseNotes(text, max = MAX_NOTES_CHARS) {
+  if (typeof text !== 'string') return '';
+  if (text.length <= max) return text;
+  const cut = text.slice(0, max);
+  const lastBreak = cut.lastIndexOf('\n');
+  return `${(lastBreak > 0 ? cut.slice(0, lastBreak) : cut).trimEnd()}…`;
+}
+
+// URL da API para as notas de uma versão (D191). Versão inválida não monta URL (devolve null).
+function releaseByTagApiUrl(version) {
+  if (!parseVersion(version)) return null;
+  return `${RELEASE_BY_TAG_API_PREFIX}${encodeURIComponent(`v${version.trim().replace(/^v/, '')}`)}`;
+}
+
+// Corpo (markdown) da release devolvida por `releases/tags/v<versão>`; null se algo não bater (D191).
+function extractReleaseBody(json, version) {
+  if (!json || typeof json !== 'object' || Array.isArray(json)) return null;
+  if (typeof version !== 'string' || !parseVersion(version)) return null;
+  if (json.tag_name !== `v${version}`) return null;
+  if (json.draft === true || json.prerelease === true) return null;
+  return typeof json.body === 'string' ? json.body : null;
+}
+
+// Reserva (D191): notas do feed do electron-updater (HTML ou lista) viram texto puro, sem marcadores de
+// idioma (os comentários HTML saem junto com as tags), e limitadas a 20 000 caracteres.
 function formatReleaseNotes(notes) {
   let text = '';
   if (typeof notes === 'string') text = notes;
@@ -108,15 +133,23 @@ function formatReleaseNotes(notes) {
     .replace(/<br\s*\/?>/gi, '\n')
     .replace(/<\/(p|li|h[1-6])>/gi, '\n')
     .replace(/<[^>]*>/g, '')
+    // entidades comuns do HTML do feed; o resultado é texto (o renderizador do modal não interpreta HTML)
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&#x27;|&apos;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
     .replace(/\r\n/g, '\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
-  return text.length > MAX_NOTES_CHARS ? `${text.slice(0, MAX_NOTES_CHARS).trimEnd()}...` : text;
+  return limitReleaseNotes(text);
 }
 
 module.exports = {
   LATEST_RELEASE_API_URL,
   RELEASE_URL_PREFIX,
+  MAX_NOTES_CHARS,
   MAX_RESPONSE_BYTES,
   REQUEST_TIMEOUT_MS,
   parseVersion,
@@ -124,4 +157,7 @@ module.exports = {
   isValidReleaseUrl,
   evaluateLatestRelease,
   formatReleaseNotes,
+  limitReleaseNotes,
+  releaseByTagApiUrl,
+  extractReleaseBody,
 };

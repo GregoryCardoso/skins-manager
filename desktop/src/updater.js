@@ -1,9 +1,10 @@
 'use strict';
 
-// Atualização do app desktop (D181). Três modos:
+// Atualização do app desktop (D181, D188 a D191). Três modos:
 //  - installer: electron-updater (GitHub Releases), com duas confirmações; nada baixa nem instala sem resposta.
 //  - portable: o electron-updater não suporta; consulta releases/latest e só avisa, com link para a página.
 //  - dev (app não empacotado): sem verificação.
+// O main é o dono do estado (lib/updateState.js); a interface mostra o modal e responde pelo IPC (`respond`).
 // Tudo que depende do Electron entra por injeção, para ser testável sem janela.
 const https = require('https');
 const {
@@ -11,10 +12,16 @@ const {
   MAX_RESPONSE_BYTES,
   REQUEST_TIMEOUT_MS,
   evaluateLatestRelease,
+  extractReleaseBody,
   formatReleaseNotes,
+  limitReleaseNotes,
+  releaseByTagApiUrl,
 } = require('./lib/updatePolicy');
+const { initialState, transition, isActionAllowed, parseRespondPayload } = require('./lib/updateState');
 
 const AUTO_CHECK_DELAY_MS = 10 * 1000;
+// Progresso enviado à interface: no máximo 1 por ponto percentual e 4 por segundo (D188).
+const MIN_PROGRESS_INTERVAL_MS = 250;
 
 function detectMode({ isPackaged, env }) {
   if (!isPackaged) return 'dev';
@@ -22,7 +29,7 @@ function detectMode({ isPackaged, env }) {
 }
 
 // GET com timeout de 10 s e teto de 256 KB; devolve o JSON já interpretado (lança em qualquer falha).
-function fetchLatestRelease(url = LATEST_RELEASE_API_URL) {
+function fetchJson(url) {
   return new Promise((resolve, reject) => {
     const request = https.get(
       url,
@@ -58,12 +65,14 @@ function fetchLatestRelease(url = LATEST_RELEASE_API_URL) {
   });
 }
 
+function fetchLatestRelease(url = LATEST_RELEASE_API_URL) {
+  return fetchJson(url);
+}
+
 function createUpdater({
   app,
   shell,
-  dialogs,
-  getLanguage,
-  getParent = () => null,
+  publishState = () => {},
   getWindow = () => null,
   stopBackend = async () => {},
   restartBackend = async () => {},
@@ -71,18 +80,36 @@ function createUpdater({
   env = process.env,
   loadAutoUpdater = () => require('electron-updater').autoUpdater,
   fetchLatest = fetchLatestRelease,
+  fetchJson: fetchJsonFn = fetchJson,
   setTimeoutFn = setTimeout,
   autoCheckDelayMs = AUTO_CHECK_DELAY_MS,
+  nowFn = Date.now,
 }) {
   const mode = detectMode({ isPackaged: app.isPackaged, env });
   const currentVersion = () => app.getVersion();
   const errText = (err) => (err && err.message ? err.message : String(err));
 
+  let state = initialState({ mode, currentVersion: currentVersion() });
   let checking = false; // consulta em andamento
-  let flowActive = false; // diálogos/download em andamento
   let autoUpdater = null;
+  let pendingVersion = null; // versão oferecida (fase available), a baixar se o usuário aceitar
   let downloadedVersion = null; // atualização baixada, aguardando reiniciar/fechar
-  let installOnQuit = false;
+  let installOnQuit = false; // só o clique explícito em "Instalar ao fechar o app" (V102-Q2)
+  let portableUrl = null; // página da release (portátil); fica só aqui, nunca vai ao renderer
+  let lastProgressAt = null;
+
+  // Aplica um evento à máquina de estados e publica o novo estado. false se o evento não vale na fase atual.
+  function apply(event) {
+    const next = transition(state, event);
+    if (next === state) return false;
+    state = next;
+    try {
+      publishState(state);
+    } catch (err) {
+      logger.error(`Falha ao publicar o estado da atualização: ${errText(err)}`);
+    }
+    return true;
+  }
 
   function getAutoUpdater() {
     if (autoUpdater) return autoUpdater;
@@ -100,8 +127,19 @@ function createUpdater({
     autoUpdater.on('download-progress', (progress) => {
       const win = getWindow();
       if (win && !win.isDestroyed()) win.setProgressBar(Math.min(1, Math.max(0, (progress.percent || 0) / 100)));
+      publishProgress(progress.percent);
     });
     return autoUpdater;
+  }
+
+  function publishProgress(rawPercent) {
+    if (state.phase !== 'downloading') return;
+    const percent = Math.min(100, Math.max(0, Math.floor(Number(rawPercent) || 0)));
+    if (percent === state.percent) return;
+    const now = nowFn();
+    if (lastProgressAt !== null && now - lastProgressAt < MIN_PROGRESS_INTERVAL_MS) return;
+    lastProgressAt = now;
+    apply({ type: 'progress', percent });
   }
 
   function clearProgress() {
@@ -109,9 +147,16 @@ function createUpdater({
     if (win && !win.isDestroyed()) win.setProgressBar(-1);
   }
 
+  // Reinício para instalar. Qualquer falha tira o modal de "Reiniciando..." e mostra o erro de instalação.
   async function restartNow() {
     logger.info('Reiniciando para instalar a atualização.');
-    await stopBackend(); // shutdown normal do backend (D177) antes de o instalador substituir os arquivos
+    try {
+      await stopBackend(); // shutdown normal do backend (D177) antes de o instalador substituir os arquivos
+    } catch (err) {
+      logger.error(`Falha ao encerrar o backend para instalar: ${errText(err)}`);
+      apply({ type: 'installFailed', detail: errText(err) });
+      return;
+    }
     try {
       getAutoUpdater().quitAndInstall(false, true);
     } catch (err) {
@@ -122,45 +167,83 @@ function createUpdater({
       } catch (restartErr) {
         logger.error(`Falha ao religar o backend: ${errText(restartErr)}`);
       }
-      await dialogs.showUpdateError({ parent: getParent(), language: await getLanguage(), reason: errText(err) });
+      apply({ type: 'installFailed', detail: errText(err) });
     }
   }
 
-  async function askRestart(language) {
-    const choice = await dialogs.showUpdateReady({ parent: getParent(), language, version: downloadedVersion });
-    if (choice === 'restart') {
-      await restartNow();
-    } else {
-      installOnQuit = true;
-      logger.info('Atualização será instalada ao fechar o app.');
-    }
-  }
-
-  // Segunda parte do fluxo do instalador: depois de "há versão nova".
-  async function installerFlow(info) {
-    const language = await getLanguage();
-    const answer = await dialogs.showUpdateAvailable({
-      parent: getParent(),
-      language,
-      version: info.version,
-      current: currentVersion(),
-      notes: formatReleaseNotes(info.releaseNotes),
-    });
-    if (answer !== 'download') {
-      logger.info('Atualização adiada pelo usuário.');
-      return;
-    }
+  async function downloadNow() {
+    lastProgressAt = null;
     try {
       await getAutoUpdater().downloadUpdate();
     } catch (err) {
       logger.error(`Falha ao baixar a atualização: ${errText(err)}`);
       clearProgress();
-      await dialogs.showUpdateError({ parent: getParent(), language: await getLanguage(), reason: errText(err) });
+      apply({ type: 'downloadFailed', detail: errText(err) });
       return;
     }
     clearProgress();
-    downloadedVersion = info.version;
-    await askRestart(await getLanguage());
+    downloadedVersion = pendingVersion;
+    apply({ type: 'downloaded' });
+  }
+
+  function runDetached(fn) {
+    Promise.resolve()
+      .then(fn)
+      .catch((err) => logger.error(`Erro no fluxo de atualização: ${errText(err)}`));
+  }
+
+  // Resposta do usuário vinda do modal (IPC `desktop:updateRespond`). Ação fora da fase ou `seq` velho: ignorada.
+  function respond(payload) {
+    const parsed = parseRespondPayload(payload);
+    if (!parsed) {
+      logger.info('Resposta de atualização ignorada: formato inválido.');
+      return { accepted: false, state };
+    }
+    const { action, seq } = parsed;
+    if (seq !== state.seq || !isActionAllowed(state.phase, action)) {
+      logger.info(`Resposta de atualização ignorada: ação "${action}" na fase "${state.phase}" (seq ${seq}, atual ${state.seq}).`);
+      return { accepted: false, state };
+    }
+    apply({ type: action });
+    switch (action) {
+      case 'download':
+        runDetached(downloadNow);
+        break;
+      case 'restart':
+        installOnQuit = false; // o reinício já instala; evita instalar de novo no before-quit
+        runDetached(restartNow);
+        break;
+      case 'installOnQuit':
+        installOnQuit = true;
+        logger.info('Atualização será instalada ao fechar o app.');
+        break;
+      case 'later':
+        logger.info('Atualização adiada pelo usuário.');
+        break;
+      case 'openDownloadPage':
+        if (portableUrl) {
+          runDetached(() => shell.openExternal(portableUrl)); // URL já validada pelo updatePolicy; nunca vem do renderer
+        }
+        break;
+      default:
+        break;
+    }
+    return { accepted: true, state };
+  }
+
+  // Notas em markdown (D191): corpo da release pela API do GitHub; se falhar, o texto do feed, sem HTML.
+  async function loadInstallerNotes(info) {
+    const url = releaseByTagApiUrl(info.version);
+    if (url) {
+      try {
+        const body = extractReleaseBody(await fetchJsonFn(url), info.version);
+        if (body !== null) return limitReleaseNotes(body);
+        logger.error('Notas da versão: resposta inesperada do GitHub; usando o texto do feed.');
+      } catch (err) {
+        logger.error(`Notas da versão: falha ao buscar no GitHub (${errText(err)}); usando o texto do feed.`);
+      }
+    }
+    return formatReleaseNotes(info.releaseNotes);
   }
 
   async function checkInstaller() {
@@ -169,7 +252,9 @@ function createUpdater({
       return { status: 'up-to-date', latestVersion: result && result.updateInfo ? result.updateInfo.version : undefined };
     }
     const info = result.updateInfo;
-    runDetached(() => installerFlow(info));
+    const notes = await loadInstallerNotes(info);
+    pendingVersion = info.version;
+    apply({ type: 'found', version: info.version, currentVersion: currentVersion(), notes });
     return { status: 'available', latestVersion: info.version };
   }
 
@@ -178,42 +263,31 @@ function createUpdater({
     const decision = evaluateLatestRelease(json, currentVersion());
     if (decision.status === 'invalid') throw new Error('Resposta inválida do GitHub.');
     if (decision.status !== 'available') return { status: 'up-to-date', latestVersion: decision.latestVersion };
-    runDetached(async () => {
-      const answer = await dialogs.showPortableUpdate({
-        parent: getParent(),
-        language: await getLanguage(),
-        version: decision.latestVersion,
-        current: currentVersion(),
-        notes: formatReleaseNotes(decision.notes),
-      });
-      if (answer === 'open') await shell.openExternal(decision.url); // URL já validada pelo updatePolicy
+    portableUrl = decision.url;
+    apply({
+      type: 'found',
+      version: decision.latestVersion,
+      currentVersion: currentVersion(),
+      notes: limitReleaseNotes(decision.notes),
     });
     return { status: 'available', latestVersion: decision.latestVersion };
-  }
-
-  // Os diálogos rodam em segundo plano; `flowActive` só solta no fim, para não abrir dois fluxos.
-  function runDetached(fn) {
-    flowActive = true;
-    Promise.resolve()
-      .then(fn)
-      .catch((err) => logger.error(`Erro no fluxo de atualização: ${errText(err)}`))
-      .finally(() => {
-        flowActive = false;
-      });
   }
 
   // `manual`: vindo do botão (erro vira status 'error'); automático: erro só no log.
   async function check({ manual = false } = {}) {
     const base = { mode, currentVersion: currentVersion() };
     if (mode === 'dev') return { ...base, status: 'disabled' };
-    if (checking || flowActive) return { ...base, status: 'busy' };
+    if (state.phase === 'downloading') return { ...base, status: 'downloading', percent: state.percent };
+    if (checking || ['available', 'installing', 'portable-available'].includes(state.phase)) {
+      return { ...base, status: 'busy' };
+    }
     if (downloadedVersion) {
-      // já baixada: oferece o reinício de novo
-      if (manual) {
-        runDetached(async () => askRestart(await getLanguage()));
-      }
+      // já baixada: a verificação manual reabre o modal de "pronta" (mesmo depois de escondido, de "instalar ao fechar"
+      // ou de um erro de instalação); a automática não incomoda
+      if (manual) apply({ type: 'reopen', version: downloadedVersion });
       return { ...base, status: 'ready', latestVersion: downloadedVersion };
     }
+    if (state.phase === 'error') apply({ type: 'clear' });
     checking = true;
     try {
       const outcome = mode === 'portable' ? await checkPortable() : await checkInstaller();
@@ -236,7 +310,9 @@ function createUpdater({
   }
 
   // "Instalar ao fechar o app": chamado pelo main depois de o backend encerrar, no before-quit.
-  // Sem autoInstallOnAppQuit global, a instalação é pedida aqui, só se o usuário escolheu essa opção.
+  // Sem autoInstallOnAppQuit global, a instalação é pedida aqui, só se o usuário escolheu essa opção (V102-Q2).
+  // Fechar o app sem responder ao modal não instala; na próxima abertura a atualização é oferecida de novo e o
+  // electron-updater reaproveita o instalador já baixado (cache em `pending`, conferido pelo sha512).
   function installPendingOnQuit() {
     if (!installOnQuit || !downloadedVersion) return false;
     installOnQuit = false;
@@ -250,7 +326,14 @@ function createUpdater({
     }
   }
 
-  return { mode, check, scheduleAutoCheck, installPendingOnQuit };
+  return { mode, check, scheduleAutoCheck, installPendingOnQuit, respond, getState: () => state };
 }
 
-module.exports = { createUpdater, detectMode, fetchLatestRelease, AUTO_CHECK_DELAY_MS };
+module.exports = {
+  createUpdater,
+  detectMode,
+  fetchJson,
+  fetchLatestRelease,
+  AUTO_CHECK_DELAY_MS,
+  MIN_PROGRESS_INTERVAL_MS,
+};

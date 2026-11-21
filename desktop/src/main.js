@@ -12,7 +12,7 @@ const { pickPort, checkPortFree, probeSkinsManager } = require('./lib/portPicker
 const { createBackendSupervisor } = require('./backendSupervisor');
 const windowSetup = require('./window');
 const dialogs = require('./dialogs');
-const { registerIpc } = require('./ipc');
+const { registerIpc, createStatePublisher } = require('./ipc');
 const { createUpdater } = require('./updater');
 const { normalizeLanguage, DEFAULT_LANGUAGE } = require('./i18n');
 
@@ -82,6 +82,10 @@ function readBrowserLockPort() {
 
 function parentWindow() {
   return mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible() ? mainWindow : null;
+}
+
+function getMainWebContents() {
+  return mainWindow && !mainWindow.isDestroyed() ? mainWindow.webContents : null;
 }
 
 function openInBrowser(port) {
@@ -222,11 +226,10 @@ if (!app.requestSingleInstanceLock()) {
     updater = createUpdater({
       app,
       shell,
-      dialogs,
       logger,
-      getLanguage: () => refreshLanguage(appPort),
-      getParent: parentWindow,
       getWindow: () => mainWindow,
+      // o modal de atualização fica na interface (D188); aqui só se envia o estado, e só à janela na origem do app
+      publishState: createStatePublisher({ getWebContents: getMainWebContents, getAppOrigin }),
       stopBackend: async () => {
         if (supervisor) await supervisor.stop();
       },
@@ -245,6 +248,9 @@ if (!app.requestSingleInstanceLock()) {
         port: appPort,
       }),
       checkForUpdates: () => updater.check({ manual: true }),
+      getUpdateState: () => updater.getState(),
+      respondToUpdate: (payload) => updater.respond(payload),
+      getMainWebContents,
     });
     updater.scheduleAutoCheck();
 

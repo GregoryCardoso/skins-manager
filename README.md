@@ -80,6 +80,7 @@ Você vê a sua versão em **Configurações → Sobre**.
 - **Instalador:** alguns segundos depois de abrir, o app procura uma versão nova. Também dá para procurar pelo botão **Verificar atualizações**, em **Configurações → Sobre**. Se houver novidade, uma janela mostra o que mudou:
   1. **Baixar e instalar** ou **Agora não** (com "Agora não", ele pergunta de novo na próxima vez que você abrir o app);
   2. depois do download: **Reiniciar agora** ou **Instalar ao fechar o app**.
+     Se você fechar a janela sem escolher, nada é instalado: a atualização é oferecida de novo na próxima abertura (o arquivo já baixado é reaproveitado). Para ver a janela outra vez, use **Verificar atualizações**.
 
   Nada é baixado nem instalado sem a sua resposta, e os seus dados são mantidos.
 - **Portátil:** o app avisa da versão nova, e o botão **Abrir página de download** leva à página certa. Baixe o novo arquivo e use-o no lugar do antigo.
@@ -175,6 +176,7 @@ You can see your version in **Settings → About**.
 - **Installer:** a few seconds after opening, the app looks for a new version. You can also check with the **Check for updates** button in **Settings → About**. If there is one, a window shows what changed:
   1. **Download and install** or **Not now** (with "Not now", it asks again the next time you open the app);
   2. after the download: **Restart now** or **Install when closing the app**.
+     If you close the window without choosing, nothing is installed: the update is offered again the next time the app opens (the file already downloaded is reused). To see the window again, use **Check for updates**.
 
   Nothing is downloaded or installed without your answer, and your data is kept.
 - **Portable:** the app tells you about the new version, and the **Open download page** button takes you to the right page. Download the new file and use it instead of the old one.

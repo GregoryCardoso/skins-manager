@@ -31,7 +31,7 @@ vi.mock('@/services/api', () => ({ getHealth: vi.fn() }));
 import AboutSettings from './AboutSettings';
 
 type Info = { mode: 'installer' | 'portable' | 'dev'; version?: string } | null;
-type Result = { mode: 'installer' | 'portable' | 'dev'; status: string; latestVersion?: string } | null;
+type Result = { mode: 'installer' | 'portable' | 'dev'; status: string; latestVersion?: string; percent?: number | null } | null;
 
 function render(state: { version?: string | null; info?: Info; checking?: boolean; result?: Result; failed?: boolean }) {
   hookState.values = [state.version ?? null, state.info ?? null, state.checking ?? false, state.result ?? null, state.failed ?? false];
@@ -88,8 +88,8 @@ describe('AboutSettings', () => {
 
   test.each([
     ['installer', 'up-to-date', undefined, 'Você já está na versão mais recente.'],
-    ['installer', 'available', '1.1.0', 'Versão 1.1.0 disponível. Responda à janela'],
-    ['portable', 'available', '1.1.0', 'Versão 1.1.0 disponível. Use a janela'],
+    ['installer', 'available', '1.1.0', 'Versão 1.1.0 disponível. Veja a janela de atualização.'],
+    ['portable', 'available', '1.1.0', 'Versão 1.1.0 disponível. Veja a janela de atualização.'],
     ['installer', 'ready', '1.1.0', 'A versão 1.1.0 já foi baixada'],
     ['installer', 'busy', undefined, 'Já existe uma verificação'],
     ['installer', 'disabled', undefined, 'não está disponível neste modo'],
@@ -99,6 +99,25 @@ describe('AboutSettings', () => {
     const html = render({ version: '1.0.0', info: { mode }, result: { mode, status, latestVersion } });
     expect(text(html)).toContain(expected);
     expect(html).toContain('role="status"');
+  });
+
+  test('download em andamento mostra o percentual', () => {
+    const html = render({
+      info: { mode: 'installer' },
+      result: { mode: 'installer', status: 'downloading', percent: 42 },
+    });
+    expect(text(html)).toContain('Baixando a atualização... 42%');
+    expect(html).toContain('role="status"');
+  });
+
+  test('download sem percentual conhecido mostra 0%', () => {
+    const html = render({ info: { mode: 'installer' }, result: { mode: 'installer', status: 'downloading' } });
+    expect(text(html)).toContain('Baixando a atualização... 0%');
+  });
+
+  test('atualização já baixada avisa que a janela foi aberta de novo', () => {
+    const html = render({ info: { mode: 'installer' }, result: { mode: 'installer', status: 'ready', latestVersion: '1.1.0' } });
+    expect(text(html)).toContain('janela de atualização foi aberta de novo');
   });
 
   test('erro devolvido pela verificação usa a classe de erro; sucesso, a de ok', () => {

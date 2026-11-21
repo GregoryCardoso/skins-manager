@@ -6,7 +6,7 @@
 const { EventEmitter } = require('events');
 const { createBackendSupervisor } = require('../src/backendSupervisor');
 const { createUpdater } = require('../src/updater');
-const { makeDeps, flush } = require('./helpers/fakeUpdaterDeps');
+const { makeDeps, flush, answer, downloadToReady } = require('./helpers/fakeUpdaterDeps');
 
 const AVAILABLE = { isUpdateAvailable: true, updateInfo: { version: '1.1.0', releaseNotes: 'x' } };
 
@@ -140,24 +140,24 @@ describe('supervisor.start({ port }) depois de stop()', () => {
 
 describe('updater + supervisor real: quitAndInstall falhando', () => {
   async function runFailingRestart({ restartBackend }) {
-    const { deps, autoUpdater, dialogs } = makeDeps({ deps: { restartBackend } });
+    const { deps, autoUpdater } = makeDeps({ deps: { restartBackend } });
     autoUpdater.quitAndInstall.mockImplementation(() => {
       throw new Error('instalador indisponível');
     });
     autoUpdater.checkForUpdates.mockResolvedValue(AVAILABLE);
-    dialogs.showUpdateAvailable.mockResolvedValue('download');
-    dialogs.showUpdateReady.mockResolvedValue('restart');
-    await createUpdater(deps).check({ manual: true });
+    const updater = createUpdater(deps);
+    await downloadToReady(updater);
+    answer(updater, 'restart');
     await flush();
-    return { deps, dialogs };
+    return { deps, updater };
   }
 
-  test('fluxo completo: stop real -> quitAndInstall falha -> start real -> backend pronto de novo -> erro mostrado', async () => {
+  test('fluxo completo: stop real -> quitAndInstall falha -> start real -> backend pronto de novo -> erro no estado', async () => {
     const { supervisor, children, events } = setupSupervisor();
     supervisor.start({ port: 3060 });
     children[0].emit('message', { type: 'ready', port: 3060 });
     const appPort = 3060;
-    const { deps, autoUpdater, dialogs } = makeDeps({
+    const { deps, autoUpdater } = makeDeps({
       deps: {
         stopBackend: async () => {
           await supervisor.stop();
@@ -171,36 +171,35 @@ describe('updater + supervisor real: quitAndInstall falhando', () => {
       throw new Error('falhou');
     });
     autoUpdater.checkForUpdates.mockResolvedValue(AVAILABLE);
-    dialogs.showUpdateAvailable.mockResolvedValue('download');
-    dialogs.showUpdateReady.mockResolvedValue('restart');
-    await createUpdater(deps).check({ manual: true });
+    const updater = createUpdater(deps);
+    await downloadToReady(updater);
+    answer(updater, 'restart');
     await flush();
     expect(children).toHaveLength(2);
     expect(supervisor.getState()).toBe('starting');
     children[1].emit('message', { type: 'ready', port: 3060 });
     expect(supervisor.getState()).toBe('running');
-    expect(dialogs.showUpdateError).toHaveBeenCalledWith(expect.objectContaining({ reason: 'falhou' }));
+    expect(updater.getState()).toMatchObject({ phase: 'error', error: { kind: 'install', detail: 'falhou' } });
     expect(events.filter((e) => e[0] === 'ready')).toHaveLength(2);
   });
 
-  test('restartBackend lançando de forma síncrona: o erro é registrado e o diálogo de erro ainda aparece', async () => {
+  test('restartBackend lançando de forma síncrona: o erro é registrado e o erro de instalação ainda é publicado', async () => {
     const restartBackend = jest.fn(() => {
       throw new Error('sync boom');
     });
-    const { deps, dialogs } = await runFailingRestart({ restartBackend });
+    const { deps, updater } = await runFailingRestart({ restartBackend });
     expect(restartBackend).toHaveBeenCalledTimes(1);
     expect(deps.logger.error).toHaveBeenCalledWith(expect.stringContaining('Falha ao religar o backend: sync boom'));
-    expect(dialogs.showUpdateError).toHaveBeenCalledTimes(1);
-    expect(dialogs.showUpdateError).toHaveBeenCalledWith(expect.objectContaining({ reason: 'instalador indisponível' }));
+    expect(updater.getState()).toMatchObject({ phase: 'error', error: { kind: 'install', detail: 'instalador indisponível' } });
   });
 
   test('restartBackend rejeitando: idem (o motivo mostrado é o do quitAndInstall, não o do religamento)', async () => {
     const restartBackend = jest.fn(async () => {
       throw new Error('async boom');
     });
-    const { deps, dialogs } = await runFailingRestart({ restartBackend });
+    const { deps, updater } = await runFailingRestart({ restartBackend });
     expect(deps.logger.error).toHaveBeenCalledWith(expect.stringContaining('Falha ao religar o backend: async boom'));
-    expect(dialogs.showUpdateError).toHaveBeenCalledWith(expect.objectContaining({ reason: 'instalador indisponível' }));
+    expect(updater.getState().error).toEqual({ kind: 'install', detail: 'instalador indisponível' });
   });
 
   test('rejeição sem Error (string/undefined) não quebra o fluxo', async () => {
@@ -208,28 +207,20 @@ describe('updater + supervisor real: quitAndInstall falhando', () => {
       const restartBackend = jest.fn(async () => {
         throw value;
       });
-      const { dialogs } = await runFailingRestart({ restartBackend });
-      expect(dialogs.showUpdateError).toHaveBeenCalledTimes(1);
+      const { updater } = await runFailingRestart({ restartBackend });
+      expect(updater.getState().phase).toBe('error');
     }
   });
 
   test('depois do erro o updater continua utilizável: nova verificação manual não fica "busy"', async () => {
-    const { deps, autoUpdater, dialogs } = makeDeps({ deps: { restartBackend: async () => {} } });
-    autoUpdater.quitAndInstall.mockImplementation(() => {
-      throw new Error('x');
-    });
-    autoUpdater.checkForUpdates.mockResolvedValue(AVAILABLE);
-    dialogs.showUpdateAvailable.mockResolvedValue('download');
-    dialogs.showUpdateReady.mockResolvedValue('restart');
-    const updater = createUpdater(deps);
-    await updater.check({ manual: true });
-    await flush();
+    const { updater } = await runFailingRestart({ restartBackend: async () => {} });
     const again = await updater.check({ manual: true });
-    expect(again.status).toBe('ready'); // já baixada; oferece o reinício de novo, não 'busy'
+    expect(again.status).toBe('ready'); // já baixada; reabre o modal de pronta, não 'busy'
+    expect(updater.getState().phase).toBe('ready');
   });
 
   test('stopBackend lançando: quitAndInstall NÃO é chamado e o erro fica no log', async () => {
-    const { deps, autoUpdater, dialogs } = makeDeps({
+    const { deps, autoUpdater } = makeDeps({
       deps: {
         stopBackend: async () => {
           throw new Error('stop falhou');
@@ -237,9 +228,9 @@ describe('updater + supervisor real: quitAndInstall falhando', () => {
       },
     });
     autoUpdater.checkForUpdates.mockResolvedValue(AVAILABLE);
-    dialogs.showUpdateAvailable.mockResolvedValue('download');
-    dialogs.showUpdateReady.mockResolvedValue('restart');
-    await createUpdater(deps).check({ manual: true });
+    const updater = createUpdater(deps);
+    await downloadToReady(updater);
+    answer(updater, 'restart');
     await flush();
     expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
     expect(deps.logger.error).toHaveBeenCalledWith(expect.stringContaining('stop falhou'));

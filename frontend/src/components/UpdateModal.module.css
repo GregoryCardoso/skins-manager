@@ -1,0 +1,12 @@
+.content { display: flex; flex-direction: column; gap: 0.8rem; }
+.message { margin: 0; font-weight: 600; }
+.notesBox { border: 1px solid var(--border); border-radius: 8px; background: var(--surface-alt); }
+.notesTitle { margin: 0; padding: 0.5rem 0.8rem; font-size: 0.9rem; border-bottom: 1px solid var(--border); }
+.notesScroll { max-height: 40vh; overflow-y: auto; padding: 0.6rem 0.8rem; }
+.progressRow { display: flex; align-items: center; gap: 0.6rem; }
+.progress { flex: 1; height: 0.9rem; accent-color: var(--accent); }
+.percent { min-width: 3rem; text-align: right; font-variant-numeric: tabular-nums; color: var(--text-muted); }
+.detail {
+  margin: 0; font-size: 0.8rem; color: var(--text-muted); white-space: pre-wrap; overflow-wrap: anywhere;
+  max-height: 10rem; overflow-y: auto;
+}

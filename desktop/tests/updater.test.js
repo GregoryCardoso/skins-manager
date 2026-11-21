@@ -2,8 +2,8 @@
 
 const https = require('https');
 const { EventEmitter } = require('events');
-const { createUpdater, detectMode, fetchLatestRelease, AUTO_CHECK_DELAY_MS } = require('../src/updater');
-const { makeAutoUpdater, makeDeps, flush } = require('./helpers/fakeUpdaterDeps');
+const { createUpdater, detectMode, fetchLatestRelease, fetchJson, AUTO_CHECK_DELAY_MS } = require('../src/updater');
+const { makeAutoUpdater, makeDeps, flush, answer, downloadToReady } = require('./helpers/fakeUpdaterDeps');
 
 const RELEASE_URL = 'https://github.com/GregoryCardoso/skins-manager/releases/tag/v1.1.0';
 const AVAILABLE = { isUpdateAvailable: true, updateInfo: { version: '1.1.0', releaseNotes: '<p>Novidades</p>' } };
@@ -26,6 +26,7 @@ describe('modo e dev', () => {
     const updater = createUpdater(deps);
     expect(updater.mode).toBe('dev');
     expect(await updater.check({ manual: true })).toEqual({ mode: 'dev', currentVersion: '1.0.0', status: 'disabled' });
+    expect(updater.getState().phase).toBe('idle');
     updater.scheduleAutoCheck();
     expect(deps.setTimeoutFn).not.toHaveBeenCalled();
     expect(deps.loadAutoUpdater).not.toHaveBeenCalled();
@@ -104,26 +105,27 @@ describe('verificação automática', () => {
     }
   });
 
-  test('erro na automática: só log, sem diálogo', async () => {
+  test('erro na automática: só log, nenhum estado publicado', async () => {
     let fire;
-    const { deps, autoUpdater, dialogs } = makeDeps({ deps: { setTimeoutFn: jest.fn((fn) => ((fire = fn), {})) } });
+    const { deps, autoUpdater, states } = makeDeps({ deps: { setTimeoutFn: jest.fn((fn) => ((fire = fn), {})) } });
     autoUpdater.checkForUpdates.mockRejectedValue(new Error('sem rede'));
     createUpdater(deps).scheduleAutoCheck();
     fire();
     await flush();
     expect(deps.logger.error).toHaveBeenCalledWith(expect.stringContaining('automática'));
     expect(deps.logger.error).toHaveBeenCalledWith(expect.stringContaining('sem rede'));
-    for (const fn of Object.values(dialogs)) expect(fn).not.toHaveBeenCalled();
+    expect(states).toEqual([]);
   });
 
-  test('automática com versão nova abre o primeiro diálogo (instalador)', async () => {
+  test('automática com versão nova publica o estado available (instalador)', async () => {
     let fire;
-    const { deps, autoUpdater, dialogs } = makeDeps({ deps: { setTimeoutFn: jest.fn((fn) => ((fire = fn), {})) } });
+    const { deps, autoUpdater, states } = makeDeps({ deps: { setTimeoutFn: jest.fn((fn) => ((fire = fn), {})) } });
     autoUpdater.checkForUpdates.mockResolvedValue(AVAILABLE);
     createUpdater(deps).scheduleAutoCheck();
     fire();
     await flush();
-    expect(dialogs.showUpdateAvailable).toHaveBeenCalledTimes(1);
+    expect(states).toHaveLength(1);
+    expect(states[0]).toMatchObject({ phase: 'available', version: '1.1.0' });
   });
 
   test('erro na manual devolve status error (e registra no log)', async () => {
@@ -136,12 +138,12 @@ describe('verificação automática', () => {
 });
 
 describe('fluxo do instalador', () => {
-  test('sem versão nova: up-to-date, sem diálogo', async () => {
-    const { deps, autoUpdater, dialogs } = makeDeps();
+  test('sem versão nova: up-to-date, nenhum estado publicado', async () => {
+    const { deps, autoUpdater, states } = makeDeps();
     autoUpdater.checkForUpdates.mockResolvedValue(NOT_AVAILABLE);
     const res = await createUpdater(deps).check({ manual: true });
     expect(res).toMatchObject({ status: 'up-to-date', latestVersion: '1.0.0' });
-    expect(dialogs.showUpdateAvailable).not.toHaveBeenCalled();
+    expect(states).toEqual([]);
   });
 
   test('resultado nulo do electron-updater vira up-to-date', async () => {
@@ -150,103 +152,137 @@ describe('fluxo do instalador', () => {
     expect(await createUpdater(deps).check({ manual: true })).toMatchObject({ status: 'up-to-date' });
   });
 
-  test('"Agora não": não baixa, não reinicia e não instala ao fechar', async () => {
-    const { deps, autoUpdater, dialogs, calls } = makeDeps();
+  test('o estado available leva versões e notas, e nunca uma URL', async () => {
+    const { deps, autoUpdater, states } = makeDeps();
     autoUpdater.checkForUpdates.mockResolvedValue(AVAILABLE);
-    dialogs.showUpdateAvailable.mockResolvedValue('later');
     const updater = createUpdater(deps);
     const res = await updater.check({ manual: true });
     expect(res).toMatchObject({ status: 'available', latestVersion: '1.1.0' });
+    expect(states[0]).toEqual({
+      seq: 1,
+      phase: 'available',
+      mode: 'installer',
+      version: '1.1.0',
+      currentVersion: '1.0.0',
+      notes: 'Novidades',
+      percent: null,
+      error: null,
+    });
+    expect(JSON.stringify(states)).not.toMatch(/https?:/);
+    expect(updater.getState()).toBe(states[0]);
+  });
+
+  test('"Agora não": não baixa, não reinicia e não instala ao fechar; a próxima verificação oferece de novo', async () => {
+    const { deps, autoUpdater, calls } = makeDeps();
+    autoUpdater.checkForUpdates.mockResolvedValue(AVAILABLE);
+    const updater = createUpdater(deps);
+    await updater.check({ manual: true });
+    expect(answer(updater, 'later')).toMatchObject({ accepted: true, state: { phase: 'idle' } });
     await flush();
     expect(autoUpdater.downloadUpdate).not.toHaveBeenCalled();
-    expect(dialogs.showUpdateReady).not.toHaveBeenCalled();
     expect(updater.installPendingOnQuit()).toBe(false);
     expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
     expect(calls).toEqual([]);
+    expect(await updater.check({ manual: true })).toMatchObject({ status: 'available' });
+    expect(updater.getState().phase).toBe('available');
   });
 
-  test('resposta inesperada do diálogo é tratada como "Agora não"', async () => {
-    const { deps, autoUpdater, dialogs } = makeDeps();
+  test('nada é baixado enquanto o usuário não responde; fechar o app com o aviso aberto não instala', async () => {
+    const { deps, autoUpdater } = makeDeps();
     autoUpdater.checkForUpdates.mockResolvedValue(AVAILABLE);
-    dialogs.showUpdateAvailable.mockResolvedValue(undefined);
-    await createUpdater(deps).check({ manual: true });
+    const updater = createUpdater(deps);
+    await updater.check({ manual: true });
     await flush();
     expect(autoUpdater.downloadUpdate).not.toHaveBeenCalled();
+    expect(updater.installPendingOnQuit()).toBe(false);
+    expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
   });
 
-  test('nada é baixado antes de o diálogo responder', async () => {
-    const { deps, autoUpdater, dialogs } = makeDeps();
+  test('fluxo completo: available -> downloading (progresso limitado) -> ready -> restart', async () => {
+    const { deps, autoUpdater, states, win, calls, clock } = makeDeps();
     autoUpdater.checkForUpdates.mockResolvedValue(AVAILABLE);
-    let answer;
-    dialogs.showUpdateAvailable.mockImplementation(() => new Promise((resolve) => (answer = resolve)));
-    await createUpdater(deps).check({ manual: true });
-    await flush();
-    expect(dialogs.showUpdateAvailable).toHaveBeenCalledTimes(1);
-    expect(autoUpdater.downloadUpdate).not.toHaveBeenCalled();
-    answer('later');
-    await flush();
-    expect(autoUpdater.downloadUpdate).not.toHaveBeenCalled();
-  });
-
-  test('o diálogo recebe versões, notas em texto simples e idioma', async () => {
-    const { deps, autoUpdater, dialogs } = makeDeps();
-    autoUpdater.checkForUpdates.mockResolvedValue(AVAILABLE);
-    await createUpdater(deps).check({ manual: true });
-    await flush();
-    expect(dialogs.showUpdateAvailable).toHaveBeenCalledWith(
-      expect.objectContaining({ version: '1.1.0', current: '1.0.0', notes: 'Novidades', language: 'pt-BR' })
-    );
-  });
-
-  test('baixar + "Reiniciar agora": stopBackend ANTES de quitAndInstall', async () => {
-    const { deps, autoUpdater, dialogs, calls } = makeDeps();
-    autoUpdater.checkForUpdates.mockResolvedValue(AVAILABLE);
-    dialogs.showUpdateAvailable.mockResolvedValue('download');
-    dialogs.showUpdateReady.mockResolvedValue('restart');
-    await createUpdater(deps).check({ manual: true });
+    let finish;
+    autoUpdater.downloadUpdate.mockImplementation(() => new Promise((resolve) => (finish = resolve)));
+    const updater = createUpdater(deps);
+    await updater.check({ manual: true });
+    expect(answer(updater, 'download')).toMatchObject({ accepted: true, state: { phase: 'downloading', percent: 0 } });
     await flush();
     expect(autoUpdater.downloadUpdate).toHaveBeenCalledTimes(1);
-    expect(dialogs.showUpdateReady).toHaveBeenCalledWith(expect.objectContaining({ version: '1.1.0' }));
+
+    // 1 envio por ponto percentual: 10.2 e 10.9 são o mesmo ponto
+    clock.now += 300;
+    autoUpdater.emit('download-progress', { percent: 10.2 });
+    clock.now += 50;
+    autoUpdater.emit('download-progress', { percent: 10.9 });
+    // no máximo 4 por segundo: o ponto 11 chega 100 ms depois do último envio e é descartado
+    clock.now += 50;
+    autoUpdater.emit('download-progress', { percent: 11 });
+    clock.now += 250;
+    autoUpdater.emit('download-progress', { percent: 12 });
+    expect(states.filter((s) => s.phase === 'downloading').map((s) => s.percent)).toEqual([0, 10, 12]);
+    // a barra de tarefas recebe todos os eventos
+    expect(win.setProgressBar.mock.calls.map((c) => c[0])).toEqual([0.102, 0.109, 0.11, 0.12]);
+
+    finish([]);
+    await flush();
+    expect(win.setProgressBar).toHaveBeenLastCalledWith(-1);
+    expect(updater.getState()).toMatchObject({ phase: 'ready', version: '1.1.0', percent: null });
+
+    expect(answer(updater, 'restart')).toMatchObject({ accepted: true, state: { phase: 'installing' } });
+    await flush();
     expect(calls).toEqual([['stopBackend'], ['quitAndInstall', false, true]]);
+    const seqs = states.map((s) => s.seq);
+    expect(seqs).toEqual([...seqs].sort((x, y) => x - y));
+    expect(new Set(seqs).size).toBe(seqs.length);
   });
 
-  test('quitAndInstall lançando depois do stopBackend: religa o backend e mostra o erro', async () => {
+  test('progresso fora da fase downloading não gera estado', async () => {
+    const { deps, autoUpdater, states } = makeDeps();
+    autoUpdater.checkForUpdates.mockResolvedValue(AVAILABLE);
+    const updater = createUpdater(deps);
+    await updater.check({ manual: true });
+    const before = states.length;
+    autoUpdater.emit('download-progress', { percent: 50 });
+    expect(states).toHaveLength(before);
+  });
+
+  test('quitAndInstall lançando depois do stopBackend: religa o backend e publica error/install', async () => {
     const restartBackend = jest.fn(async () => {});
-    const { deps, autoUpdater, dialogs, calls } = makeDeps({ deps: { restartBackend } });
+    const { deps, autoUpdater, calls } = makeDeps({ deps: { restartBackend } });
     autoUpdater.quitAndInstall.mockImplementation(() => {
       throw new Error('instalador indisponível');
     });
     autoUpdater.checkForUpdates.mockResolvedValue(AVAILABLE);
-    dialogs.showUpdateAvailable.mockResolvedValue('download');
-    dialogs.showUpdateReady.mockResolvedValue('restart');
-    await createUpdater(deps).check({ manual: true });
+    const updater = createUpdater(deps);
+    await downloadToReady(updater);
+    answer(updater, 'restart');
     await flush();
     expect(calls).toEqual([['stopBackend']]);
     expect(restartBackend).toHaveBeenCalledTimes(1);
-    expect(dialogs.showUpdateError).toHaveBeenCalledWith(expect.objectContaining({ reason: 'instalador indisponível', language: 'pt-BR' }));
+    expect(updater.getState()).toMatchObject({ phase: 'error', error: { kind: 'install', detail: 'instalador indisponível' } });
     expect(deps.logger.error).toHaveBeenCalledWith(expect.stringContaining('instalador indisponível'));
   });
 
-  test('religar o backend também falhando: o erro ainda é mostrado', async () => {
+  test('religar o backend também falhando: o erro de instalação ainda é publicado', async () => {
     const restartBackend = jest.fn(async () => {
       throw new Error('sem supervisor');
     });
-    const { deps, autoUpdater, dialogs } = makeDeps({ deps: { restartBackend } });
+    const { deps, autoUpdater } = makeDeps({ deps: { restartBackend } });
     autoUpdater.quitAndInstall.mockImplementation(() => {
       throw new Error('falhou');
     });
     autoUpdater.checkForUpdates.mockResolvedValue(AVAILABLE);
-    dialogs.showUpdateAvailable.mockResolvedValue('download');
-    dialogs.showUpdateReady.mockResolvedValue('restart');
-    await createUpdater(deps).check({ manual: true });
+    const updater = createUpdater(deps);
+    await downloadToReady(updater);
+    answer(updater, 'restart');
     await flush();
-    expect(dialogs.showUpdateError).toHaveBeenCalledTimes(1);
+    expect(updater.getState()).toMatchObject({ phase: 'error', error: { kind: 'install' } });
   });
 
   test('o reinício espera o stopBackend terminar (assíncrono)', async () => {
     const order = [];
     let release;
-    const { deps, autoUpdater, dialogs } = makeDeps();
+    const { deps, autoUpdater } = makeDeps();
     deps.stopBackend = jest.fn(
       () =>
         new Promise((resolve) => {
@@ -259,24 +295,41 @@ describe('fluxo do instalador', () => {
     );
     autoUpdater.quitAndInstall.mockImplementation(() => order.push('quit'));
     autoUpdater.checkForUpdates.mockResolvedValue(AVAILABLE);
-    dialogs.showUpdateAvailable.mockResolvedValue('download');
-    dialogs.showUpdateReady.mockResolvedValue('restart');
-    await createUpdater(deps).check({ manual: true });
+    const updater = createUpdater(deps);
+    await downloadToReady(updater);
+    answer(updater, 'restart');
     await flush();
     expect(order).toEqual(['stop-start']);
+    expect(updater.getState().phase).toBe('installing');
     release();
     await flush();
     expect(order).toEqual(['stop-start', 'stop-end', 'quit']);
   });
 
-  test('"Instalar ao fechar": não reinicia agora; installPendingOnQuit instala uma vez', async () => {
-    const { deps, autoUpdater, dialogs, calls } = makeDeps();
+  test('stopBackend lançando: quitAndInstall NÃO é chamado, o erro fica no log e no estado', async () => {
+    const { deps, autoUpdater } = makeDeps({
+      deps: {
+        stopBackend: async () => {
+          throw new Error('stop falhou');
+        },
+      },
+    });
     autoUpdater.checkForUpdates.mockResolvedValue(AVAILABLE);
-    dialogs.showUpdateAvailable.mockResolvedValue('download');
-    dialogs.showUpdateReady.mockResolvedValue('on-quit');
     const updater = createUpdater(deps);
-    await updater.check({ manual: true });
+    await downloadToReady(updater);
+    answer(updater, 'restart');
     await flush();
+    expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
+    expect(deps.logger.error).toHaveBeenCalledWith(expect.stringContaining('stop falhou'));
+    expect(updater.getState()).toMatchObject({ phase: 'error', error: { kind: 'install', detail: 'stop falhou' } });
+  });
+
+  test('"Instalar ao fechar": não reinicia agora; installPendingOnQuit instala uma vez', async () => {
+    const { deps, autoUpdater, calls } = makeDeps();
+    autoUpdater.checkForUpdates.mockResolvedValue(AVAILABLE);
+    const updater = createUpdater(deps);
+    await downloadToReady(updater);
+    expect(answer(updater, 'installOnQuit')).toMatchObject({ accepted: true, state: { phase: 'idle' } });
     expect(calls).toEqual([]);
     expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
     expect(updater.installPendingOnQuit()).toBe(true);
@@ -285,15 +338,42 @@ describe('fluxo do instalador', () => {
     expect(autoUpdater.quitAndInstall).toHaveBeenCalledTimes(1);
   });
 
-  test('fechar o diálogo de "pronta" (resposta fora de restart) segue como instalar ao fechar', async () => {
-    const { deps, autoUpdater, dialogs } = makeDeps();
+  test('V102-Q2: fechar o app em ready sem escolher NÃO instala', async () => {
+    const { deps, autoUpdater } = makeDeps();
     autoUpdater.checkForUpdates.mockResolvedValue(AVAILABLE);
-    dialogs.showUpdateAvailable.mockResolvedValue('download');
-    dialogs.showUpdateReady.mockResolvedValue(undefined);
+    const updater = createUpdater(deps);
+    await downloadToReady(updater);
+    expect(updater.getState().phase).toBe('ready');
+    expect(updater.installPendingOnQuit()).toBe(false);
+    expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
+  });
+
+  test('fechar o app durante o download ou com o aviso aberto não instala', async () => {
+    const { deps, autoUpdater } = makeDeps();
+    autoUpdater.checkForUpdates.mockResolvedValue(AVAILABLE);
+    autoUpdater.downloadUpdate.mockImplementation(() => new Promise(() => {}));
     const updater = createUpdater(deps);
     await updater.check({ manual: true });
+    expect(updater.installPendingOnQuit()).toBe(false);
+    answer(updater, 'download');
     await flush();
-    expect(updater.installPendingOnQuit()).toBe(true);
+    expect(updater.getState().phase).toBe('downloading');
+    expect(updater.installPendingOnQuit()).toBe(false);
+    expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
+  });
+
+  test('"Reiniciar agora" depois de "instalar ao fechar" não instala de novo no before-quit', async () => {
+    const { deps, autoUpdater } = makeDeps();
+    autoUpdater.checkForUpdates.mockResolvedValue(AVAILABLE);
+    const updater = createUpdater(deps);
+    await downloadToReady(updater);
+    answer(updater, 'installOnQuit');
+    await updater.check({ manual: true }); // reabre
+    answer(updater, 'restart');
+    await flush();
+    expect(autoUpdater.quitAndInstall).toHaveBeenCalledTimes(1);
+    expect(updater.installPendingOnQuit()).toBe(false);
+    expect(autoUpdater.quitAndInstall).toHaveBeenCalledTimes(1);
   });
 
   test('installPendingOnQuit sem nada baixado não instala', () => {
@@ -305,12 +385,11 @@ describe('fluxo do instalador', () => {
   });
 
   test('installPendingOnQuit: falha do quitAndInstall é engolida e registrada', async () => {
-    const { deps, autoUpdater, dialogs } = makeDeps();
+    const { deps, autoUpdater } = makeDeps();
     autoUpdater.checkForUpdates.mockResolvedValue(AVAILABLE);
-    dialogs.showUpdateAvailable.mockResolvedValue('download');
     const updater = createUpdater(deps);
-    await updater.check({ manual: true });
-    await flush();
+    await downloadToReady(updater);
+    answer(updater, 'installOnQuit');
     autoUpdater.quitAndInstall.mockImplementation(() => {
       throw new Error('falhou');
     });
@@ -318,51 +397,148 @@ describe('fluxo do instalador', () => {
     expect(deps.logger.error).toHaveBeenCalledWith(expect.stringContaining('falhou'));
   });
 
-  test('falha no download: mostra erro, limpa a barra e não pergunta de reiniciar', async () => {
+  test('falha no download: error/download no estado, barra limpa, nada para instalar', async () => {
     const au = makeAutoUpdater({ checkResult: AVAILABLE, downloadError: new Error('disco cheio') });
-    const { deps, dialogs, win } = makeDeps({ autoUpdater: au });
-    dialogs.showUpdateAvailable.mockResolvedValue('download');
+    const { deps, win } = makeDeps({ autoUpdater: au });
     const updater = createUpdater(deps);
     await updater.check({ manual: true });
+    answer(updater, 'download');
     await flush();
-    expect(dialogs.showUpdateError).toHaveBeenCalledWith(expect.objectContaining({ reason: 'disco cheio' }));
-    expect(dialogs.showUpdateReady).not.toHaveBeenCalled();
+    expect(updater.getState()).toMatchObject({ phase: 'error', error: { kind: 'download', detail: 'disco cheio' } });
     expect(win.setProgressBar).toHaveBeenLastCalledWith(-1);
     expect(updater.installPendingOnQuit()).toBe(false);
+    expect(deps.logger.error).toHaveBeenCalledWith(expect.stringContaining('disco cheio'));
+    // "Fechar" o erro volta a idle, e uma nova verificação oferece a versão de novo
+    answer(updater, 'dismiss');
+    expect(updater.getState().phase).toBe('idle');
+    expect(await updater.check({ manual: true })).toMatchObject({ status: 'available' });
   });
 
-  test('depois de baixada, nova verificação manual devolve ready e reabre o pedido de reinício', async () => {
-    const { deps, autoUpdater, dialogs, calls } = makeDeps();
-    autoUpdater.checkForUpdates.mockResolvedValue(AVAILABLE);
-    dialogs.showUpdateAvailable.mockResolvedValue('download');
-    dialogs.showUpdateReady.mockResolvedValueOnce('on-quit').mockResolvedValueOnce('restart');
+  test('nova verificação com o erro de download na tela limpa o erro', async () => {
+    const au = makeAutoUpdater({ checkResult: NOT_AVAILABLE, downloadError: new Error('x') });
+    const { deps, states } = makeDeps({ autoUpdater: au });
+    au.checkForUpdates.mockResolvedValueOnce(AVAILABLE).mockResolvedValue(NOT_AVAILABLE);
     const updater = createUpdater(deps);
     await updater.check({ manual: true });
+    answer(updater, 'download');
     await flush();
+    expect(updater.getState().phase).toBe('error');
+    expect(await updater.check({ manual: true })).toMatchObject({ status: 'up-to-date' });
+    expect(updater.getState().phase).toBe('idle');
+    expect(states.at(-1).error).toBeNull();
+  });
+
+  test('depois de baixada, a verificação manual devolve ready e reabre o modal (novo seq)', async () => {
+    const { deps, autoUpdater, calls } = makeDeps();
+    autoUpdater.checkForUpdates.mockResolvedValue(AVAILABLE);
+    const updater = createUpdater(deps);
+    await downloadToReady(updater);
+    const seqBefore = updater.getState().seq;
     autoUpdater.checkForUpdates.mockClear();
+
+    // o usuário só escondeu o modal (X/Esc): a fase continua ready, e a verificação manual muda o seq
     const res = await updater.check({ manual: true });
     expect(res).toMatchObject({ status: 'ready', latestVersion: '1.1.0' });
-    await flush();
     expect(autoUpdater.checkForUpdates).not.toHaveBeenCalled();
-    expect(dialogs.showUpdateReady).toHaveBeenCalledTimes(2);
+    expect(updater.getState()).toMatchObject({ phase: 'ready', version: '1.1.0' });
+    expect(updater.getState().seq).toBeGreaterThan(seqBefore);
+
+    // depois de "instalar ao fechar" (fase idle) a verificação manual também volta a ready
+    answer(updater, 'installOnQuit');
+    expect(updater.getState().phase).toBe('idle');
+    expect(await updater.check({ manual: true })).toMatchObject({ status: 'ready' });
+    expect(updater.getState().phase).toBe('ready');
+
+    answer(updater, 'restart');
+    await flush();
     expect(calls).toEqual([['stopBackend'], ['quitAndInstall', false, true]]);
   });
 
-  test('verificação automática depois de baixada não reabre diálogo', async () => {
-    const { deps, autoUpdater, dialogs } = makeDeps();
+  test('depois de erro de instalação, a verificação manual volta a ready', async () => {
+    const { deps, autoUpdater } = makeDeps({ deps: { restartBackend: async () => {} } });
+    autoUpdater.quitAndInstall.mockImplementation(() => {
+      throw new Error('x');
+    });
     autoUpdater.checkForUpdates.mockResolvedValue(AVAILABLE);
-    dialogs.showUpdateAvailable.mockResolvedValue('download');
     const updater = createUpdater(deps);
-    await updater.check({ manual: true });
+    await downloadToReady(updater);
+    answer(updater, 'restart');
     await flush();
-    dialogs.showUpdateReady.mockClear();
+    expect(updater.getState().phase).toBe('error');
+    expect(await updater.check({ manual: true })).toMatchObject({ status: 'ready' });
+    expect(updater.getState()).toMatchObject({ phase: 'ready', error: null });
+  });
+
+  test('verificação automática depois de baixada não reabre o modal', async () => {
+    const { deps, autoUpdater, states } = makeDeps();
+    autoUpdater.checkForUpdates.mockResolvedValue(AVAILABLE);
+    const updater = createUpdater(deps);
+    await downloadToReady(updater);
+    const count = states.length;
     expect(await updater.check({ manual: false })).toMatchObject({ status: 'ready' });
-    await flush();
-    expect(dialogs.showUpdateReady).not.toHaveBeenCalled();
+    expect(states).toHaveLength(count);
   });
 });
 
-describe('concorrência', () => {
+describe('respond: respostas inválidas são ignoradas', () => {
+  async function availableUpdater() {
+    const made = makeDeps();
+    made.autoUpdater.checkForUpdates.mockResolvedValue(AVAILABLE);
+    const updater = createUpdater(made.deps);
+    await updater.check({ manual: true });
+    return { ...made, updater };
+  }
+
+  test('ação de outra fase', async () => {
+    const { updater, autoUpdater } = await availableUpdater();
+    const before = updater.getState();
+    for (const action of ['restart', 'installOnQuit', 'dismiss', 'openDownloadPage']) {
+      expect(updater.respond({ action, seq: before.seq })).toEqual({ accepted: false, state: before });
+    }
+    expect(updater.getState()).toBe(before);
+    expect(autoUpdater.downloadUpdate).not.toHaveBeenCalled();
+  });
+
+  test('seq velho (clique repetido) e seq futuro', async () => {
+    const { updater, autoUpdater } = await availableUpdater();
+    const seq = updater.getState().seq;
+    expect(updater.respond({ action: 'download', seq: seq - 1 }).accepted).toBe(false);
+    expect(updater.respond({ action: 'download', seq: seq + 1 }).accepted).toBe(false);
+    expect(updater.respond({ action: 'download', seq }).accepted).toBe(true);
+    // o mesmo clique de novo: o seq mudou e a fase também
+    expect(updater.respond({ action: 'download', seq }).accepted).toBe(false);
+    await flush();
+    expect(autoUpdater.downloadUpdate).toHaveBeenCalledTimes(1);
+  });
+
+  test.each([[null], [undefined], ['download'], [42], [[]], [{}], [{ action: 'download' }], [{ action: 'download', seq: '1' }], [{ action: 'formatar', seq: 1 }], [{ action: 'download', seq: 1.5 }]])(
+    'payload %j',
+    async (payload) => {
+      const { updater, autoUpdater } = await availableUpdater();
+      expect(updater.respond(payload).accepted).toBe(false);
+      expect(autoUpdater.downloadUpdate).not.toHaveBeenCalled();
+      expect(updater.getState().phase).toBe('available');
+    }
+  );
+
+  test('nas fases idle, downloading e installing nenhuma ação é aceita', async () => {
+    const { updater, autoUpdater } = await availableUpdater();
+    answer(updater, 'later');
+    for (const action of ['download', 'later', 'restart', 'installOnQuit', 'dismiss', 'openDownloadPage']) {
+      expect(answer(updater, action).accepted).toBe(false);
+    }
+    await updater.check({ manual: true });
+    autoUpdater.downloadUpdate.mockImplementation(() => new Promise(() => {}));
+    answer(updater, 'download');
+    await flush();
+    expect(updater.getState().phase).toBe('downloading');
+    for (const action of ['download', 'later', 'restart', 'installOnQuit', 'dismiss', 'openDownloadPage']) {
+      expect(answer(updater, action).accepted).toBe(false);
+    }
+  });
+});
+
+describe('concorrência (busy)', () => {
   test('segunda verificação durante a primeira devolve busy', async () => {
     const { deps, autoUpdater } = makeDeps();
     let resolveCheck;
@@ -379,30 +555,147 @@ describe('concorrência', () => {
     expect(await updater.check({ manual: true })).toMatchObject({ status: 'up-to-date' });
   });
 
-  test('enquanto o diálogo está aberto (fluxo ativo) devolve busy', async () => {
-    const { deps, autoUpdater, dialogs } = makeDeps();
+  test('durante a busca das notas (checking) devolve busy', async () => {
+    const { deps, autoUpdater } = makeDeps();
+    let finishNotes;
+    deps.fetchJson.mockImplementation(() => new Promise((resolve) => (finishNotes = resolve)));
     autoUpdater.checkForUpdates.mockResolvedValue(AVAILABLE);
-    let answer;
-    dialogs.showUpdateAvailable.mockImplementation(() => new Promise((resolve) => (answer = resolve)));
     const updater = createUpdater(deps);
-    await updater.check({ manual: true });
+    const first = updater.check({ manual: true });
     await flush();
     expect(await updater.check({ manual: true })).toMatchObject({ status: 'busy' });
-    answer('later');
-    await flush();
+    finishNotes({ tag_name: 'v1.1.0', body: 'ok' });
+    expect(await first).toMatchObject({ status: 'available' });
+    expect(updater.getState().phase).toBe('available'); // o estado só é publicado depois das notas
+  });
+
+  test('com o aviso available aberto devolve busy; depois de "Agora não" volta ao normal', async () => {
+    const { deps, autoUpdater } = makeDeps();
+    autoUpdater.checkForUpdates.mockResolvedValue(AVAILABLE);
+    const updater = createUpdater(deps);
+    await updater.check({ manual: true });
+    expect(await updater.check({ manual: true })).toMatchObject({ status: 'busy' });
+    answer(updater, 'later');
     expect(await updater.check({ manual: true })).toMatchObject({ status: 'available' });
   });
 
-  test('erro dentro do fluxo em segundo plano não vira rejeição solta e libera o fluxo', async () => {
-    const { deps, autoUpdater, dialogs } = makeDeps();
+  test('durante o download devolve downloading com o percentual; durante a instalação, busy', async () => {
+    const { deps, autoUpdater, clock } = makeDeps();
     autoUpdater.checkForUpdates.mockResolvedValue(AVAILABLE);
-    dialogs.showUpdateAvailable.mockRejectedValue(new Error('diálogo quebrou'));
+    let finish;
+    autoUpdater.downloadUpdate.mockImplementation(() => new Promise((resolve) => (finish = resolve)));
+    deps.stopBackend = jest.fn(() => new Promise(() => {}));
     const updater = createUpdater(deps);
     await updater.check({ manual: true });
+    answer(updater, 'download');
+    clock.now += 1000;
+    autoUpdater.emit('download-progress', { percent: 42 });
+    expect(await updater.check({ manual: true })).toMatchObject({ status: 'downloading', percent: 42 });
+    expect(autoUpdater.checkForUpdates).toHaveBeenCalledTimes(1);
+    finish([]);
     await flush();
-    expect(deps.logger.error).toHaveBeenCalledWith(expect.stringContaining('diálogo quebrou'));
-    autoUpdater.checkForUpdates.mockResolvedValue(NOT_AVAILABLE);
-    expect(await updater.check({ manual: true })).toMatchObject({ status: 'up-to-date' });
+    answer(updater, 'restart');
+    expect(await updater.check({ manual: true })).toMatchObject({ status: 'busy' });
+  });
+
+  test('erro ao publicar o estado não derruba o fluxo', async () => {
+    const { deps, autoUpdater } = makeDeps();
+    deps.publishState.mockImplementation(() => {
+      throw new Error('janela fechada');
+    });
+    autoUpdater.checkForUpdates.mockResolvedValue(AVAILABLE);
+    const updater = createUpdater(deps);
+    expect(await updater.check({ manual: true })).toMatchObject({ status: 'available' });
+    expect(deps.logger.error).toHaveBeenCalledWith(expect.stringContaining('janela fechada'));
+    expect(updater.getState().phase).toBe('available');
+  });
+});
+
+describe('notas da versão (D191)', () => {
+  const API_URL = 'https://api.github.com/repos/GregoryCardoso/skins-manager/releases/tags/v1.1.0';
+  const BODY = '<!-- pt-BR -->\n## Novidades\n- a\n\n<!-- en -->\n## What is new\n- a';
+
+  async function notesFor(json, { reject, fetchedUrl } = {}) {
+    const { deps, autoUpdater } = makeDeps();
+    if (reject) deps.fetchJson.mockRejectedValue(reject);
+    else deps.fetchJson.mockResolvedValue(json);
+    autoUpdater.checkForUpdates.mockResolvedValue(AVAILABLE);
+    const updater = createUpdater(deps);
+    await updater.check({ manual: true });
+    if (fetchedUrl) fetchedUrl(deps.fetchJson);
+    return updater.getState().notes;
+  }
+
+  test('busca a release pela tag e usa o markdown cru, com os marcadores de idioma', async () => {
+    let seen;
+    const notes = await notesFor({ tag_name: 'v1.1.0', body: BODY }, { fetchedUrl: (f) => (seen = f.mock.calls) });
+    expect(notes).toBe(BODY);
+    expect(seen).toEqual([[API_URL]]);
+  });
+
+  test.each([
+    ['tag diferente', { tag_name: 'v9.9.9', body: 'x' }],
+    ['rascunho', { tag_name: 'v1.1.0', body: 'x', draft: true }],
+    ['pré-release', { tag_name: 'v1.1.0', body: 'x', prerelease: true }],
+    ['sem body', { tag_name: 'v1.1.0' }],
+    ['JSON que não é objeto', 'texto'],
+    ['null', null],
+  ])('%s: usa o texto do feed, sem HTML', async (_n, json) => {
+    expect(await notesFor(json)).toBe('Novidades');
+  });
+
+  test.each([
+    ['timeout', new Error('Tempo esgotado.')],
+    ['HTTP 404', new Error('HTTP 404')],
+    ['JSON inválido', new Error('JSON inválido.')],
+  ])('falha (%s): reserva do feed, a falha vai para o log e o fluxo segue', async (_n, error) => {
+    const { deps, autoUpdater } = makeDeps();
+    deps.fetchJson.mockRejectedValue(error);
+    autoUpdater.checkForUpdates.mockResolvedValue(AVAILABLE);
+    const updater = createUpdater(deps);
+    expect(await updater.check({ manual: true })).toMatchObject({ status: 'available' });
+    expect(updater.getState().notes).toBe('Novidades');
+    expect(deps.logger.error).toHaveBeenCalledWith(expect.stringContaining(error.message));
+  });
+
+  test('a reserva do feed tira o HTML e os marcadores de idioma', async () => {
+    const { deps, autoUpdater } = makeDeps();
+    autoUpdater.checkForUpdates.mockResolvedValue({
+      isUpdateAvailable: true,
+      updateInfo: { version: '1.1.0', releaseNotes: '<p>Oi <b>mundo</b></p><script>alert(1)</script><!-- en -->' },
+    });
+    const updater = createUpdater(deps);
+    await updater.check({ manual: true });
+    expect(updater.getState().notes).not.toMatch(/[<>]/);
+    expect(updater.getState().notes).toContain('Oi mundo');
+  });
+
+  test('versão inválida: nenhum fetch e usa o feed', async () => {
+    const { deps, autoUpdater } = makeDeps();
+    autoUpdater.checkForUpdates.mockResolvedValue({
+      isUpdateAvailable: true,
+      updateInfo: { version: '1.1.0/../../x', releaseNotes: 'feed' },
+    });
+    const updater = createUpdater(deps);
+    await updater.check({ manual: true });
+    expect(deps.fetchJson).not.toHaveBeenCalled();
+    expect(updater.getState().notes).toBe('feed');
+  });
+
+  test('corte em 20 000 caracteres, no fim de linha, com reticências', async () => {
+    const line = `${'a'.repeat(99)}\n`;
+    const notes = await notesFor({ tag_name: 'v1.1.0', body: line.repeat(300) });
+    expect(notes.length).toBeLessThanOrEqual(20001);
+    expect(notes.endsWith('…')).toBe(true);
+    expect(notes.slice(0, -1).endsWith('a')).toBe(true);
+  });
+
+  test('a URL buscada nunca sai do estado enviado ao renderer', async () => {
+    const { deps, autoUpdater, states } = makeDeps();
+    deps.fetchJson.mockResolvedValue({ tag_name: 'v1.1.0', body: 'x', html_url: RELEASE_URL, url: API_URL });
+    autoUpdater.checkForUpdates.mockResolvedValue(AVAILABLE);
+    await createUpdater(deps).check({ manual: true });
+    expect(JSON.stringify(states)).not.toMatch(/github\.com|https?:/);
   });
 });
 
@@ -411,33 +704,55 @@ describe('portátil', () => {
     makeDeps({ deps: { env: { PORTABLE_EXECUTABLE_FILE: 'C:\\SkinsManager-Portable.exe' }, ...extra } });
 
   test('nunca carrega o electron-updater', async () => {
-    const { deps, dialogs } = portable();
+    const { deps } = portable();
     deps.fetchLatest.mockResolvedValue({ tag_name: 'v1.1.0', html_url: RELEASE_URL, body: 'x' });
-    dialogs.showPortableUpdate.mockResolvedValue('close');
     await createUpdater(deps).check({ manual: true });
     await flush();
     expect(deps.loadAutoUpdater).not.toHaveBeenCalled();
   });
 
-  test('versão nova + "Abrir página": openExternal só com a URL validada', async () => {
-    const { deps, dialogs, shell } = portable();
-    deps.fetchLatest.mockResolvedValue({ tag_name: 'v1.1.0', html_url: RELEASE_URL, body: '<b>n</b>' });
-    dialogs.showPortableUpdate.mockResolvedValue('open');
+  test('versão nova: fase portable-available com as notas em markdown e sem a URL', async () => {
+    const { deps, states } = portable();
+    deps.fetchLatest.mockResolvedValue({ tag_name: 'v1.1.0', html_url: RELEASE_URL, body: '## Novo\n- **a**' });
     const res = await createUpdater(deps).check({ manual: true });
     expect(res).toMatchObject({ mode: 'portable', status: 'available', latestVersion: '1.1.0' });
+    expect(states[0]).toMatchObject({ phase: 'portable-available', mode: 'portable', version: '1.1.0', notes: '## Novo\n- **a**' });
+    expect(JSON.stringify(states)).not.toMatch(/github\.com|https?:/);
+    expect(deps.fetchJson).not.toHaveBeenCalled();
+  });
+
+  test('"Abrir página": openExternal só com a URL guardada no main; uma url no payload é ignorada', async () => {
+    const { deps, shell } = portable();
+    deps.fetchLatest.mockResolvedValue({ tag_name: 'v1.1.0', html_url: RELEASE_URL, body: 'x' });
+    const updater = createUpdater(deps);
+    await updater.check({ manual: true });
+    const seq = updater.getState().seq;
+    const res = updater.respond({ action: 'openDownloadPage', seq, url: 'https://evil.example/' });
+    expect(res).toMatchObject({ accepted: true, state: { phase: 'idle' } });
     await flush();
-    expect(dialogs.showPortableUpdate).toHaveBeenCalledWith(expect.objectContaining({ version: '1.1.0', current: '1.0.0', notes: 'n' }));
     expect(shell.openExternal).toHaveBeenCalledTimes(1);
     expect(shell.openExternal).toHaveBeenCalledWith(RELEASE_URL);
   });
 
-  test('"Fechar": não abre nada', async () => {
-    const { deps, dialogs, shell } = portable();
+  test('"Agora não" (dismiss): não abre nada; ações do instalador são recusadas', async () => {
+    const { deps, shell } = portable();
     deps.fetchLatest.mockResolvedValue({ tag_name: 'v1.1.0', html_url: RELEASE_URL });
-    dialogs.showPortableUpdate.mockResolvedValue('close');
-    await createUpdater(deps).check({ manual: true });
+    const updater = createUpdater(deps);
+    await updater.check({ manual: true });
+    for (const action of ['download', 'later', 'restart', 'installOnQuit']) expect(answer(updater, action).accepted).toBe(false);
+    expect(answer(updater, 'dismiss').accepted).toBe(true);
     await flush();
     expect(shell.openExternal).not.toHaveBeenCalled();
+    expect(updater.getState().phase).toBe('idle');
+  });
+
+  test('com o aviso aberto, nova verificação devolve busy', async () => {
+    const { deps } = portable();
+    deps.fetchLatest.mockResolvedValue({ tag_name: 'v1.1.0', html_url: RELEASE_URL });
+    const updater = createUpdater(deps);
+    await updater.check({ manual: true });
+    expect(await updater.check({ manual: true })).toMatchObject({ status: 'busy' });
+    expect(deps.fetchLatest).toHaveBeenCalledTimes(1);
   });
 
   test.each([
@@ -445,13 +760,13 @@ describe('portátil', () => {
     ['URL com @', 'https://github.com@evil.com/GregoryCardoso/skins-manager/releases/x'],
     ['http', 'http://github.com/GregoryCardoso/skins-manager/releases/tag/v9'],
     ['javascript', 'javascript:alert(1)'],
-  ])('%s: status error, sem diálogo e sem openExternal', async (_n, url) => {
-    const { deps, dialogs, shell } = portable();
+  ])('%s: status error, sem estado e sem openExternal', async (_n, url) => {
+    const { deps, shell, states } = portable();
     deps.fetchLatest.mockResolvedValue({ tag_name: 'v9.0.0', html_url: url });
     const res = await createUpdater(deps).check({ manual: true });
     await flush();
     expect(res.status).toBe('error');
-    expect(dialogs.showPortableUpdate).not.toHaveBeenCalled();
+    expect(states).toEqual([]);
     expect(shell.openExternal).not.toHaveBeenCalled();
   });
 
@@ -460,10 +775,10 @@ describe('portátil', () => {
       { tag_name: 'v1.0.0', html_url: RELEASE_URL },
       { tag_name: 'v0.5.0', html_url: RELEASE_URL },
     ]) {
-      const { deps, dialogs } = portable();
+      const { deps, states } = portable();
       deps.fetchLatest.mockResolvedValue(json);
       expect((await createUpdater(deps).check({ manual: true })).status).toBe('up-to-date');
-      expect(dialogs.showPortableUpdate).not.toHaveBeenCalled();
+      expect(states).toEqual([]);
     }
     for (const json of [
       { tag_name: 'v2.0.0', html_url: RELEASE_URL, draft: true },
@@ -471,21 +786,21 @@ describe('portátil', () => {
       null,
       {},
     ]) {
-      const { deps, dialogs } = portable();
+      const { deps, states } = portable();
       deps.fetchLatest.mockResolvedValue(json);
       expect((await createUpdater(deps).check({ manual: true })).status).toBe('error');
-      expect(dialogs.showPortableUpdate).not.toHaveBeenCalled();
+      expect(states).toEqual([]);
     }
   });
 
   test('falha de rede: manual vira error; automática só registra', async () => {
-    const { deps, dialogs } = portable();
+    const { deps, states } = portable();
     deps.fetchLatest.mockRejectedValue(new Error('HTTP 403'));
     const updater = createUpdater(deps);
     expect((await updater.check({ manual: true })).status).toBe('error');
     expect(await updater.check({ manual: false })).toMatchObject({ status: 'error' });
     expect(deps.logger.error).toHaveBeenCalledWith(expect.stringContaining('HTTP 403'));
-    expect(dialogs.showPortableUpdate).not.toHaveBeenCalled();
+    expect(states).toEqual([]);
   });
 });
 
@@ -531,6 +846,18 @@ describe('fetchLatestRelease (https real simulado)', () => {
     expect(cap.url).toBe('https://api.github.com/repos/GregoryCardoso/skins-manager/releases/latest');
     expect(cap.options.timeout).toBe(10000);
     expect(cap.options.headers['User-Agent']).toBeTruthy();
+  });
+
+  test('fetchJson usa a URL recebida (notas por tag) com os mesmos limites', async () => {
+    const cap = stubGet(200, (res) => {
+      res.emit('data', Buffer.from('{"tag_name":"v1.2.3","body":"x"}'));
+      res.emit('end');
+    });
+    await expect(fetchJson('https://api.github.com/repos/GregoryCardoso/skins-manager/releases/tags/v1.2.3')).resolves.toMatchObject({
+      body: 'x',
+    });
+    expect(cap.url).toBe('https://api.github.com/repos/GregoryCardoso/skins-manager/releases/tags/v1.2.3');
+    expect(cap.options.timeout).toBe(10000);
   });
 
   test.each([201, 204, 301, 302, 403, 404, 500])('status %i é recusado e a resposta é descartada', async (status) => {

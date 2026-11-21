@@ -49,6 +49,8 @@ export default function AboutSettings() {
       statusText = t(result.mode === 'portable' ? 'settings.about.availablePortable' : 'settings.about.available', {
         version: v,
       });
+    } else if (result.status === 'downloading') {
+      statusText = t('settings.about.downloading', { percent: result.percent ?? 0 });
     } else if (result.status === 'ready') statusText = t('settings.about.ready', { version: v });
     else if (result.status === 'busy') statusText = t('settings.about.busy');
     else if (result.status === 'disabled') statusText = t('settings.about.disabled');
