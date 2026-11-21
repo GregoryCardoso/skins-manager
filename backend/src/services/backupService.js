@@ -12,7 +12,9 @@ const {
   backupStamp,
   selectBackupsToDelete,
 } = require('../config/backupRetention');
+const { AUTO_BACKUP_KEEP } = require('../config/backupRetention');
 const { AppError, ValidationError, ConflictError } = require('../errors/AppError');
+const folderOpener = require('./system/folderOpener');
 const catalogService = require('./catalogService');
 const settingsService = require('./settingsService');
 const Item = require('../models/Item');
@@ -255,7 +257,42 @@ function importBackup(buffer, { now = new Date() } = {}) {
   }
 }
 
+// --- Pasta de backups (D175) ----------------------------------------------------------------------
+
+function backupsDirPath() {
+  return path.join(getDataDir(), 'backups');
+}
+
+function getBackupInfo({ canOpenFn = folderOpener.canOpenFolder } = {}) {
+  ensureFileDatabase();
+  return {
+    dataDir: getDataDir(),
+    backupsDir: backupsDirPath(),
+    autoBackupKeep: AUTO_BACKUP_KEEP,
+    canOpenFolder: Boolean(canOpenFn()),
+  };
+}
+
+// Abre a pasta de backups (criando-a se preciso). `openFolderFn(dir)` é injetável (Promise).
+async function openBackupsFolder({ openFolderFn = folderOpener.openFolder, canOpenFn = folderOpener.canOpenFolder } = {}) {
+  ensureFileDatabase();
+  if (!canOpenFn()) {
+    throw new ConflictError('Abrir a pasta só é possível no Windows. Copie o caminho e abra manualmente.', 'FOLDER_OPEN_UNSUPPORTED');
+  }
+  const dir = backupsDirPath();
+  try {
+    fs.mkdirSync(dir, { recursive: true });
+    await openFolderFn(dir);
+  } catch (err) {
+    console.error(`Falha ao abrir a pasta de backups: ${err && err.message ? err.message : err}`);
+    throw new AppError(500, 'FOLDER_OPEN_FAILED', 'Não foi possível abrir a pasta de backups. Copie o caminho e abra manualmente.');
+  }
+  return { path: dir };
+}
+
 module.exports = {
+  getBackupInfo,
+  openBackupsFolder,
   EXPORT_CONTENT_TYPE,
   IMPORT_BACKUP_PREFIX,
   MIGRATION_BACKUP_PREFIX,

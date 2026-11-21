@@ -11,8 +11,21 @@ function fatal(message) {
 let env;
 let closeDb;
 let app;
+let lock = null;
 try {
   env = require('./src/config/env');
+  // Ordem (D172, D173): trava da pasta de dados, migração legada, banco, listen.
+  if (env.dbPath !== ':memory:') {
+    const { acquireLock } = require('./src/config/instanceLock');
+    const { APP_VERSION } = require('./src/config/appInfo');
+    lock = acquireLock(path.dirname(env.dbPath), {
+      port: env.port,
+      mode: process.env.SKINS_MANAGER_MODE === 'desktop' ? 'desktop' : 'browser',
+      version: APP_VERSION,
+    });
+    process.on('exit', () => lock.release());
+    require('./src/config/legacyDataMigration').runLegacyMigration({ dbPathIsDefault: env.dbPathIsDefault, dbPath: env.dbPath });
+  }
   ({ closeDb } = require('./src/config/database'));
   const { getDb } = require('./src/config/database');
   app = require('./src/app');
@@ -22,6 +35,7 @@ try {
   syncBundledCatalog();
 } catch (err) {
   // T45: mensagem em português, sem stack trace.
+  if (lock) lock.release();
   fatal(`Não foi possível iniciar o Skins Manager: ${err && err.message ? err.message : err}`);
 }
 
@@ -41,16 +55,19 @@ server.on('error', (err) => {
     console.error(`Falha ao iniciar o servidor: ${err && err.message ? err.message : err}`);
   }
   closeDb();
+  if (lock) lock.release();
   process.exit(1);
 });
 
 function shutdown() {
   server.close(() => {
     closeDb();
+    if (lock) lock.release();
     process.exit(0);
   });
   setTimeout(() => {
     closeDb();
+    if (lock) lock.release();
     process.exit(0);
   }, 2000).unref();
 }

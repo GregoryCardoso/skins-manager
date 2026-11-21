@@ -160,6 +160,9 @@
     "BACKUP_CORRUPTED": "O arquivo de backup está corrompido e não foi importado.",
     "BACKUP_NEWER_VERSION": "Este backup foi criado por uma versão mais nova do Skins Manager. Atualize o app.",
     "BACKUP_IMPORT_FAILED": "Não foi possível importar o backup. Seus dados anteriores foram preservados.",
+    "DATA_DIR_LOCKED": "O Skins Manager já está aberto em outra janela ou instância.",
+    "FOLDER_OPEN_UNSUPPORTED": "Abrir a pasta só é possível no Windows. Copie o caminho e abra manualmente.",
+    "FOLDER_OPEN_FAILED": "Não foi possível abrir a pasta de backups. Copie o caminho e abra manualmente.",
     "FX_FETCH_FAILED": "Não foi possível consultar a cotação. Verifique sua conexão com a internet.",
     "FX_RATE_LIMITED": "O limite de consultas da fonte foi atingido. Tente mais tarde ou use a PTAX.",
     "FX_INVALID_RESPONSE": "A resposta da fonte da cotação veio em um formato inesperado ou com valor inválido. Digite a cotação manualmente.",
@@ -685,7 +688,12 @@
       "migrated": "Os dados foram atualizados da versão {from} para a {to}.",
       "reloading": "A página será recarregada em instantes...",
       "reloadNow": "Recarregar agora",
-      "retention": "Os backups automáticos ficam na pasta backups, ao lado do banco de dados. São mantidos os 10 mais recentes de cada tipo (antes de importar e antes de atualizar o app)."
+      "folderLabel": "Pasta de backups",
+      "openFolder": "Abrir pasta",
+      "copyPath": "Copiar caminho",
+      "pathCopied": "Caminho copiado.",
+      "copyFailed": "Não foi possível copiar. Selecione o caminho e copie manualmente.",
+      "retention": "Os backups automáticos ficam na pasta de backups, dentro da pasta de dados do app. São mantidos os 10 mais recentes de cada tipo (antes de importar e antes de atualizar o app)."
     },
     "loadError": "Não foi possível carregar as configurações: {reason}"
   }

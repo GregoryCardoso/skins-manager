@@ -11,13 +11,15 @@ const { errorHandler, notFoundHandler } = require('./middlewares/errorHandler');
 // (D70; `undefined` = fetch global do Node). `staticDir` é a pasta do frontend exportado (D134).
 const DEFAULT_STATIC_DIR = path.join(__dirname, '..', '..', 'frontend', 'out');
 
-function createApp({ now = () => new Date(), fetchFn, catalogValidation, staticDir = DEFAULT_STATIC_DIR, backupMaxBytes } = {}) {
+function createApp({ now = () => new Date(), fetchFn, catalogValidation, staticDir = DEFAULT_STATIC_DIR, backupMaxBytes, openFolderFn, canOpenFolderFn } = {}) {
   const app = express();
   app.disable('x-powered-by');
   app.locals.now = now;
   app.locals.fetchFn = fetchFn;
   app.locals.staticDir = staticDir;
   app.locals.backupMaxBytes = backupMaxBytes; // `undefined` = BACKUP_MAX_BYTES (D151)
+  app.locals.openFolderFn = openFolderFn; // `undefined` = Explorer real (D175)
+  app.locals.canOpenFolderFn = canOpenFolderFn; // `undefined` = só no Windows
   app.locals.catalogValidation = catalogValidation; // `undefined` = padrão do service (T36)
 
   app.use(hostGuard); // antes de tudo: DNS rebinding (inclui /api/health)

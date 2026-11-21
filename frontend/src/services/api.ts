@@ -1,5 +1,6 @@
 import type {
   BackupImportResult,
+  BackupInfo,
   Category,
   CatalogRefreshResult,
   CatalogSearchResult,
@@ -280,3 +281,9 @@ export const importBackup = (file: Blob) =>
     rawBody: { data: file, contentType: 'application/octet-stream' },
     timeoutMs: 120000,
   });
+
+// Caminho das pastas de dados e de backups (D175).
+export const getBackupInfo = (signal?: AbortSignal) => request<BackupInfo>('GET', '/backup/info', { signal });
+
+// Abre a pasta de backups no Explorer; o servidor não aceita nenhum caminho (corpo `{}`).
+export const openBackupsFolder = () => request<{ path: string }>('POST', '/backup/open-folder', { body: {} });

@@ -35,4 +35,22 @@ function importBackup(req, res) {
   res.json({ success: true, data });
 }
 
-module.exports = { exportBackup, importBackup };
+// GET /api/backup/info (D175).
+function info(req, res) {
+  res.json({ success: true, data: backupService.getBackupInfo({ canOpenFn: req.app.locals.canOpenFolderFn }) });
+}
+
+// POST /api/backup/open-folder (D175): abre só a pasta de backups; nenhum caminho vem do cliente.
+async function openFolder(req, res, next) {
+  try {
+    const data = await backupService.openBackupsFolder({
+      openFolderFn: req.app.locals.openFolderFn,
+      canOpenFn: req.app.locals.canOpenFolderFn,
+    });
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { exportBackup, importBackup, info, openFolder };

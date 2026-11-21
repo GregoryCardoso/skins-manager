@@ -160,6 +160,9 @@
     "BACKUP_CORRUPTED": "The backup file is corrupted and was not imported.",
     "BACKUP_NEWER_VERSION": "This backup was created by a newer version of Skins Manager. Update the app.",
     "BACKUP_IMPORT_FAILED": "Could not import the backup. Your previous data was preserved.",
+    "DATA_DIR_LOCKED": "Skins Manager is already open in another window or instance.",
+    "FOLDER_OPEN_UNSUPPORTED": "Opening the folder is only possible on Windows. Copy the path and open it manually.",
+    "FOLDER_OPEN_FAILED": "Could not open the backups folder. Copy the path and open it manually.",
     "FX_FETCH_FAILED": "Could not query the exchange rate. Check your internet connection.",
     "FX_RATE_LIMITED": "The source's query limit was reached. Try again later or use the PTAX.",
     "FX_INVALID_RESPONSE": "The exchange rate source returned an unexpected format or an invalid value. Type the rate manually.",
@@ -685,7 +688,12 @@
       "migrated": "Your data was updated from version {from} to {to}.",
       "reloading": "The page will reload in a moment...",
       "reloadNow": "Reload now",
-      "retention": "Automatic backups are kept in the backups folder, next to the database. The 10 most recent of each kind are kept (before importing and before updating the app)."
+      "folderLabel": "Backups folder",
+      "openFolder": "Open folder",
+      "copyPath": "Copy path",
+      "pathCopied": "Path copied.",
+      "copyFailed": "Could not copy. Select the path and copy it manually.",
+      "retention": "Automatic backups are kept in the backups folder, inside the app's data folder. The 10 most recent of each kind are kept (before importing and before updating the app)."
     },
     "loadError": "Could not load the settings: {reason}"
   }

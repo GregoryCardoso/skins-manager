@@ -1,6 +1,7 @@
 'use strict';
 
 const path = require('path');
+const { resolveDefaultDataDir } = require('../../src/config/paths');
 
 const KEYS = ['PORT', 'DB_PATH', 'CORS_ORIGIN', 'SLOW_ITEM_DAYS'];
 let saved;
@@ -34,7 +35,8 @@ describe('config/env', () => {
     expect(env.port).toBe(3001);
     expect(env.slowItemDays).toBe(21);
     expect(env.corsOrigin).toEqual(['http://localhost:3000', 'http://127.0.0.1:3000']);
-    expect(path.normalize(env.dbPath)).toBe(path.join(__dirname, '..', '..', 'data', 'inventory.sqlite'));
+    expect(path.normalize(env.dbPath)).toBe(path.join(resolveDefaultDataDir({ env: process.env }), 'inventory.sqlite'));
+    expect(env.dbPathIsDefault).toBe(true);
   });
 
   test('variáveis vazias também caem nos padrões', () => {
@@ -47,7 +49,7 @@ describe('config/env', () => {
 
   test('lê valores válidos das variáveis', () => {
     const env = loadEnvWith({ PORT: '4000', DB_PATH: ':memory:', CORS_ORIGIN: 'http://x:1', SLOW_ITEM_DAYS: '30' });
-    expect(env).toEqual({ port: 4000, dbPath: ':memory:', corsOrigin: ['http://x:1'], slowItemDays: 30 });
+    expect(env).toEqual({ port: 4000, dbPath: ':memory:', dbPathIsDefault: false, corsOrigin: ['http://x:1'], slowItemDays: 30 });
   });
 
   test('CORS_ORIGIN aceita lista separada por vírgula (com espaços e barra final)', () => {
@@ -93,8 +95,8 @@ describe('config/env', () => {
     });
   });
 
-  test('não expõe taxas no env (só as 4 chaves)', () => {
+  test('não expõe taxas no env (só as 5 chaves)', () => {
     const env = loadEnvWith({});
-    expect(Object.keys(env).sort()).toEqual(['corsOrigin', 'dbPath', 'port', 'slowItemDays']);
+    expect(Object.keys(env).sort()).toEqual(['corsOrigin', 'dbPath', 'dbPathIsDefault', 'port', 'slowItemDays']);
   });
 });

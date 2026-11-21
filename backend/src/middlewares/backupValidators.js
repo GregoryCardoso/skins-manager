@@ -1,5 +1,5 @@
 const express = require('express');
-const { AppError } = require('../errors/AppError');
+const { AppError, ValidationError } = require('../errors/AppError');
 const { BACKUP_MAX_BYTES } = require('../config/constants');
 
 // Só valida a forma da requisição de importação (D151): tipo de conteúdo, tamanho e corpo binário.
@@ -39,3 +39,22 @@ function parseImportBody(req, res, next) {
 }
 
 module.exports = { requireOctetStream, parseImportBody, BACKUP_MAX_BYTES };
+
+// POST /backup/open-folder (D175): JSON obrigatório e corpo `{}` (nenhum campo, em especial nenhum caminho).
+function validateOpenFolderBody(req, res, next) {
+  const type = String(req.get('content-type') || '').toLowerCase();
+  if (!/^application\/json\s*(;|$)/.test(type)) {
+    return next(new AppError(415, 'UNSUPPORTED_MEDIA_TYPE', 'Envie a requisição com Content-Type: application/json.'));
+  }
+  const body = req.body;
+  if (body === null || typeof body !== 'object' || Array.isArray(body)) {
+    return next(new ValidationError('O corpo da requisição deve ser um objeto JSON vazio ({}).', 'INVALID_BODY'));
+  }
+  const unknown = Object.keys(body)[0];
+  if (unknown !== undefined) {
+    return next(new ValidationError(`Campo desconhecido: ${unknown}`, 'UNKNOWN_FIELD', { field: unknown }));
+  }
+  return next();
+}
+
+module.exports.validateOpenFolderBody = validateOpenFolderBody;

@@ -1,13 +1,15 @@
 'use strict';
 
-// Banco de exemplo para desenvolvimento (D108). NUNCA abre nem toca o banco real (data/inventory.sqlite).
+// Banco de exemplo para desenvolvimento (D108). NUNCA abre nem toca o banco real (%APPDATA%\SkinsManager\inventory.sqlite nem o antigo data/inventory.sqlite).
 // Este módulo só usa `fs`, `path` e `dotenv`; não carrega nada de `src/` (o `DB_PATH` precisa ser definido antes).
 const fs = require('fs');
 const path = require('path');
 const dotenv = require('dotenv');
 
 const BACKEND_DIR = path.join(__dirname, '..');
-const DEFAULT_REAL_DB_PATH = path.join(BACKEND_DIR, 'data', 'inventory.sqlite');
+const { resolveDefaultDataDir } = require('../src/config/paths'); // módulo puro: não abre banco nem lê o .env
+const LEGACY_REAL_DB_PATH = path.join(BACKEND_DIR, 'data', 'inventory.sqlite');
+const DEFAULT_REAL_DB_PATH = path.join(resolveDefaultDataDir(), 'inventory.sqlite'); // D171
 const DEV_DB_PATH = path.join(BACKEND_DIR, 'data', 'inventory.dev.sqlite');
 const MEMORY = ':memory:';
 
@@ -39,7 +41,7 @@ function isSamePath(a, b) {
 
 // Caminhos que o app usa como banco real: o padrão e o `DB_PATH` do backend/.env (lido sem alterar o ambiente).
 function resolveRealDbPaths({ envFile = path.join(BACKEND_DIR, '.env'), env = process.env } = {}) {
-  const paths = [DEFAULT_REAL_DB_PATH];
+  const paths = [DEFAULT_REAL_DB_PATH, LEGACY_REAL_DB_PATH];
   const add = (value) => {
     if (typeof value === 'string' && value.trim() !== '' && value.trim() !== MEMORY) {
       paths.push(path.resolve(BACKEND_DIR, value.trim()));
@@ -98,5 +100,5 @@ function removeDbFiles(dbPath) {
 }
 
 module.exports = {
-  DEV_DB_PATH, DEFAULT_REAL_DB_PATH, resolveRealDbPaths, assertSafeTarget, resolveSeedTarget, removeDbFiles, isSamePath,
+  DEV_DB_PATH, DEFAULT_REAL_DB_PATH, LEGACY_REAL_DB_PATH, resolveRealDbPaths, assertSafeTarget, resolveSeedTarget, removeDbFiles, isSamePath,
 };

@@ -5,10 +5,12 @@ const settingsRoutes = require('./settingsRoutes');
 const catalogRoutes = require('./catalogRoutes');
 const backupRoutes = require('./backupRoutes');
 
+const { APP_NAME, APP_VERSION } = require('../config/appInfo');
+
 const router = Router();
 
 router.get('/health', (req, res) => {
-  res.json({ success: true, data: { status: 'ok', timestamp: req.app.locals.now().toISOString() } });
+  res.json({ success: true, data: { status: 'ok', timestamp: req.app.locals.now().toISOString(), app: APP_NAME, version: APP_VERSION } });
 });
 
 router.use('/items', itemRoutes);

@@ -1,10 +1,9 @@
 const path = require('path');
 const dotenv = require('dotenv');
 const { MIN_SLOW_ITEM_DAYS, MAX_SLOW_ITEM_DAYS } = require('./constants');
+const { resolveDefaultDataDir } = require('./paths');
 
 dotenv.config({ path: path.join(__dirname, '..', '..', '.env'), quiet: true });
-
-const DEFAULT_DB_PATH = path.join(__dirname, '..', '..', 'data', 'inventory.sqlite');
 
 function parsePort(raw, fallback) {
   if (raw === undefined || String(raw).trim() === '') return fallback;
@@ -46,10 +45,16 @@ function resolveDbPath(value) {
   return path.resolve(path.join(__dirname, '..', '..'), value);
 }
 
+// DB_PATH vazio = <pasta de dados>\inventory.sqlite (D171): %APPDATA%\SkinsManager no Windows.
 function loadEnv(source = process.env) {
+  const explicitDbPath = nonEmpty(source.DB_PATH, '');
+  const dbPathIsDefault = explicitDbPath === '';
   return Object.freeze({
     port: parsePort(source.PORT, 3001),
-    dbPath: resolveDbPath(nonEmpty(source.DB_PATH, DEFAULT_DB_PATH)),
+    dbPath: dbPathIsDefault
+      ? path.join(resolveDefaultDataDir({ env: source }), 'inventory.sqlite')
+      : resolveDbPath(explicitDbPath),
+    dbPathIsDefault,
     corsOrigin: Object.freeze(parseCorsOrigins(source.CORS_ORIGIN)),
     slowItemDays: parseSlowItemDays(source.SLOW_ITEM_DAYS),
   });

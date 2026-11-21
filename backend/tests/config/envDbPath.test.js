@@ -3,7 +3,7 @@ const os = require('os');
 const path = require('path');
 
 const BACKEND_DIR = path.resolve(__dirname, '..', '..');
-const KEYS = ['PORT', 'DB_PATH', 'CORS_ORIGIN', 'SLOW_ITEM_DAYS'];
+const KEYS = ['PORT', 'DB_PATH', 'APPDATA', 'CORS_ORIGIN', 'SLOW_ITEM_DAYS'];
 let saved;
 let savedCwd;
 let tmpDir;
@@ -74,10 +74,17 @@ describe('config/env - DB_PATH', () => {
     expect(loadEnvWith({ DB_PATH: raw }).dbPath).toBe(':memory:');
   });
 
-  test.each([undefined, '', '   '])('DB_PATH=%j → backend/data/inventory.sqlite (absoluto, mesmo com cwd diferente)', (raw) => {
+  test.each([undefined, '', '   '])('DB_PATH=%j → <pasta de dados>/inventory.sqlite e dbPathIsDefault (D171)', (raw) => {
     process.chdir(tmpDir);
-    const vars = raw === undefined ? {} : { DB_PATH: raw };
+    const vars = { APPDATA: path.join(tmpDir, 'roaming') };
+    if (raw !== undefined) vars.DB_PATH = raw;
     const env = loadEnvWith(vars);
-    expect(env.dbPath).toBe(path.join(BACKEND_DIR, 'data', 'inventory.sqlite'));
+    const { resolveDefaultDataDir } = require('../../src/config/paths');
+    expect(env.dbPath).toBe(path.join(resolveDefaultDataDir({ env: vars }), 'inventory.sqlite'));
+    expect(env.dbPathIsDefault).toBe(true);
+  });
+
+  test('DB_PATH explícito → dbPathIsDefault false', () => {
+    expect(loadEnvWith({ DB_PATH: ':memory:' }).dbPathIsDefault).toBe(false);
   });
 });

@@ -19,6 +19,16 @@ export type ApiEnvelope<T> = { success: true; data: T } | { success: false; erro
 export interface HealthStatus {
   status: 'ok';
   timestamp: string;
+  app?: string;
+  version?: string;
+}
+
+// Resposta de GET /backup/info (D175).
+export interface BackupInfo {
+  dataDir: string;
+  backupsDir: string;
+  autoBackupKeep: number;
+  canOpenFolder: boolean;
 }
 
 export type CatalogSource = 'SKINS' | 'STICKERS' | 'CRATES' | 'KEYCHAINS' | 'AGENTS';

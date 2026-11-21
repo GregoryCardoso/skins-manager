@@ -6,8 +6,8 @@ import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
 import { formatInteger } from '@/lib/format';
 import { saveBlobAs } from '@/lib/download';
 import { BACKUP_MAX_BYTES, isBackupTooLarge } from '@/lib/backupFile';
-import { ApiRequestError, exportBackup, importBackup } from '@/services/api';
-import type { BackupImportResult } from '@/types/api';
+import { ApiRequestError, exportBackup, getBackupInfo, importBackup, openBackupsFolder } from '@/services/api';
+import type { BackupImportResult, BackupInfo } from '@/types/api';
 import ConfirmDialog from './ConfirmDialog';
 import styles from './settings.module.css';
 
@@ -28,6 +28,30 @@ export default function BackupSettings() {
   const [importError, setImportError] = useState<unknown>(null);
   const [pickError, setPickError] = useState<unknown>(null);
   const [result, setResult] = useState<BackupImportResult | null>(null);
+  const [info, setInfo] = useState<BackupInfo | null>(null);
+  const [folderError, setFolderError] = useState<unknown>(null);
+  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
+
+  useEffect(() => {
+    const controller = new AbortController();
+    getBackupInfo(controller.signal)
+      .then(setInfo)
+      .catch(() => setInfo(null)); // sem o caminho a tela continua útil (só não o mostra)
+    return () => controller.abort();
+  }, []);
+
+  const onOpenFolder = () => {
+    setFolderError(null);
+    openBackupsFolder().catch((err: unknown) => setFolderError(err));
+  };
+
+  const onCopyPath = () => {
+    if (!info) return;
+    navigator.clipboard
+      .writeText(info.backupsDir)
+      .then(() => setCopyState('copied'))
+      .catch(() => setCopyState('failed'));
+  };
 
   useEffect(() => {
     if (result === null) return undefined;
@@ -135,6 +159,26 @@ export default function BackupSettings() {
       )}
 
       <p className={styles.muted}>{t('settings.backup.retention')}</p>
+      {info && (
+        <div>
+          <p className={styles.muted}>
+            {t('settings.backup.folderLabel')}: <code data-testid="backups-dir">{info.backupsDir}</code>
+          </p>
+          <div className={styles.row}>
+            {info.canOpenFolder && (
+              <button type="button" className={styles.button} onClick={onOpenFolder}>
+                {t('settings.backup.openFolder')}
+              </button>
+            )}
+            <button type="button" className={styles.button} onClick={onCopyPath}>
+              {t('settings.backup.copyPath')}
+            </button>
+          </div>
+          {copyState === 'copied' && <p className={styles.ok} role="status">{t('settings.backup.pathCopied')}</p>}
+          {copyState === 'failed' && <p className={styles.error} role="alert">{t('settings.backup.copyFailed')}</p>}
+          {folderError !== null && <p className={styles.error} role="alert">{errorMessageFor(folderError, tLoose, locale)}</p>}
+        </div>
+      )}
 
       {confirming && file && (
         <ConfirmDialog
