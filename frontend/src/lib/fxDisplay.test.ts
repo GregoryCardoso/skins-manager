@@ -74,7 +74,7 @@ describe('erros FX_* traduzidos com o nome da fonte', () => {
 
   test('códigos removidos não existem mais nos dicionários', () => {
     for (const dict of [ptBR.errors, en.errors] as Record<string, string>[]) {
-      for (const code of ['PTAX_FETCH_FAILED', 'PTAX_INVALID_RESPONSE', 'PTAX_REFRESH_IN_PROGRESS', 'WITHDRAWAL_NOT_ALLOWED']) {
+      for (const code of ['PTAX_FETCH_FAILED', 'PTAX_INVALID_RESPONSE', 'PTAX_REFRESH_IN_PROGRESS']) {
         expect(dict[code]).toBeUndefined();
       }
     }

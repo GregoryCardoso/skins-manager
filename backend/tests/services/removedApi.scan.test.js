@@ -16,12 +16,12 @@ function walk(dir) {
   });
 }
 
+// WITHDRAWAL_NOT_ALLOWED saiu em D165 e voltou na 8.2 (D203, E8-Q6): não consta mais desta lista.
 const REMOVED = [
   'effectiveRate',
   'EFFECTIVE_RATE',
   'simulateWithdrawal',
   'BELOW_FEE',
-  'WITHDRAWAL_NOT_ALLOWED',
   'recentWithdrawals',
   'computeWithdrawalFee',
   'estimateWithdrawable',

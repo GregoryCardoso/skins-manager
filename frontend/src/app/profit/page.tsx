@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import DepositFormModal from '@/components/DepositFormModal';
 import DepositsTable from '@/components/DepositsTable';
+import WithdrawalsSection from '@/components/WithdrawalsSection';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import { formatDate, formatMoney } from '@/lib/format';
@@ -13,7 +14,7 @@ import styles from './page.module.css';
 
 type Dialog = { kind: 'create' } | { kind: 'edit'; deposit: Deposit } | { kind: 'delete'; deposit: Deposit };
 
-// 8.1: só a seção Aportes. Saques, saldos e o resumo entram nas próximas subetapas (D198).
+// 8.1: Aportes; 8.2: Saques. Saldos e o resumo entram nas próximas subetapas (D198).
 export default function ProfitPage() {
   const t = useT();
   const tLoose = useTLoose();
@@ -136,6 +137,8 @@ export default function ProfitPage() {
           </div>
         )}
       </section>
+
+      <WithdrawalsSection />
 
       {dialog?.kind === 'create' && <DepositFormModal stores={stores} onClose={closeDialog} onSaved={finish} onGone={depositGone} />}
       {dialog?.kind === 'edit' && (

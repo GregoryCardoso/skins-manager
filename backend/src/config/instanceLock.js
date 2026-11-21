@@ -61,8 +61,10 @@ async function removeStaleLockByProbe(dataDir, { isAlive = isProcessAlive, probe
   if (info.pid === pid || !isAlive(info.pid)) return false;
   const startedMs = Date.parse(info.startedAt);
   const ageMs = now.getTime() - startedMs;
-  // idade negativa (relógio do Windows voltou) não protege a trava: ela é sondada
-  if (Number.isFinite(ageMs) && ageMs >= 0 && ageMs < STARTUP_GRACE_MS) return false;
+  // Trava recente: não sonda (a outra instância pode ainda estar subindo). Idade levemente negativa também é
+  // recente: duas instâncias abrindo juntas leem a trava uma da outra com o horário de quem a criou alguns ms
+  // "no futuro". Só uma trava muito no futuro (relógio do Windows voltou) deixa de ser protegida e é sondada.
+  if (Number.isFinite(ageMs) && ageMs > -STARTUP_GRACE_MS && ageMs < STARTUP_GRACE_MS) return false;
   if (await probe(info)) return false;
   fs.rmSync(lockPath, { force: true });
   return true;
@@ -88,6 +90,22 @@ function lockedMessage(info) {
 }
 
 // Cria a trava. Devolve { release }. Lança AppError DATA_DIR_LOCKED se outra instância viva a detém.
+// Publica a trava já com o conteúdo completo: grava num temporário e cria a trava com link (atômico, falha com
+// EEXIST se ela já existir). Com `wx` direto, outra instância podia ler o arquivo ainda vazio, achá-lo "ilegível"
+// (velho) e apagá-lo, e as duas ficavam com a trava. Sem suporte a link (ex.: FAT32), volta ao `wx`.
+function publishLockFile(lockPath, payload, pid) {
+  const tmpPath = `${lockPath}.${pid}.${Date.now()}.tmp`;
+  fs.writeFileSync(tmpPath, payload, { flag: 'wx' });
+  try {
+    fs.linkSync(tmpPath, lockPath);
+  } catch (err) {
+    if (err && err.code === 'EEXIST') throw err;
+    fs.writeFileSync(lockPath, payload, { flag: 'wx' });
+  } finally {
+    fs.rmSync(tmpPath, { force: true });
+  }
+}
+
 function acquireLock(dataDir, { pid = process.pid, port, mode = 'browser', version, now = new Date(), isAlive = isProcessAlive } = {}) {
   fs.mkdirSync(dataDir, { recursive: true });
   const lockPath = path.join(dataDir, LOCK_FILE_NAME);
@@ -95,7 +113,7 @@ function acquireLock(dataDir, { pid = process.pid, port, mode = 'browser', versi
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
-      fs.writeFileSync(lockPath, payload, { flag: 'wx' });
+      publishLockFile(lockPath, payload, pid);
       let released = false;
       const release = () => {
         if (released) return;

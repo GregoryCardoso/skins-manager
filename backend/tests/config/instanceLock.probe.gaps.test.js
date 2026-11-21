@@ -367,6 +367,10 @@ describe('server.js real (processo filho): PID reaproveitado e trava com sondage
         return 'timeout';
       })(),
     ]);
+    if (results === 'timeout') {
+      // diagnóstico: mostra o que as duas instâncias disseram
+      console.log('A', a.stdout, a.stderr, '\nB', b.stdout, b.stderr, '\nlock', fs.readdirSync(dbDir));
+    }
     expect(results).not.toBe('timeout');
     const survivor = a.child.exitCode === null ? a : b;
     const loser = survivor === a ? b : a;
@@ -380,5 +384,18 @@ describe('server.js real (processo filho): PID reaproveitado e trava com sondage
     const p = startServer(port, { env: { DB_PATH: ':memory:' } });
     await waitUp(port, p);
     expect(fs.readdirSync(dbDir)).toEqual([]);
+  });
+});
+
+describe('removeStaleLockByProbe: duas instâncias abrindo juntas', () => {
+  test('trava com startedAt poucos ms no futuro (criada pela outra instância agora) não é sondada nem removida', async () => {
+    const dir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'sm-race-'));
+    const now = new Date('2026-11-21T12:00:00.000Z');
+    fs.writeFileSync(path.join(dir, LOCK_FILE_NAME), JSON.stringify({ pid: 4242, port: 3001, startedAt: new Date(now.getTime() + 5).toISOString() }));
+    const probe = jest.fn(async () => false);
+    expect(await removeStaleLockByProbe(dir, { isAlive: () => true, probe, now, pid: 99 })).toBe(false);
+    expect(probe).not.toHaveBeenCalled();
+    expect(fs.existsSync(path.join(dir, LOCK_FILE_NAME))).toBe(true);
+    fs.rmSync(dir, { recursive: true, force: true });
   });
 });

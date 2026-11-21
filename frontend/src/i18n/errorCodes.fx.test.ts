@@ -4,7 +4,7 @@ import ptBR from './pt-BR.json';
 import en from './en.json';
 
 const NEW_CODES = ['FX_FETCH_FAILED', 'FX_RATE_LIMITED', 'FX_INVALID_RESPONSE', 'FX_REFRESH_IN_PROGRESS', 'INVALID_FX_SOURCE'];
-const REMOVED = ['PTAX_FETCH_FAILED', 'PTAX_INVALID_RESPONSE', 'PTAX_REFRESH_IN_PROGRESS', 'WITHDRAWAL_NOT_ALLOWED'];
+const REMOVED = ['PTAX_FETCH_FAILED', 'PTAX_INVALID_RESPONSE', 'PTAX_REFRESH_IN_PROGRESS'];
 
 describe('códigos de cotação (D162/D165)', () => {
   test.each(NEW_CODES)('%s está na lista e traduzido nos dois idiomas', (code) => {

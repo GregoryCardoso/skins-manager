@@ -12,6 +12,7 @@ const Database = require('better-sqlite3');
 const BACKEND_DIR = path.resolve(__dirname, '..');
 const SERVER = path.join(BACKEND_DIR, 'server.js');
 const REDIRECT = path.join(__dirname, 'helpers', 'redirectLegacyDir.js');
+const SPY_LOCK = path.join(__dirname, 'helpers', 'spyInstanceLock.js');
 
 jest.setTimeout(40000);
 
@@ -61,8 +62,8 @@ function makeLegacy() {
   fs.writeFileSync(path.join(legacyDir, 'backups', 'old.sqlite'), 'b');
 }
 
-function start(port, { env = {}, preload = true } = {}) {
-  const args = preload ? ['-r', REDIRECT, SERVER] : [SERVER];
+function start(port, { env = {}, preload = true, spyLock = false } = {}) {
+  const args = [...(preload ? ['-r', REDIRECT] : []), ...(spyLock ? ['-r', SPY_LOCK] : []), SERVER];
   const child = spawn(process.execPath, args, {
     cwd: BACKEND_DIR,
     env: { ...process.env, PORT: String(port), APPDATA: appData, DB_PATH: '', SM_TEST_LEGACY_DIR: legacyDir, ...env },
@@ -211,11 +212,24 @@ describe('server.js - pasta de dados (7.2)', () => {
     }
   });
 
+  // Isolado da máquina: não olha backend/data (onde um `npm run dev` pode ter a trava). Prova que a trava
+  // nem é pedida (spy no instanceLock) e que nada é criado na APPDATA nem na pasta legada temporárias.
   test(':memory: não cria trava nem pasta de dados', async () => {
     const port = await freePort();
-    const p = start(port, { preload: false, env: { DB_PATH: ':memory:' } });
+    const p = start(port, { env: { DB_PATH: ':memory:' }, spyLock: true });
     await waitUp(port, p);
+    expect(p.stdout).not.toContain('[lock]');
     expect(fs.readdirSync(appData)).toEqual([]);
-    expect(fs.existsSync(path.join(BACKEND_DIR, 'data', 'skins-manager.lock'))).toBe(false);
+    expect(fs.existsSync(legacyDir)).toBe(false);
+    expect(fs.readdirSync(tmp).sort()).toEqual(['roaming']);
+  });
+
+  test('controle do spy: com DB_PATH em arquivo a trava é pedida na pasta do banco temporário', async () => {
+    const explicitDir = path.join(tmp, 'explicit');
+    fs.mkdirSync(explicitDir);
+    const port = await freePort();
+    const p = start(port, { env: { DB_PATH: path.join(explicitDir, 'x.sqlite') }, spyLock: true });
+    await waitUp(port, p);
+    expect(p.stdout).toContain(`[lock] acquire ${explicitDir}`);
   });
 });

@@ -319,6 +319,49 @@ export interface DepositCreateBody {
 
 export type DepositPatchBody = Partial<DepositCreateBody>;
 
+// --- Saques (D203) ---
+
+export interface Withdrawal {
+  id: number;
+  // Saque antigo sem loja: storeId, storeName, currency e amountStoreCents nulos.
+  storeId: number | null;
+  storeName: string | null;
+  currency: Currency | null;
+  amountStoreCents: number | null;
+  // Taxa paga na moeda da loja; nulo = não informada.
+  feeCents: number | null;
+  amountBrlCents: number;
+  withdrawnAt: string;
+  note: string | null;
+  legacyWithoutStore: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WithdrawalList {
+  withdrawals: Withdrawal[];
+  totals: { count: number; amountBrlCents: number };
+}
+
+export interface WithdrawalCreateBody {
+  storeId: number;
+  amountStoreCents: number;
+  feeCents?: number | null;
+  amountBrlCents: number;
+  withdrawnAt: string;
+  note?: string | null;
+}
+
+export type WithdrawalPatchBody = Partial<WithdrawalCreateBody>;
+
+export interface FeeSuggestion {
+  storeId: number;
+  amountStoreCents: number;
+  suggestedFeeCents: number | null;
+  // 'FEES_NOT_CONFIGURED' quando a loja não tem taxa de saque configurada.
+  warningCode: string | null;
+}
+
 // --- Catálogo (busca do formulário, D115) ---
 
 export interface CatalogItem {

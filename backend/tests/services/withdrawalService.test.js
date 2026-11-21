@@ -10,8 +10,11 @@ const { estimateBalanceBrl } = withdrawalService;
 const SETTINGS = { usdBrlRate: 5.0 };
 
 describe('withdrawalService: API pública', () => {
-  test('só estimateBalanceBrl é exportado (sem cotação efetiva, simulação nem taxa de saque)', () => {
-    expect(Object.keys(withdrawalService)).toEqual(['estimateBalanceBrl']);
+  test('sem cotação efetiva nem simulação de saque; só estimativa de saldo, regras e orquestradores dos saques', () => {
+    expect(Object.keys(withdrawalService).sort()).toEqual([
+      'buildWithdrawalRecord', 'createWithdrawal', 'deleteWithdrawal', 'estimateBalanceBrl', 'getFeeSuggestion',
+      'listWithdrawals', 'suggestWithdrawalFeeCents', 'toWithdrawalView', 'updateWithdrawal',
+    ]);
   });
 });
 

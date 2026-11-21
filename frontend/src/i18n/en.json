@@ -171,7 +171,12 @@
     "INVALID_FX_SOURCE": "Invalid exchange rate source. Choose the commercial rate or the PTAX.",
     "INVALID_SALE_HOLD_DAYS": "The hold must be a whole number of days, from 0 to 30.",
     "DEPOSITED_AT_IN_FUTURE": "The deposit date cannot be in the future.",
-    "DEPOSIT_NOT_FOUND": "The deposit was not found."
+    "DEPOSIT_NOT_FOUND": "The deposit was not found.",
+    "STORE_REQUIRED": "Choose the withdrawal's store.",
+    "WITHDRAWAL_FEE_ABOVE_AMOUNT": "The fee paid cannot be greater than the amount withdrawn.",
+    "WITHDRAWN_AT_IN_FUTURE": "The withdrawal date cannot be in the future.",
+    "WITHDRAWAL_NOT_ALLOWED": "This store does not allow withdrawals. Turn on \"Allows withdrawal\" on the Stores page.",
+    "WITHDRAWAL_NOT_FOUND": "The withdrawal was not found."
   },
   "warnings": {
     "FEES_NOT_CONFIGURED": "The store fees are not configured.",
@@ -436,7 +441,10 @@
     "depositedAt": "Deposit date",
     "storeId": "Store",
     "note": "Note",
-    "saleHoldDays": "Balance hold"
+    "saleHoldDays": "Balance hold",
+    "amountStoreCents": "Amount withdrawn",
+    "feeCents": "Fee paid",
+    "withdrawnAt": "Withdrawal date"
   },
   "errorDetails": {
     "INVALID_RATE": "The rate must be at least 0% and below 100%, with at most {maxDecimals} decimal places in the percentage.",
@@ -755,7 +763,7 @@
   },
   "profit": {
     "title": "Real profit",
-    "subtitle": "Track the money you put into the stores. Withdrawals, balances and the summary arrive in upcoming updates."
+    "subtitle": "Track the money you put into the stores and what you withdrew. Balances and the summary arrive in upcoming updates."
   },
   "deposits": {
     "title": "Deposits",
@@ -800,6 +808,65 @@
       "note": "Note (optional)",
       "amountRequired": "Enter the deposit amount.",
       "invalidMoney": "Invalid amount. Use the format 1.25, greater than zero.",
+      "invalidDate": "Invalid date."
+    }
+  },
+  "withdrawals": {
+    "title": "Withdrawals",
+    "intro": "What you withdrew from the stores to your account. The amount received in R$ is what counts toward the real profit.",
+    "count": {
+      "one": "{count} withdrawal",
+      "other": "{count} withdrawals"
+    },
+    "total": "Total received from withdrawals: {value}",
+    "new": "New withdrawal",
+    "empty": "No withdrawals recorded",
+    "emptyHint": "Record each withdrawal from a store to your account. It counts toward the real profit.",
+    "loadError": "Could not load the withdrawals: {reason}",
+    "gone": "The withdrawal no longer exists. The list was refreshed.",
+    "created": "Withdrawal of {value} recorded.",
+    "updated": "Withdrawal updated.",
+    "deleted": "Withdrawal of {value} deleted.",
+    "legacyNoStore": "No store (old record)",
+    "feeNotInformed": "—",
+    "inactiveStore": "{name} (inactive)",
+    "noWithdrawalStores": "No active store allows withdrawals. Turn on \"Allows withdrawal\" on a store to record withdrawals.",
+    "goToStores": "Open Stores",
+    "columns": {
+      "date": "Date",
+      "store": "Store",
+      "amount": "Amount withdrawn",
+      "fee": "Fee paid",
+      "received": "Received (R$)",
+      "note": "Note",
+      "actions": "Actions"
+    },
+    "actions": {
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "deleteTitle": "Delete withdrawal",
+    "deleteMessage": "Delete the withdrawal of {value} made on {date}? This cannot be undone.",
+    "confirmDelete": "Delete",
+    "form": {
+      "createTitle": "New withdrawal",
+      "editTitle": "Edit withdrawal",
+      "store": "Store",
+      "chooseStore": "Choose the store",
+      "legacyHint": "This withdrawal predates the required store. Choose the store and the amount withdrawn to be able to save it.",
+      "amount": "Amount withdrawn ({currency})",
+      "fee": "Fee paid ({currency})",
+      "feeHint": "Leave empty if you do not know (\"not informed\"); 0 = no fee paid.",
+      "feeSuggested": "Suggested from the store's withdrawal fee. You can edit it.",
+      "feeNotConfigured": "The store has no withdrawal fee configured; enter the fee paid, if you know it.",
+      "received": "Amount received in your account (R$)",
+      "date": "Withdrawal date",
+      "note": "Note (optional)",
+      "storeRequired": "Choose the withdrawal's store.",
+      "amountRequired": "Enter the amount withdrawn.",
+      "invalidMoney": "Invalid amount. Use the format 1.25, greater than zero.",
+      "invalidFee": "Invalid fee. Use the format 1.25 (0 is allowed) or leave it empty.",
+      "receivedRequired": "Enter the amount received in your account.",
       "invalidDate": "Invalid date."
     }
   }

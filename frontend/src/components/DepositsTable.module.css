@@ -20,3 +20,4 @@
 .button:disabled { opacity: 0.5; cursor: not-allowed; }
 .danger { color: var(--danger); }
 .danger:hover:not(:disabled) { border-color: var(--danger); }
+.numeric { font-variant-numeric: tabular-nums; white-space: nowrap; }

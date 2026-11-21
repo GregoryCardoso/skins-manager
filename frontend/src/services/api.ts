@@ -9,6 +9,7 @@ import type {
   DepositCreateBody,
   DepositList,
   DepositPatchBody,
+  FeeSuggestion,
   ErrorParams,
   HealthStatus,
   ItemCreateBody,
@@ -27,6 +28,10 @@ import type {
   Store,
   StoreCreateBody,
   StorePatchBody,
+  Withdrawal,
+  WithdrawalCreateBody,
+  WithdrawalList,
+  WithdrawalPatchBody,
 } from '@/types/api';
 
 // Build de produção: o backend serve a interface na mesma origem (D134); em desenvolvimento a API fica na 3001.
@@ -214,6 +219,19 @@ export const createDeposit = (body: DepositCreateBody) => request<Deposit>('POST
 export const updateDeposit = (id: number, body: DepositPatchBody) => request<Deposit>('PATCH', `/deposits/${id}`, { body });
 
 export const deleteDeposit = (id: number) => request<{ id: number }>('DELETE', `/deposits/${id}`);
+
+// Saques (D203): a sugestão de taxa só pré-preenche o formulário; nada é calculado no frontend.
+export const listWithdrawals = (signal?: AbortSignal) => request<WithdrawalList>('GET', '/withdrawals', { signal });
+
+export const getWithdrawalFeeSuggestion = (storeId: number, amountStoreCents: number, signal?: AbortSignal) =>
+  request<FeeSuggestion>('GET', '/withdrawals/fee-suggestion', { signal, query: { storeId, amountStoreCents } });
+
+export const createWithdrawal = (body: WithdrawalCreateBody) => request<Withdrawal>('POST', '/withdrawals', { body });
+
+export const updateWithdrawal = (id: number, body: WithdrawalPatchBody) =>
+  request<Withdrawal>('PATCH', `/withdrawals/${id}`, { body });
+
+export const deleteWithdrawal = (id: number) => request<{ id: number }>('DELETE', `/withdrawals/${id}`);
 
 export const updateFxRate = (usdBrlRate: number) =>
   request<Settings>('PUT', '/settings/fx-rate', { body: { usdBrlRate } });

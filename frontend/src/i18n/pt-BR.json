@@ -171,7 +171,12 @@
     "INVALID_FX_SOURCE": "Fonte de cotação inválida. Escolha a cotação comercial ou a PTAX.",
     "INVALID_SALE_HOLD_DAYS": "A retenção deve ser um número inteiro de dias, de 0 a 30.",
     "DEPOSITED_AT_IN_FUTURE": "A data do aporte não pode estar no futuro.",
-    "DEPOSIT_NOT_FOUND": "O aporte não foi encontrado."
+    "DEPOSIT_NOT_FOUND": "O aporte não foi encontrado.",
+    "STORE_REQUIRED": "Escolha a loja do saque.",
+    "WITHDRAWAL_FEE_ABOVE_AMOUNT": "A taxa paga não pode ser maior que o valor sacado.",
+    "WITHDRAWN_AT_IN_FUTURE": "A data do saque não pode estar no futuro.",
+    "WITHDRAWAL_NOT_ALLOWED": "Esta loja não permite saque. Ative \"Permite saque\" na tela de Lojas.",
+    "WITHDRAWAL_NOT_FOUND": "O saque não foi encontrado."
   },
   "warnings": {
     "FEES_NOT_CONFIGURED": "As taxas da loja não estão configuradas.",
@@ -436,7 +441,10 @@
     "depositedAt": "Data do aporte",
     "storeId": "Loja",
     "note": "Observação",
-    "saleHoldDays": "Retenção do saldo"
+    "saleHoldDays": "Retenção do saldo",
+    "amountStoreCents": "Valor sacado",
+    "feeCents": "Taxa paga",
+    "withdrawnAt": "Data do saque"
   },
   "errorDetails": {
     "INVALID_RATE": "A taxa deve ser maior ou igual a 0% e menor que 100%, com no máximo {maxDecimals} casas decimais no percentual.",
@@ -755,7 +763,7 @@
   },
   "profit": {
     "title": "Lucro real",
-    "subtitle": "Acompanhe o dinheiro que você colocou nas lojas. Saques, saldos e o resumo chegam nas próximas atualizações."
+    "subtitle": "Acompanhe o dinheiro que você colocou e o que sacou das lojas. Saldos e o resumo chegam nas próximas atualizações."
   },
   "deposits": {
     "title": "Aportes",
@@ -800,6 +808,65 @@
       "note": "Observação (opcional)",
       "amountRequired": "Informe o valor do aporte.",
       "invalidMoney": "Valor inválido. Use o formato 1,25, maior que zero.",
+      "invalidDate": "Data inválida."
+    }
+  },
+  "withdrawals": {
+    "title": "Saques",
+    "intro": "O que você sacou das lojas para a sua conta. O valor recebido em R$ é o que entra no lucro real.",
+    "count": {
+      "one": "{count} saque",
+      "other": "{count} saques"
+    },
+    "total": "Total recebido em saques: {value}",
+    "new": "Novo saque",
+    "empty": "Nenhum saque registrado",
+    "emptyHint": "Registre cada saque feito de uma loja para a sua conta. Isso entra no cálculo do lucro real.",
+    "loadError": "Não foi possível carregar os saques: {reason}",
+    "gone": "O saque não existe mais. A lista foi atualizada.",
+    "created": "Saque de {value} registrado.",
+    "updated": "Saque atualizado.",
+    "deleted": "Saque de {value} excluído.",
+    "legacyNoStore": "Sem loja (registro antigo)",
+    "feeNotInformed": "—",
+    "inactiveStore": "{name} (inativa)",
+    "noWithdrawalStores": "Nenhuma loja ativa permite saque. Ative \"Permite saque\" em uma loja para registrar saques.",
+    "goToStores": "Abrir Lojas",
+    "columns": {
+      "date": "Data",
+      "store": "Loja",
+      "amount": "Valor sacado",
+      "fee": "Taxa paga",
+      "received": "Recebido (R$)",
+      "note": "Observação",
+      "actions": "Ações"
+    },
+    "actions": {
+      "edit": "Editar",
+      "delete": "Excluir"
+    },
+    "deleteTitle": "Excluir saque",
+    "deleteMessage": "Excluir o saque de {value} feito em {date}? Esta ação não pode ser desfeita.",
+    "confirmDelete": "Excluir",
+    "form": {
+      "createTitle": "Novo saque",
+      "editTitle": "Editar saque",
+      "store": "Loja",
+      "chooseStore": "Escolha a loja",
+      "legacyHint": "Este saque é de antes das lojas serem obrigatórias. Escolha a loja e o valor sacado para poder salvá-lo.",
+      "amount": "Valor sacado ({currency})",
+      "fee": "Taxa paga ({currency})",
+      "feeHint": "Deixe vazio se não souber (\"não informada\"); 0 = não pagou taxa.",
+      "feeSuggested": "Sugerida pela taxa de saque da loja. Você pode editar.",
+      "feeNotConfigured": "A loja não tem taxa de saque configurada; informe a taxa paga, se souber.",
+      "received": "Valor recebido na conta (R$)",
+      "date": "Data do saque",
+      "note": "Observação (opcional)",
+      "storeRequired": "Escolha a loja do saque.",
+      "amountRequired": "Informe o valor sacado.",
+      "invalidMoney": "Valor inválido. Use o formato 1,25, maior que zero.",
+      "invalidFee": "Taxa inválida. Use o formato 1,25 (0 é permitido) ou deixe vazio.",
+      "receivedRequired": "Informe o valor recebido na conta.",
       "invalidDate": "Data inválida."
     }
   }
