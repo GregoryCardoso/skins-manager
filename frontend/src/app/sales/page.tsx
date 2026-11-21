@@ -28,7 +28,7 @@ function SalesView() {
   const router = useRouter();
   const pathname = usePathname() ?? '/sales';
   const searchParams = useSearchParams();
-  const { usdBrlRate } = usePreferences();
+  const { usdBrlRate, reloadFxRate } = usePreferences();
 
   const searchKey = searchParams.toString();
   const filters = useMemo(() => parseSalesFilters(new URLSearchParams(searchKey)), [searchKey]);
@@ -77,13 +77,19 @@ function SalesView() {
     [router, pathname],
   );
 
+  // Ao tentar de novo, relê também a cotação (que pode não ter carregado com o backend fora do ar).
+  const retryAfterOutage = () => {
+    reloadFxRate();
+    reload();
+  };
+
   const connectionProblem = error instanceof ApiRequestError && CONNECTION_ERRORS.includes(error.code);
   if (connectionProblem) {
     return (
       <>
         <h1>{t('sales.title')}</h1>
         <SystemStatus />
-        <button type="button" className={styles.retry} onClick={reload}>{t('common.retry')}</button>
+        <button type="button" className={styles.retry} onClick={retryAfterOutage}>{t('common.retry')}</button>
       </>
     );
   }

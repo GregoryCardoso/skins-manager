@@ -37,7 +37,7 @@ interface PreferencesContextValue {
   saveFxRefreshSource: (source: FxRefreshSource) => Promise<void>;
   // Busca a cotação na fonte salva e grava direto; rejeita com o erro da API.
   refreshFxRate: () => Promise<FxRefreshResult>;
-  // Relê a cotação do servidor (usado quando o backend volta a responder).
+  // Relê a cotação do servidor (usado ao tentar de novo depois de o backend ter ficado fora do ar).
   reloadFxRate: () => void;
 }
 
@@ -162,7 +162,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     getSettings()
       .then(applyFx)
       .catch(() => {
-        // Backend fora do ar: o indicador de status já mostra o problema.
+        // Backend fora do ar: a página mostra o painel de aviso.
       });
   }, [applyFx]);
 

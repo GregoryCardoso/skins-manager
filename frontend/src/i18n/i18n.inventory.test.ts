@@ -29,9 +29,7 @@ const NEW_KEYS = [
   'filters.order', 'filters.orderDesc', 'filters.orderAsc',
   'tradeLock.locked', 'tradeLock.released', 'tradeLock.remaining', 'tradeLock.until',
   'tradeLock.units.d', 'tradeLock.units.h', 'tradeLock.units.min',
-  'statusIndicator.online', 'statusIndicator.offline', 'statusIndicator.checking', 'statusIndicator.catalog',
-  'statusIndicator.details', 'statusIndicator.close',
-  'fx.label', 'fx.value', 'fx.notSet', 'fx.edit', 'fx.save', 'fx.cancel', 'fx.saving', 'fx.invalidInput',
+  'fx.saving', 'fx.invalidInput',
 ];
 
 describe.each([['pt-BR', ptBR], ['en', en]])('chaves da 4B.2 em %s', (_name, dict) => {
@@ -68,8 +66,6 @@ describe.each([['pt-BR', ptBR], ['en', en]])('chaves da 4B.2 em %s', (_name, dic
     expect(get(dict, 'filters.stagnantOnly')).toContain('{days}');
     expect(get(dict, 'tradeLock.remaining')).toContain('{time}');
     expect(get(dict, 'tradeLock.until')).toContain('{date}');
-    expect(get(dict, 'statusIndicator.catalog')).toContain('{total}');
-    expect(get(dict, 'fx.value')).toContain('{rate}');
     expect(get(dict, 'inventory.count')).toContain('{count}');
   });
 });

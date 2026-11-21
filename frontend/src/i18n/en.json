@@ -288,21 +288,7 @@
       "DEMOROU_VENDER": "Slow to sell"
     }
   },
-  "statusIndicator": {
-    "online": "Online",
-    "offline": "Offline",
-    "checking": "Checking",
-    "catalog": "Catalog: {total}",
-    "details": "Show system details",
-    "close": "Close"
-  },
   "fx": {
-    "label": "USD→BRL rate",
-    "value": "US$ 1 = {rate}",
-    "notSet": "Rate not set",
-    "edit": "Edit",
-    "save": "Save",
-    "cancel": "Cancel",
     "saving": "Saving...",
     "invalidInput": "Enter a number greater than zero (e.g. 5.40).",
     "sourceShort": {

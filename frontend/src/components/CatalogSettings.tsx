@@ -10,6 +10,29 @@ import styles from './settings.module.css';
 
 const SOURCES: CatalogSource[] = ['SKINS', 'STICKERS', 'CRATES', 'KEYCHAINS', 'AGENTS'];
 
+// Total do catálogo, contagens por fonte e data da última atualização.
+export function CatalogSummary({ status }: { status: CatalogStatus }) {
+  const t = useT();
+  const locale = useLanguage();
+  return (
+    <>
+      <p className={styles.catalogTotal}>{t('catalog.total', { total: formatInteger(status.total, locale) })}</p>
+      <ul className={styles.counts}>
+        {SOURCES.map((source) => (
+          <li key={source}>
+            {t(`catalog.source.${source}`)}: {formatInteger(status.countsBySource[source] ?? 0, locale)}
+          </li>
+        ))}
+      </ul>
+      <p className={styles.muted}>
+        {status.catalogUpdatedAt
+          ? t('catalog.updatedAt', { date: formatDateTime(status.catalogUpdatedAt, locale) })
+          : t('catalog.neverUpdated')}
+      </p>
+    </>
+  );
+}
+
 // Catálogo de itens (D152): status, contagens e o botão "atualizar catálogo" (movido do painel de status).
 export default function CatalogSettings() {
   const t = useT();
@@ -52,21 +75,7 @@ export default function CatalogSettings() {
     <section className={styles.card} aria-labelledby="settings-catalog-title">
       <h2 id="settings-catalog-title" className={styles.cardTitle}>{t('settings.catalog.title')}</h2>
       {status ? (
-        <>
-          <p>{t('catalog.total', { total: formatInteger(status.total, locale) })}</p>
-          <ul className={styles.counts}>
-            {SOURCES.map((source) => (
-              <li key={source}>
-                {t(`catalog.source.${source}`)}: {formatInteger(status.countsBySource[source] ?? 0, locale)}
-              </li>
-            ))}
-          </ul>
-          <p className={styles.muted}>
-            {status.catalogUpdatedAt
-              ? t('catalog.updatedAt', { date: formatDateTime(status.catalogUpdatedAt, locale) })
-              : t('catalog.neverUpdated')}
-          </p>
-        </>
+        <CatalogSummary status={status} />
       ) : loadError ? (
         <p className={styles.error} role="alert">{errorMessageFor(loadError, tLoose, locale)}</p>
       ) : (

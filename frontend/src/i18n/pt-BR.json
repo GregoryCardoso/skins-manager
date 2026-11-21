@@ -288,21 +288,7 @@
       "DEMOROU_VENDER": "Demorou para vender"
     }
   },
-  "statusIndicator": {
-    "online": "Online",
-    "offline": "Offline",
-    "checking": "Verificando",
-    "catalog": "Catálogo: {total}",
-    "details": "Ver detalhes do sistema",
-    "close": "Fechar"
-  },
   "fx": {
-    "label": "Cotação USD→BRL",
-    "value": "US$ 1 = {rate}",
-    "notSet": "Cotação não definida",
-    "edit": "Editar",
-    "save": "Salvar",
-    "cancel": "Cancelar",
     "saving": "Salvando...",
     "invalidInput": "Digite um número maior que zero (ex.: 5,40).",
     "sourceShort": {

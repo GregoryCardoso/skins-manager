@@ -5,9 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 import { useT } from '@/i18n/I18nProvider';
 import styles from './AppHeader.module.css';
-import FxRateControl from './FxRateControl';
 import HeaderControls from './HeaderControls';
-import SystemStatusIndicator from './SystemStatusIndicator';
 
 export default function AppHeader() {
   const t = useT();
@@ -40,8 +38,6 @@ export default function AppHeader() {
           {t('nav.settings')}
         </Link>
       </nav>
-      <SystemStatusIndicator />
-      <FxRateControl />
       <HeaderControls />
     </header>
   );

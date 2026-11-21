@@ -8,6 +8,7 @@ import FxRateSettings from '@/components/FxRateSettings';
 import PreferencesSettings from '@/components/PreferencesSettings';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
+import { usePreferences } from '@/components/PreferencesProvider';
 import { ApiRequestError, getSettings } from '@/services/api';
 import type { Settings } from '@/types/api';
 import styles from './page.module.css';
@@ -19,6 +20,7 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [error, setError] = useState<unknown>(null);
   const [reloadToken, setReloadToken] = useState(0);
+  const { reloadFxRate } = usePreferences();
 
   useEffect(() => {
     const controller = new AbortController();
@@ -41,7 +43,10 @@ export default function SettingsPage() {
       {error !== null && (
         <div className={styles.error} role="alert">
           <p>{t('settings.loadError', { reason: errorMessageFor(error, tLoose, language) })}</p>
-          <button type="button" className={styles.retry} onClick={() => setReloadToken((n) => n + 1)}>
+          <button type="button" className={styles.retry} onClick={() => {
+              reloadFxRate();
+              setReloadToken((n) => n + 1);
+            }}>
             {t('common.retry')}
           </button>
         </div>
