@@ -1,5 +1,6 @@
 const { ValidationError } = require('../errors/AppError');
 const { MAX_AMOUNT_CENTS } = require('../config/constants');
+const { isPlainObject } = require('./validationHelpers');
 
 function validateStoreQuery(req, res, next) {
   const raw = req.query.activeOnly;
@@ -44,7 +45,7 @@ const BODY_FIELDS = Object.freeze({
 });
 
 function checkBodyShape(body, { requireKeys }) {
-  if (body === null || typeof body !== 'object' || Array.isArray(body)) {
+  if (!isPlainObject(body)) {
     return new ValidationError('O corpo da requisição deve ser um objeto JSON.', 'INVALID_BODY');
   }
   const keys = Object.keys(body);

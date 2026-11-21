@@ -25,7 +25,8 @@
     "inventory": "Inventory",
     "sales": "Sales",
     "main": "Main navigation",
-    "stores": "Stores"
+    "stores": "Stores",
+    "settings": "Settings"
   },
   "header": {
     "preferenceNotSaved": "Preference not saved on the server: {reason}",
@@ -56,7 +57,8 @@
     "server": "Server",
     "online": "Online",
     "offline": "Offline",
-    "lastResponse": "Response at {time}"
+    "lastResponse": "Response at {time}",
+    "manageInSettings": "Update in Settings"
   },
   "catalog": {
     "title": "Catalog",
@@ -147,7 +149,14 @@
     "STORE_IN_USE": "The store was already used and can only be deactivated.",
     "PRIMARY_STORE_REQUIRED": "There must always be a primary store. Choose another primary store first.",
     "PRIMARY_STORE_INACTIVE": "The primary store cannot be inactive. Choose another primary store first.",
-    "SALE_FEE_INCOMPLETE": "Fill in the sale fee type and rate together, or leave both empty."
+    "SALE_FEE_INCOMPLETE": "Fill in the sale fee type and rate together, or leave both empty.",
+    "PTAX_FETCH_FAILED": "Could not query the Central Bank PTAX rate. Check your internet connection.",
+    "PTAX_NOT_FOUND": "The Central Bank has not published the PTAX rate in recent days. Try again later or type the rate manually.",
+    "PTAX_INVALID_RESPONSE": "The Central Bank response had an unexpected format or an invalid value. Type the rate manually.",
+    "PTAX_REFRESH_IN_PROGRESS": "A rate update is already in progress.",
+    "INVALID_FAST_TURNOVER_DAYS": "Fast turnover must be a whole number from 1 to 364 days.",
+    "INVALID_SLOW_ITEM_DAYS": "The stagnant limit must be a whole number from 2 to 365 days.",
+    "AGING_THRESHOLDS_ORDER": "Fast turnover must be lower than the stagnant limit."
   },
   "warnings": {
     "FEES_NOT_CONFIGURED": "The store fees are not configured.",
@@ -180,7 +189,7 @@
     "informativeStore": "Store: {store}",
     "legacy": "Not linked to the catalog",
     "sold": "Sold",
-    "turnaround": "Sold in {days}",
+    "turnaround": "Sold {days} after unlock",
     "inspect": "Inspect",
     "inspectInvalid": "Invalid inspect link",
     "actions": {
@@ -192,7 +201,11 @@
       "lockedHint": "Trade locked until {date}",
       "history": "History"
     },
-    "itemGone": "This item no longer exists (it may have been deleted in another tab). The list was refreshed."
+    "itemGone": "This item no longer exists (it may have been deleted in another tab). The list was refreshed.",
+    "daysForSale": "for sale for {days}",
+    "daysInInventory": "in inventory for {days}",
+    "inTradeLock": "In trade lock · {time}",
+    "daysHeld": "{days} since purchase"
   },
   "filters": {
     "label": "Inventory filters",
@@ -200,7 +213,7 @@
     "statusAll": "All",
     "category": "Category",
     "categoryAll": "All",
-    "stagnantOnly": "Stagnant only (over {days} days)",
+    "stagnantOnly": "Stagnant only (for sale for over {days} days)",
     "order": "Order by age",
     "orderDesc": "Oldest first",
     "orderAsc": "Newest first"
@@ -259,7 +272,8 @@
     "agingBucket": {
       "RECENTE": "Recent",
       "EM_GIRO": "Moving",
-      "AGARRADO": "Stagnant"
+      "AGARRADO": "Stagnant",
+      "EM_TRADE_LOCK": "In trade lock"
     },
     "turnaroundBucket": {
       "GIRO_RAPIDO": "Fast turnover",
@@ -411,7 +425,8 @@
     "FLOAT_OUT_OF_RANGE": "This item's float must be between {min} and {max}.",
     "FIELD_TOO_LONG": "Maximum of {max} characters.",
     "UNKNOWN_FIELD": "Unknown field: {field}.",
-    "INVALID_AMOUNT": "The maximum allowed amount is {max}."
+    "INVALID_AMOUNT": "The maximum allowed amount is {max}.",
+    "AGING_THRESHOLDS_ORDER": "Fast turnover ({fast} days) must be lower than the stagnant limit ({slow} days)."
   },
   "sales": {
     "title": "Sales",
@@ -440,7 +455,9 @@
       "soldAt": "Sale date",
       "days": "Turnaround",
       "actions": "Actions"
-    }
+    },
+    "daysAfterRelease": "{days} after unlock",
+    "daysHeld": "{days} since purchase"
   },
   "salesFilters": {
     "label": "Sales filters",
@@ -473,7 +490,7 @@
     "totalSold": "Total sold",
     "totalNet": "Total net received",
     "totalProfit": "Total profit",
-    "avgTurnaround": "Average turnaround",
+    "avgTurnaround": "Average turnaround (after unlock)",
     "avgTurnaroundValue": "{days} days",
     "usdNote": "Amounts in US$ using the rate recorded on each sale.",
     "profitTitle": "Net {net} − cost {cost}"
@@ -482,7 +499,7 @@
     "heading": "Item history",
     "title": "History: {name}",
     "soldCount": "Sold",
-    "avgDaysToSell": "Average time to sell",
+    "avgDaysToSell": "Average time to sell (since unlock)",
     "avgPurchaseCost": "Average cost",
     "avgCostUnits": {
       "one": "of {count} unit",
@@ -589,5 +606,52 @@
     "nameRequired": "Enter the store name.",
     "created": "Store \"{name}\" created.",
     "updated": "Store \"{name}\" updated."
+  },
+  "settings": {
+    "title": "Settings",
+    "fx": {
+      "title": "USD→BRL rate",
+      "current": "Current rate",
+      "notSet": "Rate not set",
+      "value": "US$ 1 = {rate}",
+      "sourceLabel": "Source",
+      "source": {
+        "MANUAL": "Manual",
+        "PTAX": "PTAX sell rate (Central Bank)"
+      },
+      "ptaxDate": "PTAX of {date}",
+      "manualLabel": "Manual rate",
+      "save": "Save rate",
+      "saved": "Rate saved (manual).",
+      "refreshPtax": "Update rate (PTAX)",
+      "refreshing": "Querying the Central Bank...",
+      "refreshed": "Rate updated from the PTAX sell rate of {date}: US$ 1 = {rate}.",
+      "note": "PTAX is only queried when you click the button and is saved right away. Rates already stored on items do not change."
+    },
+    "preferences": {
+      "title": "Preferences",
+      "theme": "Theme",
+      "language": "Language"
+    },
+    "aging": {
+      "title": "Turnover limits",
+      "intro": "Days are counted from the trade lock release (or from purchase when there is no lock). Changing the limits reclassifies items without changing any data.",
+      "fast": "Fast turnover up to",
+      "slow": "Stagnant above",
+      "days": "days",
+      "defaultValue": "Default: {days} days",
+      "restore": "Restore default",
+      "save": "Save limits",
+      "saved": "Limits saved.",
+      "restored": "Default restored.",
+      "noChanges": "Nothing to save.",
+      "middle": "In turnover: from {from} to {to} days.",
+      "adjusted": "The saved limits do not match the current system default; fast turnover is being computed as {fast} days. Save new limits to fix this.",
+      "invalidNumber": "Enter a whole number (e.g. 7)."
+    },
+    "catalog": {
+      "title": "Item catalog"
+    },
+    "loadError": "Could not load the settings: {reason}"
   }
 }

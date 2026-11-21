@@ -72,7 +72,7 @@ describe('POST /api/items/:id/sell', () => {
     expectError(await sell(item.id, sellBody({ soldAt: 'nunca' })), 400, 'INVALID_DATE');
     const ok = await sell(item.id, sellBody({ soldAt: '2026-11-10T12:00:00.000Z' }));
     expect(ok.status).toBe(200);
-    expect(ok.body.data.item.aging).toEqual({ turnaroundDays: 0, turnaroundBucket: 'GIRO_RAPIDO' });
+    expect(ok.body.data.item.aging).toEqual({ turnaroundDays: 0, turnaroundBucket: 'GIRO_RAPIDO', daysHeld: 0 });
   });
 
   test('23:59 BRT de hoje aceito', async () => {

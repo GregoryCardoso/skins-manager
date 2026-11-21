@@ -32,17 +32,39 @@ export interface CatalogRefreshResult extends CatalogStatus {
   linkedLegacyItems: number;
 }
 
+export type FxRateSource = 'MANUAL' | 'PTAX';
+
 export interface Settings {
   usdBrlRate: number | null;
   usdBrlRateUpdatedAt: string | null;
+  // Origem da cotação (null = nunca definida) e data da PTAX (só com origem PTAX).
+  usdBrlRateSource: FxRateSource | null;
+  ptaxQuotedAt: string | null;
   catalogUpdatedAt: string | null;
   theme: Theme;
   language: Language;
+  // Limites de giro (D159): valores salvos (null = padrão), efetivos e padrões.
+  fastTurnoverDaysCustom: number | null;
+  slowItemDaysCustom: number | null;
+  fastTurnoverDays: number;
+  slowItemDays: number;
+  fastTurnoverDaysDefault: number;
+  slowItemDaysDefault: number;
+  agingThresholdsAdjusted: boolean;
   updatedAt: string | null;
 }
 export interface PreferencesPatch {
   theme?: ThemeChoice;
   language?: Language;
+  // Inteiro ou null (volta ao padrão).
+  fastTurnoverDays?: number | null;
+  slowItemDays?: number | null;
+}
+
+// Resposta de POST /settings/fx-rate/ptax (D147): PTAX de venda do dia útil mais recente com cotação.
+export interface PtaxRefreshResult {
+  settings: Settings;
+  ptax: { rate: number; buyRate: number | null; sellRate: number; quotedAt: string; quoteDate: string };
 }
 
 // --- Itens, lojas e cotação (4B.2; espelham D49/D72 do backend) ---
@@ -54,7 +76,7 @@ export type Variant = 'NORMAL' | 'STATTRAK' | 'SOUVENIR';
 export type Exterior = 'FN' | 'MW' | 'FT' | 'WW' | 'BS';
 export type AcquisitionType = 'GANHEI' | 'COMPRA';
 export type ItemStatus = 'EM_ESTOQUE' | 'VENDIDO';
-export type AgingBucket = 'RECENTE' | 'EM_GIRO' | 'AGARRADO';
+export type AgingBucket = 'RECENTE' | 'EM_GIRO' | 'AGARRADO' | 'EM_TRADE_LOCK';
 export type TurnaroundBucket = 'GIRO_RAPIDO' | 'GIRO_NORMAL' | 'DEMOROU_VENDER';
 export type WarningCode = 'FEES_NOT_CONFIGURED' | 'FX_NOT_CONFIGURED' | 'BELOW_FEE' | 'PRICE_OVERFLOW';
 
@@ -65,9 +87,11 @@ export interface TradeLock {
   tradeUnlockAt: string | null;
 }
 
+// Em estoque (D160): `daysForSale` conta da liberação do trade lock (nulo em lock); `daysInInventory` é só informação.
+// Vendido: `turnaroundDays` conta da liberação até a venda; `daysHeld` (desde a aquisição) é só informação.
 export type Aging =
-  | { daysInInventory: number; agingBucket: AgingBucket }
-  | { turnaroundDays: number; turnaroundBucket: TurnaroundBucket };
+  | { daysInInventory: number; daysForSale: number | null; agingBucket: AgingBucket }
+  | { turnaroundDays: number; turnaroundBucket: TurnaroundBucket; daysHeld: number };
 
 export interface ApproxAmount {
   currency: Currency;
@@ -161,6 +185,7 @@ export interface ItemView {
 
 export interface ItemListMeta {
   count: number;
+  fastTurnoverDays: number;
   slowItemDays: number;
   usdBrlRate: number | null;
   generatedAt: string;

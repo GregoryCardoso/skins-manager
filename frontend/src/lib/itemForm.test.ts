@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'vitest';
 import {
   applyCatalogChoice, applyPurchaseStore, buildCreateBody, buildPatchBody, fieldVisibility, initialCreateState,
-  stateFromItem, variantOptions, type CatalogChoice, type FormContext,
+  stateFromItem, variantOptions, setAcquiredAt, setAcquisitionType, setTradeUnlockAt, addSevenDays,
+  type CatalogChoice, type FormContext,
 } from './itemForm';
 import { STORES, makeItem } from './testFixtures';
 
@@ -21,9 +22,74 @@ function created(choice: CatalogChoice, mutate: (s: ReturnType<typeof initialCre
 }
 
 describe('estado inicial', () => {
-  test('COMPRA, loja principal e data de compra agora; trade lock vazio', () => {
+  test('COMPRA, loja principal e data de compra agora; trade lock = compra + 7 dias (D161)', () => {
     const s = initialCreateState(ctx);
-    expect(s).toMatchObject({ acquisitionType: 'COMPRA', purchaseStoreId: 1, tradeUnlockAt: '', acquiredAt: '2026-11-20T12:00', fxText: '' });
+    expect(s).toMatchObject({
+      acquisitionType: 'COMPRA', purchaseStoreId: 1, tradeUnlockAt: '2026-11-27T12:00', tradeUnlockAuto: true,
+      acquiredAt: '2026-11-20T12:00', fxText: '',
+    });
+  });
+});
+
+describe('fim do trade lock automático (D161)', () => {
+  const base = () => initialCreateState(ctx);
+
+  test('GANHEI vem sem trade lock; COMPRA com compra + 7 dias, e volta a acompanhar o tipo', () => {
+    const ganhei = setAcquisitionType(base(), 'GANHEI');
+    expect(ganhei).toMatchObject({ acquisitionType: 'GANHEI', tradeUnlockAt: '', tradeUnlockAuto: true });
+    expect(setAcquisitionType(ganhei, 'COMPRA')).toMatchObject({ tradeUnlockAt: '2026-11-27T12:00', tradeUnlockAuto: true });
+  });
+
+  test('trocar a data de compra recalcula a sugestão (COMPRA) e não preenche em GANHEI', () => {
+    expect(setAcquiredAt(base(), '2026-11-10T08:30')).toMatchObject({ acquiredAt: '2026-11-10T08:30', tradeUnlockAt: '2026-11-17T08:30', tradeUnlockAuto: true });
+    const ganhei = setAcquisitionType(base(), 'GANHEI');
+    expect(setAcquiredAt(ganhei, '2026-11-10T08:30').tradeUnlockAt).toBe('');
+  });
+
+  test('data de compra apagada ou inválida deixa a sugestão vazia sem desligar o automático', () => {
+    expect(setAcquiredAt(base(), '')).toMatchObject({ tradeUnlockAt: '', tradeUnlockAuto: true });
+    expect(setAcquiredAt(base(), '2026-02-30T10:00')).toMatchObject({ tradeUnlockAt: '', tradeUnlockAuto: true });
+  });
+
+  test('digitar ou limpar o campo desliga o automático: tipo e data de compra não o alteram mais', () => {
+    const typed = setTradeUnlockAt(base(), '2026-12-01T10:00');
+    expect(typed).toMatchObject({ tradeUnlockAt: '2026-12-01T10:00', tradeUnlockAuto: false });
+    expect(setAcquisitionType(typed, 'GANHEI').tradeUnlockAt).toBe('2026-12-01T10:00');
+    expect(setAcquiredAt(typed, '2026-11-01T10:00').tradeUnlockAt).toBe('2026-12-01T10:00');
+    const cleared = setTradeUnlockAt(base(), '');
+    expect(cleared).toMatchObject({ tradeUnlockAt: '', tradeUnlockAuto: false });
+    expect(setAcquiredAt(cleared, '2026-11-01T10:00').tradeUnlockAt).toBe('');
+    expect(setAcquisitionType(cleared, 'GANHEI').tradeUnlockAt).toBe('');
+    expect(setAcquisitionType(setAcquisitionType(cleared, 'GANHEI'), 'COMPRA').tradeUnlockAt).toBe('');
+  });
+
+  test('botão "+7 dias" preenche e desliga o automático', () => {
+    const s = addSevenDays(setAcquiredAt(base(), '2026-11-10T08:30'), ctx.now);
+    expect(s).toMatchObject({ tradeUnlockAt: '2026-11-17T08:30', tradeUnlockAuto: false });
+    expect(setAcquiredAt(s, '2026-11-01T08:30').tradeUnlockAt).toBe('2026-11-17T08:30');
+  });
+
+  test('edição de item existente não sugere nada', () => {
+    const item = makeItem({ tradeUnlockAt: null, acquisitionType: 'GANHEI' });
+    const s = stateFromItem(item, 'pt-BR');
+    expect(s).toMatchObject({ tradeUnlockAt: '', tradeUnlockAuto: false });
+    expect(setAcquisitionType(s, 'COMPRA').tradeUnlockAt).toBe('');
+    expect(setAcquiredAt(s, '2026-11-01T10:00').tradeUnlockAt).toBe('');
+    const locked = stateFromItem(makeItem({ tradeUnlockAt: '2026-11-25T12:00:00.000Z' }), 'pt-BR');
+    expect(locked.tradeUnlockAuto).toBe(false);
+    expect(setAcquisitionType(locked, 'GANHEI').tradeUnlockAt).toBe(locked.tradeUnlockAt);
+  });
+
+  test('corpo: a sugestão automática de COMPRA é enviada; GANHEI e campo vazio não enviam tradeUnlockAt', () => {
+    const compra = applyCatalogChoice(base(), AK);
+    const r = buildCreateBody({ ...compra, priceText: '1' }, ctx);
+    expect(r.ok && r.body.tradeUnlockAt).toMatch(/^2026-11-27T12:00:00[+-]\d{2}:\d{2}$/);
+    const ganhei = setAcquisitionType(applyCatalogChoice(base(), AK), 'GANHEI');
+    const g = buildCreateBody(ganhei, ctx);
+    expect(g.ok && 'tradeUnlockAt' in g.body).toBe(false);
+    const cleared = setTradeUnlockAt({ ...compra, priceText: '1' }, '');
+    const c = buildCreateBody(cleared, ctx);
+    expect(c.ok && 'tradeUnlockAt' in c.body).toBe(false);
   });
 });
 

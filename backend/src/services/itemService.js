@@ -2,7 +2,6 @@
 
 // Orquestra os services puros para o CRUD, a venda e o desfazer venda de itens (D50).
 // As funções `build*` e `toItemView` são puras (sem banco) e exportadas para teste unitário.
-const env = require('../config/env');
 const Item = require('../models/Item');
 const Store = require('../models/Store');
 const Setting = require('../models/Setting');
@@ -23,6 +22,7 @@ const { minPricesForItem, resolveSaleNet } = require('./pricingService');
 const { computeSaleProfitUsdCents, buildSaleInfo } = require('./profitService');
 const { buildStatsIndex, buildStatsKey, computeStats, computeSalesSummary } = require('./itemStatsService');
 const { getStoreOrFail } = require('./storeService');
+const { getAgingThresholds } = require('./settingsService');
 
 const ACQUISITION_TYPES = ['GANHEI', 'COMPRA'];
 
@@ -341,7 +341,7 @@ function toCatalogSummary(entry) {
 
 function toItemView(
   item,
-  { stores, settings, statsIndex, catalogById = new Map(), now = new Date(), slowItemDays = env.slowItemDays }
+  { stores, settings, statsIndex, catalogById = new Map(), now = new Date(), thresholds = getAgingThresholds() }
 ) {
   const inStock = item.status === 'EM_ESTOQUE';
   return {
@@ -350,7 +350,7 @@ function toItemView(
     isLegacy: isNil(item.catalogId) && CATALOG_CATEGORIES.includes(item.category),
     catalog: isNil(item.catalogId) ? null : toCatalogSummary(catalogById.get(item.catalogId)),
     tradeLock: getTradeLockStatus(item.tradeUnlockAt, now),
-    aging: getAging(item, { slowItemDays, now }),
+    aging: getAging(item, { thresholds, now }),
     minPrices: inStock ? minPricesForItem({ item, stores, settings }) : null,
     saleProfitUsdCents: computeSaleProfitUsdCents(item),
     saleInfo: buildSaleInfo(item, settings ? settings.usdBrlRate : null),
@@ -372,9 +372,9 @@ function inTransaction(fn) {
   return runInTransaction(fn);
 }
 
-function viewOf(item, { now, slowItemDays }) {
+function viewOf(item, { now, thresholds }) {
   const { stores, settings, statsIndex, catalogById } = loadContext();
-  return toItemView(item, { stores, settings, statsIndex, catalogById, now, slowItemDays });
+  return toItemView(item, { stores, settings, statsIndex, catalogById, now, thresholds });
 }
 
 function findOrFail(id) {
@@ -383,23 +383,29 @@ function findOrFail(id) {
   return item;
 }
 
-function listItems(query = {}, { now = new Date(), slowItemDays = env.slowItemDays } = {}) {
+function listItems(query = {}, { now = new Date(), thresholds = getAgingThresholds() } = {}) {
   const { items: all, stores, settings, statsIndex, catalogById } = loadContext();
   let items = all;
   if (query.status) items = items.filter((i) => i.status === query.status);
   if (query.category) items = items.filter((i) => i.category === query.category);
-  if (query.stagnantOnly) items = filterStagnant(items, slowItemDays, now);
+  if (query.stagnantOnly) items = filterStagnant(items, thresholds, now);
   if (query.sortBy === 'age') items = sortByAge(items, query.order ?? 'desc', now);
   else if (query.sortBy === 'turnaround') items = sortByTurnaround(items, query.order ?? 'asc');
 
   return {
-    items: items.map((item) => toItemView(item, { stores, settings, statsIndex, catalogById, now, slowItemDays })),
-    meta: { count: items.length, slowItemDays, usdBrlRate: settings.usdBrlRate, generatedAt: now.toISOString() },
+    items: items.map((item) => toItemView(item, { stores, settings, statsIndex, catalogById, now, thresholds })),
+    meta: {
+      count: items.length,
+      fastTurnoverDays: thresholds.fastTurnoverDays,
+      slowItemDays: thresholds.slowItemDays,
+      usdBrlRate: settings.usdBrlRate,
+      generatedAt: now.toISOString(),
+    },
   };
 }
 
 // Vendas (D124/D127): lista filtrada/ordenada + resumo sobre o mesmo conjunto. Estatísticas usam todos os itens.
-function listSales(query = {}, { now = new Date(), slowItemDays = env.slowItemDays } = {}) {
+function listSales(query = {}, { now = new Date(), thresholds = getAgingThresholds() } = {}) {
   const { items: all, stores, settings, statsIndex, catalogById } = loadContext();
   let items = all.filter((i) => i.status === 'VENDIDO');
   if (!isNil(query.saleStoreId)) items = items.filter((i) => i.saleStoreId === query.saleStoreId);
@@ -408,11 +414,12 @@ function listSales(query = {}, { now = new Date(), slowItemDays = env.slowItemDa
   if (sortKey === 'turnaround') items = sortByTurnaround(items, query.order ?? 'asc');
   else items = sortBySoldAt(items, query.order ?? 'desc');
   return {
-    items: items.map((item) => toItemView(item, { stores, settings, statsIndex, catalogById, now, slowItemDays })),
+    items: items.map((item) => toItemView(item, { stores, settings, statsIndex, catalogById, now, thresholds })),
     summary: computeSalesSummary(items, { usdBrlRate: settings.usdBrlRate }),
     meta: {
       count: items.length,
-      slowItemDays,
+      fastTurnoverDays: thresholds.fastTurnoverDays,
+      slowItemDays: thresholds.slowItemDays,
       usdBrlRate: settings.usdBrlRate,
       generatedAt: now.toISOString(),
       soldFrom: query.soldFrom ?? null,
@@ -422,12 +429,12 @@ function listSales(query = {}, { now = new Date(), slowItemDays = env.slowItemDa
 }
 
 function getItem(id, ctx = {}) {
-  const { now = new Date(), slowItemDays = env.slowItemDays } = ctx;
-  return viewOf(findOrFail(id), { now, slowItemDays });
+  const { now = new Date(), thresholds = getAgingThresholds() } = ctx;
+  return viewOf(findOrFail(id), { now, thresholds });
 }
 
 function createItem(input, ctx = {}) {
-  const { now = new Date(), slowItemDays = env.slowItemDays } = ctx;
+  const { now = new Date(), thresholds = getAgingThresholds() } = ctx;
   const catalogEntry = loadCatalogEntry(input, null);
   const identity = resolveItemIdentity({
     body: input, catalogEntry, freeNameCatalogMatch: lookupFreeNameMatch(input, null),
@@ -436,11 +443,11 @@ function createItem(input, ctx = {}) {
   const store = isNil(input.purchaseStoreId) ? null : getStoreOrFail(input.purchaseStoreId, { field: 'purchaseStoreId' });
   const record = buildItemRecord(merged, { store, settings: Setting.get(), now, body: input });
   if (catalogEntry) assertFloatInCatalogRange(record.floatValue, catalogEntry);
-  return inTransaction(() => viewOf(Item.create({ ...record, catalogId: identity.catalogId }, { now }), { now, slowItemDays }));
+  return inTransaction(() => viewOf(Item.create({ ...record, catalogId: identity.catalogId }, { now }), { now, thresholds }));
 }
 
 function updateItem(id, partial, ctx = {}) {
-  const { now = new Date(), slowItemDays = env.slowItemDays } = ctx;
+  const { now = new Date(), thresholds = getAgingThresholds() } = ctx;
   const existing = findOrFail(id);
   const catalogEntry = loadCatalogEntry(partial, existing);
   const identity = resolveItemIdentity({
@@ -470,7 +477,7 @@ function updateItem(id, partial, ctx = {}) {
   if (catalogEntry && (catalogChanged || hasKey(partial, 'floatValue'))) {
     assertFloatInCatalogRange(record.floatValue, catalogEntry);
   }
-  return inTransaction(() => viewOf(Item.update(id, { ...record, catalogId: identity.catalogId }, { now }), { now, slowItemDays }));
+  return inTransaction(() => viewOf(Item.update(id, { ...record, catalogId: identity.catalogId }, { now }), { now, thresholds }));
 }
 
 function deleteItem(id) {
@@ -479,20 +486,20 @@ function deleteItem(id) {
 }
 
 function sellItem(id, input, ctx = {}) {
-  const { now = new Date(), slowItemDays = env.slowItemDays } = ctx;
+  const { now = new Date(), thresholds = getAgingThresholds() } = ctx;
   const item = findOrFail(id);
   if (item.status !== 'EM_ESTOQUE') throw new ConflictError('Item já vendido.', 'ITEM_ALREADY_SOLD');
   const store = getStoreOrFail(input.saleStoreId, { field: 'saleStoreId' });
   const { record, sale } = buildSaleRecord(item, input, { store, settings: Setting.get(), now });
-  const view = inTransaction(() => viewOf(Item.update(id, record, { now }), { now, slowItemDays }));
+  const view = inTransaction(() => viewOf(Item.update(id, record, { now }), { now, thresholds }));
   return { item: view, sale: { ...sale, saleProfitUsdCents: view.saleProfitUsdCents } };
 }
 
 function unsellItem(id, ctx = {}) {
-  const { now = new Date(), slowItemDays = env.slowItemDays } = ctx;
+  const { now = new Date(), thresholds = getAgingThresholds() } = ctx;
   const item = findOrFail(id);
   if (item.status !== 'VENDIDO') throw new ConflictError('Item não está vendido.', 'ITEM_NOT_SOLD');
-  return inTransaction(() => viewOf(Item.update(id, buildUnsellPatch(), { now }), { now, slowItemDays }));
+  return inTransaction(() => viewOf(Item.update(id, buildUnsellPatch(), { now }), { now, thresholds }));
 }
 
 function getItemStats({ name, category, variant, exterior, phase }) {

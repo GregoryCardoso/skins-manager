@@ -11,6 +11,7 @@ import type {
   ItemPatchBody,
   ItemView,
   PreferencesPatch,
+  PtaxRefreshResult,
   SaleQuote,
   SalesList,
   SalesQuery,
@@ -184,6 +185,10 @@ export const deleteStore = (id: number) => request<{ id: number }>('DELETE', `/s
 
 export const updateFxRate = (usdBrlRate: number) =>
   request<Settings>('PUT', '/settings/fx-rate', { body: { usdBrlRate } });
+
+// PTAX de venda do Banco Central (D147): o backend limita a 20 s no total; salva direto. Corpo `{}` JSON obrigatório.
+export const refreshPtax = () =>
+  request<PtaxRefreshResult>('POST', '/settings/fx-rate/ptax', { body: {}, timeoutMs: 30000 });
 
 export const getItem = (id: number, signal?: AbortSignal) => request<ItemView>('GET', `/items/${id}`, { signal });
 

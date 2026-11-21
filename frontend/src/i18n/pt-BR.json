@@ -25,7 +25,8 @@
     "inventory": "Inventário",
     "sales": "Vendas",
     "main": "Navegação principal",
-    "stores": "Lojas"
+    "stores": "Lojas",
+    "settings": "Configurações"
   },
   "header": {
     "preferenceNotSaved": "Preferência não salva no servidor: {reason}",
@@ -56,7 +57,8 @@
     "server": "Servidor",
     "online": "Online",
     "offline": "Offline",
-    "lastResponse": "Resposta em {time}"
+    "lastResponse": "Resposta em {time}",
+    "manageInSettings": "Atualizar em Configurações"
   },
   "catalog": {
     "title": "Catálogo",
@@ -147,7 +149,14 @@
     "STORE_IN_USE": "A loja já foi usada e só pode ser desativada.",
     "PRIMARY_STORE_REQUIRED": "Sempre deve haver uma loja principal. Escolha outra loja como principal antes.",
     "PRIMARY_STORE_INACTIVE": "A loja principal não pode ficar inativa. Escolha outra loja principal antes.",
-    "SALE_FEE_INCOMPLETE": "Informe o tipo e a taxa de venda juntos, ou deixe os dois vazios."
+    "SALE_FEE_INCOMPLETE": "Informe o tipo e a taxa de venda juntos, ou deixe os dois vazios.",
+    "PTAX_FETCH_FAILED": "Não foi possível consultar a PTAX do Banco Central. Verifique sua conexão com a internet.",
+    "PTAX_NOT_FOUND": "O Banco Central não publicou a PTAX nos últimos dias. Tente mais tarde ou digite a cotação manualmente.",
+    "PTAX_INVALID_RESPONSE": "A resposta do Banco Central veio em um formato inesperado ou com valor inválido. Digite a cotação manualmente.",
+    "PTAX_REFRESH_IN_PROGRESS": "Já existe uma atualização da cotação em andamento.",
+    "INVALID_FAST_TURNOVER_DAYS": "O giro rápido deve ser um número inteiro de 1 a 364 dias.",
+    "INVALID_SLOW_ITEM_DAYS": "O limite de agarrado deve ser um número inteiro de 2 a 365 dias.",
+    "AGING_THRESHOLDS_ORDER": "O giro rápido deve ser menor que o limite de agarrado."
   },
   "warnings": {
     "FEES_NOT_CONFIGURED": "As taxas da loja não estão configuradas.",
@@ -180,7 +189,7 @@
     "informativeStore": "Loja: {store}",
     "legacy": "Sem vínculo com o catálogo",
     "sold": "Vendido",
-    "turnaround": "Vendido em {days}",
+    "turnaround": "Vendido {days} após liberar",
     "inspect": "Inspecionar",
     "inspectInvalid": "Link de inspeção inválido",
     "actions": {
@@ -192,7 +201,11 @@
       "lockedHint": "Em trade lock até {date}",
       "history": "Histórico"
     },
-    "itemGone": "Este item não existe mais (talvez tenha sido excluído em outra aba). A lista foi atualizada."
+    "itemGone": "Este item não existe mais (talvez tenha sido excluído em outra aba). A lista foi atualizada.",
+    "daysForSale": "à venda há {days}",
+    "daysInInventory": "no inventário há {days}",
+    "inTradeLock": "Em trade lock · {time}",
+    "daysHeld": "{days} desde a compra"
   },
   "filters": {
     "label": "Filtros do inventário",
@@ -200,7 +213,7 @@
     "statusAll": "Todos",
     "category": "Categoria",
     "categoryAll": "Todas",
-    "stagnantOnly": "Só agarrados (mais de {days} dias)",
+    "stagnantOnly": "Só agarrados (à venda há mais de {days} dias)",
     "order": "Ordem por idade",
     "orderDesc": "Mais antigos primeiro",
     "orderAsc": "Mais novos primeiro"
@@ -259,7 +272,8 @@
     "agingBucket": {
       "RECENTE": "Recente",
       "EM_GIRO": "Em giro",
-      "AGARRADO": "Agarrado"
+      "AGARRADO": "Agarrado",
+      "EM_TRADE_LOCK": "Em trade lock"
     },
     "turnaroundBucket": {
       "GIRO_RAPIDO": "Giro rápido",
@@ -411,7 +425,8 @@
     "FLOAT_OUT_OF_RANGE": "O float deste item deve estar entre {min} e {max}.",
     "FIELD_TOO_LONG": "Máximo de {max} caracteres.",
     "UNKNOWN_FIELD": "Campo desconhecido: {field}.",
-    "INVALID_AMOUNT": "O valor máximo permitido é {max}."
+    "INVALID_AMOUNT": "O valor máximo permitido é {max}.",
+    "AGING_THRESHOLDS_ORDER": "O giro rápido ({fast} dias) deve ser menor que o limite de agarrado ({slow} dias)."
   },
   "sales": {
     "title": "Vendas",
@@ -440,7 +455,9 @@
       "soldAt": "Data da venda",
       "days": "Giro",
       "actions": "Ações"
-    }
+    },
+    "daysAfterRelease": "{days} após liberar",
+    "daysHeld": "{days} desde a compra"
   },
   "salesFilters": {
     "label": "Filtros das vendas",
@@ -473,7 +490,7 @@
     "totalSold": "Total vendido",
     "totalNet": "Total líquido recebido",
     "totalProfit": "Lucro total",
-    "avgTurnaround": "Giro médio",
+    "avgTurnaround": "Giro médio (após liberar)",
     "avgTurnaroundValue": "{days} dias",
     "usdNote": "Valores em US$ com a cotação gravada de cada venda.",
     "profitTitle": "Líquido {net} − custo {cost}"
@@ -482,7 +499,7 @@
     "heading": "Histórico do item",
     "title": "Histórico: {name}",
     "soldCount": "Vendidas",
-    "avgDaysToSell": "Tempo médio até vender",
+    "avgDaysToSell": "Tempo médio até vender (desde a liberação)",
     "avgPurchaseCost": "Custo médio",
     "avgCostUnits": {
       "one": "de {count} unidade",
@@ -589,5 +606,52 @@
     "nameRequired": "Informe o nome da loja.",
     "created": "Loja \"{name}\" criada.",
     "updated": "Loja \"{name}\" atualizada."
+  },
+  "settings": {
+    "title": "Configurações",
+    "fx": {
+      "title": "Cotação USD→BRL",
+      "current": "Cotação atual",
+      "notSet": "Cotação não definida",
+      "value": "US$ 1 = {rate}",
+      "sourceLabel": "Origem",
+      "source": {
+        "MANUAL": "Manual",
+        "PTAX": "PTAX de venda (Banco Central)"
+      },
+      "ptaxDate": "PTAX de {date}",
+      "manualLabel": "Cotação manual",
+      "save": "Salvar cotação",
+      "saved": "Cotação salva (manual).",
+      "refreshPtax": "Atualizar cotação (PTAX)",
+      "refreshing": "Consultando o Banco Central...",
+      "refreshed": "Cotação atualizada pela PTAX de venda de {date}: US$ 1 = {rate}.",
+      "note": "A PTAX só é consultada quando você clica no botão e é salva na hora. Cotações já gravadas em itens não mudam."
+    },
+    "preferences": {
+      "title": "Preferências",
+      "theme": "Tema",
+      "language": "Idioma"
+    },
+    "aging": {
+      "title": "Limites de giro",
+      "intro": "Os dias contam a partir da liberação do trade lock (ou da compra, se não houver lock). Mudar os limites reclassifica os itens sem alterar nenhum dado.",
+      "fast": "Giro rápido até",
+      "slow": "Agarrado acima de",
+      "days": "dias",
+      "defaultValue": "Padrão: {days} dias",
+      "restore": "Restaurar padrão",
+      "save": "Salvar limites",
+      "saved": "Limites salvos.",
+      "restored": "Padrão restaurado.",
+      "noChanges": "Nenhuma alteração para salvar.",
+      "middle": "Em giro: de {from} a {to} dias.",
+      "adjusted": "Os limites salvos não combinam com o padrão atual do sistema; o giro rápido está sendo calculado como {fast} dias. Salve novos limites para corrigir.",
+      "invalidNumber": "Digite um número inteiro (ex.: 7)."
+    },
+    "catalog": {
+      "title": "Catálogo de itens"
+    },
+    "loadError": "Não foi possível carregar as configurações: {reason}"
   }
 }

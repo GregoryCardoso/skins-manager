@@ -1,6 +1,6 @@
 // Lógica pura do formulário de item (D116). Nenhuma regra de negócio: só decide visibilidade e monta o corpo
 // que o backend valida. Textos de erro local são chaves de tradução (`itemForm.invalidMoney` etc.).
-import { dateToLocalInput, isoToLocalInput, localInputToIso, addDaysToLocalInput } from '@/lib/dateInput';
+import { dateToLocalInput, isoToLocalInput, localInputToDate, localInputToIso, addDaysToLocalInput } from '@/lib/dateInput';
 import { formatFloat } from '@/lib/format';
 import {
   formatCentsInput, formatDecimalInput, parseDecimalInput, parseFloatInput, parseIntegerInput, parseMoneyToCents,
@@ -39,6 +39,8 @@ export interface ItemFormState {
   // datetime-local (hora local)
   acquiredAt: string;
   tradeUnlockAt: string;
+  // Verdadeiro enquanto "fim do trade lock" tem o valor sugerido pelo formulário (D161); mexer no campo desliga.
+  tradeUnlockAuto: boolean;
   inspectLink: string;
   originDetail: string;
   assetId: string;
@@ -126,8 +128,15 @@ export interface FormContext {
   now?: Date;
 }
 
+// Sugestão do fim do trade lock (D161): COMPRA = data da compra + 7 dias; GANHEI (já liberado) = vazio.
+export function suggestedTradeUnlock(type: AcquisitionType, acquiredAt: string): string {
+  if (type !== 'COMPRA' || localInputToDate(acquiredAt) === null) return '';
+  return addDaysToLocalInput(acquiredAt, 7);
+}
+
 export function initialCreateState({ stores, usdBrlRate, language, now = new Date() }: FormContext): ItemFormState {
   const primary = stores.find((s) => s.isPrimary) ?? null;
+  const acquiredAt = dateToLocalInput(now);
   return {
     catalog: null,
     freeMode: false,
@@ -142,8 +151,9 @@ export function initialCreateState({ stores, usdBrlRate, language, now = new Dat
     purchaseStoreId: primary ? primary.id : null,
     priceText: '',
     fxText: primary?.currency === 'BRL' && usdBrlRate !== null ? formatDecimalInput(usdBrlRate, language) : '',
-    acquiredAt: dateToLocalInput(now),
-    tradeUnlockAt: '',
+    acquiredAt,
+    tradeUnlockAt: suggestedTradeUnlock('COMPRA', acquiredAt),
+    tradeUnlockAuto: true,
     inspectLink: '',
     originDetail: '',
     assetId: '',
@@ -167,6 +177,8 @@ export function stateFromItem(item: ItemView, language: string): ItemFormState {
     fxText: item.fxRateAtPurchase !== null ? formatDecimalInput(item.fxRateAtPurchase, language) : '',
     acquiredAt: isoToLocalInput(item.acquiredAt),
     tradeUnlockAt: isoToLocalInput(item.tradeUnlockAt),
+    // Edição não sugere nada (D161).
+    tradeUnlockAuto: false,
     inspectLink: item.inspectLink ?? '',
     originDetail: item.originDetail ?? '',
     assetId: item.assetId ?? '',
@@ -205,8 +217,26 @@ export function applyPurchaseStore(
   return { ...state, purchaseStoreId: storeId, priceText: currencyChanged ? '' : state.priceText, fxText };
 }
 
+// Botão "+7 dias": preenche manualmente, então o campo deixa de ser automático.
 export function addSevenDays(state: ItemFormState, now: Date = new Date()): ItemFormState {
-  return { ...state, tradeUnlockAt: addDaysToLocalInput(state.acquiredAt, 7, now) };
+  return { ...state, tradeUnlockAt: addDaysToLocalInput(state.acquiredAt, 7, now), tradeUnlockAuto: false };
+}
+
+// Trocar o tipo de aquisição: com o campo ainda automático ele acompanha o tipo novo; editado, fica como está (D161).
+export function setAcquisitionType(state: ItemFormState, type: AcquisitionType): ItemFormState {
+  if (!state.tradeUnlockAuto) return { ...state, acquisitionType: type };
+  return { ...state, acquisitionType: type, tradeUnlockAt: suggestedTradeUnlock(type, state.acquiredAt) };
+}
+
+// Trocar a data de compra: a sugestão (COMPRA) é recalculada só enquanto o campo é automático.
+export function setAcquiredAt(state: ItemFormState, acquiredAt: string): ItemFormState {
+  if (!state.tradeUnlockAuto) return { ...state, acquiredAt };
+  return { ...state, acquiredAt, tradeUnlockAt: suggestedTradeUnlock(state.acquisitionType, acquiredAt) };
+}
+
+// Digitar ou limpar o campo: o valor passa a ser do usuário.
+export function setTradeUnlockAt(state: ItemFormState, tradeUnlockAt: string): ItemFormState {
+  return { ...state, tradeUnlockAt, tradeUnlockAuto: false };
 }
 
 // --- Montagem dos corpos -----------------------------------------------------------------------------

@@ -77,15 +77,15 @@ describe('config/env', () => {
     expect(env.slowItemDays).toBe(21);
   });
 
-  describe('P4 — SLOW_ITEM_DAYS mínimo 8 (D41)', () => {
-    test('SLOW_ITEM_DAYS=7 lança com a mensagem de D41', () => {
-      expect(() => loadEnvWith({ SLOW_ITEM_DAYS: '7' })).toThrow(
-        new Error('Variável de ambiente SLOW_ITEM_DAYS inválida: deve ser um inteiro maior ou igual a 8 (recebido "7").')
+  describe('SLOW_ITEM_DAYS de 2 a 365 (D159)', () => {
+    test.each(['1', '366', '0', '-1', '21.5', 'abc'])('SLOW_ITEM_DAYS=%s lança com a mensagem do intervalo', (value) => {
+      expect(() => loadEnvWith({ SLOW_ITEM_DAYS: value })).toThrow(
+        new Error(`Variável de ambiente SLOW_ITEM_DAYS inválida: deve ser um inteiro de 2 a 365 (recebido "${value}").`)
       );
     });
 
-    test('SLOW_ITEM_DAYS=8 aceito', () => {
-      expect(loadEnvWith({ SLOW_ITEM_DAYS: '8' }).slowItemDays).toBe(8);
+    test.each([['2', 2], ['7', 7], ['8', 8], ['365', 365]])('SLOW_ITEM_DAYS=%s aceito', (value, expected) => {
+      expect(loadEnvWith({ SLOW_ITEM_DAYS: value }).slowItemDays).toBe(expected);
     });
 
     test('SLOW_ITEM_DAYS ausente → 21', () => {

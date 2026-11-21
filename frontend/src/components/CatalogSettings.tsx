@@ -1,0 +1,92 @@
+'use client';
+
+import { useCallback, useEffect, useState } from 'react';
+import { errorMessageFor } from '@/i18n/errorMessage';
+import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
+import { formatDateTime, formatInteger } from '@/lib/format';
+import { getCatalogStatus, refreshCatalog } from '@/services/api';
+import type { CatalogSource, CatalogStatus } from '@/types/api';
+import styles from './settings.module.css';
+
+const SOURCES: CatalogSource[] = ['SKINS', 'STICKERS', 'CRATES', 'KEYCHAINS', 'AGENTS'];
+
+// Catálogo de itens (D152): status, contagens e o botão "atualizar catálogo" (movido do painel de status).
+export default function CatalogSettings() {
+  const t = useT();
+  const tLoose = useTLoose();
+  const locale = useLanguage();
+  const [status, setStatus] = useState<CatalogStatus | null>(null);
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshError, setRefreshError] = useState<unknown>(null);
+  const [info, setInfo] = useState<{ total: number; skipped: number; linked: number } | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    getCatalogStatus(controller.signal)
+      .then((data) => {
+        setStatus(data);
+        setLoadError(null);
+      })
+      .catch((err: unknown) => {
+        if (!controller.signal.aborted) setLoadError(err);
+      });
+    return () => controller.abort();
+  }, []);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    setRefreshError(null);
+    setInfo(null);
+    refreshCatalog()
+      .then((result) => {
+        setStatus(result);
+        setLoadError(null);
+        setInfo({ total: result.total, skipped: result.skipped, linked: result.linkedLegacyItems });
+      })
+      .catch((err: unknown) => setRefreshError(err))
+      .finally(() => setRefreshing(false));
+  }, []);
+
+  return (
+    <section className={styles.card} aria-labelledby="settings-catalog-title">
+      <h2 id="settings-catalog-title" className={styles.cardTitle}>{t('settings.catalog.title')}</h2>
+      {status ? (
+        <>
+          <p>{t('catalog.total', { total: formatInteger(status.total, locale) })}</p>
+          <ul className={styles.counts}>
+            {SOURCES.map((source) => (
+              <li key={source}>
+                {t(`catalog.source.${source}`)}: {formatInteger(status.countsBySource[source] ?? 0, locale)}
+              </li>
+            ))}
+          </ul>
+          <p className={styles.muted}>
+            {status.catalogUpdatedAt
+              ? t('catalog.updatedAt', { date: formatDateTime(status.catalogUpdatedAt, locale) })
+              : t('catalog.neverUpdated')}
+          </p>
+        </>
+      ) : loadError ? (
+        <p className={styles.error} role="alert">{errorMessageFor(loadError, tLoose, locale)}</p>
+      ) : (
+        <p className={styles.muted}>{t('common.loading')}</p>
+      )}
+      <div className={styles.row}>
+        <button type="button" className={styles.button} onClick={onRefresh} disabled={refreshing}>
+          {refreshing ? t('catalog.refreshing') : t('catalog.refresh')}
+        </button>
+      </div>
+      {info && (
+        <p className={styles.ok} role="status">
+          {t('catalog.refreshDone', {
+            total: formatInteger(info.total, locale),
+            skipped: formatInteger(info.skipped, locale),
+            linked: formatInteger(info.linked, locale),
+          })}
+        </p>
+      )}
+      {refreshError !== null && <p className={styles.error} role="alert">{errorMessageFor(refreshError, tLoose, locale)}</p>}
+    </section>
+  );
+}

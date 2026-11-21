@@ -1,6 +1,6 @@
 const path = require('path');
 const dotenv = require('dotenv');
-const { MIN_SLOW_ITEM_DAYS } = require('./constants');
+const { MIN_SLOW_ITEM_DAYS, MAX_SLOW_ITEM_DAYS } = require('./constants');
 
 dotenv.config({ path: path.join(__dirname, '..', '..', '.env'), quiet: true });
 
@@ -18,9 +18,9 @@ function parsePort(raw, fallback) {
 function parseSlowItemDays(raw) {
   const text = raw === undefined ? '' : String(raw).trim();
   if (text === '') return 21;
-  if (!/^\d+$/.test(text) || Number(text) < MIN_SLOW_ITEM_DAYS) {
+  if (!/^\d+$/.test(text) || Number(text) < MIN_SLOW_ITEM_DAYS || Number(text) > MAX_SLOW_ITEM_DAYS) {
     throw new Error(
-      `Variável de ambiente SLOW_ITEM_DAYS inválida: deve ser um inteiro maior ou igual a ${MIN_SLOW_ITEM_DAYS} (recebido "${raw}").`
+      `Variável de ambiente SLOW_ITEM_DAYS inválida: deve ser um inteiro de ${MIN_SLOW_ITEM_DAYS} a ${MAX_SLOW_ITEM_DAYS} (recebido "${raw}").`
     );
   }
   return Number(text);

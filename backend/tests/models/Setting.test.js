@@ -10,7 +10,7 @@ describe('models/Setting', () => {
     const s = Setting.get();
     expect(s).toMatchObject({ usdBrlRate: null, usdBrlRateUpdatedAt: null });
     expect(typeof s.updatedAt).toBe('string');
-    expect(Object.keys(s).sort()).toEqual(['catalogUpdatedAt', 'language', 'theme', 'updatedAt', 'usdBrlRate', 'usdBrlRateUpdatedAt']);
+    expect(Object.keys(s).sort()).toEqual(['catalogUpdatedAt', 'fastTurnoverDays', 'language', 'ptaxQuotedAt', 'slowItemDays', 'theme', 'updatedAt', 'usdBrlRate', 'usdBrlRateSource', 'usdBrlRateUpdatedAt']);
   });
 
   test('update grava cotação, preserva campos não enviados e muda updatedAt', () => {
@@ -21,6 +21,7 @@ describe('models/Setting', () => {
       const s = Setting.update({ usdBrlRate: 5.3 });
       expect(s).toEqual({
         usdBrlRate: 5.3, usdBrlRateUpdatedAt: '2026-06-01T00:00:00.000Z', catalogUpdatedAt: null, theme: 'SYSTEM', language: 'pt-BR',
+        usdBrlRateSource: null, ptaxQuotedAt: null, fastTurnoverDays: null, slowItemDays: null,
         updatedAt: '2026-06-02T00:00:00.000Z',
       });
     } finally {

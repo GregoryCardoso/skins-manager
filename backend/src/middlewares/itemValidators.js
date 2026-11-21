@@ -1,4 +1,5 @@
 const { ValidationError } = require('../errors/AppError');
+const { isPlainObject } = require('./validationHelpers');
 const {
   MAX_AMOUNT_CENTS, MAX_NAME_LENGTH, MAX_ORIGIN_DETAIL_LENGTH, CATALOG_ID_MAX_LENGTH,
   MAX_INSPECT_LINK_LENGTH, MAX_ASSET_ID_LENGTH, MAX_PHASE_LENGTH,
@@ -57,9 +58,7 @@ function fail(message, code, extra) {
   return new ValidationError(message, code, extra);
 }
 
-function isObject(body) {
-  return body !== null && typeof body === 'object' && !Array.isArray(body);
-}
+const isObject = isPlainObject;
 
 function matchesType(value, type) {
   if (type === STRING) return typeof value === 'string';

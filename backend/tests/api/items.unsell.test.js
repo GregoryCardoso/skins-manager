@@ -30,7 +30,7 @@ describe('POST /api/items/:id/unsell', () => {
     expect(view.status).toBe('EM_ESTOQUE');
     expect(SALE_KEYS).toHaveLength(11);
     for (const key of SALE_KEYS) expect(view[key]).toBeNull();
-    expect(view.aging).toEqual({ daysInInventory: 9, agingBucket: 'EM_GIRO' });
+    expect(view.aging).toEqual({ daysInInventory: 9, daysForSale: 9, agingBucket: 'EM_GIRO' });
     expect(view.minPrices.find((m) => m.storeName === 'CSFloat').minPriceCents).toBe(103);
     expect(view.saleProfitUsdCents).toBeNull();
     expect(view).toMatchObject({

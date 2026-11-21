@@ -1,7 +1,12 @@
 // Constantes compartilhadas entre config e services (T14). Arquivo sem dependências além de `path`.
 const path = require('path');
 
-const MIN_SLOW_ITEM_DAYS = 8;
+// Limites de giro (D159): 1 <= rápido < agarrado <= 365. O mínimo do agarrado (2) é o mínimo do rápido + 1.
+const DEFAULT_FAST_TURNOVER_DAYS = 7;
+const MIN_FAST_TURNOVER_DAYS = 1;
+const MAX_FAST_TURNOVER_DAYS = 364;
+const MIN_SLOW_ITEM_DAYS = 2;
+const MAX_SLOW_ITEM_DAYS = 365;
 // Teto de qualquer valor em centavos recebido pela API (R$/US$ 100 milhões).
 const MAX_AMOUNT_CENTS = 1e10;
 // Limites de texto (após trim).
@@ -41,8 +46,28 @@ const CATALOG_SNAPSHOT_PATH = path.join(__dirname, '..', '..', 'data', 'seed', '
 const THEMES = Object.freeze(['SYSTEM', 'LIGHT', 'DARK']);
 const LANGUAGES = Object.freeze(['pt-BR', 'en']);
 
+// PTAX do Banco Central (D147).
+const PTAX_BASE_URL = 'https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoDolarDia(dataCotacao=@dataCotacao)';
+const PTAX_CALL_TIMEOUT_MS = 10000;
+const PTAX_TOTAL_TIMEOUT_MS = 20000;
+const PTAX_MAX_RESPONSE_BYTES = 64 * 1024;
+const PTAX_MAX_LOOKBACK_DAYS = 7;
+const PTAX_MIN_RATE = 1;
+const PTAX_MAX_RATE = 50;
+
 module.exports = Object.freeze({
+  DEFAULT_FAST_TURNOVER_DAYS,
+  MIN_FAST_TURNOVER_DAYS,
+  MAX_FAST_TURNOVER_DAYS,
   MIN_SLOW_ITEM_DAYS,
+  MAX_SLOW_ITEM_DAYS,
+  PTAX_BASE_URL,
+  PTAX_CALL_TIMEOUT_MS,
+  PTAX_TOTAL_TIMEOUT_MS,
+  PTAX_MAX_RESPONSE_BYTES,
+  PTAX_MAX_LOOKBACK_DAYS,
+  PTAX_MIN_RATE,
+  PTAX_MAX_RATE,
   MAX_AMOUNT_CENTS,
   MAX_NAME_LENGTH,
   MAX_ORIGIN_DETAIL_LENGTH,

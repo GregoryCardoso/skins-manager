@@ -22,6 +22,13 @@ describe('errorMessageFor com params', () => {
     expect(errorMessageFor(e, tEn, 'en')).toBe("This item's float must be between 0.1 and 0.7.");
   });
 
+  test('AGING_THRESHOLDS_ORDER usa os limites efetivos de params (D159)', () => {
+    const e = err('AGING_THRESHOLDS_ORDER', { field: 'slowItemDays', params: { fastTurnoverDays: 25, slowItemDays: 21 } });
+    expect(errorMessageFor(e, tPt)).toBe('O giro rápido (25 dias) deve ser menor que o limite de agarrado (21 dias).');
+    expect(errorMessageFor(e, tEn)).toBe('Fast turnover (25 days) must be lower than the stagnant limit (21 days).');
+    expect(errorMessageFor(err('AGING_THRESHOLDS_ORDER'), tPt)).toBe('O giro rápido deve ser menor que o limite de agarrado.');
+  });
+
   test('FIELD_TOO_LONG, INVALID_AMOUNT e UNKNOWN_FIELD', () => {
     expect(errorMessageFor(err('FIELD_TOO_LONG', { params: { maxLength: 200 } }), tPt)).toBe('Máximo de 200 caracteres.');
     expect(errorMessageFor(err('INVALID_AMOUNT', { params: { maxCents: 1e10 } }), tPt, 'pt-BR')).toContain('100.000.000,00');

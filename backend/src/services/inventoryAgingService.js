@@ -2,12 +2,11 @@
 
 // Tempo no inventário (2.6): dias inteiros, faixas, ordenação e filtro de parados.
 const env = require('../config/env');
-const { MIN_SLOW_ITEM_DAYS } = require('../config/constants');
+const { DEFAULT_FAST_TURNOVER_DAYS, MAX_SLOW_ITEM_DAYS } = require('../config/constants');
 const { ValidationError } = require('../errors/AppError');
 const { parseDate } = require('./dateUtils');
 
 const DAY_MS = 86400000;
-const FAST_DAYS = 7;
 
 const SP_FORMAT = new Intl.DateTimeFormat('en-CA', {
   timeZone: 'America/Sao_Paulo',
@@ -23,9 +22,27 @@ function assertDays(days) {
   }
 }
 
-function assertSlowItemDays(slowItemDays) {
-  if (!Number.isInteger(slowItemDays) || slowItemDays < MIN_SLOW_ITEM_DAYS) {
-    throw new Error(`Configuração inválida: SLOW_ITEM_DAYS deve ser um inteiro maior ou igual a ${MIN_SLOW_ITEM_DAYS}.`);
+// Limites efetivos (D159): salvo ?? padrão. Combinação incoerente (só ao trocar o .env) usa rápido = agarrado − 1.
+// Pura. `adjusted: true` quando a salvaguarda foi aplicada.
+function resolveAgingThresholds({ fastSaved = null, slowSaved = null, envSlowItemDays = env.slowItemDays } = {}) {
+  const slowItemDays = slowSaved ?? envSlowItemDays;
+  const fastTurnoverDays = fastSaved ?? DEFAULT_FAST_TURNOVER_DAYS;
+  if (fastTurnoverDays >= 1 && fastTurnoverDays < slowItemDays) return { fastTurnoverDays, slowItemDays, adjusted: false };
+  return { fastTurnoverDays: slowItemDays - 1, slowItemDays, adjusted: true };
+}
+
+function defaultThresholds() {
+  const { fastTurnoverDays, slowItemDays } = resolveAgingThresholds();
+  return { fastTurnoverDays, slowItemDays };
+}
+
+// Erro de programação: os limites chegam validados (1 <= F < S <= 365).
+function assertThresholds(thresholds) {
+  const { fastTurnoverDays: f, slowItemDays: s } = thresholds ?? {};
+  if (!Number.isInteger(f) || !Number.isInteger(s) || f < 1 || f >= s || s > MAX_SLOW_ITEM_DAYS) {
+    throw new Error(
+      `Configuração inválida: os limites de giro devem ser inteiros com 1 <= rápido < agarrado <= ${MAX_SLOW_ITEM_DAYS}.`
+    );
   }
 }
 
@@ -34,20 +51,38 @@ function daysBetween(start, end) {
   return Math.max(0, Math.floor(ms / DAY_MS));
 }
 
-function classifyStock(days, slowItemDays = env.slowItemDays) {
-  assertSlowItemDays(slowItemDays);
+function classifyStock(days, thresholds = defaultThresholds()) {
+  assertThresholds(thresholds);
   assertDays(days);
-  if (days <= FAST_DAYS) return 'RECENTE';
-  if (days <= slowItemDays) return 'EM_GIRO';
+  if (days <= thresholds.fastTurnoverDays) return 'RECENTE';
+  if (days <= thresholds.slowItemDays) return 'EM_GIRO';
   return 'AGARRADO';
 }
 
-function classifyTurnaround(days, slowItemDays = env.slowItemDays) {
-  assertSlowItemDays(slowItemDays);
+function classifyTurnaround(days, thresholds = defaultThresholds()) {
+  assertThresholds(thresholds);
   assertDays(days);
-  if (days <= FAST_DAYS) return 'GIRO_RAPIDO';
-  if (days <= slowItemDays) return 'GIRO_NORMAL';
+  if (days <= thresholds.fastTurnoverDays) return 'GIRO_RAPIDO';
+  if (days <= thresholds.slowItemDays) return 'GIRO_NORMAL';
   return 'DEMOROU_VENDER';
+}
+
+// Início da contagem do giro (D160): `tradeUnlockAt` se existir e for posterior a `acquiredAt`; senão `acquiredAt`.
+function listingStart(item) {
+  if (item.tradeUnlockAt === null || item.tradeUnlockAt === undefined) return item.acquiredAt;
+  const unlockMs = parseDate(item.tradeUnlockAt, 'Fim do trade lock').getTime();
+  return unlockMs > parseDate(item.acquiredAt, 'Data de aquisição').getTime() ? item.tradeUnlockAt : item.acquiredAt;
+}
+
+// Item em estoque ainda bloqueado (`now < tradeUnlockAt`; igualdade = liberado, como 2.3).
+function isInTradeLock(item, now = new Date()) {
+  if (item.status === 'VENDIDO' || item.tradeUnlockAt === null || item.tradeUnlockAt === undefined) return false;
+  return parseDate(now, 'Data atual').getTime() < parseDate(item.tradeUnlockAt, 'Fim do trade lock').getTime();
+}
+
+// Dias da liberação (ou aquisição) até a venda, mínimo 0 (D160).
+function turnaroundDaysOf(item) {
+  return daysBetween(listingStart(item), item.soldAt);
 }
 
 // Dia civil { year, month, day } (números) do instante em America/Sao_Paulo.
@@ -83,13 +118,19 @@ function assertAcquiredAtNotFuture(acquiredAt, now = new Date()) {
   });
 }
 
-function getAging(item, { slowItemDays = env.slowItemDays, now = new Date() } = {}) {
+function getAging(item, { thresholds = defaultThresholds(), now = new Date() } = {}) {
   if (item.status === 'VENDIDO') {
-    const turnaroundDays = daysBetween(item.acquiredAt, item.soldAt);
-    return { turnaroundDays, turnaroundBucket: classifyTurnaround(turnaroundDays, slowItemDays) };
+    const turnaroundDays = turnaroundDaysOf(item);
+    return {
+      turnaroundDays,
+      turnaroundBucket: classifyTurnaround(turnaroundDays, thresholds),
+      daysHeld: daysBetween(item.acquiredAt, item.soldAt),
+    };
   }
   const daysInInventory = daysBetween(item.acquiredAt, now);
-  return { daysInInventory, agingBucket: classifyStock(daysInInventory, slowItemDays) };
+  if (isInTradeLock(item, now)) return { daysInInventory, daysForSale: null, agingBucket: 'EM_TRADE_LOCK' };
+  const daysForSale = daysBetween(listingStart(item), now);
+  return { daysInInventory, daysForSale, agingBucket: classifyStock(daysForSale, thresholds) };
 }
 
 // Ordenação estável, valor por direção e desempate por id ASC; não muta a entrada.
@@ -104,17 +145,24 @@ function sortBy(items, valueOf, order) {
     .map((entry) => entry.item);
 }
 
-// Mais antigo = maior idade; ordena pelo instante exato de aquisição (T21), não por dias inteiros.
+// Mais antigo à venda primeiro em `desc`, pelo instante exato da liberação (T21, D160). Itens em trade lock vão
+// sempre para o fim (nas duas direções), por `tradeUnlockAt` crescente e depois id.
 function sortByAge(items, order = 'desc', now = new Date()) {
   const nowMs = parseDate(now, 'Data atual').getTime();
-  return sortBy(items, (item) => nowMs - parseDate(item.acquiredAt, 'Data de aquisição').getTime(), order);
+  const nowDate = new Date(nowMs);
+  const locked = items.filter((item) => isInTradeLock(item, nowDate));
+  const free = items.filter((item) => !isInTradeLock(item, nowDate));
+  return [
+    ...sortBy(free, (item) => nowMs - parseDate(listingStart(item), 'Data de liberação').getTime(), order),
+    ...sortBy(locked, (item) => parseDate(item.tradeUnlockAt, 'Fim do trade lock').getTime(), 'asc'),
+  ];
 }
 
 // Itens sem soldAt (em estoque) vão sempre para o fim.
 function sortByTurnaround(items, order = 'asc') {
   const sold = items.filter((item) => item.status === 'VENDIDO');
   const unsold = items.filter((item) => item.status !== 'VENDIDO');
-  return [...sortBy(sold, (item) => daysBetween(item.acquiredAt, item.soldAt), order), ...sortBy(unsold, () => 0, 'asc')];
+  return [...sortBy(sold, turnaroundDaysOf, order), ...sortBy(unsold, () => 0, 'asc')];
 }
 
 // "YYYY-MM-DD" -> { year, month, day } numéricos; undefined/null -> null.
@@ -150,14 +198,21 @@ function sortBySoldAt(items, order = 'desc') {
   ];
 }
 
-function filterStagnant(items, slowItemDays = env.slowItemDays, now = new Date()) {
+// Só em estoque, liberado e `AGARRADO` pelos dias à venda; item em trade lock nunca entra (D160).
+function filterStagnant(items, thresholds = defaultThresholds(), now = new Date()) {
   return items.filter(
     (item) =>
-      item.status === 'EM_ESTOQUE' && classifyStock(daysBetween(item.acquiredAt, now), slowItemDays) === 'AGARRADO'
+      item.status === 'EM_ESTOQUE' &&
+      !isInTradeLock(item, now) &&
+      classifyStock(daysBetween(listingStart(item), now), thresholds) === 'AGARRADO'
   );
 }
 
 module.exports = {
+  resolveAgingThresholds,
+  listingStart,
+  isInTradeLock,
+  turnaroundDaysOf,
   daysBetween,
   classifyStock,
   classifyTurnaround,

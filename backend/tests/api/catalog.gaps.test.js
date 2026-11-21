@@ -236,7 +236,7 @@ describe('PATCH /api/settings: preferências (bordas)', () => {
       const res = await patch(app, { theme });
       expect(res.status).toBe(200);
       expect(res.body.data).toMatchObject({ theme });
-      expect(Object.keys(res.body.data).sort()).toEqual(['catalogUpdatedAt', 'language', 'theme', 'updatedAt', 'usdBrlRate', 'usdBrlRateUpdatedAt']);
+      expect(Object.keys(res.body.data).sort()).toEqual(['agingThresholdsAdjusted', 'catalogUpdatedAt', 'fastTurnoverDays', 'fastTurnoverDaysCustom', 'fastTurnoverDaysDefault', 'language', 'ptaxQuotedAt', 'slowItemDays', 'slowItemDaysCustom', 'slowItemDaysDefault', 'theme', 'updatedAt', 'usdBrlRate', 'usdBrlRateSource', 'usdBrlRateUpdatedAt']);
     }
     for (const language of ['en', 'pt-BR']) {
       expect((await patch(app, { language })).body.data.language).toBe(language);

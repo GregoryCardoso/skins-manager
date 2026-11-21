@@ -7,6 +7,7 @@ import { resolveErrorTarget } from '@/lib/formErrors';
 import { formatFloat } from '@/lib/format';
 import {
   ALL_EXTERIORS, FREE_NAME_CATEGORIES, addSevenDays, applyCatalogChoice, applyPurchaseStore, buildCreateBody,
+  setAcquiredAt, setAcquisitionType, setTradeUnlockAt,
   buildPatchBody, effectiveCategory, fieldVisibility, findStore, initialCreateState, stateFromItem, variantOptions,
   visibleItemFields,
   type CatalogChoice, type FormContext, type FormErrors, type ItemFormState,
@@ -310,7 +311,7 @@ export default function ItemFormModal({ item, stores, onClose, onSaved, onGone }
                   type="radio"
                   name="acquisitionType"
                   checked={state.acquisitionType === type}
-                  onChange={() => patch({ acquisitionType: type })}
+                  onChange={() => setState((s) => setAcquisitionType(s, type))}
                 />
                 {tLoose(`enums.acquisitionType.${type}`)}
               </label>
@@ -387,7 +388,7 @@ export default function ItemFormModal({ item, stores, onClose, onSaved, onGone }
                 className={styles.input}
                 type="datetime-local"
                 value={state.acquiredAt}
-                onChange={(e) => patch({ acquiredAt: e.target.value })}
+                onChange={(e) => setState((s) => setAcquiredAt(s, e.target.value))}
               />
             )}
           </FormField>
@@ -400,7 +401,7 @@ export default function ItemFormModal({ item, stores, onClose, onSaved, onGone }
                   className={styles.input}
                   type="datetime-local"
                   value={state.tradeUnlockAt}
-                  onChange={(e) => patch({ tradeUnlockAt: e.target.value })}
+                  onChange={(e) => setState((s) => setTradeUnlockAt(s, e.target.value))}
                 />
                 <button
                   type="button"

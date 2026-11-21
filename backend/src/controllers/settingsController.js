@@ -14,4 +14,12 @@ function updatePreferences(req, res) {
   res.json({ success: true, data });
 }
 
-module.exports = { get, updateFxRate, updatePreferences };
+async function refreshPtax(req, res) {
+  const data = await settingsService.refreshFxRateFromPtax({
+    fetchFn: req.app.locals.fetchFn,
+    now: req.app.locals.now(),
+  });
+  res.json({ success: true, data });
+}
+
+module.exports = { get, updateFxRate, updatePreferences, refreshPtax };

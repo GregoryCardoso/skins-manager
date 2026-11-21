@@ -109,13 +109,16 @@ describe('T12 / T13 / T14', () => {
     });
   });
 
-  test('MIN_SLOW_ITEM_DAYS vem de config/constants.js e é usado por env e pelo aging', () => {
-    expect(constants.MIN_SLOW_ITEM_DAYS).toBe(8);
-    expect(() => classifyStock(5, 7)).toThrow(/maior ou igual a 8/);
+  test('limites de giro vêm de config/constants.js (D159) e não são redeclarados em env/aging', () => {
+    expect(constants.MIN_SLOW_ITEM_DAYS).toBe(2);
+    expect(constants.MAX_SLOW_ITEM_DAYS).toBe(365);
+    expect(constants.DEFAULT_FAST_TURNOVER_DAYS).toBe(7);
+    expect(() => classifyStock(5, { fastTurnoverDays: 7, slowItemDays: 7 })).toThrow(/1 <= rápido < agarrado <= 365/);
     const root = path.join(__dirname, '..', '..', 'src');
     for (const f of ['config/env.js', 'services/inventoryAgingService.js']) {
       const src = fs.readFileSync(path.join(root, f), 'utf8');
-      expect(src).not.toMatch(/const MIN_SLOW_ITEM_DAYS\s*=/);
+      expect(src).not.toMatch(/const (MIN|MAX)_SLOW_ITEM_DAYS\s*=/);
+      expect(src).not.toMatch(/const FAST_DAYS\s*=/);
     }
   });
 });
@@ -157,11 +160,11 @@ describe('T17 - estimativa sem store.id', () => {
 
 describe('T18 - dias inválidos', () => {
   test.each([NaN, -1, 1.5, undefined, '3'])('classify com days=%p lança Error', (days) => {
-    expect(() => classifyStock(days, 21)).toThrow(Error);
-    expect(() => classifyTurnaround(days, 21)).toThrow(Error);
+    expect(() => classifyStock(days, { fastTurnoverDays: 7, slowItemDays: 21 })).toThrow(Error);
+    expect(() => classifyTurnaround(days, { fastTurnoverDays: 7, slowItemDays: 21 })).toThrow(Error);
   });
   test('0 é válido', () => {
-    expect(classifyStock(0, 21)).toBe('RECENTE');
+    expect(classifyStock(0, { fastTurnoverDays: 7, slowItemDays: 21 })).toBe('RECENTE');
   });
 });
 

@@ -25,6 +25,10 @@ export function errorDetailParams(
       return typeof p.maxCents === 'number'
         ? { max: formatMoney(p.maxCents, 'USD', locale).replace(/[^\d.,\s]/g, '').trim() }
         : null;
+    case 'AGING_THRESHOLDS_ORDER':
+      return typeof p.fastTurnoverDays === 'number' && typeof p.slowItemDays === 'number'
+        ? { fast: p.fastTurnoverDays, slow: p.slowItemDays }
+        : null;
     case 'UNKNOWN_FIELD': {
       if (!error.field) return null;
       const label = t(`fields.${error.field}`);

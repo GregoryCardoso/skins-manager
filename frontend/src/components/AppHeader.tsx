@@ -14,8 +14,9 @@ export default function AppHeader() {
   const pathname = usePathname() ?? '/';
   const isSales = pathname.startsWith('/sales');
   const isStores = pathname.startsWith('/stores');
+  const isSettings = pathname.startsWith('/settings');
   const isInventory = pathname === '/' || pathname === '';
-  const pageTitle = isSales ? t('nav.sales') : isStores ? t('nav.stores') : isInventory ? t('nav.inventory') : null;
+  const pageTitle = isSales ? t('nav.sales') : isStores ? t('nav.stores') : isSettings ? t('nav.settings') : isInventory ? t('nav.inventory') : null;
   const appName = t('common.appName');
 
   useEffect(() => {
@@ -34,6 +35,9 @@ export default function AppHeader() {
         </Link>
         <Link href="/stores/" className={isStores ? styles.active : styles.link} aria-current={isStores ? 'page' : undefined}>
           {t('nav.stores')}
+        </Link>
+        <Link href="/settings/" className={isSettings ? styles.active : styles.link} aria-current={isSettings ? 'page' : undefined}>
+          {t('nav.settings')}
         </Link>
       </nav>
       <SystemStatusIndicator />

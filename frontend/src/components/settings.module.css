@@ -1,0 +1,37 @@
+.card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  padding: 1rem 1.25rem; margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.75rem;
+}
+.cardTitle { margin: 0; font-size: 1.1rem; }
+.row { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.form { display: flex; align-items: flex-end; gap: 0.6rem; flex-wrap: wrap; }
+.field { display: flex; flex-direction: column; gap: 0.25rem; }
+.label { font-size: 0.82rem; color: var(--text-muted); }
+.input, .select {
+  font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; padding: 0.4rem 0.55rem;
+}
+.input { width: 7rem; }
+.input[aria-invalid='true'] { border-color: var(--danger); }
+.input:focus-visible, .select:focus-visible, .button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.button {
+  font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; padding: 0.4rem 0.9rem; cursor: pointer;
+}
+.button:hover:not(:disabled) { border-color: var(--accent); }
+.button:disabled { opacity: 0.6; cursor: progress; }
+.primary { color: var(--accent-text); background: var(--accent); border-color: var(--accent); }
+.big { font-size: 1.15rem; font-weight: 600; }
+.muted { color: var(--text-muted); font-size: 0.88rem; margin: 0; }
+.ok { color: var(--success); margin: 0; }
+.error { color: var(--danger); margin: 0; font-size: 0.88rem; }
+.warning {
+  color: var(--text); background: var(--warning-bg); border: 1px solid var(--warning); border-radius: 8px;
+  padding: 0.5rem 0.8rem; font-size: 0.88rem; margin: 0;
+}
+.tag {
+  display: inline-block; font-size: 0.78rem; border: 1px solid var(--border); border-radius: 999px;
+  padding: 0.05rem 0.55rem; color: var(--text-muted);
+}
+.counts { margin: 0; padding-left: 1.1rem; }
+.sub { font-size: 0.85rem; color: var(--text-muted); }

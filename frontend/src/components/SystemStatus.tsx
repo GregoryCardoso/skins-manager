@@ -1,10 +1,11 @@
 'use client';
 
+import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
 import { formatDateTime, formatInteger } from '@/lib/format';
-import { getCatalogStatus, getHealth, refreshCatalog } from '@/services/api';
+import { getCatalogStatus, getHealth } from '@/services/api';
 import type { CatalogSource, CatalogStatus, HealthStatus } from '@/types/api';
 import styles from './SystemStatus.module.css';
 
@@ -24,9 +25,6 @@ export default function SystemStatus() {
   const locale = useLanguage();
   const [health, setHealth] = useState<Loadable<HealthStatus>>(initial);
   const [catalog, setCatalog] = useState<Loadable<CatalogStatus>>(initial);
-  const [refreshing, setRefreshing] = useState(false);
-  const [refreshError, setRefreshError] = useState<unknown>(null);
-  const [refreshInfo, setRefreshInfo] = useState<{ total: number; skipped: number; linked: number } | null>(null);
   const controllerRef = useRef<AbortController | null>(null);
 
   const check = useCallback(() => {
@@ -52,19 +50,6 @@ export default function SystemStatus() {
     check();
     return () => controllerRef.current?.abort();
   }, [check]);
-
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    setRefreshError(null);
-    setRefreshInfo(null);
-    refreshCatalog()
-      .then((result) => {
-        setCatalog({ loading: false, data: result, error: null });
-        setRefreshInfo({ total: result.total, skipped: result.skipped, linked: result.linkedLegacyItems });
-      })
-      .catch((error: unknown) => setRefreshError(error))
-      .finally(() => setRefreshing(false));
-  }, []);
 
   const checking = health.loading || catalog.loading;
 
@@ -121,21 +106,7 @@ export default function SystemStatus() {
             <p className={styles.muted}>{t('common.loading')}</p>
           )}
 
-          <button type="button" className={styles.button} onClick={onRefresh} disabled={refreshing}>
-            {refreshing ? t('catalog.refreshing') : t('catalog.refresh')}
-          </button>
-          {refreshInfo && (
-            <p className={styles.ok} role="status">
-              {t('catalog.refreshDone', {
-                total: formatInteger(refreshInfo.total, locale),
-                skipped: formatInteger(refreshInfo.skipped, locale),
-                linked: formatInteger(refreshInfo.linked, locale),
-              })}
-            </p>
-          )}
-          {refreshError !== null && (
-            <p className={styles.error} role="alert">{errorMessageFor(refreshError, tLoose)}</p>
-          )}
+          <Link href="/settings/" className={styles.link}>{t('status.manageInSettings')}</Link>
         </article>
       </div>
     </section>

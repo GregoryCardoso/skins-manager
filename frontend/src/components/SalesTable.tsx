@@ -64,8 +64,9 @@ function DaysCell({ item }: { item: ItemView }) {
   if (!('turnaroundDays' in aging)) return <span className={styles.muted}>{t('common.none')}</span>;
   return (
     <div className={styles.stack}>
-      <span>{tPlural('common.dayCount', aging.turnaroundDays)}</span>
+      <span>{t('sales.daysAfterRelease', { days: tPlural('common.dayCount', aging.turnaroundDays) })}</span>
       <Badge tone={BUCKET_TONES[aging.turnaroundBucket]}>{tLoose(`enums.turnaroundBucket.${aging.turnaroundBucket}`)}</Badge>
+      <span className={styles.muted}>{t('sales.daysHeld', { days: tPlural('common.dayCount', aging.daysHeld) })}</span>
     </div>
   );
 }

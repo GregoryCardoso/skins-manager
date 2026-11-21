@@ -79,7 +79,7 @@ describe('formato de sucesso e cabeçalhos', () => {
   test('listagem: { items, meta } com as chaves da D49', async () => {
     const res = await request(app).get('/api/items');
     expect(Object.keys(res.body.data).sort()).toEqual(['items', 'meta']);
-    expect(Object.keys(res.body.data.meta).sort()).toEqual(['count', 'generatedAt', 'slowItemDays', 'usdBrlRate']);
+    expect(Object.keys(res.body.data.meta).sort()).toEqual(['count', 'fastTurnoverDays', 'generatedAt', 'slowItemDays', 'usdBrlRate']);
   });
 
   test('ItemView tem tradeLock, aging, minPrices, saleProfitUsdCents e stats', async () => {

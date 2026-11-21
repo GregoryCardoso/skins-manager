@@ -19,7 +19,7 @@ describe('PUT /api/settings/fx-rate (lacunas)', () => {
   test('GET no formato padrão; updatedAt inicial é ISO', async () => {
     const body = await getSettings();
     expect(Object.keys(body).sort()).toEqual(['data', 'success']);
-    expect(Object.keys(body.data).sort()).toEqual(['catalogUpdatedAt', 'language', 'theme', 'updatedAt', 'usdBrlRate', 'usdBrlRateUpdatedAt']);
+    expect(Object.keys(body.data).sort()).toEqual(['agingThresholdsAdjusted', 'catalogUpdatedAt', 'fastTurnoverDays', 'fastTurnoverDaysCustom', 'fastTurnoverDaysDefault', 'language', 'ptaxQuotedAt', 'slowItemDays', 'slowItemDaysCustom', 'slowItemDaysDefault', 'theme', 'updatedAt', 'usdBrlRate', 'usdBrlRateSource', 'usdBrlRateUpdatedAt']);
     expect(new Date(body.data.updatedAt).toISOString()).toBe(body.data.updatedAt);
   });
 
@@ -61,7 +61,9 @@ describe('PUT /api/settings/fx-rate (lacunas)', () => {
       success: true,
       data: {
         usdBrlRate: 5.5, usdBrlRateUpdatedAt: '2026-11-20T10:00:00.000Z', catalogUpdatedAt: null,
-        theme: 'SYSTEM', language: 'pt-BR', updatedAt: '2026-11-20T10:00:00.000Z',
+        theme: 'SYSTEM', language: 'pt-BR', usdBrlRateSource: 'MANUAL',
+        agingThresholdsAdjusted: false, fastTurnoverDays: 7, fastTurnoverDaysCustom: null, fastTurnoverDaysDefault: 7,
+      slowItemDays: 21, slowItemDaysCustom: null, slowItemDaysDefault: 21, ptaxQuotedAt: null, updatedAt: '2026-11-20T10:00:00.000Z',
       },
     });
   });

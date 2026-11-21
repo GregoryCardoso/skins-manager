@@ -24,6 +24,7 @@ const BUCKET_TONES: Record<string, BadgeTone> = {
   RECENTE: 'success',
   EM_GIRO: 'neutral',
   AGARRADO: 'danger',
+  EM_TRADE_LOCK: 'info',
   GIRO_RAPIDO: 'success',
   GIRO_NORMAL: 'neutral',
   DEMOROU_VENDER: 'warning',
@@ -88,10 +89,26 @@ function DaysCell({ item }: { item: ItemView }) {
   const tPlural = useTPlural();
   const aging = item.aging;
   if ('daysInInventory' in aging) {
+    const inInventory = (
+      <span className={styles.muted}>{t('inventory.daysInInventory', { days: tPlural('common.dayCount', aging.daysInInventory) })}</span>
+    );
+    // Em trade lock não há dias à venda nem faixa (D160): selo com o tempo restante.
+    if (aging.daysForSale === null) {
+      const time = remainingToText(formatRemaining(item.tradeLock.remainingMs), {
+        d: t('tradeLock.units.d'), h: t('tradeLock.units.h'), min: t('tradeLock.units.min'),
+      });
+      return (
+        <div className={styles.stack}>
+          <Badge tone={BUCKET_TONES[aging.agingBucket]} icon="🔒">{t('inventory.inTradeLock', { time })}</Badge>
+          {inInventory}
+        </div>
+      );
+    }
     return (
       <div className={styles.stack}>
-        <span>{tPlural('common.dayCount', aging.daysInInventory)}</span>
+        <span>{t('inventory.daysForSale', { days: tPlural('common.dayCount', aging.daysForSale) })}</span>
         <Badge tone={BUCKET_TONES[aging.agingBucket]}>{tLoose(`enums.agingBucket.${aging.agingBucket}`)}</Badge>
+        {inInventory}
       </div>
     );
   }
@@ -99,6 +116,7 @@ function DaysCell({ item }: { item: ItemView }) {
     <div className={styles.stack}>
       <span>{t('inventory.turnaround', { days: tPlural('common.dayCount', aging.turnaroundDays) })}</span>
       <Badge tone={BUCKET_TONES[aging.turnaroundBucket]}>{tLoose(`enums.turnaroundBucket.${aging.turnaroundBucket}`)}</Badge>
+      <span className={styles.muted}>{t('inventory.daysHeld', { days: tPlural('common.dayCount', aging.daysHeld) })}</span>
     </div>
   );
 }

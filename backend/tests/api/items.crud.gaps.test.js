@@ -114,7 +114,7 @@ describe('PATCH /api/items/:id (lacunas)', () => {
     expect(unchanged).toMatchObject({ acquiredAt: '2026-11-10T12:00:00.000Z', purchaseStoreId: storeId('CSFloat') });
     const ok = await patch(item.id, { acquiredAt: '2026-11-18T12:00:00.000Z' });
     expect(ok.status).toBe(200);
-    expect(ok.body.data).toMatchObject({ status: 'VENDIDO', aging: { turnaroundDays: 0, turnaroundBucket: 'GIRO_RAPIDO' } });
+    expect(ok.body.data).toMatchObject({ status: 'VENDIDO', aging: { turnaroundDays: 0, turnaroundBucket: 'GIRO_RAPIDO', daysHeld: 0 } });
   });
 
   test('item vendido: trocar COMPRA -> GANHEI zera o custo e recalcula o lucro', async () => {
@@ -163,7 +163,7 @@ describe('DELETE e unsell (lacunas)', () => {
     await sell(item.id);
     const res = await request(app).post(`/api/items/${item.id}/unsell`);
     expect(res.status).toBe(200);
-    expect(res.body.data.aging).toEqual({ daysInInventory: 9, agingBucket: 'EM_GIRO' });
+    expect(res.body.data.aging).toEqual({ daysInInventory: 9, daysForSale: 9, agingBucket: 'EM_GIRO' });
     expect(res.body.data).not.toHaveProperty('turnaroundDays');
   });
 

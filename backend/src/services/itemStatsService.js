@@ -3,7 +3,7 @@
 // Histórico agregado por item igual (2.7). Métricas em USD (centavos) com a cotação gravada de cada item.
 const { toUsdCents } = require('./currencyService');
 const { roundCents } = require('./fees/rounding');
-const { daysBetween } = require('./inventoryAgingService');
+const { turnaroundDaysOf } = require('./inventoryAgingService');
 const { computeSaleProfitUsdCents, buildSaleInfo } = require('./profitService');
 const { approxCounterpart } = require('./currencyService');
 
@@ -46,7 +46,7 @@ function computeStats(items) {
     unitCount,
     soldWithFxCount,
     soldCount: sold.length,
-    avgDaysToSell: Math.round(mean(sold.map((item) => daysBetween(item.acquiredAt, item.soldAt))) * 10) / 10,
+    avgDaysToSell: Math.round(mean(sold.map((item) => turnaroundDaysOf(item))) * 10) / 10,
     avgPurchaseCostUsdCents,
     avgSalePriceUsdCents: roundCents(
       mean(sold.map((item) => toUsdCents(item.salePriceCents, item.saleCurrency, item.fxRateAtSale, 'ROUND'))),
@@ -88,7 +88,7 @@ function computeSalesSummary(items, { usdBrlRate = null } = {}) {
     totalPurchaseCostUsdCents,
     totalProfitUsdCents,
     avgTurnaroundDays: sold.length
-      ? Math.round(mean(sold.map((item) => daysBetween(item.acquiredAt, item.soldAt))) * 10) / 10
+      ? Math.round(mean(sold.map((item) => turnaroundDaysOf(item))) * 10) / 10
       : null,
     soldWithFxCount: infos.filter((i) => i.usesRecordedFx).length,
     approxBrl: {

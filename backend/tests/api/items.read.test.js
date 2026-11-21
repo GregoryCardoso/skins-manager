@@ -61,7 +61,7 @@ describe('GET /api/items/:id', () => {
     const a = await createItemViaApi(app, purchaseBody({ floatValue: 0.2 }));
     await createItemViaApi(app, purchaseBody({ floatValue: 0.3, purchasePriceCents: 300 }));
     const view = (await get(`/api/items/${a.id}`)).body.data;
-    expect(view.aging).toEqual({ daysInInventory: 9, agingBucket: 'EM_GIRO' });
+    expect(view.aging).toEqual({ daysInInventory: 9, daysForSale: 9, agingBucket: 'EM_GIRO' });
     expect(view.stats).toMatchObject({ soldCount: 0, avgPurchaseCostUsdCents: 200, avgDaysToSell: null });
   });
 

@@ -16,7 +16,9 @@ describe('settingsService', () => {
     expect(settingsService.updateFxRate(5.1234, { now })).toEqual({
       usdBrlRate: 5.1234,
       usdBrlRateUpdatedAt: '2026-11-19T15:00:00.000Z',
-      catalogUpdatedAt: null, theme: 'SYSTEM', language: 'pt-BR',
+      catalogUpdatedAt: null, theme: 'SYSTEM', language: 'pt-BR', usdBrlRateSource: 'MANUAL',
+      agingThresholdsAdjusted: false, fastTurnoverDays: 7, fastTurnoverDaysCustom: null, fastTurnoverDaysDefault: 7,
+      slowItemDays: 21, slowItemDaysCustom: null, slowItemDaysDefault: 21, ptaxQuotedAt: null,
       updatedAt: '2026-11-19T15:00:00.000Z',
     });
   });

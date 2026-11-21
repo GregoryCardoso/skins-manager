@@ -53,7 +53,7 @@ export function makeItem(overrides: Partial<ItemView> = {}): ItemView {
     netReceivedManual: false,
     soldAt: null,
     tradeLock: { isLocked: false, remainingMs: 0, formatted: 'Liberado', tradeUnlockAt: null },
-    aging: { daysInInventory: 9, agingBucket: 'EM_GIRO' },
+    aging: { daysInInventory: 9, daysForSale: 9, agingBucket: 'EM_GIRO' },
     minPrices: [],
     saleProfitUsdCents: null,
     saleInfo: null,

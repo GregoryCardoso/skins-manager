@@ -1,35 +1,44 @@
 const { ValidationError } = require('../errors/AppError');
+const { isPlainObject, rejectUnknownFields, requireJsonContentType } = require('./validationHelpers');
+
+const invalidBody = (message) => new ValidationError(message, 'INVALID_BODY');
 
 // Validação de forma; o valor (> 0) é validado pelo settingsService.
 function validateFxRateBody(req, res, next) {
   const body = req.body;
-  if (body === null || typeof body !== 'object' || Array.isArray(body)) {
-    return next(new ValidationError('O corpo da requisição deve ser um objeto JSON.', 'INVALID_BODY'));
-  }
-  const unknown = Object.keys(body).find((k) => k !== 'usdBrlRate');
-  if (unknown) return next(new ValidationError(`Campo desconhecido: ${unknown}`, 'UNKNOWN_FIELD'));
+  if (!isPlainObject(body)) throw invalidBody('O corpo da requisição deve ser um objeto JSON.');
+  rejectUnknownFields(body, ['usdBrlRate']);
   if (body.usdBrlRate === undefined) {
-    return next(new ValidationError('O campo usdBrlRate é obrigatório.', 'REQUIRED_FIELD'));
+    throw new ValidationError('O campo usdBrlRate é obrigatório.', 'REQUIRED_FIELD', { field: 'usdBrlRate' });
   }
   if (typeof body.usdBrlRate !== 'number') {
-    return next(new ValidationError('usdBrlRate deve ser um número.', 'INVALID_FIELD'));
+    throw new ValidationError('usdBrlRate deve ser um número.', 'INVALID_FIELD', { field: 'usdBrlRate' });
   }
   return next();
 }
 
-// PATCH /api/settings (D83): só `theme` e `language`; os valores permitidos são checados no service.
-const PREFERENCE_KEYS = ['theme', 'language'];
+// PATCH /api/settings (D83, D159): tema, idioma e os limites de giro. Os valores permitidos são checados no service.
+const TEXT_KEYS = ['theme', 'language'];
+const DAYS_KEYS = ['fastTurnoverDays', 'slowItemDays']; // número ou null; o tipo é checado no service (códigos próprios)
 
 function validatePreferencesBody(req, res, next) {
   const body = req.body;
-  if (body === null || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).length === 0) {
-    return next(new ValidationError('Informe ao menos theme ou language em um objeto JSON.', 'INVALID_BODY'));
+  if (!isPlainObject(body) || Object.keys(body).length === 0) {
+    throw invalidBody('Informe ao menos um campo (theme, language, fastTurnoverDays ou slowItemDays) em um objeto JSON.');
   }
-  const unknown = Object.keys(body).find((k) => !PREFERENCE_KEYS.includes(k));
-  if (unknown) return next(new ValidationError(`Campo desconhecido: ${unknown}`, 'UNKNOWN_FIELD'));
-  const invalid = Object.keys(body).find((k) => typeof body[k] !== 'string');
-  if (invalid) return next(new ValidationError(`O campo ${invalid} deve ser texto.`, 'INVALID_FIELD'));
+  rejectUnknownFields(body, [...TEXT_KEYS, ...DAYS_KEYS]);
+  const invalid = TEXT_KEYS.find((k) => body[k] !== undefined && typeof body[k] !== 'string');
+  if (invalid) throw new ValidationError(`O campo ${invalid} deve ser texto.`, 'INVALID_FIELD', { field: invalid });
   return next();
 }
 
-module.exports = { validateFxRateBody, validatePreferencesBody };
+// POST /api/settings/fx-rate/ptax (D147): corpo `{}` e Content-Type JSON obrigatório.
+function validatePtaxRefreshBody(req, res, next) {
+  requireJsonContentType(req);
+  const body = req.body === undefined ? {} : req.body;
+  if (!isPlainObject(body)) throw invalidBody('O corpo da requisição deve ser um objeto JSON.');
+  rejectUnknownFields(body, []);
+  return next();
+}
+
+module.exports = { validateFxRateBody, validatePreferencesBody, validatePtaxRefreshBody };

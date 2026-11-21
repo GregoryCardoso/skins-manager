@@ -140,9 +140,9 @@ describe('toItemView', () => {
 
   test('item em estoque: tradeLock, aging, minPrices, stats', () => {
     const item = usdItem({ tradeUnlockAt: null });
-    const view = toItemView(item, { stores, settings: SETTINGS, statsIndex: buildStatsIndex([item]), now: NOW, slowItemDays: 21 });
+    const view = toItemView(item, { stores, settings: SETTINGS, statsIndex: buildStatsIndex([item]), now: NOW, thresholds: { fastTurnoverDays: 7, slowItemDays: 21 } });
     expect(view.tradeLock.isLocked).toBe(false);
-    expect(view.aging).toEqual({ daysInInventory: 18, agingBucket: 'EM_GIRO' });
+    expect(view.aging).toEqual({ daysInInventory: 18, daysForSale: 18, agingBucket: 'EM_GIRO' });
     expect(view.minPrices.find((m) => m.storeName === 'CSFloat').minPriceCents).toBe(103);
     expect(view.saleProfitUsdCents).toBeNull();
     expect(view.stats.soldCount).toBe(0);
@@ -154,10 +154,10 @@ describe('toItemView', () => {
       status: 'VENDIDO', soldAt: '2026-11-05T12:00:00.000Z', saleCurrency: 'USD', fxRateAtSale: null,
       netReceivedCents: 122, salePriceCents: 125,
     });
-    const view = toItemView(item, { stores, settings: SETTINGS, statsIndex: buildStatsIndex([item]), now: NOW, slowItemDays: 21 });
+    const view = toItemView(item, { stores, settings: SETTINGS, statsIndex: buildStatsIndex([item]), now: NOW, thresholds: { fastTurnoverDays: 7, slowItemDays: 21 } });
     expect(view.minPrices).toBeNull();
     expect(view.saleProfitUsdCents).toBe(22);
-    expect(view.aging).toEqual({ turnaroundDays: 4, turnaroundBucket: 'GIRO_RAPIDO' });
+    expect(view.aging).toEqual({ turnaroundDays: 4, turnaroundBucket: 'GIRO_RAPIDO', daysHeld: 4 });
   });
 });
 
