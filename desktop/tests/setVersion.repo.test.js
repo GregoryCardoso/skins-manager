@@ -127,8 +127,9 @@ describe('setVersion sobre cópias reais', () => {
   test('sem versão no package.json de um dos pacotes: lança e não grava nenhum arquivo, nem os locks', () => {
     fs.writeFileSync(path.join(copy, 'desktop', 'package.json'), '{"name":"d"}');
     const lockBefore = fs.readFileSync(path.join(copy, 'package-lock.json'), 'utf8');
+    const rootBefore = fs.readFileSync(path.join(copy, 'package.json'), 'utf8');
     expect(() => setVersion('5.5.5', { rootDir: copy })).toThrow(/não tem o campo "version"/);
     expect(fs.readFileSync(path.join(copy, 'package-lock.json'), 'utf8')).toBe(lockBefore);
-    expect(fs.readFileSync(path.join(copy, 'package.json'), 'utf8')).toContain('"version": "1.0.0"');
+    expect(fs.readFileSync(path.join(copy, 'package.json'), 'utf8')).toBe(rootBefore);
   });
 });

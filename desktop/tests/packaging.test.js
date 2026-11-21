@@ -94,9 +94,14 @@ describe('paths.js empacotado, com espaços', () => {
   });
 });
 
-describe('versão 1.0.0 nos quatro package.json', () => {
-  test.each(['..', '../backend', '../frontend', '.'])('%s', (dir) => {
-    expect(JSON.parse(fs.readFileSync(path.join(DESKTOP_DIR, dir, 'package.json'), 'utf8')).version).toBe('1.0.0');
+describe('mesma versão nos quatro package.json', () => {
+  // Não fixa o número: o version:set muda os quatro juntos (D182).
+  test('raiz, backend, frontend e desktop têm a mesma versão, em semver x.y.z', () => {
+    const versions = ['..', '../backend', '../frontend', '.'].map(
+      (dir) => JSON.parse(fs.readFileSync(path.join(DESKTOP_DIR, dir, 'package.json'), 'utf8')).version,
+    );
+    expect(versions[0]).toMatch(/^(0|[1-9]d*).(0|[1-9]d*).(0|[1-9]d*)$/);
+    expect(new Set(versions).size).toBe(1);
   });
 });
 
