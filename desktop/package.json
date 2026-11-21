@@ -1,0 +1,25 @@
+{
+  "name": "skins-manager-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Skins Manager em janela própria (Electron)",
+  "main": "src/main.js",
+  "scripts": {
+    "stage": "node scripts/stageApp.js",
+    "start": "electron .",
+    "dev": "node scripts/stageApp.js && electron .",
+    "test": "jest",
+    "postinstall": "node node_modules/electron/install.js"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "roots": [
+      "<rootDir>/tests"
+    ]
+  },
+  "devDependencies": {
+    "@electron/rebuild": "4.2.1",
+    "electron": "44.11.5",
+    "jest": "^30.5.2"
+  }
+}

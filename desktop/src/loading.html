@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'">
+  <title>Skins Manager</title>
+  <style>
+    :root { color-scheme: light dark; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+      font-family: "Segoe UI", system-ui, sans-serif; background: Canvas; color: CanvasText;
+    }
+    h1 { font-size: 20px; font-weight: 600; margin: 0; }
+    p { margin: 0; opacity: 0.7; font-size: 14px; }
+    .spinner {
+      width: 28px; height: 28px; border-radius: 50%;
+      border: 3px solid rgba(128, 128, 128, 0.35); border-top-color: currentColor;
+      animation: spin 0.9s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="spinner" role="progressbar" aria-label="Carregando"></div>
+  <h1>Skins Manager</h1>
+  <p>Iniciando&hellip; / Starting&hellip;</p>
+</body>
+</html>

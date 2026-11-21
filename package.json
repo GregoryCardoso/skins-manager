@@ -18,7 +18,12 @@
     "test:frontend": "npm --prefix frontend test",
     "test:backend": "npm --prefix backend test",
     "catalog:snapshot": "npm --prefix backend run catalog:snapshot",
-    "seed:dev": "npm --prefix backend run seed:dev"
+    "seed:dev": "npm --prefix backend run seed:dev",
+    "desktop:install": "npm --prefix desktop install",
+    "desktop:stage": "npm --prefix desktop run stage",
+    "desktop:dev": "npm --prefix desktop run dev",
+    "test:desktop": "npm --prefix desktop test",
+    "test:all": "npm test && npm run test:desktop"
   },
   "devDependencies": {
     "concurrently": "^10.0.7"

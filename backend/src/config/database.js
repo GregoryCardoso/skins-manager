@@ -20,9 +20,11 @@ function latestVersion(migrations) {
 function assertSupportedVersion(db, migrations) {
   const current = db.pragma('user_version', { simple: true });
   if (current > latestVersion(migrations)) {
-    throw new Error(
+    const err = new Error(
       `O banco de dados foi criado por uma versão mais nova do Skins Manager (v${current}; este app conhece até v${latestVersion(migrations)}). Atualize o app.`
     );
+    err.name = 'NewerDatabaseError'; // o server.js traduz para o código `fatal` do app desktop (D177)
+    throw err;
   }
   return current;
 }
