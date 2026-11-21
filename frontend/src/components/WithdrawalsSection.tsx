@@ -16,7 +16,7 @@ import WithdrawalsTable from './WithdrawalsTable';
 type Dialog = { kind: 'create' } | { kind: 'edit'; withdrawal: Withdrawal } | { kind: 'delete'; withdrawal: Withdrawal };
 
 // Seção Saques da página Lucro real (8.2): lista, cadastro, edição e exclusão. Carrega os próprios dados.
-export default function WithdrawalsSection() {
+export default function WithdrawalsSection({ onDataChanged }: { onDataChanged?: () => void }) {
   const t = useT();
   const tLoose = useTLoose();
   const tPlural = useTPlural();
@@ -63,8 +63,9 @@ export default function WithdrawalsSection() {
       closeDialog();
       setNotice(message);
       reload();
+      onDataChanged?.();
     },
-    [closeDialog, reload],
+    [closeDialog, reload, onDataChanged],
   );
 
   const gone = useCallback(() => finish(t('withdrawals.gone')), [finish, t]);

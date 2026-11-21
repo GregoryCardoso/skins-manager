@@ -35,14 +35,10 @@ describe('models/Withdrawal', () => {
     expect(() => Withdrawal.create(wd({ storeId: 9999, amountStoreCents: 10 }))).toThrow(/FOREIGN KEY/);
   });
 
-  test('findAll e sumAmountBrlCents', () => {
-    expect(Withdrawal.sumAmountBrlCents()).toBe(0);
+  test('findAll mais recente primeiro', () => {
     const a = Withdrawal.create(wd({ amountBrlCents: 100, withdrawnAt: '2026-01-01T00:00:00.000Z' }));
     const b = Withdrawal.create(wd({ amountBrlCents: 200, withdrawnAt: '2026-03-01T00:00:00.000Z' }));
-    expect(Withdrawal.sumAmountBrlCents()).toBe(300);
     expect(Withdrawal.findAll().map((w) => w.id)).toEqual([b.id, a.id]);
-    expect(Withdrawal.findAll({ from: '2026-02-01T00:00:00.000Z' }).map((w) => w.id)).toEqual([b.id]);
-    expect(Withdrawal.findAll({ to: '2026-02-01T00:00:00.000Z' }).map((w) => w.id)).toEqual([a.id]);
   });
 
   test('update parcial, inexistente e remove', () => {

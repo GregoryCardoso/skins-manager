@@ -5,6 +5,7 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 import DepositFormModal from '@/components/DepositFormModal';
 import DepositsTable from '@/components/DepositsTable';
 import StoreBalancesPanel from '@/components/StoreBalancesPanel';
+import SummaryCards from '@/components/SummaryCards';
 import WithdrawalsSection from '@/components/WithdrawalsSection';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
@@ -15,7 +16,7 @@ import styles from './page.module.css';
 
 type Dialog = { kind: 'create' } | { kind: 'edit'; deposit: Deposit } | { kind: 'delete'; deposit: Deposit };
 
-// 8.1: Aportes; 8.2: Saques. Saldos e o resumo entram nas próximas subetapas (D198).
+// 8.1: Aportes; 8.2: Saques; 8.3: Saldos; 8.4: resumo (SummaryCards) no topo.
 export default function ProfitPage() {
   const t = useT();
   const tLoose = useTLoose();
@@ -27,6 +28,14 @@ export default function ProfitPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown>(null);
   const [reloadToken, setReloadToken] = useState(0);
+  // Qualquer mudança em aportes, saques ou saldos recarrega o resumo do topo.
+  const [summaryToken, setSummaryToken] = useState(0);
+  const refreshSummary = useCallback(() => setSummaryToken((n) => n + 1), []);
+  const [balancesToken, setBalancesToken] = useState(0);
+  const withdrawalsChanged = useCallback(() => {
+    setSummaryToken((n) => n + 1);
+    setBalancesToken((n) => n + 1);
+  }, []);
   const [dialog, setDialog] = useState<Dialog | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [confirmBusy, setConfirmBusy] = useState(false);
@@ -63,8 +72,9 @@ export default function ProfitPage() {
       closeDialog();
       setNotice(message);
       reload();
+      refreshSummary();
     },
-    [closeDialog, reload],
+    [closeDialog, reload, refreshSummary],
   );
 
   const depositGone = useCallback(() => finish(t('deposits.gone')), [finish, t]);
@@ -88,6 +98,8 @@ export default function ProfitPage() {
     <>
       <h1>{t('profit.title')}</h1>
       <p className={styles.subtitle}>{t('profit.subtitle')}</p>
+
+      <SummaryCards reloadKey={summaryToken} />
 
       <section className={styles.section} aria-labelledby="deposits-heading">
         <div className={styles.titleRow}>
@@ -139,9 +151,9 @@ export default function ProfitPage() {
         )}
       </section>
 
-      <WithdrawalsSection />
+      <WithdrawalsSection onDataChanged={withdrawalsChanged} />
 
-      <StoreBalancesPanel />
+      <StoreBalancesPanel onDataChanged={refreshSummary} reloadKey={balancesToken} />
 
       {dialog?.kind === 'create' && <DepositFormModal stores={stores} onClose={closeDialog} onSaved={finish} onGone={depositGone} />}
       {dialog?.kind === 'edit' && (

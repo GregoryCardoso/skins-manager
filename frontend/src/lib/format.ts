@@ -53,3 +53,8 @@ export function remainingToText(parts: RemainingParts, units: { d: string; h: st
 export function formatRate(rate: number, locale: string): string {
   return new Intl.NumberFormat(locale, { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 4 }).format(rate);
 }
+
+// Razão (0,7754 -> "77,5%") com uma casa decimal, no idioma da tela.
+export function formatPercent(ratio: number, locale: string): string {
+  return new Intl.NumberFormat(locale, { style: 'percent', minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(ratio);
+}

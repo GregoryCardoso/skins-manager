@@ -33,26 +33,11 @@ describe('models/Deposit', () => {
     expect(() => Deposit.create(dep({ storeId: 9999 }))).toThrow(/FOREIGN KEY/);
   });
 
-  test('soma com tabela vazia = 0', () => {
-    expect(Deposit.sumAmountBrlCents()).toBe(0);
-  });
-
-  test('soma dos valores', () => {
-    Deposit.create(dep({ amountBrlCents: 100 }));
-    Deposit.create(dep({ amountBrlCents: 250 }));
-    expect(Deposit.sumAmountBrlCents()).toBe(350);
-  });
-
-  test('findAll mais recente primeiro e filtra from/to inclusivos', () => {
+  test('findAll mais recente primeiro', () => {
     const a = Deposit.create(dep({ depositedAt: '2026-01-01T00:00:00.000Z' }));
     const b = Deposit.create(dep({ depositedAt: '2026-03-01T00:00:00.000Z' }));
     const c = Deposit.create(dep({ depositedAt: '2026-02-01T00:00:00.000Z' }));
     expect(Deposit.findAll().map((d) => d.id)).toEqual([b.id, c.id, a.id]);
-    expect(Deposit.findAll({ from: '2026-02-01T00:00:00.000Z' }).map((d) => d.id)).toEqual([b.id, c.id]);
-    expect(Deposit.findAll({ to: '2026-02-01T00:00:00.000Z' }).map((d) => d.id)).toEqual([c.id, a.id]);
-    expect(
-      Deposit.findAll({ from: '2026-01-15T00:00:00.000Z', to: '2026-02-15T00:00:00.000Z' }).map((d) => d.id)
-    ).toEqual([c.id]);
   });
 
   test('update parcial, update inexistente e remove', () => {

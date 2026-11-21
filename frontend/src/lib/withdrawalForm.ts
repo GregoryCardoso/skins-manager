@@ -108,12 +108,15 @@ export function buildWithdrawalPatchBody(state: WithdrawalFormState, original: W
   const patch: WithdrawalPatchBody = {};
   if (state.storeId !== null && state.storeId !== original.storeId) patch.storeId = state.storeId;
   const amountStore = parseMoneyToCents(state.amountText, language);
-  if (amountStore !== null && amountStore !== original.amountStoreCents) patch.amountStoreCents = amountStore;
+  // D221: trocar de loja sempre envia o valor sacado junto (a moeda da nova loja pode ser outra).
+  if (amountStore !== null && (amountStore !== original.amountStoreCents || patch.storeId !== undefined)) patch.amountStoreCents = amountStore;
+  // D221: trocar de loja também envia a taxa (o valor do campo, ou null se vazio), mesmo sem alteração.
+  const storeChanged = patch.storeId !== undefined;
   if (state.feeText.trim() === '') {
-    if (original.feeCents !== null) patch.feeCents = null;
+    if (original.feeCents !== null || storeChanged) patch.feeCents = null;
   } else {
     const fee = parseMoneyToCents(state.feeText, language);
-    if (fee !== null && fee !== original.feeCents) patch.feeCents = fee;
+    if (fee !== null && (fee !== original.feeCents || storeChanged)) patch.feeCents = fee;
   }
   const received = parseMoneyToCents(state.receivedText, language);
   if (received !== null && received !== original.amountBrlCents) patch.amountBrlCents = received;

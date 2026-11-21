@@ -21,18 +21,17 @@ function estimateBalanceBrl({ balanceCents, store, settings }) {
   if (!Number.isSafeInteger(balanceCents) || balanceCents < 0) {
     throw new ValidationError('Saldo deve ser um inteiro de centavos maior ou igual a 0.', 'INVALID_AMOUNT');
   }
-  const withdrawable = Boolean(store.allowsWithdrawal);
-  const exact = (estimatedBrlCents) => ({ estimatedBrlCents, withdrawable, estimated: false, warning: null, warningCode: null });
+  const exact = (estimatedBrlCents) => ({ estimatedBrlCents, estimated: false, warning: null, warningCode: null });
   if (balanceCents === 0) return exact(0);
   if (store.currency === 'BRL') return exact(balanceCents);
   const usdBrlRate = settings ? settings.usdBrlRate : null;
   if (!isValidFxRate(usdBrlRate)) {
     return {
-      estimatedBrlCents: null, withdrawable, estimated: true, warning: WARNING_FX, warningCode: WARNINGS.FX_NOT_CONFIGURED.code,
+      estimatedBrlCents: null, estimated: true, warning: WARNING_FX, warningCode: WARNINGS.FX_NOT_CONFIGURED.code,
     };
   }
   return {
-    estimatedBrlCents: roundCents(balanceCents * usdBrlRate, 'ROUND'), withdrawable, estimated: true, warning: null, warningCode: null,
+    estimatedBrlCents: roundCents(balanceCents * usdBrlRate, 'ROUND'), estimated: true, warning: null, warningCode: null,
   };
 }
 
@@ -53,7 +52,9 @@ function assertAmount(value, field, label) {
 // Saque antigo (sem loja) só é editável escolhendo loja e valor (STORE_REQUIRED / REQUIRED_FIELD, D203).
 // WITHDRAWAL_NOT_ALLOWED: só ao criar ou ao trocar de loja (E8-Q6); manter a loja gravada é sempre aceito,
 // e loja inativa também.
-function buildWithdrawalRecord(input, { existing = null, store = null, now = new Date() } = {}) {
+// D221: ao trocar de loja com moeda diferente (ou saque antigo sem loja, moeda anterior desconhecida), o valor sacado
+// precisa vir no corpo (`previousStore`: a loja gravada, nula se não havia); a taxa continua validada no registro mesclado.
+function buildWithdrawalRecord(input, { existing = null, store = null, previousStore = null, now = new Date() } = {}) {
   const base = existing
     ? {
       storeId: existing.storeId,
@@ -75,6 +76,11 @@ function buildWithdrawalRecord(input, { existing = null, store = null, now = new
   const storeChanged = !existing || record.storeId !== existing.storeId;
   if (storeChanged && !store.allowsWithdrawal) {
     throw new ValidationError('Esta loja não permite saque.', 'WITHDRAWAL_NOT_ALLOWED', { field: 'storeId' });
+  }
+
+  if (existing && storeChanged && input && input.amountStoreCents === undefined) {
+    const currencyKnownAndEqual = previousStore && previousStore.currency === store.currency;
+    if (!currencyKnownAndEqual) throw required('amountStoreCents');
   }
 
   // 2. valor sacado (moeda da loja)
@@ -182,7 +188,7 @@ function createWithdrawal(input, { now = new Date() } = {}) {
 function updateWithdrawal(id, partial, { now = new Date() } = {}) {
   const existing = findOrFail(id);
   const storeId = partial.storeId !== undefined ? partial.storeId : existing.storeId;
-  const record = buildWithdrawalRecord(partial, { existing, store: loadStore(storeId), now });
+  const record = buildWithdrawalRecord(partial, { existing, store: loadStore(storeId), previousStore: loadStore(existing.storeId), now });
   return toWithdrawalView(Withdrawal.update(id, record, { now }), storesMap());
 }
 

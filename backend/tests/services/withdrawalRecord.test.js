@@ -108,7 +108,16 @@ describe('buildWithdrawalRecord: edição (registro mesclado)', () => {
 
   test('trocar para loja sem saque -> WITHDRAWAL_NOT_ALLOWED; para loja com saque, aceito', () => {
     failWith(() => build({ storeId: 2 }, { existing: OLD, store: steam() }), 'WITHDRAWAL_NOT_ALLOWED', 'storeId');
-    expect(build({ storeId: 3 }, { existing: OLD, store: csmoney() }).storeId).toBe(3);
+    expect(build({ storeId: 3 }, { existing: OLD, store: csmoney(), previousStore: csfloat() }).storeId).toBe(3);
+  });
+
+  test('D221: trocar de loja com moeda diferente (ou saque antigo sem loja) exige amountStoreCents', () => {
+    const brlWithdrawable = steam({ allowsWithdrawal: true });
+    failWith(() => build({ storeId: 2 }, { existing: OLD, store: brlWithdrawable, previousStore: csfloat() }), 'REQUIRED_FIELD', 'amountStoreCents');
+    expect(build({ storeId: 2, amountStoreCents: 9000 }, { existing: OLD, store: brlWithdrawable, previousStore: csfloat() }).amountStoreCents).toBe(9000);
+    failWith(() => build({ storeId: 1 }, { existing: LEGACY, store: csfloat(), previousStore: null }), 'REQUIRED_FIELD', 'amountStoreCents');
+    // mesma moeda: o valor gravado é mantido
+    expect(build({ storeId: 3 }, { existing: OLD, store: csmoney(), previousStore: csfloat() }).amountStoreCents).toBe(10000);
   });
 
   test('feeCents: null limpa a taxa; trocar o valor abaixo da taxa gravada recusa', () => {

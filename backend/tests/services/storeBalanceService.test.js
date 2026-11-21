@@ -70,7 +70,7 @@ function d206() {
     sale(3, '2026-11-19T12:00:00.000Z', 1000), // E
     sale(3, '2026-11-10T12:00:00.000Z', 600), // I
     sale(2, '2026-11-21T10:00:00.000Z', 800, 0), // H
-    { status: 'EM_ESTOQUE', purchaseStoreId: 1, acquiredAt: '2026-11-01T12:00:00.000Z', saleStoreId: null },
+    { status: 'EM_ESTOQUE', acquisitionType: 'COMPRA', purchaseStoreId: 1, acquiredAt: '2026-11-01T12:00:00.000Z', saleStoreId: null },
   ];
   const withdrawals = [{ storeId: 1, withdrawnAt: '2026-11-10T12:00:00.000Z' }, { storeId: null, withdrawnAt: '2026-01-05T12:00:00.000Z' }];
   return { stores, latestBalances, items, withdrawals, settings: RATE, now: NOW };
@@ -146,7 +146,7 @@ describe('buildCurrentBalances: avisos', () => {
   });
 
   test('compra, saque e venda sem retenção depois do registro -> ACTIVITY_AFTER_BALANCE', () => {
-    const purchase = { status: 'EM_ESTOQUE', purchaseStoreId: 1, acquiredAt: '2026-11-21T00:00:00.000Z' };
+    const purchase = { status: 'EM_ESTOQUE', acquisitionType: 'COMPRA', purchaseStoreId: 1, acquiredAt: '2026-11-21T00:00:00.000Z' };
     expect(only(csfloat(), { latestBalances: [recorded], items: [purchase] }).outdatedReasons).toEqual(['ACTIVITY_AFTER_BALANCE']);
     const withdrawal = { storeId: 1, withdrawnAt: '2026-11-21T00:00:00.000Z' };
     expect(only(csfloat(), { latestBalances: [recorded], withdrawals: [withdrawal] }).outdatedReasons).toEqual(['ACTIVITY_AFTER_BALANCE']);
@@ -154,20 +154,25 @@ describe('buildCurrentBalances: avisos', () => {
     expect(only(csfloat(), { latestBalances: [recorded], items: [noHold] }).outdatedReasons).toEqual(['ACTIVITY_AFTER_BALANCE']);
   });
 
+  test('item GANHEI com loja informativa não dispara ACTIVITY_AFTER_BALANCE', () => {
+    const gift = { status: 'EM_ESTOQUE', acquisitionType: 'GANHEI', purchaseStoreId: 1, acquiredAt: '2026-11-21T00:00:00.000Z' };
+    expect(only(csfloat(), { latestBalances: [recorded], items: [gift] })).toMatchObject({ outdated: false, outdatedReasons: [] });
+  });
+
   test('atividade exatamente no recordedAt, ou antes, não dispara; saque de outra loja não dispara', () => {
-    const equal = { status: 'EM_ESTOQUE', purchaseStoreId: 1, acquiredAt: recorded.recordedAt };
+    const equal = { status: 'EM_ESTOQUE', acquisitionType: 'COMPRA', purchaseStoreId: 1, acquiredAt: recorded.recordedAt };
     expect(only(csfloat(), { latestBalances: [recorded], items: [equal] }).outdated).toBe(false);
     const other = { storeId: 3, withdrawnAt: '2026-11-21T00:00:00.000Z' };
     expect(only(csfloat(), { latestBalances: [recorded], withdrawals: [other] }).outdated).toBe(false);
   });
 
   test('os dois motivos juntos, nessa ordem', () => {
-    const items = [sale(1, '2026-11-13T20:00:00.000Z', 100), { status: 'EM_ESTOQUE', purchaseStoreId: 1, acquiredAt: '2026-11-21T00:00:00.000Z' }];
+    const items = [sale(1, '2026-11-13T20:00:00.000Z', 100), { status: 'EM_ESTOQUE', acquisitionType: 'COMPRA', purchaseStoreId: 1, acquiredAt: '2026-11-21T00:00:00.000Z' }];
     expect(only(csfloat(), { latestBalances: [recorded], items }).outdatedReasons).toEqual(['RELEASED_AFTER_BALANCE', 'ACTIVITY_AFTER_BALANCE']);
   });
 
   test('loja sem saldo registrado: outdated false mesmo com atividade', () => {
-    const items = [{ status: 'EM_ESTOQUE', purchaseStoreId: 1, acquiredAt: '2026-11-21T00:00:00.000Z' }, sale(1, '2026-11-01T00:00:00.000Z', 100)];
+    const items = [{ status: 'EM_ESTOQUE', acquisitionType: 'COMPRA', purchaseStoreId: 1, acquiredAt: '2026-11-21T00:00:00.000Z' }, sale(1, '2026-11-01T00:00:00.000Z', 100)];
     const row = only(csfloat(), { items });
     expect(row).toMatchObject({ outdated: false, outdatedReasons: [], balance: null, availableCents: 0 });
     expect(row.releasedAfterBalance.count).toBe(1);

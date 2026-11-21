@@ -12,14 +12,6 @@ function create(data, { now = new Date() } = {}) {
   return findById(Number(id));
 }
 
-function findLatestByStore(storeId) {
-  return mapRow(
-    getDb()
-      .prepare('SELECT * FROM store_balances WHERE store_id = ? ORDER BY recorded_at DESC, id DESC LIMIT 1')
-      .get(storeId)
-  );
-}
-
 function findLatestAll() {
   return getDb()
     .prepare(
@@ -54,4 +46,4 @@ function remove(id) {
   return getDb().prepare('DELETE FROM store_balances WHERE id = ?').run(id).changes > 0;
 }
 
-module.exports = { create, findById, findLatestByStore, findLatestAll, findHistory, findAll, remove };
+module.exports = { create, findById, findLatestAll, findHistory, findAll, remove };

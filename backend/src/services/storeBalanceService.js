@@ -13,6 +13,7 @@ const { MAX_AMOUNT_CENTS } = require('../config/constants');
 const { parseDate } = require('./dateUtils');
 const { assertNotFutureDay } = require('./inventoryAgingService');
 const { estimateBalanceBrl } = require('./withdrawalService');
+const { isValidFxRate } = require('./currencyService');
 const { computeHeldSalesForStore } = require('./saleHoldService');
 const { WARNINGS } = require('./warnings');
 
@@ -65,7 +66,7 @@ function outdatedReasonsOf({ store, latestBalance, held, items, withdrawals }) {
   const after = (iso) => !isNil(iso) && Date.parse(iso) > recordedMs;
   const reasons = [];
   if (held.releasedAfterBalance.count > 0) reasons.push('RELEASED_AFTER_BALANCE');
-  const purchased = items.some((item) => item.purchaseStoreId === store.id && after(item.acquiredAt));
+  const purchased = items.some((item) => item.acquisitionType === 'COMPRA' && item.purchaseStoreId === store.id && after(item.acquiredAt));
   const withdrawn = withdrawals.some((w) => w.storeId === store.id && after(w.withdrawnAt));
   const soldWithoutHold = items.some(
     (item) => item.status === 'VENDIDO' && item.saleStoreId === store.id && !(item.saleHoldDaysApplied > 0) && after(item.soldAt)
@@ -92,7 +93,7 @@ function buildCurrentBalances({
     const missingFx = [available, pending, released].some((part) => part.warningCode === WARNINGS.FX_NOT_CONFIGURED.code);
     let warningCode = null;
     if (missingFx) warningCode = WARNINGS.FX_NOT_CONFIGURED.code;
-    else if (outdated) warningCode = 'BALANCE_MAYBE_OUTDATED';
+    else if (outdated) warningCode = WARNINGS.BALANCE_MAYBE_OUTDATED.code;
     return {
       storeId: store.id,
       storeName: store.name,
@@ -129,7 +130,7 @@ function buildCurrentBalances({
   return {
     stores: rows,
     totals,
-    usdBrlRate: settings && !isNil(settings.usdBrlRate) ? settings.usdBrlRate : null,
+    usdBrlRate: settings && isValidFxRate(settings.usdBrlRate) ? settings.usdBrlRate : null,
     computedAt: now.toISOString(),
   };
 }

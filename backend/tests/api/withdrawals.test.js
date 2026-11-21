@@ -142,6 +142,21 @@ describe('PATCH /api/withdrawals/:id', () => {
     expect(res.body.data).toMatchObject({ storeId: storeId('CSMoney'), storeName: 'CSMoney' });
   });
 
+  test('D221: trocar para loja de outra moeda exige amountStoreCents; sem a troca de moeda, não', async () => {
+    await request(app).patch(`/api/stores/${storeId('Steam')}`).send({ allowsWithdrawal: true }).expect(200);
+    const { id } = (await post(body())).body.data; // CSFloat (USD)
+    expectError(await patch(id, { storeId: storeId('Steam') }), 400, 'REQUIRED_FIELD', { field: 'amountStoreCents' });
+    const ok = await patch(id, { storeId: storeId('Steam'), amountStoreCents: 52000, feeCents: 250 });
+    expect(ok.status).toBe(200);
+    expect(ok.body.data).toMatchObject({ currency: 'BRL', amountStoreCents: 52000 });
+    // fee <= amount continua valendo no registro mesclado
+    expectError(await patch(id, { storeId: storeId('Steam'), amountStoreCents: 100 }), 400, 'WITHDRAWAL_FEE_ABOVE_AMOUNT', { field: 'feeCents' });
+    // mesma moeda (USD -> USD): mantém o valor gravado
+    const { id: id2 } = (await post(body())).body.data;
+    const same = await patch(id2, { storeId: storeId('CSMoney'), feeCents: null });
+    expect(same.body.data.amountStoreCents).toBe(10000);
+  });
+
   test('manter a loja é aceito mesmo depois de a loja deixar de permitir saque', async () => {
     const { id } = (await post(body())).body.data;
     await request(app).patch(`/api/stores/${storeId('CSFloat')}`).send({ allowsWithdrawal: false }).expect(200);

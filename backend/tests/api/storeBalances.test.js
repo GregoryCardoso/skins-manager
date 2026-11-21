@@ -229,7 +229,7 @@ describe('GET /api/store-balances/current: exemplo de D206 centavo a centavo', (
   test('excluir o último saldo da CSFloat: o corte volta ao anterior (vendas voltam a contar)', async () => {
     const older = StoreBalance.create({ storeId: ids.csf, balanceCents: 1, fxRate: null, recordedAt: '2026-11-10T00:00:00.000Z' }, { now: D206_NOW });
     expect(older.id).toBeDefined();
-    const lastId = StoreBalance.findLatestByStore(ids.csf).id;
+    const lastId = StoreBalance.findLatestAll().find((b) => b.storeId === ids.csf).id;
     expect((await request(app).delete(`/api/store-balances/${lastId}`)).status).toBe(200);
     const csf = row(await current(), 'CSFloat');
     // corte = 2026-11-10T00:00Z: D (libera 19/11 10:00) passa a contar como liberada

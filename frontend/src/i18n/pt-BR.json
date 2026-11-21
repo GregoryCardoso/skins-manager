@@ -779,7 +779,33 @@
   },
   "profit": {
     "title": "Lucro real",
-    "subtitle": "Acompanhe o dinheiro que você colocou, o que sacou e o saldo de cada loja. O resumo chega na próxima atualização."
+    "subtitle": "Acompanhe o que você colocou, o que sacou, o saldo de cada loja e o seu lucro real.",
+    "pendingIncluded": "inclui ≈ {amount} pendente (libera a partir de {date})",
+    "pendingIncludedNoDate": "inclui ≈ {amount} pendente",
+    "releasedIncluded": "inclui ≈ {amount} liberado após o último saldo registrado (atualize o saldo)",
+    "estimatedNote": "Valores com ≈ são estimados pela cotação {fx}.",
+    "estimatedNoFx": "Valores com ≈ são estimados pela cotação do dólar, que ainda não está configurada.",
+    "emptyHint": "Registre aportes e saldos para ver o lucro real.",
+    "summary": {
+      "title": "Resumo",
+      "loadError": "Não foi possível carregar o resumo: {reason}",
+      "realProfit": "Lucro real",
+      "realProfitHint": "Saques + saldos (disponível, pendente e liberado) + estoque − aportes.",
+      "usdApprox": "≈ {value}",
+      "deposited": "Total colocado",
+      "withdrawn": "Total retirado",
+      "platformBalance": "Saldo nas plataformas",
+      "stock": "Estoque (pelo custo)",
+      "withdrawnVsDeposited": "Já sacado vs. colocado",
+      "withdrawnVsDepositedNone": "sem aportes",
+      "withdrawnVsDepositedDetail": "{withdrawn} de {deposited}",
+      "unavailable": "indisponível",
+      "unavailableHint": "Falta a cotação do dólar para calcular este valor.",
+      "pendingUnavailable": "inclui saldo pendente: indisponível (falta a cotação do dólar)",
+      "releasedUnavailable": "inclui saldo liberado após o último registro: indisponível (falta a cotação do dólar)",
+      "warningStore": "{store}: {message}",
+      "warningStock": "Estoque: {message}"
+    }
   },
   "deposits": {
     "title": "Aportes",

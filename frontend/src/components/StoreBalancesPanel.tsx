@@ -103,7 +103,8 @@ function StoreRow({ store, onRecord, onHistory }: {
 
 // Seção Saldos da página Lucro real (8.3, D207, D216): disponível + pendente + liberado após o último registro,
 // por loja, tudo vindo pronto do backend. Carrega os próprios dados.
-export default function StoreBalancesPanel() {
+// `reloadKey`: a página o incrementa quando algo externo (saques) muda, para o aviso de saldo desatualizado atualizar sem F5.
+export default function StoreBalancesPanel({ onDataChanged, reloadKey = 0 }: { onDataChanged?: () => void; reloadKey?: number }) {
   const t = useT();
   const tLoose = useTLoose();
   const tPlural = useTPlural();
@@ -117,6 +118,11 @@ export default function StoreBalancesPanel() {
   const [notice, setNotice] = useState<string | null>(null);
 
   const reload = useCallback(() => setReloadToken((n) => n + 1), []);
+  // Mudança de saldo: recarrega o painel e avisa a página (o resumo do topo depende dos saldos).
+  const changed = useCallback(() => {
+    setReloadToken((n) => n + 1);
+    onDataChanged?.();
+  }, [onDataChanged]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -133,14 +139,14 @@ export default function StoreBalancesPanel() {
         setLoading(false);
       });
     return () => controller.abort();
-  }, [reloadToken]);
+  }, [reloadToken, reloadKey]);
 
   const closeDialog = useCallback(() => setDialog(null), []);
   const saved = useCallback((message: string) => {
     setDialog(null);
     setNotice(message);
-    reload();
-  }, [reload]);
+    changed();
+  }, [changed]);
 
   const nonWithdrawable = data ? data.totals.nonWithdrawableEstimatedBrlCents : null;
   const hasNonWithdrawable = data !== null && data.stores.some((store) => !store.allowsWithdrawal);
@@ -198,7 +204,7 @@ export default function StoreBalancesPanel() {
       )}
 
       {dialog?.kind === 'record' && <StoreBalanceFormModal store={dialog.store} onClose={closeDialog} onSaved={saved} />}
-      {dialog?.kind === 'history' && <StoreBalanceHistory store={dialog.store} onClose={closeDialog} onChanged={reload} />}
+      {dialog?.kind === 'history' && <StoreBalanceHistory store={dialog.store} onClose={closeDialog} onChanged={changed} />}
     </section>
   );
 }

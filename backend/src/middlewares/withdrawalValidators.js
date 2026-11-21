@@ -24,9 +24,6 @@ function checkBodyShape(body, { requireKeys }) {
     return err;
   }
   if (requireKeys) {
-    if (body.storeId === undefined || body.storeId === null) {
-      return new ValidationError('A loja do saque é obrigatória.', 'STORE_REQUIRED', { field: 'storeId' });
-    }
     for (const key of ['amountStoreCents', 'amountBrlCents', 'withdrawnAt']) {
       if (body[key] === undefined || body[key] === null) {
         return new ValidationError(`O campo ${key} é obrigatório.`, 'REQUIRED_FIELD', { field: key });

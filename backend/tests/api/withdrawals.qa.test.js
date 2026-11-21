@@ -63,8 +63,9 @@ describe('ordem das validações (POST)', () => {
     expectError(await post({ foo: 1 }), 400, 'UNKNOWN_FIELD', { field: 'foo' });
   });
 
-  test('ausentes: loja primeiro, depois valor sacado, recebido e data (nessa ordem)', async () => {
-    expectError(await post({}), 400, 'STORE_REQUIRED', { field: 'storeId' });
+  test('ausentes: loja (service), depois valor sacado, recebido e data (nessa ordem)', async () => {
+    expectError(await post({ amountStoreCents: 5, amountBrlCents: 5, withdrawnAt: '2026-11-10T12:00:00.000Z' }), 400, 'STORE_REQUIRED', { field: 'storeId' });
+    expectError(await post({ storeId: null, amountStoreCents: 5, amountBrlCents: 5, withdrawnAt: '2026-11-10T12:00:00.000Z' }), 400, 'STORE_REQUIRED', { field: 'storeId' });
     expectError(await post({ storeId: storeId('CSFloat') }), 400, 'REQUIRED_FIELD', { field: 'amountStoreCents' });
     expectError(await post({ storeId: storeId('CSFloat'), amountStoreCents: 5 }), 400, 'REQUIRED_FIELD', { field: 'amountBrlCents' });
     expectError(await post({ storeId: storeId('CSFloat'), amountStoreCents: 5, amountBrlCents: 5 }), 400, 'REQUIRED_FIELD', { field: 'withdrawnAt' });

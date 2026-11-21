@@ -3,8 +3,14 @@
 // Lucro da venda (2.5) e lucro real (2.10).
 const { toUsdCents, isValidFxRate, approxCounterpart } = require('./currencyService');
 const { roundCents } = require('./fees/rounding');
-const { estimateBalanceBrl } = require('./withdrawalService');
-const { WARNING_FX } = require('./warnings');
+const { WARNING_FX, WARNINGS } = require('./warnings');
+const { buildCurrentBalances } = require('./storeBalanceService');
+const Setting = require('../models/Setting');
+const Item = require('../models/Item');
+const Store = require('../models/Store');
+const Deposit = require('../models/Deposit');
+const Withdrawal = require('../models/Withdrawal');
+const StoreBalance = require('../models/StoreBalance');
 
 const sumOf = (values) => values.reduce((acc, v) => acc + v, 0);
 const addNullable = (a, b) => (a === null || b === null ? null : a + b);
@@ -63,65 +69,59 @@ function estimateStockBrl(stockItems, usdBrlRate) {
   return { totalBrlCents: total, warning: null };
 }
 
+// Lucro real (2.10, D205, D206). `balances` é o resultado de `storeBalanceService.buildCurrentBalances` (uma linha por
+// loja, com disponível, pendente e liberado após o último registro já convertidos, cada parcela com ROUND, T82).
+// Lojas não sacáveis entram como as demais; a soma "não sacável" é só informativa e não é somada de novo (D212).
+// Avisos (T48): objetos { source, storeId, storeName, code, text }, sem concatenar texto; o frontend traduz pelo código.
 function computeRealProfit(input = {}) {
   const deposits = input.deposits ?? [];
   const withdrawals = input.withdrawals ?? [];
-  const platformBalances = input.platformBalances ?? [];
+  const balanceRows = (input.balances && input.balances.stores) || [];
   const stockItems = input.stockItems ?? [];
   const settings = input.settings ?? {};
-  const usdBrlRate = settings ? settings.usdBrlRate : null;
+  const usdBrlRate = settings.usdBrlRate;
   const warnings = [];
 
   const depositsBrlCents = sumOf(deposits.map((d) => d.amountBrlCents));
   const withdrawalsBrlCents = sumOf(withdrawals.map((w) => w.amountBrlCents));
 
-  const balancesByStore = platformBalances.map(({ store, balance }) => {
-    const balanceCents = balance ? balance.balanceCents : 0;
-    const est = estimateBalanceBrl({ balanceCents, store, settings });
-    if (est.warning) warnings.push(`${store.name}: ${est.warning}`);
-    return {
-      storeId: store.id,
-      storeName: store.name,
-      balanceCents,
-      currency: store.currency,
-      estimatedBrlCents: est.estimatedBrlCents,
-      withdrawable: est.withdrawable,
-      estimated: est.estimated,
-      warning: est.warning,
-    };
-  });
+  const sumRows = (pick) => balanceRows.reduce((acc, row) => addNullable(acc, pick(row)), 0);
+  const platformBalanceEstimatedBrlCents = sumRows((row) => row.availableEstimatedBrlCents);
+  const pendingBalanceEstimatedBrlCents = sumRows((row) => row.pending.estimatedBrlCents);
+  const releasedAfterBalanceEstimatedBrlCents = sumRows((row) => row.releasedAfterBalance.estimatedBrlCents);
+  const nextReleases = balanceRows.map((row) => row.pending.nextReleaseAt).filter((value) => value !== null).sort();
 
-  const sumBalances = (withdrawable) =>
-    balancesByStore
-      .filter((b) => b.withdrawable === withdrawable)
-      .reduce((acc, b) => addNullable(acc, b.estimatedBrlCents), 0);
-  const withdrawableBalanceBrlCents = sumBalances(true);
-  const nonWithdrawableBalanceBrlCents = sumBalances(false);
+  for (const row of balanceRows) {
+    const missingFx = [row.availableEstimatedBrlCents, row.pending.estimatedBrlCents, row.releasedAfterBalance.estimatedBrlCents]
+      .some((value) => value === null);
+    const storeWarning = (warning) => ({
+      source: 'STORE', storeId: row.storeId, storeName: row.storeName, code: warning.code, text: warning.text,
+    });
+    if (missingFx) warnings.push(storeWarning(WARNINGS.FX_NOT_CONFIGURED));
+    if (row.outdated) warnings.push(storeWarning(WARNINGS.BALANCE_MAYBE_OUTDATED));
+  }
 
   const stock = estimateStockBrl(stockItems, usdBrlRate);
-  if (stock.warning) warnings.push(`Estoque: ${stock.warning}`);
+  if (stock.warning) {
+    warnings.push({ source: 'STOCK', storeId: null, storeName: null, code: WARNINGS.FX_NOT_CONFIGURED.code, text: stock.warning });
+  }
   const stockEstimatedBrlCents = stock.totalBrlCents;
 
-  const withdrawableRealProfitBrlCents =
-    withdrawableBalanceBrlCents === null || stockEstimatedBrlCents === null
-      ? null
-      : withdrawalsBrlCents + withdrawableBalanceBrlCents + stockEstimatedBrlCents - depositsBrlCents;
-  const realProfitBrlCents = addNullable(withdrawableRealProfitBrlCents, nonWithdrawableBalanceBrlCents);
-
-  const toApproxUsd = (brl) => (brl === null || !isValidFxRate(usdBrlRate) ? null : toUsdCents(brl, 'BRL', usdBrlRate));
+  const parts = [platformBalanceEstimatedBrlCents, pendingBalanceEstimatedBrlCents, releasedAfterBalanceEstimatedBrlCents, stockEstimatedBrlCents];
+  const realProfitBrlCents = parts.every((part) => part !== null) ? withdrawalsBrlCents + sumOf(parts) - depositsBrlCents : null;
+  const realProfitUsdCentsApprox =
+    realProfitBrlCents === null || !isValidFxRate(usdBrlRate) ? null : toUsdCents(realProfitBrlCents, 'BRL', usdBrlRate);
 
   return {
     depositsBrlCents,
     withdrawalsBrlCents,
-    platformBalanceEstimatedBrlCents: addNullable(withdrawableBalanceBrlCents, nonWithdrawableBalanceBrlCents),
-    withdrawableBalanceBrlCents,
-    nonWithdrawableBalanceBrlCents,
+    platformBalanceEstimatedBrlCents,
+    pendingBalanceEstimatedBrlCents,
+    releasedAfterBalanceEstimatedBrlCents,
+    nextReleaseAt: nextReleases.length ? nextReleases[0] : null,
     stockEstimatedBrlCents,
     realProfitBrlCents,
-    withdrawableRealProfitBrlCents,
-    realProfitUsdCentsApprox: toApproxUsd(realProfitBrlCents),
-    withdrawableRealProfitUsdCentsApprox: toApproxUsd(withdrawableRealProfitBrlCents),
-    balancesByStore,
+    realProfitUsdCentsApprox,
     withdrawnVsDeposited: {
       withdrawnBrlCents: withdrawalsBrlCents,
       depositedBrlCents: depositsBrlCents,
@@ -131,4 +131,37 @@ function computeRealProfit(input = {}) {
   };
 }
 
-module.exports = { computeSaleProfitUsdCents, buildSaleInfo, computeRealProfit };
+// Orquestração de GET /api/profit/summary (D205): total acumulado, sem filtro de período.
+function getProfitSummary({ now = new Date() } = {}) {
+  const settings = Setting.get();
+  const items = Item.findAll();
+  const withdrawals = Withdrawal.findAll();
+  const deposits = Deposit.findAll();
+  const balances = buildCurrentBalances({
+    stores: Store.findAll(), latestBalances: StoreBalance.findLatestAll(), items, withdrawals, settings, now,
+  });
+  const stockItems = items.filter((item) => item.status === 'EM_ESTOQUE');
+  const profit = computeRealProfit({ deposits, withdrawals, balances, stockItems, settings });
+  const sumCount = (pick) => balances.stores.reduce((acc, row) => acc + pick(row), 0);
+  return {
+    ...profit,
+    balancesByStore: balances.stores,
+    counts: {
+      deposits: deposits.length,
+      withdrawals: withdrawals.length,
+      legacyWithdrawals: withdrawals.filter((w) => w.storeId === null || w.storeId === undefined).length,
+      stockItems: stockItems.length,
+      pendingSales: sumCount((row) => row.pending.count),
+      releasedAfterBalanceSales: sumCount((row) => row.releasedAfterBalance.count),
+    },
+    fx: {
+      usdBrlRate: isValidFxRate(settings.usdBrlRate) ? settings.usdBrlRate : null,
+      source: settings.usdBrlRateSource ?? null,
+      updatedAt: settings.usdBrlRateUpdatedAt ?? null,
+      quotedAt: settings.rateQuotedAt ?? null,
+    },
+    computedAt: now.toISOString(),
+  };
+}
+
+module.exports = { computeSaleProfitUsdCents, buildSaleInfo, computeRealProfit, getProfitSummary };

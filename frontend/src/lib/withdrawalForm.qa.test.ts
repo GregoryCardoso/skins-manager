@@ -151,8 +151,8 @@ describe('PATCH só com o que mudou', () => {
     expect(buildWithdrawalPatchBody({ ...base(), note: ' nova ' }, orig, 'pt-BR')).toEqual({ note: 'nova' });
   });
 
-  test('trocar a loja sem mexer no resto envia só storeId', () => {
-    expect(buildWithdrawalPatchBody({ ...base(), storeId: 4 }, orig, 'pt-BR')).toEqual({ storeId: 4 });
+  test('trocar a loja sem mexer no resto envia storeId, o valor sacado e a taxa (D221)', () => {
+    expect(buildWithdrawalPatchBody({ ...base(), storeId: 4 }, orig, 'pt-BR')).toEqual({ storeId: 4, amountStoreCents: 123456, feeCents: 250 });
   });
 
   test('a loja não escolhida (null) nunca vai no corpo', () => {

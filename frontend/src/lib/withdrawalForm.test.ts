@@ -170,7 +170,7 @@ describe('buildWithdrawalPatchBody', () => {
 
   test('só o que mudou', () => {
     expect(buildWithdrawalPatchBody({ ...same(), receivedText: '600,00' }, original, 'pt-BR')).toEqual({ amountBrlCents: 60000 });
-    expect(buildWithdrawalPatchBody({ ...same(), storeId: 4 }, original, 'pt-BR')).toEqual({ storeId: 4 });
+    expect(buildWithdrawalPatchBody({ ...same(), storeId: 4 }, original, 'pt-BR')).toEqual({ storeId: 4, amountStoreCents: 10000, feeCents: 250 });
     expect(buildWithdrawalPatchBody({ ...same(), amountText: '50,00', feeText: '1,00' }, original, 'pt-BR'))
       .toEqual({ amountStoreCents: 5000, feeCents: 100 });
   });
@@ -189,7 +189,7 @@ describe('buildWithdrawalPatchBody', () => {
   test('saque antigo sem loja: loja e valor sacado sempre vão no corpo', () => {
     const old = legacy();
     const form = { ...withdrawalFormFromWithdrawal(old, 'pt-BR'), storeId: 1, amountText: '60,00' };
-    expect(buildWithdrawalPatchBody(form, old, 'pt-BR')).toEqual({ storeId: 1, amountStoreCents: 6000 });
+    expect(buildWithdrawalPatchBody(form, old, 'pt-BR')).toEqual({ storeId: 1, amountStoreCents: 6000, feeCents: null });
   });
 });
 

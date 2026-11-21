@@ -521,3 +521,37 @@ export interface CurrentStoreBalances {
   usdBrlRate: number | null;
   computedAt: string;
 }
+
+// Resumo do lucro real (8.4, D205): tudo calculado no backend; o frontend só exibe.
+export interface ProfitWarning {
+  source: 'STORE' | 'STOCK';
+  storeId: number | null;
+  storeName: string | null;
+  code: string;
+  text: string;
+}
+
+export interface ProfitSummary {
+  depositsBrlCents: number;
+  withdrawalsBrlCents: number;
+  platformBalanceEstimatedBrlCents: number | null;
+  pendingBalanceEstimatedBrlCents: number | null;
+  releasedAfterBalanceEstimatedBrlCents: number | null;
+  nextReleaseAt: string | null;
+  stockEstimatedBrlCents: number | null;
+  realProfitBrlCents: number | null;
+  realProfitUsdCentsApprox: number | null;
+  withdrawnVsDeposited: { withdrawnBrlCents: number; depositedBrlCents: number; ratio: number | null };
+  balancesByStore: StoreBalanceSummary[];
+  counts: {
+    deposits: number;
+    withdrawals: number;
+    legacyWithdrawals: number;
+    stockItems: number;
+    pendingSales: number;
+    releasedAfterBalanceSales: number;
+  };
+  warnings: ProfitWarning[];
+  fx: { usdBrlRate: number | null; source: FxRateSource | null; updatedAt: string | null; quotedAt: string | null };
+  computedAt: string;
+}

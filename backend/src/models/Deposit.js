@@ -13,21 +13,10 @@ function create(data, { now = new Date() } = {}) {
   return findById(Number(id));
 }
 
-function findAll({ from, to } = {}) {
-  const conditions = [];
-  const params = [];
-  if (from !== undefined) {
-    conditions.push('deposited_at >= ?');
-    params.push(from);
-  }
-  if (to !== undefined) {
-    conditions.push('deposited_at <= ?');
-    params.push(to);
-  }
-  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+function findAll() {
   return getDb()
-    .prepare(`SELECT * FROM deposits ${where} ORDER BY deposited_at DESC, id DESC`)
-    .all(...params)
+    .prepare('SELECT * FROM deposits ORDER BY deposited_at DESC, id DESC')
+    .all()
     .map((r) => mapRow(r));
 }
 
@@ -40,8 +29,4 @@ function remove(id) {
   return getDb().prepare('DELETE FROM deposits WHERE id = ?').run(id).changes > 0;
 }
 
-function sumAmountBrlCents() {
-  return getDb().prepare('SELECT COALESCE(SUM(amount_brl_cents), 0) AS total FROM deposits').get().total;
-}
-
-module.exports = { create, findById, findAll, update, remove, sumAmountBrlCents };
+module.exports = { create, findById, findAll, update, remove };

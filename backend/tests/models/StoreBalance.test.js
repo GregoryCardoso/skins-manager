@@ -36,25 +36,6 @@ describe('models/StoreBalance', () => {
     expect(() => Store.remove(id)).toThrow(/FOREIGN KEY/);
   });
 
-  test('findLatestByStore escolhe por recorded_at, não por inserção', () => {
-    const id = storeIdByName('CSFloat');
-    const newest = bal(id, 300, '2026-03-01T00:00:00.000Z');
-    bal(id, 100, '2026-01-01T00:00:00.000Z');
-    bal(id, 200, '2026-02-01T00:00:00.000Z');
-    expect(StoreBalance.findLatestByStore(id).id).toBe(newest.id);
-  });
-
-  test('findLatestByStore em empate de recorded_at → maior id', () => {
-    const id = storeIdByName('CSFloat');
-    bal(id, 100, '2026-01-01T00:00:00.000Z');
-    const second = bal(id, 200, '2026-01-01T00:00:00.000Z');
-    expect(StoreBalance.findLatestByStore(id).id).toBe(second.id);
-  });
-
-  test('findLatestByStore sem saldo → null', () => {
-    expect(StoreBalance.findLatestByStore(storeIdByName('CSFloat'))).toBeNull();
-  });
-
   test('findLatestAll devolve um por loja (o mais recente, com desempate por id)', () => {
     const csfloat = storeIdByName('CSFloat');
     const steam = storeIdByName('Steam');

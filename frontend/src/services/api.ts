@@ -6,6 +6,7 @@ import type {
   CatalogSearchResult,
   CatalogStatus,
   CurrentStoreBalances,
+  ProfitSummary,
   Deposit,
   DepositCreateBody,
   DepositList,
@@ -333,3 +334,6 @@ export const getBackupInfo = (signal?: AbortSignal) => request<BackupInfo>('GET'
 
 // Abre a pasta de backups no Explorer; o servidor não aceita nenhum caminho (corpo `{}`).
 export const openBackupsFolder = () => request<{ path: string }>('POST', '/backup/open-folder', { body: {} });
+
+// Resumo do lucro real (D205): total acumulado.
+export const getProfitSummary = (signal?: AbortSignal) => request<ProfitSummary>('GET', '/profit/summary', { signal });

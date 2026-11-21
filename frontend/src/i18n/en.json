@@ -779,7 +779,33 @@
   },
   "profit": {
     "title": "Real profit",
-    "subtitle": "Track the money you put in, what you withdrew and the balance of each store. The summary arrives in the next update."
+    "subtitle": "Track what you put in, what you withdrew, each store's balance and your real profit.",
+    "pendingIncluded": "includes ≈ {amount} pending (releases from {date})",
+    "pendingIncludedNoDate": "includes ≈ {amount} pending",
+    "releasedIncluded": "includes ≈ {amount} released after the last recorded balance (update the balance)",
+    "estimatedNote": "Values with ≈ are estimated using the {fx} rate.",
+    "estimatedNoFx": "Values with ≈ are estimated using the dollar rate, which is not configured yet.",
+    "emptyHint": "Record deposits and balances to see the real profit.",
+    "summary": {
+      "title": "Summary",
+      "loadError": "Could not load the summary: {reason}",
+      "realProfit": "Real profit",
+      "realProfitHint": "Withdrawals + balances (available, pending and released) + stock − deposits.",
+      "usdApprox": "≈ {value}",
+      "deposited": "Total put in",
+      "withdrawn": "Total withdrawn",
+      "platformBalance": "Platform balances",
+      "stock": "Stock (at cost)",
+      "withdrawnVsDeposited": "Withdrawn vs. put in",
+      "withdrawnVsDepositedNone": "no deposits",
+      "withdrawnVsDepositedDetail": "{withdrawn} of {deposited}",
+      "unavailable": "unavailable",
+      "unavailableHint": "The dollar rate is missing to calculate this value.",
+      "pendingUnavailable": "includes pending balance: unavailable (dollar rate missing)",
+      "releasedUnavailable": "includes balance released after the last record: unavailable (dollar rate missing)",
+      "warningStore": "{store}: {message}",
+      "warningStock": "Stock: {message}"
+    }
   },
   "deposits": {
     "title": "Deposits",
