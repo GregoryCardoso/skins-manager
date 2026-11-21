@@ -16,7 +16,7 @@ import Modal from './Modal';
 
 const BASE_FIELDS = [
   'name', 'currency', 'saleFeeType', 'saleFeeRate', 'saleFeeRounding', 'saleMinFeeCents', 'saleFixedFeeCents',
-  'allowsWithdrawal', 'withdrawalFeeRate', 'withdrawalFixedFeeCents', 'isActive',
+  'allowsWithdrawal', 'withdrawalFeeRate', 'withdrawalFixedFeeCents', 'saleHoldDays', 'isActive',
 ] as const;
 const ROUNDINGS: SaleFeeRounding[] = ['CEIL', 'ROUND', 'FLOOR'];
 const FEE_TYPES: SaleFeeType[] = ['DEDUCTED', 'ADDED'];
@@ -218,6 +218,26 @@ export default function StoreFormModal({ store, onClose, onSaved, onGone }: Prop
                   onChange={(e) => {
                     patch({ saleFixedFeeText: e.target.value });
                     clearError('saleFixedFeeCents');
+                  }}
+                />
+              )}
+            </FormField>
+          </div>
+        </fieldset>
+
+        <fieldset className={styles.details} style={{ margin: 0 }}>
+          <legend>{t('storeForm.balanceSection')}</legend>
+          <div className={styles.grid}>
+            <FormField label={t('stores.saleHoldDays')} error={errors.saleHoldDays} hint={t('stores.saleHoldDaysHint')}>
+              {(c) => (
+                <input
+                  {...c}
+                  className={styles.input}
+                  inputMode="numeric"
+                  value={state.saleHoldDaysText}
+                  onChange={(e) => {
+                    patch({ saleHoldDaysText: e.target.value });
+                    clearError('saleHoldDays');
                   }}
                 />
               )}

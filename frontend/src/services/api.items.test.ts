@@ -138,7 +138,7 @@ describe('API de lojas (D156)', () => {
     await getStore(3);
     await createStore({
       name: 'X', currency: 'USD', saleFeeType: null, saleFeeRate: null, saleFeeRounding: 'CEIL', saleMinFeeCents: null,
-      saleFixedFeeCents: 0, allowsWithdrawal: false, withdrawalFeeRate: null, withdrawalFixedFeeCents: 0, isActive: true, isPrimary: false,
+      saleFixedFeeCents: 0, allowsWithdrawal: false, withdrawalFeeRate: null, withdrawalFixedFeeCents: 0, saleHoldDays: 0, isActive: true, isPrimary: false,
     });
     await updateStore(3, { isPrimary: true });
     await deleteStore(3);

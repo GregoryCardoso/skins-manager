@@ -176,12 +176,15 @@
     "WITHDRAWAL_FEE_ABOVE_AMOUNT": "A taxa paga não pode ser maior que o valor sacado.",
     "WITHDRAWN_AT_IN_FUTURE": "A data do saque não pode estar no futuro.",
     "WITHDRAWAL_NOT_ALLOWED": "Esta loja não permite saque. Ative \"Permite saque\" na tela de Lojas.",
-    "WITHDRAWAL_NOT_FOUND": "O saque não foi encontrado."
+    "WITHDRAWAL_NOT_FOUND": "O saque não foi encontrado.",
+    "RECORDED_AT_IN_FUTURE": "A data do saldo não pode estar no futuro.",
+    "STORE_BALANCE_NOT_FOUND": "O registro de saldo não foi encontrado."
   },
   "warnings": {
     "FEES_NOT_CONFIGURED": "As taxas da loja não estão configuradas.",
     "FX_NOT_CONFIGURED": "A cotação do dólar não está configurada.",
-    "PRICE_OVERFLOW": "O preço calculado excede o limite suportado."
+    "PRICE_OVERFLOW": "O preço calculado excede o limite suportado.",
+    "BALANCE_MAYBE_OUTDATED": "Saldo possivelmente desatualizado: houve movimentação depois do último registro."
   },
   "inventory": {
     "title": "Inventário",
@@ -444,7 +447,9 @@
     "saleHoldDays": "Retenção do saldo",
     "amountStoreCents": "Valor sacado",
     "feeCents": "Taxa paga",
-    "withdrawnAt": "Data do saque"
+    "withdrawnAt": "Data do saque",
+    "balanceCents": "Saldo",
+    "recordedAt": "Data do saldo"
   },
   "errorDetails": {
     "INVALID_RATE": "A taxa deve ser maior ou igual a 0% e menor que 100%, com no máximo {maxDecimals} casas decimais no percentual.",
@@ -492,7 +497,8 @@
       "actions": "Ações"
     },
     "daysAfterRelease": "{days} após liberar",
-    "daysHeld": "{days} desde a compra"
+    "daysHeld": "{days} desde a compra",
+    "balanceReleasesAt": "saldo liberado em {date}"
   },
   "salesFilters": {
     "label": "Filtros das vendas",
@@ -564,7 +570,9 @@
     "deleted": "Loja \"{name}\" excluída.",
     "deleteTitle": "Excluir loja",
     "deleteMessage": "Excluir a loja \"{name}\"? Esta ação não pode ser desfeita.",
-    "confirmDelete": "Excluir"
+    "confirmDelete": "Excluir",
+    "saleHoldDays": "Retenção do saldo após a venda (dias)",
+    "saleHoldDaysHint": "0 = disponível na hora. Vale para as próximas vendas; vendas já registradas não mudam."
   },
   "storesTable": {
     "columns": {
@@ -575,7 +583,8 @@
       "rounding": "Arredondamento",
       "minFixed": "Mínima / fixa",
       "withdrawal": "Saque",
-      "actions": "Ações"
+      "actions": "Ações",
+      "saleHold": "Retenção do saldo"
     },
     "primary": "Principal",
     "active": "Ativa",
@@ -600,6 +609,11 @@
       "inUse": "Loja em uso, só pode ser desativada.",
       "alreadyPrimary": "Já é a loja principal.",
       "activateFirst": "Ative a loja antes."
+    },
+    "saleHoldNone": "Na hora",
+    "saleHoldDays": {
+      "one": "{count} dia",
+      "other": "{count} dias"
     }
   },
   "storeForm": {
@@ -641,7 +655,9 @@
     "invalidMoney": "Informe um valor com no máximo 2 casas decimais (por exemplo 0,30).",
     "nameRequired": "Informe o nome da loja.",
     "created": "Loja \"{name}\" criada.",
-    "updated": "Loja \"{name}\" atualizada."
+    "updated": "Loja \"{name}\" atualizada.",
+    "balanceSection": "Saldo após a venda",
+    "invalidSaleHoldDays": "Informe um número inteiro de dias, de 0 a 30."
   },
   "settings": {
     "title": "Configurações",
@@ -763,7 +779,7 @@
   },
   "profit": {
     "title": "Lucro real",
-    "subtitle": "Acompanhe o dinheiro que você colocou e o que sacou das lojas. Saldos e o resumo chegam nas próximas atualizações."
+    "subtitle": "Acompanhe o dinheiro que você colocou, o que sacou e o saldo de cada loja. O resumo chega na próxima atualização."
   },
   "deposits": {
     "title": "Aportes",
@@ -868,6 +884,51 @@
       "invalidFee": "Taxa inválida. Use o formato 1,25 (0 é permitido) ou deixe vazio.",
       "receivedRequired": "Informe o valor recebido na conta.",
       "invalidDate": "Data inválida."
+    }
+  },
+  "storeBalances": {
+    "title": "Saldos das lojas",
+    "count": {
+      "one": "{count} loja",
+      "other": "{count} lojas"
+    },
+    "intro": "O saldo disponível é o que você vê no site da loja: registre-o aqui sempre que quiser atualizá-lo. Vendas com retenção aparecem como pendentes até serem liberadas.",
+    "loadError": "Não foi possível carregar os saldos: {reason}",
+    "empty": "Nenhuma loja cadastrada.",
+    "inactive": "inativa",
+    "nonWithdrawable": "não sacável",
+    "nonWithdrawableTitle": "Esta loja não permite saque: o saldo fica preso nela.",
+    "noBalance": "Sem saldo registrado",
+    "available": "disponível",
+    "pending": "pendente (libera em {date})",
+    "releasedAfterBalance": "liberado após o último registro",
+    "releasedNoBalance": "liberado (sem saldo registrado)",
+    "recordedAt": "Saldo registrado em {date}",
+    "outdatedReleased": "Vendas liberadas desde {date}. Registre o saldo atual.",
+    "update": "Atualizar saldo",
+    "created": "Saldo da loja {store} registrado: {value}.",
+    "nonWithdrawableTotal": "Não sacável: ≈ {value}",
+    "nonWithdrawableTotalLabel": "Não sacável:",
+    "form": {
+      "title": "Atualizar saldo: {store}",
+      "intro": "Digite o saldo disponível que aparece no site da loja. O histórico é preservado: para corrigir um erro, exclua o registro e registre de novo.",
+      "amount": "Saldo disponível ({currency})",
+      "date": "Data do saldo",
+      "amountRequired": "Informe o saldo (use 0 se estiver zerado).",
+      "invalidMoney": "Informe um valor com no máximo 2 casas decimais (por exemplo 120,50).",
+      "invalidDate": "Informe uma data e hora válidas."
+    },
+    "history": {
+      "open": "Histórico",
+      "title": "Histórico de saldos: {store}",
+      "empty": "Nenhum saldo registrado para esta loja.",
+      "date": "Data",
+      "amount": "Saldo disponível",
+      "actions": "Ações",
+      "current": "atual",
+      "delete": "Excluir",
+      "confirmDelete": "Confirmar exclusão",
+      "note": "O saldo atual é o registro mais recente. Ao excluí-lo, o anterior volta a valer."
     }
   }
 }

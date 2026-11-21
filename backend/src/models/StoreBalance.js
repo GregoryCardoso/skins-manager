@@ -7,8 +7,8 @@ function findById(id) {
   return mapRow(getDb().prepare('SELECT * FROM store_balances WHERE id = ?').get(id));
 }
 
-function create(data) {
-  const id = insertRow(getDb(), 'store_balances', data, FIELDS, { created_at: new Date().toISOString() });
+function create(data, { now = new Date() } = {}) {
+  const id = insertRow(getDb(), 'store_balances', data, FIELDS, { created_at: now.toISOString() });
   return findById(Number(id));
 }
 
@@ -42,4 +42,16 @@ function findHistory(storeId) {
     .map((r) => mapRow(r));
 }
 
-module.exports = { create, findById, findLatestByStore, findLatestAll, findHistory };
+// Todo o histórico (todas as lojas), do mais recente para o mais antigo.
+function findAll() {
+  return getDb()
+    .prepare('SELECT * FROM store_balances ORDER BY recorded_at DESC, id DESC')
+    .all()
+    .map((r) => mapRow(r));
+}
+
+function remove(id) {
+  return getDb().prepare('DELETE FROM store_balances WHERE id = ?').run(id).changes > 0;
+}
+
+module.exports = { create, findById, findLatestByStore, findLatestAll, findHistory, findAll, remove };

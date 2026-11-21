@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import DepositFormModal from '@/components/DepositFormModal';
 import DepositsTable from '@/components/DepositsTable';
+import StoreBalancesPanel from '@/components/StoreBalancesPanel';
 import WithdrawalsSection from '@/components/WithdrawalsSection';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
@@ -139,6 +140,8 @@ export default function ProfitPage() {
       </section>
 
       <WithdrawalsSection />
+
+      <StoreBalancesPanel />
 
       {dialog?.kind === 'create' && <DepositFormModal stores={stores} onClose={closeDialog} onSaved={finish} onGone={depositGone} />}
       {dialog?.kind === 'edit' && (

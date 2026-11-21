@@ -8,6 +8,7 @@ import type { ItemView, Store } from '@/types/api';
 import ConfirmDialog from './ConfirmDialog';
 import ItemFormModal from './ItemFormModal';
 import ItemHistoryBox from './ItemHistoryBox';
+import SaleReleaseNote from './SaleReleaseNote';
 import Modal from './Modal';
 import SellItemModal from './SellItemModal';
 
@@ -88,6 +89,7 @@ export function useItemDialogs(stores: Store[], reload: () => void): ItemDialogs
       )}
       {dialog?.kind === 'history' && (
         <Modal title={t('history.title', { name: dialog.item.name })} onClose={closeDialog}>
+          <SaleReleaseNote item={dialog.item} />
           <ItemHistoryBox stats={dialog.item.stats} />
         </Modal>
       )}

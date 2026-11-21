@@ -16,16 +16,24 @@ const { assertNotFutureDay } = require('./inventoryAgingService');
 const { WARNING_FX, WARNINGS } = require('./warnings');
 
 // `estimated`: true quando o valor em BRL é uma conversão pela cotação; loja em BRL é exata.
+// `warning` (texto) e `warningCode` (T48: o frontend traduz pelo código). Conversão com ROUND (T82, D206).
 function estimateBalanceBrl({ balanceCents, store, settings }) {
   if (!Number.isSafeInteger(balanceCents) || balanceCents < 0) {
     throw new ValidationError('Saldo deve ser um inteiro de centavos maior ou igual a 0.', 'INVALID_AMOUNT');
   }
   const withdrawable = Boolean(store.allowsWithdrawal);
-  if (balanceCents === 0) return { estimatedBrlCents: 0, withdrawable, estimated: false, warning: null };
-  if (store.currency === 'BRL') return { estimatedBrlCents: balanceCents, withdrawable, estimated: false, warning: null };
+  const exact = (estimatedBrlCents) => ({ estimatedBrlCents, withdrawable, estimated: false, warning: null, warningCode: null });
+  if (balanceCents === 0) return exact(0);
+  if (store.currency === 'BRL') return exact(balanceCents);
   const usdBrlRate = settings ? settings.usdBrlRate : null;
-  if (!isValidFxRate(usdBrlRate)) return { estimatedBrlCents: null, withdrawable, estimated: true, warning: WARNING_FX };
-  return { estimatedBrlCents: roundCents(balanceCents * usdBrlRate, 'FLOOR'), withdrawable, estimated: true, warning: null };
+  if (!isValidFxRate(usdBrlRate)) {
+    return {
+      estimatedBrlCents: null, withdrawable, estimated: true, warning: WARNING_FX, warningCode: WARNINGS.FX_NOT_CONFIGURED.code,
+    };
+  }
+  return {
+    estimatedBrlCents: roundCents(balanceCents * usdBrlRate, 'ROUND'), withdrawable, estimated: true, warning: null, warningCode: null,
+  };
 }
 
 const isNil = (value) => value === null || value === undefined;

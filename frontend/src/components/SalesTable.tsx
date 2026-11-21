@@ -7,6 +7,7 @@ import { Badge, type BadgeTone } from './badges';
 import ItemActions from './ItemActions';
 import ItemImage from './ItemImage';
 import MoneyWithApprox from './MoneyWithApprox';
+import SaleReleaseNote from './SaleReleaseNote';
 import styles from './SalesTable.module.css';
 
 interface Props {
@@ -120,6 +121,7 @@ function SaleRow({ item, stores, onEdit, onUnsell, onDelete, onHistory }: Props 
               approxBrlCents={info.approxBrl.netReceived}
             />
             {item.netReceivedManual && <span className={styles.muted}>{t('sales.manualNet')}</span>}
+            <SaleReleaseNote item={item} />
           </div>
         ) : t('common.none')}
       </td>

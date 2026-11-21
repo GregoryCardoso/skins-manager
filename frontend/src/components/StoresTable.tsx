@@ -1,7 +1,7 @@
 'use client';
 
 import { useId } from 'react';
-import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
+import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import { formatMoney } from '@/lib/format';
 import { rateToPercentText } from '@/lib/storeForm';
 import type { Store } from '@/types/api';
@@ -80,6 +80,12 @@ function WithdrawalCell({ store }: { store: Store }) {
   return <>{t('storesTable.withdrawalYes', { detail: parts.join(' · ') })}</>;
 }
 
+function SaleHoldCell({ store }: { store: Store }) {
+  const t = useT();
+  const tPlural = useTPlural();
+  return <>{store.saleHoldDays > 0 ? tPlural('storesTable.saleHoldDays', store.saleHoldDays) : t('storesTable.saleHoldNone')}</>;
+}
+
 export default function StoresTable({ stores, busyId, onEdit, onToggleActive, onMakePrimary, onDelete }: Props) {
   const t = useT();
   const tLoose = useTLoose();
@@ -96,6 +102,7 @@ export default function StoresTable({ stores, busyId, onEdit, onToggleActive, on
             <th scope="col">{t('storesTable.columns.rounding')}</th>
             <th scope="col">{t('storesTable.columns.minFixed')}</th>
             <th scope="col">{t('storesTable.columns.withdrawal')}</th>
+            <th scope="col">{t('storesTable.columns.saleHold')}</th>
             <th scope="col">{t('storesTable.columns.actions')}</th>
           </tr>
         </thead>
@@ -127,6 +134,7 @@ export default function StoresTable({ stores, busyId, onEdit, onToggleActive, on
                 <td>{tLoose(`storeForm.rounding.${store.saleFeeRounding}`)}</td>
                 <td><MinFixedCell store={store} /></td>
                 <td><WithdrawalCell store={store} /></td>
+                <td><SaleHoldCell store={store} /></td>
                 <td>
                   <div className={styles.actions}>
                     <Action label={t('storesTable.actions.edit')} disabled={busy} onClick={() => onEdit(store)} />

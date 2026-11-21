@@ -176,12 +176,15 @@
     "WITHDRAWAL_FEE_ABOVE_AMOUNT": "The fee paid cannot be greater than the amount withdrawn.",
     "WITHDRAWN_AT_IN_FUTURE": "The withdrawal date cannot be in the future.",
     "WITHDRAWAL_NOT_ALLOWED": "This store does not allow withdrawals. Turn on \"Allows withdrawal\" on the Stores page.",
-    "WITHDRAWAL_NOT_FOUND": "The withdrawal was not found."
+    "WITHDRAWAL_NOT_FOUND": "The withdrawal was not found.",
+    "RECORDED_AT_IN_FUTURE": "The balance date cannot be in the future.",
+    "STORE_BALANCE_NOT_FOUND": "The balance record was not found."
   },
   "warnings": {
     "FEES_NOT_CONFIGURED": "The store fees are not configured.",
     "FX_NOT_CONFIGURED": "The dollar exchange rate is not configured.",
-    "PRICE_OVERFLOW": "The calculated price exceeds the supported limit."
+    "PRICE_OVERFLOW": "The calculated price exceeds the supported limit.",
+    "BALANCE_MAYBE_OUTDATED": "Balance may be outdated: there was activity after the last record."
   },
   "inventory": {
     "title": "Inventory",
@@ -444,7 +447,9 @@
     "saleHoldDays": "Balance hold",
     "amountStoreCents": "Amount withdrawn",
     "feeCents": "Fee paid",
-    "withdrawnAt": "Withdrawal date"
+    "withdrawnAt": "Withdrawal date",
+    "balanceCents": "Balance",
+    "recordedAt": "Balance date"
   },
   "errorDetails": {
     "INVALID_RATE": "The rate must be at least 0% and below 100%, with at most {maxDecimals} decimal places in the percentage.",
@@ -492,7 +497,8 @@
       "actions": "Actions"
     },
     "daysAfterRelease": "{days} after unlock",
-    "daysHeld": "{days} since purchase"
+    "daysHeld": "{days} since purchase",
+    "balanceReleasesAt": "balance released on {date}"
   },
   "salesFilters": {
     "label": "Sales filters",
@@ -564,7 +570,9 @@
     "deleted": "Store \"{name}\" deleted.",
     "deleteTitle": "Delete store",
     "deleteMessage": "Delete the store \"{name}\"? This cannot be undone.",
-    "confirmDelete": "Delete"
+    "confirmDelete": "Delete",
+    "saleHoldDays": "Balance hold after a sale (days)",
+    "saleHoldDaysHint": "0 = available right away. Applies to future sales; sales already recorded do not change."
   },
   "storesTable": {
     "columns": {
@@ -575,7 +583,8 @@
       "rounding": "Rounding",
       "minFixed": "Minimum / fixed",
       "withdrawal": "Withdrawal",
-      "actions": "Actions"
+      "actions": "Actions",
+      "saleHold": "Balance hold"
     },
     "primary": "Primary",
     "active": "Active",
@@ -600,6 +609,11 @@
       "inUse": "Store in use, it can only be deactivated.",
       "alreadyPrimary": "Already the primary store.",
       "activateFirst": "Activate the store first."
+    },
+    "saleHoldNone": "Immediate",
+    "saleHoldDays": {
+      "one": "{count} day",
+      "other": "{count} days"
     }
   },
   "storeForm": {
@@ -641,7 +655,9 @@
     "invalidMoney": "Enter an amount with at most 2 decimal places (for example 0.30).",
     "nameRequired": "Enter the store name.",
     "created": "Store \"{name}\" created.",
-    "updated": "Store \"{name}\" updated."
+    "updated": "Store \"{name}\" updated.",
+    "balanceSection": "Balance after a sale",
+    "invalidSaleHoldDays": "Enter a whole number of days, from 0 to 30."
   },
   "settings": {
     "title": "Settings",
@@ -763,7 +779,7 @@
   },
   "profit": {
     "title": "Real profit",
-    "subtitle": "Track the money you put into the stores and what you withdrew. Balances and the summary arrive in upcoming updates."
+    "subtitle": "Track the money you put in, what you withdrew and the balance of each store. The summary arrives in the next update."
   },
   "deposits": {
     "title": "Deposits",
@@ -868,6 +884,51 @@
       "invalidFee": "Invalid fee. Use the format 1.25 (0 is allowed) or leave it empty.",
       "receivedRequired": "Enter the amount received in your account.",
       "invalidDate": "Invalid date."
+    }
+  },
+  "storeBalances": {
+    "title": "Store balances",
+    "count": {
+      "one": "{count} store",
+      "other": "{count} stores"
+    },
+    "intro": "The available balance is what you see on the store website: record it here whenever you want to update it. Sales with a hold show as pending until they are released.",
+    "loadError": "Could not load the balances: {reason}",
+    "empty": "No stores registered.",
+    "inactive": "inactive",
+    "nonWithdrawable": "not withdrawable",
+    "nonWithdrawableTitle": "This store does not allow withdrawals: the balance stays in it.",
+    "noBalance": "No balance recorded",
+    "available": "available",
+    "pending": "pending (releases on {date})",
+    "releasedAfterBalance": "released after the last record",
+    "releasedNoBalance": "released (no balance recorded)",
+    "recordedAt": "Balance recorded on {date}",
+    "outdatedReleased": "Sales released since {date}. Record the current balance.",
+    "update": "Update balance",
+    "created": "Balance of {store} recorded: {value}.",
+    "nonWithdrawableTotal": "Not withdrawable: ≈ {value}",
+    "nonWithdrawableTotalLabel": "Not withdrawable:",
+    "form": {
+      "title": "Update balance: {store}",
+      "intro": "Enter the available balance shown on the store website. The history is kept: to fix a mistake, delete the record and record it again.",
+      "amount": "Available balance ({currency})",
+      "date": "Balance date",
+      "amountRequired": "Enter the balance (use 0 if it is empty).",
+      "invalidMoney": "Enter a value with at most 2 decimal places (for example 120.50).",
+      "invalidDate": "Enter a valid date and time."
+    },
+    "history": {
+      "open": "History",
+      "title": "Balance history: {store}",
+      "empty": "No balance recorded for this store.",
+      "date": "Date",
+      "amount": "Available balance",
+      "actions": "Actions",
+      "current": "current",
+      "delete": "Delete",
+      "confirmDelete": "Confirm deletion",
+      "note": "The current balance is the most recent record. Deleting it makes the previous one current again."
     }
   }
 }

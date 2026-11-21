@@ -1,7 +1,10 @@
 // Formulário de loja (D156): conversões puras entre o texto digitado e o corpo da API.
 // Percentuais são digitados em % ("2,5" = 0.025); centavos na moeda da loja ("0,30" = 30).
 import type { Currency, SaleFeeRounding, SaleFeeType, Store, StoreCreateBody, StorePatchBody } from '@/types/api';
-import { formatCentsInput, normalizeNumberText, parseMoneyToCents } from './numberInput';
+import { formatCentsInput, normalizeNumberText, parseIntegerInput, parseMoneyToCents } from './numberInput';
+
+// Faixa da retenção do saldo após a venda (D213); a API é quem decide, isto só evita uma ida ao servidor.
+export const MAX_SALE_HOLD_DAYS = 30;
 
 // `rounded: true` só aparece quando o percentual digitado tinha mais casas do que o aceito (T85) e foi arredondado.
 export type RateParse = { ok: true; rate: number | null; rounded?: true } | { ok: false };
@@ -46,6 +49,8 @@ export interface StoreFormState {
   allowsWithdrawal: boolean;
   withdrawalFeeRateText: string;
   withdrawalFixedFeeText: string;
+  // Dias de retenção do saldo após a venda; vazio é erro (0 = disponível na hora).
+  saleHoldDaysText: string;
   isActive: boolean;
   isPrimary: boolean;
 }
@@ -53,7 +58,7 @@ export interface StoreFormState {
 export function initialStoreFormState(): StoreFormState {
   return {
     name: '', currency: 'USD', saleFeeType: '', saleFeeRateText: '', saleFeeRounding: 'CEIL', saleMinFeeText: '',
-    saleFixedFeeText: '', allowsWithdrawal: false, withdrawalFeeRateText: '', withdrawalFixedFeeText: '',
+    saleFixedFeeText: '', allowsWithdrawal: false, withdrawalFeeRateText: '', withdrawalFixedFeeText: '', saleHoldDaysText: '0',
     isActive: true, isPrimary: false,
   };
 }
@@ -70,13 +75,15 @@ export function storeFormFromStore(store: Store, language: string): StoreFormSta
     allowsWithdrawal: store.allowsWithdrawal,
     withdrawalFeeRateText: rateToPercentText(store.withdrawalFeeRate, language),
     withdrawalFixedFeeText: store.withdrawalFixedFeeCents === 0 ? '' : formatCentsInput(store.withdrawalFixedFeeCents, language),
+    saleHoldDaysText: String(store.saleHoldDays),
     isActive: store.isActive,
     isPrimary: store.isPrimary,
   };
 }
 
 export type StoreFormField =
-  | 'name' | 'saleFeeRate' | 'saleMinFeeCents' | 'saleFixedFeeCents' | 'withdrawalFeeRate' | 'withdrawalFixedFeeCents';
+  | 'name' | 'saleFeeRate' | 'saleMinFeeCents' | 'saleFixedFeeCents' | 'withdrawalFeeRate' | 'withdrawalFixedFeeCents'
+  | 'saleHoldDays';
 
 // Chaves de tradução dos erros locais (texto digitado que não vira número).
 export type StoreFormErrors = Partial<Record<StoreFormField, string>>;
@@ -98,6 +105,8 @@ export function validateStoreForm(state: StoreFormState, language: string): Stor
   if (state.withdrawalFixedFeeText.trim() !== '' && parseMoneyToCents(state.withdrawalFixedFeeText, language) === null) {
     errors.withdrawalFixedFeeCents = MONEY_ERROR;
   }
+  const holdDays = parseIntegerInput(state.saleHoldDaysText);
+  if (holdDays === null || holdDays > MAX_SALE_HOLD_DAYS) errors.saleHoldDays = 'storeForm.invalidSaleHoldDays';
   return errors;
 }
 
@@ -124,6 +133,7 @@ export function buildStoreCreateBody(state: StoreFormState, language: string): S
     allowsWithdrawal: state.allowsWithdrawal,
     withdrawalFeeRate: rateOf(state.withdrawalFeeRateText, language),
     withdrawalFixedFeeCents: centsOrZero(state.withdrawalFixedFeeText, language),
+    saleHoldDays: parseIntegerInput(state.saleHoldDaysText) ?? 0,
     isActive: state.isActive,
     isPrimary: state.isPrimary,
   };

@@ -159,6 +159,12 @@ export interface SaleInfo {
   };
 }
 
+export interface SaleRelease {
+  // Nulo em venda anterior à retenção (liberada).
+  releasesAt: string | null;
+  isHeld: boolean;
+}
+
 export interface ItemView {
   id: number;
   name: string;
@@ -196,6 +202,8 @@ export interface ItemView {
   minPrices: MinPrice[] | null;
   saleProfitUsdCents: number | null;
   saleInfo: SaleInfo | null;
+  // Liberação do saldo da venda (D214); nulo em estoque. `isHeld` enquanto o líquido ainda está retido.
+  saleRelease: SaleRelease | null;
   stats: ItemStats;
 }
 
@@ -266,8 +274,8 @@ export interface Store {
   allowsWithdrawal: boolean;
   withdrawalFeeRate: number | null;
   withdrawalFixedFeeCents: number;
-  // Dias de retenção do saldo após a venda (D213); a tela de Lojas passa a usar na 8.3.
-  saleHoldDays?: number;
+  // Dias de retenção do saldo após a venda (D213); 0 = disponível na hora.
+  saleHoldDays: number;
   createdAt: string;
   updatedAt: string;
   saleFeesConfigured: boolean;
@@ -286,6 +294,7 @@ export interface StoreCreateBody {
   allowsWithdrawal: boolean;
   withdrawalFeeRate: number | null;
   withdrawalFixedFeeCents: number;
+  saleHoldDays: number;
   isActive: boolean;
   isPrimary: boolean;
 }
@@ -441,4 +450,74 @@ export interface BackupImportResult {
   migrationsApplied: number[];
   preImportBackupFile: string;
   counts: { items: number; stores: number };
+}
+
+// --- Saldos das lojas (D204, D215, D216) ---
+
+export interface StoreBalance {
+  id: number;
+  storeId: number;
+  storeName: string | null;
+  currency: Currency | null;
+  balanceCents: number;
+  recordedAt: string;
+  createdAt: string;
+}
+
+export interface StoreBalanceHistory {
+  balances: StoreBalance[];
+}
+
+export interface StoreBalanceCreateBody {
+  storeId: number;
+  balanceCents: number;
+  recordedAt: string;
+}
+
+export type OutdatedReason = 'RELEASED_AFTER_BALANCE' | 'ACTIVITY_AFTER_BALANCE';
+
+export interface PendingBalance {
+  cents: number;
+  count: number;
+  nextReleaseAt: string | null;
+  estimatedBrlCents: number | null;
+}
+
+export interface ReleasedAfterBalance {
+  cents: number;
+  count: number;
+  earliestReleasedAt: string | null;
+  estimatedBrlCents: number | null;
+}
+
+export interface StoreBalanceSummary {
+  storeId: number;
+  storeName: string;
+  currency: Currency;
+  isActive: boolean;
+  allowsWithdrawal: boolean;
+  saleHoldDays: number;
+  balance: StoreBalance | null;
+  availableCents: number;
+  availableEstimatedBrlCents: number | null;
+  pending: PendingBalance;
+  releasedAfterBalance: ReleasedAfterBalance;
+  estimated: boolean;
+  outdated: boolean;
+  outdatedReasons: OutdatedReason[];
+  warningCode: string | null;
+}
+
+export interface CurrentStoreBalances {
+  stores: StoreBalanceSummary[];
+  totals: {
+    availableEstimatedBrlCents: number | null;
+    pendingEstimatedBrlCents: number | null;
+    releasedAfterBalanceEstimatedBrlCents: number | null;
+    nonWithdrawableEstimatedBrlCents: number | null;
+    nextReleaseAt: string | null;
+    estimated: boolean;
+  };
+  usdBrlRate: number | null;
+  computedAt: string;
 }

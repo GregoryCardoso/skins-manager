@@ -6,7 +6,7 @@ export function makeStore(overrides: Partial<Store> = {}): Store {
   return {
     id: 1, name: 'Loja', currency: 'USD', isActive: true, isPrimary: false, saleFeeType: null, saleFeeRate: null,
     saleFeeRounding: 'CEIL', saleMinFeeCents: null, saleFixedFeeCents: 0, allowsWithdrawal: false,
-    withdrawalFeeRate: null, withdrawalFixedFeeCents: 0, createdAt: '2026-01-01T00:00:00.000Z',
+    withdrawalFeeRate: null, withdrawalFixedFeeCents: 0, saleHoldDays: 0, createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z', saleFeesConfigured: false, inUse: false, ...overrides,
   };
 }
@@ -57,6 +57,7 @@ export function makeItem(overrides: Partial<ItemView> = {}): ItemView {
     minPrices: [],
     saleProfitUsdCents: null,
     saleInfo: null,
+    saleRelease: null,
     stats: { unitCount: 1, soldWithFxCount: 0, soldCount: 0, avgDaysToSell: null, avgPurchaseCostUsdCents: null, avgSalePriceUsdCents: null, avgProfitUsdCents: null },
     ...overrides,
   };

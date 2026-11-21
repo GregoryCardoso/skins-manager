@@ -5,6 +5,7 @@ import type {
   CatalogRefreshResult,
   CatalogSearchResult,
   CatalogStatus,
+  CurrentStoreBalances,
   Deposit,
   DepositCreateBody,
   DepositList,
@@ -26,6 +27,9 @@ import type {
   SellResult,
   Settings,
   Store,
+  StoreBalance,
+  StoreBalanceCreateBody,
+  StoreBalanceHistory,
   StoreCreateBody,
   StorePatchBody,
   Withdrawal,
@@ -232,6 +236,17 @@ export const updateWithdrawal = (id: number, body: WithdrawalPatchBody) =>
   request<Withdrawal>('PATCH', `/withdrawals/${id}`, { body });
 
 export const deleteWithdrawal = (id: number) => request<{ id: number }>('DELETE', `/withdrawals/${id}`);
+
+// Saldos das lojas (D204, D216): o disponível é digitado; pendente e liberado vêm calculados pelo backend.
+export const getCurrentStoreBalances = (signal?: AbortSignal) =>
+  request<CurrentStoreBalances>('GET', '/store-balances/current', { signal });
+
+export const listStoreBalances = (storeId: number, signal?: AbortSignal) =>
+  request<StoreBalanceHistory>('GET', '/store-balances', { signal, query: { storeId } });
+
+export const createStoreBalance = (body: StoreBalanceCreateBody) => request<StoreBalance>('POST', '/store-balances', { body });
+
+export const deleteStoreBalance = (id: number) => request<{ id: number }>('DELETE', `/store-balances/${id}`);
 
 export const updateFxRate = (usdBrlRate: number) =>
   request<Settings>('PUT', '/settings/fx-rate', { body: { usdBrlRate } });

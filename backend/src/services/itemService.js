@@ -15,6 +15,7 @@ const {
 } = require('./itemAttributesService');
 const catalogService = require('./catalogService');
 const { getTradeLockStatus } = require('./tradeLockService');
+const { computeSaleRelease } = require('./saleHoldService');
 const {
   getAging, assertAcquiredAtNotFuture, assertNotFutureDay, filterStagnant, sortByAge, sortByTurnaround, sortBySoldAt, filterSoldInPeriod,
 } = require('./inventoryAgingService');
@@ -360,6 +361,7 @@ function toItemView(
     minPrices: inStock ? minPricesForItem({ item, stores, settings }) : null,
     saleProfitUsdCents: computeSaleProfitUsdCents(item),
     saleInfo: buildSaleInfo(item, settings ? settings.usdBrlRate : null),
+    saleRelease: computeSaleRelease(item, now),
     stats: statsIndex.get(buildStatsKey(item)) ?? computeStats([item]),
   };
 }

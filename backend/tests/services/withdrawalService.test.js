@@ -26,16 +26,16 @@ describe('withdrawalService.estimateBalanceBrl', () => {
 
   test('loja BRL não é convertida e não é "estimada"', () => {
     expect(estimateBalanceBrl({ balanceCents: 5000, store: steam(), settings: SETTINGS })).toEqual({
-      estimatedBrlCents: 5000, withdrawable: false, estimated: false, warning: null,
+      estimatedBrlCents: 5000, withdrawable: false, estimated: false, warning: null, warningCode: null,
     });
     expect(estimateBalanceBrl({ balanceCents: 5000, store: steam({ allowsWithdrawal: true, withdrawalFeeRate: 0.5 }), settings: {} })).toEqual({
-      estimatedBrlCents: 5000, withdrawable: true, estimated: false, warning: null,
+      estimatedBrlCents: 5000, withdrawable: true, estimated: false, warning: null, warningCode: null,
     });
   });
 
   test('loja USD que permite saque: saldo bruto × cotação, sem descontar a taxa de saque', () => {
     expect(estimateBalanceBrl({ balanceCents: 10000, store: csfloat(), settings: SETTINGS })).toEqual({
-      estimatedBrlCents: 50000, withdrawable: true, estimated: true, warning: null,
+      estimatedBrlCents: 50000, withdrawable: true, estimated: true, warning: null, warningCode: null,
     });
   });
 
@@ -48,18 +48,19 @@ describe('withdrawalService.estimateBalanceBrl', () => {
 
   test('loja USD sem saque → saldo × cotação, withdrawable false', () => {
     expect(estimateBalanceBrl({ balanceCents: 1000, store: csfloat({ allowsWithdrawal: false }), settings: SETTINGS })).toEqual({
-      estimatedBrlCents: 5000, withdrawable: false, estimated: true, warning: null,
+      estimatedBrlCents: 5000, withdrawable: false, estimated: true, warning: null, warningCode: null,
     });
   });
 
   test.each([{ usdBrlRate: null }, {}, null])('sem cotação (%p) → null + "cotação não configurada"', (settings) => {
     expect(estimateBalanceBrl({ balanceCents: 1000, store: csfloat(), settings })).toEqual({
-      estimatedBrlCents: null, withdrawable: true, estimated: true, warning: 'cotação não configurada',
+      estimatedBrlCents: null, withdrawable: true, estimated: true, warning: 'cotação não configurada', warningCode: 'FX_NOT_CONFIGURED',
     });
   });
 
-  test('arredonda para baixo (FLOOR)', () => {
+  test('arredonda ao centavo mais próximo (ROUND, T82)', () => {
     expect(estimateBalanceBrl({ balanceCents: 1001, store: csfloat(), settings: { usdBrlRate: 5.2999 } }).estimatedBrlCents).toBe(5305);
+    expect(estimateBalanceBrl({ balanceCents: 12346, store: csfloat(), settings: { usdBrlRate: 5.4321 } }).estimatedBrlCents).toBe(67065);
   });
 
   test.each([-1, 1.5, '1000', null, NaN])('saldo inválido (%p) → ValidationError', (balanceCents) => {
