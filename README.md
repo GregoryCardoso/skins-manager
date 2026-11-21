@@ -1,267 +1,196 @@
 # Skins Manager
 
-Aplicativo pessoal e local para controlar o inventário e o giro de itens de CS2: custo, preço mínimo de venda
-por loja (já considerando as taxas), itens parados há muito tempo, vendas e lucro. Cada instalação tem o próprio
-banco de dados; não há login nem servidor central.
+Controle o seu inventário de skins de CS2: quanto pagou, por quanto vender sem prejuízo e o que está parado há tempo demais.
+*Keep track of your CS2 skins: what you paid, the lowest price that still avoids a loss, and what has been sitting too long.*
 
-<!-- Prints da interface: coloque as imagens em assets/screenshots/ e referencie aqui.
-![Inventário](assets/screenshots/inventario.png)
-![Vendas](assets/screenshots/vendas.png)
--->
+**[Português](#pt) · [English](#en)**
 
-## Instalar no Windows
+---
 
-Esta é a forma mais simples de usar o Skins Manager: não precisa instalar o Node.js nem usar o terminal.
+<a id="pt"></a>
 
-### 1. Baixar
+## Português
 
-Baixe **somente** pela página oficial de Releases: <https://github.com/GregoryCardoso/skins-manager/releases>
-(abra a versão mais recente e, em "Assets", baixe o arquivo). Não use cópias de outros sites.
+### O que o app faz
 
-| Arquivo | O que é |
-| --- | --- |
-| `SkinsManager-Setup-<versão>.exe` | **Instalador** (recomendado) |
-| `SkinsManager-Portable-<versão>.exe` | **Portátil**: um único `.exe`, sem instalar |
+- **Inventário com o catálogo do jogo:** escolha o item numa lista com nome e imagem, sem digitar tudo à mão.
+- **Float, pattern e fase:** guarde os detalhes de cada skin (incluindo a fase das Doppler e Gamma Doppler).
+- **Preço mínimo sem prejuízo:** para cada loja, o app calcula o menor preço de venda que ainda cobre o que você pagou, já descontando a taxa da loja.
+- **Trade lock:** veja quais itens ainda estão bloqueados e quando são liberados.
+- **Giro dos itens:** o app mostra o que vende rápido, o que está em giro normal e o que está "agarrado" (parado há muitos dias). Você escolhe os limites.
+- **Vendas e histórico:** registre cada venda e veja o lucro, o tempo médio até vender e o preço médio de cada item.
+- **Lojas configuráveis:** cadastre as lojas que você usa, com a moeda e as taxas de cada uma.
+- **Cotação do dólar:** digite a cotação ou atualize com um clique (comercial em tempo real ou PTAX do Banco Central).
+- **Backup:** exporte uma cópia de todos os seus dados e restaure quando precisar.
+- **Tema claro ou escuro** e **português ou inglês**.
+- **Atualização automática** (na versão instalada), sempre perguntando antes.
 
-Os outros arquivos da release (`latest.yml` e `.blockmap`) são usados pela atualização automática; você não precisa deles.
+<!-- Prints e GIF: adicionar na Etapa 10, em assets/screenshots/ -->
+> 📷 *Espaço reservado para imagens do app (`assets/screenshots/`).*
 
-### 2. Aviso do Windows (SmartScreen)
+### Como usar
 
-Ao abrir o instalador, o Windows pode mostrar "O Windows protegeu o computador". Clique em **Mais informações**
-e depois em **Executar assim mesmo**. Isso acontece porque o app não tem assinatura digital paga, não porque tem
-vírus. O aviso vale para o instalador **e também para o portátil**. Baixe só da página oficial de releases do GitHub.
-O aviso pode voltar a cada versão nova.
+Existem duas formas. Os seus dados são os mesmos nas duas.
 
-### 3. Instalador ou portátil
+#### Opção 1: app para Windows (recomendado)
 
-| | Instalador | Portátil |
-| --- | --- | --- |
-| Instala no Windows (sem pedir administrador; você escolhe a pasta) | sim | não |
-| Atalho na área de trabalho e no menu Iniciar | sim | não |
-| Atualização automática | sim (sempre pergunta antes) | não: o app só avisa da versão nova e abre a página de download |
-| Abertura | normal | mais lenta (o app se extrai numa pasta temporária a cada abertura) |
-| Onde ficam os dados | `%APPDATA%\SkinsManager` | `%APPDATA%\SkinsManager` (os mesmos) |
+Não precisa instalar mais nada.
 
-### 4. Onde ficam os dados e os backups
+1. Abra a página da versão mais recente: <https://github.com/GregoryCardoso/skins-manager/releases/latest>
+2. Em **Assets**, baixe **um** destes arquivos:
 
-Tudo fica na pasta `%APPDATA%\SkinsManager` (normalmente `C:\Users\<seu usuário>\AppData\Roaming\SkinsManager`),
-a mesma no instalador, no portátil e no `start-app.bat`:
+   | Arquivo | Para quem |
+   | --- | --- |
+   | `SkinsManager-Setup-<versão>.exe` | **Instalador (recomendado).** Instala o app, cria atalho na área de trabalho e no menu Iniciar e se atualiza sozinho (sempre perguntando antes). Não pede senha de administrador. |
+   | `SkinsManager-Portable-<versão>.exe` | **Portátil.** Não instala nada: é só dar dois cliques no arquivo. Demora um pouco mais para abrir e não se atualiza sozinho; ele só avisa quando sai uma versão nova. |
 
-- `inventory.sqlite`: seu banco de dados;
-- `backups\`: cópias automáticas;
-- `logs\`: registros do app desktop (só para diagnóstico).
+   Os outros arquivos da página (`latest.yml` e `.blockmap`) são usados pela atualização automática. Você não precisa deles.
+3. Dê dois cliques no arquivo baixado.
+4. **Se aparecer "O Windows protegeu o computador":** clique em **Mais informações** e depois em **Executar assim mesmo**.
+   Esse aviso aparece porque o app não tem uma assinatura digital paga, não porque tem vírus. Ele pode voltar a cada versão nova.
+   Baixe o app **somente** pela página oficial acima, nunca de outros sites.
 
-Em **Configurações → Backup** há o botão **Abrir pasta** (abre a pasta de backups no Explorador de Arquivos) e
-**Copiar caminho**.
+#### Opção 2: no navegador, pelo código
 
-### 5. Como fazer backup
+Para quem prefere usar o app numa aba do navegador.
 
-Em **Configurações → Backup**:
+1. Instale o **Node.js**, versão **LTS**, em <https://nodejs.org> (é só seguir o instalador com as opções padrão).
+2. Na página da versão mais recente (<https://github.com/GregoryCardoso/skins-manager/releases/latest>), em **Assets**, baixe o **Source code (zip)**.
+3. Clique com o botão direito no arquivo baixado e escolha **Extrair tudo**. Escolha uma pasta fixa (por exemplo, `Documentos`).
+4. Abra a pasta extraída e dê dois cliques em **`start-app.bat`**.
+   - Na primeira vez, ele baixa o que precisa e prepara o app. Isso exige internet e pode levar alguns minutos.
+   - Depois, o app abre sozinho no navegador.
+5. Para fechar o app, feche a janela preta do `start-app.bat`.
 
-- **Exportar backup** gera um arquivo com todos os seus dados. Guarde-o em lugar seguro e não o compartilhe: ele contém
-  seus dados pessoais (itens, valores, lojas e configurações).
-- **Importar backup** (**Escolher arquivo de backup** e depois **Substituir meus dados**) troca TODOS os dados atuais
-  pelos do arquivo. Uma cópia dos dados atuais é salva antes, na pasta de backups.
-- O app também faz cópias automáticas na pasta `backups` antes de importar um backup e antes de atualizar o banco
-  para uma versão nova do app. Ficam os 10 mais recentes de cada tipo.
+> Não abra o app para Windows e o `start-app.bat` ao mesmo tempo: os dois usam os mesmos dados, e só um pode ficar aberto.
 
-### 6. Como atualizar
+### Seus dados
 
-- **Instalador:** cerca de 10 segundos depois de abrir, o app procura versão nova (também pelo botão
-  **Verificar atualizações** em Configurações → Sobre). Se houver, aparece uma janela com as novidades:
-  1. **Baixar e instalar** ou **Agora não** (nesse caso ele pergunta de novo na próxima vez que você abrir o app);
-  2. depois do download: **Reiniciar agora** ou **Instalar ao fechar o app**. Fechar essa janela sem escolher (no X)
-     equivale a **Instalar ao fechar o app**.
+- Ficam **só no seu computador**. Nada é enviado para a internet nem para outra pessoa.
+- A pasta é `%APPDATA%\SkinsManager` (normalmente `C:\Users\<seu usuário>\AppData\Roaming\SkinsManager`). As duas formas de uso, o instalador e o portátil, usam essa mesma pasta.
+- **Fazer backup:** em **Configurações → Backup**, clique em **Exportar backup**. Guarde o arquivo num lugar seguro (um pen drive ou a nuvem, por exemplo) e não o compartilhe: ele contém todos os seus dados.
+- **Restaurar:** em **Configurações → Backup**, clique em **Escolher arquivo de backup** e depois em **Substituir meus dados**. Antes de trocar, o app guarda uma cópia dos dados atuais.
+- O app também faz cópias automáticas antes de importar um backup e antes de atualizar os dados para uma versão nova. O botão **Abrir pasta**, em **Configurações → Backup**, mostra onde elas ficam.
+- **Desinstalar não apaga os seus dados.** Se instalar de novo, tudo continua lá. Para apagar tudo de vez, exclua a pasta `%APPDATA%\SkinsManager` (faça um backup antes, se quiser guardar algo).
 
-  Nada é baixado ou instalado sem a sua resposta, e seus dados não são alterados.
-- **Portátil:** o app avisa da versão nova e o botão **Abrir página de download** leva à página da release. Baixe o novo
-  `.exe` e use-o no lugar do antigo (os dados continuam em `%APPDATA%\SkinsManager`).
-- **Código-fonte (`start-app.bat`):** não verifica versão. Atualize com `git pull` ou baixe o código novo do
-  repositório e rode o `start-app.bat` de novo.
+### Atualização
 
-### 7. Desinstalar sem perder os dados
+Você vê a sua versão em **Configurações → Sobre**.
 
-Desinstale em **Configurações do Windows → Aplicativos** (instalador) ou apague o `.exe` (portátil). Desinstalar
-**não apaga** `%APPDATA%\SkinsManager`: se instalar de novo, seus dados continuam lá. Para apagar tudo de vez, exclua
-essa pasta manualmente (faça um backup antes, se quiser guardar algo).
+- **Instalador:** alguns segundos depois de abrir, o app procura uma versão nova. Também dá para procurar pelo botão **Verificar atualizações**, em **Configurações → Sobre**. Se houver novidade, uma janela mostra o que mudou:
+  1. **Baixar e instalar** ou **Agora não** (com "Agora não", ele pergunta de novo na próxima vez que você abrir o app);
+  2. depois do download: **Reiniciar agora** ou **Instalar ao fechar o app**.
 
-### 8. Não abra o desktop e o `start-app.bat` ao mesmo tempo
+  Nada é baixado nem instalado sem a sua resposta, e os seus dados são mantidos.
+- **Portátil:** o app avisa da versão nova, e o botão **Abrir página de download** leva à página certa. Baixe o novo arquivo e use-o no lugar do antigo.
+- **No navegador:** o app não procura versões novas. Baixe o **Source code (zip)** da versão nova, extraia numa pasta nova e use o `start-app.bat` dela. Os seus dados continuam em `%APPDATA%\SkinsManager`; depois, você pode apagar a pasta antiga.
 
-Os dois usam a mesma pasta de dados e só um pode ficar com ela aberta. O que acontece depende da ordem:
+### Sugestões e problemas
 
-- **App desktop aberto e depois o `start-app.bat`:** o `start-app.bat` percebe que o app já está respondendo, avisa
-  "O Skins Manager já está aberto pelo app desktop." e só abre o navegador nele (não sobe um segundo servidor). Se o
-  desktop estiver numa porta diferente da configurada no `backend/.env` (ele escolhe outra quando a 3001 está ocupada),
-  o `start-app.bat` tenta subir o servidor e é recusado com o mesmo aviso.
-- **`start-app.bat` aberto e depois o app desktop:** o desktop avisa que o Skins Manager já está aberto e oferece abrir
-  o que já está rodando. Feche a janela do `start-app.bat` antes, se preferir usar o desktop.
-- **Portátil e instalador abertos ao mesmo tempo:** os dois são o mesmo app para o Windows; o segundo só traz a janela
-  que já está aberta para a frente (não abre outra).
+Encontrou um erro ou tem uma ideia? Abra uma **Issue**: <https://github.com/GregoryCardoso/skins-manager/issues> (há formulários prontos em português e inglês).
+Não anexe o seu arquivo de backup, porque ele contém os seus dados pessoais.
+Pull requests não são aceitos no momento.
 
-**Travada depois de uma queda de energia ou de fechar à força?** A pasta de dados tem um arquivo de trava
-(`skins-manager.lock`). O app já descarta sozinho a trava de um programa que não está mais rodando, mas, se mesmo assim
-ele disser que a pasta está em uso e você tem certeza de que o Skins Manager está fechado, apague o arquivo
-`%APPDATA%\SkinsManager\skins-manager.lock` e abra de novo. Seus dados não ficam nesse arquivo.
+### Créditos
 
-### 9. Vindo do `start-app.bat` antigo
+O catálogo e as imagens dos itens vêm da [CSGO-API](https://github.com/ByMykel/CSGO-API), de ByMykel.
+Este projeto não tem ligação com a Valve.
 
-Versões antigas guardavam os dados em `backend\data\`. **Só o `start-app.bat` novo migra esses dados**: na primeira
-abertura ele os **copia uma única vez** para `%APPDATA%\SkinsManager`; os arquivos originais de `backend\data\` não são
-apagados. O **app desktop não migra** `backend\data\`. Para trazer seus dados antigos para o desktop, faça uma destas
-duas coisas:
+### Uso
 
-1. rode o `start-app.bat` novo **uma vez, antes** de abrir o app desktop (ele faz a cópia; depois feche-o); ou
-2. na versão antiga use **Exportar backup** e, no app desktop, **Importar backup**.
+O app é **livre para uso pessoal**. O código pertence ao autor: **todos os direitos reservados**.
 
-## Rodar pelo código-fonte
+---
 
-Para quem prefere rodar o código ou quer desenvolver.
+<a id="en"></a>
 
-### Requisitos
+## English
 
-- Windows 10 ou mais novo
-- [Node.js](https://nodejs.org) 20 ou mais novo (versão LTS; já inclui o npm)
-- Não precisa de compilador C++: o `better-sqlite3` usa binário pronto.
+### What the app does
 
-### Instalação
+- **Inventory from the game catalog:** pick each item from a list with its name and picture instead of typing everything.
+- **Float, pattern and phase:** keep the details of each skin (including Doppler and Gamma Doppler phases).
+- **Minimum price with no loss:** for each store, the app works out the lowest selling price that still covers what you paid, after the store's fee.
+- **Trade lock:** see which items are still locked and when they unlock.
+- **Item turnover:** the app shows what sells fast, what is turning over normally and what is "stuck" (sitting for many days). You choose the limits.
+- **Sales and history:** record each sale and see the profit, the average time to sell and the average price of each item.
+- **Configurable stores:** add the stores you use, with each one's currency and fees.
+- **Dollar exchange rate:** type the rate or update it with one click (real-time commercial rate or the Brazilian Central Bank PTAX).
+- **Backup:** export a copy of all your data and restore it whenever you need.
+- **Light or dark theme** and **Portuguese or English**.
+- **Automatic updates** (in the installed version), always asking first.
 
-```powershell
-npm.cmd run install:all
-```
+<!-- Screenshots and GIF: to be added in Stage 10, in assets/screenshots/ -->
+> 📷 *Placeholder for app screenshots (`assets/screenshots/`).*
 
-> **PowerShell:** se aparecer o erro de que `npm.ps1` não pode ser carregado (política de execução), use
-> `npm.cmd` no lugar de `npm` (como nos exemplos) ou libere para o seu usuário com
-> `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`.
+### How to use it
 
-### Como rodar
+There are two ways. Your data is the same in both.
 
-#### Uso diário
+#### Option 1: Windows app (recommended)
 
-Dê dois cliques em `start-app.bat` ou rode:
+Nothing else to install.
 
-```powershell
-npm.cmd start
-```
+1. Open the latest version page: <https://github.com/GregoryCardoso/skins-manager/releases/latest>
+2. Under **Assets**, download **one** of these files:
 
-O app compila a interface e sobe tudo em <http://localhost:3001> (interface e API na mesma porta; o navegador
-abre sozinho com o `.bat`). Para fechar, feche a janela do terminal.
+   | File | For whom |
+   | --- | --- |
+   | `SkinsManager-Setup-<version>.exe` | **Installer (recommended).** Installs the app, adds shortcuts to the desktop and Start menu, and updates itself (always asking first). It does not ask for an administrator password. |
+   | `SkinsManager-Portable-<version>.exe` | **Portable.** Installs nothing: just double-click the file. It takes a bit longer to open and does not update itself; it only tells you when a new version is out. |
 
-- `start-app.bat` instala as dependências na primeira vez, só recompila a interface quando o código mudou e,
-  se o app já estiver aberto, apenas abre o navegador.
-- `npm.cmd start` sempre recompila. `npm.cmd run serve` sobe sem recompilar.
-- O servidor escuta somente em `127.0.0.1`: outros aparelhos da rede não acessam o app.
+   The other files on that page (`latest.yml` and `.blockmap`) are used by automatic updates. You don't need them.
+3. Double-click the downloaded file.
+4. **If you see "Windows protected your PC":** click **More info** and then **Run anyway**.
+   This warning appears because the app does not have a paid digital signature, not because it has a virus. It may come back with each new version.
+   Download the app **only** from the official page above, never from other sites.
 
-#### App desktop (desenvolvimento)
+#### Option 2: in the browser, from the code
 
-Na raiz do projeto, uma vez: `npm.cmd run desktop:install` (instala as dependências da pasta `desktop/`).
+For those who prefer to use the app in a browser tab.
 
-```powershell
-npm.cmd run desktop:install   # instala as dependências do desktop (Electron e electron-builder)
-npm.cmd run desktop:dev       # monta o app e abre a janela do Electron (sem instalador)
-npm.cmd run desktop:stage     # só monta a pasta desktop/.stage (backend + interface compilada)
-npm.cmd run desktop:dist      # gera o instalador e o portátil em desktop/dist (sem publicar)
-```
+1. Install **Node.js**, **LTS** version, from <https://nodejs.org> (just follow the installer with the default options).
+2. On the latest version page (<https://github.com/GregoryCardoso/skins-manager/releases/latest>), under **Assets**, download **Source code (zip)**.
+3. Right-click the downloaded file and choose **Extract All**. Pick a permanent folder (for example, `Documents`).
+4. Open the extracted folder and double-click **`start-app.bat`**.
+   - The first time, it downloads what it needs and sets the app up. This needs internet and may take a few minutes.
+   - After that, the app opens by itself in the browser.
+5. To close the app, close the black `start-app.bat` window.
 
-O ícone do app é gerado a partir de um arquivo da pasta `desktop/build`; veja [desktop/build/LEIA-ME.md](desktop/build/LEIA-ME.md).
+> Don't open the Windows app and `start-app.bat` at the same time: both use the same data, and only one can be open.
 
-#### Desenvolvimento
+### Your data
 
-```powershell
-npm.cmd run dev        # interface em http://localhost:3000 e API em http://localhost:3001
-npm.cmd run dev:demo   # igual, com o banco de exemplo (inventory.dev.sqlite)
-```
+- It stays **only on your computer**. Nothing is sent to the internet or to anyone else.
+- The folder is `%APPDATA%\SkinsManager` (usually `C:\Users\<your user>\AppData\Roaming\SkinsManager`). Both ways of using the app, the installer and the portable version, use this same folder.
+- **Back up:** in **Settings → Backup**, click **Export backup**. Keep the file somewhere safe (a USB drive or the cloud, for example) and don't share it: it contains all your data.
+- **Restore:** in **Settings → Backup**, click **Choose backup file** and then **Replace my data**. Before replacing anything, the app keeps a copy of your current data.
+- The app also makes automatic copies before importing a backup and before updating your data for a new version. The **Open folder** button, in **Settings → Backup**, shows where they are.
+- **Uninstalling does not delete your data.** If you install again, everything is still there. To delete everything for good, remove the `%APPDATA%\SkinsManager` folder (make a backup first if you want to keep anything).
 
-### Testes
+### Updates
 
-```powershell
-npm.cmd test                          # backend (Jest) + frontend (Vitest)
-npm.cmd run test:desktop              # app desktop (Jest)
-npm.cmd run test:all                  # tudo
-npm.cmd run test:backend
-npm.cmd run test:frontend
-npm.cmd --prefix frontend run typecheck
-```
+You can see your version in **Settings → About**.
 
-### Estrutura
+- **Installer:** a few seconds after opening, the app looks for a new version. You can also check with the **Check for updates** button in **Settings → About**. If there is one, a window shows what changed:
+  1. **Download and install** or **Not now** (with "Not now", it asks again the next time you open the app);
+  2. after the download: **Restart now** or **Install when closing the app**.
 
-```
-backend/    API Express + SQLite (MVC + services); também serve a interface compilada
-frontend/   Next.js (exportação estática, TypeScript)
-desktop/    app desktop (Electron), empacotamento e publicação
-scripts/    auxiliares do start-app.bat e da versão
-assets/     imagens para o README
-docs/       especificação e decisões (não versionado)
-```
+  Nothing is downloaded or installed without your answer, and your data is kept.
+- **Portable:** the app tells you about the new version, and the **Open download page** button takes you to the right page. Download the new file and use it instead of the old one.
+- **In the browser:** the app does not look for new versions. Download the new version's **Source code (zip)**, extract it to a new folder and use its `start-app.bat`. Your data stays in `%APPDATA%\SkinsManager`; you can then delete the old folder.
 
-### Configuração técnica (opcional)
+### Suggestions and problems
 
-`backend/.env` (modelo em `backend/.env.example`): `PORT` (padrão 3001), `DB_PATH`, `CORS_ORIGIN` e
-`SLOW_ITEM_DAYS` (padrão 21). Taxas, cotação e demais preferências pessoais são configuradas pela interface.
+Found a bug or have an idea? Open an **Issue**: <https://github.com/GregoryCardoso/skins-manager/issues> (there are ready-made forms in Portuguese and English).
+Don't attach your backup file, because it contains your personal data.
+Pull requests are not accepted at the moment.
 
-### Onde ficam os dados (código-fonte)
+### Credits
 
-- Banco, backups e logs: `%APPDATA%\SkinsManager` (veja "Instalar no Windows", item 4). `DB_PATH` no `backend/.env`
-  só serve para desenvolvimento e testes.
-- Dados antigos de `backend/data/` são copiados uma única vez para a pasta nova (pelo `start-app.bat`; o app desktop não faz essa cópia), sem apagar o original.
-- Banco de exemplo do modo `dev:demo`: `backend/data/inventory.dev.sqlite` (separado dos seus dados reais).
-- As lojas iniciais são criadas na primeira execução e recriadas se a tabela de lojas ficar vazia.
+The item catalog and images come from [CSGO-API](https://github.com/ByMykel/CSGO-API), by ByMykel.
+This project is not affiliated with Valve.
 
-## Publicar uma nova versão (mantenedor)
+### Use
 
-As versões saem no GitHub Releases pelo comando `npm run desktop:release`, que cria **um rascunho** com os arquivos;
-você revisa e publica.
-
-**Pré-requisito:** `npm run desktop:install` (instala as dependências do desktop, incluindo o electron-builder).
-
-1. **Definir a versão** (atualiza os quatro `package.json` e os `package-lock.json` correspondentes: raiz, backend, frontend e desktop):
-
-   ```powershell
-   npm.cmd run version:set -- 1.0.1
-   ```
-
-   O formato é só `x.y.z` (sem `v` e sem sufixos). Regras: **MAJOR** para mudança que exija ação do usuário,
-   **MINOR** para funcionalidade nova, **PATCH** para correção. A versão do app é independente da versão do esquema
-   do banco.
-2. **Commit e push** na branch principal. O rascunho é criado apontando para o commit atual (HEAD) e o GitHub cria a tag
-   `v<versão>` nele ao publicar; por isso o commit e o push vêm **antes**.
-3. **Definir o token do GitHub só na sessão do terminal** (nunca grave o token em arquivo). Serve um token clássico
-   com o escopo `repo` ou um token fine-grained restrito ao repositório `skins-manager` com a permissão
-   **Contents: Read and write**. No **CMD**:
-
-   ```bat
-   set GH_TOKEN=seu_token
-   ```
-
-   No PowerShell: `$env:GH_TOKEN = "seu_token"`. A variável vale só naquela janela.
-4. **Gerar o rascunho** (no CMD, na raiz do projeto):
-
-   ```bat
-   npm run desktop:release
-   ```
-
-   Antes de tudo o script confere o Git: se houver mudanças rastreadas sem commit, ou se o commit atual ainda não
-   estiver no GitHub, ele recusa (faça o commit e o push). O rascunho aponta para esse commit. Depois o script roda os testes, monta o app, empacota (sem publicar) e cria o rascunho `v<versão>` enviando os arquivos.
-5. **Revisar no GitHub** (Releases → rascunho): confira `SkinsManager-Setup-<versão>.exe`,
-   `SkinsManager-Portable-<versão>.exe`, `latest.yml` e o `.blockmap` do instalador; escreva as notas da versão (elas
-   aparecem na janela de atualização) e clique em **Publish release**.
-
-**Se der erro:**
-
-- O script **recusa** se já existir release ou rascunho com a mesma tag. Se for um rascunho seu que não foi publicado,
-  apague-o no GitHub e rode de novo; se a versão já foi publicada, aumente a versão (`version:set`).
-- Se falhar **no meio** (por exemplo, no envio dos arquivos), nada foi publicado: apague o rascunho incompleto no GitHub
-  e rode `npm run desktop:release` de novo.
-- Sem `GH_TOKEN` o script para antes de qualquer passo.
-
-## Uso e contribuições
-
-- O código é visível, mas **todos os direitos reservados**: o projeto não adota licença open source e não há arquivo `LICENSE`.
-- **Uso pessoal é livre** para qualquer pessoa.
-- O download oficial é **somente** pelas [Releases](https://github.com/GregoryCardoso/skins-manager/releases) deste repositório.
-- Sugestões e bugs: abra uma [Issue](https://github.com/GregoryCardoso/skins-manager/issues) (há modelos em português e
-  inglês). **Pull requests não são aceitos no momento.**
-
-## Créditos
-
-Catálogo e imagens dos itens vêm da [CSGO-API](https://github.com/ByMykel/CSGO-API), de ByMykel.
-Este projeto não tem afiliação com a Valve.
+The app is **free for personal use**. The code belongs to the author: **all rights reserved**.
