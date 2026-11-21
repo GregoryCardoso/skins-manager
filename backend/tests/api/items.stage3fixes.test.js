@@ -110,7 +110,7 @@ describe('I2: teto de centavos e leitura resiliente', () => {
       expect((await request(app).get(`/api/items/${item.id}`)).body.data).toMatchObject({ status: 'EM_ESTOQUE', soldAt: null });
       expect((await request(app).post(`/api/items/${item.id}/sell`).send(sellBody())).status).toBe(200);
       spy = failView();
-      expect((await request(app).post(`/api/items/${item.id}/unsell`)).status).toBe(500);
+      expect((await request(app).post(`/api/items/${item.id}/unsell`).set('Content-Type', 'application/json')).status).toBe(500);
       spy.mockRestore();
       expect((await request(app).get(`/api/items/${item.id}`)).body.data.status).toBe('VENDIDO');
     });

@@ -18,7 +18,7 @@ describe('/api/settings', () => {
     expect(res.body.data).toEqual({
       usdBrlRate: null, usdBrlRateUpdatedAt: null, usdBrlRateSource: null, catalogUpdatedAt: null, theme: 'SYSTEM', language: 'pt-BR',
       agingThresholdsAdjusted: false, fastTurnoverDays: 7, fastTurnoverDaysCustom: null, fastTurnoverDaysDefault: 7,
-      slowItemDays: 21, slowItemDaysCustom: null, slowItemDaysDefault: 21, ptaxQuotedAt: null, updatedAt: expect.any(String),
+      slowItemDays: 21, slowItemDaysCustom: null, slowItemDaysDefault: 21, rateQuotedAt: null, fxRefreshSource: 'AWESOMEAPI', updatedAt: expect.any(String),
     });
     expect(res.body.data).not.toHaveProperty('id');
   });
@@ -31,7 +31,7 @@ describe('/api/settings', () => {
       usdBrlRateUpdatedAt: '2026-11-19T15:00:00.000Z',
       catalogUpdatedAt: null, theme: 'SYSTEM', language: 'pt-BR', usdBrlRateSource: 'MANUAL',
       agingThresholdsAdjusted: false, fastTurnoverDays: 7, fastTurnoverDaysCustom: null, fastTurnoverDaysDefault: 7,
-      slowItemDays: 21, slowItemDaysCustom: null, slowItemDaysDefault: 21, ptaxQuotedAt: null,
+      slowItemDays: 21, slowItemDaysCustom: null, slowItemDaysDefault: 21, rateQuotedAt: null, fxRefreshSource: 'AWESOMEAPI',
       updatedAt: '2026-11-19T15:00:00.000Z',
     });
     expect((await request(app).get('/api/settings')).body.data.usdBrlRate).toBe(5.25);
@@ -56,7 +56,7 @@ describe('/api/settings', () => {
   });
 
   describe('PATCH /api/settings (preferências, D83)', () => {
-    const patch = (body) => request(app).patch('/api/settings').send(body);
+    const patch = (body) => request(app).patch('/api/settings').set('Content-Type', 'application/json').send(body);
 
     test('GET inicial traz theme SYSTEM, language pt-BR e catalogUpdatedAt nulo', async () => {
       const res = await request(app).get('/api/settings');
@@ -75,7 +75,7 @@ describe('/api/settings', () => {
       expect(res.body.data).toEqual({
         usdBrlRate: null, usdBrlRateUpdatedAt: null, usdBrlRateSource: null, catalogUpdatedAt: null, ...expected,
         agingThresholdsAdjusted: false, fastTurnoverDays: 7, fastTurnoverDaysCustom: null, fastTurnoverDaysDefault: 7,
-      slowItemDays: 21, slowItemDaysCustom: null, slowItemDaysDefault: 21, ptaxQuotedAt: null, updatedAt: '2026-11-19T15:00:00.000Z',
+      slowItemDays: 21, slowItemDaysCustom: null, slowItemDaysDefault: 21, rateQuotedAt: null, fxRefreshSource: 'AWESOMEAPI', updatedAt: '2026-11-19T15:00:00.000Z',
       });
       expect((await request(app).get('/api/settings')).body.data).toMatchObject(expected);
     });
@@ -90,7 +90,7 @@ describe('/api/settings', () => {
     test('{} e corpos que não são objeto -> INVALID_BODY', async () => {
       expectError(await patch({}), 400, 'INVALID_BODY');
       expectError(await patch([{ theme: 'DARK' }]), 400, 'INVALID_BODY');
-      expectError(await patch('texto'), 400, 'INVALID_BODY');
+      expectError(await request(app).patch('/api/settings').send('texto'), 415, 'UNSUPPORTED_MEDIA_TYPE');
     });
 
     test('outras chaves (usdBrlRate, catalogUpdatedAt, foo) -> UNKNOWN_FIELD e nada muda', async () => {

@@ -18,7 +18,7 @@ const sell = (id, body = {}) =>
   request(app).post(`/api/items/${id}/sell`).send({
     saleStoreId: storeId('CSFloat'), salePriceCents: 125, soldAt: '2026-11-18T12:00:00.000Z', ...body,
   });
-const unsell = (id, body) => request(app).post(`/api/items/${id}/unsell`).send(body);
+const unsell = (id, body) => request(app).post(`/api/items/${id}/unsell`).set('Content-Type', 'application/json').send(body);
 
 describe('POST /api/items/:id/unsell', () => {
   test('volta a EM_ESTOQUE, limpa os 11 campos de venda e preserva a compra', async () => {

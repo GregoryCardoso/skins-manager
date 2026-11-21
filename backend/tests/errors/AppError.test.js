@@ -9,11 +9,11 @@ describe('errors/AppError', () => {
     expect(typeof err.stack).toBe('string');
   });
 
-  test('ValidationError: status 400 e code padrão VALIDATION_ERROR', () => {
-    const err = new ValidationError('Campo inválido');
+  test('ValidationError: status 400 com o código informado (T25: o código é obrigatório)', () => {
+    const err = new ValidationError('Campo inválido', 'INVALID_FIELD');
     expect(err).toBeInstanceOf(AppError);
     expect(err).toBeInstanceOf(Error);
-    expect(err).toMatchObject({ name: 'ValidationError', status: 400, code: 'VALIDATION_ERROR', message: 'Campo inválido' });
+    expect(err).toMatchObject({ name: 'ValidationError', status: 400, code: 'INVALID_FIELD', message: 'Campo inválido' });
   });
 
   test('ValidationError aceita code customizado mantendo status 400', () => {
@@ -28,7 +28,7 @@ describe('errors/AppError', () => {
     expect(new ConflictError('Item já vendido.', 'ITEM_ALREADY_SOLD')).toMatchObject({
       name: 'ConflictError', status: 409, code: 'ITEM_ALREADY_SOLD',
     });
-    expect(new NotFoundError('x')).toBeInstanceOf(AppError);
-    expect(new ConflictError('x')).toBeInstanceOf(AppError);
+    expect(new NotFoundError('x', 'X_NOT_FOUND')).toBeInstanceOf(AppError);
+    expect(new ConflictError('x', 'X_CONFLICT')).toBeInstanceOf(AppError);
   });
 });

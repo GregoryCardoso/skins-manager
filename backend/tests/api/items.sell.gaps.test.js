@@ -95,7 +95,7 @@ describe('trade lock na venda (D59 revisada, exemplos da D56)', () => {
     expect((await sell(item.id, sellBody())).status).toBe(200);
     const refused = await request(app).patch(`/api/items/${item.id}`).send({ tradeUnlockAt: '2026-11-18T13:00:00.000Z' });
     expectError(refused, 409, 'ITEM_TRADE_LOCKED');
-    expect((await request(app).post(`/api/items/${item.id}/unsell`)).status).toBe(200);
+    expect((await request(app).post(`/api/items/${item.id}/unsell`).set('Content-Type', 'application/json')).status).toBe(200);
     const patched = await request(app).patch(`/api/items/${item.id}`).send({ tradeUnlockAt: '2026-11-18T13:00:00.000Z' });
     expect(patched.status).toBe(200);
     const res = await sell(item.id, sellBody());
@@ -214,7 +214,7 @@ describe('validação de forma da venda', () => {
 
   test('corpo ausente, array ou status no corpo', async () => {
     const item = await createItemViaApi(app);
-    expectError(await request(app).post(`/api/items/${item.id}/sell`), 400, 'INVALID_BODY');
+    expectError(await request(app).post(`/api/items/${item.id}/sell`).set('Content-Type', 'application/json'), 400, 'REQUIRED_FIELD');
     expectError(await sell(item.id, [sellBody()]), 400, 'INVALID_BODY');
     expectError(await sell(item.id, sellBody({ status: 'VENDIDO' })), 400, 'UNKNOWN_FIELD');
     expectError(await sell(item.id, sellBody({ saleCurrency: 'BRL' })), 400, 'UNKNOWN_FIELD');

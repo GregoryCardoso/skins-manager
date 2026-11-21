@@ -382,14 +382,20 @@ describe('retenção (D151)', () => {
     for (const f of MANUAL) expect(backupFiles()).toContain(f);
   });
 
-  test('migração poda só o tipo migração (importação de um v3), e arquivos fora do padrão ficam', async () => {
+  test('importar um v3 não cria nem poda backups de migração (inventory-v*); arquivos fora do padrão ficam', async () => {
+    const before = count(MIG);
+    expect(before).toHaveLength(12);
     const v3 = sub('v3-ret.sqlite');
     database.openDatabase(v3, { migrations: MIGRATIONS.slice(0, 3) }).close();
+    for (let i = 0; i < 11; i += 1) {
+      const r = await octet(fs.readFileSync(v3));
+      expect(r.status).toBe(200);
+    }
     const res = await octet(fs.readFileSync(v3));
     expect(res.status).toBe(200);
-    expect(count(MIG)).toHaveLength(10);
+    expect(count(MIG)).toEqual(before);
+    expect(backupFiles().filter((n) => /^inventory-v3-.*Z\.sqlite$/.test(n))).toEqual(before.filter((n) => n.startsWith('inventory-v3-')));
     expect(count(IMPORT)).toHaveLength(10);
-    expect(backupFiles()).toContain(res.body.data.preImportBackupFile);
     for (const f of MANUAL) expect(backupFiles()).toContain(f);
     expect(tmpFiles()).toEqual([]);
   });
@@ -428,7 +434,7 @@ describe('retenção (D151)', () => {
     expect(res.status).toBe(200);
     expect(res.body.data.fileVersion).toBe(3);
     expect(database.getSchemaVersion()).toBe(database.getLatestSchemaVersion());
-    expect(count(MIG).length).toBeGreaterThan(10);
+    expect(count(MIG)).toHaveLength(12 + 12); // importar não poda o tipo migração
   });
 
   test('falha ao listar a pasta de backups também não derruba (pruneAutoBackups nunca lança)', () => {

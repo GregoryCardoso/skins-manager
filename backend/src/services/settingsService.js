@@ -5,10 +5,11 @@ const Setting = require('../models/Setting');
 const { ValidationError, ConflictError } = require('../errors/AppError');
 const { isValidFxRate } = require('./currencyService');
 const { resolveAgingThresholds } = require('./inventoryAgingService');
-const { fetchLatestPtax } = require('./ptax/bcbPtaxAdapter');
+const { getProvider } = require('./fxRates');
 const {
   THEMES,
   LANGUAGES,
+  FX_REFRESH_SOURCES,
   DEFAULT_FAST_TURNOVER_DAYS,
   MIN_FAST_TURNOVER_DAYS,
   MAX_FAST_TURNOVER_DAYS,
@@ -67,49 +68,58 @@ function updateFxRate(usdBrlRate, { now = new Date() } = {}) {
   if (!isValidFxRate(usdBrlRate)) {
     throw new ValidationError('Cotação USD→BRL inválida: informe um número maior que zero.', 'INVALID_FX_RATE');
   }
-  // Edição manual: origem MANUAL e sem data de PTAX (D143, D147).
+  if (fxRefreshInProgress) {
+    throw new ConflictError('Uma atualização da cotação está em andamento. Aguarde terminar.', 'FX_REFRESH_IN_PROGRESS', {
+      params: { source: Setting.get().fxRefreshSource },
+    });
+  }
+  // Edição manual: origem MANUAL e sem data de cotação (D143, D162).
   Setting.update(
-    { usdBrlRate, usdBrlRateUpdatedAt: now.toISOString(), usdBrlRateSource: 'MANUAL', ptaxQuotedAt: null },
+    { usdBrlRate, usdBrlRateUpdatedAt: now.toISOString(), usdBrlRateSource: 'MANUAL', rateQuotedAt: null },
     { now }
   );
   return getSettings();
 }
 
-// Atualização da cotação pela PTAX de venda do Banco Central (D147). Salva direto; uma por vez.
-let ptaxRefreshInProgress = false;
+// Atualização da cotação pela fonte salva em `fxRefreshSource` (D162): AWESOMEAPI ou PTAX. Uma por vez (trava única).
+// Na falha nada é gravado e o erro sai com `params.source`.
+let fxRefreshInProgress = false;
 
-function isPtaxRefreshInProgress() {
-  return ptaxRefreshInProgress;
+function isFxRefreshInProgress() {
+  return fxRefreshInProgress;
 }
 
-async function refreshFxRateFromPtax({ fetchFn = globalThis.fetch, now = new Date(), timeouts } = {}) {
-  if (ptaxRefreshInProgress) {
-    throw new ConflictError('Já existe uma atualização da PTAX em andamento.', 'PTAX_REFRESH_IN_PROGRESS');
+async function refreshFxRate({ fetchFn = globalThis.fetch, now = new Date(), timeouts } = {}) {
+  const source = Setting.get().fxRefreshSource;
+  if (fxRefreshInProgress) {
+    throw new ConflictError('Já existe uma atualização da cotação em andamento.', 'FX_REFRESH_IN_PROGRESS', {
+      params: { source },
+    });
   }
-  ptaxRefreshInProgress = true;
+  fxRefreshInProgress = true;
   try {
-    const quote = await fetchLatestPtax({ fetchFn, now, ...timeouts });
+    const quote = await getProvider(source).fetchLatestRate({ fetchFn, now, ...timeouts });
     Setting.update(
       {
-        usdBrlRate: quote.sellRate,
+        usdBrlRate: quote.rate,
         usdBrlRateUpdatedAt: now.toISOString(),
-        usdBrlRateSource: 'PTAX',
-        ptaxQuotedAt: quote.quotedAt,
+        usdBrlRateSource: quote.source,
+        rateQuotedAt: quote.quotedAt,
       },
       { now }
     );
     return {
       settings: getSettings(),
-      ptax: {
-        rate: quote.sellRate,
+      quote: {
+        source: quote.source,
+        rate: quote.rate,
         buyRate: quote.buyRate,
         sellRate: quote.sellRate,
         quotedAt: quote.quotedAt,
-        quoteDate: quote.quoteDate,
       },
     };
   } finally {
-    ptaxRefreshInProgress = false;
+    fxRefreshInProgress = false;
   }
 }
 
@@ -124,13 +134,20 @@ function checkDays(value, { min, max, code, field, label }) {
   }
 }
 
-// Preferências pessoais (D83, D159): tema, idioma e os dois limites de giro.
+// Preferências pessoais (D83, D159, D162): tema, idioma, os dois limites de giro e a fonte do "atualizar cotação".
 function updatePreferences(partial, { now = new Date() } = {}) {
   if (partial.theme !== undefined && !THEMES.includes(partial.theme)) {
     throw new ValidationError(`Tema inválido. Use ${THEMES.join(', ')}.`, 'INVALID_THEME');
   }
   if (partial.language !== undefined && !LANGUAGES.includes(partial.language)) {
     throw new ValidationError(`Idioma inválido. Use ${LANGUAGES.join(', ')}.`, 'INVALID_LANGUAGE');
+  }
+  if (partial.fxRefreshSource !== undefined && !FX_REFRESH_SOURCES.includes(partial.fxRefreshSource)) {
+    throw new ValidationError(
+      `Fonte de cotação inválida. Use ${FX_REFRESH_SOURCES.join(', ')}.`,
+      'INVALID_FX_SOURCE',
+      { field: 'fxRefreshSource' }
+    );
   }
   const hasFast = partial.fastTurnoverDays !== undefined;
   const hasSlow = partial.slowItemDays !== undefined;
@@ -166,7 +183,7 @@ function updatePreferences(partial, { now = new Date() } = {}) {
     }
   }
   const changes = {};
-  for (const key of ['theme', 'language', 'fastTurnoverDays', 'slowItemDays']) {
+  for (const key of ['theme', 'language', 'fxRefreshSource', 'fastTurnoverDays', 'slowItemDays']) {
     if (partial[key] !== undefined) changes[key] = partial[key];
   }
   Setting.update(changes, { now });
@@ -178,6 +195,6 @@ module.exports = {
   getAgingThresholds,
   updateFxRate,
   updatePreferences,
-  refreshFxRateFromPtax,
-  isPtaxRefreshInProgress,
+  refreshFxRate,
+  isFxRefreshInProgress,
 };

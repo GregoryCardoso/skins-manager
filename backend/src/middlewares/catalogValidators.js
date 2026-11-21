@@ -1,5 +1,5 @@
 const { ValidationError } = require('../errors/AppError');
-const { isPlainObject } = require('./validationHelpers');
+const { isPlainObject, requireJsonContentType } = require('./validationHelpers');
 const { CATALOG_SEARCH_DEFAULT_LIMIT, CATALOG_SEARCH_MAX_LIMIT, CATALOG_ID_MAX_LENGTH } = require('../config/constants');
 const { CATEGORIES } = require('../services/itemAttributesService');
 const { normalizeSearchText } = require('../services/catalog/csgoApiAdapter');
@@ -39,6 +39,8 @@ function validateCatalogIdParam(req, res, next) {
 
 // Sem corpo: ausente ou `{}`; qualquer chave -> UNKNOWN_FIELD.
 function validateRefreshBody(req, res, next) {
+  // T44: exige Content-Type JSON (um POST sem corpo de outro site seria uma "simple request" de CORS).
+  requireJsonContentType(req);
   const body = req.body === undefined ? {} : req.body;
   if (!isPlainObject(body)) {
     return next(new ValidationError('O corpo da requisição deve ser um objeto JSON.', 'INVALID_BODY'));

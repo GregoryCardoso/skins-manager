@@ -33,6 +33,17 @@ export function errorDetailParams(
       return typeof p.fileVersion === 'number' && typeof p.appVersion === 'number'
         ? { fileVersion: p.fileVersion, appVersion: p.appVersion }
         : null;
+    case 'FX_FETCH_FAILED':
+    case 'FX_RATE_LIMITED':
+    case 'FX_INVALID_RESPONSE':
+    case 'FX_REFRESH_IN_PROGRESS':
+    case 'PTAX_NOT_FOUND': {
+      // `params.source` (AWESOMEAPI | PTAX) vira o nome da fonte na mensagem (D162).
+      if (typeof p.source !== 'string') return null;
+      const key = `fx.sourceName.${p.source}`;
+      const name = t(key);
+      return { source: name !== key ? name : p.source };
+    }
     case 'UNKNOWN_FIELD': {
       if (!error.field) return null;
       const label = t(`fields.${error.field}`);

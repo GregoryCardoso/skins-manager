@@ -86,7 +86,7 @@ describe('POST /sell com netReceivedCents (D122)', () => {
   test('unsell limpa o líquido manual; nova venda sem líquido calcula', async () => {
     const item = await createItemViaApi(app);
     await sell(item.id, { netReceivedCents: 120 });
-    const un = await request(app).post(`/api/items/${item.id}/unsell`).send();
+    const un = await request(app).post(`/api/items/${item.id}/unsell`).set('Content-Type', 'application/json').send();
     expect(un.body.data).toMatchObject({ netReceivedCents: null, netReceivedManual: false, saleFeeTypeApplied: null });
     const again = await sell(item.id);
     expect(again.body.data.sale).toMatchObject({ netReceivedCents: 122, netReceivedManual: false });

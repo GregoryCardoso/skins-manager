@@ -163,7 +163,7 @@ describe('GET /api/catalog/:id e /status', () => {
 describe('POST /api/catalog/refresh', () => {
   test('sucesso com fetchFn injetado e relógio injetado', async () => {
     const app = makeApp(NOW, { fetchFn: fixtureFetch() });
-    const res = await request(app).post('/api/catalog/refresh');
+    const res = await request(app).post('/api/catalog/refresh').set('Content-Type', 'application/json');
     expect(res.status).toBe(200);
     expect(res.body.data).toEqual({
       catalogUpdatedAt: NOW.toISOString(),
@@ -176,21 +176,21 @@ describe('POST /api/catalog/refresh', () => {
   });
 
   test('corpo {} é aceito', async () => {
-    const res = await request(makeApp(NOW, { fetchFn: fixtureFetch() })).post('/api/catalog/refresh').send({});
+    const res = await request(makeApp(NOW, { fetchFn: fixtureFetch() })).post('/api/catalog/refresh').set('Content-Type', 'application/json').send({});
     expect(res.status).toBe(200);
   });
 
   test('corpo com chave -> UNKNOWN_FIELD; corpo não objeto -> INVALID_BODY', async () => {
     const app = makeApp(NOW, { fetchFn: fixtureFetch() });
-    expectError(await request(app).post('/api/catalog/refresh').send({ force: true }), 400, 'UNKNOWN_FIELD');
-    expectError(await request(app).post('/api/catalog/refresh').send([]), 400, 'INVALID_BODY');
+    expectError(await request(app).post('/api/catalog/refresh').set('Content-Type', 'application/json').send({ force: true }), 400, 'UNKNOWN_FIELD');
+    expectError(await request(app).post('/api/catalog/refresh').set('Content-Type', 'application/json').send([]), 400, 'INVALID_BODY');
   });
 
   test('falha do download -> 502 CATALOG_FETCH_FAILED e catálogo intacto', async () => {
     importCatalogFixture();
     const fetchFn = fixtureFetch({ 'en/skins.json': { ok: false, status: 500, text: async () => '' } });
     const app = makeApp(NOW, { fetchFn });
-    const res = await request(app).post('/api/catalog/refresh');
+    const res = await request(app).post('/api/catalog/refresh').set('Content-Type', 'application/json');
     expectError(res, 502, 'CATALOG_FETCH_FAILED');
     expect(res.body.error.message).toBe('Não foi possível baixar o catálogo. Verifique a conexão com a internet.');
     expect((await request(app).get('/api/catalog/status')).body.data.total).toBe(21);
@@ -198,9 +198,9 @@ describe('POST /api/catalog/refresh', () => {
 
   test('rede caindo e JSON inválido -> 502', async () => {
     const down = makeApp(NOW, { fetchFn: async () => { throw new TypeError('fetch failed'); } });
-    expectError(await request(down).post('/api/catalog/refresh'), 502, 'CATALOG_FETCH_FAILED');
+    expectError(await request(down).post('/api/catalog/refresh').set('Content-Type', 'application/json'), 502, 'CATALOG_FETCH_FAILED');
     const bad = makeApp(NOW, { fetchFn: fixtureFetch({ 'en/agents.json': { ok: true, status: 200, text: async () => 'oi' } }) });
-    expectError(await request(bad).post('/api/catalog/refresh'), 502, 'CATALOG_INVALID_FORMAT');
+    expectError(await request(bad).post('/api/catalog/refresh').set('Content-Type', 'application/json'), 502, 'CATALOG_INVALID_FORMAT');
   });
 
   test('atualização simultânea -> 409 CATALOG_REFRESH_IN_PROGRESS', async () => {
@@ -212,10 +212,10 @@ describe('POST /api/catalog/refresh', () => {
       return base(url, opts);
     };
     const app = makeApp(NOW, { fetchFn: slowFetch });
-    const first = request(app).post('/api/catalog/refresh').then((r) => r);
+    const first = request(app).post('/api/catalog/refresh').set('Content-Type', 'application/json').then((r) => r);
     // espera a primeira chegar ao serviço
     await new Promise((resolve) => setTimeout(resolve, 100));
-    const second = await request(makeApp(NOW, { fetchFn: base })).post('/api/catalog/refresh');
+    const second = await request(makeApp(NOW, { fetchFn: base })).post('/api/catalog/refresh').set('Content-Type', 'application/json');
     expectError(second, 409, 'CATALOG_REFRESH_IN_PROGRESS');
     release();
     expect((await first).status).toBe(200);
@@ -225,7 +225,7 @@ describe('POST /api/catalog/refresh', () => {
     const original = globalThis.fetch;
     globalThis.fetch = fixtureFetch();
     try {
-      const res = await request(makeApp()).post('/api/catalog/refresh');
+      const res = await request(makeApp()).post('/api/catalog/refresh').set('Content-Type', 'application/json');
       expect(res.status).toBe(200);
     } finally {
       globalThis.fetch = original;

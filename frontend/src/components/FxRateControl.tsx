@@ -5,6 +5,7 @@ import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
 import { formatDecimalInput, parseDecimalInput } from '@/lib/numberInput';
 import { formatRate } from '@/lib/format';
+import { fxDateText, fxSourceName, fxSourceShort } from '@/lib/fxDisplay';
 import styles from './FxRateControl.module.css';
 import { usePreferences } from './PreferencesProvider';
 
@@ -13,7 +14,7 @@ export default function FxRateControl() {
   const t = useT();
   const tLoose = useTLoose();
   const language = useLanguage();
-  const { usdBrlRate, saveFxRate } = usePreferences();
+  const { usdBrlRate, saveFxRate, fxSource, rateQuotedAt, fxRateUpdatedAt } = usePreferences();
   const inputId = useId();
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState('');
@@ -47,11 +48,20 @@ export default function FxRateControl() {
   };
 
   if (!editing) {
+    // Rótulo curto da fonte no texto; nome completo e data/hora na dica (D162).
+    const short = fxSourceShort(fxSource, tLoose);
+    const tooltip = [
+      t('fx.label'),
+      fxSourceName(fxSource, tLoose),
+      fxDateText({ source: fxSource, quotedAt: rateQuotedAt, updatedAt: fxRateUpdatedAt }, language, tLoose),
+    ]
+      .filter(Boolean)
+      .join(' · ');
     return (
       <div className={styles.root}>
-        <span className={styles.value} title={t('fx.label')}>
+        <span className={styles.value} title={tooltip}>
           {usdBrlRate !== null
-            ? t('fx.value', { rate: formatRate(usdBrlRate, language) })
+            ? `${t('fx.value', { rate: formatRate(usdBrlRate, language) })}${short ? ` · ${short}` : ''}`
             : t('fx.notSet')}
         </span>
         <button type="button" className={styles.button} onClick={startEdit}>{t('fx.edit')}</button>

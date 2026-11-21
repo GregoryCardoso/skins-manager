@@ -161,6 +161,8 @@ function nameTakenBy(name, selfId) {
 function createStore(input, { now = new Date() } = {}) {
   const record = buildStoreRecord(input, { nameTaken: nameTakenBy(input.name, null) });
   const id = runInTransaction(() => {
+    // Banco legado sem loja principal: a loja ativa criada passa a ser a principal.
+    if (record.isActive && !Store.findPrimary()) record.isPrimary = true;
     if (record.isPrimary) Store.clearPrimary({ now });
     return Store.create(record, { now }).id;
   });
@@ -176,6 +178,8 @@ function updateStore(id, partial, { now = new Date() } = {}) {
     nameTaken: partial.name !== undefined && nameTakenBy(partial.name, id),
   });
   runInTransaction(() => {
+    // Banco legado sem loja principal: a loja ativada passa a ser a principal.
+    if (record.isActive && !existing.isActive && !Store.findPrimary()) record.isPrimary = true;
     if (record.isPrimary && !existing.isPrimary) Store.clearPrimary({ now });
     Store.update(id, record, { now });
   });

@@ -91,7 +91,7 @@ describe('POST /sell com netReceivedCents: bordas (D122)', () => {
   test('unsell de venda sem taxa (snapshot nulo) funciona e permite revenda calculada', async () => {
     const item = await createItemViaApi(app);
     await sell(item.id, { saleStoreId: storeId('CSMoney'), salePriceCents: 200, netReceivedCents: 180 });
-    const un = await request(app).post(`/api/items/${item.id}/unsell`).send();
+    const un = await request(app).post(`/api/items/${item.id}/unsell`).set('Content-Type', 'application/json').send();
     expect(un.status).toBe(200);
     expect(un.body.data).toMatchObject({ status: 'EM_ESTOQUE', netReceivedManual: false, netReceivedCents: null, saleStoreId: null });
     expect((await sell(item.id)).body.data.sale.netReceivedManual).toBe(false);
@@ -192,10 +192,10 @@ describe('field/params nos erros (D113): PATCH, venda e erros sem campo', () => 
   test('sem field/params: ITEM_NOT_FOUND, ITEM_ALREADY_SOLD, ITEM_NOT_SOLD', async () => {
     const item = await createItemViaApi(app);
     expectError(await sell(9999), 404, 'ITEM_NOT_FOUND', { field: null, params: null });
-    expectError(await request(app).post('/api/items/9999/unsell').send(), 404, 'ITEM_NOT_FOUND', { field: null });
+    expectError(await request(app).post('/api/items/9999/unsell').set('Content-Type', 'application/json').send(), 404, 'ITEM_NOT_FOUND', { field: null });
     expectError(await request(app).delete('/api/items/9999'), 404, 'ITEM_NOT_FOUND', { field: null });
     expectError(await patch(9999, { originDetail: 'a' }), 404, 'ITEM_NOT_FOUND', { field: null });
-    expectError(await request(app).post(`/api/items/${item.id}/unsell`).send(), 409, 'ITEM_NOT_SOLD', { field: null, params: null });
+    expectError(await request(app).post(`/api/items/${item.id}/unsell`).set('Content-Type', 'application/json').send(), 409, 'ITEM_NOT_SOLD', { field: null, params: null });
     await sell(item.id);
     expectError(await sell(item.id), 409, 'ITEM_ALREADY_SOLD', { field: null, params: null });
   });
@@ -265,6 +265,6 @@ describe('T51 (D115): bordas da deduplicação', () => {
     const item = await createItemViaApi(app, purchaseBody({ catalogId: 'h-b' }));
     expect((await patch(item.id, { purchasePriceCents: 99 })).status).toBe(200);
     expect((await sell(item.id)).status).toBe(200);
-    expect((await request(app).post(`/api/items/${item.id}/unsell`).send()).status).toBe(200);
+    expect((await request(app).post(`/api/items/${item.id}/unsell`).set('Content-Type', 'application/json').send()).status).toBe(200);
   });
 });

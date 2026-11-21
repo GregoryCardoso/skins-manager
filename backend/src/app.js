@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const env = require('./config/env');
 const routes = require('./routes');
+const { hostGuard } = require('./middlewares/hostGuard');
 const { createStaticFrontend } = require('./middlewares/staticFrontend');
 const { errorHandler, notFoundHandler } = require('./middlewares/errorHandler');
 
@@ -19,6 +20,7 @@ function createApp({ now = () => new Date(), fetchFn, catalogValidation, staticD
   app.locals.backupMaxBytes = backupMaxBytes; // `undefined` = BACKUP_MAX_BYTES (D151)
   app.locals.catalogValidation = catalogValidation; // `undefined` = padrão do service (T36)
 
+  app.use(hostGuard); // antes de tudo: DNS rebinding (inclui /api/health)
   app.use(cors({ origin: env.corsOrigin, exposedHeaders: ['Content-Disposition'] }));
   app.use(express.json());
 

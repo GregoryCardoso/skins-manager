@@ -8,9 +8,7 @@ const added = require('../../src/services/fees/addedSaleFee');
 const { computeSaleFee } = require('../../src/services/fees/saleFeeFormula');
 const { isValidFxRate, toUsdCents } = require('../../src/services/currencyService');
 const { findMinSalePriceCents, computeSale } = require('../../src/services/pricingService');
-const {
-  effectiveRate, simulateWithdrawal, estimateBalanceBrl,
-} = require('../../src/services/withdrawalService');
+const { estimateBalanceBrl } = require('../../src/services/withdrawalService');
 const {
   classifyStock, classifyTurnaround, sortByAge, sortByTurnaround, assertNotFutureDay,
 } = require('../../src/services/inventoryAgingService');
@@ -37,11 +35,10 @@ describe('T11 - códigos específicos', () => {
     expect(codeOf(() => roundCents(NaN, 'ROUND'))).toBe('INVALID_AMOUNT');
   });
 
-  test('pricing e withdrawal', () => {
+  test('pricing e saldo estimado', () => {
     expect(codeOf(() => findMinSalePriceCents(-1, CSF))).toBe('INVALID_AMOUNT');
     expect(codeOf(() => computeSale({ salePriceCents: 0, store: csfloat() }))).toBe('INVALID_AMOUNT');
-    expect(codeOf(() => simulateWithdrawal({ amountStoreCents: 0, store: csfloat(), settings: {}, recentWithdrawals: [] }))).toBe('INVALID_AMOUNT');
-    expect(codeOf(() => estimateBalanceBrl({ balanceCents: -1, store: csfloat(), settings: {}, recentWithdrawals: [] }))).toBe('INVALID_AMOUNT');
+    expect(codeOf(() => estimateBalanceBrl({ balanceCents: -1, store: csfloat(), settings: {} }))).toBe('INVALID_AMOUNT');
   });
 
   test('nenhum service usa o código genérico VALIDATION_ERROR', () => {
@@ -99,12 +96,10 @@ describe('T12 / T13 / T14', () => {
       WARNINGS: {
         FEES_NOT_CONFIGURED: { code: 'FEES_NOT_CONFIGURED', text: 'taxas não configuradas' },
         FX_NOT_CONFIGURED: { code: 'FX_NOT_CONFIGURED', text: 'cotação não configurada' },
-        BELOW_FEE: { code: 'BELOW_FEE', text: 'valor menor que a taxa' },
         PRICE_OVERFLOW: { code: 'PRICE_OVERFLOW', text: 'valor alto demais para calcular o preço mínimo' },
       },
       WARNING_FEES: 'taxas não configuradas',
       WARNING_FX: 'cotação não configurada',
-      WARNING_BELOW_FEE: 'valor menor que a taxa',
       WARNING_PRICE_OVERFLOW: 'valor alto demais para calcular o preço mínimo',
     });
   });
@@ -120,41 +115,6 @@ describe('T12 / T13 / T14', () => {
       expect(src).not.toMatch(/const (MIN|MAX)_SLOW_ITEM_DAYS\s*=/);
       expect(src).not.toMatch(/const FAST_DAYS\s*=/);
     }
-  });
-});
-
-describe('T16 - effectiveRate', () => {
-  test('ordena por instante (ISO mistos Z e -03:00) e usa os 5 mais recentes', () => {
-    // 10:00-03:00 = 13:00Z (mais recente que 12:00Z, embora "10:00..." < "12:00..." como texto)
-    const w = (id, withdrawnAt, brl) => ({ id, storeId: 1, amountStoreCents: 1000, amountBrlCents: brl, withdrawnAt });
-    const list = [
-      w(1, '2026-11-01T12:00:00.000Z', 1000),
-      w(2, '2026-11-01T10:00:00.000-03:00', 9000),
-      w(3, '2026-11-02T12:00:00.000Z', 5000),
-      w(4, '2026-11-03T12:00:00.000Z', 5000),
-      w(5, '2026-11-04T12:00:00.000Z', 5000),
-      w(6, '2026-11-05T12:00:00.000Z', 5000),
-    ];
-    // 5 mais recentes: ids 6,5,4,3 e 2 (13:00Z de 01/11); id 1 (12:00Z) fica de fora.
-    expect(effectiveRate(list, 1)).toBeCloseTo((5 + 5 + 5 + 5 + 9) / 5, 10);
-  });
-
-  test('descarta saques com amountBrlCents inválido', () => {
-    const list = [
-      { id: 1, storeId: 1, amountStoreCents: 1000, amountBrlCents: 5000, withdrawnAt: '2026-11-01T00:00:00Z' },
-      { id: 2, storeId: 1, amountStoreCents: 1000, amountBrlCents: 0, withdrawnAt: '2026-11-02T00:00:00Z' },
-      { id: 3, storeId: 1, amountStoreCents: 1000, amountBrlCents: null, withdrawnAt: '2026-11-03T00:00:00Z' },
-    ];
-    expect(effectiveRate(list, 1)).toBe(5);
-  });
-});
-
-describe('T17 - estimativa sem store.id', () => {
-  test('ignora saques e cai em taxa + cotação', () => {
-    const store = csfloat({ id: undefined });
-    const withdrawals = [{ id: 1, storeId: 1, amountStoreCents: 1000, amountBrlCents: 6000, withdrawnAt: '2026-11-01T00:00:00Z' }];
-    const sim = simulateWithdrawal({ amountStoreCents: 10000, store, settings: { usdBrlRate: 5 }, recentWithdrawals: withdrawals });
-    expect(sim).toMatchObject({ method: 'FEE_AND_SETTINGS_RATE', feeCents: 250, estimatedBrlCents: 48750 });
   });
 });
 

@@ -3,7 +3,10 @@ const controller = require('../controllers/itemController');
 const validateIdParam = require('../middlewares/validateIdParam');
 const v = require('../middlewares/itemValidators');
 
+const { requireJsonForWrites } = require('../middlewares/validationHelpers');
+
 const router = Router();
+router.use(requireJsonForWrites);
 
 router.get('/', v.validateItemQuery, controller.list);
 router.get('/stats', v.validateStatsQuery, controller.stats); // antes de /:id

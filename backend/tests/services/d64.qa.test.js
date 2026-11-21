@@ -1,7 +1,11 @@
 // QA independente de D64 (itens 1 e 2) nas funções puras, sem validador nem banco.
 const fs = require('fs');
 const path = require('path');
-const { buildItemRecord, buildSaleRecord } = require('../../src/services/itemService');
+const itemService = require('../../src/services/itemService');
+
+const { buildSaleRecord } = itemService;
+// T31: `body` é obrigatório; `{}` equivale a "nada além do estado mesclado foi enviado".
+const buildItemRecord = (merged, ctx = {}) => itemService.buildItemRecord(merged, { body: {}, ...ctx });
 const { assertNotFutureDay, assertAcquiredAtNotFuture, daysBetween } = require('../../src/services/inventoryAgingService');
 const { parseDate, toIso } = require('../../src/services/dateUtils');
 const { MAX_AMOUNT_CENTS } = require('../../src/config/constants');

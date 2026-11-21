@@ -6,7 +6,7 @@ const {
   parsePtaxResponse,
   candidateDays,
   fetchLatestPtax,
-} = require('../../../src/services/ptax/bcbPtaxAdapter');
+} = require('../../../src/services/fxRates/bcbPtaxAdapter');
 
 const THURSDAY = new Date('2026-11-19T15:00:00.000Z'); // 12:00 em Brasília
 const row = (extra = {}) => ({
@@ -58,22 +58,22 @@ describe('parsePtaxResponse', () => {
     expect(parsePtaxResponse({ value: [row({ dataHoraCotacao: '2026-11-19 13:04:28' })] }).quotedAt).toBe('2026-11-19T16:04:28.000Z');
     expect(parsePtaxResponse({ value: [row({ dataHoraCotacao: '2026-11-19 13:04:28.1234567' })] }).quotedAt).toBe('2026-11-19T16:04:28.123Z');
   });
-  test.each([null, 'x', {}, { value: 1 }, { value: [null] }])('formato %p → PTAX_INVALID_RESPONSE', (json) => {
-    expect(() => parsePtaxResponse(json)).toThrow(expect.objectContaining({ code: 'PTAX_INVALID_RESPONSE' }));
+  test.each([null, 'x', {}, { value: 1 }, { value: [null] }])('formato %p → FX_INVALID_RESPONSE', (json) => {
+    expect(() => parsePtaxResponse(json)).toThrow(expect.objectContaining({ code: 'FX_INVALID_RESPONSE' }));
   });
-  test.each([0, -5.3, 0.99, 50.01, 1000, '5.3', null, NaN, Infinity])('cotacaoVenda %p → PTAX_INVALID_RESPONSE', (v) => {
+  test.each([0, -5.3, 0.99, 50.01, 1000, '5.3', null, NaN, Infinity])('cotacaoVenda %p → FX_INVALID_RESPONSE', (v) => {
     expect(() => parsePtaxResponse({ value: [row({ cotacaoVenda: v })] })).toThrow(
-      expect.objectContaining({ code: 'PTAX_INVALID_RESPONSE' })
+      expect.objectContaining({ code: 'FX_INVALID_RESPONSE' })
     );
   });
   test('limites 1 e 50 são aceitos', () => {
     expect(parsePtaxResponse({ value: [row({ cotacaoVenda: 1 })] }).sellRate).toBe(1);
     expect(parsePtaxResponse({ value: [row({ cotacaoVenda: 50 })] }).sellRate).toBe(50);
   });
-  test('data da cotação inválida → PTAX_INVALID_RESPONSE', () => {
+  test('data da cotação inválida → FX_INVALID_RESPONSE', () => {
     for (const dataHoraCotacao of [undefined, 'ontem', '2026-13-45 99:99:99']) {
       expect(() => parsePtaxResponse({ value: [row({ dataHoraCotacao })] })).toThrow(
-        expect.objectContaining({ code: 'PTAX_INVALID_RESPONSE' })
+        expect.objectContaining({ code: 'FX_INVALID_RESPONSE' })
       );
     }
   });
@@ -136,42 +136,42 @@ describe('fetchLatestPtax', () => {
     expect(fetchFn.calls).toEqual(['11-19-2026']);
   });
 
-  test('HTTP 500 → PTAX_FETCH_FAILED', async () => {
+  test('HTTP 500 → FX_FETCH_FAILED', async () => {
     const fetchFn = async () => ({ ok: false, status: 500, text: async () => 'erro' });
-    await expect(fetchLatestPtax({ fetchFn, now: THURSDAY })).rejects.toEqual(code('PTAX_FETCH_FAILED'));
+    await expect(fetchLatestPtax({ fetchFn, now: THURSDAY })).rejects.toEqual(code('FX_FETCH_FAILED'));
   });
 
-  test('rede que lança → PTAX_FETCH_FAILED', async () => {
+  test('rede que lança → FX_FETCH_FAILED', async () => {
     const fetchFn = async () => {
       throw new TypeError('fetch failed');
     };
-    await expect(fetchLatestPtax({ fetchFn, now: THURSDAY })).rejects.toEqual(code('PTAX_FETCH_FAILED'));
+    await expect(fetchLatestPtax({ fetchFn, now: THURSDAY })).rejects.toEqual(code('FX_FETCH_FAILED'));
   });
 
-  test('sem fetch disponível → PTAX_FETCH_FAILED', async () => {
-    await expect(fetchLatestPtax({ fetchFn: null, now: THURSDAY })).rejects.toEqual(code('PTAX_FETCH_FAILED'));
+  test('sem fetch disponível → FX_FETCH_FAILED', async () => {
+    await expect(fetchLatestPtax({ fetchFn: null, now: THURSDAY })).rejects.toEqual(code('FX_FETCH_FAILED'));
   });
 
-  test('JSON inválido → PTAX_INVALID_RESPONSE', async () => {
+  test('JSON inválido → FX_INVALID_RESPONSE', async () => {
     const fetchFn = async () => ({ ok: true, status: 200, text: async () => '<html>' });
-    await expect(fetchLatestPtax({ fetchFn, now: THURSDAY })).rejects.toEqual(code('PTAX_INVALID_RESPONSE'));
+    await expect(fetchLatestPtax({ fetchFn, now: THURSDAY })).rejects.toEqual(code('FX_INVALID_RESPONSE'));
   });
 
-  test('valor fora de 1..50 → PTAX_INVALID_RESPONSE', async () => {
+  test('valor fora de 1..50 → FX_INVALID_RESPONSE', async () => {
     const fetchFn = fakeFetch({ '11-19-2026': { value: [row({ cotacaoVenda: 530 })] } });
-    await expect(fetchLatestPtax({ fetchFn, now: THURSDAY })).rejects.toEqual(code('PTAX_INVALID_RESPONSE'));
+    await expect(fetchLatestPtax({ fetchFn, now: THURSDAY })).rejects.toEqual(code('FX_INVALID_RESPONSE'));
   });
 
-  test('resposta acima de 64 KB → PTAX_INVALID_RESPONSE', async () => {
+  test('resposta acima de 64 KB → FX_INVALID_RESPONSE', async () => {
     const big = JSON.stringify({ value: [row()], padding: 'x'.repeat(65 * 1024) });
     const fetchFn = async () => ({ ok: true, status: 200, text: async () => big });
-    await expect(fetchLatestPtax({ fetchFn, now: THURSDAY })).rejects.toEqual(code('PTAX_INVALID_RESPONSE'));
+    await expect(fetchLatestPtax({ fetchFn, now: THURSDAY })).rejects.toEqual(code('FX_INVALID_RESPONSE'));
   });
 
   test('Content-Length acima de 64 KB é recusado sem ler o corpo', async () => {
     const text = jest.fn();
     const fetchFn = async () => ({ ok: true, status: 200, headers: { get: () => String(70 * 1024) }, text });
-    await expect(fetchLatestPtax({ fetchFn, now: THURSDAY })).rejects.toEqual(code('PTAX_INVALID_RESPONSE'));
+    await expect(fetchLatestPtax({ fetchFn, now: THURSDAY })).rejects.toEqual(code('FX_INVALID_RESPONSE'));
     expect(text).not.toHaveBeenCalled();
   });
 
@@ -188,7 +188,7 @@ describe('fetchLatestPtax', () => {
       }),
     };
     const fetchFn = async () => ({ ok: true, status: 200, body });
-    await expect(fetchLatestPtax({ fetchFn, now: THURSDAY })).rejects.toEqual(code('PTAX_INVALID_RESPONSE'));
+    await expect(fetchLatestPtax({ fetchFn, now: THURSDAY })).rejects.toEqual(code('FX_INVALID_RESPONSE'));
     expect(cancelled).toBe(true);
   });
 
@@ -200,13 +200,13 @@ describe('fetchLatestPtax', () => {
     expect((await fetchLatestPtax({ fetchFn, now: THURSDAY })).sellRate).toBe(5.3012);
   });
 
-  test('timeout por chamada (fetch que nunca responde) → PTAX_FETCH_FAILED e o sinal é abortado', async () => {
+  test('timeout por chamada (fetch que nunca responde) → FX_FETCH_FAILED e o sinal é abortado', async () => {
     let signal;
     const fetchFn = (url, opts) => {
       signal = opts.signal;
       return new Promise(() => {});
     };
-    await expect(fetchLatestPtax({ fetchFn, now: THURSDAY, callTimeoutMs: 30 })).rejects.toEqual(code('PTAX_FETCH_FAILED'));
+    await expect(fetchLatestPtax({ fetchFn, now: THURSDAY, callTimeoutMs: 30 })).rejects.toEqual(code('FX_FETCH_FAILED'));
     expect(signal.aborted).toBe(true);
   });
 
@@ -216,7 +216,7 @@ describe('fetchLatestPtax', () => {
     );
     await expect(
       fetchLatestPtax({ fetchFn, now: THURSDAY, callTimeoutMs: 1000, totalTimeoutMs: 100 })
-    ).rejects.toEqual(code('PTAX_FETCH_FAILED'));
+    ).rejects.toEqual(code('FX_FETCH_FAILED'));
     expect(fetchFn.mock.calls.length).toBeLessThan(6);
   });
 });

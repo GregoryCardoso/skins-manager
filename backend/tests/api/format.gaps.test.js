@@ -21,6 +21,7 @@ const ID_ROUTES = [
 
 function call(method, url, body) {
   const req = request(app)[method](url);
+  if (['post', 'patch', 'put'].includes(method)) req.set('Content-Type', 'application/json');
   return body === undefined ? req : req.send(body);
 }
 

@@ -185,7 +185,7 @@ describe('I2 (QA): erros de regra não gravam nada', () => {
   test('unsell de item não vendido (409) não altera nada', async () => {
     const item = await createItemViaApi(app);
     const before = rawRow(item.id);
-    expectError(await request(app).post(`/api/items/${item.id}/unsell`), 409, 'ITEM_NOT_SOLD');
+    expectError(await request(app).post(`/api/items/${item.id}/unsell`).set('Content-Type', 'application/json'), 409, 'ITEM_NOT_SOLD');
     expect(rawRow(item.id)).toEqual(before);
   });
 });

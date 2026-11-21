@@ -161,7 +161,7 @@ describe('DELETE e unsell (lacunas)', () => {
   test('unsell sem corpo e sem Content-Type -> 200; recalcula aging de estoque', async () => {
     const item = await createItemViaApi(app);
     await sell(item.id);
-    const res = await request(app).post(`/api/items/${item.id}/unsell`);
+    const res = await request(app).post(`/api/items/${item.id}/unsell`).set('Content-Type', 'application/json');
     expect(res.status).toBe(200);
     expect(res.body.data.aging).toEqual({ daysInInventory: 9, daysForSale: 9, agingBucket: 'EM_GIRO' });
     expect(res.body.data).not.toHaveProperty('turnaroundDays');
@@ -171,8 +171,8 @@ describe('DELETE e unsell (lacunas)', () => {
     const item = await createItemViaApi(app);
     await sell(item.id);
     expectError(await request(app).post(`/api/items/${item.id}/unsell`).send([1]), 400, 'INVALID_BODY');
-    await request(app).post(`/api/items/${item.id}/unsell`);
-    const res = await request(app).post(`/api/items/${item.id}/unsell`);
+    await request(app).post(`/api/items/${item.id}/unsell`).set('Content-Type', 'application/json');
+    const res = await request(app).post(`/api/items/${item.id}/unsell`).set('Content-Type', 'application/json');
     expectError(res, 409, 'ITEM_NOT_SOLD');
     expect(res.body.error.message).toBe('Item não está vendido.');
   });

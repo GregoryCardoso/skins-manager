@@ -248,7 +248,7 @@ describe('itens legados (D82)', () => {
       .send({ saleStoreId: storeId('CSFloat'), salePriceCents: 125, soldAt: '2026-11-18T12:00:00.000Z' });
     expect(sold.status).toBe(200);
     expect(sold.body.data.item.isLegacy).toBe(true);
-    expect((await request(app).post(`/api/items/${legacy.id}/unsell`)).status).toBe(200);
+    expect((await request(app).post(`/api/items/${legacy.id}/unsell`).set('Content-Type', 'application/json')).status).toBe(200);
     expect((await request(app).delete(`/api/items/${legacy.id}`)).status).toBe(200);
   });
 

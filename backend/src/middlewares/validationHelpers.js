@@ -23,4 +23,17 @@ function requireJsonContentType(req) {
   }
 }
 
-module.exports = { isNil, isPlainObject, rejectUnknownFields, requireJsonContentType };
+// Middleware de roteador: POST/PATCH/PUT exigem JSON, mesmo sem corpo (CSRF por "simple request").
+// DELETE fica de fora: exige preflight de CORS, que recusa origens desconhecidas.
+function requireJsonForWrites(req, res, next) {
+  if (['POST', 'PATCH', 'PUT'].includes(req.method)) {
+    try {
+      requireJsonContentType(req);
+    } catch (err) {
+      return next(err);
+    }
+  }
+  return next();
+}
+
+module.exports = { isNil, isPlainObject, rejectUnknownFields, requireJsonContentType, requireJsonForWrites };

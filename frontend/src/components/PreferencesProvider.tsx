@@ -11,8 +11,8 @@ import {
   toResolvedTheme,
   writeCachedPreferences,
 } from '@/lib/preferences';
-import { getSettings, refreshPtax, updateFxRate, updatePreferences } from '@/services/api';
-import type { FxRateSource, Language, PtaxRefreshResult, Settings, ThemeChoice } from '@/types/api';
+import { getSettings, refreshFxRate, updateFxRate, updatePreferences } from '@/services/api';
+import type { FxRateSource, FxRefreshResult, FxRefreshSource, Language, Settings, ThemeChoice } from '@/types/api';
 
 interface PreferencesContextValue {
   // Tema exibido (D112): a escolha salva ou, sem escolha, o do sistema lido ao abrir o app.
@@ -28,11 +28,15 @@ interface PreferencesContextValue {
   usdBrlRate: number | null;
   // Grava a cotação no servidor; rejeita com o erro da API (para o chamador mostrar a mensagem).
   saveFxRate: (rate: number) => Promise<void>;
-  // Origem da cotação (MANUAL/PTAX; null = nunca definida) e data da PTAX (D147).
+  // Origem da cotação (null = nunca definida), data/hora na fonte, data da última gravação e fonte do botão (D162).
   fxSource: FxRateSource | null;
-  ptaxQuotedAt: string | null;
-  // Busca a PTAX de venda no Banco Central e salva direto; rejeita com o erro da API.
-  refreshFxFromPtax: () => Promise<PtaxRefreshResult>;
+  rateQuotedAt: string | null;
+  fxRateUpdatedAt: string | null;
+  fxRefreshSource: FxRefreshSource;
+  // Salva a fonte do botão "atualizar cotação" na hora; rejeita com o erro da API.
+  saveFxRefreshSource: (source: FxRefreshSource) => Promise<void>;
+  // Busca a cotação na fonte salva e grava direto; rejeita com o erro da API.
+  refreshFxRate: () => Promise<FxRefreshResult>;
   // Relê a cotação do servidor (usado quando o backend volta a responder).
   reloadFxRate: () => void;
 }
@@ -46,15 +50,22 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const [saveError, setSaveError] = useState<unknown>(null);
   const [usdBrlRate, setUsdBrlRate] = useState<number | null>(null);
   const [fxSource, setFxSource] = useState<FxRateSource | null>(null);
-  const [ptaxQuotedAt, setPtaxQuotedAt] = useState<string | null>(null);
+  const [rateQuotedAt, setRateQuotedAt] = useState<string | null>(null);
+  const [fxRateUpdatedAt, setFxRateUpdatedAt] = useState<string | null>(null);
+  const [fxRefreshSource, setFxRefreshSource] = useState<FxRefreshSource>('AWESOMEAPI');
   // Campos trocados localmente: a resposta tardia do GET /settings não os sobrescreve.
   const touched = useRef({ theme: false, language: false });
 
-  const applyFx = useCallback((settings: Pick<Settings, 'usdBrlRate' | 'usdBrlRateSource' | 'ptaxQuotedAt'>) => {
-    setUsdBrlRate(settings.usdBrlRate);
-    setFxSource(settings.usdBrlRateSource);
-    setPtaxQuotedAt(settings.ptaxQuotedAt);
-  }, []);
+  const applyFx = useCallback(
+    (settings: Pick<Settings, 'usdBrlRate' | 'usdBrlRateSource' | 'rateQuotedAt' | 'usdBrlRateUpdatedAt' | 'fxRefreshSource'>) => {
+      setUsdBrlRate(settings.usdBrlRate);
+      setFxSource(settings.usdBrlRateSource);
+      setRateQuotedAt(settings.rateQuotedAt);
+      setFxRateUpdatedAt(settings.usdBrlRateUpdatedAt);
+      setFxRefreshSource(settings.fxRefreshSource);
+    },
+    [],
+  );
 
   useEffect(() => {
     // Tema do sistema lido uma vez, só como valor inicial; o app não acompanha mudanças do Windows (D112).
@@ -137,8 +148,12 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     applyFx(await updateFxRate(rate));
   }, [applyFx]);
 
-  const refreshFxFromPtax = useCallback(async () => {
-    const result = await refreshPtax();
+  const saveFxRefreshSource = useCallback(async (source: FxRefreshSource) => {
+    applyFx(await updatePreferences({ fxRefreshSource: source }));
+  }, [applyFx]);
+
+  const refreshFx = useCallback(async () => {
+    const result = await refreshFxRate();
     applyFx(result.settings);
     return result;
   }, [applyFx]);
@@ -153,11 +168,11 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(
     () => ({
-      theme, language, ready, saveError, setTheme, setLanguage, usdBrlRate, saveFxRate, fxSource, ptaxQuotedAt,
-      refreshFxFromPtax, reloadFxRate,
+      theme, language, ready, saveError, setTheme, setLanguage, usdBrlRate, saveFxRate, fxSource, rateQuotedAt,
+      fxRateUpdatedAt, fxRefreshSource, saveFxRefreshSource, refreshFxRate: refreshFx, reloadFxRate,
     }),
-    [theme, language, ready, saveError, setTheme, setLanguage, usdBrlRate, saveFxRate, fxSource, ptaxQuotedAt,
-      refreshFxFromPtax, reloadFxRate],
+    [theme, language, ready, saveError, setTheme, setLanguage, usdBrlRate, saveFxRate, fxSource, rateQuotedAt,
+      fxRateUpdatedAt, fxRefreshSource, saveFxRefreshSource, refreshFx, reloadFxRate],
   );
 
   return <PreferencesContext.Provider value={value}>{children}</PreferencesContext.Provider>;

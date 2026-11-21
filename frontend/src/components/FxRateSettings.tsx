@@ -3,17 +3,21 @@
 import { useId, useState, type FormEvent } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
-import { formatDate, formatRate } from '@/lib/format';
+import { formatRate } from '@/lib/format';
+import { describeFxRate } from '@/lib/fxDisplay';
 import { formatDecimalInput, parseDecimalInput } from '@/lib/numberInput';
 import { usePreferences } from './PreferencesProvider';
 import styles from './settings.module.css';
 
-// Cotação USD→BRL na tela de configurações (D147, D152): edição manual e "atualizar cotação" pela PTAX de venda.
+// Cotação USD→BRL na tela de configurações (D152, D162): edição manual, fonte do botão (salva na hora) e "atualizar cotação".
 export default function FxRateSettings() {
   const t = useT();
   const tLoose = useTLoose();
   const language = useLanguage();
-  const { usdBrlRate, fxSource, ptaxQuotedAt, saveFxRate, refreshFxFromPtax } = usePreferences();
+  const {
+    usdBrlRate, fxSource, rateQuotedAt, fxRateUpdatedAt, fxRefreshSource, saveFxRate, saveFxRefreshSource, refreshFxRate,
+  } = usePreferences();
+  const sourceId = useId();
   const inputId = useId();
   const [text, setText] = useState('');
   const [touched, setTouched] = useState(false);
@@ -22,7 +26,9 @@ export default function FxRateSettings() {
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
 
-  const busy = saving || refreshing;
+  const [savingSource, setSavingSource] = useState(false);
+
+  const busy = saving || refreshing || savingSource;
   const shownText = touched ? text : usdBrlRate !== null ? formatDecimalInput(usdBrlRate, language) : '';
 
   const onSave = (event: FormEvent) => {
@@ -49,18 +55,29 @@ export default function FxRateSettings() {
     setRefreshing(true);
     setError(null);
     setOk(null);
-    refreshFxFromPtax()
+    refreshFxRate()
       .then((result) => {
         setTouched(false);
         setOk(
           t('settings.fx.refreshed', {
-            date: formatDate(result.ptax.quotedAt, language),
-            rate: formatRate(result.ptax.rate, language),
+            source: tLoose(`fx.sourceName.${result.quote.source}`),
+            rate: formatRate(result.quote.rate, language),
           }),
         );
       })
       .catch((err: unknown) => setError(errorMessageFor(err, tLoose, language)))
       .finally(() => setRefreshing(false));
+  };
+
+  const onChangeSource = (value: string) => {
+    if (value !== 'AWESOMEAPI' && value !== 'PTAX') return;
+    setSavingSource(true);
+    setError(null);
+    setOk(null);
+    saveFxRefreshSource(value)
+      .then(() => setOk(t('settings.fx.refreshSourceSaved')))
+      .catch((err: unknown) => setError(errorMessageFor(err, tLoose, language)))
+      .finally(() => setSavingSource(false));
   };
 
   return (
@@ -71,12 +88,29 @@ export default function FxRateSettings() {
         <span className={styles.big}>
           {usdBrlRate !== null ? t('settings.fx.value', { rate: formatRate(usdBrlRate, language) }) : t('settings.fx.notSet')}
         </span>
-        {fxSource && (
-          <span className={styles.tag}>
-            {t('settings.fx.sourceLabel')}: {t(`settings.fx.source.${fxSource}`)}
-            {fxSource === 'PTAX' && ptaxQuotedAt ? ` · ${t('settings.fx.ptaxDate', { date: formatDate(ptaxQuotedAt, language) })}` : ''}
-          </span>
-        )}
+      </div>
+      {usdBrlRate !== null && (
+        <p className={styles.muted} data-testid="fx-description">
+          {describeFxRate(
+            { rate: usdBrlRate, source: fxSource, quotedAt: rateQuotedAt, updatedAt: fxRateUpdatedAt },
+            language,
+            tLoose,
+          )}
+        </p>
+      )}
+
+      <div className={styles.field}>
+        <label htmlFor={sourceId} className={styles.label}>{t('settings.fx.refreshSourceLabel')}</label>
+        <select
+          id={sourceId}
+          className={styles.input}
+          value={fxRefreshSource}
+          onChange={(e) => onChangeSource(e.target.value)}
+          disabled={busy}
+        >
+          <option value="AWESOMEAPI">{t('settings.fx.refreshSource.AWESOMEAPI')}</option>
+          <option value="PTAX">{t('settings.fx.refreshSource.PTAX')}</option>
+        </select>
       </div>
 
       <form className={styles.form} onSubmit={onSave}>
@@ -99,7 +133,7 @@ export default function FxRateSettings() {
           {saving ? t('fx.saving') : t('settings.fx.save')}
         </button>
         <button type="button" className={`${styles.button} ${styles.primary}`} onClick={onRefresh} disabled={busy}>
-          {refreshing ? t('settings.fx.refreshing') : t('settings.fx.refreshPtax')}
+          {refreshing ? t('settings.fx.refreshing') : t('settings.fx.refresh')}
         </button>
       </form>
 

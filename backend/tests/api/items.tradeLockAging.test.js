@@ -63,7 +63,7 @@ describe('estoque: daysForSale e EM_TRADE_LOCK', () => {
     getDb().prepare('UPDATE items SET trade_unlock_at = ? WHERE id = ?').run(day(2), a.id);
     const sold = (await get(`/api/items/${a.id}`)).body.data;
     expect(sold.aging).toMatchObject({ turnaroundDays: 0, turnaroundBucket: 'GIRO_RAPIDO' });
-    const un = await request(app).post(`/api/items/${a.id}/unsell`);
+    const un = await request(app).post(`/api/items/${a.id}/unsell`).set('Content-Type', 'application/json');
     expect(un.body.data.aging.agingBucket).toBe('EM_TRADE_LOCK');
   });
 });

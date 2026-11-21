@@ -1,6 +1,7 @@
-const {
-  buildItemRecord, buildSaleRecord, buildUnsellPatch, toItemView,
-} = require('../../src/services/itemService');
+const itemService = require('../../src/services/itemService');
+const { buildSaleRecord, buildUnsellPatch, toItemView } = itemService;
+// T31: `body` é obrigatório; `{}` equivale a "nada além do estado mesclado foi enviado".
+const buildItemRecord = (merged, ctx = {}) => itemService.buildItemRecord(merged, { body: {}, ...ctx });
 const { buildStatsIndex } = require('../../src/services/itemStatsService');
 const { csfloat, steam, csmoney, usdItem } = require('../helpers/storeFixtures');
 
@@ -22,6 +23,13 @@ const base = (o = {}) => ({
 });
 
 describe('buildItemRecord', () => {
+  test('T31: sem body é erro de programação (Error, não AppError)', () => {
+    expect(() => itemService.buildItemRecord(base(), { store: csfloat(), settings: SETTINGS, now: NOW })).toThrow(
+      /exige o corpo/
+    );
+    expect(() => itemService.buildItemRecord(base(), { store: csfloat(), settings: SETTINGS, now: NOW, body: null })).toThrow(Error);
+  });
+
   test('COMPRA USD: trim, moeda da loja, atributos normalizados', () => {
     const r = buildItemRecord(base({ floatValue: 0.1 }), { store: csfloat(), settings: SETTINGS, now: NOW });
     expect(r).toMatchObject({

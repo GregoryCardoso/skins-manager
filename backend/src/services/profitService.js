@@ -75,9 +75,9 @@ function computeRealProfit(input = {}) {
   const depositsBrlCents = sumOf(deposits.map((d) => d.amountBrlCents));
   const withdrawalsBrlCents = sumOf(withdrawals.map((w) => w.amountBrlCents));
 
-  const balancesByStore = platformBalances.map(({ store, balance, recentWithdrawals }) => {
+  const balancesByStore = platformBalances.map(({ store, balance }) => {
     const balanceCents = balance ? balance.balanceCents : 0;
-    const est = estimateBalanceBrl({ balanceCents, store, settings, recentWithdrawals });
+    const est = estimateBalanceBrl({ balanceCents, store, settings });
     if (est.warning) warnings.push(`${store.name}: ${est.warning}`);
     return {
       storeId: store.id,
@@ -86,6 +86,7 @@ function computeRealProfit(input = {}) {
       currency: store.currency,
       estimatedBrlCents: est.estimatedBrlCents,
       withdrawable: est.withdrawable,
+      estimated: est.estimated,
       warning: est.warning,
     };
   });

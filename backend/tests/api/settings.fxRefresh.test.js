@@ -1,13 +1,16 @@
 'use strict';
 
-// POST /api/settings/fx-rate/ptax (D147) com fetch falso: nunca chama a API real do BCB.
+// POST /api/settings/fx-rate/refresh (D147) com fetch falso: nunca chama a API real do BCB.
 const request = require('supertest');
 const { closeDb } = require('../../src/config/database');
 const { freshDb } = require('../helpers/fixtures');
 const { makeCatalogApp, purchaseBody, createItemViaApi, expectError, NOW } = require('../helpers/apiFixtures');
 const settingsService = require('../../src/services/settingsService');
 
-beforeEach(() => freshDb());
+beforeEach(() => {
+  freshDb();
+  require('../../src/models/Setting').update({ fxRefreshSource: 'PTAX' });
+});
 afterAll(() => closeDb());
 
 const row = (extra = {}) => ({ cotacaoCompra: 5.2987, cotacaoVenda: 5.3012, dataHoraCotacao: '2026-11-19 13:04:28.123', ...extra });
@@ -16,21 +19,22 @@ const ok = (json) => ({ ok: true, status: 200, text: async () => JSON.stringify(
 function appWith(fetchFn, now = NOW) {
   return makeCatalogApp(now, { fetchFn });
 }
-const post = (app) => request(app).post('/api/settings/fx-rate/ptax').set('Content-Type', 'application/json').send({});
+const post = (app) => request(app).post('/api/settings/fx-rate/refresh').set('Content-Type', 'application/json').send({});
 const getSettings = async (app) => (await request(app).get('/api/settings')).body.data;
 
-describe('POST /api/settings/fx-rate/ptax', () => {
+describe('POST /api/settings/fx-rate/refresh', () => {
   test('grava a PTAX de VENDA, origem PTAX, data da cotação e now; devolve settings e ptax', async () => {
     const app = appWith(async () => ok({ value: [row()] }));
     const res = await post(app);
     expect(res.status).toBe(200);
-    expect(res.body.data.ptax).toEqual({
-      rate: 5.3012, buyRate: 5.2987, sellRate: 5.3012, quotedAt: '2026-11-19T16:04:28.123Z', quoteDate: '2026-11-19',
+    expect(res.body.data.quote).toEqual({
+      source: 'PTAX',
+      rate: 5.3012, buyRate: 5.2987, sellRate: 5.3012, quotedAt: '2026-11-19T16:04:28.123Z'
     });
     expect(res.body.data.settings).toMatchObject({
       usdBrlRate: 5.3012,
       usdBrlRateSource: 'PTAX',
-      ptaxQuotedAt: '2026-11-19T16:04:28.123Z',
+      rateQuotedAt: '2026-11-19T16:04:28.123Z',
       usdBrlRateUpdatedAt: '2026-11-19T15:00:00.000Z',
     });
     expect(await getSettings(app)).toMatchObject({ usdBrlRate: 5.3012, usdBrlRateSource: 'PTAX' });
@@ -44,8 +48,7 @@ describe('POST /api/settings/fx-rate/ptax', () => {
     });
     const res = await post(app);
     expect(res.status).toBe(200);
-    expect(res.body.data.ptax.quoteDate).toBe('2026-11-18');
-    expect(res.body.data.settings.ptaxQuotedAt).toBe('2026-11-18T16:05:00.000Z');
+    expect(res.body.data.settings.rateQuotedAt).toBe('2026-11-18T16:05:00.000Z');
     expect(urls).toHaveLength(2);
   });
 
@@ -66,36 +69,36 @@ describe('POST /api/settings/fx-rate/ptax', () => {
     expect(await getSettings(app)).toMatchObject({ usdBrlRate: null, usdBrlRateSource: null });
   });
 
-  test('HTTP 500 → 502 PTAX_FETCH_FAILED', async () => {
+  test('HTTP 500 → 502 FX_FETCH_FAILED', async () => {
     const app = appWith(async () => ({ ok: false, status: 500, text: async () => '' }));
-    expectError(await post(app), 502, 'PTAX_FETCH_FAILED');
+    expectError(await post(app), 502, 'FX_FETCH_FAILED');
   });
 
-  test('rede fora → 502 PTAX_FETCH_FAILED e a cotação anterior é mantida', async () => {
+  test('rede fora → 502 FX_FETCH_FAILED e a cotação anterior é mantida', async () => {
     const app = appWith(async () => {
       throw new TypeError('fetch failed');
     });
     await request(app).put('/api/settings/fx-rate').send({ usdBrlRate: 5 });
-    expectError(await post(app), 502, 'PTAX_FETCH_FAILED');
+    expectError(await post(app), 502, 'FX_FETCH_FAILED');
     expect(await getSettings(app)).toMatchObject({ usdBrlRate: 5, usdBrlRateSource: 'MANUAL' });
   });
 
-  test.each([0, -1, 51, 530])('valor %p → 502 PTAX_INVALID_RESPONSE', async (cotacaoVenda) => {
+  test.each([0, -1, 51, 530])('valor %p → 502 FX_INVALID_RESPONSE', async (cotacaoVenda) => {
     const app = appWith(async () => ok({ value: [row({ cotacaoVenda })] }));
-    expectError(await post(app), 502, 'PTAX_INVALID_RESPONSE');
+    expectError(await post(app), 502, 'FX_INVALID_RESPONSE');
   });
 
-  test('JSON inválido → 502 PTAX_INVALID_RESPONSE', async () => {
+  test('JSON inválido → 502 FX_INVALID_RESPONSE', async () => {
     const app = appWith(async () => ({ ok: true, status: 200, text: async () => 'oops' }));
-    expectError(await post(app), 502, 'PTAX_INVALID_RESPONSE');
+    expectError(await post(app), 502, 'FX_INVALID_RESPONSE');
   });
 
-  test('resposta acima de 64 KB → 502 PTAX_INVALID_RESPONSE', async () => {
+  test('resposta acima de 64 KB → 502 FX_INVALID_RESPONSE', async () => {
     const app = appWith(async () => ({ ok: true, status: 200, text: async () => 'x'.repeat(65 * 1024) }));
-    expectError(await post(app), 502, 'PTAX_INVALID_RESPONSE');
+    expectError(await post(app), 502, 'FX_INVALID_RESPONSE');
   });
 
-  test('chamadas simultâneas → a segunda recebe 409 PTAX_REFRESH_IN_PROGRESS; depois libera', async () => {
+  test('chamadas simultâneas → a segunda recebe 409 FX_REFRESH_IN_PROGRESS; depois libera', async () => {
     let release;
     const gate = new Promise((resolve) => {
       release = resolve;
@@ -106,25 +109,25 @@ describe('POST /api/settings/fx-rate/ptax', () => {
     });
     const first = post(app).then((r) => r);
     await new Promise((resolve) => setTimeout(resolve, 50));
-    expect(settingsService.isPtaxRefreshInProgress()).toBe(true);
-    expectError(await post(app), 409, 'PTAX_REFRESH_IN_PROGRESS');
+    expect(settingsService.isFxRefreshInProgress()).toBe(true);
+    expectError(await post(app), 409, 'FX_REFRESH_IN_PROGRESS');
     release();
     expect((await first).status).toBe(200);
-    expect(settingsService.isPtaxRefreshInProgress()).toBe(false);
+    expect(settingsService.isFxRefreshInProgress()).toBe(false);
     expect((await post(app)).status).toBe(200);
   });
 
   test('a trava é liberada depois de uma falha', async () => {
     const app = appWith(async () => ({ ok: false, status: 503, text: async () => '' }));
-    expectError(await post(app), 502, 'PTAX_FETCH_FAILED');
-    expect(settingsService.isPtaxRefreshInProgress()).toBe(false);
+    expectError(await post(app), 502, 'FX_FETCH_FAILED');
+    expect(settingsService.isFxRefreshInProgress()).toBe(false);
   });
 
   test('sem Content-Type JSON → 415 UNSUPPORTED_MEDIA_TYPE e nenhuma chamada de rede', async () => {
     const fetchFn = jest.fn();
     const app = appWith(fetchFn);
-    expectError(await request(app).post('/api/settings/fx-rate/ptax'), 415, 'UNSUPPORTED_MEDIA_TYPE');
-    expectError(await request(app).post('/api/settings/fx-rate/ptax').set('Content-Type', 'text/plain').send('{}'), 415, 'UNSUPPORTED_MEDIA_TYPE');
+    expectError(await request(app).post('/api/settings/fx-rate/refresh'), 415, 'UNSUPPORTED_MEDIA_TYPE');
+    expectError(await request(app).post('/api/settings/fx-rate/refresh').set('Content-Type', 'text/plain').send('{}'), 415, 'UNSUPPORTED_MEDIA_TYPE');
     expect(fetchFn).not.toHaveBeenCalled();
   });
 
@@ -132,21 +135,21 @@ describe('POST /api/settings/fx-rate/ptax', () => {
     const fetchFn = jest.fn();
     const app = appWith(fetchFn);
     expectError(
-      await request(app).post('/api/settings/fx-rate/ptax').set('Content-Type', 'application/json').send({ x: 1 }),
+      await request(app).post('/api/settings/fx-rate/refresh').set('Content-Type', 'application/json').send({ x: 1 }),
       400, 'UNKNOWN_FIELD', { field: 'x' }
     );
     expectError(
-      await request(app).post('/api/settings/fx-rate/ptax').set('Content-Type', 'application/json').send('[1]'),
+      await request(app).post('/api/settings/fx-rate/refresh').set('Content-Type', 'application/json').send('[1]'),
       400, 'INVALID_BODY'
     );
     expect(fetchFn).not.toHaveBeenCalled();
   });
 
-  test('edição manual depois da PTAX → origem MANUAL e ptaxQuotedAt nula', async () => {
+  test('edição manual depois da PTAX → origem MANUAL e rateQuotedAt nula', async () => {
     const app = appWith(async () => ok({ value: [row()] }));
     await post(app);
     const res = await request(app).put('/api/settings/fx-rate').send({ usdBrlRate: 5.5 });
-    expect(res.body.data).toMatchObject({ usdBrlRate: 5.5, usdBrlRateSource: 'MANUAL', ptaxQuotedAt: null });
+    expect(res.body.data).toMatchObject({ usdBrlRate: 5.5, usdBrlRateSource: 'MANUAL', rateQuotedAt: null });
   });
 
   test('cotações já gravadas em itens não mudam', async () => {
@@ -173,16 +176,16 @@ describe('POST /api/settings/fx-rate/ptax', () => {
   });
 });
 
-describe('settingsService.refreshFxRateFromPtax (timeouts injetáveis)', () => {
-  test('timeout por chamada → PTAX_FETCH_FAILED e libera a trava', async () => {
+describe('settingsService.refreshFxRate (timeouts injetáveis)', () => {
+  test('timeout por chamada → FX_FETCH_FAILED e libera a trava', async () => {
     freshDb();
     await expect(
-      settingsService.refreshFxRateFromPtax({
+      settingsService.refreshFxRate({
         fetchFn: () => new Promise(() => {}),
         now: NOW,
         timeouts: { callTimeoutMs: 30 },
       })
-    ).rejects.toMatchObject({ code: 'PTAX_FETCH_FAILED' });
-    expect(settingsService.isPtaxRefreshInProgress()).toBe(false);
+    ).rejects.toMatchObject({ code: 'FX_FETCH_FAILED' });
+    expect(settingsService.isFxRefreshInProgress()).toBe(false);
   });
 });

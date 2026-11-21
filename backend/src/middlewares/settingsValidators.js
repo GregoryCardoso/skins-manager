@@ -17,14 +17,14 @@ function validateFxRateBody(req, res, next) {
   return next();
 }
 
-// PATCH /api/settings (D83, D159): tema, idioma e os limites de giro. Os valores permitidos são checados no service.
-const TEXT_KEYS = ['theme', 'language'];
+// PATCH /api/settings (D83, D159, D162): tema, idioma, fonte da cotação e os limites de giro. Os valores permitidos são checados no service.
+const TEXT_KEYS = ['theme', 'language', 'fxRefreshSource'];
 const DAYS_KEYS = ['fastTurnoverDays', 'slowItemDays']; // número ou null; o tipo é checado no service (códigos próprios)
 
 function validatePreferencesBody(req, res, next) {
   const body = req.body;
   if (!isPlainObject(body) || Object.keys(body).length === 0) {
-    throw invalidBody('Informe ao menos um campo (theme, language, fastTurnoverDays ou slowItemDays) em um objeto JSON.');
+    throw invalidBody('Informe ao menos um campo (theme, language, fxRefreshSource, fastTurnoverDays ou slowItemDays) em um objeto JSON.');
   }
   rejectUnknownFields(body, [...TEXT_KEYS, ...DAYS_KEYS]);
   const invalid = TEXT_KEYS.find((k) => body[k] !== undefined && typeof body[k] !== 'string');
@@ -32,8 +32,8 @@ function validatePreferencesBody(req, res, next) {
   return next();
 }
 
-// POST /api/settings/fx-rate/ptax (D147): corpo `{}` e Content-Type JSON obrigatório.
-function validatePtaxRefreshBody(req, res, next) {
+// POST /api/settings/fx-rate/refresh (D147, D162): corpo `{}` e Content-Type JSON obrigatório.
+function validateFxRefreshBody(req, res, next) {
   requireJsonContentType(req);
   const body = req.body === undefined ? {} : req.body;
   if (!isPlainObject(body)) throw invalidBody('O corpo da requisição deve ser um objeto JSON.');
@@ -41,4 +41,4 @@ function validatePtaxRefreshBody(req, res, next) {
   return next();
 }
 
-module.exports = { validateFxRateBody, validatePreferencesBody, validatePtaxRefreshBody };
+module.exports = { validateFxRateBody, validatePreferencesBody, validateFxRefreshBody };

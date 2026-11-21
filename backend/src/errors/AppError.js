@@ -11,22 +11,32 @@ class AppError extends Error {
   }
 }
 
+// T25 (D153): o código é obrigatório nas subclasses; sem ele é erro de programação (vira 500 genérico no errorHandler).
+function requireCode(className, code) {
+  if (typeof code !== 'string' || code.trim() === '') {
+    throw new Error(`${className} exige um código de erro (segundo argumento).`);
+  }
+}
+
 class ValidationError extends AppError {
-  constructor(message, code = 'VALIDATION_ERROR', extra) {
+  constructor(message, code, extra) {
+    requireCode('ValidationError', code);
     super(400, code, message, extra);
     this.name = 'ValidationError';
   }
 }
 
 class NotFoundError extends AppError {
-  constructor(message, code = 'NOT_FOUND', extra) {
+  constructor(message, code, extra) {
+    requireCode('NotFoundError', code);
     super(404, code, message, extra);
     this.name = 'NotFoundError';
   }
 }
 
 class ConflictError extends AppError {
-  constructor(message, code = 'CONFLICT', extra) {
+  constructor(message, code, extra) {
+    requireCode('ConflictError', code);
     super(409, code, message, extra);
     this.name = 'ConflictError';
   }
@@ -34,7 +44,8 @@ class ConflictError extends AppError {
 
 // Falha de um serviço externo (502 Bad Gateway), ex.: download do catálogo.
 class UpstreamError extends AppError {
-  constructor(message, code = 'UPSTREAM_ERROR', extra) {
+  constructor(message, code, extra) {
+    requireCode('UpstreamError', code);
     super(502, code, message, extra);
     this.name = 'UpstreamError';
   }

@@ -32,11 +32,11 @@ describe('migração v4', () => {
 
     const db = openDatabase(dbPath, { now: new Date('2026-11-20T12:00:00.000Z') });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(4);
+      expect(db.pragma('user_version', { simple: true })).toBe(5);
       expect(db.pragma('application_id', { simple: true })).toBe(1397444935);
       expect(db.prepare('SELECT * FROM stores ORDER BY id').all()).toEqual(storesBefore);
       expect(db.prepare('SELECT * FROM settings').get()).toMatchObject({
-        usd_brl_rate: 5.1, usd_brl_rate_source: 'MANUAL', ptax_quoted_at: null, slow_item_days: null,
+        usd_brl_rate: 5.1, usd_brl_rate_source: 'MANUAL', rate_quoted_at: null, slow_item_days: null,
         fast_turnover_days: null, stores_seeded: 1,
       });
       expect(fs.readdirSync(path.join(tmpRoot, 'a', 'backups')).some((f) => f.startsWith('inventory-v3-'))).toBe(true);

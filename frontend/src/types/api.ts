@@ -32,14 +32,17 @@ export interface CatalogRefreshResult extends CatalogStatus {
   linkedLegacyItems: number;
 }
 
-export type FxRateSource = 'MANUAL' | 'PTAX';
+// Origem da cotação salva e fonte do botão "atualizar cotação" (D162).
+export type FxRefreshSource = 'AWESOMEAPI' | 'PTAX';
+export type FxRateSource = 'MANUAL' | FxRefreshSource;
 
 export interface Settings {
   usdBrlRate: number | null;
   usdBrlRateUpdatedAt: string | null;
-  // Origem da cotação (null = nunca definida) e data da PTAX (só com origem PTAX).
+  // Origem da cotação (null = nunca definida), data/hora da cotação na fonte (nula com origem MANUAL) e fonte do botão.
   usdBrlRateSource: FxRateSource | null;
-  ptaxQuotedAt: string | null;
+  rateQuotedAt: string | null;
+  fxRefreshSource: FxRefreshSource;
   catalogUpdatedAt: string | null;
   theme: Theme;
   language: Language;
@@ -56,15 +59,16 @@ export interface Settings {
 export interface PreferencesPatch {
   theme?: ThemeChoice;
   language?: Language;
+  fxRefreshSource?: FxRefreshSource;
   // Inteiro ou null (volta ao padrão).
   fastTurnoverDays?: number | null;
   slowItemDays?: number | null;
 }
 
-// Resposta de POST /settings/fx-rate/ptax (D147): PTAX de venda do dia útil mais recente com cotação.
-export interface PtaxRefreshResult {
+// Resposta de POST /settings/fx-rate/refresh (D162): cotação da fonte salva em `fxRefreshSource`.
+export interface FxRefreshResult {
   settings: Settings;
-  ptax: { rate: number; buyRate: number | null; sellRate: number; quotedAt: string; quoteDate: string };
+  quote: { source: FxRefreshSource; rate: number; buyRate: number | null; sellRate: number; quotedAt: string };
 }
 
 // --- Itens, lojas e cotação (4B.2; espelham D49/D72 do backend) ---
@@ -78,7 +82,7 @@ export type AcquisitionType = 'GANHEI' | 'COMPRA';
 export type ItemStatus = 'EM_ESTOQUE' | 'VENDIDO';
 export type AgingBucket = 'RECENTE' | 'EM_GIRO' | 'AGARRADO' | 'EM_TRADE_LOCK';
 export type TurnaroundBucket = 'GIRO_RAPIDO' | 'GIRO_NORMAL' | 'DEMOROU_VENDER';
-export type WarningCode = 'FEES_NOT_CONFIGURED' | 'FX_NOT_CONFIGURED' | 'BELOW_FEE' | 'PRICE_OVERFLOW';
+export type WarningCode = 'FEES_NOT_CONFIGURED' | 'FX_NOT_CONFIGURED' | 'PRICE_OVERFLOW';
 
 export interface TradeLock {
   isLocked: boolean;

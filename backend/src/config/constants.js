@@ -32,6 +32,8 @@ const CATALOG_FILES = Object.freeze({
   AGENTS: 'agents.json',
 });
 const CATALOG_FETCH_TIMEOUT_MS = 120000;
+// Teto por arquivo baixado (T36): os maiores têm poucos MB; 50 MB protege contra resposta descontrolada.
+const CATALOG_MAX_FILE_BYTES = 50 * 1024 * 1024;
 const CATALOG_SEARCH_DEFAULT_LIMIT = 20;
 const CATALOG_SEARCH_MAX_LIMIT = 50;
 const CATALOG_ID_MAX_LENGTH = 100;
@@ -50,14 +52,20 @@ const LANGUAGES = Object.freeze(['pt-BR', 'en']);
 const PTAX_BASE_URL = 'https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoDolarDia(dataCotacao=@dataCotacao)';
 const PTAX_CALL_TIMEOUT_MS = 10000;
 const PTAX_TOTAL_TIMEOUT_MS = 20000;
-const PTAX_MAX_RESPONSE_BYTES = 64 * 1024;
 const PTAX_MAX_LOOKBACK_DAYS = 7;
-const PTAX_MIN_RATE = 1;
-const PTAX_MAX_RATE = 50;
+
+// Fontes da cotação USD→BRL (D162): limites comuns, AwesomeAPI e valores aceitos nas colunas.
+const FX_MIN_RATE = 1;
+const FX_MAX_RATE = 50;
+const FX_MAX_RESPONSE_BYTES = 64 * 1024;
+const AWESOMEAPI_URL = 'https://economia.awesomeapi.com.br/json/last/USD-BRL';
+const AWESOMEAPI_TIMEOUT_MS = 10000;
+const FX_REFRESH_SOURCES = Object.freeze(['AWESOMEAPI', 'PTAX']); // fx_refresh_source
+const FX_RATE_SOURCES = Object.freeze(['MANUAL', 'PTAX', 'AWESOMEAPI']); // usd_brl_rate_source
 
 // Backup (D150, D151).
 const BACKUP_MAX_BYTES = 100 * 1024 * 1024;
-const AUTO_BACKUP_KEEP = 10;
+const { AUTO_BACKUP_KEEP } = require('./backupRetention'); // retenção dos backups automáticos (D151)
 const SQLITE_APPLICATION_ID = 1397444935; // 'SKMG' (v4, D143)
 
 module.exports = Object.freeze({
@@ -72,10 +80,14 @@ module.exports = Object.freeze({
   PTAX_BASE_URL,
   PTAX_CALL_TIMEOUT_MS,
   PTAX_TOTAL_TIMEOUT_MS,
-  PTAX_MAX_RESPONSE_BYTES,
   PTAX_MAX_LOOKBACK_DAYS,
-  PTAX_MIN_RATE,
-  PTAX_MAX_RATE,
+  FX_MIN_RATE,
+  FX_MAX_RATE,
+  FX_MAX_RESPONSE_BYTES,
+  AWESOMEAPI_URL,
+  AWESOMEAPI_TIMEOUT_MS,
+  FX_REFRESH_SOURCES,
+  FX_RATE_SOURCES,
   MAX_AMOUNT_CENTS,
   MAX_NAME_LENGTH,
   MAX_ORIGIN_DETAIL_LENGTH,
@@ -89,6 +101,7 @@ module.exports = Object.freeze({
   CATALOG_LANGUAGES,
   CATALOG_FILES,
   CATALOG_FETCH_TIMEOUT_MS,
+  CATALOG_MAX_FILE_BYTES,
   CATALOG_SEARCH_DEFAULT_LIMIT,
   CATALOG_SEARCH_MAX_LIMIT,
   CATALOG_ID_MAX_LENGTH,

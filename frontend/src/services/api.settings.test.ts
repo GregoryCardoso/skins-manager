@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import { refreshPtax, updatePreferences } from './api';
+import { refreshFxRate, updatePreferences } from './api';
 
 function stubFetch(data: unknown = {}) {
   const fn = vi.fn().mockImplementation(() =>
@@ -17,14 +17,20 @@ const lastCall = (fn: ReturnType<typeof vi.fn>) => {
 };
 
 describe('configurações (6.2)', () => {
-  test('refreshPtax: POST /settings/fx-rate/ptax com corpo {} e Content-Type JSON', async () => {
-    const fn = stubFetch({ settings: {}, ptax: { rate: 5.3 } });
-    await expect(refreshPtax()).resolves.toMatchObject({ ptax: { rate: 5.3 } });
+  test('refreshFxRate: POST /settings/fx-rate/refresh com corpo {} e Content-Type JSON', async () => {
+    const fn = stubFetch({ settings: {}, quote: { source: 'AWESOMEAPI', rate: 5.3 } });
+    await expect(refreshFxRate()).resolves.toMatchObject({ quote: { rate: 5.3 } });
     const { url, init, body } = lastCall(fn);
-    expect(url.pathname).toBe('/api/settings/fx-rate/ptax');
+    expect(url.pathname).toBe('/api/settings/fx-rate/refresh');
     expect(init.method).toBe('POST');
     expect(body).toEqual({});
     expect(init.headers).toEqual({ 'Content-Type': 'application/json' });
+  });
+
+  test('updatePreferences envia a fonte da cotação', async () => {
+    const fn = stubFetch({});
+    await updatePreferences({ fxRefreshSource: 'PTAX' });
+    expect(lastCall(fn).body).toEqual({ fxRefreshSource: 'PTAX' });
   });
 
   test('updatePreferences envia os limites de giro, inclusive null (restaurar padrão)', async () => {

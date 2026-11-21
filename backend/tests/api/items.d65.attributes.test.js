@@ -27,12 +27,19 @@ describe('D65 atributos de arma: função única', () => {
     }
   });
 
-  test.each([['exterior', 'FN'], ['floatValue', '0.01'], ['paintSeed', '5'], ['phase', 'Ruby'], ['variant', 'NORMAL']])(
+  test.each([['exterior', 'FN'], ['phase', 'Ruby'], ['variant', 'NORMAL']])(
     '/stats com %s em CAIXA -> 400 ATTRIBUTES_NOT_ALLOWED',
     async (key, value) => {
       expectError(await stats({ name: 'X', category: 'CAIXA', [key]: value }), 400, 'ATTRIBUTES_NOT_ALLOWED');
     }
   );
+
+  // T34: float e paint seed ficam fora da chave do histórico (2.7), em qualquer categoria.
+  test.each([['floatValue', '0.01'], ['paintSeed', '5']])('/stats com %s -> 400 INVALID_QUERY', async (key, value) => {
+    for (const category of ['CAIXA', 'SKIN']) {
+      expectError(await stats({ name: 'X', category, [key]: value }), 400, 'INVALID_QUERY', { field: key });
+    }
+  });
 
   test('/stats SKIN com exterior -> 200', async () => {
     expect((await stats({ name: 'AK-47 | Redline', category: 'SKIN', exterior: 'FT' })).status).toBe(200);

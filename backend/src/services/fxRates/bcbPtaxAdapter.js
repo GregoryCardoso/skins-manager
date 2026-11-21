@@ -7,12 +7,14 @@ const {
   PTAX_BASE_URL,
   PTAX_CALL_TIMEOUT_MS,
   PTAX_TOTAL_TIMEOUT_MS,
-  PTAX_MAX_RESPONSE_BYTES,
   PTAX_MAX_LOOKBACK_DAYS,
-  PTAX_MIN_RATE,
-  PTAX_MAX_RATE,
+  FX_MIN_RATE,
+  FX_MAX_RATE,
 } = require('../../config/constants');
 const { UpstreamError } = require('../../errors/AppError');
+const { fetchJson, fetchFailed: buildFetchFailed, invalidResponse: buildInvalidResponse } = require('./fxHttp');
+
+const SOURCE = 'PTAX';
 
 const DAY_MS = 86400000;
 const SP_FORMAT = new Intl.DateTimeFormat('en-CA', {
@@ -22,13 +24,8 @@ const SP_FORMAT = new Intl.DateTimeFormat('en-CA', {
   day: '2-digit',
 });
 
-const fetchFailed = () =>
-  new UpstreamError(
-    'Não foi possível consultar a PTAX do Banco Central. Verifique a conexão com a internet.',
-    'PTAX_FETCH_FAILED'
-  );
-const invalidResponse = (detail) =>
-  new UpstreamError(`A resposta da PTAX do Banco Central é inválida (${detail}).`, 'PTAX_INVALID_RESPONSE');
+const fetchFailed = () => buildFetchFailed(SOURCE);
+const invalidResponse = (detail) => buildInvalidResponse(SOURCE, detail);
 
 const pad = (n, size = 2) => String(n).padStart(size, '0');
 
@@ -73,7 +70,7 @@ function parseQuotedAt(text) {
 }
 
 function validRate(value) {
-  return typeof value === 'number' && Number.isFinite(value) && value >= PTAX_MIN_RATE && value <= PTAX_MAX_RATE;
+  return typeof value === 'number' && Number.isFinite(value) && value >= FX_MIN_RATE && value <= FX_MAX_RATE;
 }
 
 // JSON do BCB -> null (sem cotação nesse dia) ou { buyRate, sellRate, quotedAt }; formato inesperado lança.
@@ -87,95 +84,9 @@ function parsePtaxResponse(json) {
   return { buyRate, sellRate: row.cotacaoVenda, quotedAt: parseQuotedAt(row.dataHoraCotacao) };
 }
 
-// Lê o corpo respeitando o teto de bytes; aceita respostas com stream, `text()` ou só `json()`.
-async function readBodyText(response) {
-  const header =
-    response.headers && typeof response.headers.get === 'function' ? response.headers.get('content-length') : null;
-  if (header !== null && header !== undefined && Number(header) > PTAX_MAX_RESPONSE_BYTES) {
-    throw invalidResponse('resposta grande demais');
-  }
-  let text;
-  if (response.body && typeof response.body.getReader === 'function') {
-    const reader = response.body.getReader();
-    const chunks = [];
-    let total = 0;
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      total += value.byteLength;
-      if (total > PTAX_MAX_RESPONSE_BYTES) {
-        await reader.cancel().catch(() => {});
-        throw invalidResponse('resposta grande demais');
-      }
-      chunks.push(Buffer.from(value));
-    }
-    text = Buffer.concat(chunks).toString('utf8');
-  } else if (typeof response.text === 'function') {
-    text = await response.text();
-  } else if (typeof response.json === 'function') {
-    text = JSON.stringify(await response.json());
-  } else {
-    throw fetchFailed();
-  }
-  if (Buffer.byteLength(text, 'utf8') > PTAX_MAX_RESPONSE_BYTES) throw invalidResponse('resposta grande demais');
-  return text;
-}
-
-// Executa `task(signal)` com prazo próprio e o prazo total; a primeira expiração aborta e vira PTAX_FETCH_FAILED.
-function runWithDeadline(task, { callTimeoutMs, totalSignal }) {
-  const controller = new AbortController();
-  let timer;
-  let onTotalAbort;
-  const cleanup = () => {
-    clearTimeout(timer);
-    if (onTotalAbort) totalSignal.removeEventListener('abort', onTotalAbort);
-  };
-  const expired = new Promise((_, reject) => {
-    const abort = () => {
-      controller.abort();
-      reject(fetchFailed());
-    };
-    timer = setTimeout(abort, callTimeoutMs);
-    if (totalSignal.aborted) abort();
-    else {
-      onTotalAbort = abort;
-      totalSignal.addEventListener('abort', onTotalAbort, { once: true });
-    }
-  });
-  expired.catch(() => {}); // a rejeição é tratada pelo race; evita aviso quando a tarefa termina antes
-  const running = Promise.resolve().then(() => task(controller.signal));
-  running.catch(() => {});
-  return Promise.race([running, expired]).finally(cleanup);
-}
-
 // Consulta um dia: null (sem cotação) ou { buyRate, sellRate, quotedAt }.
 async function fetchPtaxForDate(day, { fetchFn, callTimeoutMs = PTAX_CALL_TIMEOUT_MS, totalSignal }) {
-  const text = await runWithDeadline(
-    async (signal) => {
-      let response;
-      try {
-        response = await fetchFn(buildPtaxUrl(day), { signal });
-      } catch (err) {
-        throw fetchFailed();
-      }
-      if (!response || response.ok === false || (response.status !== undefined && response.status !== 200)) {
-        throw fetchFailed();
-      }
-      try {
-        return await readBodyText(response);
-      } catch (err) {
-        if (err instanceof UpstreamError) throw err;
-        throw fetchFailed();
-      }
-    },
-    { callTimeoutMs, totalSignal }
-  );
-  let json;
-  try {
-    json = JSON.parse(text);
-  } catch (err) {
-    throw invalidResponse('JSON inválido');
-  }
+  const json = await fetchJson(buildPtaxUrl(day), { fetchFn, source: SOURCE, callTimeoutMs, totalSignal });
   return parsePtaxResponse(json);
 }
 
@@ -200,8 +111,15 @@ async function fetchLatestPtax({
   }
   throw new UpstreamError(
     'O Banco Central não publicou a PTAX nos últimos dias. Tente novamente mais tarde ou informe a cotação manualmente.',
-    'PTAX_NOT_FOUND'
+    'PTAX_NOT_FOUND',
+    { params: { source: SOURCE } }
   );
 }
 
-module.exports = { buildPtaxUrl, parsePtaxResponse, candidateDays, fetchPtaxForDate, fetchLatestPtax };
+// Contrato comum das fontes (D162): { source, rate, buyRate, sellRate, quotedAt } com a PTAX de venda.
+async function fetchLatestRate(options = {}) {
+  const quote = await fetchLatestPtax(options);
+  return { source: SOURCE, rate: quote.sellRate, buyRate: quote.buyRate, sellRate: quote.sellRate, quotedAt: quote.quotedAt };
+}
+
+module.exports = { SOURCE, buildPtaxUrl, parsePtaxResponse, candidateDays, fetchPtaxForDate, fetchLatestPtax, fetchLatestRate };

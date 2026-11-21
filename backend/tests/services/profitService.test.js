@@ -31,7 +31,7 @@ function baseScenario() {
     deposits: [{ amountBrlCents: 100000 }],
     withdrawals: [csfWithdrawal, { id: 2, storeId: null, amountStoreCents: null, amountBrlCents: 20000, withdrawnAt: '2026-11-02T12:00:00.000Z' }],
     platformBalances: [
-      { store: csfloat(), balance: { balanceCents: 10000, fxRate: null, recordedAt: '2026-11-10T12:00:00.000Z' }, recentWithdrawals: [csfWithdrawal] },
+      { store: csfloat(), balance: { balanceCents: 10000, fxRate: null, recordedAt: '2026-11-10T12:00:00.000Z' } },
     ],
     stockItems: [stockItem(20000, 'BRL')],
     settings: SETTINGS,
@@ -87,13 +87,13 @@ describe('profitService.computeRealProfit', () => {
       warnings: [],
     });
     expect(r.balancesByStore).toEqual([
-      { storeId: 1, storeName: 'CSFloat', balanceCents: 10000, currency: 'USD', estimatedBrlCents: 50000, withdrawable: true, warning: null },
+      { storeId: 1, storeName: 'CSFloat', balanceCents: 10000, currency: 'USD', estimatedBrlCents: 50000, withdrawable: true, estimated: true, warning: null },
     ]);
   });
 
   test('P2: + Steam saldo 8000 BRL → nonWithdrawable 8000, real 8000, sacável 0', () => {
     const s = baseScenario();
-    s.platformBalances.push({ store: steam(), balance: { balanceCents: 8000, fxRate: 5.0, recordedAt: '2026-11-10T12:00:00.000Z' }, recentWithdrawals: [] });
+    s.platformBalances.push({ store: steam(), balance: { balanceCents: 8000, fxRate: 5.0, recordedAt: '2026-11-10T12:00:00.000Z' } });
     const r = computeRealProfit(s);
     expect(r.nonWithdrawableBalanceBrlCents).toBe(8000);
     expect(r.platformBalanceEstimatedBrlCents).toBe(58000);
@@ -139,15 +139,15 @@ describe('profitService.computeRealProfit', () => {
     });
   });
 
-  test('loja com saque, taxa nula e sem saques → lucros null + aviso', () => {
+  test('taxa de saque da loja não entra na estimativa (loja com saque e taxa nula) e o saldo é marcado como estimado', () => {
     const r = computeRealProfit({
-      platformBalances: [{ store: csmoney(), balance: { balanceCents: 1000, fxRate: null, recordedAt: '2026-11-10T12:00:00.000Z' }, recentWithdrawals: [] }],
+      platformBalances: [{ store: csmoney(), balance: { balanceCents: 1000, fxRate: null, recordedAt: '2026-11-10T12:00:00.000Z' } }],
       settings: SETTINGS,
     });
-    expect(r.withdrawableBalanceBrlCents).toBeNull();
-    expect(r.realProfitBrlCents).toBeNull();
-    expect(r.withdrawableRealProfitBrlCents).toBeNull();
-    expect(r.warnings).toContain('CSMoney: taxas não configuradas');
+    expect(r.withdrawableBalanceBrlCents).toBe(5000);
+    expect(r.realProfitBrlCents).toBe(5000);
+    expect(r.warnings).toEqual([]);
+    expect(r.balancesByStore[0]).toMatchObject({ estimatedBrlCents: 5000, estimated: true, withdrawable: true, warning: null });
   });
 
   test('só loja não sacável USD sem cotação → realProfit null, sacável calculado', () => {
@@ -155,7 +155,7 @@ describe('profitService.computeRealProfit', () => {
     const r = computeRealProfit({
       deposits: [{ amountBrlCents: 1000 }],
       withdrawals: [{ id: 1, storeId: null, amountStoreCents: null, amountBrlCents: 3000, withdrawnAt: '2026-11-01T12:00:00.000Z' }],
-      platformBalances: [{ store, balance: { balanceCents: 1000, fxRate: null, recordedAt: '2026-11-10T12:00:00.000Z' }, recentWithdrawals: [] }],
+      platformBalances: [{ store, balance: { balanceCents: 1000, fxRate: null, recordedAt: '2026-11-10T12:00:00.000Z' } }],
       settings: { usdBrlRate: null },
     });
     expect(r.nonWithdrawableBalanceBrlCents).toBeNull();
@@ -172,14 +172,14 @@ describe('profitService.computeRealProfit', () => {
   });
 
   test('loja sem saldo registrado → 0', () => {
-    const r = computeRealProfit({ platformBalances: [{ store: csfloat(), balance: null, recentWithdrawals: [] }], settings: SETTINGS });
+    const r = computeRealProfit({ platformBalances: [{ store: csfloat(), balance: null }], settings: SETTINGS });
     expect(r.balancesByStore[0]).toMatchObject({ balanceCents: 0, estimatedBrlCents: 0 });
     expect(r.realProfitBrlCents).toBe(0);
   });
 
   test('loja inativa com saldo é incluída', () => {
     const r = computeRealProfit({
-      platformBalances: [{ store: steam({ isActive: false }), balance: { balanceCents: 4000, fxRate: 5.0, recordedAt: '2026-11-10T12:00:00.000Z' }, recentWithdrawals: [] }],
+      platformBalances: [{ store: steam({ isActive: false }), balance: { balanceCents: 4000, fxRate: 5.0, recordedAt: '2026-11-10T12:00:00.000Z' } }],
       settings: SETTINGS,
     });
     expect(r.nonWithdrawableBalanceBrlCents).toBe(4000);

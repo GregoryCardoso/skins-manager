@@ -185,7 +185,11 @@ function loadCatalogEntry(body, existing) {
 }
 
 // Monta o registro de aquisição/atributos a partir do estado já mesclado. `existing` só na edição.
-function buildItemRecord(merged, { store = null, settings = null, now = new Date(), existing = null, priceInformed = true, body = null } = {}) {
+function buildItemRecord(merged, { store = null, settings = null, now = new Date(), existing = null, priceInformed = true, body } = {}) {
+  // T31: o corpo da requisição é obrigatório (GANHEI e cotação dependem de saber o que foi enviado).
+  if (body === null || typeof body !== 'object') {
+    throw new Error('buildItemRecord exige o corpo da requisição em `body`.');
+  }
   const name = isNil(merged.name) ? '' : String(merged.name).trim();
   if (name === '') throw new ValidationError('O nome do item é obrigatório.', 'REQUIRED_FIELD', { field: 'name' });
 
@@ -203,11 +207,11 @@ function buildItemRecord(merged, { store = null, settings = null, now = new Date
   let fxRate = null;
   if (isGanhei) {
     // GANHEI: custo fixo US$ 0,00, sem cotação; a loja é só informativa (D65).
-    if (body && hasKey(body, 'purchasePriceCents')) {
+    if (hasKey(body, 'purchasePriceCents')) {
       throw new ValidationError('Item ganho tem custo fixo US$ 0,00; não informe preço de compra.', 'GANHEI_COST_NOT_ALLOWED', { field: 'purchasePriceCents' });
     }
     // `fxRateAtPurchase: null` equivale a "sem cotação" e é aceito (T35 b, D73).
-    if (body && hasKey(body, 'fxRateAtPurchase') && !isNil(body.fxRateAtPurchase)) {
+    if (hasKey(body, 'fxRateAtPurchase') && !isNil(body.fxRateAtPurchase)) {
       throw new ValidationError('Item ganho não usa cotação.', 'FX_RATE_NOT_ALLOWED', { field: 'fxRateAtPurchase' });
     }
   } else {
@@ -372,9 +376,18 @@ function inTransaction(fn) {
   return runInTransaction(fn);
 }
 
+// Itens do mesmo grupo de histórico (2.7), sem carregar o inventário inteiro (T27).
+function loadStatsGroup({ category, name }, key) {
+  return Item.findStatsCandidates({ category, name }).filter((item) => buildStatsKey(item) === key);
+}
+
 function viewOf(item, { now, thresholds }) {
-  const { stores, settings, statsIndex, catalogById } = loadContext();
-  return toItemView(item, { stores, settings, statsIndex, catalogById, now, thresholds });
+  const key = buildStatsKey(item);
+  const statsIndex = new Map([[key, computeStats(loadStatsGroup(item, key))]]);
+  const catalogById = new Map(
+    isNil(item.catalogId) ? [] : catalogService.getCatalogItemsByIds([item.catalogId]).map((c) => [c.id, c])
+  );
+  return toItemView(item, { stores: Store.findAll(), settings: Setting.get(), statsIndex, catalogById, now, thresholds });
 }
 
 function findOrFail(id) {
@@ -433,6 +446,15 @@ function getItem(id, ctx = {}) {
   return viewOf(findOrFail(id), { now, thresholds });
 }
 
+// Ordem real das validações do POST /api/items (T28; a primeira falha vence):
+//  1. Forma do corpo, em middlewares/itemValidators (tipos, campos desconhecidos, formatos): 400.
+//  2. Identidade, em resolveItemIdentity: CATALOG_DERIVED_FIELD -> CATALOG_ITEM_NOT_FOUND -> CATALOG_ITEM_REQUIRED
+//     -> REQUIRED_FIELD/FIELD_TOO_LONG do nome (categorias de nome livre) -> CATALOG_ITEM_REQUIRED (passe de batalha do catálogo).
+//  3. Loja da compra existe (getStoreOrFail): STORE_NOT_FOUND.
+//  4. buildItemRecord: nome -> tipo de aquisição -> custo (GANHEI: GANHEI_COST_NOT_ALLOWED/FX_RATE_NOT_ALLOWED;
+//     COMPRA: PURCHASE_STORE_REQUIRED -> PURCHASE_PRICE_REQUIRED -> INVALID_AMOUNT -> teto -> cotação) -> atributos de
+//     arma (normalizeAttributes) -> data de aquisição (inválida, futura) -> liberação da troca.
+//  5. Faixa de float do catálogo (assertFloatInCatalogRange).
 function createItem(input, ctx = {}) {
   const { now = new Date(), thresholds = getAgingThresholds() } = ctx;
   const catalogEntry = loadCatalogEntry(input, null);
@@ -504,8 +526,7 @@ function unsellItem(id, ctx = {}) {
 
 function getItemStats({ name, category, variant, exterior, phase }) {
   const key = buildStatsKey({ name, category, variant, exterior, phase });
-  const group = Item.findAll().filter((item) => buildStatsKey(item) === key);
-  return { key, ...computeStats(group) };
+  return { key, ...computeStats(loadStatsGroup({ category, name }, key)) };
 }
 
 module.exports = {

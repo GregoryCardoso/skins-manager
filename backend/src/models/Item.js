@@ -46,6 +46,27 @@ function findLegacy(catalogCategories) {
     .map(toItem);
 }
 
+// Itens candidatos ao grupo de histórico (T27) de uma categoria e nome (estruturados, sem interpretar texto de chave).
+// Filtra no SQL por categoria e pelos termos ASCII do nome (LIKE ignora maiúsculas só em ASCII; termos com
+// outros caracteres ficam para o refino em JS). Quem chama refina comparando a chave completa (itemStatsService).
+function findStatsCandidates({ category, name }) {
+  name = String(name ?? '');
+  const escapeLike = (text) => text.replace(/[\\%_]/g, (ch) => `\\${ch}`);
+  const tokens = name
+    .split(' ')
+    .filter((token) => token !== '' && /^[\x20-\x7e]+$/.test(token));
+  const conditions = ['category = ?'];
+  const params = [category];
+  for (const token of tokens) {
+    conditions.push("lower(name) LIKE ? ESCAPE '\\'");
+    params.push(`%${escapeLike(token.toLowerCase())}%`);
+  }
+  return getDb()
+    .prepare(`SELECT * FROM items WHERE ${conditions.join(' AND ')} ORDER BY id ASC`)
+    .all(...params)
+    .map(toItem);
+}
+
 function update(id, partial = {}, { now = new Date() } = {}) {
   const changes = updateRow(getDb(), 'items', id, partial, FIELDS, { updated_at: now.toISOString() });
   return changes === 0 ? null : findById(id);
@@ -59,4 +80,4 @@ function countAll() {
   return getDb().prepare('SELECT COUNT(*) AS n FROM items').get().n;
 }
 
-module.exports = { countAll, create, findById, findAll, findLegacy, update, remove };
+module.exports = { countAll, create, findById, findAll, findStatsCandidates, findLegacy, update, remove };

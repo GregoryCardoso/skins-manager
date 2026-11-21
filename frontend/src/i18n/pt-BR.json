@@ -85,6 +85,7 @@
     "BAD_REQUEST": "Requisição inválida.",
     "PAYLOAD_TOO_LARGE": "Os dados enviados são grandes demais.",
     "UNSUPPORTED_MEDIA_TYPE": "Tipo de conteúdo não suportado.",
+    "FORBIDDEN_HOST": "Requisição recusada: o endereço de acesso não é local.",
     "CONSTRAINT_VIOLATION": "Os dados violam uma regra do banco de dados.",
     "INTERNAL_ERROR": "Erro interno do servidor.",
     "INVALID_BODY": "Corpo da requisição inválido.",
@@ -129,7 +130,6 @@
     "ITEM_TRADE_LOCKED": "Este item está em trade lock.",
     "SOLD_BEFORE_ACQUIRED": "A data de venda não pode ser anterior à de aquisição.",
     "SOLD_AT_IN_FUTURE": "A data de venda não pode estar no futuro.",
-    "WITHDRAWAL_NOT_ALLOWED": "Saque não permitido para esta loja.",
     "CATALOG_ITEM_REQUIRED": "Escolha um item do catálogo.",
     "CATALOG_DERIVED_FIELD": "Este campo é derivado do catálogo e não pode ser informado.",
     "CATALOG_ITEM_NOT_FOUND": "Item do catálogo não encontrado.",
@@ -150,10 +150,7 @@
     "PRIMARY_STORE_REQUIRED": "Sempre deve haver uma loja principal. Escolha outra loja como principal antes.",
     "PRIMARY_STORE_INACTIVE": "A loja principal não pode ficar inativa. Escolha outra loja principal antes.",
     "SALE_FEE_INCOMPLETE": "Informe o tipo e a taxa de venda juntos, ou deixe os dois vazios.",
-    "PTAX_FETCH_FAILED": "Não foi possível consultar a PTAX do Banco Central. Verifique sua conexão com a internet.",
     "PTAX_NOT_FOUND": "O Banco Central não publicou a PTAX nos últimos dias. Tente mais tarde ou digite a cotação manualmente.",
-    "PTAX_INVALID_RESPONSE": "A resposta do Banco Central veio em um formato inesperado ou com valor inválido. Digite a cotação manualmente.",
-    "PTAX_REFRESH_IN_PROGRESS": "Já existe uma atualização da cotação em andamento.",
     "INVALID_FAST_TURNOVER_DAYS": "O giro rápido deve ser um número inteiro de 1 a 364 dias.",
     "INVALID_SLOW_ITEM_DAYS": "O limite de agarrado deve ser um número inteiro de 2 a 365 dias.",
     "AGING_THRESHOLDS_ORDER": "O giro rápido deve ser menor que o limite de agarrado.",
@@ -162,12 +159,16 @@
     "BACKUP_INVALID_FILE": "Este arquivo não é um backup do Skins Manager.",
     "BACKUP_CORRUPTED": "O arquivo de backup está corrompido e não foi importado.",
     "BACKUP_NEWER_VERSION": "Este backup foi criado por uma versão mais nova do Skins Manager. Atualize o app.",
-    "BACKUP_IMPORT_FAILED": "Não foi possível importar o backup. Seus dados anteriores foram preservados."
+    "BACKUP_IMPORT_FAILED": "Não foi possível importar o backup. Seus dados anteriores foram preservados.",
+    "FX_FETCH_FAILED": "Não foi possível consultar a cotação. Verifique sua conexão com a internet.",
+    "FX_RATE_LIMITED": "O limite de consultas da fonte foi atingido. Tente mais tarde ou use a PTAX.",
+    "FX_INVALID_RESPONSE": "A resposta da fonte da cotação veio em um formato inesperado ou com valor inválido. Digite a cotação manualmente.",
+    "FX_REFRESH_IN_PROGRESS": "Já existe uma atualização da cotação em andamento.",
+    "INVALID_FX_SOURCE": "Fonte de cotação inválida. Escolha a cotação comercial ou a PTAX."
   },
   "warnings": {
     "FEES_NOT_CONFIGURED": "As taxas da loja não estão configuradas.",
     "FX_NOT_CONFIGURED": "A cotação do dólar não está configurada.",
-    "BELOW_FEE": "O preço está abaixo do mínimo para cobrir a taxa.",
     "PRICE_OVERFLOW": "O preço calculado excede o limite suportado."
   },
   "inventory": {
@@ -303,7 +304,20 @@
     "save": "Salvar",
     "cancel": "Cancelar",
     "saving": "Salvando...",
-    "invalidInput": "Digite um número maior que zero (ex.: 5,40)."
+    "invalidInput": "Digite um número maior que zero (ex.: 5,40).",
+    "sourceShort": {
+      "MANUAL": "Manual",
+      "PTAX": "PTAX",
+      "AWESOMEAPI": "Comercial"
+    },
+    "sourceName": {
+      "MANUAL": "Manual",
+      "PTAX": "PTAX do Banco Central",
+      "AWESOMEAPI": "Comercial (AwesomeAPI)"
+    },
+    "ptaxOf": "PTAX de {date}",
+    "editedAt": "editada em {date}",
+    "tooltip": "Fonte: {source}"
   },
   "confirm": {
     "deleteTitle": "Excluir item",
@@ -433,7 +447,12 @@
     "UNKNOWN_FIELD": "Campo desconhecido: {field}.",
     "INVALID_AMOUNT": "O valor máximo permitido é {max}.",
     "AGING_THRESHOLDS_ORDER": "O giro rápido ({fast} dias) deve ser menor que o limite de agarrado ({slow} dias).",
-    "BACKUP_NEWER_VERSION": "Este backup é da versão de dados {fileVersion}, mas este app só conhece até a {appVersion}. Atualize o app."
+    "BACKUP_NEWER_VERSION": "Este backup é da versão de dados {fileVersion}, mas este app só conhece até a {appVersion}. Atualize o app.",
+    "FX_FETCH_FAILED": "Não foi possível consultar a cotação ({source}). Verifique sua conexão com a internet.",
+    "FX_RATE_LIMITED": "O limite de consultas da fonte ({source}) foi atingido. Tente mais tarde ou use outra fonte.",
+    "FX_INVALID_RESPONSE": "A resposta da fonte ({source}) veio em um formato inesperado ou com valor inválido. Digite a cotação manualmente.",
+    "FX_REFRESH_IN_PROGRESS": "Já existe uma atualização da cotação em andamento ({source}).",
+    "PTAX_NOT_FOUND": "O Banco Central não publicou a PTAX nos últimos dias. Tente mais tarde, use a cotação comercial ou digite a cotação manualmente."
   },
   "sales": {
     "title": "Vendas",
@@ -621,19 +640,19 @@
       "current": "Cotação atual",
       "notSet": "Cotação não definida",
       "value": "US$ 1 = {rate}",
-      "sourceLabel": "Origem",
-      "source": {
-        "MANUAL": "Manual",
-        "PTAX": "PTAX de venda (Banco Central)"
-      },
-      "ptaxDate": "PTAX de {date}",
       "manualLabel": "Cotação manual",
       "save": "Salvar cotação",
       "saved": "Cotação salva (manual).",
-      "refreshPtax": "Atualizar cotação (PTAX)",
-      "refreshing": "Consultando o Banco Central...",
-      "refreshed": "Cotação atualizada pela PTAX de venda de {date}: US$ 1 = {rate}.",
-      "note": "A PTAX só é consultada quando você clica no botão e é salva na hora. Cotações já gravadas em itens não mudam."
+      "refreshSourceLabel": "Fonte do botão \"Atualizar cotação\"",
+      "refreshSource": {
+        "AWESOMEAPI": "Comercial em tempo real (AwesomeAPI) — padrão, próxima da CSFloat/Google",
+        "PTAX": "PTAX do Banco Central — oficial, 1 vez por dia"
+      },
+      "refreshSourceSaved": "Fonte salva.",
+      "refresh": "Atualizar cotação",
+      "refreshing": "Consultando a cotação...",
+      "refreshed": "Cotação atualizada ({source}): US$ 1 = {rate}.",
+      "note": "A cotação só é consultada quando você clica no botão e é salva na hora. Cotações já gravadas em itens não mudam."
     },
     "preferences": {
       "title": "Preferências",

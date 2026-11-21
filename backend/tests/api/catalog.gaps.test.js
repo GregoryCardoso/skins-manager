@@ -100,19 +100,19 @@ describe('POST /api/catalog/refresh: bordas', () => {
   test('falha só em pt-BR (500) -> 502 e catálogo anterior intacto; 404 só em pt-BR -> 200', async () => {
     importCatalogFixture();
     const bad = makeApp(NOW, { fetchFn: fixtureFetch({ 'pt-BR/stickers.json': status(500) }) });
-    expectError(await request(bad).post('/api/catalog/refresh').send({}), 502, 'CATALOG_FETCH_FAILED');
+    expectError(await request(bad).post('/api/catalog/refresh').set('Content-Type', 'application/json').send({}), 502, 'CATALOG_FETCH_FAILED');
     expect(Setting.get().catalogUpdatedAt).toBe('2026-11-01T00:00:00.000Z');
     const tolerated = makeApp(NOW, { fetchFn: fixtureFetch({ 'pt-BR/stickers.json': status(404) }) });
-    const ok = await request(tolerated).post('/api/catalog/refresh').send({});
+    const ok = await request(tolerated).post('/api/catalog/refresh').set('Content-Type', 'application/json').send({});
     expect(ok.status).toBe(200);
     expect(ok.body.data.catalogUpdatedAt).toBe(NOW.toISOString());
   });
 
   test('404 no en -> 502; JSON inválido -> 502 CATALOG_INVALID_FORMAT', async () => {
     const a = makeApp(NOW, { fetchFn: fixtureFetch({ 'en/crates.json': status(404) }) });
-    expectError(await request(a).post('/api/catalog/refresh').send({}), 502, 'CATALOG_FETCH_FAILED');
+    expectError(await request(a).post('/api/catalog/refresh').set('Content-Type', 'application/json').send({}), 502, 'CATALOG_FETCH_FAILED');
     const b = makeApp(NOW, { fetchFn: fixtureFetch({ 'en/crates.json': { ok: true, status: 200, text: async () => '<html>' } }) });
-    expectError(await request(b).post('/api/catalog/refresh').send({}), 502, 'CATALOG_INVALID_FORMAT');
+    expectError(await request(b).post('/api/catalog/refresh').set('Content-Type', 'application/json').send({}), 502, 'CATALOG_INVALID_FORMAT');
   });
 
   test('sem corpo é aceito; corpo array -> INVALID_BODY; chave -> UNKNOWN_FIELD e o fetch não é chamado', async () => {
@@ -122,10 +122,10 @@ describe('POST /api/catalog/refresh: bordas', () => {
       return fixtureFetch()(...a);
     };
     const app = makeApp(NOW, { fetchFn });
-    expectError(await request(app).post('/api/catalog/refresh').send([]), 400, 'INVALID_BODY');
-    expectError(await request(app).post('/api/catalog/refresh').send({ force: true }), 400, 'UNKNOWN_FIELD');
+    expectError(await request(app).post('/api/catalog/refresh').set('Content-Type', 'application/json').send([]), 400, 'INVALID_BODY');
+    expectError(await request(app).post('/api/catalog/refresh').set('Content-Type', 'application/json').send({ force: true }), 400, 'UNKNOWN_FIELD');
     expect(calls).toBe(0);
-    expect((await request(app).post('/api/catalog/refresh')).status).toBe(200);
+    expect((await request(app).post('/api/catalog/refresh').set('Content-Type', 'application/json')).status).toBe(200);
   });
 
   test('refresh simultâneo pela API: o segundo recebe 409 e depois da conclusão um novo refresh dá 200', async () => {
@@ -140,17 +140,17 @@ describe('POST /api/catalog/refresh: bordas', () => {
       },
     });
     const app = makeApp(NOW, { fetchFn: slow });
-    const first = request(app).post('/api/catalog/refresh').send({}).then((r) => r);
+    const first = request(app).post('/api/catalog/refresh').set('Content-Type', 'application/json').send({}).then((r) => r);
     await new Promise((r) => setTimeout(r, 50));
-    expectError(await request(app).post('/api/catalog/refresh').send({}), 409, 'CATALOG_REFRESH_IN_PROGRESS');
+    expectError(await request(app).post('/api/catalog/refresh').set('Content-Type', 'application/json').send({}), 409, 'CATALOG_REFRESH_IN_PROGRESS');
     release();
     expect((await first).status).toBe(200);
-    expect((await request(app).post('/api/catalog/refresh').send({})).status).toBe(200);
+    expect((await request(app).post('/api/catalog/refresh').set('Content-Type', 'application/json').send({})).status).toBe(200);
   });
 
   test('resposta traz o contrato completo e /status reflete o refresh', async () => {
     const app = makeApp(NOW, { fetchFn: fixtureFetch() });
-    const res = await request(app).post('/api/catalog/refresh').send({});
+    const res = await request(app).post('/api/catalog/refresh').set('Content-Type', 'application/json').send({});
     expect(Object.keys(res.body.data).sort()).toEqual(['catalogUpdatedAt', 'countsBySource', 'linkedLegacyItems', 'skipped', 'total']);
     const st = await request(app).get('/api/catalog/status');
     expect(st.body.data).toEqual({ catalogUpdatedAt: NOW.toISOString(), countsBySource: res.body.data.countsBySource, total: res.body.data.total });
@@ -158,7 +158,7 @@ describe('POST /api/catalog/refresh: bordas', () => {
 
   test('refresh sem catálogo prévio deixa o catálogo utilizável na busca', async () => {
     const app = makeApp(NOW, { fetchFn: fixtureFetch() });
-    await request(app).post('/api/catalog/refresh').send({});
+    await request(app).post('/api/catalog/refresh').set('Content-Type', 'application/json').send({});
     const res = await request(app).get('/api/catalog/search').query({ q: 'redline' });
     expect(res.body.data.items.map((i) => i.id)).toEqual(['skin-ak-redline']);
     expect(res.body.data.meta.catalogUpdatedAt).toBe(NOW.toISOString());
@@ -167,7 +167,7 @@ describe('POST /api/catalog/refresh: bordas', () => {
   test('refresh com pt-BR em 404 não apaga traduções que já estavam gravadas', async () => {
     importCatalogFixture();
     const app = makeApp(NOW, { fetchFn: fixtureFetch(Object.fromEntries(FILES.map((f) => [`pt-BR/${f}.json`, status(404)]))) });
-    await request(app).post('/api/catalog/refresh').send({});
+    await request(app).post('/api/catalog/refresh').set('Content-Type', 'application/json').send({});
     const res = await request(app).get('/api/catalog/skin-ak-redline');
     expect(res.body.data.namePtBr).toBe('AK-47 | Linha Vermelha');
   });
@@ -236,7 +236,7 @@ describe('PATCH /api/settings: preferências (bordas)', () => {
       const res = await patch(app, { theme });
       expect(res.status).toBe(200);
       expect(res.body.data).toMatchObject({ theme });
-      expect(Object.keys(res.body.data).sort()).toEqual(['agingThresholdsAdjusted', 'catalogUpdatedAt', 'fastTurnoverDays', 'fastTurnoverDaysCustom', 'fastTurnoverDaysDefault', 'language', 'ptaxQuotedAt', 'slowItemDays', 'slowItemDaysCustom', 'slowItemDaysDefault', 'theme', 'updatedAt', 'usdBrlRate', 'usdBrlRateSource', 'usdBrlRateUpdatedAt']);
+      expect(Object.keys(res.body.data).sort()).toEqual(['agingThresholdsAdjusted', 'catalogUpdatedAt', 'fastTurnoverDays', 'fastTurnoverDaysCustom', 'fastTurnoverDaysDefault', 'fxRefreshSource', 'language', 'rateQuotedAt', 'slowItemDays', 'slowItemDaysCustom', 'slowItemDaysDefault', 'theme', 'updatedAt', 'usdBrlRate', 'usdBrlRateSource', 'usdBrlRateUpdatedAt']);
     }
     for (const language of ['en', 'pt-BR']) {
       expect((await patch(app, { language })).body.data.language).toBe(language);
@@ -258,7 +258,7 @@ describe('PATCH /api/settings: preferências (bordas)', () => {
   test('o refresh do catálogo não altera tema nem idioma', async () => {
     const app = makeApp(NOW, { fetchFn: fixtureFetch() });
     await patch(app, { theme: 'LIGHT', language: 'en' });
-    await request(app).post('/api/catalog/refresh').send({});
+    await request(app).post('/api/catalog/refresh').set('Content-Type', 'application/json').send({});
     expect((await request(app).get('/api/settings')).body.data).toMatchObject({ theme: 'LIGHT', language: 'en', catalogUpdatedAt: NOW.toISOString() });
   });
 

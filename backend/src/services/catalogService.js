@@ -4,7 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const {
-  CATALOG_BASE_URL, CATALOG_LANGUAGES, CATALOG_FILES, CATALOG_FETCH_TIMEOUT_MS, CATALOG_SEARCH_DEFAULT_LIMIT,
+  CATALOG_BASE_URL, CATALOG_LANGUAGES, CATALOG_FILES, CATALOG_FETCH_TIMEOUT_MS, CATALOG_MAX_FILE_BYTES, CATALOG_SEARCH_DEFAULT_LIMIT,
   CATALOG_SEARCH_MAX_LIMIT, CATALOG_ID_MAX_LENGTH, CATALOG_SNAPSHOT_PATH, CATALOG_MIN_ROWS, CATALOG_MAX_SKIPPED_RATIO,
 } = require('../config/constants');
 const CatalogItem = require('../models/CatalogItem');
@@ -120,6 +120,37 @@ function urlFor(lang, file) {
   return `${CATALOG_BASE_URL}${lang}/${file}`;
 }
 
+function tooLarge() {
+  return new UpstreamError('O catálogo baixado é grande demais.', 'CATALOG_INVALID_FORMAT');
+}
+
+// Lê o corpo respeitando o teto de bytes (T36): confere o content-length e conta os bytes do stream.
+// Sem corpo legível como texto devolve null (o chamador tenta `json()`).
+async function readLimitedText(response, maxBytes = CATALOG_MAX_FILE_BYTES) {
+  const header = response.headers && typeof response.headers.get === 'function' ? response.headers.get('content-length') : null;
+  if (header !== null && header !== undefined && Number(header) > maxBytes) throw tooLarge();
+  if (response.body && typeof response.body.getReader === 'function') {
+    const reader = response.body.getReader();
+    const chunks = [];
+    let total = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > maxBytes) {
+        await reader.cancel().catch(() => {});
+        throw tooLarge();
+      }
+      chunks.push(Buffer.from(value));
+    }
+    return Buffer.concat(chunks).toString('utf8');
+  }
+  if (typeof response.text !== 'function') return null;
+  const text = await response.text();
+  if (Buffer.byteLength(text, 'utf8') > maxBytes) throw tooLarge();
+  return text;
+}
+
 async function fetchJson(fetchFn, url, { signal, optional }) {
   let response;
   let text;
@@ -133,10 +164,10 @@ async function fetchJson(fetchFn, url, { signal, optional }) {
         'CATALOG_FETCH_FAILED'
       );
     }
-    text = typeof response.text === 'function' ? await response.text() : null;
+    text = await readLimitedText(response);
     if (text === null) return await response.json();
   } catch (err) {
-    if (err instanceof UpstreamError && err.code === 'CATALOG_FETCH_FAILED') throw err;
+    if (err instanceof UpstreamError) throw err;
     if (err instanceof SyntaxError) {
       throw new UpstreamError('O catálogo baixado está em um formato inválido.', 'CATALOG_INVALID_FORMAT');
     }

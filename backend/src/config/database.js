@@ -4,7 +4,12 @@ const Database = require('better-sqlite3');
 const env = require('./env');
 const { MIGRATIONS } = require('./migrations');
 const { runSeed } = require('./seed');
-const { AUTO_BACKUP_KEEP } = require('./constants');
+const {
+  AUTO_BACKUP_KEEP,
+  MIGRATION_BACKUP_PREFIX,
+  backupStamp,
+  selectBackupsToDelete,
+} = require('./backupRetention');
 
 let instance = null;
 
@@ -22,8 +27,6 @@ function assertSupportedVersion(db, migrations) {
   return current;
 }
 
-const MIGRATION_BACKUP_PREFIX = 'inventory-v';
-
 function sqlQuote(value) {
   return `'${String(value).replace(/'/g, "''")}'`;
 }
@@ -32,7 +35,6 @@ function sqlQuote(value) {
 // Nunca lança: falha ao apagar (arquivo travado no Windows) vira aviso no console.
 function pruneAutoBackups(dir, prefix, keep = AUTO_BACKUP_KEEP) {
   try {
-    const { selectBackupsToDelete } = require('../services/backupService'); // lazy: backupService usa este módulo
     const entries = fs.readdirSync(dir).map((name) => {
       let mtimeMs = 0;
       try {
@@ -58,21 +60,26 @@ function pruneAutoBackups(dir, prefix, keep = AUTO_BACKUP_KEEP) {
 function backupBeforeMigrating(db, dbPath, fromVersion, now) {
   const dir = path.join(path.dirname(dbPath), 'backups');
   fs.mkdirSync(dir, { recursive: true });
-  const stamp = now.toISOString().replace(/:/g, '-');
-  const target = path.join(dir, `inventory-v${fromVersion}-${stamp}.sqlite`);
+  // O nome pode colidir com o backup de importação do mesmo instante (mesmo carimbo): avança 1 ms até achar um livre.
+  let moment = now.getTime();
+  let target = path.join(dir, `${MIGRATION_BACKUP_PREFIX}${fromVersion}-${backupStamp(new Date(moment))}.sqlite`);
+  while (fs.existsSync(target)) {
+    moment += 1;
+    target = path.join(dir, `${MIGRATION_BACKUP_PREFIX}${fromVersion}-${backupStamp(new Date(moment))}.sqlite`);
+  }
   db.exec(`VACUUM INTO ${sqlQuote(target)}`);
   pruneAutoBackups(dir, MIGRATION_BACKUP_PREFIX);
   return target;
 }
 
 // Aplica as migrações pendentes, cada uma na sua transação (D69).
-function runMigrations(db, migrations = MIGRATIONS, { dbPath = ':memory:', now = new Date() } = {}) {
+function runMigrations(db, migrations = MIGRATIONS, { dbPath = ':memory:', now = new Date(), skipBackup = false } = {}) {
   const current = assertSupportedVersion(db, migrations);
   const pending = migrations.filter((m) => m.version > current);
   if (pending.length === 0) return { from: current, to: current, applied: [], backupPath: null };
 
   let backupPath = null;
-  if (dbPath !== ':memory:' && current >= 1) backupPath = backupBeforeMigrating(db, dbPath, current, now);
+  if (!skipBackup && dbPath !== ':memory:' && current >= 1) backupPath = backupBeforeMigrating(db, dbPath, current, now);
 
   const applied = [];
   for (const migration of pending) {
@@ -96,7 +103,7 @@ function runMigrations(db, migrations = MIGRATIONS, { dbPath = ':memory:', now =
   return { from: current, to: latestVersion(pending), applied, backupPath };
 }
 
-function openDatabase(dbPath, { migrations = MIGRATIONS, now = new Date() } = {}) {
+function openDatabase(dbPath, { migrations = MIGRATIONS, now = new Date(), skipMigrationBackup = false } = {}) {
   const inMemory = dbPath === ':memory:';
   if (!inMemory) fs.mkdirSync(path.dirname(dbPath), { recursive: true });
 
@@ -107,7 +114,7 @@ function openDatabase(dbPath, { migrations = MIGRATIONS, now = new Date() } = {}
     assertSupportedVersion(db, migrations);
     if (!inMemory) db.pragma('journal_mode = WAL');
 
-    runMigrations(db, migrations, { dbPath, now });
+    runMigrations(db, migrations, { dbPath, now, skipBackup: skipMigrationBackup });
     runSeed(db, now);
   } catch (err) {
     // Libera o handle (no Windows ele trava o arquivo .sqlite) e propaga o erro original.
@@ -118,8 +125,9 @@ function openDatabase(dbPath, { migrations = MIGRATIONS, now = new Date() } = {}
 }
 
 // `now` só vale quando a conexão é aberta (carimbo do backup de migração).
-function getDb({ now = new Date() } = {}) {
-  if (!instance) instance = openDatabase(env.dbPath, { now });
+// `skipMigrationBackup` evita o backup `inventory-v*` de migração (usado na importação, que já tem os seus).
+function getDb({ now = new Date(), skipMigrationBackup = false } = {}) {
+  if (!instance) instance = openDatabase(env.dbPath, { now, skipMigrationBackup });
   return instance;
 }
 
@@ -142,7 +150,7 @@ function exportDatabaseTo(targetPath) {
 
 // Lê um arquivo SQLite sem tocar no banco do app (D151, passo 3). Lança se o arquivo não for um banco legível.
 function inspectDatabaseFile(filePath) {
-  const db = new Database(filePath);
+  const db = new Database(filePath, { readonly: true, fileMustExist: true });
   try {
     const quickCheck = db.pragma('quick_check', { simple: true });
     if (quickCheck !== 'ok') return { quickCheck: String(quickCheck) };
@@ -154,6 +162,8 @@ function inspectDatabaseFile(filePath) {
     };
   } finally {
     db.close();
+    // Um arquivo em modo WAL pode deixar -wal/-shm ao lado do temporário; removê-los não afeta o arquivo principal.
+    removeWalFiles(filePath);
   }
 }
 

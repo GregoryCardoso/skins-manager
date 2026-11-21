@@ -1,7 +1,7 @@
 'use strict';
 
 // Lacunas do adapter da PTAX (D147). fetchFn sempre falso.
-const { candidateDays, parsePtaxResponse, fetchLatestPtax } = require('../../../src/services/ptax/bcbPtaxAdapter');
+const { candidateDays, parsePtaxResponse, fetchLatestPtax } = require('../../../src/services/fxRates/bcbPtaxAdapter');
 
 const THURSDAY = new Date('2026-11-19T15:00:00.000Z');
 const ok = (json) => ({ ok: true, status: 200, text: async () => JSON.stringify(json) });
@@ -24,10 +24,10 @@ describe('PTAX: cotação de venda e linhas', () => {
   test('usa a venda mesmo quando a compra é válida e diferente', () => {
     expect(parsePtaxResponse({ value: [row()] }).sellRate).toBe(5.4);
   });
-  test('cotacaoVenda ausente (mesmo com compra válida) → PTAX_INVALID_RESPONSE', () => {
+  test('cotacaoVenda ausente (mesmo com compra válida) → FX_INVALID_RESPONSE', () => {
     const r = row();
     delete r.cotacaoVenda;
-    expect(() => parsePtaxResponse({ value: [r] })).toThrow(expect.objectContaining({ code: 'PTAX_INVALID_RESPONSE' }));
+    expect(() => parsePtaxResponse({ value: [r] })).toThrow(expect.objectContaining({ code: 'FX_INVALID_RESPONSE' }));
   });
   test('compra ausente ou inválida não impede o uso da venda (buyRate nulo)', () => {
     expect(parsePtaxResponse({ value: [row({ cotacaoCompra: undefined })] }).buyRate).toBeNull();
@@ -54,23 +54,23 @@ describe('PTAX: falhas em dias intermediários', () => {
       if (n === 1) return ok({ value: [] });
       throw new TypeError('fetch failed');
     });
-    await expect(fetchLatestPtax({ fetchFn, now: THURSDAY })).rejects.toMatchObject({ code: 'PTAX_FETCH_FAILED' });
+    await expect(fetchLatestPtax({ fetchFn, now: THURSDAY })).rejects.toMatchObject({ code: 'FX_FETCH_FAILED' });
     expect(fetchFn).toHaveBeenCalledTimes(2);
   });
-  test('resposta inválida no segundo dia aborta com PTAX_INVALID_RESPONSE', async () => {
+  test('resposta inválida no segundo dia aborta com FX_INVALID_RESPONSE', async () => {
     let n = 0;
     const fetchFn = async () => (++n === 1 ? ok({ value: [] }) : ok({ value: [row({ cotacaoVenda: 0 })] }));
-    await expect(fetchLatestPtax({ fetchFn, now: THURSDAY })).rejects.toMatchObject({ code: 'PTAX_INVALID_RESPONSE' });
+    await expect(fetchLatestPtax({ fetchFn, now: THURSDAY })).rejects.toMatchObject({ code: 'FX_INVALID_RESPONSE' });
   });
-  test('HTTP 404 e resposta nula → PTAX_FETCH_FAILED', async () => {
+  test('HTTP 404 e resposta nula → FX_FETCH_FAILED', async () => {
     await expect(fetchLatestPtax({ fetchFn: async () => ({ ok: false, status: 404 }), now: THURSDAY })).rejects.toMatchObject({
-      code: 'PTAX_FETCH_FAILED',
+      code: 'FX_FETCH_FAILED',
     });
     await expect(fetchLatestPtax({ fetchFn: async () => null, now: THURSDAY })).rejects.toMatchObject({
-      code: 'PTAX_FETCH_FAILED',
+      code: 'FX_FETCH_FAILED',
     });
   });
-  test('corpo que falha ao ler (text rejeita) → PTAX_FETCH_FAILED', async () => {
+  test('corpo que falha ao ler (text rejeita) → FX_FETCH_FAILED', async () => {
     const fetchFn = async () => ({
       ok: true,
       status: 200,
@@ -78,7 +78,7 @@ describe('PTAX: falhas em dias intermediários', () => {
         throw new Error('reset');
       },
     });
-    await expect(fetchLatestPtax({ fetchFn, now: THURSDAY })).rejects.toMatchObject({ code: 'PTAX_FETCH_FAILED' });
+    await expect(fetchLatestPtax({ fetchFn, now: THURSDAY })).rejects.toMatchObject({ code: 'FX_FETCH_FAILED' });
   });
   test('exatamente 64 KB é aceito; 64 KB + 1 byte é recusado', async () => {
     const limit = 64 * 1024;
@@ -88,7 +88,7 @@ describe('PTAX: falhas em dias intermediários', () => {
     const asText = (text) => async () => ({ ok: true, status: 200, text: async () => text });
     expect((await fetchLatestPtax({ fetchFn: asText(exact), now: THURSDAY })).sellRate).toBe(5.4);
     await expect(fetchLatestPtax({ fetchFn: asText(exact + ' '), now: THURSDAY })).rejects.toMatchObject({
-      code: 'PTAX_INVALID_RESPONSE',
+      code: 'FX_INVALID_RESPONSE',
     });
   });
 });

@@ -76,9 +76,9 @@ describe('CRUD de lojas', () => {
     expectError(await request(app).delete('/api/stores/9999'), 404, 'STORE_NOT_FOUND');
   });
 
-  test('PUT /settings/fx-rate grava origem MANUAL e ptaxQuotedAt nula', async () => {
-    getDb().prepare("UPDATE settings SET usd_brl_rate_source = 'PTAX', ptax_quoted_at = 'x'").run();
+  test('PUT /settings/fx-rate grava origem MANUAL e rateQuotedAt nula', async () => {
+    getDb().prepare("UPDATE settings SET usd_brl_rate_source = 'PTAX', rate_quoted_at = 'x'").run();
     await request(app).put('/api/settings/fx-rate').send({ usdBrlRate: 5.5 });
-    expect(getDb().prepare('SELECT usd_brl_rate_source AS s, ptax_quoted_at AS p FROM settings').get()).toEqual({ s: 'MANUAL', p: null });
+    expect(getDb().prepare('SELECT usd_brl_rate_source AS s, rate_quoted_at AS p FROM settings').get()).toEqual({ s: 'MANUAL', p: null });
   });
 });

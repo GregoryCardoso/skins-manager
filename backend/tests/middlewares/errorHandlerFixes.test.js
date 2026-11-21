@@ -156,11 +156,11 @@ describe('errorHandler - AppError/ValidationError e 4xx genéricos', () => {
     expect(res.body).toEqual({ success: false, error: { code: 'ITEM_ALREADY_SOLD', message: 'Item já foi vendido' } });
   });
 
-  test('ValidationError padrão → 400 VALIDATION_ERROR com a mensagem', async () => {
-    const a = buildApp((req, res, next) => next(new ValidationError('Nome é obrigatório')));
+  test('ValidationError → 400 com o código e a mensagem', async () => {
+    const a = buildApp((req, res, next) => next(new ValidationError('Nome é obrigatório', 'REQUIRED_FIELD')));
     const res = await request(a).get('/r');
     expect(res.status).toBe(400);
-    expect(res.body).toEqual({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Nome é obrigatório' } });
+    expect(res.body).toEqual({ success: false, error: { code: 'REQUIRED_FIELD', message: 'Nome é obrigatório' } });
   });
 
   test('violação real de CHECK do SQLite → 409 CONSTRAINT_VIOLATION (sem 500)', async () => {

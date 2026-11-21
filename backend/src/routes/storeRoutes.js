@@ -5,7 +5,10 @@ const {
   validateStoreQuery, validateSaleQuoteQuery, validateStoreCreateBody, validateStorePatchBody,
 } = require('../middlewares/storeValidators');
 
+const { requireJsonForWrites } = require('../middlewares/validationHelpers');
+
 const router = Router();
+router.use(requireJsonForWrites);
 
 router.get('/', validateStoreQuery, controller.list);
 router.post('/', validateStoreCreateBody, controller.create);

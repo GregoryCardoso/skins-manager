@@ -19,13 +19,13 @@ describe('PUT /api/settings/fx-rate (lacunas)', () => {
   test('GET no formato padrão; updatedAt inicial é ISO', async () => {
     const body = await getSettings();
     expect(Object.keys(body).sort()).toEqual(['data', 'success']);
-    expect(Object.keys(body.data).sort()).toEqual(['agingThresholdsAdjusted', 'catalogUpdatedAt', 'fastTurnoverDays', 'fastTurnoverDaysCustom', 'fastTurnoverDaysDefault', 'language', 'ptaxQuotedAt', 'slowItemDays', 'slowItemDaysCustom', 'slowItemDaysDefault', 'theme', 'updatedAt', 'usdBrlRate', 'usdBrlRateSource', 'usdBrlRateUpdatedAt']);
+    expect(Object.keys(body.data).sort()).toEqual(['agingThresholdsAdjusted', 'catalogUpdatedAt', 'fastTurnoverDays', 'fastTurnoverDaysCustom', 'fastTurnoverDaysDefault', 'fxRefreshSource', 'language', 'rateQuotedAt', 'slowItemDays', 'slowItemDaysCustom', 'slowItemDaysDefault', 'theme', 'updatedAt', 'usdBrlRate', 'usdBrlRateSource', 'usdBrlRateUpdatedAt']);
     expect(new Date(body.data.updatedAt).toISOString()).toBe(body.data.updatedAt);
   });
 
   test('sem corpo ou corpo texto -> INVALID_BODY', async () => {
-    expectError(await request(app).put('/api/settings/fx-rate'), 400, 'INVALID_BODY');
-    expectError(await request(app).put('/api/settings/fx-rate').set('Content-Type', 'text/plain').send('5.25'), 400, 'INVALID_BODY');
+    expectError(await request(app).put('/api/settings/fx-rate').set('Content-Type', 'application/json'), 400, 'REQUIRED_FIELD');
+    expectError(await request(app).put('/api/settings/fx-rate').set('Content-Type', 'text/plain').send('5.25'), 415, 'UNSUPPORTED_MEDIA_TYPE');
   });
 
   test('-0 -> INVALID_FX_RATE com a mensagem da D62', async () => {
@@ -63,7 +63,7 @@ describe('PUT /api/settings/fx-rate (lacunas)', () => {
         usdBrlRate: 5.5, usdBrlRateUpdatedAt: '2026-11-20T10:00:00.000Z', catalogUpdatedAt: null,
         theme: 'SYSTEM', language: 'pt-BR', usdBrlRateSource: 'MANUAL',
         agingThresholdsAdjusted: false, fastTurnoverDays: 7, fastTurnoverDaysCustom: null, fastTurnoverDaysDefault: 7,
-      slowItemDays: 21, slowItemDaysCustom: null, slowItemDaysDefault: 21, ptaxQuotedAt: null, updatedAt: '2026-11-20T10:00:00.000Z',
+      slowItemDays: 21, slowItemDaysCustom: null, slowItemDaysDefault: 21, rateQuotedAt: null, fxRefreshSource: 'AWESOMEAPI', updatedAt: '2026-11-20T10:00:00.000Z',
       },
     });
   });

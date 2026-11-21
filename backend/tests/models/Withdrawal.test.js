@@ -35,32 +35,6 @@ describe('models/Withdrawal', () => {
     expect(() => Withdrawal.create(wd({ storeId: 9999, amountStoreCents: 10 }))).toThrow(/FOREIGN KEY/);
   });
 
-  test('findLatestByStore(id, 5) com 7 saques devolve os 5 mais recentes, ignorando outras lojas e saques sem loja', () => {
-    const csfloat = storeIdByName('CSFloat');
-    const csmoney = storeIdByName('CSMoney');
-    const days = [3, 7, 1, 6, 2, 5, 4]; // inseridos fora de ordem
-    const byDay = {};
-    for (const d of days) {
-      byDay[d] = Withdrawal.create(
-        wd({ storeId: csfloat, amountStoreCents: 100 * d, withdrawnAt: `2026-01-0${d}T00:00:00.000Z` })
-      ).id;
-    }
-    Withdrawal.create(wd({ storeId: csmoney, amountStoreCents: 1, withdrawnAt: '2026-12-31T00:00:00.000Z' }));
-    Withdrawal.create(wd({ withdrawnAt: '2026-12-30T00:00:00.000Z' }));
-
-    const latest = Withdrawal.findLatestByStore(csfloat, 5);
-    expect(latest.map((w) => w.id)).toEqual([byDay[7], byDay[6], byDay[5], byDay[4], byDay[3]]);
-    expect(latest.every((w) => w.storeId === csfloat)).toBe(true);
-  });
-
-  test('findLatestByStore desempata pelo maior id', () => {
-    const csfloat = storeIdByName('CSFloat');
-    const a = Withdrawal.create(wd({ storeId: csfloat, amountStoreCents: 1 }));
-    const b = Withdrawal.create(wd({ storeId: csfloat, amountStoreCents: 2 }));
-    expect(Withdrawal.findLatestByStore(csfloat, 1).map((w) => w.id)).toEqual([b.id]);
-    expect(Withdrawal.findLatestByStore(csfloat, 10).map((w) => w.id)).toEqual([b.id, a.id]);
-  });
-
   test('findAll e sumAmountBrlCents', () => {
     expect(Withdrawal.sumAmountBrlCents()).toBe(0);
     const a = Withdrawal.create(wd({ amountBrlCents: 100, withdrawnAt: '2026-01-01T00:00:00.000Z' }));

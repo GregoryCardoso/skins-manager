@@ -31,13 +31,6 @@ function findAll({ from, to } = {}) {
     .map((r) => mapRow(r));
 }
 
-function findLatestByStore(storeId, limit) {
-  return getDb()
-    .prepare('SELECT * FROM withdrawals WHERE store_id = ? ORDER BY withdrawn_at DESC, id DESC LIMIT ?')
-    .all(storeId, limit)
-    .map((r) => mapRow(r));
-}
-
 function update(id, partial = {}) {
   const changes = updateRow(getDb(), 'withdrawals', id, partial, FIELDS, { updated_at: new Date().toISOString() });
   return changes === 0 ? null : findById(id);
@@ -51,4 +44,4 @@ function sumAmountBrlCents() {
   return getDb().prepare('SELECT COALESCE(SUM(amount_brl_cents), 0) AS total FROM withdrawals').get().total;
 }
 
-module.exports = { create, findById, findAll, findLatestByStore, update, remove, sumAmountBrlCents };
+module.exports = { create, findById, findAll, update, remove, sumAmountBrlCents };

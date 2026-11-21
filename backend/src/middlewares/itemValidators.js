@@ -185,6 +185,12 @@ const validateStatsQuery = wrap((req) => {
   const floatValue = queryValue(q, 'floatValue');
   const paintSeed = queryValue(q, 'paintSeed');
   const phase = queryValue(q, 'phase');
+  // T34: float e paint seed ficam fora da chave do histórico (2.7); recusar evita uma resposta que ignora o filtro.
+  for (const [field, value] of [['floatValue', floatValue], ['paintSeed', paintSeed]]) {
+    if (value !== undefined) {
+      throw fail(`O parâmetro ${field} não faz parte da chave do histórico.`, 'INVALID_QUERY', { field });
+    }
+  }
   assertWeaponAttributesAllowed(category, { variant: informedVariant, exterior, floatValue, paintSeed, phase });
   req.validatedQuery = {
     name,

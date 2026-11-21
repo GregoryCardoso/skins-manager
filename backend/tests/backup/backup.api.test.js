@@ -117,7 +117,7 @@ describe('importar: recusas', () => {
 
   test('BACKUP_BUSY com atualização em andamento', async () => {
     const file = await exportBuffer();
-    const spy = jest.spyOn(settingsService, 'isPtaxRefreshInProgress').mockReturnValue(true);
+    const spy = jest.spyOn(settingsService, 'isFxRefreshInProgress').mockReturnValue(true);
     const res = await octet(file);
     spy.mockRestore();
     expect(res.status).toBe(409);
@@ -150,6 +150,23 @@ describe('importar: sucesso', () => {
     expect(database.getSchemaVersion()).toBe(database.getLatestSchemaVersion());
   });
 
+  test('banco v4 (com PTAX salva) é migrado para v5 ao importar, preservando a cotação e a data', async () => {
+    const v4 = path.join(dir, 'v4.sqlite');
+    const { MIGRATIONS } = require('../../src/config/migrations');
+    const old = database.openDatabase(v4, { migrations: MIGRATIONS.slice(0, 4) });
+    old.prepare(
+      "UPDATE settings SET usd_brl_rate = 5.3012, usd_brl_rate_source = 'PTAX', ptax_quoted_at = '2026-11-19T16:04:28.123Z'"
+    ).run();
+    old.close();
+    const res = await octet(fs.readFileSync(v4));
+    expect(res.status).toBe(200);
+    expect(res.body.data).toMatchObject({ fileVersion: 4, schemaVersion: 5, migrationsApplied: [5] });
+    const settings = (await request(app).get('/api/settings')).body.data;
+    expect(settings).toMatchObject({
+      usdBrlRate: 5.3012, usdBrlRateSource: 'PTAX', rateQuotedAt: '2026-11-19T16:04:28.123Z', fxRefreshSource: 'AWESOMEAPI',
+    });
+  });
+
   test('falha na reabertura restaura o banco anterior e devolve 500', async () => {
     await request(app).patch('/api/settings').send({ language: 'en' });
     const file = await exportBuffer();
@@ -175,6 +192,5 @@ describe('importar: sucesso', () => {
     }
     const imports = backupFiles().filter((n) => n.startsWith('inventory-before-import-v'));
     expect(imports).toHaveLength(10);
-    expect(backupFiles().some((n) => /^inventory-v\d+-/.test(n))).toBe(true); // os de migração não foram tocados
   });
 });
