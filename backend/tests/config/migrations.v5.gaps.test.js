@@ -5,6 +5,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { openDatabase } = require('../../src/config/database');
+const { stripV6Rows } = require('../helpers/stripV6');
 const { MIGRATIONS } = require('../../src/config/migrations');
 
 let tmpRoot;
@@ -64,9 +65,11 @@ describe('migração v5: lacunas', () => {
 
     const db = openDatabase(dbPath, { now: NOW5 });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(5);
-      expect(snapshot(db)).toEqual(rows);
-      expect(schemaOf(db)).toEqual(schema);
+      expect(db.pragma('user_version', { simple: true })).toBe(6);
+      expect(Object.fromEntries(Object.entries(snapshot(db)).map(([t, list]) => [t, stripV6Rows(list)]))).toEqual(rows);
+      // A v6 só altera o DDL de stores, items e withdrawals (ADD COLUMN); o das demais tabelas e os índices ficam iguais.
+      const unchangedByV6 = (list) => list.filter((r) => !(r.type === 'table' && ['stores', 'items', 'withdrawals'].includes(r.name)));
+      expect(unchangedByV6(schemaOf(db))).toEqual(unchangedByV6(schema));
       expect(db.prepare('SELECT COUNT(*) AS n FROM settings').get().n).toBe(1);
     } finally {
       db.close();

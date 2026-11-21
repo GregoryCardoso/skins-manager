@@ -5,6 +5,10 @@ import type {
   CatalogRefreshResult,
   CatalogSearchResult,
   CatalogStatus,
+  Deposit,
+  DepositCreateBody,
+  DepositList,
+  DepositPatchBody,
   ErrorParams,
   HealthStatus,
   ItemCreateBody,
@@ -201,6 +205,15 @@ export const createStore = (body: StoreCreateBody) => request<Store>('POST', '/s
 export const updateStore = (id: number, body: StorePatchBody) => request<Store>('PATCH', `/stores/${id}`, { body });
 
 export const deleteStore = (id: number) => request<{ id: number }>('DELETE', `/stores/${id}`);
+
+// Aportes (D202): lista com totais calculados no backend; o frontend não soma nada.
+export const listDeposits = (signal?: AbortSignal) => request<DepositList>('GET', '/deposits', { signal });
+
+export const createDeposit = (body: DepositCreateBody) => request<Deposit>('POST', '/deposits', { body });
+
+export const updateDeposit = (id: number, body: DepositPatchBody) => request<Deposit>('PATCH', `/deposits/${id}`, { body });
+
+export const deleteDeposit = (id: number) => request<{ id: number }>('DELETE', `/deposits/${id}`);
 
 export const updateFxRate = (usdBrlRate: number) =>
   request<Settings>('PUT', '/settings/fx-rate', { body: { usdBrlRate } });

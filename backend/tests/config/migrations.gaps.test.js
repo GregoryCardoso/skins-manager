@@ -8,6 +8,7 @@ const os = require('os');
 const path = require('path');
 const Database = require('better-sqlite3');
 const { openDatabase, runMigrations } = require('../../src/config/database');
+const { stripV6Rows } = require('../helpers/stripV6');
 const { MIGRATIONS } = require('../../src/config/migrations');
 const v001 = require('../../src/config/migrations/v001_initial');
 const v002 = require('../../src/config/migrations/v002_catalog');
@@ -75,16 +76,16 @@ describe('v1 com dados -> v2', () => {
 
     const db = openDatabase(dbPath);
     try {
-      expect(dump(db, 'stores')).toEqual(before.stores);
+      expect(stripV6Rows(dump(db, 'stores'))).toEqual(before.stores); // v6 acrescenta a retenção
       expect(dump(db, 'deposits')).toEqual(before.deposits);
-      expect(dump(db, 'withdrawals')).toEqual(before.withdrawals);
+      expect(stripV6Rows(dump(db, 'withdrawals'))).toEqual(before.withdrawals);
       expect(dump(db, 'store_balances')).toEqual(before.balances);
 
       const after = dump(db, 'items');
       expect(after).toHaveLength(before.items.length);
       after.forEach((row, i) => {
         const old = before.items[i];
-        const { catalog_id: catalogId, net_received_manual: manual, ...rest } = row;
+        const { catalog_id: catalogId, net_received_manual: manual, sale_hold_days_applied: hold, ...rest } = row;
         expect(manual).toBe(0);
         expect(catalogId).toBeNull();
         if (old.acquisition_type === 'GANHEI') {
@@ -159,7 +160,7 @@ describe('falha na própria v2', () => {
     expect(() => openDatabase(dbPath, { migrations: [v001, failingV2], now: new Date('2026-11-20T09:00:00.000Z') })).toThrow();
     const db = openDatabase(dbPath, { now: new Date('2026-11-20T09:05:00.000Z') });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(5);
+      expect(db.pragma('user_version', { simple: true })).toBe(6);
       expect(db.prepare("SELECT purchase_price_cents AS c FROM items WHERE name = 'Ganhei BRL com cotação'").get().c).toBe(0);
       expect(db.prepare('SELECT COUNT(*) AS n FROM items').get().n).toBe(5);
     } finally {
@@ -181,7 +182,7 @@ describe('idempotência', () => {
     for (let i = 0; i < 3; i += 1) {
       const db = openDatabase(dbPath, { now: new Date(`2026-11-2${i + 1}T08:00:00.000Z`) });
       snapshots.push(JSON.stringify([dump(db, 'items'), dump(db, 'stores'), dump(db, 'settings')]));
-      expect(db.pragma('user_version', { simple: true })).toBe(5);
+      expect(db.pragma('user_version', { simple: true })).toBe(6);
       db.close();
     }
     expect(new Set(snapshots).size).toBe(1);
@@ -191,8 +192,8 @@ describe('idempotência', () => {
   test('runMigrations repetido em memória: segunda chamada aplica nada', () => {
     const db = openDatabase(':memory:', { migrations: [v001] });
     try {
-      expect(runMigrations(db, MIGRATIONS)).toMatchObject({ from: 1, to: 5, applied: [2, 3, 4, 5], backupPath: null });
-      expect(runMigrations(db, MIGRATIONS)).toMatchObject({ from: 5, to: 5, applied: [], backupPath: null });
+      expect(runMigrations(db, MIGRATIONS)).toMatchObject({ from: 1, to: 6, applied: [2, 3, 4, 5, 6], backupPath: null });
+      expect(runMigrations(db, MIGRATIONS)).toMatchObject({ from: 6, to: 6, applied: [], backupPath: null });
     } finally {
       db.close();
     }

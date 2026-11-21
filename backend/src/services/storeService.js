@@ -4,7 +4,9 @@
 const Store = require('../models/Store');
 const { runInTransaction } = require('../models/modelHelpers');
 const { ValidationError, NotFoundError, ConflictError } = require('../errors/AppError');
-const { MAX_AMOUNT_CENTS, MAX_STORE_NAME_LENGTH, RATE_MAX_DECIMALS } = require('../config/constants');
+const {
+  MAX_AMOUNT_CENTS, MAX_STORE_NAME_LENGTH, RATE_MAX_DECIMALS, MAX_SALE_HOLD_DAYS,
+} = require('../config/constants');
 const { saleFeeParamsFromStore } = require('./fees');
 const { computeSale } = require('./pricingService');
 
@@ -26,6 +28,7 @@ const STORE_DEFAULTS = Object.freeze({
   allowsWithdrawal: false,
   withdrawalFeeRate: null,
   withdrawalFixedFeeCents: 0,
+  saleHoldDays: 0,
 });
 const STORE_FIELDS = Object.keys(STORE_DEFAULTS);
 
@@ -83,7 +86,7 @@ function assertCents(value, field) {
 }
 
 // Registro final da loja (puro): padrões + gravado + parcial, validado nesta ordem:
-// nome, moeda, listas, taxas, centavos, par tipo/taxa, principal/ativa.
+// nome, moeda, listas, taxas, centavos, retenção, par tipo/taxa, principal/ativa.
 // `nameTaken` = outro registro já usa o nome (consulta feita pelo chamador); `inUse` trava a moeda.
 function buildStoreRecord(input, { existing = null, inUse = false, nameTaken = false } = {}) {
   const base = existing ? Object.fromEntries(STORE_FIELDS.map((f) => [f, existing[f]])) : { ...STORE_DEFAULTS };
@@ -128,6 +131,14 @@ function buildStoreRecord(input, { existing = null, inUse = false, nameTaken = f
   if (!isNil(record.saleMinFeeCents)) assertCents(record.saleMinFeeCents, 'saleMinFeeCents');
   assertCents(record.saleFixedFeeCents, 'saleFixedFeeCents');
   assertCents(record.withdrawalFixedFeeCents, 'withdrawalFixedFeeCents');
+
+  // 5b. retenção do saldo após a venda (D213): inteiro de 0 a 30
+  if (!Number.isSafeInteger(record.saleHoldDays) || record.saleHoldDays < 0 || record.saleHoldDays > MAX_SALE_HOLD_DAYS) {
+    throw new ValidationError(
+      `A retenção deve ser um número inteiro de dias entre 0 e ${MAX_SALE_HOLD_DAYS}.`, 'INVALID_SALE_HOLD_DAYS',
+      { field: 'saleHoldDays', params: { min: 0, max: MAX_SALE_HOLD_DAYS } }
+    );
+  }
 
   // 6. par tipo/taxa de venda: os dois ou nenhum
   if (isNil(record.saleFeeType) !== isNil(record.saleFeeRate)) {

@@ -4,6 +4,7 @@ const storeRoutes = require('./storeRoutes');
 const settingsRoutes = require('./settingsRoutes');
 const catalogRoutes = require('./catalogRoutes');
 const backupRoutes = require('./backupRoutes');
+const depositRoutes = require('./depositRoutes');
 
 const { APP_NAME, APP_VERSION } = require('../config/appInfo');
 
@@ -18,5 +19,6 @@ router.use('/stores', storeRoutes);
 router.use('/settings', settingsRoutes);
 router.use('/catalog', catalogRoutes);
 router.use('/backup', backupRoutes);
+router.use('/deposits', depositRoutes);
 
 module.exports = router;

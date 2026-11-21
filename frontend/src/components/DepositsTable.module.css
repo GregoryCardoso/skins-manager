@@ -1,0 +1,22 @@
+.scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+.table { width: 100%; border-collapse: collapse; min-width: 40rem; }
+.table th {
+  text-align: left; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted);
+  padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--border); background: var(--surface-alt); white-space: nowrap;
+}
+.table td { padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+.row:last-child td { border-bottom: none; }
+.amount { font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 600; }
+.date { white-space: nowrap; }
+.muted { color: var(--text-muted); }
+.note { max-width: 24rem; overflow-wrap: anywhere; }
+.actions { display: flex; gap: 0.45rem; flex-wrap: wrap; }
+.button {
+  font: inherit; font-size: 0.8rem; color: var(--text); background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; padding: 0.2rem 0.6rem; cursor: pointer; white-space: nowrap;
+}
+.button:hover:not(:disabled) { border-color: var(--accent); }
+.button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.button:disabled { opacity: 0.5; cursor: not-allowed; }
+.danger { color: var(--danger); }
+.danger:hover:not(:disabled) { border-color: var(--danger); }

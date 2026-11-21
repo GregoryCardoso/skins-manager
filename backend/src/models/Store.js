@@ -4,6 +4,7 @@ const { mapRow, insertRow, updateRow } = require('./modelHelpers');
 const FIELDS = [
   'name', 'currency', 'isActive', 'isPrimary', 'saleFeeType', 'saleFeeRate', 'saleFeeRounding',
   'saleMinFeeCents', 'saleFixedFeeCents', 'allowsWithdrawal', 'withdrawalFeeRate', 'withdrawalFixedFeeCents',
+  'saleHoldDays',
 ];
 const BOOLEANS = ['isActive', 'isPrimary', 'allowsWithdrawal'];
 

@@ -26,7 +26,8 @@
     "sales": "Vendas",
     "main": "Navegação principal",
     "stores": "Lojas",
-    "settings": "Configurações"
+    "settings": "Configurações",
+    "profit": "Lucro real"
   },
   "header": {
     "preferenceNotSaved": "Preferência não salva no servidor: {reason}",
@@ -167,7 +168,10 @@
     "FX_RATE_LIMITED": "O limite de consultas da fonte foi atingido. Tente mais tarde ou use a PTAX.",
     "FX_INVALID_RESPONSE": "A resposta da fonte da cotação veio em um formato inesperado ou com valor inválido. Digite a cotação manualmente.",
     "FX_REFRESH_IN_PROGRESS": "Já existe uma atualização da cotação em andamento.",
-    "INVALID_FX_SOURCE": "Fonte de cotação inválida. Escolha a cotação comercial ou a PTAX."
+    "INVALID_FX_SOURCE": "Fonte de cotação inválida. Escolha a cotação comercial ou a PTAX.",
+    "INVALID_SALE_HOLD_DAYS": "A retenção deve ser um número inteiro de dias, de 0 a 30.",
+    "DEPOSITED_AT_IN_FUTURE": "A data do aporte não pode estar no futuro.",
+    "DEPOSIT_NOT_FOUND": "O aporte não foi encontrado."
   },
   "warnings": {
     "FEES_NOT_CONFIGURED": "As taxas da loja não estão configuradas.",
@@ -427,7 +431,12 @@
     "withdrawalFixedFeeCents": "Taxa fixa de saque",
     "isActive": "Ativa",
     "isPrimary": "Principal",
-    "currency": "Moeda"
+    "currency": "Moeda",
+    "amountBrlCents": "Valor",
+    "depositedAt": "Data do aporte",
+    "storeId": "Loja",
+    "note": "Observação",
+    "saleHoldDays": "Retenção do saldo"
   },
   "errorDetails": {
     "INVALID_RATE": "A taxa deve ser maior ou igual a 0% e menor que 100%, com no máximo {maxDecimals} casas decimais no percentual.",
@@ -443,7 +452,8 @@
     "FX_RATE_LIMITED": "O limite de consultas da fonte ({source}) foi atingido. Tente mais tarde ou use outra fonte.",
     "FX_INVALID_RESPONSE": "A resposta da fonte ({source}) veio em um formato inesperado ou com valor inválido. Digite a cotação manualmente.",
     "FX_REFRESH_IN_PROGRESS": "Já existe uma atualização da cotação em andamento ({source}).",
-    "PTAX_NOT_FOUND": "O Banco Central não publicou a PTAX nos últimos dias. Tente mais tarde, use a cotação comercial ou digite a cotação manualmente."
+    "PTAX_NOT_FOUND": "O Banco Central não publicou a PTAX nos últimos dias. Tente mais tarde, use a cotação comercial ou digite a cotação manualmente.",
+    "INVALID_SALE_HOLD_DAYS": "A retenção deve ser um número inteiro de dias, de {min} a {max}."
   },
   "sales": {
     "title": "Vendas",
@@ -742,5 +752,55 @@
     "errorDownload": "Não foi possível baixar a atualização.",
     "errorInstall": "Não foi possível reiniciar para instalar; o app continua funcionando. Tente de novo em Configurações → Sobre.",
     "errorDetail": "Detalhes técnicos"
+  },
+  "profit": {
+    "title": "Lucro real",
+    "subtitle": "Acompanhe o dinheiro que você colocou nas lojas. Saques, saldos e o resumo chegam nas próximas atualizações."
+  },
+  "deposits": {
+    "title": "Aportes",
+    "intro": "Dinheiro que você colocou do seu bolso. A loja é só informativa: o aporte é sempre em R$.",
+    "count": {
+      "one": "{count} aporte",
+      "other": "{count} aportes"
+    },
+    "total": "Total colocado: {value}",
+    "new": "Novo aporte",
+    "empty": "Nenhum aporte registrado",
+    "emptyHint": "Registre cada vez que colocar dinheiro nas lojas. Isso entra no cálculo do lucro real.",
+    "loadError": "Não foi possível carregar os aportes: {reason}",
+    "gone": "O aporte não existe mais. A lista foi atualizada.",
+    "created": "Aporte de {value} registrado.",
+    "updated": "Aporte atualizado.",
+    "deleted": "Aporte de {value} excluído.",
+    "columns": {
+      "date": "Data",
+      "amount": "Valor",
+      "store": "Loja",
+      "note": "Observação",
+      "actions": "Ações"
+    },
+    "noStore": "—",
+    "inactiveStore": "{name} (inativa)",
+    "actions": {
+      "edit": "Editar",
+      "delete": "Excluir"
+    },
+    "deleteTitle": "Excluir aporte",
+    "deleteMessage": "Excluir o aporte de {value} feito em {date}? Esta ação não pode ser desfeita.",
+    "confirmDelete": "Excluir",
+    "form": {
+      "createTitle": "Novo aporte",
+      "editTitle": "Editar aporte",
+      "amount": "Valor (R$)",
+      "date": "Data do aporte",
+      "store": "Loja (opcional)",
+      "noStore": "Sem loja",
+      "storeHint": "Só informativa: não muda a moeda do aporte nem o saldo da loja.",
+      "note": "Observação (opcional)",
+      "amountRequired": "Informe o valor do aporte.",
+      "invalidMoney": "Valor inválido. Use o formato 1,25, maior que zero.",
+      "invalidDate": "Data inválida."
+    }
   }
 }

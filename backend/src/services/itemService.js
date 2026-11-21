@@ -39,6 +39,7 @@ const SALE_FIELDS_NULL = {
   netReceivedCents: null,
   netReceivedManual: false,
   soldAt: null,
+  saleHoldDaysApplied: null,
 };
 
 const isNil = (v) => v === null || v === undefined;
@@ -319,8 +320,9 @@ function buildSaleRecord(item, input, { store, settings = null, now = new Date()
       netReceivedCents,
       netReceivedManual,
       soldAt: soldAt.toISOString(),
+      saleHoldDaysApplied: store.saleHoldDays, // snapshot da retenção vigente (D214)
     },
-    sale: { netReceivedCents, feeCents, netReceivedManual },
+    sale: { netReceivedCents, feeCents, netReceivedManual, saleHoldDaysApplied: store.saleHoldDays },
   };
 }
 

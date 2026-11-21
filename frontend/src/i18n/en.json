@@ -26,7 +26,8 @@
     "sales": "Sales",
     "main": "Main navigation",
     "stores": "Stores",
-    "settings": "Settings"
+    "settings": "Settings",
+    "profit": "Real profit"
   },
   "header": {
     "preferenceNotSaved": "Preference not saved on the server: {reason}",
@@ -167,7 +168,10 @@
     "FX_RATE_LIMITED": "The source's query limit was reached. Try again later or use the PTAX.",
     "FX_INVALID_RESPONSE": "The exchange rate source returned an unexpected format or an invalid value. Type the rate manually.",
     "FX_REFRESH_IN_PROGRESS": "A rate update is already in progress.",
-    "INVALID_FX_SOURCE": "Invalid exchange rate source. Choose the commercial rate or the PTAX."
+    "INVALID_FX_SOURCE": "Invalid exchange rate source. Choose the commercial rate or the PTAX.",
+    "INVALID_SALE_HOLD_DAYS": "The hold must be a whole number of days, from 0 to 30.",
+    "DEPOSITED_AT_IN_FUTURE": "The deposit date cannot be in the future.",
+    "DEPOSIT_NOT_FOUND": "The deposit was not found."
   },
   "warnings": {
     "FEES_NOT_CONFIGURED": "The store fees are not configured.",
@@ -427,7 +431,12 @@
     "withdrawalFixedFeeCents": "Fixed withdrawal fee",
     "isActive": "Active",
     "isPrimary": "Primary",
-    "currency": "Currency"
+    "currency": "Currency",
+    "amountBrlCents": "Amount",
+    "depositedAt": "Deposit date",
+    "storeId": "Store",
+    "note": "Note",
+    "saleHoldDays": "Balance hold"
   },
   "errorDetails": {
     "INVALID_RATE": "The rate must be at least 0% and below 100%, with at most {maxDecimals} decimal places in the percentage.",
@@ -443,7 +452,8 @@
     "FX_RATE_LIMITED": "The query limit of the source ({source}) was reached. Try again later or use another source.",
     "FX_INVALID_RESPONSE": "The response from the source ({source}) had an unexpected format or an invalid value. Type the rate manually.",
     "FX_REFRESH_IN_PROGRESS": "A rate update is already in progress ({source}).",
-    "PTAX_NOT_FOUND": "The Central Bank has not published the PTAX rate in recent days. Try again later, use the commercial rate or type the rate manually."
+    "PTAX_NOT_FOUND": "The Central Bank has not published the PTAX rate in recent days. Try again later, use the commercial rate or type the rate manually.",
+    "INVALID_SALE_HOLD_DAYS": "The hold must be a whole number of days, from {min} to {max}."
   },
   "sales": {
     "title": "Sales",
@@ -742,5 +752,55 @@
     "errorDownload": "The update could not be downloaded.",
     "errorInstall": "Could not restart to install; the app keeps working. Try again in Settings → About.",
     "errorDetail": "Technical details"
+  },
+  "profit": {
+    "title": "Real profit",
+    "subtitle": "Track the money you put into the stores. Withdrawals, balances and the summary arrive in upcoming updates."
+  },
+  "deposits": {
+    "title": "Deposits",
+    "intro": "Money you put in from your own pocket. The store is informational only: a deposit is always in R$.",
+    "count": {
+      "one": "{count} deposit",
+      "other": "{count} deposits"
+    },
+    "total": "Total deposited: {value}",
+    "new": "New deposit",
+    "empty": "No deposits recorded",
+    "emptyHint": "Record every time you put money into the stores. It counts toward the real profit.",
+    "loadError": "Could not load the deposits: {reason}",
+    "gone": "The deposit no longer exists. The list was refreshed.",
+    "created": "Deposit of {value} recorded.",
+    "updated": "Deposit updated.",
+    "deleted": "Deposit of {value} deleted.",
+    "columns": {
+      "date": "Date",
+      "amount": "Amount",
+      "store": "Store",
+      "note": "Note",
+      "actions": "Actions"
+    },
+    "noStore": "—",
+    "inactiveStore": "{name} (inactive)",
+    "actions": {
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "deleteTitle": "Delete deposit",
+    "deleteMessage": "Delete the deposit of {value} made on {date}? This action cannot be undone.",
+    "confirmDelete": "Delete",
+    "form": {
+      "createTitle": "New deposit",
+      "editTitle": "Edit deposit",
+      "amount": "Amount (R$)",
+      "date": "Deposit date",
+      "store": "Store (optional)",
+      "noStore": "No store",
+      "storeHint": "Informational only: it does not change the deposit currency or the store balance.",
+      "note": "Note (optional)",
+      "amountRequired": "Enter the deposit amount.",
+      "invalidMoney": "Invalid amount. Use the format 1.25, greater than zero.",
+      "invalidDate": "Invalid date."
+    }
   }
 }

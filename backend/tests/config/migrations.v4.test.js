@@ -6,6 +6,7 @@ const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
 const { openDatabase } = require('../../src/config/database');
+const { stripV6Rows } = require('../helpers/stripV6');
 const { MIGRATIONS } = require('../../src/config/migrations');
 
 let tmpRoot;
@@ -32,9 +33,9 @@ describe('migração v4', () => {
 
     const db = openDatabase(dbPath, { now: new Date('2026-11-20T12:00:00.000Z') });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(5);
+      expect(db.pragma('user_version', { simple: true })).toBe(6);
       expect(db.pragma('application_id', { simple: true })).toBe(1397444935);
-      expect(db.prepare('SELECT * FROM stores ORDER BY id').all()).toEqual(storesBefore);
+      expect(stripV6Rows(db.prepare('SELECT * FROM stores ORDER BY id').all())).toEqual(storesBefore);
       expect(db.prepare('SELECT * FROM settings').get()).toMatchObject({
         usd_brl_rate: 5.1, usd_brl_rate_source: 'MANUAL', rate_quoted_at: null, slow_item_days: null,
         fast_turnover_days: null, stores_seeded: 1,
@@ -105,7 +106,7 @@ describe('migração v4', () => {
 
     const db = openDatabase(dbPath, { now: new Date('2026-11-20T12:00:00.000Z') });
     try {
-      for (const t of tables) expect(db.prepare(`SELECT * FROM ${t} ORDER BY id`).all()).toEqual(before[t]);
+      for (const t of tables) expect(stripV6Rows(db.prepare(`SELECT * FROM ${t} ORDER BY id`).all())).toEqual(before[t]);
       expect(before.items).toHaveLength(2);
       expect(db.prepare('SELECT stores_seeded AS f FROM settings').get().f).toBe(1);
     } finally {

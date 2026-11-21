@@ -189,6 +189,8 @@ export interface ItemView {
   netReceivedCents: number | null;
   netReceivedManual: boolean;
   soldAt: string | null;
+  // Snapshot da retenção do saldo na venda (D214); nulo em estoque e em vendas anteriores à v6. Só leitura.
+  saleHoldDaysApplied?: number | null;
   tradeLock: TradeLock;
   aging: Aging;
   minPrices: MinPrice[] | null;
@@ -264,6 +266,8 @@ export interface Store {
   allowsWithdrawal: boolean;
   withdrawalFeeRate: number | null;
   withdrawalFixedFeeCents: number;
+  // Dias de retenção do saldo após a venda (D213); a tela de Lojas passa a usar na 8.3.
+  saleHoldDays?: number;
   createdAt: string;
   updatedAt: string;
   saleFeesConfigured: boolean;
@@ -287,6 +291,33 @@ export interface StoreCreateBody {
 }
 
 export type StorePatchBody = Partial<StoreCreateBody>;
+
+// --- Aportes (D202) ---
+
+export interface Deposit {
+  id: number;
+  amountBrlCents: number;
+  depositedAt: string;
+  storeId: number | null;
+  storeName: string | null;
+  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DepositList {
+  deposits: Deposit[];
+  totals: { count: number; amountBrlCents: number };
+}
+
+export interface DepositCreateBody {
+  amountBrlCents: number;
+  depositedAt: string;
+  storeId?: number | null;
+  note?: string | null;
+}
+
+export type DepositPatchBody = Partial<DepositCreateBody>;
 
 // --- Catálogo (busca do formulário, D115) ---
 

@@ -6,7 +6,7 @@ const FIELDS = [
   'acquisitionType', 'originDetail', 'purchaseStoreId', 'purchasePriceCents', 'purchaseCurrency',
   'fxRateAtPurchase', 'acquiredAt', 'tradeUnlockAt', 'status', 'saleStoreId', 'salePriceCents',
   'saleCurrency', 'fxRateAtSale', 'saleFeeTypeApplied', 'saleFeeRateApplied', 'saleFeeRoundingApplied',
-  'saleMinFeeCentsApplied', 'saleFixedFeeCentsApplied', 'netReceivedCents', 'netReceivedManual', 'soldAt',
+  'saleMinFeeCentsApplied', 'saleFixedFeeCentsApplied', 'netReceivedCents', 'netReceivedManual', 'soldAt', 'saleHoldDaysApplied',
 ];
 const BOOLEAN_FIELDS = ['netReceivedManual'];
 const toItem = (row) => mapRow(row, BOOLEAN_FIELDS);

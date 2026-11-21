@@ -32,6 +32,8 @@ export function errorDetailParams(
     case 'INVALID_RATE':
       // O backend envia as casas da fração (6); no formulário o percentual tem 2 a menos (4).
       return typeof p.maxDecimals === 'number' ? { maxDecimals: Math.max(0, p.maxDecimals - 2) } : null;
+    case 'INVALID_SALE_HOLD_DAYS':
+      return typeof p.min === 'number' && typeof p.max === 'number' ? { min: p.min, max: p.max } : null;
     case 'PAYLOAD_TOO_LARGE':
       return typeof p.maxBytes === 'number' ? { maxMb: Math.round(p.maxBytes / (1024 * 1024)) } : null;
     case 'BACKUP_NEWER_VERSION':

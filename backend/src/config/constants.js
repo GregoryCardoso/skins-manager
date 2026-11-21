@@ -18,7 +18,9 @@ const MAX_PHASE_LENGTH = 100;
 const MAX_STORE_NAME_LENGTH = 50; // D145
 // Casas decimais máximas das taxas percentuais de loja (0.025 = 2,5%); a tela usa % com até 4 casas.
 const RATE_MAX_DECIMALS = 6;
-const MAX_NOTE_LENGTH = 500; // note de deposits/withdrawals (Etapa 7); sem validador nesta etapa
+// Retenção do saldo após a venda, em dias (D213): 0 = disponível na hora.
+const MAX_SALE_HOLD_DAYS = 30;
+const MAX_NOTE_LENGTH = 500; // note de deposits e withdrawals (Etapa 8); validada no depositService e, na 8.2, no withdrawalService
 
 // Catálogo de itens (D70, D80, D81).
 // Adendo D80: o GitHub Pages antigo (bymykel.github.io) redireciona para um 404; a API hospedada vive no raw do GitHub.
@@ -96,6 +98,7 @@ module.exports = Object.freeze({
   MAX_PHASE_LENGTH,
   MAX_NOTE_LENGTH,
   MAX_STORE_NAME_LENGTH,
+  MAX_SALE_HOLD_DAYS,
   RATE_MAX_DECIMALS,
   CATALOG_BASE_URL,
   CATALOG_LANGUAGES,

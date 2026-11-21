@@ -20,7 +20,7 @@ describe('AppHeader', () => {
   const html = renderToStaticMarkup(createElement(AppHeader));
 
   test('mantém o menu e os controles de tema e idioma', () => {
-    for (const key of ['nav.inventory', 'nav.sales', 'nav.stores', 'nav.settings']) expect(html).toContain(key);
+    for (const key of ['nav.inventory', 'nav.sales', 'nav.profit', 'nav.stores', 'nav.settings']) expect(html).toContain(key);
     expect(html).toContain('header-controls');
   });
 

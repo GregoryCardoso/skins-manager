@@ -138,7 +138,7 @@ describe('snapshot das taxas, netReceived e lucro (D18, D31)', () => {
     const res = await sell(item.id, sellBody({ salePriceCents: 1000 }));
     expect(res.status).toBe(200);
     // max(round(1000 × 0.02) = 20, 30) + 5 = 35 -> líquido 965; lucro 965 − 100.
-    expect(res.body.data.sale).toEqual({ netReceivedCents: 965, feeCents: 35, saleProfitUsdCents: 865, netReceivedManual: false });
+    expect(res.body.data.sale).toEqual({ netReceivedCents: 965, feeCents: 35, saleProfitUsdCents: 865, netReceivedManual: false, saleHoldDaysApplied: 7 });
     expect(res.body.data.item).toMatchObject({
       saleFeeTypeApplied: 'DEDUCTED', saleFeeRateApplied: 0.02, saleFeeRoundingApplied: 'ROUND',
       saleMinFeeCentsApplied: 30, saleFixedFeeCentsApplied: 5, netReceivedCents: 965,
@@ -163,7 +163,7 @@ describe('snapshot das taxas, netReceived e lucro (D18, D31)', () => {
     const res = await sell(item.id, sellBody({ saleStoreId: storeId('Steam'), salePriceCents: 1150, fxRateAtSale: 5.5 }));
     expect(res.status).toBe(200);
     // recebido 1000 BRL (taxa 150); 1000/5.5 = 181,8 -> 182 USD¢; custo 1000/5 = 200 USD¢.
-    expect(res.body.data.sale).toEqual({ netReceivedCents: 1000, feeCents: 150, saleProfitUsdCents: -18, netReceivedManual: false });
+    expect(res.body.data.sale).toEqual({ netReceivedCents: 1000, feeCents: 150, saleProfitUsdCents: -18, netReceivedManual: false, saleHoldDaysApplied: 0 });
     expect(res.body.data.item).toMatchObject({
       saleCurrency: 'BRL', fxRateAtSale: 5.5, saleFeeTypeApplied: 'ADDED', saleFeeRateApplied: 0.15,
     });
@@ -183,7 +183,7 @@ describe('snapshot das taxas, netReceived e lucro (D18, D31)', () => {
   test('GANHEI sem preço (custo 0): lucro = líquido', async () => {
     const item = await createItemViaApi(app, { catalogId: CAT.CASE_REVOLVER, acquisitionType: 'GANHEI', acquiredAt: '2026-11-10T12:00:00.000Z' });
     const res = await sell(item.id, sellBody());
-    expect(res.body.data.sale).toEqual({ netReceivedCents: 122, feeCents: 3, saleProfitUsdCents: 122, netReceivedManual: false });
+    expect(res.body.data.sale).toEqual({ netReceivedCents: 122, feeCents: 3, saleProfitUsdCents: 122, netReceivedManual: false, saleHoldDaysApplied: 7 });
   });
 
   test('cotação de venda inválida em BRL -> INVALID_FX_RATE; null em USD é aceito', async () => {

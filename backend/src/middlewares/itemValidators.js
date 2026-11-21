@@ -50,7 +50,7 @@ const SALE_FIELDS = {
 const LOCKED_FIELDS = [
   'status', 'saleStoreId', 'salePriceCents', 'saleCurrency', 'fxRateAtSale', 'saleFeeTypeApplied',
   'saleFeeRateApplied', 'saleFeeRoundingApplied', 'saleMinFeeCentsApplied', 'saleFixedFeeCentsApplied',
-  'netReceivedCents', 'netReceivedManual', 'soldAt',
+  'netReceivedCents', 'netReceivedManual', 'soldAt', 'saleHoldDaysApplied',
 ];
 
 // `extra`: { field, params } (D113). Todo erro de forma informa o campo.

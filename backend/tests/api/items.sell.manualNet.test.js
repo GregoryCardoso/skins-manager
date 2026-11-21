@@ -21,7 +21,7 @@ describe('POST /sell com netReceivedCents (D122)', () => {
     const item = await createItemViaApi(app);
     const res = await sell(item.id, { netReceivedCents: 120 });
     expect(res.status).toBe(200);
-    expect(res.body.data.sale).toEqual({ netReceivedCents: 120, feeCents: 5, saleProfitUsdCents: 20, netReceivedManual: true });
+    expect(res.body.data.sale).toEqual({ netReceivedCents: 120, feeCents: 5, saleProfitUsdCents: 20, netReceivedManual: true, saleHoldDaysApplied: 7 });
     expect(res.body.data.item).toMatchObject({
       netReceivedCents: 120, netReceivedManual: true, saleFeeTypeApplied: 'DEDUCTED', saleFeeRateApplied: 0.02,
     });
@@ -72,7 +72,7 @@ describe('POST /sell com netReceivedCents (D122)', () => {
     expectError(await sell(item.id, csmoney), 400, 'FEES_NOT_CONFIGURED', { field: 'netReceivedCents' });
     const res = await sell(item.id, { ...csmoney, netReceivedCents: 180 });
     expect(res.status).toBe(200);
-    expect(res.body.data.sale).toEqual({ netReceivedCents: 180, feeCents: 20, saleProfitUsdCents: 80, netReceivedManual: true });
+    expect(res.body.data.sale).toEqual({ netReceivedCents: 180, feeCents: 20, saleProfitUsdCents: 80, netReceivedManual: true, saleHoldDaysApplied: 7 });
     const row = getDb().prepare('SELECT * FROM items WHERE id = ?').get(item.id);
     expect(row).toMatchObject({
       sale_fee_type_applied: null, sale_fee_rate_applied: null, sale_fee_rounding_applied: null,

@@ -40,6 +40,7 @@ const BODY_FIELDS = Object.freeze({
   allowsWithdrawal: { type: BOOLEAN, nullable: false },
   withdrawalFeeRate: { type: NUMBER, nullable: true },
   withdrawalFixedFeeCents: { type: NUMBER, nullable: false },
+  saleHoldDays: { type: NUMBER, nullable: false },
   isActive: { type: BOOLEAN, nullable: false },
   isPrimary: { type: BOOLEAN, nullable: false },
 });
