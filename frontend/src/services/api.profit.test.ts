@@ -27,7 +27,7 @@ describe('resumo do lucro real (8.4)', () => {
   });
 
   test('textos do pendente e do liberado existem nos dois idiomas com os mesmos marcadores', () => {
-    for (const key of ['profit.pendingIncluded', 'profit.releasedIncluded', 'profit.estimatedNote', 'profit.summary.realProfit', 'profit.summary.warningStore']) {
+    for (const key of ['profit.pendingIncluded', 'profit.estimatedNote', 'profit.summary.realProfit', 'profit.summary.warningStore']) {
       expect(translate(ptBR, key), key).not.toBe(key);
       expect(translate(en, key), key).not.toBe(key);
       const holders = (text: string) => (text.match(/\{\w+\}/g) ?? []).sort();

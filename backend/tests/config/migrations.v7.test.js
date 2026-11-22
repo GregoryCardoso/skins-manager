@@ -62,11 +62,10 @@ function seedV6(dbPath) {
 }
 
 describe('migração v7', () => {
-  test('é a última migração e as migrações v1 a v6 publicadas continuam idênticas (hash)', () => {
-    const last = MIGRATIONS[MIGRATIONS.length - 1];
-    expect(last.version).toBe(7);
-    expect(last.name).toBe('store_currency_flows');
-    expect(last.disableForeignKeys).toBe(true);
+  test('a v7 existe com o nome certo e as migrações v1 a v7 publicadas continuam idênticas (hash)', () => {
+    const v7 = MIGRATIONS.find((m) => m.version === 7);
+    expect(v7.name).toBe('store_currency_flows');
+    expect(v7.disableForeignKeys).toBe(true);
     const dir = path.join(__dirname, '..', '..', 'src', 'config', 'migrations');
     expect(sha(path.join(dir, 'v001_initial.js'))).toBe('18514164a9ad3d10128e6b1c271ce7623d11835a9240fe9bf2f337bfced3eb1f');
     expect(sha(path.join(dir, 'v002_catalog.js'))).toBe('9e0718ac8ad78ee5e48a4bd41f591e3835ed3b1c653e95e6362f6041b56ba22f');
@@ -74,6 +73,7 @@ describe('migração v7', () => {
     expect(sha(path.join(dir, 'v004_stores_settings.js'))).toBe('d8dc15e343e815b01956323e05448684bc948d2c82e17d482187f1bf0febef47');
     expect(sha(path.join(dir, 'v005_fx_sources.js'))).toBe('6892beb82a64b3975a3b169316f30bb2e989a2a7dcb8867108d2ed2f0d572c27');
     expect(sha(path.join(dir, 'v006_withdrawal_fee_sale_hold.js'))).toBe('5ed05352931346dc6dad349701fd42dd1dd0dcd30a325798098428cc12216e24');
+    expect(sha(path.join(dir, 'v007_store_currency_flows.js'))).toBe('33458e5a958452fff91811822cbef913fdcfad716e4185f4c9f7f17a38f76d76');
   });
 
   test('banco v6 com aportes e saques antigos: nenhuma linha se perde, ids iguais, aportes viram legados', () => {
@@ -81,7 +81,7 @@ describe('migração v7', () => {
     const { snapshot } = seedV6(dbPath);
     const db = openDatabase(dbPath, { now: new Date('2026-11-21T12:00:00.000Z') });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(7);
+      expect(db.pragma('user_version', { simple: true })).toBe(9);
       const deposits = db.prepare('SELECT * FROM deposits ORDER BY id').all();
       expect(deposits).toHaveLength(3);
       expect(deposits.map((d) => d.id)).toEqual(snapshot.deposits.map((d) => d.id));
@@ -152,7 +152,7 @@ describe('migração v7', () => {
     const first = backups(dbPath).length;
     const db = openDatabase(dbPath);
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(7);
+      expect(db.pragma('user_version', { simple: true })).toBe(9);
       expect(backups(dbPath).length).toBe(first);
       expect(db.prepare('SELECT COUNT(*) AS n FROM deposits').get().n).toBe(3);
     } finally {

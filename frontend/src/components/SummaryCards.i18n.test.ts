@@ -24,15 +24,16 @@ describe('SummaryCards: chaves i18n (8.4)', () => {
   });
 
   test('todos os códigos de aviso do backend têm texto traduzido (warnings.<code>)', () => {
-    for (const code of ['FX_NOT_CONFIGURED', 'BALANCE_MAYBE_OUTDATED', 'FEES_NOT_CONFIGURED', 'PRICE_OVERFLOW']) {
+    for (const code of ['FX_NOT_CONFIGURED', 'COMPUTED_BALANCE_NEGATIVE', 'BALANCE_CURRENCY_MISMATCH', 'FEES_NOT_CONFIGURED', 'PRICE_OVERFLOW']) {
       expect(translate(ptBR, `warnings.${code}`)).not.toBe(`warnings.${code}`);
       expect(translate(en, `warnings.${code}`)).not.toBe(`warnings.${code}`);
     }
   });
 
-  test('textos do pendente e do liberado em en', () => {
+  test('textos do pendente em en e pt-BR; a linha do liberado após o registro não existe mais (D245)', () => {
     expect(translate(en, 'profit.pendingIncluded', { amount: '$1', date: 'Nov 25' })).toBe('includes $1 pending (releases from Nov 25)');
-    expect(translate(ptBR, 'profit.releasedIncluded', { amount: 'R$ 1' })).toContain('liberado após o último saldo registrado');
+    expect(translate(ptBR, 'profit.releasedIncluded')).toBe('profit.releasedIncluded');
+    expect(translate(en, 'profit.releasedIncluded')).toBe('profit.releasedIncluded');
   });
 });
 

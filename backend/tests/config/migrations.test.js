@@ -230,7 +230,7 @@ describe('migração v2 (catálogo, preferências e T32)', () => {
     const now = new Date('2026-11-20T12:00:00.000Z');
     const db = openDatabase(dbPath, { now });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(7);
+      expect(db.pragma('user_version', { simple: true })).toBe(9);
       expect(db.prepare('SELECT name FROM stores ORDER BY id').all().map((r) => r.name)).toEqual(['CSFloat', 'Steam', 'CSMoney']);
       const items = db.prepare('SELECT name, catalog_id FROM items ORDER BY id').all();
       expect(items).toEqual([
@@ -275,15 +275,15 @@ describe('migração v2 (catálogo, preferências e T32)', () => {
     }
   });
 
-  test('o último user_version é 7', () => {
-    expect(MIGRATIONS[MIGRATIONS.length - 1].version).toBe(7);
+  test('o último user_version é 9', () => {
+    expect(MIGRATIONS[MIGRATIONS.length - 1].version).toBe(9);
   });
 
-  test('banco com user_version = 8 é recusado e o arquivo fica inalterado', () => {
+  test('banco com user_version = 10 é recusado e o arquivo fica inalterado', () => {
     const dbPath = newDbPath();
     openDatabase(dbPath).close();
     const raw = new (require('better-sqlite3'))(dbPath);
-    raw.pragma('user_version = 8');
+    raw.pragma('user_version = 10');
     raw.pragma('wal_checkpoint(TRUNCATE)');
     raw.close();
     const before = hashFile(dbPath);

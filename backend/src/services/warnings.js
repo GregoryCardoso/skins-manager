@@ -5,7 +5,8 @@
 const WARNINGS = Object.freeze({
   FEES_NOT_CONFIGURED: Object.freeze({ code: 'FEES_NOT_CONFIGURED', text: 'taxas não configuradas' }),
   FX_NOT_CONFIGURED: Object.freeze({ code: 'FX_NOT_CONFIGURED', text: 'cotação não configurada' }),
-  BALANCE_MAYBE_OUTDATED: Object.freeze({ code: 'BALANCE_MAYBE_OUTDATED', text: 'saldo possivelmente desatualizado' }),
+  COMPUTED_BALANCE_NEGATIVE: Object.freeze({ code: 'COMPUTED_BALANCE_NEGATIVE', text: 'saldo calculado negativo' }),
+  BALANCE_CURRENCY_MISMATCH: Object.freeze({ code: 'BALANCE_CURRENCY_MISMATCH', text: 'item em moeda diferente da loja ignorado no saldo' }),
   PRICE_OVERFLOW: Object.freeze({ code: 'PRICE_OVERFLOW', text: 'valor alto demais para calcular o preço mínimo' }),
 });
 

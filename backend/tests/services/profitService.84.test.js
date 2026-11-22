@@ -1,6 +1,6 @@
 'use strict';
 
-// Lucro real em USD (8.5, D225, D226): o exemplo de D226 centavo a centavo, a referência só em USD, sem cotação e bordas.
+// Lucro real em USD (8.5, D225, D226; saldo calculado da 8.6, D239/D245): o exemplo de D226 centavo a centavo, a referência só em USD, sem cotação e bordas.
 const { computeRealProfit, estimateStockUsd } = require('../../src/services/profitService');
 const { buildCurrentBalances } = require('../../src/services/storeBalanceService');
 const { csfloat, steam, csmoney } = require('../helpers/storeFixtures');
@@ -10,10 +10,17 @@ const RATE = 5.4321;
 const SETTINGS = { usdBrlRate: RATE };
 const NO_FX = { usdBrlRate: null };
 
-const balancesOf = (args) => buildCurrentBalances({ withdrawals: [], items: [], latestBalances: [], settings: SETTINGS, now: NOW, ...args });
-const latest = (storeId, balanceCents, recordedAt) => ({ id: storeId, storeId, balanceCents, recordedAt, fxRate: null });
+// `latest(...)` agora vira um aporte da loja (não existe mais saldo inicial, D252): o saldo calculado parte de 0.
+const asDeposits = (list) => list.map((b) => ({ storeId: b.storeId, amountStoreCents: b.balanceCents, depositedAt: b.recordedAt }));
+// `latestBalances` são saldos iniciais (âncora do cálculo, D239).
+const balancesOf = ({ latestBalances = [], ...args } = {}) => buildCurrentBalances({
+  withdrawals: [], items: [], deposits: asDeposits(latestBalances), settings: SETTINGS, now: NOW, ...args,
+});
+const latest = (storeId, balanceCents, recordedAt) => ({
+  id: storeId, storeId, kind: 'INITIAL', balanceCents, computedCents: null, adjustmentCents: null, recordedAt, fxRate: null,
+});
 const sale = (storeId, net, soldAt, days = 7) => ({
-  status: 'VENDIDO', saleStoreId: storeId, netReceivedCents: net, soldAt, saleHoldDaysApplied: days, purchaseStoreId: null,
+  status: 'VENDIDO', saleStoreId: storeId, saleCurrency: storeId === 2 ? 'BRL' : 'USD', netReceivedCents: net, soldAt, saleHoldDaysApplied: days, purchaseStoreId: null,
   acquiredAt: '2026-01-01T00:00:00.000Z',
 });
 // COMPRA em USD, COMPRA na Steam (BRL, cotação gravada 5,0000) e GANHEI (0).
@@ -56,25 +63,27 @@ describe('computeRealProfit: exemplo de D226 (8.5)', () => {
     expect(r.baseCurrency).toBe('USD');
     expect(r.depositsUsdCents).toBe(14723); // 9200 + ROUND(30000 / 5,4321) = 5523
     expect(r.withdrawalsNetUsdCents).toBe(11591); // 9750 + ROUND(10000 / 5,4321) = 1841
-    expect(r.platformBalanceUsdCents).toBe(13191); // 12346 + ROUND(4590 / 5,4321) = 845 + 0
+    // disponível calculado (D252, sem corte por data): CSFloat 12346 + vendas liberadas F 1200 e D 1500 − saque 10000 = 5046;
+    // Steam ROUND((4590 + 800) / 5,4321) = 992; CSMoney 600 liberado. Não há parcela "liberado após o registro" (D245).
+    expect(r.platformBalanceUsdCents).toBe(6638); // 5046 + 992 + 600
     expect(r.pendingBalanceUsdCents).toBe(8500);
-    expect(r.releasedAfterBalanceUsdCents).toBe(1800);
+    expect(r).not.toHaveProperty('releasedAfterBalanceUsdCents');
     expect(r.stockUsdCents).toBe(1500); // 1000 + 2500 / 5,0 = 500 (cotação gravada) + 0
-    expect(r.realProfitUsdCents).toBe(21859);
+    expect(r.realProfitUsdCents).toBe(13506); // 11591 + 6638 + 8500 + 1500 - 14723
     expect(r.nextReleaseAt).toBe('2026-11-25T09:00:00.000Z');
   });
 
   test('"≈ R$" de cada total vem do backend, sobre o total já somado', () => {
     expect(r.approxBrl).toEqual({
-      deposits: 79977, withdrawals: 62963, platformBalance: 71655, pendingBalance: 46173, releasedAfterBalance: 9778, stock: 8148,
-      realProfit: 118740,
+      deposits: 79977, withdrawals: 62963, platformBalance: 36058, pendingBalance: 46173, stock: 8148,
+      realProfit: 73366,
     });
   });
 
   test('estimated e estimatedParts', () => {
     expect(r.estimated).toBe(true);
     expect(r.estimatedParts).toEqual({
-      deposits: true, withdrawals: true, platformBalance: true, pendingBalance: false, releasedAfterBalance: false, stock: true,
+      deposits: true, withdrawals: true, platformBalance: true, pendingBalance: false, stock: true,
     });
   });
 
@@ -87,10 +96,10 @@ describe('computeRealProfit: exemplo de D226 (8.5)', () => {
     const s = d226();
     s.deposits = [{ ...DEPOSIT_A, amountBrlCents: 1 }, DEPOSIT_B];
     s.withdrawals = [{ ...WITHDRAWAL_1, amountBrlCents: null }, WITHDRAWAL_2];
-    expect(computeRealProfit(s).realProfitUsdCents).toBe(21859);
+    expect(computeRealProfit(s).realProfitUsdCents).toBe(13506);
     s.withdrawals = [{ ...WITHDRAWAL_1, amountBrlCents: 999999 }, WITHDRAWAL_2];
     s.deposits = [{ ...DEPOSIT_A, amountBrlCents: 999999 }, DEPOSIT_B];
-    expect(computeRealProfit(s).realProfitUsdCents).toBe(21859);
+    expect(computeRealProfit(s).realProfitUsdCents).toBe(13506);
   });
 
   test('a taxa do saque só reduz o saque líquido; taxa nula conta 0 (D233) e não anula o lucro', () => {
@@ -98,14 +107,11 @@ describe('computeRealProfit: exemplo de D226 (8.5)', () => {
     s.withdrawals = [{ ...WITHDRAWAL_1, feeCents: null }, WITHDRAWAL_2];
     const noFee = computeRealProfit(s);
     expect(noFee.withdrawalsNetUsdCents).toBe(10000 + 1841);
-    expect(noFee.realProfitUsdCents).toBe(21859 + 250);
+    expect(noFee.realProfitUsdCents).toBe(13506 + 250);
   });
 
-  test('avisos: BALANCE_MAYBE_OUTDATED da CSFloat e da Steam; nenhum da CSMoney nem de aportes/saques com cotação', () => {
-    expect(r.warnings).toEqual([
-      { source: 'STORE', storeId: 1, storeName: 'CSFloat', code: 'BALANCE_MAYBE_OUTDATED', text: expect.any(String) },
-      { source: 'STORE', storeId: 2, storeName: 'Steam', code: 'BALANCE_MAYBE_OUTDATED', text: expect.any(String) },
-    ]);
+  test('avisos: nenhum (não há mais aviso de saldo desatualizado, D243; CSMoney sem saldo inicial não avisa)', () => {
+    expect(r.warnings).toEqual([]);
   });
 
   test('loja inativa continua somada; allowsWithdrawal não muda o lucro', () => {
@@ -114,14 +120,14 @@ describe('computeRealProfit: exemplo de D226 (8.5)', () => {
     const out = computeRealProfit({
       ...s, stores: flipped, balances: balancesOf({ stores: flipped, items: s.items, withdrawals: s.withdrawals, latestBalances: s.latestBalances }),
     });
-    expect(out.realProfitUsdCents).toBe(21859);
+    expect(out.realProfitUsdCents).toBe(13506);
   });
 });
 
 describe('computeRealProfit: referência só em USD (D226)', () => {
   test('24196, estimated false e sem "≈" em nenhuma parcela', () => {
     const r = computeRealProfit(d226({ onlyUsd: true }));
-    expect(r.realProfitUsdCents).toBe(24196); // 9750 + 12346 + 8500 + 1800 + 1000 - 9200
+    expect(r.realProfitUsdCents).toBe(15696); // 9750 + 5046 + 600 + 8500 + 1000 - 9200
     expect(r.estimated).toBe(false);
     expect(Object.values(r.estimatedParts).some(Boolean)).toBe(false);
     expect(r.depositsUsdCents).toBe(9200);
@@ -132,7 +138,7 @@ describe('computeRealProfit: referência só em USD (D226)', () => {
     const s = d226({ onlyUsd: true });
     const balances = balancesOf({ stores: s.stores, items: s.items, withdrawals: s.withdrawals, latestBalances: s.latestBalances, settings: NO_FX });
     const r = computeRealProfit({ ...s, balances, settings: NO_FX });
-    expect(r.realProfitUsdCents).toBe(24196);
+    expect(r.realProfitUsdCents).toBe(15696);
     expect(r.approxBrl.realProfit).toBeNull();
     expect(r.approxBrl.deposits).toBeNull();
     expect(r.warnings.some((w) => w.code === 'FX_NOT_CONFIGURED')).toBe(false);
@@ -144,12 +150,11 @@ describe('computeRealProfit: sem cotação (8.5)', () => {
   const balances = balancesOf({ stores: s.stores, items: s.items, withdrawals: s.withdrawals, latestBalances: s.latestBalances, settings: NO_FX });
   const r = computeRealProfit({ ...s, balances, settings: NO_FX });
 
-  test('aportes, saques e disponível ficam nulos; pendente, liberado e estoque (cotação gravada) continuam', () => {
+  test('aportes, saques e disponível ficam nulos; pendente e estoque (cotação gravada) continuam', () => {
     expect(r.depositsUsdCents).toBeNull();
     expect(r.withdrawalsNetUsdCents).toBeNull();
     expect(r.platformBalanceUsdCents).toBeNull();
     expect(r.pendingBalanceUsdCents).toBe(8500);
-    expect(r.releasedAfterBalanceUsdCents).toBe(1800);
     expect(r.stockUsdCents).toBe(1500);
     expect(r.realProfitUsdCents).toBeNull();
     expect(r.withdrawnVsDeposited.ratio).toBeNull();
@@ -195,7 +200,7 @@ describe('computeRealProfit: bordas (8.5)', () => {
 
   test('sem balances: parcelas 0 e sem avisos', () => {
     const r = computeRealProfit({ settings: SETTINGS });
-    expect([r.platformBalanceUsdCents, r.pendingBalanceUsdCents, r.releasedAfterBalanceUsdCents]).toEqual([0, 0, 0]);
+    expect([r.platformBalanceUsdCents, r.pendingBalanceUsdCents]).toEqual([0, 0]);
     expect(r.warnings).toEqual([]);
     expect(r.estimated).toBe(false);
   });

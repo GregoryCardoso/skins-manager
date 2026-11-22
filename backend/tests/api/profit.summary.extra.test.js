@@ -21,10 +21,15 @@ const get = async (url) => {
   return res.body.data;
 };
 
+// Saldo BRL da Steam vem de uma venda já liberada (aporte só existe em loja USD, D224).
+const steamSale = (steam, net) => Item.create(wonSkin({
+  name: 'steam', ...soldFields(steam, { soldAt: '2026-11-21T09:00:00.000Z', netReceivedCents: net, salePriceCents: net, saleCurrency: 'BRL', fxRateAtSale: 5.4321, saleHoldDaysApplied: 0 }),
+}), { now: NOW });
+
 describe('GET /api/profit/summary: complemento 8.4', () => {
   test('Steam BRL sem cotação: não converte (nulo + aviso); com cotação entra convertida', async () => {
     const steam = storeId('Steam');
-    StoreBalance.create({ storeId: steam, balanceCents: 4590, fxRate: null, recordedAt: '2026-11-21T09:00:00.000Z' }, { now: NOW });
+    steamSale(steam, 4590);
     const data = await get('/api/profit/summary');
     expect(data.platformBalanceUsdCents).toBeNull();
     expect(data.realProfitUsdCents).toBeNull();
@@ -38,8 +43,8 @@ describe('GET /api/profit/summary: complemento 8.4', () => {
   });
 
   test('saldo USD sem cotação: exato (1000); a Steam (BRL) fica sem US$ e o "≈ R$" nativo continua em balancesByStore', async () => {
-    StoreBalance.create({ storeId: storeId('CSFloat'), balanceCents: 1000, fxRate: null, recordedAt: '2026-11-21T09:00:00.000Z' }, { now: NOW });
-    StoreBalance.create({ storeId: storeId('Steam'), balanceCents: 4590, fxRate: null, recordedAt: '2026-11-21T09:00:00.000Z' }, { now: NOW });
+    Deposit.create({ storeId: storeId('CSFloat'), amountStoreCents: 1000, amountBrlCents: null, depositedAt: '2026-11-21T09:00:00.000Z', note: null }, { now: NOW });
+    steamSale(storeId('Steam'), 4590);
     const data = await get('/api/profit/summary');
     expect(data.platformBalanceUsdCents).toBeNull();
     expect(data.realProfitUsdCents).toBeNull();
@@ -51,12 +56,12 @@ describe('GET /api/profit/summary: complemento 8.4', () => {
   test('loja inativa (CSMoney) com saldo e venda retida continua contando', async () => {
     Setting.update({ usdBrlRate: 5 }, { now: NOW });
     const csm = storeId('CSMoney');
-    StoreBalance.create({ storeId: csm, balanceCents: 1000, fxRate: null, recordedAt: '2026-11-20T15:00:00.000Z' }, { now: NOW });
+    Deposit.create({ storeId: csm, amountStoreCents: 1000, amountBrlCents: null, depositedAt: '2026-11-20T15:00:00.000Z', note: null }, { now: NOW });
     Item.create(wonSkin({ name: 'R', ...soldFields(csm, { soldAt: '2026-11-20T18:00:00.000Z', netReceivedCents: 200, saleHoldDaysApplied: 7 }) }), { now: NOW });
     const before = await get('/api/profit/summary');
     getDb().prepare('UPDATE stores SET is_active = 0 WHERE id = ?').run(csm);
     const after = await get('/api/profit/summary');
-    expect(after.realProfitUsdCents).toBe(1200);
+    expect(after.realProfitUsdCents).toBe(200); // saldo 1000 do aporte + pendente 200 − aporte 1000
     expect(after.realProfitUsdCents).toBe(before.realProfitUsdCents);
     expect(after.pendingBalanceUsdCents).toBe(200);
   });
@@ -64,27 +69,33 @@ describe('GET /api/profit/summary: complemento 8.4', () => {
   test('a taxa paga do saque reduz só o saque líquido; o valor recebido em R$ não entra', async () => {
     Setting.update({ usdBrlRate: 5 }, { now: NOW });
     const csf = storeId('CSFloat');
+    Deposit.create({ storeId: csf, amountStoreCents: 10000, amountBrlCents: null, depositedAt: '2026-11-01T12:00:00.000Z', note: null }, { now: NOW });
     const w = Withdrawal.create({ storeId: csf, amountStoreCents: 10000, feeCents: 250, amountBrlCents: 40000, withdrawnAt: '2026-11-10T12:00:00.000Z' }, { now: NOW });
     const a = await get('/api/profit/summary');
-    expect(a.realProfitUsdCents).toBe(9750);
+    expect(a.realProfitUsdCents).toBe(-250); // saque líquido 9750 + saldo 0 − aporte 10000
     getDb().prepare('UPDATE withdrawals SET fee_cents = 9000, amount_brl_cents = NULL WHERE id = ?').run(w.id);
     const b = await get('/api/profit/summary');
-    expect(b.realProfitUsdCents).toBe(1000);
+    expect(b.realProfitUsdCents).toBe(-9000); // saque líquido 1000 + saldo 0 − aporte 10000
   });
 
   test('só aportes (sem saques): ratio 0 e lucro negativo; sem aportes: ratio null', async () => {
     Setting.update({ usdBrlRate: 5 }, { now: NOW });
-    Deposit.create({ storeId: storeId('CSFloat'), amountStoreCents: 2000, amountBrlCents: null, depositedAt: '2026-11-01T12:00:00.000Z', note: null }, { now: NOW });
+    const csf = storeId('CSFloat');
+    Deposit.create({ storeId: csf, amountStoreCents: 2000, amountBrlCents: null, depositedAt: '2026-11-01T12:00:00.000Z', note: null }, { now: NOW });
+    // o aporte credita a loja (8.6); a perda vem de um ajuste confirmado numa conferência (taxa não registrada)
+    StoreBalance.create({
+      kind: 'CHECK', storeId: csf, balanceCents: 1500, computedCents: 2000, adjustmentCents: -500, fxRate: null, note: 'taxa', recordedAt: '2026-11-05T12:00:00.000Z',
+    }, { now: NOW });
     const data = await get('/api/profit/summary');
-    expect(data.realProfitUsdCents).toBe(-2000);
-    expect(data.approxBrl.realProfit).toBe(-10000);
+    expect(data.realProfitUsdCents).toBe(-500);
+    expect(data.approxBrl.realProfit).toBe(-2500);
     expect(data.withdrawnVsDeposited.ratio).toBe(0);
   });
 
   test('consistência: balancesByStore e fx batem com /current e com as configurações', async () => {
     Setting.update({ usdBrlRate: 5.4321 }, { now: NOW });
     const csf = storeId('CSFloat');
-    StoreBalance.create({ storeId: csf, balanceCents: 12346, fxRate: null, recordedAt: '2026-11-20T15:00:00.000Z' }, { now: NOW });
+    Deposit.create({ storeId: csf, amountStoreCents: 12346, amountBrlCents: null, depositedAt: '2026-11-20T15:00:00.000Z', note: null }, { now: NOW });
     Item.create(wonSkin({ name: 'B', ...soldFields(csf, { soldAt: '2026-11-20T18:00:00.000Z', netReceivedCents: 2500, saleHoldDaysApplied: 7 }) }), { now: NOW });
     const summary = await get('/api/profit/summary');
     const current = await get('/api/store-balances/current');
@@ -92,7 +103,6 @@ describe('GET /api/profit/summary: complemento 8.4', () => {
     const sum = (pick) => current.stores.reduce((acc, row) => acc + pick(row), 0);
     expect(summary.platformBalanceUsdCents).toBe(sum((r) => r.availableUsdCents));
     expect(summary.pendingBalanceUsdCents).toBe(sum((r) => r.pending.usdCents));
-    expect(summary.releasedAfterBalanceUsdCents).toBe(sum((r) => r.releasedAfterBalance.usdCents));
     expect(summary.approxBrl.platformBalance).toBe(current.totals.approxBrl.available);
     expect(summary.approxBrl.pendingBalance).toBe(current.totals.approxBrl.pending);
     expect(summary.counts.pendingSales).toBe(1);

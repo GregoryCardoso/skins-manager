@@ -4,8 +4,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
 import { formatDate, formatMoney } from '@/lib/format';
-import { ApiRequestError, deleteStoreBalance, listStoreBalances } from '@/services/api';
-import type { StoreBalance, StoreBalanceSummary } from '@/types/api';
+import { ApiRequestError, deleteStoreBalanceEntry, listStoreBalances } from '@/services/api';
+import type { StoreBalanceEntry, StoreBalanceSummary } from '@/types/api';
+import ConfirmDialog from './ConfirmDialog';
 import tableStyles from './DepositsTable.module.css';
 import styles from './forms.module.css';
 import Modal from './Modal';
@@ -17,23 +18,24 @@ interface Props {
   onChanged: () => void;
 }
 
-// Histórico de saldos registrados da loja, do mais recente para o mais antigo; só exclusão (append-only, D204).
+// Histórico da loja (D242, D247): conferências (com calculado, diferença e ajuste) e registros antigos,
+// do mais recente para o mais antigo. Só exclusão (append-only).
 export default function StoreBalanceHistory({ store, onClose, onChanged }: Props) {
   const t = useT();
   const tLoose = useTLoose();
   const language = useLanguage();
 
-  const [balances, setBalances] = useState<StoreBalance[] | null>(null);
+  const [entries, setEntries] = useState<StoreBalanceEntry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
-  const [confirmId, setConfirmId] = useState<number | null>(null);
-  const [busyId, setBusyId] = useState<number | null>(null);
+  const [confirming, setConfirming] = useState<StoreBalanceEntry | null>(null);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
     listStoreBalances(store.storeId, controller.signal)
       .then((data) => {
-        setBalances(data.balances);
+        setEntries(data.balances);
         setError(null);
       })
       .catch((err: unknown) => {
@@ -43,71 +45,65 @@ export default function StoreBalanceHistory({ store, onClose, onChanged }: Props
     return () => controller.abort();
   }, [store.storeId, reloadToken, tLoose, language]);
 
-  const remove = useCallback((balance: StoreBalance) => {
-    setBusyId(balance.id);
+  const remove = useCallback((entry: StoreBalanceEntry) => {
+    setBusy(true);
     setError(null);
-    deleteStoreBalance(balance.id)
+    deleteStoreBalanceEntry(entry.id)
       .catch((err: unknown) => {
         // Já excluído em outro lugar: só recarrega a lista.
         if (err instanceof ApiRequestError && err.code === 'STORE_BALANCE_NOT_FOUND') return;
         setError(errorMessageFor(err, tLoose, language));
       })
       .finally(() => {
-        setBusyId(null);
-        setConfirmId(null);
+        setBusy(false);
+        setConfirming(null);
         setReloadToken((n) => n + 1);
         onChanged();
       });
   }, [tLoose, language, onChanged]);
 
+  const money = (cents: number | null) => (cents === null ? '' : formatMoney(cents, store.currency, language));
+  const kindLabel = (entry: StoreBalanceEntry) => t(entry.legacy ? 'storeBalances.kind.LEGACY' : 'storeBalances.kind.CHECK');
+
   return (
     <Modal title={t('storeBalances.history.title', { store: store.storeName })} onClose={onClose} wide>
       {error && <div className={styles.topError} role="alert">{error}</div>}
-      {balances === null && error === null && <p className={styles.muted}>{t('common.loading')}</p>}
-      {balances !== null && balances.length === 0 && <p className={styles.muted}>{t('storeBalances.history.empty')}</p>}
-      {balances !== null && balances.length > 0 && (
+      {entries === null && error === null && <p className={styles.muted}>{t('common.loading')}</p>}
+      {entries !== null && entries.length === 0 && <p className={styles.muted}>{t('storeBalances.history.empty')}</p>}
+      {entries !== null && entries.length > 0 && (
         <div className={tableStyles.scroll}>
           <table className={tableStyles.table}>
             <thead>
               <tr>
                 <th scope="col">{t('storeBalances.history.date')}</th>
-                <th scope="col">{t('storeBalances.history.amount')}</th>
+                <th scope="col">{t('storeBalances.history.type')}</th>
+                <th scope="col">{t('storeBalances.history.real')}</th>
+                <th scope="col">{t('storeBalances.history.computed')}</th>
+                <th scope="col">{t('storeBalances.history.difference')}</th>
+                <th scope="col">{t('storeBalances.history.adjustment')}</th>
+                <th scope="col">{t('storeBalances.history.noteColumn')}</th>
                 <th scope="col">{t('storeBalances.history.actions')}</th>
               </tr>
             </thead>
             <tbody>
-              {balances.map((balance, index) => (
-                <tr key={balance.id} className={tableStyles.row}>
-                  <td className={tableStyles.date}>
-                    {formatDate(balance.recordedAt, language)}
-                    {index === 0 && <span className={tableStyles.muted}> ({t('storeBalances.history.current')})</span>}
-                  </td>
-                  <td className={tableStyles.amount}>{formatMoney(balance.balanceCents, store.currency, language)}</td>
+              {entries.map((entry) => (
+                <tr key={entry.id} className={tableStyles.row}>
+                  <td className={tableStyles.date}>{formatDate(entry.recordedAt, language)}</td>
+                  <td>{kindLabel(entry)}</td>
+                  <td className={tableStyles.amount}>{money(entry.balanceCents)}</td>
+                  <td className={tableStyles.amount}>{money(entry.computedCents)}</td>
+                  <td className={tableStyles.amount}>{money(entry.differenceCents)}</td>
+                  <td className={tableStyles.amount}>{money(entry.adjustmentCents)}</td>
+                  <td>{entry.note ?? ''}</td>
                   <td>
-                    {confirmId === balance.id ? (
-                      <div className={tableStyles.actions}>
-                        <button
-                          type="button"
-                          className={`${tableStyles.button} ${tableStyles.danger}`}
-                          onClick={() => remove(balance)}
-                          disabled={busyId === balance.id}
-                        >
-                          {t('storeBalances.history.confirmDelete')}
-                        </button>
-                        <button type="button" className={tableStyles.button} onClick={() => setConfirmId(null)} disabled={busyId === balance.id}>
-                          {t('common.cancel')}
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        className={`${tableStyles.button} ${tableStyles.danger}`}
-                        onClick={() => setConfirmId(balance.id)}
-                        disabled={busyId !== null}
-                      >
-                        {t('storeBalances.history.delete')}
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      className={`${tableStyles.button} ${tableStyles.danger}`}
+                      onClick={() => setConfirming(entry)}
+                      disabled={busy}
+                    >
+                      {t('storeBalances.history.delete')}
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -119,6 +115,18 @@ export default function StoreBalanceHistory({ store, onClose, onChanged }: Props
       <div className={styles.actions}>
         <button type="button" className={styles.button} onClick={onClose}>{t('common.close')}</button>
       </div>
+
+      {confirming && (
+        <ConfirmDialog
+          title={t('storeBalances.history.deleteTitle')}
+          message={t('storeBalances.history.deleteMessage')}
+          confirmLabel={t('storeBalances.history.confirmDelete')}
+          danger
+          busy={busy}
+          onConfirm={() => remove(confirming)}
+          onCancel={() => setConfirming(null)}
+        />
+      )}
     </Modal>
   );
 }

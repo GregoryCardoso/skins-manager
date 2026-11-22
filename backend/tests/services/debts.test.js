@@ -94,7 +94,8 @@ describe('T12 / T13 / T14', () => {
       WARNINGS: {
         FEES_NOT_CONFIGURED: { code: 'FEES_NOT_CONFIGURED', text: 'taxas não configuradas' },
         FX_NOT_CONFIGURED: { code: 'FX_NOT_CONFIGURED', text: 'cotação não configurada' },
-        BALANCE_MAYBE_OUTDATED: { code: 'BALANCE_MAYBE_OUTDATED', text: 'saldo possivelmente desatualizado' },
+        COMPUTED_BALANCE_NEGATIVE: { code: 'COMPUTED_BALANCE_NEGATIVE', text: 'saldo calculado negativo' },
+        BALANCE_CURRENCY_MISMATCH: { code: 'BALANCE_CURRENCY_MISMATCH', text: 'item em moeda diferente da loja ignorado no saldo' },
         PRICE_OVERFLOW: { code: 'PRICE_OVERFLOW', text: 'valor alto demais para calcular o preço mínimo' },
       },
       WARNING_FEES: 'taxas não configuradas',

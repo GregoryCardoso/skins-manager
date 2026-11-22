@@ -1,20 +1,27 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
 import { resolveErrorTarget } from '@/lib/formErrors';
 import { formatMoney } from '@/lib/format';
 import {
-  buildStoreBalanceBody, initialStoreBalanceState, validateStoreBalanceForm, type StoreBalanceFormState,
+  buildCheckPreviewQuery, buildStoreBalanceBody, initialStoreBalanceState, validateStoreBalanceForm, type StoreBalanceFormState,
 } from '@/lib/storeBalanceForm';
-import { ApiRequestError, createStoreBalance } from '@/services/api';
-import type { StoreBalanceSummary } from '@/types/api';
+import { ApiRequestError, createStoreBalanceCheck, getStoreBalanceCheckPreview } from '@/services/api';
+import type { StoreBalanceCheckPreview, StoreBalanceSummary } from '@/types/api';
 import FormField from './FormField';
 import styles from './forms.module.css';
 import Modal from './Modal';
 
-const FORM_FIELDS = ['balanceCents', 'recordedAt'] as const;
+const FORM_FIELDS = ['balanceCents', 'recordedAt', 'note'] as const;
+const PREVIEW_DEBOUNCE_MS = 300;
+
+type PreviewState =
+  | { status: 'idle' }
+  | { status: 'loading' }
+  | { status: 'ok'; data: StoreBalanceCheckPreview }
+  | { status: 'error'; message: string };
 
 interface Props {
   store: StoreBalanceSummary;
@@ -22,7 +29,8 @@ interface Props {
   onSaved: (message: string) => void;
 }
 
-// Registra o saldo DISPONÍVEL da loja (o que o site da loja mostra). O histórico é append-only (D200).
+// Conferência do saldo (D242, D247): o usuário digita o saldo REAL do site; o backend calcula o saldo na data e a diferença
+// (prévia com debounce, nada é calculado aqui). Dois caminhos: só registrar a conferência ou registrar também o ajuste.
 export default function StoreBalanceFormModal({ store, onClose, onSaved }: Props) {
   const t = useT();
   const tLoose = useTLoose();
@@ -32,9 +40,33 @@ export default function StoreBalanceFormModal({ store, onClose, onSaved }: Props
   const [errors, setErrors] = useState<Partial<Record<string, string>>>({});
   const [topError, setTopError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [preview, setPreview] = useState<PreviewState>({ status: 'idle' });
 
   const patch = (partial: Partial<StoreBalanceFormState>) => setState((s) => ({ ...s, ...partial }));
   const clearError = (field: string) => setErrors((e) => (e[field] ? { ...e, [field]: undefined } : e));
+
+  // Prévia: espera 300 ms depois da última digitação e cancela a chamada anterior.
+  useEffect(() => {
+    const query = buildCheckPreviewQuery({ amountText: state.amountText, recordedAt: state.recordedAt, noteText: '' }, store.storeId, language);
+    if (query === null) {
+      setPreview({ status: 'idle' });
+      return undefined;
+    }
+    const controller = new AbortController();
+    setPreview({ status: 'loading' });
+    const timer = setTimeout(() => {
+      getStoreBalanceCheckPreview(query, controller.signal)
+        .then((data) => setPreview({ status: 'ok', data }))
+        .catch((err: unknown) => {
+          if (controller.signal.aborted || (err instanceof ApiRequestError && err.code === 'ABORTED')) return;
+          setPreview({ status: 'error', message: errorMessageFor(err, tLoose, language) });
+        });
+    }, PREVIEW_DEBOUNCE_MS);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [state.amountText, state.recordedAt, store.storeId, language, tLoose]);
 
   const showApiError = (err: unknown) => {
     const message = errorMessageFor(err, tLoose, language);
@@ -49,11 +81,10 @@ export default function StoreBalanceFormModal({ store, onClose, onSaved }: Props
     }
   };
 
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
+  const submit = (adjust: boolean) => {
     if (saving) return;
     setTopError(null);
-    const local = validateStoreBalanceForm(state, language);
+    const local = validateStoreBalanceForm(state, language, { adjust });
     if (Object.keys(local).length > 0) {
       const translated: Partial<Record<string, string>> = {};
       for (const [field, key] of Object.entries(local)) translated[field] = tLoose(key);
@@ -62,21 +93,30 @@ export default function StoreBalanceFormModal({ store, onClose, onSaved }: Props
     }
     setErrors({});
     setSaving(true);
-    createStoreBalance(buildStoreBalanceBody(state, store.storeId, language))
-      .then((saved) => onSaved(t('storeBalances.created', {
-        store: store.storeName, value: formatMoney(saved.balanceCents, store.currency, language),
-      })))
+    createStoreBalanceCheck(buildStoreBalanceBody(state, store.storeId, language, adjust))
+      .then((saved) => onSaved(
+        saved.adjustmentCents !== null
+          ? t('storeBalances.checkAdjusted', { store: store.storeName, value: formatMoney(saved.adjustmentCents, store.currency, language) })
+          : t('storeBalances.checkSaved', { store: store.storeName })
+      ))
       .catch((err: unknown) => {
         setSaving(false);
         showApiError(err);
       });
   };
 
+  const onFormSubmit = (event: FormEvent) => {
+    event.preventDefault();
+    submit(false);
+  };
+
   const currencyLabel = store.currency === 'USD' ? 'US$' : 'R$';
+  const difference = preview.status === 'ok' ? preview.data.differenceCents : null;
+  const hasDifference = difference !== null && difference !== 0;
 
   return (
     <Modal title={t('storeBalances.form.title', { store: store.storeName })} onClose={onClose} busy={saving}>
-      <form className={styles.form} onSubmit={submit} noValidate>
+      <form className={styles.form} onSubmit={onFormSubmit} noValidate>
         {topError && <div className={styles.topError} role="alert">{topError}</div>}
         <p className={styles.hint}>{t('storeBalances.form.intro')}</p>
 
@@ -112,11 +152,52 @@ export default function StoreBalanceFormModal({ store, onClose, onSaved }: Props
           </FormField>
         </div>
 
+        <div aria-live="polite" className={styles.hint}>
+          {preview.status === 'loading' && t('storeBalances.checkPreviewLoading')}
+          {preview.status === 'error' && <span role="alert">{preview.message}</span>}
+          {preview.status === 'ok' && (
+            hasDifference
+              ? t('storeBalances.checkPreview', {
+                computed: formatMoney(preview.data.computedCents, store.currency, language),
+                difference: formatMoney(preview.data.differenceCents, store.currency, language),
+              })
+              : `${t('storeBalances.computed')}: ${formatMoney(preview.data.computedCents, store.currency, language)}. ${t('storeBalances.checkPreviewMatch')}`
+          )}
+        </div>
+
+        {hasDifference && (
+          <FormField label={t('storeBalances.adjustmentNote')} error={errors.note} hint={t('storeBalances.adjustmentNoteHint')}>
+            {(c) => (
+              <input
+                {...c}
+                className={styles.input}
+                maxLength={500}
+                value={state.noteText}
+                onChange={(e) => {
+                  patch({ noteText: e.target.value });
+                  clearError('note');
+                }}
+              />
+            )}
+          </FormField>
+        )}
+
         <div className={styles.actions}>
           <button type="button" className={styles.button} onClick={onClose} disabled={saving}>{t('common.cancel')}</button>
-          <button type="submit" className={`${styles.button} ${styles.primary}`} disabled={saving}>
-            {saving ? t('common.saving') : t('common.save')}
-          </button>
+          {hasDifference ? (
+            <>
+              <button type="button" className={styles.button} onClick={() => submit(false)} disabled={saving}>
+                {t('storeBalances.saveCheckOnly')}
+              </button>
+              <button type="button" className={`${styles.button} ${styles.primary}`} onClick={() => submit(true)} disabled={saving}>
+                {saving ? t('common.saving') : t('storeBalances.adjustAndSave')}
+              </button>
+            </>
+          ) : (
+            <button type="submit" className={`${styles.button} ${styles.primary}`} disabled={saving}>
+              {saving ? t('common.saving') : t('storeBalances.saveCheck')}
+            </button>
+          )}
         </div>
       </form>
     </Modal>

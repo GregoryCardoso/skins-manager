@@ -70,7 +70,7 @@ describe('CRUD de lojas', () => {
     const moneyId = storeId('CSMoney');
     expect((await request(app).delete(`/api/stores/${moneyId}`)).body.data).toEqual({ id: moneyId });
     expectError(await request(app).delete(`/api/stores/${storeId('CSFloat')}`), 409, 'PRIMARY_STORE_REQUIRED');
-    getDb().prepare('INSERT INTO store_balances (store_id, balance_cents, recorded_at, created_at) VALUES (?, 1, ?, ?)')
+    getDb().prepare("INSERT INTO store_balances (store_id, kind, balance_cents, recorded_at, created_at) VALUES (?, 'CHECK', 1, ?, ?)")
       .run(storeId('Steam'), 'a', 'b');
     expectError(await request(app).delete(`/api/stores/${storeId('Steam')}`), 409, 'STORE_IN_USE');
     expectError(await request(app).delete('/api/stores/9999'), 404, 'STORE_NOT_FOUND');

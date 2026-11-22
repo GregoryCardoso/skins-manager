@@ -8,24 +8,28 @@ const { csfloat, steam, csmoney } = require('../helpers/storeFixtures');
 
 const NOW = new Date('2026-11-21T12:00:00.000Z');
 const RATE = { usdBrlRate: 5.4321 };
-const latest = (storeId, balanceCents) => ({ id: storeId, storeId, balanceCents, recordedAt: '2026-11-20T15:00:00.000Z', fxRate: null });
+// `latestBalances` são saldos iniciais (âncora do saldo calculado, D239).
+const latest = (storeId, balanceCents) => ({
+  id: storeId, storeId, kind: 'INITIAL', balanceCents, computedCents: null, adjustmentCents: null, recordedAt: '2026-11-20T15:00:00.000Z', fxRate: null,
+});
 const sale = (storeId, soldAt, net, days = 7) => ({
-  status: 'VENDIDO', saleStoreId: storeId, soldAt, netReceivedCents: net, saleHoldDaysApplied: days, acquisitionType: 'GANHEI',
+  status: 'VENDIDO', saleStoreId: storeId, saleCurrency: storeId === 2 ? 'BRL' : 'USD', soldAt, netReceivedCents: net, saleHoldDaysApplied: days, acquisitionType: 'GANHEI',
   purchaseStoreId: null, acquiredAt: '2026-10-01T12:00:00.000Z',
 });
 const PENDING_SALE = (storeId, net) => sale(storeId, '2026-11-20T18:00:00.000Z', net); // ainda retida
-const only = (store, extra = {}, settings = RATE) => buildCurrentBalances({ stores: [store], settings, now: NOW, ...extra });
+// `latest(...)` agora vira um aporte da loja (não existe mais saldo inicial, D252): o saldo calculado parte de 0.
+const asDeposits = (list) => list.map((b) => ({ storeId: b.storeId, amountStoreCents: b.balanceCents, depositedAt: b.recordedAt }));
+const only = (store, { latestBalances = [], ...extra } = {}, settings = RATE) => buildCurrentBalances({ stores: [store], settings, now: NOW, deposits: asDeposits(latestBalances), ...extra });
 
 describe('flags por parcela: loja BRL', () => {
-  test('só com disponível: disponível estimado, pendente e liberado NÃO (zero não é estimado)', () => {
+  test('só com disponível: disponível estimado, pendente NÃO (zero não é estimado)', () => {
     const r = only(steam({ id: 2 }), { latestBalances: [latest(2, 4590)] });
     const row = r.stores[0];
     expect(row.availableEstimated).toBe(true);
     expect(row.pending).toMatchObject({ cents: 0, usdCents: 0, approxBrlCents: 0, estimated: false });
-    expect(row.releasedAfterBalance).toMatchObject({ cents: 0, usdCents: 0, estimated: false });
     expect(row.estimated).toBe(true);
     expect(r.totals).toMatchObject({
-      availableEstimated: true, pendingEstimated: false, releasedAfterBalanceEstimated: false, estimated: true,
+      availableEstimated: true, pendingEstimated: false, estimated: true,
     });
   });
 
@@ -36,7 +40,7 @@ describe('flags por parcela: loja BRL', () => {
     expect(row.pending.estimated).toBe(true);
     expect(row.availableEstimated).toBe(false); // sem saldo registrado: 0
     expect(row.availableUsdCents).toBe(0);
-    expect(r.totals).toMatchObject({ availableEstimated: false, pendingEstimated: true, releasedAfterBalanceEstimated: false });
+    expect(r.totals).toMatchObject({ availableEstimated: false, pendingEstimated: true });
   });
 
   test('saldo 0 registrado em loja BRL: nada estimado, mesmo com cotação', () => {
@@ -49,7 +53,7 @@ describe('flags por parcela: loja BRL', () => {
   test('loja USD: nada estimado em nenhuma parcela, mesmo com pendente', () => {
     const r = only(csfloat(), { latestBalances: [latest(1, 5000)], items: [PENDING_SALE(1, 700)] });
     const row = r.stores[0];
-    expect([row.availableEstimated, row.pending.estimated, row.releasedAfterBalance.estimated, row.estimated]).toEqual([false, false, false, false]);
+    expect([row.availableEstimated, row.pending.estimated, row.estimated]).toEqual([false, false, false]);
     expect(r.totals.estimated).toBe(false);
   });
 });
@@ -84,7 +88,7 @@ describe('flags por parcela: sem cotação', () => {
 describe('totais: nonWithdrawableEstimated só olha lojas sem saque', () => {
   const mixed = (steamAllows) => buildCurrentBalances({
     stores: [csfloat(), steam({ id: 2, allowsWithdrawal: steamAllows })],
-    latestBalances: [latest(1, 10000), latest(2, 4590)], settings: RATE, now: NOW,
+    deposits: asDeposits([latest(1, 10000), latest(2, 4590)]), settings: RATE, now: NOW,
   });
 
   test('Steam sem saque (BRL estimada): nonWithdrawableEstimated true', () => {
@@ -98,7 +102,7 @@ describe('totais: nonWithdrawableEstimated só olha lojas sem saque', () => {
   });
   test('loja USD sem saque (CSMoney): não sacável exata -> nonWithdrawableEstimated false', () => {
     const r = buildCurrentBalances({
-      stores: [csfloat(), csmoney({ id: 3, allowsWithdrawal: false })], latestBalances: [latest(3, 800)], settings: RATE, now: NOW,
+      stores: [csfloat(), csmoney({ id: 3, allowsWithdrawal: false })], deposits: asDeposits([latest(3, 800)]), settings: RATE, now: NOW,
     });
     expect(r.totals).toMatchObject({ nonWithdrawableUsdCents: 800, nonWithdrawableEstimated: false, estimated: false });
   });
@@ -112,7 +116,7 @@ describe('totais: nonWithdrawableEstimated só olha lojas sem saque', () => {
 
 describe('consistência dos flags entre buildCurrentBalances e computeRealProfit.estimatedParts', () => {
   const run = ({ stores, latestBalances = [], items = [], settings = RATE, deposits = [], withdrawals = [] }) => {
-    const balances = buildCurrentBalances({ stores, latestBalances, items, withdrawals, settings, now: NOW });
+    const balances = buildCurrentBalances({ stores, items, withdrawals, deposits: [...deposits, ...asDeposits(latestBalances)], settings, now: NOW });
     const profit = computeRealProfit({ deposits, withdrawals, stores, balances, stockItems: [], settings });
     return { balances, profit };
   };
@@ -128,15 +132,13 @@ describe('consistência dos flags entre buildCurrentBalances e computeRealProfit
     const { balances, profit } = run(input);
     expect(profit.estimatedParts.platformBalance).toBe(balances.totals.availableEstimated);
     expect(profit.estimatedParts.pendingBalance).toBe(balances.totals.pendingEstimated);
-    expect(profit.estimatedParts.releasedAfterBalance).toBe(balances.totals.releasedAfterBalanceEstimated);
     expect(profit.platformBalanceUsdCents).toBe(balances.totals.availableUsdCents);
     expect(profit.pendingBalanceUsdCents).toBe(balances.totals.pendingUsdCents);
-    expect(profit.releasedAfterBalanceUsdCents).toBe(balances.totals.releasedAfterBalanceUsdCents);
   });
 
-  test('um saldo disponível BRL estimado não contamina pendente nem liberado no resumo', () => {
+  test('um saldo disponível BRL estimado não contamina o pendente no resumo', () => {
     const { profit } = run({ stores: [csfloat(), steam({ id: 2 })], latestBalances: [latest(2, 4590)], items: [PENDING_SALE(1, 900)] });
-    expect(profit.estimatedParts).toMatchObject({ platformBalance: true, pendingBalance: false, releasedAfterBalance: false });
+    expect(profit.estimatedParts).toMatchObject({ platformBalance: true, pendingBalance: false });
     expect(profit.estimated).toBe(true);
   });
 });

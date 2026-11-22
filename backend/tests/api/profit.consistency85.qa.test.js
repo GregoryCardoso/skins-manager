@@ -39,8 +39,11 @@ function seed() {
   Withdrawal.create({ storeId: csm, amountStoreCents: 2000, feeCents: null, amountBrlCents: 11000, withdrawnAt: '2026-11-11T12:00:00.000Z' }, { now: NOW });
   legacyWithdrawal(10001);
   legacyWithdrawal(555);
-  StoreBalance.create({ storeId: csf, balanceCents: 12346, fxRate: null, recordedAt: '2026-11-20T15:00:00.000Z' }, { now: NOW });
-  StoreBalance.create({ storeId: steam, balanceCents: 4591, fxRate: RATE, recordedAt: '2026-11-21T09:00:00.000Z' }, { now: NOW });
+  Deposit.create({ storeId: csf, amountStoreCents: 12346, amountBrlCents: null, depositedAt: '2026-11-20T15:00:00.000Z', note: null }, { now: NOW });
+  // saldo BRL da Steam: venda já liberada (aporte só existe em loja USD)
+  Item.create(wonSkin({
+    name: 'steam', ...soldFields(steam, { soldAt: '2026-11-21T09:00:00.000Z', netReceivedCents: 4591, salePriceCents: 4591, saleCurrency: 'BRL', fxRateAtSale: RATE, saleHoldDaysApplied: 0 }),
+  }), { now: NOW });
   Item.create(wonSkin({
     name: 'pendente', ...soldFields(csf, { soldAt: '2026-11-20T18:00:00.000Z', netReceivedCents: 2500, salePriceCents: 2500, saleHoldDaysApplied: 7 }),
     acquiredAt: '2026-10-01T12:00:00.000Z',
@@ -77,7 +80,7 @@ describe('consistência entre /summary, /current e as listas', () => {
     expect(deposits.totals.amountUsdCents).toBe(sum);
     // legados: ROUND(30001 / 5,4321) = 5523 e ROUND(777 / 5,4321) = 143
     expect(deposits.deposits.filter((d) => d.legacy).map((d) => d.amountUsdCents).sort()).toEqual([143, 5523]);
-    expect(sum).toBe(9200 + 3333 + 5523 + 143);
+    expect(sum).toBe(9200 + 3333 + 5523 + 143 + 12346);
     expect(deposits.totals.approxBrlCents).toBe(Math.round(sum * RATE));
     const withdrawals = await get('/api/withdrawals');
     const net = withdrawals.withdrawals.reduce((acc, w) => acc + w.amountUsdCents, 0);
@@ -92,25 +95,25 @@ describe('consistência entre /summary, /current e as listas', () => {
     expect(summary.balancesByStore).toEqual(current.stores);
     expect(summary.platformBalanceUsdCents).toBe(current.totals.availableUsdCents);
     expect(summary.pendingBalanceUsdCents).toBe(current.totals.pendingUsdCents);
-    expect(summary.releasedAfterBalanceUsdCents).toBe(current.totals.releasedAfterBalanceUsdCents);
     expect(summary.nextReleaseAt).toBe(current.totals.nextReleaseAt);
     expect(summary.approxBrl.platformBalance).toBe(current.totals.approxBrl.available);
     expect(summary.approxBrl.pendingBalance).toBe(current.totals.approxBrl.pending);
-    expect(summary.approxBrl.releasedAfterBalance).toBe(current.totals.approxBrl.releasedAfterBalance);
-    expect(current.totals.availableUsdCents).toBe(12346 + Math.round(4591 / RATE));
-    expect(current.totals.nonWithdrawableUsdCents).toBe(Math.round(4591 / RATE));
+    // sem saldo inicial (D252): CSFloat 9200 + 12346 − saque 10000 = 11546; CSMoney 3333 − 2000 = 1333;
+    // Steam (BRL): venda 4591 − compra 2501 = 2090, convertida uma vez
+    expect(current.totals.availableUsdCents).toBe(11546 + 1333 + Math.round(2090 / RATE));
+    expect(current.totals.nonWithdrawableUsdCents).toBe(Math.round(2090 / RATE));
   });
 
   test('o lucro do resumo fecha com as próprias parcelas', async () => {
     seed();
     const s = await get('/api/profit/summary');
     expect(s.realProfitUsdCents).toBe(
-      s.withdrawalsNetUsdCents + s.platformBalanceUsdCents + s.pendingBalanceUsdCents + s.releasedAfterBalanceUsdCents + s.stockUsdCents - s.depositsUsdCents
+      s.withdrawalsNetUsdCents + s.platformBalanceUsdCents + s.pendingBalanceUsdCents + s.stockUsdCents - s.depositsUsdCents
     );
     expect(s.stockUsdCents).toBe(Math.round(2501 / 5.0)); // cotação gravada, não a das configurações
     expect(s.approxBrl.realProfit).toBe(Math.round(s.realProfitUsdCents * RATE));
     expect(s.estimated).toBe(true);
-    expect(s.counts).toMatchObject({ legacyDeposits: 2, legacyWithdrawals: 2, withdrawalsWithoutFee: 1, deposits: 4, withdrawals: 4, stockItems: 1, pendingSales: 1 });
+    expect(s.counts).toMatchObject({ legacyDeposits: 2, legacyWithdrawals: 2, withdrawalsWithoutFee: 1, deposits: 5, withdrawals: 4, stockItems: 1, pendingSales: 1 });
   });
 
   test('sem cotação: lista e resumo ficam nulos juntos e os avisos DEPOSITS e WITHDRAWALS saem uma vez cada', async () => {
@@ -141,7 +144,7 @@ describe('consistência entre /summary, /current e as listas', () => {
     Withdrawal.create({ storeId: csf, amountStoreCents: 5000, feeCents: 100, amountBrlCents: null, withdrawnAt: '2026-11-10T12:00:00.000Z' }, { now: NOW });
     Setting.update({ usdBrlRate: null }, { now: NOW });
     const s = await get('/api/profit/summary');
-    expect(s).toMatchObject({ depositsUsdCents: 10000, withdrawalsNetUsdCents: 4900, realProfitUsdCents: -5100, estimated: false });
+    expect(s).toMatchObject({ depositsUsdCents: 10000, withdrawalsNetUsdCents: 4900, platformBalanceUsdCents: 5000, realProfitUsdCents: -100, estimated: false }); // o saldo calculado fica com 10000 − 5000; o lucro é só a taxa
     expect(s.withdrawnVsDeposited.ratio).toBe(0.49);
     expect(s.warnings).toEqual([]);
     expect(s.approxBrl.realProfit).toBeNull();

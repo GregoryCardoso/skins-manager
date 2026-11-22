@@ -179,13 +179,16 @@
     "WITHDRAWAL_NOT_FOUND": "O saque não foi encontrado.",
     "DEPOSIT_STORE_CURRENCY_NOT_ALLOWED": "O aporte só pode ser registrado em loja em dólar (US$).",
     "RECORDED_AT_IN_FUTURE": "A data do saldo não pode estar no futuro.",
-    "STORE_BALANCE_NOT_FOUND": "O registro de saldo não foi encontrado."
+    "STORE_BALANCE_NOT_FOUND": "O registro de saldo não foi encontrado.",
+    "ADJUSTMENT_NOTE_REQUIRED": "Informe uma observação para o ajuste.",
+    "BALANCE_CHECK_BEFORE_LAST": "A conferência não pode ser anterior à última conferência. Exclua a mais recente para corrigir."
   },
   "warnings": {
     "FEES_NOT_CONFIGURED": "As taxas da loja não estão configuradas.",
     "FX_NOT_CONFIGURED": "A cotação do dólar não está configurada.",
     "PRICE_OVERFLOW": "O preço calculado excede o limite suportado.",
-    "BALANCE_MAYBE_OUTDATED": "Saldo possivelmente desatualizado: houve movimentação depois do último registro."
+    "COMPUTED_BALANCE_NEGATIVE": "Saldo calculado negativo: registre o aporte que falta ou confira as compras e os saques.",
+    "BALANCE_CURRENCY_MISMATCH": "Há itens em moeda diferente da loja, ignorados no saldo calculado."
   },
   "inventory": {
     "title": "Inventário",
@@ -783,7 +786,6 @@
     "subtitle": "Acompanhe o que você colocou, o que sacou, o saldo de cada loja e o seu lucro real.",
     "pendingIncluded": "inclui {amount} pendente (libera a partir de {date})",
     "pendingIncludedNoDate": "inclui {amount} pendente",
-    "releasedIncluded": "inclui {amount} liberado após o último saldo registrado (atualize o saldo)",
     "estimatedNote": "Valores com ≈ são estimados pela cotação {fx}.",
     "estimatedNoFx": "Valores com ≈ são estimados pela cotação do dólar, que ainda não está configurada.",
     "emptyHint": "Registre aportes e saldos para ver o lucro real.",
@@ -791,7 +793,7 @@
       "title": "Resumo",
       "loadError": "Não foi possível carregar o resumo: {reason}",
       "realProfit": "Lucro real",
-      "realProfitHint": "Saques líquidos + saldos (disponível, pendente e liberado) + estoque − aportes, tudo em dólar (US$).",
+      "realProfitHint": "Saques líquidos + saldos das lojas (disponível calculado e pendente) + estoque − aportes, tudo em dólar (US$).",
       "deposited": "Total colocado",
       "withdrawn": "Total retirado",
       "platformBalance": "Saldo nas plataformas",
@@ -802,7 +804,6 @@
       "unavailable": "indisponível",
       "unavailableHint": "Falta a cotação do dólar para calcular este valor.",
       "pendingUnavailable": "inclui saldo pendente: indisponível (falta a cotação do dólar)",
-      "releasedUnavailable": "inclui saldo liberado após o último registro: indisponível (falta a cotação do dólar)",
       "warningStore": "{store}: {message}",
       "warningStock": "Estoque: {message}",
       "brlApprox": "≈ {value}",
@@ -936,31 +937,64 @@
       "one": "{count} loja",
       "other": "{count} lojas"
     },
-    "intro": "O saldo disponível é o que você vê no site da loja: registre-o aqui sempre que quiser atualizá-lo. Vendas com retenção aparecem como pendentes até serem liberadas.",
+    "intro": "O saldo de cada loja é calculado: aportes + vendas liberadas − compras − saques + ajustes. Confira com o saldo do site quando quiser. Vendas com retenção aparecem como pendentes até serem liberadas.",
     "loadError": "Não foi possível carregar os saldos: {reason}",
     "empty": "Nenhuma loja cadastrada.",
     "inactive": "inativa",
     "nonWithdrawable": "não sacável",
     "nonWithdrawableTitle": "Esta loja não permite saque: o saldo fica preso nela.",
-    "noBalance": "Sem saldo registrado",
     "available": "disponível",
     "pending": "pendente (libera em {date})",
-    "releasedAfterBalance": "liberado após o último registro",
-    "releasedNoBalance": "liberado (sem saldo registrado)",
-    "recordedAt": "Saldo registrado em {date}",
-    "outdatedReleased": "Vendas liberadas desde {date}. Registre o saldo atual.",
-    "update": "Atualizar saldo",
-    "created": "Saldo da loja {store} registrado: {value}.",
+    "computed": "Calculado",
+    "difference": "Diferença",
+    "lastCheckDays": {
+      "one": "Última conferência há {count} dia",
+      "other": "Última conferência há {count} dias"
+    },
+    "lastCheckToday": "Última conferência hoje",
+    "neverChecked": "Nunca conferido",
+    "check": "Conferir saldo",
+    "details": "Detalhes",
+    "hideDetails": "Ocultar detalhes",
+    "breakdown": {
+      "title": "Como o saldo disponível é calculado",
+      "deposits": "Aportes",
+      "purchases": "Compras",
+      "withdrawals": "Saques",
+      "salesReleased": "Vendas liberadas",
+      "adjustments": "Ajustes"
+    },
+    "legacyDepositsIgnored": {
+      "one": "{count} aporte antigo (sem valor creditado na loja) fica fora do cálculo. Edite-o para informar o valor creditado.",
+      "other": "{count} aportes antigos (sem valor creditado na loja) ficam fora do cálculo. Edite-os para informar o valor creditado."
+    },
+    "currencyMismatchIgnored": {
+      "one": "{count} item em moeda diferente da loja foi ignorado no cálculo.",
+      "other": "{count} itens em moeda diferente da loja foram ignorados no cálculo."
+    },
+    "checkPreview": "Calculado: {computed} · Diferença: {difference}",
+    "checkPreviewLoading": "Calculando...",
+    "checkPreviewMatch": "Bate com o saldo calculado.",
+    "adjustAndSave": "Registrar conferência e ajuste",
+    "saveCheckOnly": "Só registrar a conferência",
+    "saveCheck": "Registrar conferência",
+    "adjustmentNote": "Observação do ajuste",
+    "adjustmentNoteHint": "Obrigatória para registrar o ajuste (por exemplo: taxa não registrada).",
+    "checkSaved": "Conferência da loja {store} registrada.",
+    "checkAdjusted": "Conferência da loja {store} registrada, com ajuste de {value}.",
     "nonWithdrawableTotal": "Não sacável: {value}",
     "nonWithdrawableTotalLabel": "Não sacável:",
     "totalAvailable": "Total disponível: {value}",
     "totalPending": "Total pendente: {value}",
-    "totalReleased": "Total liberado após o registro: {value}",
+    "kind": {
+      "CHECK": "Conferência",
+      "LEGACY": "Registro antigo"
+    },
     "form": {
-      "title": "Atualizar saldo: {store}",
-      "intro": "Digite o saldo disponível que aparece no site da loja. O histórico é preservado: para corrigir um erro, exclua o registro e registre de novo.",
-      "amount": "Saldo disponível ({currency})",
-      "date": "Data do saldo",
+      "title": "Conferir saldo: {store}",
+      "intro": "Digite o saldo real que aparece no site da loja. O app mostra quanto deveria ser pelo cálculo e a diferença; você escolhe se registra um ajuste.",
+      "amount": "Saldo real ({currency})",
+      "date": "Data da conferência",
       "amountRequired": "Informe o saldo (use 0 se estiver zerado).",
       "invalidMoney": "Informe um valor com no máximo 2 casas decimais (por exemplo 120,50).",
       "invalidDate": "Informe uma data e hora válidas."
@@ -968,14 +1002,23 @@
     "history": {
       "open": "Histórico",
       "title": "Histórico de saldos: {store}",
-      "empty": "Nenhum saldo registrado para esta loja.",
+      "empty": "Nenhum registro de saldo para esta loja.",
       "date": "Data",
-      "amount": "Saldo disponível",
+      "type": "Tipo",
+      "real": "Saldo real",
+      "computed": "Calculado",
+      "difference": "Diferença",
+      "adjustment": "Ajuste",
+      "noteColumn": "Observação",
       "actions": "Ações",
-      "current": "atual",
       "delete": "Excluir",
       "confirmDelete": "Confirmar exclusão",
-      "note": "O saldo atual é o registro mais recente. Ao excluí-lo, o anterior volta a valer."
-    }
+      "deleteTitle": "Excluir registro",
+      "deleteMessage": "Excluir este registro? Se ele tiver ajuste, o ajuste também deixa de valer.",
+      "note": "Excluir uma conferência remove o ajuste dela do saldo. Para corrigir uma conferência, exclua a mais recente e registre de novo."
+    },
+    "startHint": "Não quer lançar o histórico antigo? Registre um aporte com o saldo atual da loja. O lucro real passa a ser medido a partir dessa data.",
+    "totalsTitle": "Total nas lojas",
+    "totalPendingDate": "Total pendente (libera a partir de {date}): {value}"
   }
 }

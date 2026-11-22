@@ -1,259 +1,237 @@
 'use strict';
 
-// 8.3 (D206, D211, D215, D216): buildStoreBalanceRecord e buildCurrentBalances (puros, com `now` fixo).
-const { buildStoreBalanceRecord, buildCurrentBalances } = require('../../src/services/storeBalanceService');
-const { MAX_AMOUNT_CENTS } = require('../../src/config/constants');
+// 8.6 (D239, D246, Revisão 23: D252, D256): funções puras do saldo calculado das lojas, com `now`/`at` fixos.
+// O saldo parte sempre de 0, com todas as movimentações da loja (não existe saldo inicial).
+const {
+  computeStoreBalance, daysSince, buildCheckRecord, buildCurrentBalances,
+} = require('../../src/services/storeBalanceService');
+const { computeRealProfit } = require('../../src/services/profitService');
+const { MAX_AMOUNT_CENTS, MAX_NOTE_LENGTH } = require('../../src/config/constants');
 const { csfloat, steam, csmoney } = require('../helpers/storeFixtures');
 
-const NOW = new Date('2026-11-21T12:00:00.000Z');
+const NOW = new Date('2026-11-22T12:00:00.000Z');
 const RATE = { usdBrlRate: 5.4321 };
+const code = (fn) => { try { fn(); } catch (e) { return [e.code, e.field]; } return null; };
 
+const checkOf = (storeId, recordedAt, { balanceCents = 0, computedCents = 0, adjustmentCents = null, id = 200 } = {}) => ({
+  id, storeId, kind: 'CHECK', balanceCents, computedCents, adjustmentCents, recordedAt,
+});
+// Registro antigo (migrado): conferência sem cálculo nem ajuste.
+const legacyOf = (storeId, balanceCents, recordedAt, id = 300) => ({
+  id, storeId, kind: 'CHECK', balanceCents, computedCents: null, adjustmentCents: null, recordedAt,
+});
 const sale = (storeId, soldAt, net, days = 7, extra = {}) => ({
-  status: 'VENDIDO', saleStoreId: storeId, soldAt, netReceivedCents: net, saleHoldDaysApplied: days, acquisitionType: 'GANHEI',
-  purchaseStoreId: null, acquiredAt: '2026-10-01T12:00:00.000Z', ...extra,
+  status: 'VENDIDO', saleStoreId: storeId, saleCurrency: 'USD', soldAt, netReceivedCents: net, saleHoldDaysApplied: days,
+  acquisitionType: 'GANHEI', purchaseStoreId: null, acquiredAt: '2026-10-01T12:00:00.000Z', purchasePriceCents: 0, purchaseCurrency: 'USD', ...extra,
+});
+const purchase = (storeId, acquiredAt, cents, extra = {}) => ({
+  status: 'EM_ESTOQUE', acquisitionType: 'COMPRA', purchaseStoreId: storeId, purchaseCurrency: 'USD', purchasePriceCents: cents,
+  acquiredAt, saleStoreId: null, fxRateAtPurchase: null, ...extra,
+});
+const deposit = (storeId, depositedAt, cents) => ({ storeId, amountStoreCents: cents, depositedAt });
+const withdrawal = (storeId, withdrawnAt, cents) => ({ storeId, amountStoreCents: cents, withdrawnAt });
+
+describe('exemplo de referência da Revisão 23 (D252): aporte 10,20 + compra 5,20', () => {
+  const store = csfloat({ id: 1 });
+  const deposits = [deposit(1, '2026-11-01T12:00:00.000Z', 1020)];
+  const bought = purchase(1, '2026-11-02T12:00:00.000Z', 520);
+
+  test('saldo 500, total colocado 1020, estoque 520 e lucro real 0 (exato)', () => {
+    const balances = buildCurrentBalances({ stores: [store], deposits, items: [bought], settings: RATE, now: NOW });
+    expect(balances.stores[0]).toMatchObject({
+      availableCents: 500, availableUsdCents: 500, breakdown: { depositsCents: 1020, purchasesCents: 520 },
+    });
+    const profit = computeRealProfit({ deposits, stores: [store], balances, stockItems: [bought], settings: RATE });
+    expect(profit).toMatchObject({
+      depositsUsdCents: 1020, platformBalanceUsdCents: 500, stockUsdCents: 520, realProfitUsdCents: 0, estimated: false,
+    });
+  });
+
+  test('vendendo o item por líquido 600: disponível 1100, estoque 0 e lucro 80', () => {
+    const soldItem = { ...bought, status: 'VENDIDO', saleStoreId: 1, saleCurrency: 'USD', soldAt: '2026-11-10T12:00:00.000Z', netReceivedCents: 600, saleHoldDaysApplied: 0 };
+    const balances = buildCurrentBalances({ stores: [store], deposits, items: [soldItem], settings: RATE, now: NOW });
+    expect(balances.stores[0].availableCents).toBe(1100);
+    const profit = computeRealProfit({ deposits, stores: [store], balances, stockItems: [], settings: RATE });
+    expect(profit).toMatchObject({ platformBalanceUsdCents: 1100, stockUsdCents: 0, realProfitUsdCents: 80 });
+  });
 });
 
-describe('buildStoreBalanceRecord', () => {
+describe('computeStoreBalance: sem corte por data', () => {
+  const store = csfloat({ id: 1 });
+  const run = (extra) => computeStoreBalance({ store, at: NOW, ...extra });
+
+  test('movimentações antigas contam; a igualdade com `at` entra e um ms depois fica fora', () => {
+    expect(run({ deposits: [deposit(1, '2000-01-01T00:00:00.000Z', 500)] }).availableCents).toBe(500);
+    expect(run({ deposits: [deposit(1, NOW.toISOString(), 500)] }).availableCents).toBe(500);
+    expect(run({ deposits: [deposit(1, '2026-11-22T12:00:00.001Z', 500)] }).availableCents).toBe(0);
+  });
+
+  test('a venda antiga já liberada conta; o pendente é soldAt <= at < liberação', () => {
+    const r = run({ items: [sale(1, '2026-01-01T12:00:00.000Z', 400), sale(1, '2026-11-20T18:00:00.000Z', 1500), sale(1, '2026-11-23T00:00:00.000Z', 99)] });
+    expect(r.breakdown.salesReleasedCents).toBe(400);
+    expect(r.pending).toEqual({ cents: 1500, count: 1, nextReleaseAt: '2026-11-27T18:00:00.000Z' });
+  });
+
+  test('compra de item vendido continua descontando; GANHEI com loja informativa não afeta', () => {
+    const soldItem = { ...purchase(1, '2026-11-12T00:00:00.000Z', 300), ...sale(1, '2026-11-13T00:00:00.000Z', 400, 0), acquisitionType: 'COMPRA', purchaseStoreId: 1, acquiredAt: '2026-11-12T00:00:00.000Z', purchasePriceCents: 300 };
+    expect(run({ items: [soldItem] })).toMatchObject({ availableCents: 100, breakdown: { purchasesCents: 300, salesReleasedCents: 400 } });
+    expect(run({ items: [{ ...purchase(1, '2026-11-12T00:00:00.000Z', 900), acquisitionType: 'GANHEI' }] }).availableCents).toBe(0);
+  });
+
+  test('venda com retenção nula, 0 e 7', () => {
+    const r = run({ items: [sale(1, '2026-11-20T00:00:00.000Z', 100, null), sale(1, '2026-11-20T00:00:00.000Z', 200, 0), sale(1, '2026-11-20T00:00:00.000Z', 400, 7)] });
+    expect(r.availableCents).toBe(300);
+    expect(r.pending).toMatchObject({ cents: 400, count: 1 });
+  });
+
+  test('liberação exatamente em `at` já está liberada', () => {
+    expect(run({ items: [sale(1, '2026-11-15T12:00:00.000Z', 250)] }).availableCents).toBe(250);
+  });
+
+  test('venda em loja diferente da de compra: a compra desconta de uma e o líquido entra na outra', () => {
+    const item = { ...sale(2, '2026-11-12T00:00:00.000Z', 700, 0), acquisitionType: 'COMPRA', purchaseStoreId: 1, purchasePriceCents: 500, purchaseCurrency: 'USD', saleCurrency: 'BRL' };
+    expect(run({ items: [item] }).availableCents).toBe(-500);
+    expect(computeStoreBalance({ store: steam({ id: 2 }), items: [item], at: NOW }).availableCents).toBe(700);
+  });
+
+  test('aporte legado ignorado e contado; saque sem loja não entra; a taxa do saque não desconta de novo', () => {
+    const r = run({
+      deposits: [{ storeId: 1, amountStoreCents: null, depositedAt: '2026-11-12T00:00:00.000Z' }, deposit(1, '2026-11-12T00:00:00.000Z', 100)],
+      withdrawals: [{ storeId: null, amountStoreCents: null, withdrawnAt: '2026-11-12T00:00:00.000Z' }, { ...withdrawal(1, '2026-11-12T00:00:00.000Z', 30), feeCents: 5 }],
+    });
+    expect(r.availableCents).toBe(70);
+    expect(r.ignored.legacyDeposits).toBe(1);
+  });
+
+  test('ajuste entra por data; conferência sem ajuste e de outra loja não; excludeId tira a própria', () => {
+    const own = checkOf(1, '2026-11-12T00:00:00.000Z', { adjustmentCents: -50, id: 9 });
+    const other = checkOf(2, '2026-11-12T00:00:00.000Z', { adjustmentCents: -70, id: 10 });
+    const none = checkOf(1, '2026-11-12T00:00:00.000Z', { id: 11 });
+    expect(run({ checks: [own, other, none] }).availableCents).toBe(-50);
+    expect(run({ checks: [own], excludeId: 9 }).availableCents).toBe(0);
+    expect(run({ checks: [checkOf(1, '2026-11-23T00:00:00.000Z', { adjustmentCents: 40 })] }).availableCents).toBe(0);
+  });
+
+  test('registro antigo (sem cálculo nem ajuste) não muda o saldo', () => {
+    expect(run({ checks: [legacyOf(1, 9999, '2026-11-12T00:00:00.000Z')] }).availableCents).toBe(0);
+  });
+
+  test('resultado negativo (E8-Q20), moeda divergente ignorada e contada, loja inativa e BRL', () => {
+    expect(run({ items: [purchase(1, '2026-11-12T00:00:00.000Z', 300)] }).availableCents).toBe(-300);
+    const r = run({ items: [purchase(1, '2026-11-12T00:00:00.000Z', 300, { purchaseCurrency: 'BRL' }), sale(1, '2026-11-12T00:00:00.000Z', 50, 0, { saleCurrency: 'BRL' })] });
+    expect(r).toMatchObject({ availableCents: 0, ignored: { currencyMismatch: 2 } });
+    expect(computeStoreBalance({ store: csfloat({ id: 1, isActive: false }), deposits: [deposit(1, '2026-11-12T00:00:00.000Z', 10)], at: NOW }).availableCents).toBe(10);
+  });
+
+  test('histórico completo: disponível = aportes + vendas liberadas − compras − saques, sem ajustes', () => {
+    const r = run({
+      deposits: [deposit(1, '2026-02-01T00:00:00.000Z', 10000)],
+      items: [purchase(1, '2026-02-02T00:00:00.000Z', 4000), sale(1, '2026-03-01T00:00:00.000Z', 1500)],
+      withdrawals: [withdrawal(1, '2026-04-01T00:00:00.000Z', 2000)],
+    });
+    expect(r.availableCents).toBe(10000 + 1500 - 4000 - 2000);
+    expect(r.breakdown.adjustmentsCents).toBe(0);
+    expect(r.breakdown).not.toHaveProperty('initialCents');
+  });
+});
+
+describe('daysSince', () => {
+  test('0, 23h59 (0), 24h (1) e nulo', () => {
+    expect(daysSince(NOW.toISOString(), NOW)).toBe(0);
+    expect(daysSince('2026-11-21T12:00:00.001Z', NOW)).toBe(0);
+    expect(daysSince('2026-11-21T12:00:00.000Z', NOW)).toBe(1);
+    expect(daysSince(null, NOW)).toBeNull();
+    expect(daysSince('2026-11-23T12:00:00.000Z', NOW)).toBe(0);
+  });
+});
+
+describe('buildCheckRecord', () => {
   const store = csfloat();
-  const base = { storeId: 1, balanceCents: 12346, recordedAt: '2026-11-20T15:00:00.000Z' };
-  const build = (input, opts = {}) => buildStoreBalanceRecord({ ...base, ...input }, { store, settings: RATE, now: NOW, ...opts });
-  const code = (fn) => { try { fn(); } catch (e) { return [e.code, e.field]; } return null; };
+  const build = (input, opts = {}) => buildCheckRecord(
+    { storeId: 1, balanceCents: 7900, recordedAt: '2026-11-16T12:00:00.000Z', ...input },
+    { store, lastCheck: null, computedCents: 8000, settings: RATE, now: NOW, ...opts }
+  );
 
-  test('registro válido; loja USD grava fxRate nulo', () => {
-    expect(build({})).toEqual({ storeId: 1, balanceCents: 12346, fxRate: null, recordedAt: '2026-11-20T15:00:00.000Z' });
+  test('sem ajuste por padrão; com adjust e diferença: ajuste = real − calculado e nota obrigatória', () => {
+    expect(build({})).toMatchObject({ kind: 'CHECK', balanceCents: 7900, computedCents: 8000, adjustmentCents: null, note: null });
+    expect(build({ adjust: true, note: 'taxa não registrada' })).toMatchObject({ adjustmentCents: -100, note: 'taxa não registrada' });
+    expect(code(() => build({ adjust: true }))).toEqual(['ADJUSTMENT_NOTE_REQUIRED', 'note']);
+    expect(code(() => build({ adjust: true, note: '   ' }))).toEqual(['ADJUSTMENT_NOTE_REQUIRED', 'note']);
   });
 
-  test('loja BRL grava a cotação das configurações; sem cotação, nulo', () => {
-    expect(build({}, { store: steam() }).fxRate).toBe(5.4321);
-    expect(build({}, { store: steam(), settings: { usdBrlRate: null } }).fxRate).toBeNull();
-    expect(build({}, { store: steam(), settings: null }).fxRate).toBeNull();
+  test('diferença 0 com adjust: sem ajuste e sem exigir nota; o registro não tem mais saldo inicial', () => {
+    expect(build({ balanceCents: 8000, adjust: true })).toMatchObject({ adjustmentCents: null, note: null });
+    expect(() => build({ recordedAt: '2000-01-01T00:00:00.000Z' })).not.toThrow(); // não existe BALANCE_CHECK_BEFORE_INITIAL
   });
 
-  test('limites do saldo: 0, 1 e MAX ok; -1, MAX+1, decimal e string inválidos', () => {
-    for (const v of [0, 1, MAX_AMOUNT_CENTS]) expect(build({ balanceCents: v }).balanceCents).toBe(v);
-    for (const v of [-1, MAX_AMOUNT_CENTS + 1, 1.5, '100', NaN]) {
-      expect(code(() => build({ balanceCents: v }))).toEqual(['INVALID_AMOUNT', 'balanceCents']);
-    }
+  test('BALANCE_CHECK_BEFORE_LAST: antes da última conferência com cálculo recusada; igual aceita', () => {
+    const lastCheck = checkOf(1, '2026-11-18T12:00:00.000Z');
+    expect(code(() => build({}, { lastCheck }))).toEqual(['BALANCE_CHECK_BEFORE_LAST', 'recordedAt']);
+    expect(build({ recordedAt: '2026-11-18T12:00:00.000Z' }, { lastCheck }).recordedAt).toBe('2026-11-18T12:00:00.000Z');
   });
 
-  test('obrigatórios e loja inexistente', () => {
+  test('ordem dos erros: campos, loja, valor, data, última, nota, tamanho', () => {
     expect(code(() => build({ storeId: null }))).toEqual(['REQUIRED_FIELD', 'storeId']);
     expect(code(() => build({}, { store: null }))).toEqual(['STORE_NOT_FOUND', 'storeId']);
-    expect(code(() => build({ balanceCents: null }))).toEqual(['REQUIRED_FIELD', 'balanceCents']);
-    expect(code(() => build({ recordedAt: null }))).toEqual(['REQUIRED_FIELD', 'recordedAt']);
-    expect(code(() => build({ recordedAt: 'ontem' }))).toEqual(['INVALID_DATE', 'recordedAt']);
+    expect(code(() => build({ balanceCents: -1, recordedAt: 'x' }))).toEqual(['INVALID_AMOUNT', 'balanceCents']);
+    expect(code(() => build({ balanceCents: MAX_AMOUNT_CENTS + 1 }))).toEqual(['INVALID_AMOUNT', 'balanceCents']);
+    expect(code(() => build({ recordedAt: 'x' }))).toEqual(['INVALID_DATE', 'recordedAt']);
+    expect(code(() => build({ recordedAt: '2026-11-17T00:00:00.000Z', adjust: true }, { lastCheck: checkOf(1, '2026-11-18T12:00:00.000Z') }))).toEqual(['BALANCE_CHECK_BEFORE_LAST', 'recordedAt']);
+    expect(code(() => build({ adjust: true, note: 'a'.repeat(MAX_NOTE_LENGTH + 1) }))).toEqual(['FIELD_TOO_LONG', 'note']);
   });
 
-  test('data futura: recusada; até 23:59 de hoje em Brasília aceita', () => {
-    expect(code(() => build({ recordedAt: '2026-11-23T12:00:00.000Z' }))).toEqual(['RECORDED_AT_IN_FUTURE', 'recordedAt']);
-    expect(build({ recordedAt: '2026-11-22T01:59:00.000Z' }).recordedAt).toBe('2026-11-22T01:59:00.000Z'); // 21/11 22:59 BRT
-    // virada BRT/UTC: 02:00Z do dia 22 ainda é 23:00 de 21/11 em Brasília
-    expect(build({ recordedAt: '2026-11-22T02:00:00.000Z' }).recordedAt).toBe('2026-11-22T02:00:00.000Z');
-    expect(code(() => build({ recordedAt: '2026-11-22T03:00:00.000Z' }))).toEqual(['RECORDED_AT_IN_FUTURE', 'recordedAt']);
+  test('data mais tarde hoje aceita; amanhã em Brasília recusada', () => {
+    expect(build({ recordedAt: '2026-11-22T20:00:00.000Z' }).recordedAt).toBe('2026-11-22T20:00:00.000Z');
+    expect(code(() => build({ recordedAt: '2026-11-23T03:00:00.000Z' }))).toEqual(['RECORDED_AT_IN_FUTURE', 'recordedAt']);
   });
 });
 
-// Cenário completo de D206 / D216 / D226 (valores em US$ e "≈ R$" da 8.5).
-function d206() {
+describe('buildCurrentBalances', () => {
   const stores = [csfloat({ id: 1, saleHoldDays: 7 }), steam({ id: 2, saleHoldDays: 0 }), csmoney({ id: 3, saleHoldDays: 7 })];
-  const latestBalances = [
-    { id: 1, storeId: 1, balanceCents: 12346, recordedAt: '2026-11-20T15:00:00.000Z', createdAt: 'x' },
-    { id: 2, storeId: 2, balanceCents: 4590, recordedAt: '2026-11-21T09:00:00.000Z', createdAt: 'x' },
-  ];
-  const items = [
-    sale(1, '2026-11-20T18:00:00.000Z', 2500), // B
-    sale(1, '2026-11-21T01:30:00.000Z', 2000), // C
-    sale(1, '2026-11-18T09:00:00.000Z', 3000), // G
-    sale(1, '2026-11-13T20:00:00.000Z', 1200), // F
-    sale(1, '2026-11-12T10:00:00.000Z', 1500), // D
-    sale(3, '2026-11-19T12:00:00.000Z', 1000), // E
-    sale(3, '2026-11-10T12:00:00.000Z', 600), // I
-    sale(2, '2026-11-21T10:00:00.000Z', 800, 0), // H
-    { status: 'EM_ESTOQUE', acquisitionType: 'COMPRA', purchaseStoreId: 1, acquiredAt: '2026-11-01T12:00:00.000Z', saleStoreId: null },
-  ];
-  const withdrawals = [{ storeId: 1, withdrawnAt: '2026-11-10T12:00:00.000Z' }, { storeId: null, withdrawnAt: '2026-01-05T12:00:00.000Z' }];
-  return { stores, latestBalances, items, withdrawals, settings: RATE, now: NOW };
-}
-
-describe('buildCurrentBalances: exemplo de D206 centavo a centavo', () => {
-  const result = buildCurrentBalances(d206());
+  const deposits = [deposit(1, '2026-11-12T12:00:00.000Z', 5000), deposit(2, '2026-11-12T12:00:00.000Z', 4590)];
+  const items = [purchase(1, '2026-11-13T12:00:00.000Z', 3000), sale(1, '2026-11-11T09:00:00.000Z', 2500), sale(1, '2026-11-20T18:00:00.000Z', 1500)];
+  const entries = [checkOf(1, '2026-11-16T12:00:00.000Z', { balanceCents: 7900, computedCents: 8000, adjustmentCents: -100, id: 201 })];
+  const result = buildCurrentBalances({ stores, entries, deposits, items, settings: RATE, now: NOW });
   const byName = Object.fromEntries(result.stores.map((s) => [s.storeName, s]));
 
-  test('CSFloat', () => {
-    const c = byName.CSFloat;
-    expect(c).toMatchObject({
-      availableCents: 12346, availableUsdCents: 12346, availableApproxBrlCents: 67065, allowsWithdrawal: true, estimated: false,
-      outdated: true, outdatedReasons: ['RELEASED_AFTER_BALANCE'], warningCode: 'BALANCE_MAYBE_OUTDATED', saleHoldDays: 7,
+  test('CSFloat: 5000 − 3000 + 2500 − 100 = 4400, pendente 1500, última conferência há 6 dias, sem saldo inicial', () => {
+    expect(byName.CSFloat).toMatchObject({
+      availableCents: 4400, availableUsdCents: 4400, negative: false, warningCode: null, daysSinceLastCheck: 6,
+      breakdown: { depositsCents: 5000, purchasesCents: 3000, withdrawalsCents: 0, salesReleasedCents: 2500, adjustmentsCents: -100 },
+      pending: { cents: 1500, count: 1, nextReleaseAt: '2026-11-27T18:00:00.000Z', usdCents: 1500, estimated: false },
+      lastCheck: { id: 201, kind: 'CHECK', differenceCents: -100, legacy: false },
     });
-    expect(c.pending).toEqual({ cents: 7500, count: 3, nextReleaseAt: '2026-11-25T09:00:00.000Z', usdCents: 7500, approxBrlCents: 40741, estimated: false });
-    expect(c.releasedAfterBalance).toEqual({ cents: 1200, count: 1, earliestReleasedAt: '2026-11-20T20:00:00.000Z', usdCents: 1200, approxBrlCents: 6519, estimated: false });
+    expect(byName.CSFloat).not.toHaveProperty('initialBalance');
+    expect(byName.CSFloat.breakdown).not.toHaveProperty('initialCents');
   });
 
-  test('Steam: venda H com retenção 0 só dispara ACTIVITY_AFTER_BALANCE', () => {
-    expect(byName.Steam).toMatchObject({
-      availableCents: 4590, availableUsdCents: 845, availableApproxBrlCents: 4590, allowsWithdrawal: false, estimated: true,
-      outdated: true, outdatedReasons: ['ACTIVITY_AFTER_BALANCE'], warningCode: 'BALANCE_MAYBE_OUTDATED',
+  test('Steam (BRL) convertida uma vez para USD e estimada; CSMoney sem registro: sem aviso', () => {
+    expect(byName.Steam).toMatchObject({ availableCents: 4590, availableUsdCents: 845, estimated: true, daysSinceLastCheck: null, lastCheck: null });
+    expect(byName.CSMoney).toMatchObject({ availableCents: 0, warningCode: null, lastCheck: null });
+  });
+
+  test('totais: disponível, pendente e "não sacável" (disponível + pendente das lojas sem saque)', () => {
+    expect(result.totals).toMatchObject({
+      availableUsdCents: 4400 + 845, pendingUsdCents: 1500, nonWithdrawableUsdCents: 845, nextReleaseAt: '2026-11-27T18:00:00.000Z', estimated: true,
     });
-    expect(byName.Steam.pending).toEqual({ cents: 0, count: 0, nextReleaseAt: null, usdCents: 0, approxBrlCents: 0, estimated: false });
-    expect(byName.Steam.releasedAfterBalance).toEqual({ cents: 0, count: 0, earliestReleasedAt: null, usdCents: 0, approxBrlCents: 0, estimated: false });
-  });
-
-  test('CSMoney: sem saldo registrado, sem aviso', () => {
-    const m = byName.CSMoney;
-    expect(m).toMatchObject({ balance: null, availableCents: 0, availableUsdCents: 0, availableApproxBrlCents: 0, outdated: false, outdatedReasons: [], warningCode: null });
-    expect(m.pending).toEqual({ cents: 1000, count: 1, nextReleaseAt: '2026-11-26T12:00:00.000Z', usdCents: 1000, approxBrlCents: 5432, estimated: false });
-    expect(m.releasedAfterBalance).toEqual({ cents: 600, count: 1, earliestReleasedAt: '2026-11-17T12:00:00.000Z', usdCents: 600, approxBrlCents: 3259, estimated: false });
-  });
-
-  test('totais', () => {
-    expect(result.totals).toEqual({
-      availableUsdCents: 13191,
-      pendingUsdCents: 8500,
-      releasedAfterBalanceUsdCents: 1800,
-      nonWithdrawableUsdCents: 845,
-      availableEstimated: true,
-      pendingEstimated: false,
-      releasedAfterBalanceEstimated: false,
-      nonWithdrawableEstimated: true,
-      approxBrl: { available: 71655, pending: 46173, releasedAfterBalance: 9778, nonWithdrawable: 4590 },
-      nextReleaseAt: '2026-11-25T09:00:00.000Z',
-      estimated: true,
-    });
-    expect(result.usdBrlRate).toBe(5.4321);
-    expect(result.computedAt).toBe(NOW.toISOString());
-  });
-
-  test('uma linha por loja, inclusive inativa; ordem das lojas preservada', () => {
+    expect(result.totals).not.toHaveProperty('releasedAfterBalanceUsdCents');
     expect(result.stores.map((s) => s.storeName)).toEqual(['CSFloat', 'Steam', 'CSMoney']);
-    const inactive = d206();
-    inactive.stores[0] = { ...inactive.stores[0], isActive: false };
-    const r = buildCurrentBalances(inactive);
-    expect(r.stores[0]).toMatchObject({ isActive: false });
-    expect(r.stores[0].pending.cents).toBe(7500);
-  });
-});
-
-describe('buildCurrentBalances: avisos', () => {
-  const only = (store, extra) => buildCurrentBalances({ stores: [store], settings: RATE, now: NOW, ...extra }).stores[0];
-  const balance = (id, iso, cents = 100) => ({ id, storeId: 1, balanceCents: cents, recordedAt: iso, createdAt: 'x' });
-  const recorded = balance(1, '2026-11-20T15:00:00.000Z');
-
-  test('só venda pendente não dispara o aviso', () => {
-    const row = only(csfloat(), { latestBalances: [recorded], items: [sale(1, '2026-11-20T18:00:00.000Z', 100)] });
-    expect(row.pending.count).toBe(1);
-    expect(row).toMatchObject({ outdated: false, outdatedReasons: [], warningCode: null });
   });
 
-  test('venda liberada depois do registro -> RELEASED_AFTER_BALANCE', () => {
-    const row = only(csfloat(), { latestBalances: [recorded], items: [sale(1, '2026-11-13T20:00:00.000Z', 100)] });
-    expect(row.outdatedReasons).toEqual(['RELEASED_AFTER_BALANCE']);
-  });
-
-  test('compra, saque e venda sem retenção depois do registro -> ACTIVITY_AFTER_BALANCE', () => {
-    const purchase = { status: 'EM_ESTOQUE', acquisitionType: 'COMPRA', purchaseStoreId: 1, acquiredAt: '2026-11-21T00:00:00.000Z' };
-    expect(only(csfloat(), { latestBalances: [recorded], items: [purchase] }).outdatedReasons).toEqual(['ACTIVITY_AFTER_BALANCE']);
-    const withdrawal = { storeId: 1, withdrawnAt: '2026-11-21T00:00:00.000Z' };
-    expect(only(csfloat(), { latestBalances: [recorded], withdrawals: [withdrawal] }).outdatedReasons).toEqual(['ACTIVITY_AFTER_BALANCE']);
-    const noHold = sale(1, '2026-11-21T00:00:00.000Z', 100, null);
-    expect(only(csfloat(), { latestBalances: [recorded], items: [noHold] }).outdatedReasons).toEqual(['ACTIVITY_AFTER_BALANCE']);
-  });
-
-  test('item GANHEI com loja informativa não dispara ACTIVITY_AFTER_BALANCE', () => {
-    const gift = { status: 'EM_ESTOQUE', acquisitionType: 'GANHEI', purchaseStoreId: 1, acquiredAt: '2026-11-21T00:00:00.000Z' };
-    expect(only(csfloat(), { latestBalances: [recorded], items: [gift] })).toMatchObject({ outdated: false, outdatedReasons: [] });
-  });
-
-  test('atividade exatamente no recordedAt, ou antes, não dispara; saque de outra loja não dispara', () => {
-    const equal = { status: 'EM_ESTOQUE', acquisitionType: 'COMPRA', purchaseStoreId: 1, acquiredAt: recorded.recordedAt };
-    expect(only(csfloat(), { latestBalances: [recorded], items: [equal] }).outdated).toBe(false);
-    const other = { storeId: 3, withdrawnAt: '2026-11-21T00:00:00.000Z' };
-    expect(only(csfloat(), { latestBalances: [recorded], withdrawals: [other] }).outdated).toBe(false);
-  });
-
-  test('os dois motivos juntos, nessa ordem', () => {
-    const items = [sale(1, '2026-11-13T20:00:00.000Z', 100), { status: 'EM_ESTOQUE', acquisitionType: 'COMPRA', purchaseStoreId: 1, acquiredAt: '2026-11-21T00:00:00.000Z' }];
-    expect(only(csfloat(), { latestBalances: [recorded], items }).outdatedReasons).toEqual(['RELEASED_AFTER_BALANCE', 'ACTIVITY_AFTER_BALANCE']);
-  });
-
-  test('loja sem saldo registrado: outdated false mesmo com atividade', () => {
-    const items = [{ status: 'EM_ESTOQUE', acquisitionType: 'COMPRA', purchaseStoreId: 1, acquiredAt: '2026-11-21T00:00:00.000Z' }, sale(1, '2026-11-01T00:00:00.000Z', 100)];
-    const row = only(csfloat(), { items });
-    expect(row).toMatchObject({ outdated: false, outdatedReasons: [], balance: null, availableCents: 0 });
-    expect(row.releasedAfterBalance.count).toBe(1);
-  });
-
-  test('o saldo mais recente de cada loja é o que vale (latestBalances por loja)', () => {
-    const row = only(csfloat(), { latestBalances: [balance(5, '2026-11-21T08:00:00.000Z', 777)] });
-    expect(row.balance).toMatchObject({ id: 5, balanceCents: 777, storeName: 'CSFloat', currency: 'USD' });
-  });
-});
-
-describe('buildCurrentBalances: sem cotação e totais', () => {
-  const noFx = (settings) => {
-    const input = d206();
-    return buildCurrentBalances({ ...input, settings });
-  };
-
-  test('sem cotação: loja USD segue exata (sem "≈ R$"); só a Steam (BRL) fica sem US$ e com FX_NOT_CONFIGURED', () => {
-    const r = noFx({ usdBrlRate: null });
-    const csf = r.stores.find((s) => s.storeName === 'CSFloat');
-    expect(csf).toMatchObject({
-      availableCents: 12346, availableUsdCents: 12346, availableApproxBrlCents: null, warningCode: 'BALANCE_MAYBE_OUTDATED', estimated: false,
-    });
-    expect(csf.pending).toMatchObject({ cents: 7500, usdCents: 7500, approxBrlCents: null });
-    expect(csf.releasedAfterBalance).toMatchObject({ cents: 1200, usdCents: 1200, approxBrlCents: null });
-    expect(r.stores.find((s) => s.storeName === 'Steam')).toMatchObject({
-      availableUsdCents: null, availableApproxBrlCents: 4590, warningCode: 'FX_NOT_CONFIGURED', estimated: true,
-    });
-    expect(r.totals).toMatchObject({
-      availableUsdCents: null, pendingUsdCents: 8500, releasedAfterBalanceUsdCents: 1800, nonWithdrawableUsdCents: null, estimated: true,
-      approxBrl: { available: null, pending: null, releasedAfterBalance: null, nonWithdrawable: null },
-    });
-    expect(r.usdBrlRate).toBeNull();
-  });
-
-  test('settings nulo equivale a sem cotação', () => {
-    expect(noFx(null).totals.availableUsdCents).toBeNull();
-    expect(noFx(null).usdBrlRate).toBeNull();
-  });
-
-  test('nonWithdrawable soma as três categorias da loja sem saque', () => {
-    const input = d206();
-    // Steam com retenção 2: venda pendente e liberada além do disponível
-    input.stores[1] = steam({ id: 2, saleHoldDays: 2 });
-    input.items.push(sale(2, '2026-11-21T00:00:00.000Z', 300, 2)); // libera 23/11: pendente
-    input.items.push(sale(2, '2026-11-19T00:00:00.000Z', 200, 2)); // libera 21/11 00:00: antes do registro das 09:00 -> não conta
-    input.items.push(sale(2, '2026-11-19T10:00:00.000Z', 50, 2)); // libera 21/11 10:00: depois do registro, antes de now
-    const r = buildCurrentBalances(input);
-    // cada parcela da loja BRL é convertida uma vez: 4590 -> 845, 300 -> 55, 50 -> 9
-    expect(r.totals.nonWithdrawableUsdCents).toBe(845 + 55 + 9);
-  });
-
-  test('nextReleaseAt é o menor entre lojas e nulo sem pendentes', () => {
-    expect(buildCurrentBalances({ stores: [csfloat()], now: NOW, settings: RATE }).totals.nextReleaseAt).toBeNull();
+  test('saldo negativo: convertido com sinal, sem -0, com COMPUTED_BALANCE_NEGATIVE; FX_NOT_CONFIGURED tem prioridade', () => {
+    const r = buildCurrentBalances({ stores: [csfloat({ id: 1 })], items: [purchase(1, '2026-11-12T00:00:00.000Z', 300)], settings: RATE, now: NOW });
+    expect(r.stores[0]).toMatchObject({ availableCents: -300, availableUsdCents: -300, negative: true, warningCode: 'COMPUTED_BALANCE_NEGATIVE' });
+    const tiny = buildCurrentBalances({ stores: [steam({ id: 2 })], items: [purchase(2, '2026-11-12T00:00:00.000Z', 1, { purchaseCurrency: 'BRL' })], settings: RATE, now: NOW });
+    expect(Object.is(tiny.stores[0].availableUsdCents, -0)).toBe(false);
+    const noFx = buildCurrentBalances({ stores: [steam({ id: 2 })], items: [purchase(2, '2026-11-12T00:00:00.000Z', 300, { purchaseCurrency: 'BRL' })], settings: { usdBrlRate: null }, now: NOW });
+    expect(noFx.stores[0]).toMatchObject({ availableCents: -300, availableUsdCents: null, warningCode: 'FX_NOT_CONFIGURED' });
     expect(buildCurrentBalances({ stores: [], now: NOW }).totals).toMatchObject({ availableUsdCents: 0, nonWithdrawableUsdCents: 0, estimated: false });
   });
 
-  test('retenção 0 na loja: nenhuma parcela pendente nem liberada', () => {
-    const r = buildCurrentBalances({
-      stores: [csfloat({ saleHoldDays: 0 })], items: [sale(1, '2026-11-21T10:00:00.000Z', 900, 0)], settings: RATE, now: NOW,
-    });
-    expect(r.stores[0].pending.cents + r.stores[0].releasedAfterBalance.cents).toBe(0);
-  });
-
-  test('snapshot nulo em vendas antigas nunca entra', () => {
-    const r = buildCurrentBalances({ stores: [csfloat()], items: [sale(1, '2026-11-20T10:00:00.000Z', 900, null)], settings: RATE, now: NOW });
-    expect(r.stores[0].pending.count + r.stores[0].releasedAfterBalance.count).toBe(0);
-  });
-});
-
-describe('buildCurrentBalances: flags de estimado por parcela (D225, D229)', () => {
-  test('loja BRL com saldo estima o disponível; loja USD não; totais refletem as parcelas', () => {
-    const r = buildCurrentBalances(d206());
-    const byName = Object.fromEntries(r.stores.map((s) => [s.storeName, s]));
-    expect(byName.Steam.availableEstimated).toBe(true);
-    expect(byName.CSFloat.availableEstimated).toBe(false);
-    expect(byName.Steam.pending.estimated).toBe(false);
-    expect(r.totals).toMatchObject({ availableEstimated: true, pendingEstimated: false, releasedAfterBalanceEstimated: false, nonWithdrawableEstimated: true });
+  test('a última conferência considera o registro antigo (desempate pelo maior id)', () => {
+    const rows = [legacyOf(1, 100, '2026-11-20T00:00:00.000Z', 5), legacyOf(1, 90, '2026-11-20T00:00:00.000Z', 6)];
+    const row = buildCurrentBalances({ stores: [csfloat({ id: 1 })], entries: rows, settings: RATE, now: NOW }).stores[0];
+    expect(row.lastCheck).toMatchObject({ id: 6, legacy: true, differenceCents: null });
+    expect(row.daysSinceLastCheck).toBe(2);
   });
 });

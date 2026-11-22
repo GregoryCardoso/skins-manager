@@ -476,29 +476,52 @@ export interface BackupImportResult {
   counts: { items: number; stores: number };
 }
 
-// --- Saldos das lojas (D204, D215, D216) ---
+// --- Saldo das lojas calculado (8.6: D239 a D246) ---
 
-export interface StoreBalance {
+// Só existe a conferência (D253); `legacy` marca o registro antigo (sem cálculo).
+
+// Uma linha do histórico: conferência. `legacy`: conferência migrada ("registro antigo", sem calculado).
+export interface StoreBalanceEntry {
   id: number;
   storeId: number;
   storeName: string | null;
   currency: Currency | null;
+  kind: 'CHECK';
   balanceCents: number;
+  computedCents: number | null;
+  differenceCents: number | null;
+  adjustmentCents: number | null;
+  note: string | null;
+  legacy: boolean;
   recordedAt: string;
   createdAt: string;
 }
 
 export interface StoreBalanceHistory {
-  balances: StoreBalance[];
+  balances: StoreBalanceEntry[];
 }
 
-export interface StoreBalanceCreateBody {
+// Conferência (POST): `adjust` grava o ajuste (nota obrigatória quando há diferença).
+export interface StoreBalanceCheckBody {
   storeId: number;
   balanceCents: number;
   recordedAt: string;
+  adjust?: boolean;
+  note?: string;
 }
 
-export type OutdatedReason = 'RELEASED_AFTER_BALANCE' | 'ACTIVITY_AFTER_BALANCE';
+// Prévia da conferência (GET /store-balances/check-preview): nada é gravado nem calculado no frontend.
+export interface StoreBalanceCheckPreview {
+  storeId: number;
+  currency: Currency;
+  recordedAt: string;
+  balanceCents: number;
+  computedCents: number;
+  differenceCents: number;
+  differenceUsdCents: number | null;
+  differenceApproxBrlCents: number | null;
+  estimated: boolean;
+}
 
 export interface PendingBalance {
   cents: number;
@@ -511,13 +534,12 @@ export interface PendingBalance {
   estimated: boolean;
 }
 
-export interface ReleasedAfterBalance {
-  cents: number;
-  count: number;
-  earliestReleasedAt: string | null;
-  usdCents: number | null;
-  approxBrlCents: number | null;
-  estimated: boolean;
+export interface StoreBalanceBreakdown {
+  depositsCents: number;
+  purchasesCents: number;
+  withdrawalsCents: number;
+  salesReleasedCents: number;
+  adjustmentsCents: number;
 }
 
 export interface StoreBalanceSummary {
@@ -527,16 +549,19 @@ export interface StoreBalanceSummary {
   isActive: boolean;
   allowsWithdrawal: boolean;
   saleHoldDays: number;
-  balance: StoreBalance | null;
+  lastCheck: StoreBalanceEntry | null;
+  // Dias desde a última conferência (inclusive registro antigo); nulo = nunca conferido.
+  daysSinceLastCheck: number | null;
+  breakdown: StoreBalanceBreakdown;
   availableCents: number;
   availableUsdCents: number | null;
   availableApproxBrlCents: number | null;
   availableEstimated: boolean;
+  negative: boolean;
   pending: PendingBalance;
-  releasedAfterBalance: ReleasedAfterBalance;
+  ignored: { legacyDeposits: number; currencyMismatch: number };
   estimated: boolean;
-  outdated: boolean;
-  outdatedReasons: OutdatedReason[];
+  // FX_NOT_CONFIGURED > COMPUTED_BALANCE_NEGATIVE > nulo ("nunca conferido" nunca vira aviso).
   warningCode: string | null;
 }
 
@@ -545,16 +570,13 @@ export interface CurrentStoreBalances {
   totals: {
     availableUsdCents: number | null;
     pendingUsdCents: number | null;
-    releasedAfterBalanceUsdCents: number | null;
     nonWithdrawableUsdCents: number | null;
     availableEstimated: boolean;
     pendingEstimated: boolean;
-    releasedAfterBalanceEstimated: boolean;
     nonWithdrawableEstimated: boolean;
     approxBrl: {
       available: number | null;
       pending: number | null;
-      releasedAfterBalance: number | null;
       nonWithdrawable: number | null;
     };
     nextReleaseAt: string | null;
@@ -579,7 +601,6 @@ export interface ProfitSummary {
   withdrawalsNetUsdCents: number | null;
   platformBalanceUsdCents: number | null;
   pendingBalanceUsdCents: number | null;
-  releasedAfterBalanceUsdCents: number | null;
   nextReleaseAt: string | null;
   stockUsdCents: number | null;
   realProfitUsdCents: number | null;
@@ -590,7 +611,6 @@ export interface ProfitSummary {
     withdrawals: boolean;
     platformBalance: boolean;
     pendingBalance: boolean;
-    releasedAfterBalance: boolean;
     stock: boolean;
   };
   // "≈ R$" de cada total, calculado no backend (nulo sem cotação).
@@ -599,7 +619,6 @@ export interface ProfitSummary {
     withdrawals: number | null;
     platformBalance: number | null;
     pendingBalance: number | null;
-    releasedAfterBalance: number | null;
     stock: number | null;
     realProfit: number | null;
   };
@@ -613,7 +632,6 @@ export interface ProfitSummary {
     withdrawalsWithoutFee: number;
     stockItems: number;
     pendingSales: number;
-    releasedAfterBalanceSales: number;
   };
   warnings: ProfitWarning[];
   fx: { usdBrlRate: number | null; source: FxRateSource | null; updatedAt: string | null; quotedAt: string | null };

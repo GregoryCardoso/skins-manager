@@ -71,14 +71,12 @@ function SummaryBody({ data }: { data: ProfitSummary }) {
   const profit = data.realProfitUsdCents;
   const tone = profit === null ? '' : profit > 0 ? styles.positive : profit < 0 ? styles.negative : '';
   const pending = data.pendingBalanceUsdCents;
-  const released = data.releasedAfterBalanceUsdCents;
-  // Os valores pendente e liberado só ganham "≈" se a parcela teve conversão.
+  // O valor pendente só ganha "≈" se a parcela teve conversão.
   const pendingText = (value: number) => moneyLine({ cents: value, estimated: data.estimatedParts.pendingBalance });
-  const releasedText = (value: number) => moneyLine({ cents: value, estimated: data.estimatedParts.releasedAfterBalance });
   const ratio = data.withdrawnVsDeposited;
   const isEmpty =
     data.counts.deposits === 0 && data.counts.withdrawals === 0 && data.counts.stockItems === 0 &&
-    data.balancesByStore.every((row) => row.balance === null && row.pending.count === 0 && row.releasedAfterBalance.count === 0);
+    data.balancesByStore.every((row) => row.lastCheck === null && row.pending.count === 0 && row.availableCents === 0);
   const fxText = data.fx.usdBrlRate !== null
     ? describeFxRate(
       { rate: data.fx.usdBrlRate, source: data.fx.source, quotedAt: data.fx.quotedAt, updatedAt: data.fx.updatedAt },
@@ -105,12 +103,6 @@ function SummaryBody({ data }: { data: ProfitSummary }) {
           )}
           {pending === null && data.counts.pendingSales > 0 && (
             <p className={styles.included}>{t('profit.summary.pendingUnavailable')}</p>
-          )}
-          {released !== null && released > 0 && (
-            <p className={styles.included}>{t('profit.releasedIncluded', { amount: releasedText(released) })}</p>
-          )}
-          {released === null && data.counts.releasedAfterBalanceSales > 0 && (
-            <p className={styles.included}>{t('profit.summary.releasedUnavailable')}</p>
           )}
           {data.counts.legacyDeposits > 0 && (
             <p className={styles.included}>{tPlural('profit.summary.legacyDeposits', data.counts.legacyDeposits)}</p>

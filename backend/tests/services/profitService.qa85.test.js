@@ -9,15 +9,20 @@ const { csfloat, steam, csmoney } = require('../helpers/storeFixtures');
 const NOW = new Date('2026-11-21T12:00:00.000Z');
 const USD_STORES = [csfloat({ id: 1 }), csmoney({ id: 3 })];
 const steam2 = (overrides = {}) => steam({ id: 5, name: 'Steam2', ...overrides });
-const latest = (storeId, balanceCents, recordedAt = '2026-11-20T15:00:00.000Z') => ({ id: storeId, storeId, balanceCents, recordedAt, fxRate: null });
+// `latestBalances` são saldos iniciais (âncora do saldo calculado, D239).
+const latest = (storeId, balanceCents, recordedAt = '2026-11-20T15:00:00.000Z') => ({
+  id: storeId, storeId, kind: 'INITIAL', balanceCents, computedCents: null, adjustmentCents: null, recordedAt, fxRate: null,
+});
 const stockItem = (cost, currency = 'USD', fx = currency === 'BRL' ? 2.0 : null) => ({
   status: 'EM_ESTOQUE', purchasePriceCents: cost, purchaseCurrency: currency, fxRateAtPurchase: fx,
 });
 const soldBrl = { status: 'VENDIDO', purchasePriceCents: 99999, purchaseCurrency: 'USD', fxRateAtPurchase: null };
 
+// `latest(...)` agora vira um aporte da loja (não existe mais saldo inicial, D252): o saldo calculado parte de 0.
+const asDeposits = (list) => list.map((b) => ({ storeId: b.storeId, amountStoreCents: b.balanceCents, depositedAt: b.recordedAt }));
 function profit({ stores = USD_STORES, rate = 2.0, deposits = [], withdrawals = [], latestBalances = [], items = [], stockItems = [] } = {}) {
   const settings = { usdBrlRate: rate };
-  const balances = buildCurrentBalances({ stores, latestBalances, items, withdrawals, settings, now: NOW });
+  const balances = buildCurrentBalances({ stores, items, withdrawals, deposits: [...deposits, ...asDeposits(latestBalances)], settings, now: NOW });
   return computeRealProfit({ deposits, withdrawals, stores, balances, stockItems, settings });
 }
 const legacyDeposit = (brl, id = 1) => ({ id, storeId: null, amountStoreCents: null, amountBrlCents: brl });
@@ -76,7 +81,7 @@ describe('estimated e estimatedParts', () => {
     const r = profit({ stockItems: [stockItem(500, 'BRL', 5.0)] });
     expect(r.estimated).toBe(true);
     expect(r.estimatedParts).toEqual({
-      deposits: false, withdrawals: false, platformBalance: false, pendingBalance: false, releasedAfterBalance: false, stock: true,
+      deposits: false, withdrawals: false, platformBalance: false, pendingBalance: false, stock: true,
     });
   });
 
@@ -156,7 +161,7 @@ describe('sem cotação: parcelas nulas e avisos', () => {
     expect(r.realProfitUsdCents).toBeNull();
     expect(sources(r)).toEqual(['DEPOSITS']);
     expect(r.approxBrl).toEqual({
-      deposits: null, withdrawals: null, platformBalance: null, pendingBalance: null, releasedAfterBalance: null, stock: null, realProfit: null,
+      deposits: null, withdrawals: null, platformBalance: null, pendingBalance: null, stock: null, realProfit: null,
     });
     expect(r.withdrawnVsDeposited.ratio).toBeNull();
   });
@@ -178,9 +183,9 @@ describe('sem cotação: parcelas nulas e avisos', () => {
     expect(r.realProfitUsdCents).toBeNull();
   });
 
-  test('os três de uma vez: ordem STORE, DEPOSITS, WITHDRAWALS; pendente, liberado e estoque seguem', () => {
+  test('os três de uma vez: ordem STORE, DEPOSITS, WITHDRAWALS; pendente e estoque seguem', () => {
     const items = [
-      { status: 'VENDIDO', saleStoreId: 1, netReceivedCents: 7500, soldAt: '2026-11-20T18:00:00.000Z', saleHoldDaysApplied: 7, purchaseStoreId: null, acquiredAt: '2026-01-01T00:00:00.000Z' },
+      { status: 'VENDIDO', saleStoreId: 1, saleCurrency: 'USD', netReceivedCents: 7500, soldAt: '2026-11-20T18:00:00.000Z', saleHoldDaysApplied: 7, purchaseStoreId: null, acquiredAt: '2026-01-01T00:00:00.000Z' },
     ];
     const r = profit({
       stores, rate: null, deposits: [legacyDeposit(100)], withdrawals: [legacyWithdrawal(100)],
@@ -188,7 +193,6 @@ describe('sem cotação: parcelas nulas e avisos', () => {
     });
     expect(sources(r)).toEqual(['STORE:Steam', 'DEPOSITS', 'WITHDRAWALS']);
     expect(r.pendingBalanceUsdCents).toBe(7500);
-    expect(r.releasedAfterBalanceUsdCents).toBe(0);
     expect(r.stockUsdCents).toBe(1300); // 1500 / 5,0 = 300 (gravada) + 1000
     expect(r.realProfitUsdCents).toBeNull();
     expect(r.warnings.some((w) => w.source === 'STOCK')).toBe(false);

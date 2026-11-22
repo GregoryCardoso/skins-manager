@@ -179,13 +179,16 @@
     "WITHDRAWAL_NOT_FOUND": "The withdrawal was not found.",
     "DEPOSIT_STORE_CURRENCY_NOT_ALLOWED": "Deposits can only be recorded in a US dollar (USD) store.",
     "RECORDED_AT_IN_FUTURE": "The balance date cannot be in the future.",
-    "STORE_BALANCE_NOT_FOUND": "The balance record was not found."
+    "STORE_BALANCE_NOT_FOUND": "The balance record was not found.",
+    "ADJUSTMENT_NOTE_REQUIRED": "Enter a note for the adjustment.",
+    "BALANCE_CHECK_BEFORE_LAST": "The check cannot be earlier than the last check. Delete the most recent one to correct it."
   },
   "warnings": {
     "FEES_NOT_CONFIGURED": "The store fees are not configured.",
     "FX_NOT_CONFIGURED": "The dollar exchange rate is not configured.",
     "PRICE_OVERFLOW": "The calculated price exceeds the supported limit.",
-    "BALANCE_MAYBE_OUTDATED": "Balance may be outdated: there was activity after the last record."
+    "COMPUTED_BALANCE_NEGATIVE": "Calculated balance is negative: record the missing deposit or check the purchases and withdrawals.",
+    "BALANCE_CURRENCY_MISMATCH": "Some items are in a currency different from the store and were ignored in the calculated balance."
   },
   "inventory": {
     "title": "Inventory",
@@ -783,7 +786,6 @@
     "subtitle": "Track what you put in, what you withdrew, each store's balance and your real profit.",
     "pendingIncluded": "includes {amount} pending (releases from {date})",
     "pendingIncludedNoDate": "includes {amount} pending",
-    "releasedIncluded": "includes {amount} released after the last recorded balance (update the balance)",
     "estimatedNote": "Values with ≈ are estimated using the {fx} rate.",
     "estimatedNoFx": "Values with ≈ are estimated using the dollar rate, which is not configured yet.",
     "emptyHint": "Record deposits and balances to see the real profit.",
@@ -791,7 +793,7 @@
       "title": "Summary",
       "loadError": "Could not load the summary: {reason}",
       "realProfit": "Real profit",
-      "realProfitHint": "Net withdrawals + balances (available, pending and released) + stock − deposits, all in US dollars (US$).",
+      "realProfitHint": "Net withdrawals + store balances (calculated available and pending) + stock − deposits, all in US dollars (US$).",
       "deposited": "Total put in",
       "withdrawn": "Total withdrawn",
       "platformBalance": "Platform balances",
@@ -802,7 +804,6 @@
       "unavailable": "unavailable",
       "unavailableHint": "The dollar rate is missing to calculate this value.",
       "pendingUnavailable": "includes pending balance: unavailable (dollar rate missing)",
-      "releasedUnavailable": "includes balance released after the last record: unavailable (dollar rate missing)",
       "warningStore": "{store}: {message}",
       "warningStock": "Stock: {message}",
       "brlApprox": "≈ {value}",
@@ -936,31 +937,64 @@
       "one": "{count} store",
       "other": "{count} stores"
     },
-    "intro": "The available balance is what you see on the store website: record it here whenever you want to update it. Sales with a hold show as pending until they are released.",
+    "intro": "Each store balance is calculated: deposits + released sales − purchases − withdrawals + adjustments. Check it against the website balance whenever you like. Sales with a hold show as pending until they are released.",
     "loadError": "Could not load the balances: {reason}",
     "empty": "No stores registered.",
     "inactive": "inactive",
     "nonWithdrawable": "not withdrawable",
     "nonWithdrawableTitle": "This store does not allow withdrawals: the balance stays in it.",
-    "noBalance": "No balance recorded",
     "available": "available",
     "pending": "pending (releases on {date})",
-    "releasedAfterBalance": "released after the last record",
-    "releasedNoBalance": "released (no balance recorded)",
-    "recordedAt": "Balance recorded on {date}",
-    "outdatedReleased": "Sales released since {date}. Record the current balance.",
-    "update": "Update balance",
-    "created": "Balance of {store} recorded: {value}.",
+    "computed": "Calculated",
+    "difference": "Difference",
+    "lastCheckDays": {
+      "one": "Last checked {count} day ago",
+      "other": "Last checked {count} days ago"
+    },
+    "lastCheckToday": "Last checked today",
+    "neverChecked": "Never checked",
+    "check": "Check balance",
+    "details": "Details",
+    "hideDetails": "Hide details",
+    "breakdown": {
+      "title": "How the available balance is calculated",
+      "deposits": "Deposits",
+      "purchases": "Purchases",
+      "withdrawals": "Withdrawals",
+      "salesReleased": "Released sales",
+      "adjustments": "Adjustments"
+    },
+    "legacyDepositsIgnored": {
+      "one": "{count} old deposit (no amount credited to the store) is left out of the calculation. Edit it to enter the credited amount.",
+      "other": "{count} old deposits (no amount credited to the store) are left out of the calculation. Edit them to enter the credited amount."
+    },
+    "currencyMismatchIgnored": {
+      "one": "{count} item in a currency different from the store was ignored in the calculation.",
+      "other": "{count} items in a currency different from the store were ignored in the calculation."
+    },
+    "checkPreview": "Calculated: {computed} · Difference: {difference}",
+    "checkPreviewLoading": "Calculating...",
+    "checkPreviewMatch": "Matches the calculated balance.",
+    "adjustAndSave": "Record check and adjustment",
+    "saveCheckOnly": "Record the check only",
+    "saveCheck": "Record check",
+    "adjustmentNote": "Adjustment note",
+    "adjustmentNoteHint": "Required to record the adjustment (for example: fee not recorded).",
+    "checkSaved": "Check of {store} recorded.",
+    "checkAdjusted": "Check of {store} recorded, with an adjustment of {value}.",
     "nonWithdrawableTotal": "Not withdrawable: {value}",
     "nonWithdrawableTotalLabel": "Not withdrawable:",
     "totalAvailable": "Total available: {value}",
     "totalPending": "Total pending: {value}",
-    "totalReleased": "Total released after the record: {value}",
+    "kind": {
+      "CHECK": "Check",
+      "LEGACY": "Old record"
+    },
     "form": {
-      "title": "Update balance: {store}",
-      "intro": "Enter the available balance shown on the store website. The history is kept: to fix a mistake, delete the record and record it again.",
-      "amount": "Available balance ({currency})",
-      "date": "Balance date",
+      "title": "Check balance: {store}",
+      "intro": "Enter the real balance shown on the store website. The app shows what it should be by the calculation and the difference; you choose whether to record an adjustment.",
+      "amount": "Real balance ({currency})",
+      "date": "Check date",
       "amountRequired": "Enter the balance (use 0 if it is empty).",
       "invalidMoney": "Enter a value with at most 2 decimal places (for example 120.50).",
       "invalidDate": "Enter a valid date and time."
@@ -968,14 +1002,23 @@
     "history": {
       "open": "History",
       "title": "Balance history: {store}",
-      "empty": "No balance recorded for this store.",
+      "empty": "No balance record for this store.",
       "date": "Date",
-      "amount": "Available balance",
+      "type": "Type",
+      "real": "Real balance",
+      "computed": "Calculated",
+      "difference": "Difference",
+      "adjustment": "Adjustment",
+      "noteColumn": "Note",
       "actions": "Actions",
-      "current": "current",
       "delete": "Delete",
       "confirmDelete": "Confirm deletion",
-      "note": "The current balance is the most recent record. Deleting it makes the previous one current again."
-    }
+      "deleteTitle": "Delete record",
+      "deleteMessage": "Delete this record? If it has an adjustment, the adjustment stops counting too.",
+      "note": "Deleting a check removes its adjustment from the balance. To fix a check, delete the most recent one and record it again."
+    },
+    "startHint": "Don't want to enter your old history? Record a deposit with the store's current balance. Real profit will be measured from that date on.",
+    "totalsTitle": "Total in stores",
+    "totalPendingDate": "Total pending (releases from {date}): {value}"
   }
 }

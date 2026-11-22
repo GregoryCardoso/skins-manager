@@ -28,12 +28,17 @@ const stockItem = (cost, currency = 'USD', extra = {}) => ({
 const NOW = new Date('2026-11-21T12:00:00.000Z');
 const NO_FX = { usdBrlRate: null };
 
+// `latest(...)` agora vira um aporte da loja (não existe mais saldo inicial, D252): o saldo calculado parte de 0.
+const asDeposits = (list) => list.map((b) => ({ storeId: b.storeId, amountStoreCents: b.balanceCents, depositedAt: b.recordedAt }));
 // Saldos por loja como o /current os entrega (buildCurrentBalances), a partir de lojas, saldos e itens.
-const balancesOf = ({ stores = [], latestBalances = [], items = [], withdrawals = [], settings = SETTINGS } = {}) =>
-  buildCurrentBalances({ stores, latestBalances, items, withdrawals, settings, now: NOW });
-const latest = (storeId, balanceCents, recordedAt = '2026-11-10T12:00:00.000Z') => ({ id: storeId, storeId, balanceCents, recordedAt, fxRate: null });
+// `latestBalances` são saldos iniciais (a âncora do cálculo, D239).
+const balancesOf = ({ stores = [], latestBalances = [], items = [], withdrawals = [], deposits = [], settings = SETTINGS } = {}) =>
+  buildCurrentBalances({ stores, items, withdrawals, deposits: [...deposits, ...asDeposits(latestBalances)], settings, now: NOW });
+const latest = (storeId, balanceCents, recordedAt = '2026-11-10T12:00:00.000Z') => ({
+  id: storeId, storeId, kind: 'INITIAL', balanceCents, computedCents: null, adjustmentCents: null, recordedAt, fxRate: null,
+});
 const heldSale = (storeId, net, soldAt, days = 7) => ({
-  status: 'VENDIDO', saleStoreId: storeId, netReceivedCents: net, soldAt, saleHoldDaysApplied: days, purchaseStoreId: null, acquiredAt: '2026-01-01T00:00:00.000Z',
+  status: 'VENDIDO', saleStoreId: storeId, saleCurrency: 'USD', netReceivedCents: net, soldAt, saleHoldDaysApplied: days, purchaseStoreId: null, acquiredAt: '2026-01-01T00:00:00.000Z',
 });
 
 // Cenário base de D44 em US$: aportes 20000 (CSFloat); saques líquidos 6000 (um sem loja, R$ 200,00 / 5,0); CSFloat saldo 10000;
@@ -45,7 +50,7 @@ function baseScenario() {
     deposits: [{ id: 1, storeId: 1, amountStoreCents: 20000, amountBrlCents: 100000 }],
     withdrawals,
     stores: [csfloat()],
-    balances: balancesOf({ stores: [csfloat()], latestBalances: [latest(1, 10000)], withdrawals }),
+    balances: balancesOf({ stores: [csfloat()], latestBalances: [latest(1, 12000)], withdrawals }), // 12000 − saque 2000 = 10000
     stockItems: [stockItem(20000, 'BRL')],
     settings: SETTINGS,
   };
@@ -83,7 +88,7 @@ describe('profitService.computeSaleProfitUsdCents', () => {
 });
 
 describe('profitService.computeRealProfit', () => {
-  test('exemplo D44 em US$: lucro 0, sem pendente nem liberado', () => {
+  test('exemplo D44 em US$: lucro 0, sem pendente', () => {
     const r = computeRealProfit(baseScenario());
     expect(r).toMatchObject({
       baseCurrency: 'USD',
@@ -91,7 +96,6 @@ describe('profitService.computeRealProfit', () => {
       withdrawalsNetUsdCents: 6000, // 2000 (CSFloat, sem taxa informada = 0) + ROUND(20000 / 5,0) = 4000
       platformBalanceUsdCents: 10000,
       pendingBalanceUsdCents: 0,
-      releasedAfterBalanceUsdCents: 0,
       nextReleaseAt: null,
       stockUsdCents: 4000,
       realProfitUsdCents: 0,
@@ -106,7 +110,7 @@ describe('profitService.computeRealProfit', () => {
   test('loja não sacável (Steam, BRL) entra no lucro convertida: 8000 BRL / 5,0 = 1600', () => {
     const s = baseScenario();
     s.stores = [csfloat(), steam()];
-    s.balances = balancesOf({ stores: s.stores, latestBalances: [latest(1, 10000), latest(steam().id, 8000)], withdrawals: s.withdrawals });
+    s.balances = balancesOf({ stores: s.stores, latestBalances: [latest(1, 12000), latest(steam().id, 8000)], withdrawals: s.withdrawals });
     const r = computeRealProfit(s);
     expect(r.platformBalanceUsdCents).toBe(11600);
     expect(r.realProfitUsdCents).toBe(1600);
@@ -115,15 +119,17 @@ describe('profitService.computeRealProfit', () => {
     expect(s.balances.totals.nonWithdrawableUsdCents).toBe(1600);
   });
 
-  test('pendente e liberado após o registro entram no total (lojas USD, exatos)', () => {
+  test('pendente e vendas liberadas (já no disponível calculado) entram no total, sem parcela separada (lojas USD, exatos)', () => {
     const stores = [csfloat()];
     const items = [heldSale(1, 7500, '2026-11-20T18:00:00.000Z'), heldSale(1, 1200, '2026-11-13T20:00:00.000Z')];
     const rate = { usdBrlRate: 5.4321 };
     const balances = balancesOf({ stores, latestBalances: [latest(1, 12346, '2026-11-20T15:00:00.000Z')], items, settings: rate });
     const r = computeRealProfit({ balances, stores, settings: rate });
-    expect(r.platformBalanceUsdCents).toBe(12346);
+    expect(r.platformBalanceUsdCents).toBe(12346 + 1200); // a venda liberada depois do saldo inicial já está no disponível
     expect(r.pendingBalanceUsdCents).toBe(7500);
-    expect(r.releasedAfterBalanceUsdCents).toBe(1200);
+    expect(r).not.toHaveProperty('releasedAfterBalanceUsdCents');
+    expect(r.approxBrl).not.toHaveProperty('releasedAfterBalance');
+    expect(r.estimatedParts).not.toHaveProperty('releasedAfterBalance');
     expect(r.nextReleaseAt).toBe('2026-11-27T18:00:00.000Z');
     expect(r.realProfitUsdCents).toBe(12346 + 7500 + 1200);
     expect(r.estimated).toBe(false);
@@ -156,7 +162,6 @@ describe('profitService.computeRealProfit', () => {
       withdrawalsNetUsdCents: 0,
       platformBalanceUsdCents: 0,
       pendingBalanceUsdCents: 0,
-      releasedAfterBalanceUsdCents: 0,
       stockUsdCents: 0,
       realProfitUsdCents: 0,
       withdrawnVsDeposited: { withdrawnUsdCents: 0, depositedUsdCents: 0, ratio: null },
@@ -205,14 +210,40 @@ describe('profitService.computeRealProfit', () => {
     expect(r.warnings).toEqual([]);
   });
 
-  test('aviso BALANCE_MAYBE_OUTDATED vira objeto com a loja', () => {
-    const balances = balancesOf({
-      stores: [csfloat()], latestBalances: [latest(1, 100, '2026-11-01T12:00:00.000Z')],
-      withdrawals: [{ storeId: 1, withdrawnAt: '2026-11-05T12:00:00.000Z' }],
-    });
-    expect(computeRealProfit({ balances, settings: SETTINGS }).warnings).toEqual([
-      { source: 'STORE', storeId: 1, storeName: 'CSFloat', code: 'BALANCE_MAYBE_OUTDATED', text: 'saldo possivelmente desatualizado' },
+  test('saldo calculado negativo vira aviso com a loja e entra no lucro com sinal (E8-Q20)', () => {
+    const withdrawals = [{ storeId: 1, amountStoreCents: 300, feeCents: null, amountBrlCents: null, withdrawnAt: '2026-11-05T12:00:00.000Z' }];
+    const balances = balancesOf({ stores: [csfloat()], latestBalances: [latest(1, 100, '2026-11-01T12:00:00.000Z')], withdrawals });
+    const r = computeRealProfit({ balances, stores: [csfloat()], withdrawals, settings: SETTINGS });
+    expect(r.platformBalanceUsdCents).toBe(-200);
+    expect(r.warnings).toEqual([
+      { source: 'STORE', storeId: 1, storeName: 'CSFloat', code: 'COMPUTED_BALANCE_NEGATIVE', text: 'saldo calculado negativo' },
     ]);
+  });
+
+  test('sem saldo inicial e nunca conferida: nenhum aviso (D243)', () => {
+    const r = computeRealProfit({ balances: balancesOf({ stores: [csfloat(), steam(), csmoney()] }), settings: SETTINGS });
+    expect(r.warnings).toEqual([]);
+  });
+
+  test('aporte de 10,20 + compra de 5,20: saldo 500, colocado 1020, estoque 520 e lucro 0 (D252)', () => {
+    const stores = [csfloat()];
+    const deposits = [{ id: 1, storeId: 1, amountStoreCents: 1020, amountBrlCents: null, depositedAt: '2026-11-01T12:00:00.000Z' }];
+    const bought = { status: 'EM_ESTOQUE', acquisitionType: 'COMPRA', purchaseStoreId: 1, purchasePriceCents: 520, purchaseCurrency: 'USD', fxRateAtPurchase: null, acquiredAt: '2026-11-02T12:00:00.000Z' };
+    const balances = balancesOf({ stores, deposits, items: [bought] });
+    const r = computeRealProfit({ balances, stores, deposits, stockItems: [bought], settings: SETTINGS });
+    expect(r).toMatchObject({ depositsUsdCents: 1020, platformBalanceUsdCents: 500, stockUsdCents: 520, realProfitUsdCents: 0, estimated: false });
+  });
+
+  test('todo aporte e saque contam no lucro real e no saldo da loja, de qualquer data (D245, D252)', () => {
+    const stores = [csfloat()];
+    const deposits = [{ id: 1, storeId: 1, amountStoreCents: 5000, amountBrlCents: null, depositedAt: '2020-11-01T12:00:00.000Z' }];
+    const withdrawals = [{ id: 1, storeId: 1, amountStoreCents: 1000, feeCents: null, amountBrlCents: null, withdrawnAt: '2020-11-02T12:00:00.000Z' }];
+    const balances = balancesOf({ stores, deposits, withdrawals });
+    expect(balances.stores[0].availableCents).toBe(4000);
+    const r = computeRealProfit({ balances, stores, deposits, withdrawals, settings: SETTINGS });
+    expect(r.depositsUsdCents).toBe(5000);
+    expect(r.withdrawalsNetUsdCents).toBe(1000);
+    expect(r.realProfitUsdCents).toBe(1000 + 4000 - 5000);
   });
 
   test('loja sem saldo registrado -> 0; loja inativa com saldo é somada', () => {

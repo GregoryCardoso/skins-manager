@@ -1,6 +1,6 @@
 'use strict';
 
-// Retenção do saldo após a venda (2.8, D214, D215). Funções puras com `now`: nada é gravado, tudo é calculado na hora.
+// Retenção do saldo após a venda (2.8, D214, D239). Funções puras com `now`: nada é gravado, tudo é calculado na hora.
 // A liberação é um instante exato em UTC: `soldAt + saleHoldDaysApplied × 24 h` (não é dia de calendário).
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -23,35 +23,43 @@ function computeSaleRelease(item, now = new Date()) {
   return { releasesAt: new Date(releaseMs).toISOString(), isHeld: now.getTime() < releaseMs };
 }
 
-// Vendas de uma loja que entram na conta além do saldo registrado (D215, E8-Q15): retenção > 0 e liberação
-// posterior ao `recordedAt` do último saldo (sem saldo, todas). Duas categorias, somadas pelo líquido na moeda da loja:
-// pendente (now < liberação) e liberado após o último registro (recordedAt < liberação <= now).
-function computeHeldSalesForStore({ storeId, sales = [], latestBalance = null, now = new Date() }) {
-  const nowMs = now.getTime();
-  const recordedMs = latestBalance ? Date.parse(latestBalance.recordedAt) : null;
+const toMs = (value) => (value instanceof Date ? value.getTime() : Date.parse(value));
+
+// Instante (ms) da liberação de uma venda para o saldo calculado (D239, D244): `soldAt + retenção × 24 h`, com a
+// retenção nula (venda anterior à v6) valendo 0. `null` se a data da venda for inválida.
+function releaseInstantOf(item) {
+  if (isNil(item.soldAt)) return null;
+  const soldMs = Date.parse(item.soldAt);
+  if (Number.isNaN(soldMs)) return null;
+  return soldMs + (isNil(item.saleHoldDaysApplied) ? 0 : item.saleHoldDaysApplied) * DAY_MS;
+}
+
+// Vendas de uma loja separadas em liberadas e pendentes num instante `at` (D239, D252). Sem corte por data.
+// Considera só vendas com `soldAt <= at`:
+// - liberada: `liberação <= at`;
+// - pendente: `liberação > at`; `nextReleaseAt` é a menor liberação pendente.
+// Soma o líquido (`netReceivedCents`) na moeda da loja. O chamador filtra moedas divergentes.
+function splitStoreSales({ storeId, sales = [], at }) {
+  const atMs = toMs(at);
+  const released = { cents: 0, count: 0 };
   const pending = { cents: 0, count: 0, nextReleaseAt: null };
-  const released = { cents: 0, count: 0, earliestReleasedAt: null };
   let nextMs = null;
-  let earliestMs = null;
   for (const sale of sales) {
     if (sale.status !== 'VENDIDO' || sale.saleStoreId !== storeId) continue;
-    if (!(sale.saleHoldDaysApplied > 0)) continue; // retenção 0 ou nula nunca entra
-    const releaseMs = releaseMsOf(sale);
-    if (releaseMs === null) continue;
-    if (recordedMs !== null && !(releaseMs > recordedMs)) continue; // já estava liberada no saldo registrado
-    if (nowMs < releaseMs) {
+    const soldMs = Date.parse(sale.soldAt);
+    const releaseMs = releaseInstantOf(sale);
+    if (releaseMs === null || Number.isNaN(soldMs) || soldMs > atMs) continue;
+    if (releaseMs > atMs) {
       pending.cents += sale.netReceivedCents;
       pending.count += 1;
       if (nextMs === null || releaseMs < nextMs) nextMs = releaseMs;
     } else {
       released.cents += sale.netReceivedCents;
       released.count += 1;
-      if (earliestMs === null || releaseMs < earliestMs) earliestMs = releaseMs;
     }
   }
   pending.nextReleaseAt = nextMs === null ? null : new Date(nextMs).toISOString();
-  released.earliestReleasedAt = earliestMs === null ? null : new Date(earliestMs).toISOString();
-  return { pending, releasedAfterBalance: released };
+  return { released, pending };
 }
 
-module.exports = { DAY_MS, computeSaleRelease, computeHeldSalesForStore };
+module.exports = { DAY_MS, computeSaleRelease, releaseInstantOf, splitStoreSales };

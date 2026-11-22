@@ -28,8 +28,9 @@ import type {
   SellResult,
   Settings,
   Store,
-  StoreBalance,
-  StoreBalanceCreateBody,
+  StoreBalanceCheckBody,
+  StoreBalanceCheckPreview,
+  StoreBalanceEntry,
   StoreBalanceHistory,
   StoreCreateBody,
   StorePatchBody,
@@ -238,16 +239,23 @@ export const updateWithdrawal = (id: number, body: WithdrawalPatchBody) =>
 
 export const deleteWithdrawal = (id: number) => request<{ id: number }>('DELETE', `/withdrawals/${id}`);
 
-// Saldos das lojas (D204, D216): o disponível é digitado; pendente e liberado vêm calculados pelo backend.
+// Saldo das lojas calculado (8.6, D246, Revisão 23): o backend calcula tudo; o frontend só envia conferências.
 export const getCurrentStoreBalances = (signal?: AbortSignal) =>
   request<CurrentStoreBalances>('GET', '/store-balances/current', { signal });
 
 export const listStoreBalances = (storeId: number, signal?: AbortSignal) =>
   request<StoreBalanceHistory>('GET', '/store-balances', { signal, query: { storeId } });
 
-export const createStoreBalance = (body: StoreBalanceCreateBody) => request<StoreBalance>('POST', '/store-balances', { body });
+// Prévia da conferência: calculado e diferença na data informada, sem gravar nada.
+export const getStoreBalanceCheckPreview = (
+  query: { storeId: number; balanceCents: number; recordedAt: string },
+  signal?: AbortSignal,
+) => request<StoreBalanceCheckPreview>('GET', '/store-balances/check-preview', { signal, query });
 
-export const deleteStoreBalance = (id: number) => request<{ id: number }>('DELETE', `/store-balances/${id}`);
+export const createStoreBalanceCheck = (body: StoreBalanceCheckBody) =>
+  request<StoreBalanceEntry>('POST', '/store-balances', { body });
+
+export const deleteStoreBalanceEntry = (id: number) => request<{ id: number }>('DELETE', `/store-balances/${id}`);
 
 export const updateFxRate = (usdBrlRate: number) =>
   request<Settings>('PUT', '/settings/fx-rate', { body: { usdBrlRate } });

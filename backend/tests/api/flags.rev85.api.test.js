@@ -4,6 +4,7 @@ const request = require('supertest');
 const { closeDb } = require('../../src/config/database');
 const Setting = require('../../src/models/Setting');
 const StoreBalance = require('../../src/models/StoreBalance');
+const Deposit = require('../../src/models/Deposit');
 const Item = require('../../src/models/Item');
 const { freshDb, wonSkin, soldFields } = require('../helpers/fixtures');
 const { makeApp, storeId, expectError } = require('../helpers/apiFixtures');
@@ -30,7 +31,6 @@ describe('flags de estimado: /current e /summary dizem o mesmo', () => {
     const current = await get('/api/store-balances/current');
     expect(summary.estimatedParts.platformBalance).toBe(current.totals.availableEstimated);
     expect(summary.estimatedParts.pendingBalance).toBe(current.totals.pendingEstimated);
-    expect(summary.estimatedParts.releasedAfterBalance).toBe(current.totals.releasedAfterBalanceEstimated);
     return { summary, current };
   };
 
@@ -39,18 +39,18 @@ describe('flags de estimado: /current e /summary dizem o mesmo', () => {
     expect(Object.values(current.totals).filter((v) => typeof v === 'boolean').every((v) => v === false)).toBe(true);
   });
 
-  test('só saldo disponível na Steam (BRL): disponível estimado; pendente e liberado não', async () => {
-    StoreBalance.create({ storeId: steam, balanceCents: 4591, fxRate: 5.4321, recordedAt: '2026-11-21T09:00:00.000Z' }, { now: NOW });
+  test('só saldo disponível na Steam (BRL): disponível estimado; pendente não', async () => {
+    Item.create(wonSkin({ name: 'steam', ...soldFields(steam, { soldAt: '2026-11-21T09:00:00.000Z', netReceivedCents: 4591, salePriceCents: 4591, saleCurrency: 'BRL', fxRateAtSale: 5.4321, saleHoldDaysApplied: 0 }) }), { now: NOW });
     const { summary, current } = await check();
-    expect(current.totals).toMatchObject({ availableEstimated: true, pendingEstimated: false, releasedAfterBalanceEstimated: false });
+    expect(current.totals).toMatchObject({ availableEstimated: true, pendingEstimated: false });
     expect(current.totals.nonWithdrawableEstimated).toBe(true); // a Steam não permite saque
-    expect(summary.estimatedParts).toMatchObject({ platformBalance: true, pendingBalance: false, releasedAfterBalance: false });
+    expect(summary.estimatedParts).toMatchObject({ platformBalance: true, pendingBalance: false });
     const row = current.stores.find((s) => s.storeId === steam);
     expect(row.pending).toMatchObject({ usdCents: 0, estimated: false });
   });
 
   test('só saldo na CSFloat (USD) e venda pendente: nada estimado', async () => {
-    StoreBalance.create({ storeId: csf, balanceCents: 12346, fxRate: null, recordedAt: '2026-11-20T15:00:00.000Z' }, { now: NOW });
+    Deposit.create({ storeId: csf, amountStoreCents: 12346, amountBrlCents: null, depositedAt: '2026-11-20T15:00:00.000Z', note: null }, { now: NOW });
     Item.create(wonSkin({
       name: 'pendente', ...soldFields(csf, { soldAt: '2026-11-20T18:00:00.000Z', netReceivedCents: 2500, salePriceCents: 2500, saleHoldDaysApplied: 7 }),
       acquiredAt: '2026-10-01T12:00:00.000Z',
@@ -62,7 +62,7 @@ describe('flags de estimado: /current e /summary dizem o mesmo', () => {
   });
 
   test('sem cotação: Steam com saldo fica nula e os flags continuam iguais nos dois endpoints', async () => {
-    StoreBalance.create({ storeId: steam, balanceCents: 4591, fxRate: null, recordedAt: '2026-11-21T09:00:00.000Z' }, { now: NOW });
+    Item.create(wonSkin({ name: 'steam', ...soldFields(steam, { soldAt: '2026-11-21T09:00:00.000Z', netReceivedCents: 4591, salePriceCents: 4591, saleCurrency: 'BRL', fxRateAtSale: 5.4321, saleHoldDaysApplied: 0 }) }), { now: NOW });
     Setting.update({ usdBrlRate: null }, { now: NOW });
     const { summary, current } = await check();
     expect(current.totals.availableUsdCents).toBeNull();

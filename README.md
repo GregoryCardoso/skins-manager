@@ -21,6 +21,7 @@ Controle o seu inventário de skins de CS2: quanto pagou, por quanto vender sem 
 - **Vendas e histórico:** registre cada venda e veja o lucro, o tempo médio até vender e o preço médio de cada item.
 - **Lojas configuráveis:** cadastre as lojas que você usa, com a moeda e as taxas de cada uma.
 - **Cotação do dólar:** digite a cotação ou atualize com um clique (comercial em tempo real ou PTAX do Banco Central).
+- **Lucro real:** registre aportes, saques e conferências com o saldo do site; o saldo de cada loja é calculado a partir das suas movimentações. Não quer lançar o histórico antigo? Registre um aporte com o saldo atual da loja: o lucro real passa a ser medido a partir dessa data.
 - **Backup:** exporte uma cópia de todos os seus dados e restaure quando precisar.
 - **Tema claro ou escuro** e **português ou inglês**.
 - **Atualização automática** (na versão instalada), sempre perguntando antes.
@@ -117,6 +118,7 @@ O app é **livre para uso pessoal**. O código pertence ao autor: **todos os dir
 - **Sales and history:** record each sale and see the profit, the average time to sell and the average price of each item.
 - **Configurable stores:** add the stores you use, with each one's currency and fees.
 - **Dollar exchange rate:** type the rate or update it with one click (real-time commercial rate or the Brazilian Central Bank PTAX).
+- **Real profit:** record deposits, withdrawals and checks against the site balance; each store's balance is calculated from its activity. Don't want to enter your old history? Record a deposit with the store's current balance: real profit will be measured from that date on.
 - **Backup:** export a copy of all your data and restore it whenever you need.
 - **Light or dark theme** and **Portuguese or English**.
 - **Automatic updates** (in the installed version), always asking first.

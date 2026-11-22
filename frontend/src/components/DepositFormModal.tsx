@@ -165,6 +165,7 @@ export default function DepositFormModal({ deposit, stores, onClose, onSaved, on
               />
             )}
           </FormField>
+          <p className={styles.hint}>{t('storeBalances.startHint')}</p>
           <FormField label={t('deposits.form.date')} error={errors.depositedAt}>
             {(c) => (
               <input
