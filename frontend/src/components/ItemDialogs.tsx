@@ -1,10 +1,10 @@
 'use client';
 
-import { useCallback, useState, type ReactNode } from 'react';
+import { useCallback, useRef, useState, type ReactNode } from 'react';
 import { useInvalidate } from '@/lib/useInvalidate';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
-import { ApiRequestError, deleteItem, unsellItem } from '@/services/api';
+import { ApiRequestError, deleteItem, markItemForSale, markItemOffSale, unsellItem } from '@/services/api';
 import type { ItemView, Store } from '@/types/api';
 import ConfirmDialog from './ConfirmDialog';
 import ItemFormModal from './ItemFormModal';
@@ -19,6 +19,7 @@ type Dialog =
   | { kind: 'sell'; item: ItemView }
   | { kind: 'delete'; item: ItemView }
   | { kind: 'unsell'; item: ItemView }
+  | { kind: 'offSale'; item: ItemView }
   | { kind: 'history'; item: ItemView };
 
 export interface ItemDialogsApi {
@@ -27,6 +28,11 @@ export interface ItemDialogsApi {
   openSell: (item: ItemView) => void;
   openUnsell: (item: ItemView) => void;
   openDelete: (item: ItemView) => void;
+  // "Não está à venda" pede confirmação (o giro recomeça ao voltar); "Colocar à venda" age direto (D266).
+  openOffSale: (item: ItemView) => void;
+  putForSale: (item: ItemView) => void;
+  // Id do item cujo "Colocar à venda" está em andamento (o botão fica desabilitado).
+  forSalePendingId: number | null;
   openHistory: (item: ItemView) => void;
   notice: string | null;
   dismissNotice: () => void;
@@ -45,6 +51,8 @@ export function useItemDialogs(stores: Store[]): ItemDialogsApi {
   const [notice, setNotice] = useState<string | null>(null);
   const [confirmBusy, setConfirmBusy] = useState(false);
   const [confirmError, setConfirmError] = useState<string | null>(null);
+  const [forSalePendingId, setForSalePendingId] = useState<number | null>(null);
+  const forSalePendingRef = useRef<number | null>(null);
 
   const closeDialog = useCallback(() => {
     setDialog(null);
@@ -65,7 +73,11 @@ export function useItemDialogs(stores: Store[]): ItemDialogsApi {
     finish(t('inventory.itemGone'));
   }, [finish, invalidate, t]);
 
-  const runConfirm = (action: Promise<unknown>, doneMessage: string, invalidation: 'item.delete' | 'item.unsell') => {
+  const runConfirm = (
+    action: Promise<unknown>,
+    doneMessage: string,
+    invalidation: 'item.delete' | 'item.unsell' | 'item.offSale',
+  ) => {
     setConfirmBusy(true);
     setConfirmError(null);
     action
@@ -78,8 +90,37 @@ export function useItemDialogs(stores: Store[]): ItemDialogsApi {
           itemGone();
           return;
         }
+        // Já vendido em outra aba/janela: recarrega a lista e mostra a mensagem traduzida (adendo 4 da revisão 8.6/8.7).
+        if (invalidation === 'item.offSale' && err instanceof ApiRequestError && err.code === 'ITEM_ALREADY_SOLD') {
+          invalidate('item.offSale');
+        }
         setConfirmBusy(false);
         setConfirmError(errorMessageFor(err, tLoose, language));
+      });
+  };
+
+  // Sem confirmação: voltar à venda é reversível. Erros viram o aviso da página.
+  // O botão fica travado durante a requisição, para evitar clique duplo (adendo 4 da revisão 8.6/8.7).
+  const putForSale = (item: ItemView) => {
+    if (forSalePendingRef.current !== null) return;
+    forSalePendingRef.current = item.id;
+    setForSalePendingId(item.id);
+    markItemForSale(item.id)
+      .finally(() => {
+        forSalePendingRef.current = null;
+        setForSalePendingId(null);
+      })
+      .then(() => {
+        invalidate('item.backOnSale');
+        setNotice(t('inventory.forSaleDone', { name: item.name }));
+      })
+      .catch((err: unknown) => {
+        if (err instanceof ApiRequestError && err.code === 'ITEM_NOT_FOUND') {
+          itemGone();
+          return;
+        }
+        if (err instanceof ApiRequestError && err.code === 'ITEM_ALREADY_SOLD') invalidate('item.sell');
+        setNotice(errorMessageFor(err, tLoose, language));
       });
   };
 
@@ -112,6 +153,17 @@ export function useItemDialogs(stores: Store[]): ItemDialogsApi {
           onConfirm={() => runConfirm(deleteItem(dialog.item.id), t('confirm.deleted'), 'item.delete')}
         />
       )}
+      {dialog?.kind === 'offSale' && (
+        <ConfirmDialog
+          title={t('inventory.offSaleConfirmTitle')}
+          message={t('inventory.offSaleConfirmMessage')}
+          confirmLabel={t('inventory.actions.offSale')}
+          busy={confirmBusy}
+          error={confirmError}
+          onCancel={closeDialog}
+          onConfirm={() => runConfirm(markItemOffSale(dialog.item.id), t('inventory.offSaleDone', { name: dialog.item.name }), 'item.offSale')}
+        />
+      )}
       {dialog?.kind === 'unsell' && (
         <ConfirmDialog
           title={t('confirm.unsellTitle')}
@@ -132,6 +184,9 @@ export function useItemDialogs(stores: Store[]): ItemDialogsApi {
     openSell: (item) => setDialog({ kind: 'sell', item }),
     openUnsell: (item) => setDialog({ kind: 'unsell', item }),
     openDelete: (item) => setDialog({ kind: 'delete', item }),
+    openOffSale: (item) => setDialog({ kind: 'offSale', item }),
+    putForSale,
+    forSalePendingId,
     openHistory: (item) => setDialog({ kind: 'history', item }),
     notice,
     dismissNotice: () => setNotice(null),

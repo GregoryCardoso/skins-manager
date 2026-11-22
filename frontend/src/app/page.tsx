@@ -11,7 +11,7 @@ import SystemStatus from '@/components/SystemStatus';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
 import {
-  DEFAULT_FILTERS, hasActiveFilters, parseFilters, toApiQuery, toSearchString, type InventoryFilters as Filters,
+  clearedFilters, hasActiveFilters, parseFilters, toApiQuery, toSearchString, type InventoryFilters as Filters,
 } from '@/lib/inventoryQuery';
 import { queryKeys } from '@/lib/queryKeys';
 import { ApiRequestError, listItems, listStores } from '@/services/api';
@@ -49,8 +49,9 @@ function InventoryView() {
     storesQuery.refetch();
   }, [itemsQuery, storesQuery]);
 
-  const { openCreate, openEdit, openSell, openUnsell, openDelete, openHistory, notice, dismissNotice, dialogs } =
-    useItemDialogs(stores);
+  const {
+    openCreate, openEdit, openSell, openUnsell, openDelete, openHistory, openOffSale, putForSale, forSalePendingId, notice, dismissNotice, dialogs,
+  } = useItemDialogs(stores);
 
   const setFilters = useCallback(
     (next: Filters) => {
@@ -102,9 +103,30 @@ function InventoryView() {
         slowItemDays={slowItemDays}
         loading={loading}
         onChange={setFilters}
-        onClear={() => setFilters(DEFAULT_FILTERS)}
+        onClear={() => setFilters(clearedFilters(filters))}
         onRefresh={reload}
       />
+
+      {filters.status === 'EM_ESTOQUE' && (
+        <div className={styles.tabs} role="tablist" aria-label={t('inventory.title')}>
+          {(['FOR_SALE', 'OFF_SALE'] as const).map((state) => {
+            const count = data ? (state === 'FOR_SALE' ? data.meta.saleStateCounts.forSale : data.meta.saleStateCounts.offSale) : 0;
+            const selected = filters.saleState === state;
+            return (
+              <button
+                key={state}
+                type="button"
+                role="tab"
+                aria-selected={selected}
+                className={selected ? `${styles.tab} ${styles.tabActive}` : styles.tab}
+                onClick={() => setFilters({ ...filters, saleState: state, stagnant: state === 'OFF_SALE' ? false : filters.stagnant })}
+              >
+                {t(state === 'FOR_SALE' ? 'inventory.tabs.forSale' : 'inventory.tabs.offSale', { count })}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {error !== null && (
         <div className={styles.error} role="alert">
@@ -117,9 +139,13 @@ function InventoryView() {
 
       {data !== null && data.items.length === 0 && error === null && (
         <div className={styles.empty}>
-          <p>{filtered ? t('inventory.emptyFiltered') : t('inventory.empty')}</p>
+          <p>
+            {filtered
+              ? t('inventory.emptyFiltered')
+              : filters.status === 'EM_ESTOQUE' && filters.saleState === 'OFF_SALE' ? t('inventory.offSaleEmpty') : t('inventory.empty')}
+          </p>
           {filtered && (
-            <button type="button" className={styles.retry} onClick={() => setFilters(DEFAULT_FILTERS)}>
+            <button type="button" className={styles.retry} onClick={() => setFilters(clearedFilters(filters))}>
               {t('inventory.clearFilters')}
             </button>
           )}
@@ -136,6 +162,9 @@ function InventoryView() {
             onUnsell={openUnsell}
             onDelete={openDelete}
             onHistory={openHistory}
+            onOffSale={openOffSale}
+            onForSale={putForSale}
+            forSalePendingId={forSalePendingId}
           />
         </div>
       )}

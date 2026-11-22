@@ -23,6 +23,7 @@ const BUCKET_TONES: Record<string, BadgeTone> = {
   GIRO_RAPIDO: 'success',
   GIRO_NORMAL: 'neutral',
   DEMOROU_VENDER: 'warning',
+  SEM_GIRO: 'neutral',
 };
 
 const noop = () => undefined;
@@ -63,6 +64,15 @@ function DaysCell({ item }: { item: ItemView }) {
   const tPlural = useTPlural();
   const aging = item.aging;
   if (!('turnaroundDays' in aging)) return <span className={styles.muted}>{t('common.none')}</span>;
+  // Vendido fora de venda (D263): sem giro; só a faixa "sem giro" e o tempo desde a compra.
+  if (aging.turnaroundDays === null) {
+    return (
+      <div className={styles.stack}>
+        <Badge tone={BUCKET_TONES[aging.turnaroundBucket]}>{tLoose(`enums.turnaroundBucket.${aging.turnaroundBucket}`)}</Badge>
+        <span className={styles.muted}>{t('sales.daysHeld', { days: tPlural('common.dayCount', aging.daysHeld) })}</span>
+      </div>
+    );
+  }
   return (
     <div className={styles.stack}>
       <span>{t('sales.daysAfterRelease', { days: tPlural('common.dayCount', aging.turnaroundDays) })}</span>

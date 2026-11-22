@@ -66,12 +66,12 @@ function makeV6Backup(file) {
 }
 
 describe('backup e a retenção do saldo', () => {
-  test('importar um backup v5 migra para v9: lojas pelo nome, vendas antigas nulas, saques e itens preservados, aporte legado', async () => {
+  test('importar um backup v5 migra para v10: lojas pelo nome, vendas antigas nulas, saques e itens preservados, aporte legado', async () => {
     const v5 = path.join(dir, 'v5.sqlite');
     makeV5Backup(v5);
     const res = await octet(fs.readFileSync(v5));
     expect(res.status).toBe(200);
-    expect(res.body.data).toMatchObject({ fileVersion: 5, schemaVersion: 9, migrationsApplied: [6, 7, 8, 9] });
+    expect(res.body.data).toMatchObject({ fileVersion: 5, schemaVersion: 10, migrationsApplied: [6, 7, 8, 9, 10] });
 
     const db = database.getDb();
     expect(holds()).toEqual({ CSFloat: 7, csmoney: 7, Steam: 0 });
@@ -105,12 +105,12 @@ describe('backup e a retenção do saldo', () => {
     expect(after.prepare("SELECT sale_hold_days_applied AS h FROM items WHERE name = 'Vendida'").get().h).toBe(12);
   });
 
-  test('importar um backup v6 migra para v9: aportes legados, saques e taxas intactos, app segue funcionando', async () => {
+  test('importar um backup v6 migra para v10: aportes legados, saques e taxas intactos, app segue funcionando', async () => {
     const v6 = path.join(dir, 'v6.sqlite');
     makeV6Backup(v6);
     const res = await octet(fs.readFileSync(v6));
     expect(res.status).toBe(200);
-    expect(res.body.data).toMatchObject({ fileVersion: 6, schemaVersion: 9, migrationsApplied: [7, 8, 9] });
+    expect(res.body.data).toMatchObject({ fileVersion: 6, schemaVersion: 10, migrationsApplied: [7, 8, 9, 10] });
 
     const deposits = (await request(app).get('/api/deposits')).body.data;
     expect(deposits.totals).toMatchObject({ count: 2, legacyCount: 2 });

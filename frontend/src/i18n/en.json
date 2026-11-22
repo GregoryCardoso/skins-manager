@@ -225,13 +225,25 @@
       "unsell": "Undo sale",
       "delete": "Delete",
       "lockedHint": "Trade locked until {date}",
-      "history": "History"
+      "history": "History",
+      "offSale": "Not for sale",
+      "forSale": "Put up for sale"
     },
     "itemGone": "This item no longer exists (it may have been deleted in another tab). The list was refreshed.",
     "daysForSale": "for sale for {days}",
     "daysInInventory": "in inventory for {days}",
     "inTradeLock": "In trade lock · {time}",
-    "daysHeld": "{days} since purchase"
+    "daysHeld": "{days} since purchase",
+    "tabs": {
+      "forSale": "For sale ({count})",
+      "offSale": "Not for sale ({count})"
+    },
+    "offSaleConfirmTitle": "Take off sale?",
+    "offSaleConfirmMessage": "The item leaves the for-sale list. When put back up for sale, the turnover count restarts.",
+    "offSaleSince": "Not for sale since {date}",
+    "offSaleEmpty": "No items off sale.",
+    "offSaleDone": "{name} taken off sale.",
+    "forSaleDone": "{name} put back up for sale."
   },
   "filters": {
     "label": "Inventory filters",
@@ -299,12 +311,14 @@
       "RECENTE": "Recent",
       "EM_GIRO": "Moving",
       "AGARRADO": "Stagnant",
-      "EM_TRADE_LOCK": "In trade lock"
+      "EM_TRADE_LOCK": "In trade lock",
+      "FORA_DE_VENDA": "Not for sale"
     },
     "turnaroundBucket": {
       "GIRO_RAPIDO": "Fast turnover",
       "GIRO_NORMAL": "Normal turnover",
-      "DEMOROU_VENDER": "Slow to sell"
+      "DEMOROU_VENDER": "Slow to sell",
+      "SEM_GIRO": "Sold while not for sale (no turnover)"
     }
   },
   "fx": {
@@ -555,7 +569,11 @@
     "none": "No sales of this item yet",
     "fxNote": "{count} of {total} sales used a recorded USD→BRL rate",
     "keyNote": "Same name, category, variant, exterior and phase.",
-    "daysValue": "{days} days"
+    "daysValue": "{days} days",
+    "soldOffSale": {
+      "one": "{count} sale made while not for sale is not in the average time",
+      "other": "{count} sales made while not for sale are not in the average time"
+    }
   },
   "stores": {
     "title": "Stores",

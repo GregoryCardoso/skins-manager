@@ -8,6 +8,7 @@ import { formatMoney } from '@/lib/format';
 import {
   buildCheckPreviewQuery, buildStoreBalanceBody, initialStoreBalanceState, validateStoreBalanceForm, type StoreBalanceFormState,
 } from '@/lib/storeBalanceForm';
+import { MAX_NOTE_LENGTH } from '@/lib/limits';
 import { useInvalidate } from '@/lib/useInvalidate';
 import { ApiRequestError, createStoreBalanceCheck, getStoreBalanceCheckPreview } from '@/services/api';
 import type { StoreBalanceCheckPreview, StoreBalanceSummary } from '@/types/api';
@@ -176,7 +177,7 @@ export default function StoreBalanceFormModal({ store, onClose, onSaved }: Props
               <input
                 {...c}
                 className={styles.input}
-                maxLength={500}
+                maxLength={MAX_NOTE_LENGTH}
                 value={state.noteText}
                 onChange={(e) => {
                   patch({ noteText: e.target.value });

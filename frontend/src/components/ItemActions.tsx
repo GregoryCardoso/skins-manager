@@ -13,13 +13,18 @@ interface Props {
   onUnsell: (item: ItemView) => void;
   onDelete: (item: ItemView) => void;
   onHistory?: (item: ItemView) => void;
+  // Só no inventário (D266): "Não está à venda" (com confirmação) e "Colocar à venda" (direto).
+  onOffSale?: (item: ItemView) => void;
+  onForSale?: (item: ItemView) => void;
+  // "Colocar à venda" em andamento: o botão fica desabilitado (evita clique duplo).
+  forSaleBusy?: boolean;
   // Ação extra no fim (ex.: "Inspecionar").
   children?: ReactNode;
 }
 
 // Botões por situação do item (D118): EM_ESTOQUE -> Editar, Vender, Excluir; VENDIDO -> Editar, Desfazer venda, Excluir.
 // "Vender" fica desabilitado em trade lock (D74); o backend continua sendo a fonte da regra.
-export default function ItemActions({ item, onEdit, onSell, onUnsell, onDelete, onHistory, children }: Props) {
+export default function ItemActions({ item, onEdit, onSell, onUnsell, onDelete, onHistory, onOffSale, onForSale, forSaleBusy = false, children }: Props) {
   const t = useT();
   const locale = useLanguage();
   const sold = item.status === 'VENDIDO';
@@ -36,6 +41,14 @@ export default function ItemActions({ item, onEdit, onSell, onUnsell, onDelete, 
       ) : (
         <button type="button" className={styles.button} onClick={() => onSell(item)} disabled={locked} title={lockHint}>
           {t('inventory.actions.sell')}
+        </button>
+      )}
+      {item.saleState === 'FOR_SALE' && onOffSale && (
+        <button type="button" className={styles.button} onClick={() => onOffSale(item)}>{t('inventory.actions.offSale')}</button>
+      )}
+      {item.saleState === 'OFF_SALE' && onForSale && (
+        <button type="button" className={styles.button} onClick={() => onForSale(item)} disabled={forSaleBusy} aria-busy={forSaleBusy}>
+          {t('inventory.actions.forSale')}
         </button>
       )}
       <button type="button" className={`${styles.button} ${styles.danger}`} onClick={() => onDelete(item)}>

@@ -103,12 +103,12 @@ describe('computeStoreBalance: sem corte por data', () => {
     expect(r.ignored.legacyDeposits).toBe(1);
   });
 
-  test('ajuste entra por data; conferência sem ajuste e de outra loja não; excludeId tira a própria', () => {
+  test('ajuste entra por data; conferência sem ajuste e de outra loja não; `excludeId` não existe mais', () => {
     const own = checkOf(1, '2026-11-12T00:00:00.000Z', { adjustmentCents: -50, id: 9 });
     const other = checkOf(2, '2026-11-12T00:00:00.000Z', { adjustmentCents: -70, id: 10 });
     const none = checkOf(1, '2026-11-12T00:00:00.000Z', { id: 11 });
     expect(run({ checks: [own, other, none] }).availableCents).toBe(-50);
-    expect(run({ checks: [own], excludeId: 9 }).availableCents).toBe(0);
+    expect(run({ checks: [own], excludeId: 9 }).availableCents).toBe(-50); // parâmetro removido (adendo 6): é ignorado
     expect(run({ checks: [checkOf(1, '2026-11-23T00:00:00.000Z', { adjustmentCents: 40 })] }).availableCents).toBe(0);
   });
 

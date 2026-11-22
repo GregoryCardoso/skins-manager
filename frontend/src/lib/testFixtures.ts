@@ -58,7 +58,11 @@ export function makeItem(overrides: Partial<ItemView> = {}): ItemView {
     saleProfitUsdCents: null,
     saleInfo: null,
     saleRelease: null,
-    stats: { unitCount: 1, soldWithFxCount: 0, soldCount: 0, avgDaysToSell: null, avgPurchaseCostUsdCents: null, avgSalePriceUsdCents: null, avgProfitUsdCents: null },
+    saleState: 'FOR_SALE',
+    offSaleAt: null,
+    forSaleSince: null,
+    soldWhileOffSale: false,
+    stats: { unitCount: 1, soldWithFxCount: 0, soldCount: 0, soldOffSaleCount: 0, avgDaysToSell: null, avgPurchaseCostUsdCents: null, avgSalePriceUsdCents: null, avgProfitUsdCents: null },
     ...overrides,
   };
 }

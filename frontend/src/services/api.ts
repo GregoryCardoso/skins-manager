@@ -189,6 +189,7 @@ export const listItems = (query: ItemListQuery, signal?: AbortSignal) =>
       status: query.status,
       category: query.category,
       stagnantOnly: query.stagnantOnly ? 'true' : undefined,
+      saleState: query.saleState,
       sortBy: 'age',
       order: query.order,
     },
@@ -264,6 +265,11 @@ export const updateFxRate = (usdBrlRate: number) =>
 // Corpo `{}` JSON obrigatório.
 export const refreshFxRate = () =>
   request<FxRefreshResult>('POST', '/settings/fx-rate/refresh', { body: {}, timeoutMs: 30000 });
+
+// "Não está à venda" e "Colocar à venda" (D265): a data é a do servidor; o corpo é `{}` (JSON obrigatório).
+export const markItemOffSale = (id: number) => request<{ item: ItemView }>('POST', `/items/${id}/off-sale`, { body: {} });
+
+export const markItemForSale = (id: number) => request<{ item: ItemView }>('POST', `/items/${id}/for-sale`, { body: {} });
 
 export const getItem = (id: number, signal?: AbortSignal) => request<ItemView>('GET', `/items/${id}`, { signal });
 

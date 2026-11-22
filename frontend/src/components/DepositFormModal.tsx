@@ -9,6 +9,7 @@ import {
 } from '@/lib/depositForm';
 import { resolveErrorTarget } from '@/lib/formErrors';
 import { formatMoney } from '@/lib/format';
+import { MAX_NOTE_LENGTH } from '@/lib/limits';
 import { useInvalidate } from '@/lib/useInvalidate';
 import { ApiRequestError, createDeposit, updateDeposit } from '@/services/api';
 import type { Deposit, Store } from '@/types/api';
@@ -195,7 +196,7 @@ export default function DepositFormModal({ deposit, stores, onClose, onSaved, on
             <input
               {...c}
               className={styles.input}
-              maxLength={500}
+              maxLength={MAX_NOTE_LENGTH}
               value={state.note}
               onChange={(e) => {
                 patch({ note: e.target.value });

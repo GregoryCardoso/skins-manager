@@ -56,6 +56,7 @@ describe('itemStatsService.computeStats', () => {
       unitCount: 2,
       soldWithFxCount: 0,
       soldCount: 0,
+      soldOffSaleCount: 0,
       avgDaysToSell: null,
       avgPurchaseCostUsdCents: 150,
       avgSalePriceUsdCents: null,
@@ -65,7 +66,7 @@ describe('itemStatsService.computeStats', () => {
 
   test('lista vazia → avgPurchaseCost null', () => {
     expect(computeStats([])).toEqual({
-      unitCount: 0, soldWithFxCount: 0, soldCount: 0, avgDaysToSell: null, avgPurchaseCostUsdCents: null, avgSalePriceUsdCents: null, avgProfitUsdCents: null,
+      unitCount: 0, soldWithFxCount: 0, soldCount: 0, soldOffSaleCount: 0, avgDaysToSell: null, avgPurchaseCostUsdCents: null, avgSalePriceUsdCents: null, avgProfitUsdCents: null,
     });
   });
 
@@ -75,6 +76,7 @@ describe('itemStatsService.computeStats', () => {
       unitCount: 3,
       soldWithFxCount: 0,
       soldCount: 2,
+      soldOffSaleCount: 0,
       avgDaysToSell: 3.5,
       avgPurchaseCostUsdCents: 200, // (100 + 300 + 200) / 3
       avgSalePriceUsdCents: 350, // só vendidos

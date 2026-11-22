@@ -15,7 +15,7 @@ function create(data, { now = new Date() } = {}) {
   return findById(Number(id));
 }
 
-// Todas as entradas (saldos iniciais e conferências), do mais recente para o mais antigo.
+// Todas as entradas (esquema v9: só conferências e registros antigos, sem saldo inicial), do mais recente para o mais antigo.
 function findAllEntries() {
   return getDb()
     .prepare('SELECT * FROM store_balances ORDER BY recorded_at DESC, id DESC')

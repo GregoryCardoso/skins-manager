@@ -18,6 +18,9 @@ interface Props {
   onUnsell: (item: ItemView) => void;
   onDelete: (item: ItemView) => void;
   onHistory: (item: ItemView) => void;
+  onOffSale: (item: ItemView) => void;
+  onForSale: (item: ItemView) => void;
+  forSalePendingId?: number | null;
 }
 
 const BUCKET_TONES: Record<string, BadgeTone> = {
@@ -28,6 +31,8 @@ const BUCKET_TONES: Record<string, BadgeTone> = {
   GIRO_RAPIDO: 'success',
   GIRO_NORMAL: 'neutral',
   DEMOROU_VENDER: 'warning',
+  FORA_DE_VENDA: 'neutral',
+  SEM_GIRO: 'neutral',
 };
 
 function isStagnant(item: ItemView): boolean {
@@ -85,6 +90,7 @@ function StoreCell({ item, stores }: { item: ItemView; stores: Store[] }) {
 
 function DaysCell({ item }: { item: ItemView }) {
   const t = useT();
+  const locale = useLanguage();
   const tLoose = useTLoose();
   const tPlural = useTPlural();
   const aging = item.aging;
@@ -92,6 +98,16 @@ function DaysCell({ item }: { item: ItemView }) {
     const inInventory = (
       <span className={styles.muted}>{t('inventory.daysInInventory', { days: tPlural('common.dayCount', aging.daysInInventory) })}</span>
     );
+    // Fora de venda (D263): sem dias à venda nem faixa de giro; mostra desde quando (o trade lock vai na própria coluna).
+    if (aging.agingBucket === 'FORA_DE_VENDA') {
+      return (
+        <div className={styles.stack}>
+          <Badge tone={BUCKET_TONES.FORA_DE_VENDA}>{tLoose('enums.agingBucket.FORA_DE_VENDA')}</Badge>
+          {item.offSaleAt && <span>{t('inventory.offSaleSince', { date: formatDate(item.offSaleAt, locale) })}</span>}
+          {inInventory}
+        </div>
+      );
+    }
     // Em trade lock não há dias à venda nem faixa (D160): selo com o tempo restante.
     if (aging.daysForSale === null) {
       const time = remainingToText(formatRemaining(item.tradeLock.remainingMs), {
@@ -109,6 +125,14 @@ function DaysCell({ item }: { item: ItemView }) {
         <span>{t('inventory.daysForSale', { days: tPlural('common.dayCount', aging.daysForSale) })}</span>
         <Badge tone={BUCKET_TONES[aging.agingBucket]}>{tLoose(`enums.agingBucket.${aging.agingBucket}`)}</Badge>
         {inInventory}
+      </div>
+    );
+  }
+  if (aging.turnaroundDays === null) {
+    return (
+      <div className={styles.stack}>
+        <Badge tone={BUCKET_TONES[aging.turnaroundBucket]}>{tLoose(`enums.turnaroundBucket.${aging.turnaroundBucket}`)}</Badge>
+        <span className={styles.muted}>{t('inventory.daysHeld', { days: tPlural('common.dayCount', aging.daysHeld) })}</span>
       </div>
     );
   }
@@ -158,7 +182,7 @@ function InspectAction({ link }: { link: string | null }) {
   );
 }
 
-export default function InventoryTable({ items, stores, onEdit, onSell, onUnsell, onDelete, onHistory }: Props) {
+export default function InventoryTable({ items, stores, onEdit, onSell, onUnsell, onDelete, onHistory, onOffSale, onForSale, forSalePendingId = null }: Props) {
   const t = useT();
   const locale = useLanguage();
 
@@ -196,7 +220,17 @@ export default function InventoryTable({ items, stores, onEdit, onSell, onUnsell
                     : <MinPriceCell minPrices={item.minPrices} stores={stores} />}
                 </td>
                 <td>
-                  <ItemActions item={item} onEdit={onEdit} onSell={onSell} onUnsell={onUnsell} onDelete={onDelete} onHistory={onHistory}>
+                  <ItemActions
+                    item={item}
+                    onEdit={onEdit}
+                    onSell={onSell}
+                    onUnsell={onUnsell}
+                    onDelete={onDelete}
+                    onHistory={onHistory}
+                    onOffSale={onOffSale}
+                    onForSale={onForSale}
+                    forSaleBusy={forSalePendingId === item.id}
+                  >
                     <InspectAction link={item.inspectLink} />
                   </ItemActions>
                 </td>

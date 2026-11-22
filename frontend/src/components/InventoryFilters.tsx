@@ -3,7 +3,7 @@
 import { useId } from 'react';
 import { useT, useTLoose } from '@/i18n/I18nProvider';
 import {
-  CATEGORIES, STATUS_FILTERS, hasActiveFilters,
+  CATEGORIES, STATUS_FILTERS, hasActiveFilters, isStagnantDisabled,
   type AgeOrder, type CategoryFilter, type InventoryFilters as Filters, type StatusFilter,
 } from '@/lib/inventoryQuery';
 import styles from './InventoryFilters.module.css';
@@ -21,7 +21,8 @@ export default function InventoryFilters({ filters, slowItemDays, loading, onCha
   const t = useT();
   const tLoose = useTLoose();
   const id = useId();
-  const stagnantDisabled = filters.status === 'VENDIDO';
+  // "Só agarrados" não vale para vendidos nem para a aba "Fora de venda" dos itens em estoque (D266).
+  const stagnantDisabled = isStagnantDisabled(filters);
 
   return (
     <form className={styles.bar} onSubmit={(event) => event.preventDefault()} aria-label={t('filters.label')}>

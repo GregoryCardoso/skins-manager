@@ -18,6 +18,7 @@ const { getTradeLockStatus } = require('./tradeLockService');
 const { computeSaleRelease } = require('./saleHoldService');
 const {
   getAging, assertAcquiredAtNotFuture, assertNotFutureDay, filterStagnant, sortByAge, sortByTurnaround, sortBySoldAt, filterSoldInPeriod,
+  isOffSale, soldWhileOffSale,
 } = require('./inventoryAgingService');
 const { minPricesForItem, resolveSaleNet } = require('./pricingService');
 const { computeSaleProfitUsdCents, buildSaleInfo } = require('./profitService');
@@ -354,6 +355,9 @@ function toItemView(
   return {
     ...item,
     // Legado: sem vínculo com o catálogo numa categoria que o exige (D82).
+    // Estado de venda (D265): só itens em estoque; vendido = null. `soldWhileOffSale`: vendido sem passar pela venda (sem giro).
+    saleState: inStock ? (isOffSale(item) ? 'OFF_SALE' : 'FOR_SALE') : null,
+    soldWhileOffSale: soldWhileOffSale(item),
     isLegacy: isNil(item.catalogId) && CATALOG_CATEGORIES.includes(item.category),
     catalog: isNil(item.catalogId) ? null : toCatalogSummary(catalogById.get(item.catalogId)),
     tradeLock: getTradeLockStatus(item.tradeUnlockAt, now),
@@ -403,8 +407,14 @@ function findOrFail(id) {
 function listItems(query = {}, { now = new Date(), thresholds = getAgingThresholds() } = {}) {
   const { items: all, stores, settings, statsIndex, catalogById } = loadContext();
   let items = all;
-  if (query.status) items = items.filter((i) => i.status === query.status);
   if (query.category) items = items.filter((i) => i.category === query.category);
+  // Contagem das abas (D265, adendo 1 da revisão 8.6/8.7): sobre os itens em estoque, com a categoria,
+  // independentemente do filtro de `status` e sem `saleState` nem `stagnantOnly`.
+  const stock = items.filter((i) => i.status === 'EM_ESTOQUE');
+  if (query.status) items = items.filter((i) => i.status === query.status);
+  const saleStateCounts = { forSale: stock.filter((i) => !isOffSale(i)).length, offSale: stock.filter((i) => isOffSale(i)).length };
+  if (query.saleState === 'FOR_SALE') items = items.filter((i) => i.status === 'EM_ESTOQUE' && !isOffSale(i));
+  else if (query.saleState === 'OFF_SALE') items = items.filter((i) => isOffSale(i));
   if (query.stagnantOnly) items = filterStagnant(items, thresholds, now);
   if (query.sortBy === 'age') items = sortByAge(items, query.order ?? 'desc', now);
   else if (query.sortBy === 'turnaround') items = sortByTurnaround(items, query.order ?? 'asc');
@@ -413,6 +423,7 @@ function listItems(query = {}, { now = new Date(), thresholds = getAgingThreshol
     items: items.map((item) => toItemView(item, { stores, settings, statsIndex, catalogById, now, thresholds })),
     meta: {
       count: items.length,
+      saleStateCounts,
       fastTurnoverDays: thresholds.fastTurnoverDays,
       slowItemDays: thresholds.slowItemDays,
       usdBrlRate: settings.usdBrlRate,
@@ -528,6 +539,25 @@ function unsellItem(id, ctx = {}) {
   return inTransaction(() => viewOf(Item.update(id, buildUnsellPatch(), { now }), { now, thresholds }));
 }
 
+// "Não está à venda" (D263, D265): grava `offSaleAt = now`. Só em estoque; já fora de venda = sem mudança (idempotente).
+function markOffSale(id, ctx = {}) {
+  const { now = new Date(), thresholds = getAgingThresholds() } = ctx;
+  const item = findOrFail(id);
+  if (item.status !== 'EM_ESTOQUE') throw new ConflictError('Item já vendido.', 'ITEM_ALREADY_SOLD');
+  if (isOffSale(item)) return { item: viewOf(item, { now, thresholds }) };
+  return { item: inTransaction(() => viewOf(Item.update(id, { offSaleAt: now.toISOString() }, { now }), { now, thresholds })) };
+}
+
+// "Colocar à venda" (D263, D265): grava `forSaleSince = now` e limpa `offSaleAt`; o giro recomeça. Já à venda = sem mudança.
+function markForSale(id, ctx = {}) {
+  const { now = new Date(), thresholds = getAgingThresholds() } = ctx;
+  const item = findOrFail(id);
+  if (item.status !== 'EM_ESTOQUE') throw new ConflictError('Item já vendido.', 'ITEM_ALREADY_SOLD');
+  if (!isOffSale(item)) return { item: viewOf(item, { now, thresholds }) };
+  const patch = { forSaleSince: now.toISOString(), offSaleAt: null };
+  return { item: inTransaction(() => viewOf(Item.update(id, patch, { now }), { now, thresholds })) };
+}
+
 function getItemStats({ name, category, variant, exterior, phase }) {
   const key = buildStatsKey({ name, category, variant, exterior, phase });
   return { key, ...computeStats(loadStatsGroup({ category, name }, key)) };
@@ -547,5 +577,7 @@ module.exports = {
   deleteItem,
   sellItem,
   unsellItem,
+  markOffSale,
+  markForSale,
   getItemStats,
 };

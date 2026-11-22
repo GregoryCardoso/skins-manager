@@ -7,6 +7,7 @@ const FIELDS = [
   'fxRateAtPurchase', 'acquiredAt', 'tradeUnlockAt', 'status', 'saleStoreId', 'salePriceCents',
   'saleCurrency', 'fxRateAtSale', 'saleFeeTypeApplied', 'saleFeeRateApplied', 'saleFeeRoundingApplied',
   'saleMinFeeCentsApplied', 'saleFixedFeeCentsApplied', 'netReceivedCents', 'netReceivedManual', 'soldAt', 'saleHoldDaysApplied',
+  'offSaleAt', 'forSaleSince',
 ];
 const BOOLEAN_FIELDS = ['netReceivedManual'];
 const toItem = (row) => mapRow(row, BOOLEAN_FIELDS);

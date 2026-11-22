@@ -62,11 +62,36 @@ function classifyTurnaround(days, thresholds) {
   return 'DEMOROU_VENDER';
 }
 
-// Início da contagem do giro (D160): `tradeUnlockAt` se existir e for posterior a `acquiredAt`; senão `acquiredAt`.
+const isNil = (value) => value === null || value === undefined;
+
+// Início da contagem do giro (D160, D263): o mais tarde entre `acquiredAt`, `tradeUnlockAt` e `forSaleSince`
+// (quando o item voltou à venda). Empate: vale o primeiro da ordem acquiredAt, tradeUnlockAt, forSaleSince.
 function listingStart(item) {
-  if (item.tradeUnlockAt === null || item.tradeUnlockAt === undefined) return item.acquiredAt;
-  const unlockMs = parseDate(item.tradeUnlockAt, 'Fim do trade lock').getTime();
-  return unlockMs > parseDate(item.acquiredAt, 'Data de aquisição').getTime() ? item.tradeUnlockAt : item.acquiredAt;
+  let best = item.acquiredAt;
+  let bestMs = parseDate(item.acquiredAt, 'Data de aquisição').getTime();
+  const candidates = [
+    [item.tradeUnlockAt, 'Fim do trade lock'],
+    [item.forSaleSince, 'Data em que voltou à venda'],
+  ];
+  for (const [value, label] of candidates) {
+    if (isNil(value)) continue;
+    const ms = parseDate(value, label).getTime();
+    if (ms > bestMs) {
+      best = value;
+      bestMs = ms;
+    }
+  }
+  return best;
+}
+
+// Em estoque e fora de venda (D263): `offSaleAt` preenchido.
+function isOffSale(item) {
+  return item.status === 'EM_ESTOQUE' && !isNil(item.offSaleAt);
+}
+
+// Vendido enquanto estava fora de venda (a venda guarda `offSaleAt`): não tem giro (D263).
+function soldWhileOffSale(item) {
+  return item.status === 'VENDIDO' && !isNil(item.offSaleAt);
 }
 
 // Item em estoque ainda bloqueado (`now < tradeUnlockAt`; igualdade = liberado, como 2.3).
@@ -115,6 +140,9 @@ function assertAcquiredAtNotFuture(acquiredAt, now = new Date()) {
 
 function getAging(item, { thresholds, now = new Date() } = {}) {
   assertThresholds(thresholds); // T81: obrigatório, nunca lê o banco
+  if (soldWhileOffSale(item)) {
+    return { turnaroundDays: null, turnaroundBucket: 'SEM_GIRO', daysHeld: daysBetween(item.acquiredAt, item.soldAt) };
+  }
   if (item.status === 'VENDIDO') {
     const turnaroundDays = turnaroundDaysOf(item);
     return {
@@ -124,6 +152,8 @@ function getAging(item, { thresholds, now = new Date() } = {}) {
     };
   }
   const daysInInventory = daysBetween(item.acquiredAt, now);
+  // Fora de venda prevalece sobre o trade lock (que continua informado à parte, no `tradeLock` da view).
+  if (isOffSale(item)) return { daysInInventory, daysForSale: null, agingBucket: 'FORA_DE_VENDA' };
   if (isInTradeLock(item, now)) return { daysInInventory, daysForSale: null, agingBucket: 'EM_TRADE_LOCK' };
   const daysForSale = daysBetween(listingStart(item), now);
   return { daysInInventory, daysForSale, agingBucket: classifyStock(daysForSale, thresholds) };
@@ -141,24 +171,29 @@ function sortBy(items, valueOf, order) {
     .map((entry) => entry.item);
 }
 
-// Mais antigo à venda primeiro em `desc`, pelo instante exato da liberação (T21, D160). Itens em trade lock vão
-// sempre para o fim (nas duas direções), por `tradeUnlockAt` crescente e depois id.
+// Mais antigo à venda primeiro em `desc`, pelo instante exato da liberação (T21, D160). Depois dos à venda e liberados vêm
+// os em trade lock (por `tradeUnlockAt` crescente e depois id) e, por último, os fora de venda (por `offSaleAt`
+// crescente e depois id), nas duas direções (D265).
 function sortByAge(items, order = 'desc', now = new Date()) {
   const nowMs = parseDate(now, 'Data atual').getTime();
   const nowDate = new Date(nowMs);
-  const locked = items.filter((item) => isInTradeLock(item, nowDate));
-  const free = items.filter((item) => !isInTradeLock(item, nowDate));
+  const off = items.filter((item) => isOffSale(item));
+  const rest = items.filter((item) => !isOffSale(item));
+  const locked = rest.filter((item) => isInTradeLock(item, nowDate));
+  const free = rest.filter((item) => !isInTradeLock(item, nowDate));
   return [
     ...sortBy(free, (item) => nowMs - parseDate(listingStart(item), 'Data de liberação').getTime(), order),
     ...sortBy(locked, (item) => parseDate(item.tradeUnlockAt, 'Fim do trade lock').getTime(), 'asc'),
+    ...sortBy(off, (item) => parseDate(item.offSaleAt, 'Data em que saiu da venda').getTime(), 'asc'),
   ];
 }
 
-// Itens sem soldAt (em estoque) vão sempre para o fim.
+// Vendas sem giro (SEM_GIRO) vão depois das com giro, e os itens sem soldAt (em estoque) por último (D265).
 function sortByTurnaround(items, order = 'asc') {
-  const sold = items.filter((item) => item.status === 'VENDIDO');
+  const sold = items.filter((item) => item.status === 'VENDIDO' && !soldWhileOffSale(item));
+  const noTurnover = items.filter((item) => soldWhileOffSale(item));
   const unsold = items.filter((item) => item.status !== 'VENDIDO');
-  return [...sortBy(sold, turnaroundDaysOf, order), ...sortBy(unsold, () => 0, 'asc')];
+  return [...sortBy(sold, turnaroundDaysOf, order), ...sortBy(noTurnover, () => 0, 'asc'), ...sortBy(unsold, () => 0, 'asc')];
 }
 
 // "YYYY-MM-DD" -> { year, month, day } numéricos; undefined/null -> null.
@@ -194,12 +229,13 @@ function sortBySoldAt(items, order = 'desc') {
   ];
 }
 
-// Só em estoque, liberado e `AGARRADO` pelos dias à venda; item em trade lock nunca entra (D160).
+// Só em estoque, à venda, liberado e `AGARRADO` pelos dias à venda; trade lock e fora de venda nunca entram (D160, D263).
 function filterStagnant(items, thresholds, now = new Date()) {
   assertThresholds(thresholds);
   return items.filter(
     (item) =>
       item.status === 'EM_ESTOQUE' &&
+      !isOffSale(item) &&
       !isInTradeLock(item, now) &&
       classifyStock(daysBetween(listingStart(item), now), thresholds) === 'AGARRADO'
   );
@@ -208,6 +244,8 @@ function filterStagnant(items, thresholds, now = new Date()) {
 module.exports = {
   resolveAgingThresholds,
   listingStart,
+  isOffSale,
+  soldWhileOffSale,
   isInTradeLock,
   turnaroundDaysOf,
   daysBetween,

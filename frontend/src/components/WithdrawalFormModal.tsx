@@ -9,6 +9,7 @@ import {
   initialWithdrawalState, validateWithdrawalForm, withdrawalAmountText, withdrawalFormFromWithdrawal, withdrawalStoreOptions,
   type WithdrawalFormState,
 } from '@/lib/withdrawalForm';
+import { MAX_NOTE_LENGTH } from '@/lib/limits';
 import { useInvalidate } from '@/lib/useInvalidate';
 import { ApiRequestError, createWithdrawal, getWithdrawalFeeSuggestion, updateWithdrawal } from '@/services/api';
 import type { Store, Withdrawal } from '@/types/api';
@@ -242,7 +243,7 @@ export default function WithdrawalFormModal({ withdrawal, stores, onClose, onSav
             <input
               {...c}
               className={styles.input}
-              maxLength={500}
+              maxLength={MAX_NOTE_LENGTH}
               value={state.note}
               onChange={(e) => {
                 patch({ note: e.target.value });

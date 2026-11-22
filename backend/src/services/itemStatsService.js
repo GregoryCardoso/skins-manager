@@ -3,7 +3,7 @@
 // Histórico agregado por item igual (2.7). Métricas em USD (centavos) com a cotação gravada de cada item.
 const { toUsdCents } = require('./currencyService');
 const { roundCents } = require('./fees/rounding');
-const { turnaroundDaysOf } = require('./inventoryAgingService');
+const { turnaroundDaysOf, soldWhileOffSale } = require('./inventoryAgingService');
 const { computeSaleProfitUsdCents, buildSaleInfo } = require('./profitService');
 const { approxCounterpart } = require('./currencyService');
 
@@ -29,6 +29,7 @@ function computeStats(items) {
     unitCount,
     soldWithFxCount,
     soldCount: 0,
+    soldOffSaleCount: 0,
     avgDaysToSell: null,
     avgPurchaseCostUsdCents: null,
     avgSalePriceUsdCents: null,
@@ -41,12 +42,15 @@ function computeStats(items) {
       )
     : null;
   if (sold.length === 0) return { ...empty, avgPurchaseCostUsdCents };
+  // Vendas feitas fora de venda não têm giro e ficam fora do tempo médio (D263).
+  const withTurnover = sold.filter((item) => !soldWhileOffSale(item));
 
   return {
     unitCount,
     soldWithFxCount,
     soldCount: sold.length,
-    avgDaysToSell: Math.round(mean(sold.map((item) => turnaroundDaysOf(item))) * 10) / 10,
+    soldOffSaleCount: sold.length - withTurnover.length,
+    avgDaysToSell: withTurnover.length ? Math.round(mean(withTurnover.map((item) => turnaroundDaysOf(item))) * 10) / 10 : null,
     avgPurchaseCostUsdCents,
     avgSalePriceUsdCents: roundCents(
       mean(sold.map((item) => toUsdCents(item.salePriceCents, item.saleCurrency, item.fxRateAtSale, 'ROUND'))),
@@ -71,6 +75,7 @@ function buildStatsIndex(items) {
 // Resumo das vendas já filtradas (D126). Tudo em USD com a cotação gravada de cada venda; "≈ R$" pela cotação atual.
 function computeSalesSummary(items, { usdBrlRate = null } = {}) {
   const sold = items.filter((item) => item.status === 'VENDIDO');
+  const withTurnover = sold.filter((item) => !soldWhileOffSale(item));
   const infos = sold.map((item) => buildSaleInfo(item, usdBrlRate));
   const sum = (pick) => infos.reduce((acc, info) => acc + pick(info), 0);
   const totalSalePriceUsdCents = sum((i) => i.salePriceUsdCents);
@@ -87,8 +92,8 @@ function computeSalesSummary(items, { usdBrlRate = null } = {}) {
     totalNetReceivedUsdCents,
     totalPurchaseCostUsdCents,
     totalProfitUsdCents,
-    avgTurnaroundDays: sold.length
-      ? Math.round(mean(sold.map((item) => turnaroundDaysOf(item))) * 10) / 10
+    avgTurnaroundDays: withTurnover.length
+      ? Math.round(mean(withTurnover.map((item) => turnaroundDaysOf(item))) * 10) / 10
       : null,
     soldWithFxCount: infos.filter((i) => i.usesRecordedFx).length,
     approxBrl: {

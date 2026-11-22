@@ -58,6 +58,9 @@ export default function ItemHistoryBox({ stats, compact = false }: Props) {
           )}
         </>
       )}
+      {stats.soldOffSaleCount > 0 && (
+        <p className={styles.note}>{tPlural('history.soldOffSale', stats.soldOffSaleCount)}</p>
+      )}
       {stats.soldWithFxCount > 0 && (
         <p className={styles.note}>{t('history.fxNote', { count: stats.soldWithFxCount, total: stats.soldCount })}</p>
       )}

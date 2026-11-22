@@ -55,11 +55,11 @@ test('todas as colunas (inclusive REAL, BRL, fases, textos com aspas) idênticas
     const after = db.prepare('SELECT * FROM items ORDER BY id').all();
     expect(after).toHaveLength(3);
     after.forEach((row, i) => {
-      const { net_received_manual: manual, sale_hold_days_applied: hold, ...rest } = row; // v6 acrescenta o snapshot
+      const { net_received_manual: manual, sale_hold_days_applied: hold, off_sale_at: offSale, for_sale_since: forSale, ...rest } = row; // v6 acrescenta o snapshot
       expect(manual).toBe(0);
       expect(rest).toEqual(dump[i]);
     });
-    expect(db.prepare("SELECT count(*) c FROM pragma_table_info('items')").get().c).toBe(Object.keys(dump[0]).length + 2);
+    expect(db.prepare("SELECT count(*) c FROM pragma_table_info('items')").get().c).toBe(Object.keys(dump[0]).length + 4);
   } finally {
     db.close();
   }
@@ -73,7 +73,7 @@ test('idempotência: reabrir não migra de novo, não cria outro backup e não a
   db.close();
   db = openDatabase(dbPath, { now: new Date('2026-11-21T12:00:00.000Z') });
   try {
-    expect(db.pragma('user_version', { simple: true })).toBe(9);
+    expect(db.pragma('user_version', { simple: true })).toBe(10);
     expect(db.prepare('SELECT * FROM items ORDER BY id').all()).toEqual(first);
   } finally {
     db.close();

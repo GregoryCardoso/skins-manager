@@ -225,13 +225,25 @@
       "unsell": "Desfazer venda",
       "delete": "Excluir",
       "lockedHint": "Em trade lock até {date}",
-      "history": "Histórico"
+      "history": "Histórico",
+      "offSale": "Não está à venda",
+      "forSale": "Colocar à venda"
     },
     "itemGone": "Este item não existe mais (talvez tenha sido excluído em outra aba). A lista foi atualizada.",
     "daysForSale": "à venda há {days}",
     "daysInInventory": "no inventário há {days}",
     "inTradeLock": "Em trade lock · {time}",
-    "daysHeld": "{days} desde a compra"
+    "daysHeld": "{days} desde a compra",
+    "tabs": {
+      "forSale": "À venda ({count})",
+      "offSale": "Fora de venda ({count})"
+    },
+    "offSaleConfirmTitle": "Tirar da venda?",
+    "offSaleConfirmMessage": "O item sai da lista à venda. Ao voltar à venda, a contagem de giro recomeça.",
+    "offSaleSince": "Fora de venda desde {date}",
+    "offSaleEmpty": "Nenhum item fora de venda.",
+    "offSaleDone": "{name} saiu da venda.",
+    "forSaleDone": "{name} voltou à venda."
   },
   "filters": {
     "label": "Filtros do inventário",
@@ -299,12 +311,14 @@
       "RECENTE": "Recente",
       "EM_GIRO": "Em giro",
       "AGARRADO": "Agarrado",
-      "EM_TRADE_LOCK": "Em trade lock"
+      "EM_TRADE_LOCK": "Em trade lock",
+      "FORA_DE_VENDA": "Fora de venda"
     },
     "turnaroundBucket": {
       "GIRO_RAPIDO": "Giro rápido",
       "GIRO_NORMAL": "Giro normal",
-      "DEMOROU_VENDER": "Demorou para vender"
+      "DEMOROU_VENDER": "Demorou para vender",
+      "SEM_GIRO": "Vendido fora de venda (sem giro)"
     }
   },
   "fx": {
@@ -555,7 +569,11 @@
     "none": "Nenhuma venda deste item ainda",
     "fxNote": "{count} de {total} vendas usaram cotação USD→BRL gravada",
     "keyNote": "Mesmo nome, categoria, variante, exterior e fase.",
-    "daysValue": "{days} dias"
+    "daysValue": "{days} dias",
+    "soldOffSale": {
+      "one": "{count} venda fora de venda não entra no tempo médio",
+      "other": "{count} vendas fora de venda não entram no tempo médio"
+    }
   },
   "stores": {
     "title": "Lojas",

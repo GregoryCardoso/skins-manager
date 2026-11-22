@@ -90,8 +90,10 @@ export type Variant = 'NORMAL' | 'STATTRAK' | 'SOUVENIR';
 export type Exterior = 'FN' | 'MW' | 'FT' | 'WW' | 'BS';
 export type AcquisitionType = 'GANHEI' | 'COMPRA';
 export type ItemStatus = 'EM_ESTOQUE' | 'VENDIDO';
-export type AgingBucket = 'RECENTE' | 'EM_GIRO' | 'AGARRADO' | 'EM_TRADE_LOCK';
-export type TurnaroundBucket = 'GIRO_RAPIDO' | 'GIRO_NORMAL' | 'DEMOROU_VENDER';
+export type AgingBucket = 'RECENTE' | 'EM_GIRO' | 'AGARRADO' | 'EM_TRADE_LOCK' | 'FORA_DE_VENDA';
+export type TurnaroundBucket = 'GIRO_RAPIDO' | 'GIRO_NORMAL' | 'DEMOROU_VENDER' | 'SEM_GIRO';
+// Item em estoque à venda ou fora de venda (D263); nulo em item vendido.
+export type SaleState = 'FOR_SALE' | 'OFF_SALE';
 export type WarningCode = 'FEES_NOT_CONFIGURED' | 'FX_NOT_CONFIGURED' | 'PRICE_OVERFLOW';
 
 export interface TradeLock {
@@ -103,9 +105,10 @@ export interface TradeLock {
 
 // Em estoque (D160): `daysForSale` conta da liberação do trade lock (nulo em lock); `daysInInventory` é só informação.
 // Vendido: `turnaroundDays` conta da liberação até a venda; `daysHeld` (desde a aquisição) é só informação.
+// Fora de venda (D263): `FORA_DE_VENDA` sem dias à venda; vendido fora de venda: `SEM_GIRO` e `turnaroundDays` nulo.
 export type Aging =
   | { daysInInventory: number; daysForSale: number | null; agingBucket: AgingBucket }
-  | { turnaroundDays: number; turnaroundBucket: TurnaroundBucket; daysHeld: number };
+  | { turnaroundDays: number | null; turnaroundBucket: TurnaroundBucket; daysHeld: number };
 
 export interface ApproxAmount {
   currency: Currency;
@@ -138,6 +141,8 @@ export interface ItemStats {
   unitCount: number;
   soldWithFxCount: number;
   soldCount: number;
+  // Vendas feitas fora de venda: não entram no tempo médio (D263).
+  soldOffSaleCount: number;
   avgDaysToSell: number | null;
   avgPurchaseCostUsdCents: number | null;
   avgSalePriceUsdCents: number | null;
@@ -204,11 +209,18 @@ export interface ItemView {
   saleInfo: SaleInfo | null;
   // Liberação do saldo da venda (D214); nulo em estoque. `isHeld` enquanto o líquido ainda está retido.
   saleRelease: SaleRelease | null;
+  // Estado de venda (D265): FOR_SALE/OFF_SALE em estoque; nulo em vendido. As datas só mudam pelos botões da API.
+  saleState: SaleState | null;
+  offSaleAt: string | null;
+  forSaleSince: string | null;
+  soldWhileOffSale: boolean;
   stats: ItemStats;
 }
 
 export interface ItemListMeta {
   count: number;
+  // Contagem das abas, sobre os itens em estoque (com a categoria; sem saleState nem stagnantOnly).
+  saleStateCounts: { forSale: number; offSale: number };
   fastTurnoverDays: number;
   slowItemDays: number;
   usdBrlRate: number | null;
@@ -223,6 +235,7 @@ export interface ItemListQuery {
   status?: ItemStatus;
   category?: Category;
   stagnantOnly?: boolean;
+  saleState?: SaleState;
   order: 'asc' | 'desc';
 }
 

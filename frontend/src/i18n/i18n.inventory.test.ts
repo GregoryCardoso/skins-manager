@@ -15,8 +15,8 @@ const ENUMS: Record<string, string[]> = {
   exteriorShort: ['FN', 'MW', 'FT', 'WW', 'BS'],
   acquisitionType: ['GANHEI', 'COMPRA'],
   status: ['EM_ESTOQUE', 'VENDIDO'],
-  agingBucket: ['RECENTE', 'EM_GIRO', 'AGARRADO', 'EM_TRADE_LOCK'],
-  turnaroundBucket: ['GIRO_RAPIDO', 'GIRO_NORMAL', 'DEMOROU_VENDER'],
+  agingBucket: ['RECENTE', 'EM_GIRO', 'AGARRADO', 'EM_TRADE_LOCK', 'FORA_DE_VENDA'],
+  turnaroundBucket: ['GIRO_RAPIDO', 'GIRO_NORMAL', 'DEMOROU_VENDER', 'SEM_GIRO'],
 };
 
 const NEW_KEYS = [

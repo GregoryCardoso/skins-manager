@@ -145,6 +145,9 @@ const validateUnsellBody = wrap((req) => {
   if (extra) throw fail(`Campo desconhecido: ${extra}`, 'UNKNOWN_FIELD', { field: extra });
 });
 
+// Os POSTs off-sale e for-sale aceitam só o corpo vazio `{}` (D265); `offSaleAt`/`forSaleSince` não são editáveis no PATCH.
+const validateSaleStateBody = validateUnsellBody;
+
 function queryValue(query, key, allowed) {
   const raw = query[key];
   if (raw === undefined) return undefined;
@@ -161,6 +164,10 @@ const validateItemQuery = wrap((req) => {
   const sortBy = queryValue(q, 'sortBy', ['age', 'turnaround']);
   const order = queryValue(q, 'order', ['asc', 'desc']);
   const stagnantOnly = queryValue(q, 'stagnantOnly', ['true', 'false']);
+  const saleState = queryValue(q, 'saleState', ['FOR_SALE', 'OFF_SALE']);
+  if (saleState !== undefined && status === 'VENDIDO') {
+    throw fail('saleState só vale para itens em estoque.', 'INVALID_QUERY', { field: 'saleState' });
+  }
   if (order !== undefined && sortBy === undefined) {
     throw fail('order só pode ser usado junto com sortBy.', 'INVALID_QUERY', { field: 'order' });
   }
@@ -170,6 +177,7 @@ const validateItemQuery = wrap((req) => {
     sortBy,
     order: sortBy ? order ?? (sortBy === 'age' ? 'desc' : 'asc') : undefined,
     stagnantOnly: stagnantOnly === 'true',
+    saleState,
   };
 });
 
@@ -248,4 +256,5 @@ module.exports = {
   validateUpdateItemBody,
   validateSellBody,
   validateUnsellBody,
+  validateSaleStateBody,
 };

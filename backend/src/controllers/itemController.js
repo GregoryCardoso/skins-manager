@@ -39,4 +39,12 @@ function unsell(req, res) {
   ok(res, itemService.unsellItem(req.params.id, ctx(req)));
 }
 
-module.exports = { list, sales, stats, getById, create, update, remove, sell, unsell };
+function offSale(req, res) {
+  ok(res, itemService.markOffSale(req.params.id, ctx(req)));
+}
+
+function forSale(req, res) {
+  ok(res, itemService.markForSale(req.params.id, ctx(req)));
+}
+
+module.exports = { list, sales, stats, getById, create, update, remove, sell, unsell, offSale, forSale };

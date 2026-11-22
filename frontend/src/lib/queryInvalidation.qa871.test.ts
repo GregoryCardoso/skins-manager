@@ -32,6 +32,7 @@ describe('cada função de escrita do api.ts invalida a ação certa onde é usa
   const WRITES: Record<string, InvalidationAction[]> = {
     createItem: ['item.create'], updateItem: ['item.update'], sellItem: ['item.sell'],
     deleteItem: ['item.delete'], unsellItem: ['item.unsell'],
+    markItemOffSale: ['item.offSale'], markItemForSale: ['item.backOnSale'],
     createDeposit: ['deposit.create'], updateDeposit: ['deposit.update'], deleteDeposit: ['deposit.delete'],
     createWithdrawal: ['withdrawal.create'], updateWithdrawal: ['withdrawal.update'], deleteWithdrawal: ['withdrawal.delete'],
     createStoreBalanceCheck: ['balanceCheck.create'], deleteStoreBalanceEntry: ['balanceCheck.delete'],
@@ -81,11 +82,9 @@ describe('cada função de escrita do api.ts invalida a ação certa onde é usa
     }
   });
 
-  test('toda ação do mapa (exceto as do 8.7.2 ainda sem tela) é usada em algum arquivo', () => {
+  test('toda ação do mapa é usada em algum arquivo (inclusive as da 8.7.2)', () => {
     const used = new Set(prod.filter((f) => !rel(f).startsWith('lib/queryInvalidation')).flatMap((f) => [...actionsIn(f)]));
-    const notYet = ['item.offSale', 'item.backOnSale'];
     for (const action of ACTIONS) {
-      if (notYet.includes(action)) continue;
       expect(used.has(action), `ação ${action} nunca usada`).toBe(true);
     }
   });

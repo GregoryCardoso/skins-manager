@@ -27,10 +27,10 @@ const msOf = (value) => (value instanceof Date ? value.getTime() : Date.parse(va
 // --- Cálculo (puro) -----------------------------------------------------------------------------
 
 // Saldo disponível e pendente da loja S no instante `at` (D239, D252). `checks`: conferências (qualquer loja; as de outras
-// lojas e as sem ajuste são ignoradas); `excludeId` tira uma conferência da conta (a própria, na gravação).
+// lojas e as sem ajuste são ignoradas).
 // Entra tudo o que tem data `d <= at`, de qualquer época.
 function computeStoreBalance({
-  store, checks = [], deposits = [], withdrawals = [], items = [], at, excludeId = null,
+  store, checks = [], deposits = [], withdrawals = [], items = [], at,
 }) {
   const atMs = msOf(at);
   const inWindow = (iso) => Date.parse(iso) <= atMs;
@@ -69,7 +69,6 @@ function computeStoreBalance({
   let adjustmentsCents = 0;
   for (const check of checks) {
     if (check.storeId !== store.id || check.kind !== 'CHECK' || isNil(check.adjustmentCents)) continue;
-    if (check.id === excludeId) continue;
     if (inWindow(check.recordedAt)) adjustmentsCents += check.adjustmentCents;
   }
 
