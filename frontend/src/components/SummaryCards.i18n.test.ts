@@ -31,7 +31,7 @@ describe('SummaryCards: chaves i18n (8.4)', () => {
   });
 
   test('textos do pendente e do liberado em en', () => {
-    expect(translate(en, 'profit.pendingIncluded', { amount: '$1', date: 'Nov 25' })).toBe('includes ≈ $1 pending (releases from Nov 25)');
+    expect(translate(en, 'profit.pendingIncluded', { amount: '$1', date: 'Nov 25' })).toBe('includes $1 pending (releases from Nov 25)');
     expect(translate(ptBR, 'profit.releasedIncluded', { amount: 'R$ 1' })).toContain('liberado após o último saldo registrado');
   });
 });

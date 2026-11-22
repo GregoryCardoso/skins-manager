@@ -63,8 +63,9 @@ describe('buildWithdrawalRecord: criação', () => {
     expect(build(input({ amountStoreCents: MAX_AMOUNT_CENTS })).amountStoreCents).toBe(MAX_AMOUNT_CENTS);
   });
 
-  test('valor recebido em BRL: obrigatório e maior que 0', () => {
-    failWith(() => build(input({ amountBrlCents: undefined })), 'REQUIRED_FIELD', 'amountBrlCents');
+  test('valor recebido em BRL: opcional e só informativo (8.5); quando informado, maior que 0', () => {
+    expect(build(input({ amountBrlCents: undefined })).amountBrlCents).toBeNull();
+    expect(build(input({ amountBrlCents: null })).amountBrlCents).toBeNull();
     failWith(() => build(input({ amountBrlCents: 0 })), 'INVALID_AMOUNT', 'amountBrlCents');
     failWith(() => build(input({ amountBrlCents: -5 })), 'INVALID_AMOUNT', 'amountBrlCents');
     failWith(() => build(input({ amountBrlCents: MAX_AMOUNT_CENTS + 1 })), 'INVALID_AMOUNT', 'amountBrlCents');
@@ -137,6 +138,13 @@ describe('buildWithdrawalRecord: edição (registro mesclado)', () => {
     failWith(() => build({ storeId: 1 }, { existing: LEGACY }), 'REQUIRED_FIELD', 'amountStoreCents');
     const rec = build({ storeId: 1, amountStoreCents: 20000 }, { existing: LEGACY });
     expect(rec).toMatchObject({ storeId: 1, amountStoreCents: 20000, feeCents: null, amountBrlCents: 50000 });
+  });
+
+  test('8.5: amountBrlCents: null no PATCH limpa o valor recebido; saque antigo editado sem amountBrlCents é aceito', () => {
+    expect(build({ amountBrlCents: null }, { existing: OLD }).amountBrlCents).toBeNull();
+    const rec = build({ storeId: 1, amountStoreCents: 20000, amountBrlCents: null }, { existing: LEGACY });
+    expect(rec).toMatchObject({ storeId: 1, amountStoreCents: 20000, amountBrlCents: null });
+    expect(build({ storeId: 1, amountStoreCents: 20000 }, { existing: { ...LEGACY, amountBrlCents: null } }).amountBrlCents).toBeNull();
   });
 
   test('saque antigo: escolher loja sem saque também é recusado', () => {

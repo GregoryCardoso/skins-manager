@@ -5,11 +5,12 @@ import { useCallback, useEffect, useState } from 'react';
 import styles from '@/app/profit/page.module.css';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
-import { formatDate, formatMoney } from '@/lib/format';
-import { withdrawalStoreOptions } from '@/lib/withdrawalForm';
+import { formatDate } from '@/lib/format';
+import { withdrawalAmountText, withdrawalStoreOptions } from '@/lib/withdrawalForm';
 import { ApiRequestError, deleteWithdrawal, listStores, listWithdrawals } from '@/services/api';
 import type { Store, Withdrawal, WithdrawalList } from '@/types/api';
 import ConfirmDialog from './ConfirmDialog';
+import { useMoneyLine } from './MoneyApprox';
 import WithdrawalFormModal from './WithdrawalFormModal';
 import WithdrawalsTable from './WithdrawalsTable';
 
@@ -21,6 +22,7 @@ export default function WithdrawalsSection({ onDataChanged }: { onDataChanged?: 
   const tLoose = useTLoose();
   const tPlural = useTPlural();
   const language = useLanguage();
+  const moneyLine = useMoneyLine();
 
   const [data, setData] = useState<WithdrawalList | null>(null);
   const [stores, setStores] = useState<Store[] | null>(null);
@@ -74,7 +76,7 @@ export default function WithdrawalsSection({ onDataChanged }: { onDataChanged?: 
     setConfirmBusy(true);
     setConfirmError(null);
     deleteWithdrawal(withdrawal.id)
-      .then(() => finish(t('withdrawals.deleted', { value: formatMoney(withdrawal.amountBrlCents, 'BRL', language) })))
+      .then(() => finish(t('withdrawals.deleted', { value: withdrawalAmountText(withdrawal, language) })))
       .catch((err: unknown) => {
         if (err instanceof ApiRequestError && err.code === 'WITHDRAWAL_NOT_FOUND') {
           gone();
@@ -108,7 +110,11 @@ export default function WithdrawalsSection({ onDataChanged }: { onDataChanged?: 
       )}
 
       {data && data.totals.count > 0 && (
-        <p className={styles.total}>{t('withdrawals.total', { value: formatMoney(data.totals.amountBrlCents, 'BRL', language) })}</p>
+        <p className={styles.total}>
+          {t('withdrawals.total', {
+            value: moneyLine({ cents: data.totals.netUsdCents, estimated: data.totals.estimated, approxCents: data.totals.approxBrlCents }),
+          })}
+        </p>
       )}
 
       {notice && (
@@ -152,7 +158,7 @@ export default function WithdrawalsSection({ onDataChanged }: { onDataChanged?: 
         <ConfirmDialog
           title={t('withdrawals.deleteTitle')}
           message={t('withdrawals.deleteMessage', {
-            value: formatMoney(dialog.withdrawal.amountBrlCents, 'BRL', language),
+            value: withdrawalAmountText(dialog.withdrawal, language),
             date: formatDate(dialog.withdrawal.withdrawnAt, language),
           })}
           confirmLabel={t('withdrawals.confirmDelete')}

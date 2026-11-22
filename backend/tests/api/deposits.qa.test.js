@@ -14,38 +14,38 @@ afterAll(() => closeDb());
 
 const post = (body) => request(app).post('/api/deposits').send(body);
 const patch = (id, body) => request(app).patch(`/api/deposits/${id}`).send(body);
-const body = (overrides = {}) => ({ amountBrlCents: 10000, depositedAt: '2026-11-10T12:00:00.000Z', ...overrides });
+const body = (overrides = {}) => ({ storeId: storeId('CSFloat'), amountStoreCents: 10000, depositedAt: '2026-11-10T12:00:00.000Z', ...overrides });
 const rowCount = () => getDb().prepare('SELECT COUNT(*) AS n FROM deposits').get().n;
 
 describe('valor', () => {
   test('limites: 1 e 1e10 aceitos; 1e10+1, 0 e negativos recusados', async () => {
-    expect((await post(body({ amountBrlCents: 1 }))).status).toBe(201);
-    expect((await post(body({ amountBrlCents: 1e10 }))).status).toBe(201);
-    expectError(await post(body({ amountBrlCents: 1e10 + 1 })), 400, 'INVALID_AMOUNT', { field: 'amountBrlCents', params: { maxCents: 1e10 } });
-    expectError(await post(body({ amountBrlCents: 0 })), 400, 'INVALID_AMOUNT');
-    expectError(await post(body({ amountBrlCents: -100 })), 400, 'INVALID_AMOUNT');
+    expect((await post(body({ amountStoreCents: 1 }))).status).toBe(201);
+    expect((await post(body({ amountStoreCents: 1e10 }))).status).toBe(201);
+    expectError(await post(body({ amountStoreCents: 1e10 + 1 })), 400, 'INVALID_AMOUNT', { field: 'amountStoreCents', params: { maxCents: 1e10 } });
+    expectError(await post(body({ amountStoreCents: 0 })), 400, 'INVALID_AMOUNT');
+    expectError(await post(body({ amountStoreCents: -100 })), 400, 'INVALID_AMOUNT');
     expect(rowCount()).toBe(2);
   });
 
   test('valores fora do inteiro seguro e fracionários são INVALID_AMOUNT', async () => {
-    expectError(await post(body({ amountBrlCents: 2 ** 53 })), 400, 'INVALID_AMOUNT');
-    expectError(await post(body({ amountBrlCents: 1e300 })), 400, 'INVALID_AMOUNT');
-    expectError(await post(body({ amountBrlCents: 0.5 })), 400, 'INVALID_AMOUNT');
+    expectError(await post(body({ amountStoreCents: 2 ** 53 })), 400, 'INVALID_AMOUNT');
+    expectError(await post(body({ amountStoreCents: 1e300 })), 400, 'INVALID_AMOUNT');
+    expectError(await post(body({ amountStoreCents: 0.5 })), 400, 'INVALID_AMOUNT');
   });
 
   test('tipos errados são INVALID_FIELD (booleano, texto, lista, objeto, nulo é REQUIRED_FIELD)', async () => {
     for (const bad of [true, '100', [100], { v: 1 }]) {
-      expectError(await post(body({ amountBrlCents: bad })), 400, 'INVALID_FIELD', { field: 'amountBrlCents' });
+      expectError(await post(body({ amountStoreCents: bad })), 400, 'INVALID_FIELD', { field: 'amountStoreCents' });
     }
-    expectError(await post(body({ amountBrlCents: null })), 400, 'REQUIRED_FIELD', { field: 'amountBrlCents' });
+    expectError(await post(body({ amountStoreCents: null })), 400, 'REQUIRED_FIELD', { field: 'amountStoreCents' });
     expect(rowCount()).toBe(0);
   });
 
   test('PATCH: limites e tipos valem igualmente', async () => {
     const { id } = (await post(body())).body.data;
-    expectError(await patch(id, { amountBrlCents: 1e10 + 1 }), 400, 'INVALID_AMOUNT');
-    expectError(await patch(id, { amountBrlCents: '5' }), 400, 'INVALID_FIELD');
-    expect((await patch(id, { amountBrlCents: 1e10 })).body.data.amountBrlCents).toBe(1e10);
+    expectError(await patch(id, { amountStoreCents: 1e10 + 1 }), 400, 'INVALID_AMOUNT');
+    expectError(await patch(id, { amountStoreCents: '5' }), 400, 'INVALID_FIELD');
+    expect((await patch(id, { amountStoreCents: 1e10 })).body.data.amountStoreCents).toBe(1e10);
   });
 });
 
@@ -112,37 +112,39 @@ describe('observação', () => {
   });
 });
 
-describe('loja (D202: informativa)', () => {
-  test('loja inativa é aceita no POST e no PATCH; a moeda da loja não interfere (aporte sempre em BRL)', async () => {
+describe('loja (D227, D232: só USD)', () => {
+  test('loja inativa em USD é aceita no POST e no PATCH', async () => {
     const csmoney = storeId('CSMoney'); // USD
     await request(app).patch(`/api/stores/${csmoney}`).send({ isActive: false }).expect(200);
     const created = await post(body({ storeId: csmoney }));
     expect(created.status).toBe(201);
-    expect(created.body.data).toMatchObject({ storeId: csmoney, storeName: 'CSMoney', amountBrlCents: 10000 });
+    expect(created.body.data).toMatchObject({ storeId: csmoney, storeName: 'CSMoney', amountStoreCents: 10000 });
     const { id } = (await post(body())).body.data;
     expect((await patch(id, { storeId: csmoney })).status).toBe(200);
   });
 
   test('loja inexistente, zero e negativo -> STORE_NOT_FOUND; tipos errados -> INVALID_FIELD', async () => {
     for (const bad of [9999, 0, -1]) expectError(await post(body({ storeId: bad })), 400, 'STORE_NOT_FOUND', { field: 'storeId' });
+    expectError(await post(body({ storeId: storeId('Steam') })), 400, 'DEPOSIT_STORE_CURRENCY_NOT_ALLOWED', { field: 'storeId' });
     for (const bad of ['1', true, [1], 1e300]) expectError(await post(body({ storeId: bad })), 400, 'INVALID_FIELD', { field: 'storeId' });
     expect(rowCount()).toBe(0);
   });
 
   test('excluir a loja com aporte -> 409 STORE_IN_USE e o aporte continua apontando para ela', async () => {
-    const created = await request(app).post('/api/stores').send({ name: 'Outra', currency: 'BRL' }).expect(201);
+    const created = await request(app).post('/api/stores').send({ name: 'Outra', currency: 'USD' }).expect(201);
     const sid = created.body.data.id;
     const { id } = (await post(body({ storeId: sid }))).body.data;
     expectError(await request(app).delete(`/api/stores/${sid}`), 409, 'STORE_IN_USE');
+    // a moeda da loja com aporte fica travada (o valor está na moeda da loja)
+    expectError(await request(app).patch(`/api/stores/${sid}`).send({ currency: 'BRL' }), 409, 'STORE_CURRENCY_LOCKED');
     expect(getDb().prepare('SELECT store_id AS s FROM deposits WHERE id = ?').get(id).s).toBe(sid);
     // aporte sem loja não "usa" nenhuma
     await request(app).delete(`/api/deposits/${id}`).expect(200);
-    await post(body());
     await request(app).delete(`/api/stores/${sid}`).expect(200);
   });
 
   test('loja em uso só por aporte: desativar é permitido e o aporte continua exibindo o nome', async () => {
-    const created = await request(app).post('/api/stores').send({ name: 'Outra', currency: 'BRL' }).expect(201);
+    const created = await request(app).post('/api/stores').send({ name: 'Outra', currency: 'USD' }).expect(201);
     const sid = created.body.data.id;
     await post(body({ storeId: sid }));
     await request(app).patch(`/api/stores/${sid}`).send({ isActive: false }).expect(200);
@@ -152,27 +154,27 @@ describe('loja (D202: informativa)', () => {
 
 describe('listagem', () => {
   test('ordena pelo instante UTC (não pelo texto do offset), desempata por id DESC; total soma tudo', async () => {
-    const a = (await post(body({ depositedAt: '2026-11-10T23:00:00-03:00', amountBrlCents: 1 }))).body.data; // 11/11 02:00Z
-    const b = (await post(body({ depositedAt: '2026-11-11T01:00:00Z', amountBrlCents: 2 }))).body.data; // 01:00Z
-    const c = (await post(body({ depositedAt: '2026-11-11T02:00:00Z', amountBrlCents: 4 }))).body.data; // mesmo instante de a
+    const a = (await post(body({ depositedAt: '2026-11-10T23:00:00-03:00', amountStoreCents: 1 }))).body.data; // 11/11 02:00Z
+    const b = (await post(body({ depositedAt: '2026-11-11T01:00:00Z', amountStoreCents: 2 }))).body.data; // 01:00Z
+    const c = (await post(body({ depositedAt: '2026-11-11T02:00:00Z', amountStoreCents: 4 }))).body.data; // mesmo instante de a
     const res = (await request(app).get('/api/deposits')).body.data;
     expect(res.deposits.map((d) => d.id)).toEqual([c.id, a.id, b.id]);
-    expect(res.totals).toEqual({ count: 3, amountBrlCents: 7 });
+    expect(res.totals).toMatchObject({ count: 3, amountUsdCents: 7 });
   });
 
   test('o PATCH da data reordena a lista e o total não muda', async () => {
-    const a = (await post(body({ depositedAt: '2026-11-01T12:00:00Z', amountBrlCents: 10 }))).body.data;
-    const b = (await post(body({ depositedAt: '2026-11-02T12:00:00Z', amountBrlCents: 20 }))).body.data;
+    const a = (await post(body({ depositedAt: '2026-11-01T12:00:00Z', amountStoreCents: 10 }))).body.data;
+    const b = (await post(body({ depositedAt: '2026-11-02T12:00:00Z', amountStoreCents: 20 }))).body.data;
     await patch(a.id, { depositedAt: '2026-11-05T12:00:00Z' }).expect(200);
     const res = (await request(app).get('/api/deposits')).body.data;
     expect(res.deposits.map((d) => d.id)).toEqual([a.id, b.id]);
-    expect(res.totals.amountBrlCents).toBe(30);
+    expect(res.totals.amountUsdCents).toBe(30);
   });
 
   test('total com valores grandes não perde precisão dentro do limite', async () => {
-    await post(body({ amountBrlCents: 1e10 }));
-    await post(body({ amountBrlCents: 1e10 }));
-    expect((await request(app).get('/api/deposits')).body.data.totals.amountBrlCents).toBe(2e10);
+    await post(body({ amountStoreCents: 1e10 }));
+    await post(body({ amountStoreCents: 1e10 }));
+    expect((await request(app).get('/api/deposits')).body.data.totals.amountUsdCents).toBe(2e10);
   });
 });
 
@@ -181,14 +183,14 @@ describe('segurança: as três escritas', () => {
     const ok = await request(app).post('/api/deposits').set('Content-Type', 'application/json; charset=utf-8').send(JSON.stringify(body()));
     expect(ok.status).toBe(201);
     const { id } = ok.body.data;
-    expectError(await request(app).post('/api/deposits').type('form').send({ amountBrlCents: 1 }), 415, 'UNSUPPORTED_MEDIA_TYPE');
+    expectError(await request(app).post('/api/deposits').type('form').send({ amountStoreCents: 1 }), 415, 'UNSUPPORTED_MEDIA_TYPE');
     expectError(await request(app).patch(`/api/deposits/${id}`).type('form').send({ note: 'x' }), 415, 'UNSUPPORTED_MEDIA_TYPE');
     expectError(await request(app).post('/api/deposits').set('Content-Type', 'application/octet-stream').send(Buffer.from('{}')), 415, 'UNSUPPORTED_MEDIA_TYPE');
     expect(rowCount()).toBe(1);
   });
 
   test('JSON malformado -> 400 (formato padrão) sem gravar', async () => {
-    const res = await request(app).post('/api/deposits').set('Content-Type', 'application/json').send('{"amountBrlCents": ');
+    const res = await request(app).post('/api/deposits').set('Content-Type', 'application/json').send('{"amountStoreCents": ');
     expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);
     expect(typeof res.body.error.code).toBe('string');

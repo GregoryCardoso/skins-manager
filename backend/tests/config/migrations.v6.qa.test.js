@@ -22,6 +22,7 @@ afterAll(() => {
 });
 
 const upTo5 = MIGRATIONS.filter((m) => m.version <= 5);
+const upTo6 = MIGRATIONS.filter((m) => m.version <= 6);
 const dbIn = (name) => path.join(tmpRoot, name, 'inventory.sqlite');
 const columns = (db, table) => db.prepare('SELECT name FROM pragma_table_info(?)').all(table).map((r) => r.name);
 const rootPage = (db, table) => db.prepare('SELECT rootpage FROM sqlite_master WHERE name = ?').get(table).rootpage;
@@ -58,7 +59,7 @@ describe('migração v6: lojas com nomes variados (D213)', () => {
     insertStore(old, 'cs money');
     old.close();
 
-    const db = openDatabase(dbPath);
+    const db = openDatabase(dbPath, { migrations: upTo6 });
     try {
       const holds = Object.fromEntries(db.prepare('SELECT name, sale_hold_days AS d FROM stores').all().map((r) => [r.name, r.d]));
       expect(holds).toEqual({
@@ -74,7 +75,7 @@ describe('migração v6: lojas com nomes variados (D213)', () => {
     const old = openDatabase(dbPath, { migrations: upTo5 });
     old.prepare('DELETE FROM stores').run();
     old.close();
-    const db = openDatabase(dbPath);
+    const db = openDatabase(dbPath, { migrations: upTo6 });
     try {
       expect(db.pragma('user_version', { simple: true })).toBe(6);
       expect(db.prepare('SELECT COUNT(*) AS n FROM stores').get().n).toBe(0);
@@ -106,7 +107,7 @@ describe('migração v6: dados reais variados', () => {
     const before = snapshot(old);
     old.close();
 
-    const db = openDatabase(dbPath);
+    const db = openDatabase(dbPath, { migrations: upTo6 });
     try {
       expect(snapshot(db)).toEqual(before);
       expect(db.prepare('SELECT COUNT(*) AS n FROM items WHERE sale_hold_days_applied IS NOT NULL').get().n).toBe(0);
@@ -125,7 +126,7 @@ describe('migração v6: dados reais variados', () => {
     const old = openDatabase(dbPath, { migrations: upTo5 });
     const before = ['stores', 'items', 'withdrawals'].map((t) => rootPage(old, t));
     old.close();
-    const db = openDatabase(dbPath);
+    const db = openDatabase(dbPath, { migrations: upTo6 });
     try {
       expect(['stores', 'items', 'withdrawals'].map((t) => rootPage(db, t))).toEqual(before);
       expect(columns(db, 'withdrawals')).toContain('fee_cents');
@@ -157,7 +158,7 @@ describe('migração v6: dado antigo x CHECK de sale_hold_days_applied', () => {
     old.pragma('ignore_check_constraints = ON');
     old.prepare("UPDATE items SET sold_at = '2026-11-15T12:00:00.000Z' WHERE id = ?").run(stock);
     old.close();
-    expect(() => openDatabase(dbPath)).toThrow(/CHECK/);
+    expect(() => openDatabase(dbPath, { migrations: upTo6 })).toThrow(/CHECK/);
     const raw = new Database(dbPath);
     try {
       expect(raw.pragma('user_version', { simple: true })).toBe(5);
@@ -186,7 +187,7 @@ describe('migração v6: falha no meio e backup', () => {
     };
     old.close();
 
-    expect(() => openDatabase(dbPath)).toThrow(/duplicate column/i);
+    expect(() => openDatabase(dbPath, { migrations: upTo6 })).toThrow(/duplicate column/i);
 
     const raw = new Database(dbPath);
     try {
@@ -209,7 +210,7 @@ describe('migração v6: falha no meio e backup', () => {
     const old = openDatabase(dbPath, { migrations: upTo5 });
     old.exec('ALTER TABLE withdrawals ADD COLUMN fee_cents INTEGER');
     old.close();
-    expect(() => openDatabase(dbPath)).toThrow();
+    expect(() => openDatabase(dbPath, { migrations: upTo6 })).toThrow();
     fs.rmSync(dbPath, { force: true });
     for (const suffix of ['-wal', '-shm']) fs.rmSync(`${dbPath}${suffix}`, { force: true });
     expect(fs.existsSync(dbPath)).toBe(false);
@@ -223,7 +224,7 @@ describe('migração v6: falha no meio e backup', () => {
     insertStock(old, 'E', csfloat);
     const items = old.prepare('SELECT * FROM items ORDER BY id').all();
     old.close();
-    openDatabase(dbPath).close();
+    openDatabase(dbPath, { migrations: upTo6 }).close();
 
     const dir = path.join(path.dirname(dbPath), 'backups');
     const file = fs.readdirSync(dir).find((f) => f.startsWith('inventory-v5-'));
@@ -242,7 +243,7 @@ describe('migração v6: falha no meio e backup', () => {
   test('skipMigrationBackup não cria o backup, e a v6 aplica igual', () => {
     const dbPath = dbIn('semBackup');
     openDatabase(dbPath, { migrations: upTo5 }).close();
-    const db = openDatabase(dbPath, { skipMigrationBackup: true });
+    const db = openDatabase(dbPath, { migrations: upTo6, skipMigrationBackup: true });
     try {
       expect(db.pragma('user_version', { simple: true })).toBe(6);
       expect(fs.existsSync(path.join(path.dirname(dbPath), 'backups'))).toBe(false);
@@ -259,7 +260,7 @@ describe('seed com checagem de coluna', () => {
     expect(columns(old, 'stores')).not.toContain('sale_hold_days');
     expect(old.prepare('SELECT name FROM stores ORDER BY id').all().map((r) => r.name)).toEqual(['CSFloat', 'Steam', 'CSMoney']);
     old.close();
-    const db = openDatabase(dbPath);
+    const db = openDatabase(dbPath, { migrations: upTo6 });
     try {
       expect(db.prepare('SELECT name, sale_hold_days AS d FROM stores ORDER BY id').all())
         .toEqual([{ name: 'CSFloat', d: 7 }, { name: 'Steam', d: 0 }, { name: 'CSMoney', d: 7 }]);
@@ -269,7 +270,7 @@ describe('seed com checagem de coluna', () => {
   });
 
   test('banco novo com a lista completa: o seed roda depois das migrações e grava 7/0/7 (nunca o ramo sem coluna)', () => {
-    const db = openDatabase(':memory:');
+    const db = openDatabase(':memory:', { migrations: upTo6 });
     try {
       expect(columns(db, 'stores')).toContain('sale_hold_days');
       expect(db.prepare('SELECT name, sale_hold_days AS d FROM stores ORDER BY id').all())

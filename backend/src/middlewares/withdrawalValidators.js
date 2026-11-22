@@ -9,7 +9,7 @@ const BODY_FIELDS = Object.freeze({
   storeId: { type: 'number', nullable: true, integer: true },
   amountStoreCents: { type: 'number', nullable: false },
   feeCents: { type: 'number', nullable: true },
-  amountBrlCents: { type: 'number', nullable: false },
+  amountBrlCents: { type: 'number', nullable: true },
   withdrawnAt: { type: 'string', nullable: false },
   note: { type: 'string', nullable: true },
 });
@@ -24,7 +24,7 @@ function checkBodyShape(body, { requireKeys }) {
     return err;
   }
   if (requireKeys) {
-    for (const key of ['amountStoreCents', 'amountBrlCents', 'withdrawnAt']) {
+    for (const key of ['amountStoreCents', 'withdrawnAt']) {
       if (body[key] === undefined || body[key] === null) {
         return new ValidationError(`O campo ${key} é obrigatório.`, 'REQUIRED_FIELD', { field: key });
       }

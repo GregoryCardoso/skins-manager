@@ -9,7 +9,7 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe('resumo do lucro real (8.4)', () => {
   test('getProfitSummary: GET /profit/summary', async () => {
-    const payload = { realProfitBrlCents: 117575, warnings: [] };
+    const payload = { baseCurrency: 'USD', realProfitUsdCents: 21859, warnings: [] };
     const fn = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ success: true, data: payload }), { status: 200, headers: { 'Content-Type': 'application/json' } }),
     );
@@ -34,7 +34,7 @@ describe('resumo do lucro real (8.4)', () => {
       expect(holders(translate(en, key)), key).toEqual(holders(translate(ptBR, key)));
     }
     expect(translate(ptBR, 'profit.pendingIncluded', { amount: 'R$ 461,73', date: '25/11/2026' }))
-      .toBe('inclui ≈ R$ 461,73 pendente (libera a partir de 25/11/2026)');
+      .toBe('inclui R$ 461,73 pendente (libera a partir de 25/11/2026)'); // o "≈" vem junto do valor, só se estimado
   });
 
   test('o subtítulo não promete mais o resumo para depois', () => {

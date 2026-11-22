@@ -164,31 +164,36 @@ describe('GET /api/store-balances/current: exemplo de D206 centavo a centavo', (
   test('CSFloat, Steam e CSMoney', async () => {
     const data = await current();
     expect(row(data, 'CSFloat')).toMatchObject({
-      saleHoldDays: 7, availableCents: 12346, availableEstimatedBrlCents: 67065, allowsWithdrawal: true, estimated: true,
+      saleHoldDays: 7, availableCents: 12346, availableUsdCents: 12346, availableApproxBrlCents: 67065, allowsWithdrawal: true, estimated: false,
       outdated: true, outdatedReasons: ['RELEASED_AFTER_BALANCE'], warningCode: 'BALANCE_MAYBE_OUTDATED',
-      pending: { cents: 7500, count: 3, nextReleaseAt: '2026-11-25T09:00:00.000Z', estimatedBrlCents: 40741 },
-      releasedAfterBalance: { cents: 1200, count: 1, earliestReleasedAt: '2026-11-20T20:00:00.000Z', estimatedBrlCents: 6519 },
+      pending: { cents: 7500, count: 3, nextReleaseAt: '2026-11-25T09:00:00.000Z', usdCents: 7500, approxBrlCents: 40741, estimated: false },
+      releasedAfterBalance: { cents: 1200, count: 1, earliestReleasedAt: '2026-11-20T20:00:00.000Z', usdCents: 1200, approxBrlCents: 6519, estimated: false },
     });
     expect(row(data, 'Steam')).toMatchObject({
-      saleHoldDays: 0, availableCents: 4590, availableEstimatedBrlCents: 4590, allowsWithdrawal: false, estimated: false,
+      saleHoldDays: 0, availableCents: 4590, availableUsdCents: 845, availableApproxBrlCents: 4590, allowsWithdrawal: false, estimated: true,
       outdated: true, outdatedReasons: ['ACTIVITY_AFTER_BALANCE'], warningCode: 'BALANCE_MAYBE_OUTDATED',
-      pending: { cents: 0, count: 0, nextReleaseAt: null, estimatedBrlCents: 0 },
-      releasedAfterBalance: { cents: 0, count: 0, earliestReleasedAt: null, estimatedBrlCents: 0 },
+      pending: { cents: 0, count: 0, nextReleaseAt: null, usdCents: 0, approxBrlCents: 0, estimated: false },
+      releasedAfterBalance: { cents: 0, count: 0, earliestReleasedAt: null, usdCents: 0, approxBrlCents: 0, estimated: false },
     });
     expect(row(data, 'CSMoney')).toMatchObject({
-      balance: null, availableCents: 0, availableEstimatedBrlCents: 0, outdated: false, outdatedReasons: [], warningCode: null,
-      pending: { cents: 1000, count: 1, nextReleaseAt: '2026-11-26T12:00:00.000Z', estimatedBrlCents: 5432 },
-      releasedAfterBalance: { cents: 600, count: 1, earliestReleasedAt: '2026-11-17T12:00:00.000Z', estimatedBrlCents: 3259 },
+      balance: null, availableCents: 0, availableUsdCents: 0, availableApproxBrlCents: 0, outdated: false, outdatedReasons: [], warningCode: null,
+      pending: { cents: 1000, count: 1, nextReleaseAt: '2026-11-26T12:00:00.000Z', usdCents: 1000, approxBrlCents: 5432, estimated: false },
+      releasedAfterBalance: { cents: 600, count: 1, earliestReleasedAt: '2026-11-17T12:00:00.000Z', usdCents: 600, approxBrlCents: 3259, estimated: false },
     });
   });
 
-  test('totais: disponível 71655, pendente 46173, liberado 9778, não sacável 4590, nextReleaseAt 2026-11-25T09:00Z', async () => {
+  test('totais em US$: disponível 13191 (≈ R$ 716,55), pendente 8500, liberado 1800, não sacável 845, nextReleaseAt 2026-11-25T09:00Z', async () => {
     const data = await current();
     expect(data.totals).toEqual({
-      availableEstimatedBrlCents: 71655,
-      pendingEstimatedBrlCents: 46173,
-      releasedAfterBalanceEstimatedBrlCents: 9778,
-      nonWithdrawableEstimatedBrlCents: 4590,
+      availableUsdCents: 13191,
+      pendingUsdCents: 8500,
+      releasedAfterBalanceUsdCents: 1800,
+      nonWithdrawableUsdCents: 845,
+      availableEstimated: true,
+      pendingEstimated: false,
+      releasedAfterBalanceEstimated: false,
+      nonWithdrawableEstimated: true,
+      approxBrl: { available: 71655, pending: 46173, releasedAfterBalance: 9778, nonWithdrawable: 4590 },
       nextReleaseAt: '2026-11-25T09:00:00.000Z',
       estimated: true,
     });
@@ -200,8 +205,8 @@ describe('GET /api/store-balances/current: exemplo de D206 centavo a centavo', (
     getDb().prepare('UPDATE stores SET allows_withdrawal = 1 WHERE id = ?').run(ids.steam);
     getDb().prepare('UPDATE stores SET allows_withdrawal = 0 WHERE id = ?').run(ids.csf);
     const t = (await current()).totals;
-    expect(t).toMatchObject({ availableEstimatedBrlCents: 71655, pendingEstimatedBrlCents: 46173, releasedAfterBalanceEstimatedBrlCents: 9778 });
-    expect(t.nonWithdrawableEstimatedBrlCents).toBe(67065 + 40741 + 6519);
+    expect(t).toMatchObject({ availableUsdCents: 13191, pendingUsdCents: 8500, releasedAfterBalanceUsdCents: 1800 });
+    expect(t.nonWithdrawableUsdCents).toBe(12346 + 7500 + 1200);
   });
 
   test('unsell de uma venda pendente (G) sai na hora; de uma liberada (F) também', async () => {
@@ -244,16 +249,17 @@ describe('GET /api/store-balances/current: exemplo de D206 centavo a centavo', (
     expect(csm.pending.cents).toBe(1000);
   });
 
-  test('sem cotação: estimatedBrlCents null nas duas categorias + FX_NOT_CONFIGURED; cents preenchidos', async () => {
+  test('sem cotação: lojas USD seguem exatas (sem "≈ R$"); só a Steam (BRL) fica sem US$ e com FX_NOT_CONFIGURED', async () => {
     getDb().prepare('UPDATE settings SET usd_brl_rate = NULL').run();
     const data = await current();
     const csf = row(data, 'CSFloat');
-    expect(csf).toMatchObject({ availableEstimatedBrlCents: null, warningCode: 'FX_NOT_CONFIGURED', availableCents: 12346 });
-    expect(csf.pending).toMatchObject({ cents: 7500, estimatedBrlCents: null });
-    expect(csf.releasedAfterBalance).toMatchObject({ cents: 1200, estimatedBrlCents: null });
-    expect(row(data, 'Steam').availableEstimatedBrlCents).toBe(4590);
-    expect(data.totals.pendingEstimatedBrlCents).toBeNull();
-    expect(data.totals.nonWithdrawableEstimatedBrlCents).toBe(4590);
+    expect(csf).toMatchObject({ availableUsdCents: 12346, availableApproxBrlCents: null, warningCode: 'BALANCE_MAYBE_OUTDATED', availableCents: 12346 });
+    expect(csf.pending).toMatchObject({ cents: 7500, usdCents: 7500, approxBrlCents: null });
+    expect(csf.releasedAfterBalance).toMatchObject({ cents: 1200, usdCents: 1200, approxBrlCents: null });
+    expect(row(data, 'Steam')).toMatchObject({ availableUsdCents: null, availableApproxBrlCents: 4590, warningCode: 'FX_NOT_CONFIGURED' });
+    expect(data.totals.pendingUsdCents).toBe(8500);
+    expect(data.totals.availableUsdCents).toBeNull();
+    expect(data.totals.nonWithdrawableUsdCents).toBeNull();
     expect(data.usdBrlRate).toBeNull();
   });
 
@@ -265,7 +271,7 @@ describe('GET /api/store-balances/current: exemplo de D206 centavo a centavo', (
       expect(s).toMatchObject({ balance: null, availableCents: 0, outdated: false });
       expect(s.pending).toMatchObject({ cents: 0, count: 0, nextReleaseAt: null });
     }
-    expect(data.totals).toMatchObject({ availableEstimatedBrlCents: 0, pendingEstimatedBrlCents: 0, nextReleaseAt: null, estimated: false });
+    expect(data.totals).toMatchObject({ availableUsdCents: 0, pendingUsdCents: 0, nextReleaseAt: null, estimated: false });
   });
 });
 

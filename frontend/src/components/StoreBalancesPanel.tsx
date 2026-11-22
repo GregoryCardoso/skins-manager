@@ -8,22 +8,27 @@ import { formatDate, formatMoney } from '@/lib/format';
 import { ApiRequestError, getCurrentStoreBalances } from '@/services/api';
 import type { Currency, CurrentStoreBalances, StoreBalanceSummary } from '@/types/api';
 import { Badge } from './badges';
+import { useMoneyLine } from './MoneyApprox';
 import StoreBalanceFormModal from './StoreBalanceFormModal';
 import StoreBalanceHistory from './StoreBalanceHistory';
 import styles from './StoreBalancesPanel.module.css';
 
 type Dialog = { kind: 'record'; store: StoreBalanceSummary } | { kind: 'history'; store: StoreBalanceSummary };
 
-// Valor na moeda da loja com "≈ R$" discreto ao lado (só loja em dólar com cotação; 2.11).
-function Amount({ cents, currency, approxBrlCents }: { cents: number; currency: Currency; approxBrlCents: number | null }) {
+// Valor na moeda da loja (2.8) com o aproximado discreto ao lado, calculado no backend (D229): "≈ R$" em loja USD,
+// "≈ US$" em loja BRL. Sem cotação, o aproximado some.
+function Amount({ cents, currency, usdCents, approxBrlCents }: {
+  cents: number; currency: Currency; usdCents: number | null; approxBrlCents: number | null;
+}) {
   const t = useT();
   const language = useLanguage();
+  const approx = currency === 'USD'
+    ? (approxBrlCents === null ? null : formatMoney(approxBrlCents, 'BRL', language))
+    : (usdCents === null ? null : formatMoney(usdCents, 'USD', language));
   return (
     <span className={styles.amount}>
       <strong>{formatMoney(cents, currency, language)}</strong>
-      {currency === 'USD' && approxBrlCents !== null && (
-        <span className={styles.approx}> {t('common.approx', { value: formatMoney(approxBrlCents, 'BRL', language) })}</span>
-      )}
+      {approx !== null && <span className={styles.approx}> {t('common.approx', { value: approx })}</span>}
     </span>
   );
 }
@@ -54,7 +59,7 @@ function StoreRow({ store, onRecord, onHistory }: {
       <div className={styles.values}>
         {hasBalance ? (
           <span>
-            <Amount cents={store.availableCents} currency={store.currency} approxBrlCents={store.availableEstimatedBrlCents} />{' '}
+            <Amount cents={store.availableCents} currency={store.currency} usdCents={store.availableUsdCents} approxBrlCents={store.availableApproxBrlCents} />{' '}
             {t('storeBalances.available')}
           </span>
         ) : (
@@ -63,7 +68,7 @@ function StoreRow({ store, onRecord, onHistory }: {
         {pending.cents > 0 && (
           <span>
             {'+ '}
-            <Amount cents={pending.cents} currency={store.currency} approxBrlCents={pending.estimatedBrlCents} />{' '}
+            <Amount cents={pending.cents} currency={store.currency} usdCents={pending.usdCents} approxBrlCents={pending.approxBrlCents} />{' '}
             {t('storeBalances.pending', {
               date: pending.nextReleaseAt ? formatDate(pending.nextReleaseAt, language) : t('common.none'),
             })}
@@ -72,7 +77,7 @@ function StoreRow({ store, onRecord, onHistory }: {
         {showReleased && (
           <span>
             {'+ '}
-            <Amount cents={released.cents} currency={store.currency} approxBrlCents={released.estimatedBrlCents} />{' '}
+            <Amount cents={released.cents} currency={store.currency} usdCents={released.usdCents} approxBrlCents={released.approxBrlCents} />{' '}
             {t(releasedLabel)}
           </span>
         )}
@@ -109,6 +114,7 @@ export default function StoreBalancesPanel({ onDataChanged, reloadKey = 0 }: { o
   const tLoose = useTLoose();
   const tPlural = useTPlural();
   const language = useLanguage();
+  const moneyLine = useMoneyLine();
 
   const [data, setData] = useState<CurrentStoreBalances | null>(null);
   const [loading, setLoading] = useState(true);
@@ -148,10 +154,16 @@ export default function StoreBalancesPanel({ onDataChanged, reloadKey = 0 }: { o
     changed();
   }, [changed]);
 
-  const nonWithdrawable = data ? data.totals.nonWithdrawableEstimatedBrlCents : null;
+  const nonWithdrawable = data ? data.totals.nonWithdrawableUsdCents : null;
   const hasNonWithdrawable = data !== null && data.stores.some((store) => !store.allowsWithdrawal);
   // A soma só aparece se for maior que 0 ou nula por falta de cotação (D212).
   const showNonWithdrawable = hasNonWithdrawable && (nonWithdrawable === null || nonWithdrawable > 0);
+
+  const totalLines = data === null ? [] : ([
+    { key: 'storeBalances.totalAvailable', cents: data.totals.availableUsdCents, estimated: data.totals.availableEstimated, approx: data.totals.approxBrl.available },
+    { key: 'storeBalances.totalPending', cents: data.totals.pendingUsdCents, estimated: data.totals.pendingEstimated, approx: data.totals.approxBrl.pending },
+    { key: 'storeBalances.totalReleased', cents: data.totals.releasedAfterBalanceUsdCents, estimated: data.totals.releasedAfterBalanceEstimated, approx: data.totals.approxBrl.releasedAfterBalance },
+  ] as const);
 
   return (
     <section className={pageStyles.section} aria-labelledby="balances-heading">
@@ -193,11 +205,26 @@ export default function StoreBalancesPanel({ onDataChanged, reloadKey = 0 }: { o
               ))}
             </ul>
           )}
+          {data.stores.length > 0 && (
+            <div className={styles.totals}>
+              {totalLines.map((line) => (
+                <p key={line.key} className={styles.nonWithdrawableTotal}>
+                  {t(line.key, { value: moneyLine({ cents: line.cents, estimated: line.estimated, approxCents: line.approx }) })}
+                </p>
+              ))}
+            </div>
+          )}
           {showNonWithdrawable && (
             <p className={styles.nonWithdrawableTotal}>
               {nonWithdrawable === null
                 ? `${t('storeBalances.nonWithdrawableTotalLabel')} ${tLoose('warnings.FX_NOT_CONFIGURED')}`
-                : t('storeBalances.nonWithdrawableTotal', { value: formatMoney(nonWithdrawable, 'BRL', language) })}
+                : t('storeBalances.nonWithdrawableTotal', {
+                  value: moneyLine({
+                    cents: nonWithdrawable,
+                    estimated: data.totals.nonWithdrawableEstimated,
+                    approxCents: data.totals.approxBrl.nonWithdrawable,
+                  }),
+                })}
             </p>
           )}
         </div>

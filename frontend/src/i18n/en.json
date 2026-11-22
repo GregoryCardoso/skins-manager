@@ -172,11 +172,12 @@
     "INVALID_SALE_HOLD_DAYS": "The hold must be a whole number of days, from 0 to 30.",
     "DEPOSITED_AT_IN_FUTURE": "The deposit date cannot be in the future.",
     "DEPOSIT_NOT_FOUND": "The deposit was not found.",
-    "STORE_REQUIRED": "Choose the withdrawal's store.",
+    "STORE_REQUIRED": "Choose the store.",
     "WITHDRAWAL_FEE_ABOVE_AMOUNT": "The fee paid cannot be greater than the amount withdrawn.",
     "WITHDRAWN_AT_IN_FUTURE": "The withdrawal date cannot be in the future.",
     "WITHDRAWAL_NOT_ALLOWED": "This store does not allow withdrawals. Turn on \"Allows withdrawal\" on the Stores page.",
     "WITHDRAWAL_NOT_FOUND": "The withdrawal was not found.",
+    "DEPOSIT_STORE_CURRENCY_NOT_ALLOWED": "Deposits can only be recorded in a US dollar (USD) store.",
     "RECORDED_AT_IN_FUTURE": "The balance date cannot be in the future.",
     "STORE_BALANCE_NOT_FOUND": "The balance record was not found."
   },
@@ -440,12 +441,12 @@
     "isActive": "Active",
     "isPrimary": "Primary",
     "currency": "Currency",
-    "amountBrlCents": "Amount",
+    "amountBrlCents": "Amount in BRL",
     "depositedAt": "Deposit date",
     "storeId": "Store",
     "note": "Note",
     "saleHoldDays": "Balance hold",
-    "amountStoreCents": "Amount withdrawn",
+    "amountStoreCents": "Amount in the store",
     "feeCents": "Fee paid",
     "withdrawnAt": "Withdrawal date",
     "balanceCents": "Balance",
@@ -780,9 +781,9 @@
   "profit": {
     "title": "Real profit",
     "subtitle": "Track what you put in, what you withdrew, each store's balance and your real profit.",
-    "pendingIncluded": "includes ≈ {amount} pending (releases from {date})",
-    "pendingIncludedNoDate": "includes ≈ {amount} pending",
-    "releasedIncluded": "includes ≈ {amount} released after the last recorded balance (update the balance)",
+    "pendingIncluded": "includes {amount} pending (releases from {date})",
+    "pendingIncludedNoDate": "includes {amount} pending",
+    "releasedIncluded": "includes {amount} released after the last recorded balance (update the balance)",
     "estimatedNote": "Values with ≈ are estimated using the {fx} rate.",
     "estimatedNoFx": "Values with ≈ are estimated using the dollar rate, which is not configured yet.",
     "emptyHint": "Record deposits and balances to see the real profit.",
@@ -790,8 +791,7 @@
       "title": "Summary",
       "loadError": "Could not load the summary: {reason}",
       "realProfit": "Real profit",
-      "realProfitHint": "Withdrawals + balances (available, pending and released) + stock − deposits.",
-      "usdApprox": "≈ {value}",
+      "realProfitHint": "Net withdrawals + balances (available, pending and released) + stock − deposits, all in US dollars (US$).",
       "deposited": "Total put in",
       "withdrawn": "Total withdrawn",
       "platformBalance": "Platform balances",
@@ -804,12 +804,23 @@
       "pendingUnavailable": "includes pending balance: unavailable (dollar rate missing)",
       "releasedUnavailable": "includes balance released after the last record: unavailable (dollar rate missing)",
       "warningStore": "{store}: {message}",
-      "warningStock": "Stock: {message}"
+      "warningStock": "Stock: {message}",
+      "brlApprox": "≈ {value}",
+      "legacyDeposits": {
+        "one": "{count} old deposit in BRL converted at the exchange rate (≈). Edit it to enter the store and credited amount.",
+        "other": "{count} old deposits in BRL converted at the exchange rate (≈). Edit them to enter the store and credited amount."
+      },
+      "withdrawalsWithoutFee": {
+        "one": "{count} withdrawal without a fee counts as fee 0.",
+        "other": "{count} withdrawals without a fee count as fee 0."
+      },
+      "warningDeposits": "Deposits: {message}",
+      "warningWithdrawals": "Withdrawals: {message}"
     }
   },
   "deposits": {
     "title": "Deposits",
-    "intro": "Money you put in from your own pocket. The store is informational only: a deposit is always in R$.",
+    "intro": "Money you put into the stores, in the store currency (for now, only US dollar stores). The amount paid in R$ is for reference only.",
     "count": {
       "one": "{count} deposit",
       "other": "{count} deposits"
@@ -825,10 +836,11 @@
     "deleted": "Deposit of {value} deleted.",
     "columns": {
       "date": "Date",
-      "amount": "Amount",
+      "amount": "Credited to the store",
       "store": "Store",
       "note": "Note",
-      "actions": "Actions"
+      "actions": "Actions",
+      "paid": "Paid (R$)"
     },
     "noStore": "—",
     "inactiveStore": "{name} (inactive)",
@@ -842,25 +854,30 @@
     "form": {
       "createTitle": "New deposit",
       "editTitle": "Edit deposit",
-      "amount": "Amount (R$)",
       "date": "Deposit date",
-      "store": "Store (optional)",
-      "noStore": "No store",
-      "storeHint": "Informational only: it does not change the deposit currency or the store balance.",
+      "store": "Store (US dollar)",
       "note": "Note (optional)",
-      "amountRequired": "Enter the deposit amount.",
+      "amountRequired": "Enter the amount credited to the store.",
       "invalidMoney": "Invalid amount. Use the format 1.25, greater than zero.",
-      "invalidDate": "Invalid date."
-    }
+      "invalidDate": "Invalid date.",
+      "chooseStore": "Choose the store",
+      "storeRequired": "Choose the deposit's store."
+    },
+    "amountStore": "Amount credited to the store (US$)",
+    "noUsdStores": "No active US dollar store. Add one under Stores.",
+    "legacyStoreNotUsd": "This old record's store is not in US dollars. Choose a US$ store.",
+    "amountBrlOptional": "Amount paid in BRL (optional, for reference only)",
+    "legacyBadge": "Old record in BRL",
+    "legacyEditHint": "This deposit was recorded in BRL only. Enter the store and the credited amount."
   },
   "withdrawals": {
     "title": "Withdrawals",
-    "intro": "What you withdrew from the stores to your account. The amount received in R$ is what counts toward the real profit.",
+    "intro": "What you withdrew from the stores to your account, in the store currency. The net amount (withdrawn minus the fee paid) is what counts toward the real profit; the amount received in R$ is for reference only.",
     "count": {
       "one": "{count} withdrawal",
       "other": "{count} withdrawals"
     },
-    "total": "Total received from withdrawals: {value}",
+    "total": "Total net withdrawn: {value}",
     "new": "New withdrawal",
     "empty": "No withdrawals recorded",
     "emptyHint": "Record each withdrawal from a store to your account. It counts toward the real profit.",
@@ -901,16 +918,17 @@
       "feeHint": "Leave empty if you do not know (\"not informed\"); 0 = no fee paid.",
       "feeSuggested": "Suggested from the store's withdrawal fee. You can edit it.",
       "feeNotConfigured": "The store has no withdrawal fee configured; enter the fee paid, if you know it.",
-      "received": "Amount received in your account (R$)",
       "date": "Withdrawal date",
       "note": "Note (optional)",
       "storeRequired": "Choose the withdrawal's store.",
       "amountRequired": "Enter the amount withdrawn.",
       "invalidMoney": "Invalid amount. Use the format 1.25, greater than zero.",
       "invalidFee": "Invalid fee. Use the format 1.25 (0 is allowed) or leave it empty.",
-      "receivedRequired": "Enter the amount received in your account.",
       "invalidDate": "Invalid date."
-    }
+    },
+    "amountBrlOptional": "Amount received in BRL (optional, for reference only)",
+    "net": "Net",
+    "legacyRecordedBrl": "(old record)"
   },
   "storeBalances": {
     "title": "Store balances",
@@ -933,8 +951,11 @@
     "outdatedReleased": "Sales released since {date}. Record the current balance.",
     "update": "Update balance",
     "created": "Balance of {store} recorded: {value}.",
-    "nonWithdrawableTotal": "Not withdrawable: ≈ {value}",
+    "nonWithdrawableTotal": "Not withdrawable: {value}",
     "nonWithdrawableTotalLabel": "Not withdrawable:",
+    "totalAvailable": "Total available: {value}",
+    "totalPending": "Total pending: {value}",
+    "totalReleased": "Total released after the record: {value}",
     "form": {
       "title": "Update balance: {store}",
       "intro": "Enter the available balance shown on the store website. The history is kept: to fix a mistake, delete the record and record it again.",

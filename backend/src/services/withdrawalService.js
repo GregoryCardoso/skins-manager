@@ -1,39 +1,18 @@
 'use strict';
 
-// Saldo estimado em BRL (2.8, 2.10, D163, D165): saldo bruto × cotação das configurações.
-// A taxa de saque pertence ao saque e só é registrada quando ele acontece; não entra na estimativa.
-// Usado somente no lucro real; nunca no preço mínimo por item.
-// Também aqui: regras dos saques (D201, D203). `buildWithdrawalRecord` e `suggestWithdrawalFeeCents` são puros;
-// o resto orquestra os models.
+// Regras dos saques (D201, D203, D228). buildWithdrawalRecord e suggestWithdrawalFeeCents são puros;
+// o resto orquestra os models. O saque é na moeda da loja; o valor recebido em R$ é opcional e só informativo (8.5).
+// A taxa de saque pertence ao saque e só é registrada quando ele acontece.
 const Withdrawal = require('../models/Withdrawal');
 const Store = require('../models/Store');
+const Setting = require('../models/Setting');
 const { ValidationError, NotFoundError } = require('../errors/AppError');
 const { MAX_AMOUNT_CENTS, MAX_NOTE_LENGTH } = require('../config/constants');
-const { roundCents, applyRateRounding } = require('./fees/rounding');
-const { isValidFxRate } = require('./currencyService');
+const { applyRateRounding } = require('./fees/rounding');
+const { toUsdBase, approxBrlOf } = require('./currencyService');
 const { parseDate } = require('./dateUtils');
 const { assertNotFutureDay } = require('./inventoryAgingService');
-const { WARNING_FX, WARNINGS } = require('./warnings');
-
-// `estimated`: true quando o valor em BRL é uma conversão pela cotação; loja em BRL é exata.
-// `warning` (texto) e `warningCode` (T48: o frontend traduz pelo código). Conversão com ROUND (T82, D206).
-function estimateBalanceBrl({ balanceCents, store, settings }) {
-  if (!Number.isSafeInteger(balanceCents) || balanceCents < 0) {
-    throw new ValidationError('Saldo deve ser um inteiro de centavos maior ou igual a 0.', 'INVALID_AMOUNT');
-  }
-  const exact = (estimatedBrlCents) => ({ estimatedBrlCents, estimated: false, warning: null, warningCode: null });
-  if (balanceCents === 0) return exact(0);
-  if (store.currency === 'BRL') return exact(balanceCents);
-  const usdBrlRate = settings ? settings.usdBrlRate : null;
-  if (!isValidFxRate(usdBrlRate)) {
-    return {
-      estimatedBrlCents: null, estimated: true, warning: WARNING_FX, warningCode: WARNINGS.FX_NOT_CONFIGURED.code,
-    };
-  }
-  return {
-    estimatedBrlCents: roundCents(balanceCents * usdBrlRate, 'ROUND'), estimated: true, warning: null, warningCode: null,
-  };
-}
+const { WARNINGS } = require('./warnings');
 
 const isNil = (value) => value === null || value === undefined;
 const required = (field) => new ValidationError(`O campo ${field} é obrigatório.`, 'REQUIRED_FIELD', { field });
@@ -64,7 +43,7 @@ function buildWithdrawalRecord(input, { existing = null, store = null, previousS
       withdrawnAt: existing.withdrawnAt,
       note: existing.note,
     }
-    : { storeId: null, amountStoreCents: null, feeCents: null, amountBrlCents: undefined, withdrawnAt: undefined, note: null };
+    : { storeId: null, amountStoreCents: null, feeCents: null, amountBrlCents: null, withdrawnAt: undefined, note: null };
   const record = { ...base };
   for (const field of Object.keys(record)) if (input && input[field] !== undefined) record[field] = input[field];
 
@@ -98,9 +77,9 @@ function buildWithdrawalRecord(input, { existing = null, store = null, previousS
     }
   }
 
-  // 4. valor recebido em BRL
-  if (isNil(record.amountBrlCents)) throw required('amountBrlCents');
-  assertAmount(record.amountBrlCents, 'amountBrlCents', 'O valor recebido');
+  // 4. valor recebido em BRL: opcional, só informativo
+  if (isNil(record.amountBrlCents)) record.amountBrlCents = null;
+  else assertAmount(record.amountBrlCents, 'amountBrlCents', 'O valor recebido');
 
   // 5. data: normalizada para UTC; um saque já gravado só é revalidado quando a data é alterada
   if (isNil(record.withdrawnAt)) throw required('withdrawnAt');
@@ -144,8 +123,24 @@ function suggestWithdrawalFeeCents(amountStoreCents, store) {
   return { suggestedFeeCents: suggested, warningCode: null };
 }
 
-function toWithdrawalView(row, storesById) {
+// Líquido na moeda da loja: sacado - taxa (taxa não informada conta 0, D233). Nulo no saque sem loja.
+function withdrawalNetStoreCents(withdrawal) {
+  if (isNil(withdrawal.storeId) || isNil(withdrawal.amountStoreCents)) return null;
+  return withdrawal.amountStoreCents - (withdrawal.feeCents ?? 0);
+}
+
+// Líquido na moeda base (D225, D228): saque com loja pelo líquido na moeda da loja; sem loja, o valor em R$ (estimado).
+function withdrawalBaseAmount(withdrawal, store, usdBrlRate) {
+  const net = withdrawalNetStoreCents(withdrawal);
+  if (net === null) return toUsdBase(withdrawal.amountBrlCents, 'BRL', usdBrlRate);
+  // Loja referenciada que não está no mapa: a moeda é desconhecida, então não se assume USD (o lucro fica nulo).
+  if (!store) return { usdCents: null, approxBrlCents: null, estimated: false };
+  return toUsdBase(net, store.currency, usdBrlRate);
+}
+
+function toWithdrawalView(row, storesById, usdBrlRate = null) {
   const store = isNil(row.storeId) ? null : storesById.get(row.storeId);
+  const base = withdrawalBaseAmount(row, store, usdBrlRate);
   return {
     id: row.id,
     storeId: row.storeId,
@@ -153,10 +148,14 @@ function toWithdrawalView(row, storesById) {
     currency: store ? store.currency : null,
     amountStoreCents: row.amountStoreCents,
     feeCents: row.feeCents,
+    netStoreCents: withdrawalNetStoreCents(row),
     amountBrlCents: row.amountBrlCents,
     withdrawnAt: row.withdrawnAt,
     note: row.note,
     legacyWithoutStore: isNil(row.storeId),
+    amountUsdCents: base.usdCents,
+    approxBrlCents: base.approxBrlCents,
+    estimated: base.estimated,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -173,23 +172,33 @@ function findOrFail(id) {
 
 function listWithdrawals() {
   const stores = storesMap();
+  const rate = Setting.get().usdBrlRate;
   const rows = Withdrawal.findAll(); // withdrawnAt DESC, id DESC
+  const views = rows.map((row) => toWithdrawalView(row, stores, rate));
+  const netUsdCents = views.reduce((acc, view) => (acc === null || view.amountUsdCents === null ? null : acc + view.amountUsdCents), 0);
   return {
-    withdrawals: rows.map((row) => toWithdrawalView(row, stores)),
-    totals: { count: rows.length, amountBrlCents: rows.reduce((sum, row) => sum + row.amountBrlCents, 0) },
+    withdrawals: views,
+    totals: {
+      count: views.length,
+      legacyCount: views.filter((view) => view.legacyWithoutStore).length,
+      withoutFeeCount: views.filter((view) => !view.legacyWithoutStore && view.feeCents === null).length,
+      netUsdCents,
+      approxBrlCents: approxBrlOf(netUsdCents, rate),
+      estimated: views.some((view) => view.estimated),
+    },
   };
 }
 
 function createWithdrawal(input, { now = new Date() } = {}) {
   const record = buildWithdrawalRecord(input, { store: loadStore(input.storeId), now });
-  return toWithdrawalView(Withdrawal.create(record, { now }), storesMap());
+  return toWithdrawalView(Withdrawal.create(record, { now }), storesMap(), Setting.get().usdBrlRate);
 }
 
 function updateWithdrawal(id, partial, { now = new Date() } = {}) {
   const existing = findOrFail(id);
   const storeId = partial.storeId !== undefined ? partial.storeId : existing.storeId;
   const record = buildWithdrawalRecord(partial, { existing, store: loadStore(storeId), previousStore: loadStore(existing.storeId), now });
-  return toWithdrawalView(Withdrawal.update(id, record, { now }), storesMap());
+  return toWithdrawalView(Withdrawal.update(id, record, { now }), storesMap(), Setting.get().usdBrlRate);
 }
 
 function deleteWithdrawal(id) {
@@ -206,8 +215,9 @@ function getFeeSuggestion({ storeId, amountStoreCents }) {
 }
 
 module.exports = {
-  estimateBalanceBrl,
   buildWithdrawalRecord,
+  withdrawalNetStoreCents,
+  withdrawalBaseAmount,
   suggestWithdrawalFeeCents,
   toWithdrawalView,
   listWithdrawals,

@@ -5,9 +5,10 @@ const { ValidationError } = require('../errors/AppError');
 const { isPlainObject, rejectUnknownFields } = require('./validationHelpers');
 
 const BODY_FIELDS = Object.freeze({
-  amountBrlCents: { type: 'number', nullable: false },
-  depositedAt: { type: 'string', nullable: false },
   storeId: { type: 'number', nullable: true },
+  amountStoreCents: { type: 'number', nullable: false },
+  amountBrlCents: { type: 'number', nullable: true },
+  depositedAt: { type: 'string', nullable: false },
   note: { type: 'string', nullable: true },
 });
 
@@ -20,13 +21,8 @@ function checkBodyShape(body, { requireKeys }) {
   } catch (err) {
     return err;
   }
-  if (requireKeys) {
-    for (const key of ['amountBrlCents', 'depositedAt']) {
-      if (body[key] === undefined || body[key] === null) {
-        return new ValidationError(`O campo ${key} é obrigatório.`, 'REQUIRED_FIELD', { field: key });
-      }
-    }
-  } else if (Object.keys(body).length === 0) {
+  // Obrigatoriedade (loja, valor, data) fica no depositService, na ordem de D227.
+  if (!requireKeys && Object.keys(body).length === 0) {
     return new ValidationError('Informe ao menos um campo para alterar.', 'INVALID_BODY');
   }
   for (const [key, value] of Object.entries(body)) {

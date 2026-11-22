@@ -14,3 +14,4 @@
 .warning { margin: 0; color: var(--warning); font-size: 0.85rem; }
 .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.25rem; }
 .nonWithdrawableTotal { margin: 0.75rem 0 0; font-weight: 600; }
+.totals { margin-top: 0.25rem; }

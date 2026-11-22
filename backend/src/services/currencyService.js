@@ -53,4 +53,23 @@ function approxCounterpart(cents, currency, usdBrlRate) {
   return null;
 }
 
-module.exports = { CURRENCIES, approxCounterpart, isValidFxRate, toUsdCents, fromUsdCents, convertCents };
+// Valor na moeda base (USD) para o lucro real e os totais (D225). `usdCents` nulo = BRL sem cotação.
+// `estimated`: true quando houve conversão BRL -> USD. `approxBrlCents`: "≈ R$" pela cotação (nulo sem cotação em USD).
+function toUsdBase(cents, currency, usdBrlRate) {
+  if (cents === 0) return { usdCents: 0, approxBrlCents: 0, estimated: false };
+  const hasRate = isValidFxRate(usdBrlRate);
+  if (currency === 'USD') {
+    return { usdCents: cents, approxBrlCents: hasRate ? roundCents(cents * usdBrlRate, 'ROUND') : null, estimated: false };
+  }
+  assertCurrency(currency);
+  return { usdCents: hasRate ? roundCents(cents / usdBrlRate, 'ROUND') : null, approxBrlCents: cents, estimated: true };
+}
+
+// "≈ R$" de um total em USD já somado (D225). Nulo sem valor ou sem cotação; nunca devolve -0.
+function approxBrlOf(usdCents, usdBrlRate) {
+  if (!Number.isSafeInteger(usdCents) || !isValidFxRate(usdBrlRate)) return null;
+  const value = roundCents(usdCents * usdBrlRate, 'ROUND');
+  return value === 0 ? 0 : value;
+}
+
+module.exports = { CURRENCIES, toUsdBase, approxBrlOf, approxCounterpart, isValidFxRate, toUsdCents, fromUsdCents, convertCents };

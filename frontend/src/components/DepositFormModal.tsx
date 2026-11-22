@@ -4,18 +4,19 @@ import { useState, type FormEvent } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
 import {
-  buildDepositCreateBody, buildDepositPatchBody, depositFormFromDeposit, initialDepositState, validateDepositForm,
-  type DepositFormState,
+  buildDepositCreateBody, buildDepositPatchBody, depositFormFromDeposit, depositStoreOptions, initialDepositState,
+  legacyStoreIsNotUsd, validateDepositForm, type DepositFormState,
 } from '@/lib/depositForm';
 import { resolveErrorTarget } from '@/lib/formErrors';
 import { formatMoney } from '@/lib/format';
 import { ApiRequestError, createDeposit, updateDeposit } from '@/services/api';
 import type { Deposit, Store } from '@/types/api';
+import Link from 'next/link';
 import FormField from './FormField';
 import styles from './forms.module.css';
 import Modal from './Modal';
 
-const FORM_FIELDS = ['amountBrlCents', 'depositedAt', 'storeId', 'note'] as const;
+const FORM_FIELDS = ['storeId', 'amountStoreCents', 'amountBrlCents', 'depositedAt', 'note'] as const;
 
 interface Props {
   // Sem `deposit` = novo aporte.
@@ -86,32 +87,79 @@ export default function DepositFormModal({ deposit, stores, onClose, onSaved, on
     }
     setSaving(true);
     createDeposit(buildDepositCreateBody(state, language))
-      .then((saved) => onSaved(t('deposits.created', { value: formatMoney(saved.amountBrlCents, 'BRL', language) })))
+      .then((saved) => onSaved(t('deposits.created', { value: saved.amountStoreCents === null ? '' : formatMoney(saved.amountStoreCents, 'USD', language) })))
       .catch((err: unknown) => {
         setSaving(false);
         showApiError(err);
       });
   };
 
-  // Loja inativa só aparece se já for a do aporte (vale para aportes antigos).
-  const storeOptions = stores.filter((store) => store.isActive || store.id === state.storeId);
+  // Só lojas em USD ativas (E8-Q16), mais a gravada no aporte se for USD (mesmo inativa). A Steam nunca aparece.
+  const storeOptions = depositStoreOptions(stores, deposit ?? null);
+  const legacy = deposit?.legacy === true;
+  const noUsdStores = storeOptions.length === 0;
 
   return (
     <Modal title={editing ? t('deposits.form.editTitle') : t('deposits.form.createTitle')} onClose={onClose} busy={saving}>
       <form className={styles.form} onSubmit={submit} noValidate>
         {topError && <div className={styles.topError} role="alert">{topError}</div>}
+        {legacy && <p className={styles.hint}>{t('deposits.legacyEditHint')}</p>}
+        {noUsdStores && (
+          <p className={styles.hint} role="status">
+            {t('deposits.noUsdStores')} <Link href="/stores/">{t('withdrawals.goToStores')}</Link>
+          </p>
+        )}
+
+        <FormField
+          label={t('deposits.form.store')}
+          error={errors.storeId}
+          hint={deposit && legacyStoreIsNotUsd(deposit) ? t('deposits.legacyStoreNotUsd') : undefined}
+        >
+          {(c) => (
+            <select
+              {...c}
+              className={styles.select}
+              autoFocus
+              value={state.storeId === null ? '' : String(state.storeId)}
+              onChange={(e) => {
+                patch({ storeId: e.target.value === '' ? null : Number(e.target.value) });
+                clearError('storeId');
+              }}
+            >
+              <option value="">{t('deposits.form.chooseStore')}</option>
+              {storeOptions.map((store) => (
+                <option key={store.id} value={store.id}>
+                  {store.isActive ? store.name : t('deposits.inactiveStore', { name: store.name })}
+                </option>
+              ))}
+            </select>
+          )}
+        </FormField>
 
         <div className={styles.grid}>
-          <FormField label={t('deposits.form.amount')} error={errors.amountBrlCents}>
+          <FormField label={t('deposits.amountStore')} error={errors.amountStoreCents}>
             {(c) => (
               <input
                 {...c}
                 className={styles.input}
                 inputMode="decimal"
-                autoFocus
                 value={state.amountText}
                 onChange={(e) => {
                   patch({ amountText: e.target.value });
+                  clearError('amountStoreCents');
+                }}
+              />
+            )}
+          </FormField>
+          <FormField label={t('deposits.amountBrlOptional')} error={errors.amountBrlCents}>
+            {(c) => (
+              <input
+                {...c}
+                className={styles.input}
+                inputMode="decimal"
+                value={state.paidText}
+                onChange={(e) => {
+                  patch({ paidText: e.target.value });
                   clearError('amountBrlCents');
                 }}
               />
@@ -132,27 +180,6 @@ export default function DepositFormModal({ deposit, stores, onClose, onSaved, on
             )}
           </FormField>
         </div>
-
-        <FormField label={t('deposits.form.store')} error={errors.storeId} hint={t('deposits.form.storeHint')}>
-          {(c) => (
-            <select
-              {...c}
-              className={styles.select}
-              value={state.storeId === null ? '' : String(state.storeId)}
-              onChange={(e) => {
-                patch({ storeId: e.target.value === '' ? null : Number(e.target.value) });
-                clearError('storeId');
-              }}
-            >
-              <option value="">{t('deposits.form.noStore')}</option>
-              {storeOptions.map((store) => (
-                <option key={store.id} value={store.id}>
-                  {store.isActive ? store.name : t('deposits.inactiveStore', { name: store.name })}
-                </option>
-              ))}
-            </select>
-          )}
-        </FormField>
 
         <FormField label={t('deposits.form.note')} error={errors.note}>
           {(c) => (

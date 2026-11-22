@@ -4,6 +4,7 @@ import { useLanguage, useT } from '@/i18n/I18nProvider';
 import { formatDate, formatMoney } from '@/lib/format';
 import type { Withdrawal } from '@/types/api';
 import styles from './DepositsTable.module.css';
+import MoneyApprox from './MoneyApprox';
 
 interface Props {
   withdrawals: Withdrawal[];
@@ -11,7 +12,8 @@ interface Props {
   onDelete: (withdrawal: Withdrawal) => void;
 }
 
-// Valor e taxa na moeda da loja; só o "Recebido" é em R$. Estilos compartilhados com a tabela de aportes.
+// Sacado e taxa na moeda da loja; "Líquido" em US$ com "≈ R$" (ou "≈ US$" em loja BRL); o "Recebido" em R$ é só informativo.
+// Tudo o que é conversão vem do backend. Estilos compartilhados com a tabela de aportes.
 export default function WithdrawalsTable({ withdrawals, onEdit, onDelete }: Props) {
   const t = useT();
   const language = useLanguage();
@@ -25,6 +27,7 @@ export default function WithdrawalsTable({ withdrawals, onEdit, onDelete }: Prop
             <th scope="col">{t('withdrawals.columns.store')}</th>
             <th scope="col">{t('withdrawals.columns.amount')}</th>
             <th scope="col">{t('withdrawals.columns.fee')}</th>
+            <th scope="col">{t('withdrawals.net')}</th>
             <th scope="col">{t('withdrawals.columns.received')}</th>
             <th scope="col">{t('withdrawals.columns.note')}</th>
             <th scope="col">{t('withdrawals.columns.actions')}</th>
@@ -40,14 +43,26 @@ export default function WithdrawalsTable({ withdrawals, onEdit, onDelete }: Prop
                 <td className={styles.amount}>
                   {w.amountStoreCents !== null && currency !== null
                     ? formatMoney(w.amountStoreCents, currency, language)
-                    : <span className={styles.muted}>{t('withdrawals.feeNotInformed')}</span>}
+                    : <span className={styles.muted}>{t('common.none')}</span>}
                 </td>
                 <td className={styles.numeric}>
                   {w.feeCents !== null && currency !== null
                     ? formatMoney(w.feeCents, currency, language)
-                    : <span className={styles.muted}>{t('withdrawals.feeNotInformed')}</span>}
+                    : <span className={styles.muted}>{t('common.none')}</span>}
                 </td>
-                <td className={styles.amount}>{formatMoney(w.amountBrlCents, 'BRL', language)}</td>
+                <td className={styles.amount}>
+                  <MoneyApprox cents={w.amountUsdCents} estimated={w.estimated} approxCents={w.legacyWithoutStore ? null : w.approxBrlCents} />
+                </td>
+                <td className={styles.numeric}>
+                  {w.amountBrlCents === null
+                    ? <span className={styles.muted}>{t('common.none')}</span>
+                    : (
+                      <>
+                        {formatMoney(w.amountBrlCents, 'BRL', language)}
+                        {w.legacyWithoutStore && <small className={styles.muted}> {t('withdrawals.legacyRecordedBrl')}</small>}
+                      </>
+                    )}
+                </td>
                 <td className={styles.note}>{w.note ?? <span className={styles.muted}>{t('common.none')}</span>}</td>
                 <td>
                   <div className={styles.actions}>

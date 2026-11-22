@@ -30,9 +30,9 @@ describe('ordem: loja, valor sacado, taxa, recebido, data, nota', () => {
     expect(codeOf(() => build({ ...allBad, amountStoreCents: 100, feeCents: 1, amountBrlCents: 1, withdrawnAt: valid.withdrawnAt }))).toBe('INVALID_FIELD:note');
   });
 
-  test('valor sacado ausente é REQUIRED_FIELD (não INVALID_AMOUNT) e vem antes do recebido ausente', () => {
+  test('valor sacado ausente é REQUIRED_FIELD (não INVALID_AMOUNT); o recebido em R$ ausente não é erro (8.5)', () => {
     expect(codeOf(() => build({ storeId: 1 }))).toBe('REQUIRED_FIELD:amountStoreCents');
-    expect(codeOf(() => build({ storeId: 1, amountStoreCents: 100 }))).toBe('REQUIRED_FIELD:amountBrlCents');
+    expect(codeOf(() => build({ storeId: 1, amountStoreCents: 100 }))).toBe('REQUIRED_FIELD:withdrawnAt');
     expect(codeOf(() => build({ storeId: 1, amountStoreCents: 100, amountBrlCents: 100 }))).toBe('REQUIRED_FIELD:withdrawnAt');
   });
 

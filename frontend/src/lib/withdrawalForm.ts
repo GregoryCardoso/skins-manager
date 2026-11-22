@@ -1,6 +1,7 @@
 // Formulário de saque (D203, D207, E8-Q12): conversões puras entre o texto digitado e o corpo da API.
 // O frontend não calcula a taxa: só pré-preenche com a sugestão do backend enquanto o campo não foi "tocado".
 import { isoToLocalInput, localInputToIso, nowLocalInput } from '@/lib/dateInput';
+import { formatMoney } from '@/lib/format';
 import { formatCentsInput, parseMoneyToCents } from '@/lib/numberInput';
 import type { Store, Withdrawal, WithdrawalCreateBody, WithdrawalPatchBody } from '@/types/api';
 
@@ -12,7 +13,7 @@ export interface WithdrawalFormState {
   feeText: string;
   // true depois que o usuário edita a taxa (ou ao editar um saque com taxa gravada): a sugestão não a sobrescreve mais.
   feeTouched: boolean;
-  // Valor recebido na conta, em R$.
+  // Valor recebido na conta, em R$: opcional e só informativo (8.5); vazio = não informado.
   receivedText: string;
   // datetime-local (hora local)
   withdrawnAt: string;
@@ -37,10 +38,18 @@ export function withdrawalFormFromWithdrawal(withdrawal: Withdrawal, language: s
     amountText: withdrawal.amountStoreCents === null ? '' : formatCentsInput(withdrawal.amountStoreCents, language),
     feeText: withdrawal.feeCents === null ? '' : formatCentsInput(withdrawal.feeCents, language),
     feeTouched: !withdrawal.legacyWithoutStore,
-    receivedText: formatCentsInput(withdrawal.amountBrlCents, language),
+    receivedText: withdrawal.amountBrlCents === null ? '' : formatCentsInput(withdrawal.amountBrlCents, language),
     withdrawnAt: isoToLocalInput(withdrawal.withdrawnAt),
     note: withdrawal.note ?? '',
   };
+}
+
+// Valor do saque para mensagens: o sacado na moeda da loja; saque antigo sem loja, o valor em R$ gravado. Só formata.
+export function withdrawalAmountText(withdrawal: Withdrawal, language: string): string {
+  if (withdrawal.amountStoreCents !== null && withdrawal.currency !== null) {
+    return formatMoney(withdrawal.amountStoreCents, withdrawal.currency, language);
+  }
+  return withdrawal.amountBrlCents === null ? '' : formatMoney(withdrawal.amountBrlCents, 'BRL', language);
 }
 
 // Lojas do formulário: só as ativas que permitem saque; na edição, a loja já gravada continua na lista.
@@ -79,8 +88,8 @@ export function validateWithdrawalForm(state: WithdrawalFormState, language: str
   }
   // Taxa: vazia = não informada; 0 é permitido.
   if (state.feeText.trim() !== '' && parseMoneyToCents(state.feeText, language) === null) errors.feeCents = 'withdrawals.form.invalidFee';
-  if (state.receivedText.trim() === '') errors.amountBrlCents = 'withdrawals.form.receivedRequired';
-  else {
+  // Valor recebido em R$: opcional; quando informado, maior que zero.
+  if (state.receivedText.trim() !== '') {
     const cents = parseMoneyToCents(state.receivedText, language);
     if (cents === null || cents <= 0) errors.amountBrlCents = 'withdrawals.form.invalidMoney';
   }
@@ -88,21 +97,21 @@ export function validateWithdrawalForm(state: WithdrawalFormState, language: str
   return errors;
 }
 
-// Corpo completo (vírgula -> centavos; taxa e nota vazias são omitidas). Só use depois de `validateWithdrawalForm` sem erros.
+// Corpo completo (vírgula -> centavos; taxa, valor recebido e nota vazios são omitidos). Só use depois de `validateWithdrawalForm` sem erros.
 export function buildWithdrawalCreateBody(state: WithdrawalFormState, language: string): WithdrawalCreateBody {
   const body: WithdrawalCreateBody = {
     storeId: state.storeId ?? 0,
     amountStoreCents: parseMoneyToCents(state.amountText, language) ?? 0,
-    amountBrlCents: parseMoneyToCents(state.receivedText, language) ?? 0,
     withdrawnAt: localInputToIso(state.withdrawnAt) ?? '',
   };
+  if (state.receivedText.trim() !== '') body.amountBrlCents = parseMoneyToCents(state.receivedText, language) ?? 0;
   if (state.feeText.trim() !== '') body.feeCents = parseMoneyToCents(state.feeText, language) ?? 0;
   const note = state.note.trim();
   if (note !== '') body.note = note;
   return body;
 }
 
-// Só os campos que mudaram em relação ao saque original (o PATCH é parcial); taxa e nota esvaziadas viram `null`.
+// Só os campos que mudaram em relação ao saque original (o PATCH é parcial); taxa, valor recebido e nota esvaziados viram `null`.
 // Num saque antigo sem loja, loja e valor sacado sempre diferem do original (nulos) e vão no corpo.
 export function buildWithdrawalPatchBody(state: WithdrawalFormState, original: Withdrawal, language: string): WithdrawalPatchBody {
   const patch: WithdrawalPatchBody = {};
@@ -118,8 +127,12 @@ export function buildWithdrawalPatchBody(state: WithdrawalFormState, original: W
     const fee = parseMoneyToCents(state.feeText, language);
     if (fee !== null && (fee !== original.feeCents || storeChanged)) patch.feeCents = fee;
   }
-  const received = parseMoneyToCents(state.receivedText, language);
-  if (received !== null && received !== original.amountBrlCents) patch.amountBrlCents = received;
+  if (state.receivedText.trim() === '') {
+    if (original.amountBrlCents !== null) patch.amountBrlCents = null;
+  } else {
+    const received = parseMoneyToCents(state.receivedText, language);
+    if (received !== null && received !== original.amountBrlCents) patch.amountBrlCents = received;
+  }
   if (state.withdrawnAt !== isoToLocalInput(original.withdrawnAt)) {
     const iso = localInputToIso(state.withdrawnAt);
     if (iso !== null) patch.withdrawnAt = iso;

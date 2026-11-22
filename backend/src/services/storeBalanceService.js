@@ -12,8 +12,7 @@ const { ValidationError, NotFoundError } = require('../errors/AppError');
 const { MAX_AMOUNT_CENTS } = require('../config/constants');
 const { parseDate } = require('./dateUtils');
 const { assertNotFutureDay } = require('./inventoryAgingService');
-const { estimateBalanceBrl } = require('./withdrawalService');
-const { isValidFxRate } = require('./currencyService');
+const { isValidFxRate, toUsdBase, approxBrlOf } = require('./currencyService');
 const { computeHeldSalesForStore } = require('./saleHoldService');
 const { WARNINGS } = require('./warnings');
 
@@ -76,7 +75,7 @@ function outdatedReasonsOf({ store, latestBalance, held, items, withdrawals }) {
 }
 
 // Uma linha por loja (inclusive inativas) + totais (D216). Cada parcela (disponível, pendente e liberado de cada loja)
-// é convertida UMA vez, com ROUND (T82). `items`: todos os itens (vendas e compras); `withdrawals`: todos os saques.
+// é convertida UMA vez para USD, com ROUND (T82, D225); o "≈ R$" dos totais vem do total já somado. `items`: todos os itens (vendas e compras); `withdrawals`: todos os saques.
 function buildCurrentBalances({
   stores, latestBalances = [], items = [], withdrawals = [], settings = null, now = new Date(),
 } = {}) {
@@ -84,13 +83,15 @@ function buildCurrentBalances({
   const rows = stores.map((store) => {
     const latestBalance = latestByStore.get(store.id) ?? null;
     const held = computeHeldSalesForStore({ storeId: store.id, sales: items, latestBalance, now });
-    const convert = (cents) => estimateBalanceBrl({ balanceCents: cents, store, settings });
-    const available = convert(latestBalance ? latestBalance.balanceCents : 0);
+    const rate = settings ? settings.usdBrlRate : null;
+    const convert = (cents) => toUsdBase(cents, store.currency, rate);
+    const availableCents = latestBalance ? latestBalance.balanceCents : 0;
+    const available = convert(availableCents);
     const pending = convert(held.pending.cents);
     const released = convert(held.releasedAfterBalance.cents);
     const outdatedReasons = outdatedReasonsOf({ store, latestBalance, held, items, withdrawals });
     const outdated = outdatedReasons.length > 0;
-    const missingFx = [available, pending, released].some((part) => part.warningCode === WARNINGS.FX_NOT_CONFIGURED.code);
+    const missingFx = [available, pending, released].some((part) => part.usdCents === null);
     let warningCode = null;
     if (missingFx) warningCode = WARNINGS.FX_NOT_CONFIGURED.code;
     else if (outdated) warningCode = WARNINGS.BALANCE_MAYBE_OUTDATED.code;
@@ -102,10 +103,14 @@ function buildCurrentBalances({
       allowsWithdrawal: Boolean(store.allowsWithdrawal),
       saleHoldDays: store.saleHoldDays,
       balance: latestBalance ? toStoreBalanceView(latestBalance, store) : null,
-      availableCents: latestBalance ? latestBalance.balanceCents : 0,
-      availableEstimatedBrlCents: available.estimatedBrlCents,
-      pending: { ...held.pending, estimatedBrlCents: pending.estimatedBrlCents },
-      releasedAfterBalance: { ...held.releasedAfterBalance, estimatedBrlCents: released.estimatedBrlCents },
+      availableCents,
+      availableUsdCents: available.usdCents,
+      availableApproxBrlCents: available.approxBrlCents,
+      availableEstimated: available.estimated,
+      pending: { ...held.pending, usdCents: pending.usdCents, approxBrlCents: pending.approxBrlCents, estimated: pending.estimated },
+      releasedAfterBalance: {
+        ...held.releasedAfterBalance, usdCents: released.usdCents, approxBrlCents: released.approxBrlCents, estimated: released.estimated,
+      },
       estimated: available.estimated || pending.estimated || released.estimated,
       outdated,
       outdatedReasons,
@@ -115,15 +120,30 @@ function buildCurrentBalances({
 
   const sumOf = (pick, filter = () => true) => rows.filter(filter).reduce((acc, row) => addNullable(acc, pick(row)), 0);
   const nextReleases = rows.map((row) => row.pending.nextReleaseAt).filter((value) => value !== null).sort();
+  const rate = settings ? settings.usdBrlRate : null;
+  const availableUsd = sumOf((row) => row.availableUsdCents);
+  const pendingUsd = sumOf((row) => row.pending.usdCents);
+  const releasedUsd = sumOf((row) => row.releasedAfterBalance.usdCents);
+  // Só informativo (D212): disponível + pendente + liberado das lojas sem saque; não é somado de novo no lucro real.
+  const nonWithdrawableUsd = sumOf(
+    (row) => addNullable(addNullable(row.availableUsdCents, row.pending.usdCents), row.releasedAfterBalance.usdCents),
+    (row) => !row.allowsWithdrawal
+  );
   const totals = {
-    availableEstimatedBrlCents: sumOf((row) => row.availableEstimatedBrlCents),
-    pendingEstimatedBrlCents: sumOf((row) => row.pending.estimatedBrlCents),
-    releasedAfterBalanceEstimatedBrlCents: sumOf((row) => row.releasedAfterBalance.estimatedBrlCents),
-    // Só informativo (D212): disponível + pendente + liberado das lojas sem saque; não é somado de novo no lucro real.
-    nonWithdrawableEstimatedBrlCents: sumOf(
-      (row) => addNullable(addNullable(row.availableEstimatedBrlCents, row.pending.estimatedBrlCents), row.releasedAfterBalance.estimatedBrlCents),
-      (row) => !row.allowsWithdrawal
-    ),
+    availableUsdCents: availableUsd,
+    pendingUsdCents: pendingUsd,
+    releasedAfterBalanceUsdCents: releasedUsd,
+    nonWithdrawableUsdCents: nonWithdrawableUsd,
+    availableEstimated: rows.some((row) => row.availableEstimated),
+    pendingEstimated: rows.some((row) => row.pending.estimated),
+    releasedAfterBalanceEstimated: rows.some((row) => row.releasedAfterBalance.estimated),
+    nonWithdrawableEstimated: rows.some((row) => !row.allowsWithdrawal && row.estimated),
+    approxBrl: {
+      available: approxBrlOf(availableUsd, rate),
+      pending: approxBrlOf(pendingUsd, rate),
+      releasedAfterBalance: approxBrlOf(releasedUsd, rate),
+      nonWithdrawable: approxBrlOf(nonWithdrawableUsd, rate),
+    },
     nextReleaseAt: nextReleases.length ? nextReleases[0] : null,
     estimated: rows.some((row) => row.estimated),
   };

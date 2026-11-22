@@ -301,34 +301,44 @@ export interface StoreCreateBody {
 
 export type StorePatchBody = Partial<StoreCreateBody>;
 
-// --- Aportes (D202) ---
+// --- Aportes (D202, D227): valor creditado na moeda da loja (só lojas em USD); R$ pago é opcional e só informativo ---
 
 export interface Deposit {
   id: number;
-  amountBrlCents: number;
-  depositedAt: string;
   storeId: number | null;
   storeName: string | null;
+  currency: Currency | null;
+  // Valor creditado na loja (USD). Nulo no aporte legado (registrado só em R$ antes da 8.5).
+  amountStoreCents: number | null;
+  // Valor pago em R$: informativo; nulo quando não informado.
+  amountBrlCents: number | null;
+  depositedAt: string;
   note: string | null;
+  legacy: boolean;
+  // Valor em US$ e "≈ R$" calculados pelo backend (nulos sem cotação); estimated = houve conversão R$ -> US$.
+  amountUsdCents: number | null;
+  approxBrlCents: number | null;
+  estimated: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface DepositList {
   deposits: Deposit[];
-  totals: { count: number; amountBrlCents: number };
+  totals: { count: number; legacyCount: number; amountUsdCents: number | null; approxBrlCents: number | null; estimated: boolean };
 }
 
 export interface DepositCreateBody {
-  amountBrlCents: number;
+  storeId: number;
+  amountStoreCents: number;
+  amountBrlCents?: number | null;
   depositedAt: string;
-  storeId?: number | null;
   note?: string | null;
 }
 
 export type DepositPatchBody = Partial<DepositCreateBody>;
 
-// --- Saques (D203) ---
+// --- Saques (D203, D228): na moeda da loja; o valor recebido em R$ é opcional e só informativo ---
 
 export interface Withdrawal {
   id: number;
@@ -339,24 +349,38 @@ export interface Withdrawal {
   amountStoreCents: number | null;
   // Taxa paga na moeda da loja; nulo = não informada.
   feeCents: number | null;
-  amountBrlCents: number;
+  // Líquido na moeda da loja (sacado - taxa; taxa não informada conta 0). Nulo no saque antigo sem loja.
+  netStoreCents: number | null;
+  // Valor recebido em R$: informativo; nulo quando não informado.
+  amountBrlCents: number | null;
   withdrawnAt: string;
   note: string | null;
   legacyWithoutStore: boolean;
+  // Líquido em US$ e "≈ R$" calculados pelo backend (nulos sem cotação); estimated = houve conversão para US$.
+  amountUsdCents: number | null;
+  approxBrlCents: number | null;
+  estimated: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface WithdrawalList {
   withdrawals: Withdrawal[];
-  totals: { count: number; amountBrlCents: number };
+  totals: {
+    count: number;
+    legacyCount: number;
+    withoutFeeCount: number;
+    netUsdCents: number | null;
+    approxBrlCents: number | null;
+    estimated: boolean;
+  };
 }
 
 export interface WithdrawalCreateBody {
   storeId: number;
   amountStoreCents: number;
   feeCents?: number | null;
-  amountBrlCents: number;
+  amountBrlCents?: number | null;
   withdrawnAt: string;
   note?: string | null;
 }
@@ -480,14 +504,20 @@ export interface PendingBalance {
   cents: number;
   count: number;
   nextReleaseAt: string | null;
-  estimatedBrlCents: number | null;
+  // Em US$ (nulo: loja em R$ sem cotação) e "≈ R$" (em loja BRL, o próprio valor nativo); tudo vem do backend (D229).
+  usdCents: number | null;
+  approxBrlCents: number | null;
+  // true se a parcela teve conversão R$ -> US$ (loja BRL com valor > 0).
+  estimated: boolean;
 }
 
 export interface ReleasedAfterBalance {
   cents: number;
   count: number;
   earliestReleasedAt: string | null;
-  estimatedBrlCents: number | null;
+  usdCents: number | null;
+  approxBrlCents: number | null;
+  estimated: boolean;
 }
 
 export interface StoreBalanceSummary {
@@ -499,7 +529,9 @@ export interface StoreBalanceSummary {
   saleHoldDays: number;
   balance: StoreBalance | null;
   availableCents: number;
-  availableEstimatedBrlCents: number | null;
+  availableUsdCents: number | null;
+  availableApproxBrlCents: number | null;
+  availableEstimated: boolean;
   pending: PendingBalance;
   releasedAfterBalance: ReleasedAfterBalance;
   estimated: boolean;
@@ -511,10 +543,20 @@ export interface StoreBalanceSummary {
 export interface CurrentStoreBalances {
   stores: StoreBalanceSummary[];
   totals: {
-    availableEstimatedBrlCents: number | null;
-    pendingEstimatedBrlCents: number | null;
-    releasedAfterBalanceEstimatedBrlCents: number | null;
-    nonWithdrawableEstimatedBrlCents: number | null;
+    availableUsdCents: number | null;
+    pendingUsdCents: number | null;
+    releasedAfterBalanceUsdCents: number | null;
+    nonWithdrawableUsdCents: number | null;
+    availableEstimated: boolean;
+    pendingEstimated: boolean;
+    releasedAfterBalanceEstimated: boolean;
+    nonWithdrawableEstimated: boolean;
+    approxBrl: {
+      available: number | null;
+      pending: number | null;
+      releasedAfterBalance: number | null;
+      nonWithdrawable: number | null;
+    };
     nextReleaseAt: string | null;
     estimated: boolean;
   };
@@ -522,9 +564,9 @@ export interface CurrentStoreBalances {
   computedAt: string;
 }
 
-// Resumo do lucro real (8.4, D205): tudo calculado no backend; o frontend só exibe.
+// Resumo do lucro real em USD (8.5, D226, D229): tudo calculado no backend; o frontend só exibe.
 export interface ProfitWarning {
-  source: 'STORE' | 'STOCK';
+  source: 'STORE' | 'STOCK' | 'DEPOSITS' | 'WITHDRAWALS';
   storeId: number | null;
   storeName: string | null;
   code: string;
@@ -532,21 +574,43 @@ export interface ProfitWarning {
 }
 
 export interface ProfitSummary {
-  depositsBrlCents: number;
-  withdrawalsBrlCents: number;
-  platformBalanceEstimatedBrlCents: number | null;
-  pendingBalanceEstimatedBrlCents: number | null;
-  releasedAfterBalanceEstimatedBrlCents: number | null;
+  baseCurrency: 'USD';
+  depositsUsdCents: number | null;
+  withdrawalsNetUsdCents: number | null;
+  platformBalanceUsdCents: number | null;
+  pendingBalanceUsdCents: number | null;
+  releasedAfterBalanceUsdCents: number | null;
   nextReleaseAt: string | null;
-  stockEstimatedBrlCents: number | null;
-  realProfitBrlCents: number | null;
-  realProfitUsdCentsApprox: number | null;
-  withdrawnVsDeposited: { withdrawnBrlCents: number; depositedBrlCents: number; ratio: number | null };
+  stockUsdCents: number | null;
+  realProfitUsdCents: number | null;
+  // true se qualquer parcela do lucro teve conversão R$ -> US$ ("≈" no valor principal).
+  estimated: boolean;
+  estimatedParts: {
+    deposits: boolean;
+    withdrawals: boolean;
+    platformBalance: boolean;
+    pendingBalance: boolean;
+    releasedAfterBalance: boolean;
+    stock: boolean;
+  };
+  // "≈ R$" de cada total, calculado no backend (nulo sem cotação).
+  approxBrl: {
+    deposits: number | null;
+    withdrawals: number | null;
+    platformBalance: number | null;
+    pendingBalance: number | null;
+    releasedAfterBalance: number | null;
+    stock: number | null;
+    realProfit: number | null;
+  };
+  withdrawnVsDeposited: { withdrawnUsdCents: number | null; depositedUsdCents: number | null; ratio: number | null };
   balancesByStore: StoreBalanceSummary[];
   counts: {
     deposits: number;
+    legacyDeposits: number;
     withdrawals: number;
     legacyWithdrawals: number;
+    withdrawalsWithoutFee: number;
     stockItems: number;
     pendingSales: number;
     releasedAfterBalanceSales: number;

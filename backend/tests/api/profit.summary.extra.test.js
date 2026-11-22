@@ -22,23 +22,30 @@ const get = async (url) => {
 };
 
 describe('GET /api/profit/summary: complemento 8.4', () => {
-  test('Steam BRL continua somada sem cotação e CSFloat USD zerada não anula o lucro', async () => {
+  test('Steam BRL sem cotação: não converte (nulo + aviso); com cotação entra convertida', async () => {
     const steam = storeId('Steam');
     StoreBalance.create({ storeId: steam, balanceCents: 4590, fxRate: null, recordedAt: '2026-11-21T09:00:00.000Z' }, { now: NOW });
     const data = await get('/api/profit/summary');
-    expect(data.platformBalanceEstimatedBrlCents).toBe(4590);
-    expect(data.realProfitBrlCents).toBe(4590);
-    expect(data.warnings).toEqual([]);
+    expect(data.platformBalanceUsdCents).toBeNull();
+    expect(data.realProfitUsdCents).toBeNull();
+    expect(data.warnings).toContainEqual({ source: 'STORE', storeId: steam, storeName: 'Steam', code: 'FX_NOT_CONFIGURED', text: expect.any(String) });
+    Setting.update({ usdBrlRate: 5.4321 }, { now: NOW });
+    const withFx = await get('/api/profit/summary');
+    expect(withFx.platformBalanceUsdCents).toBe(845);
+    expect(withFx.realProfitUsdCents).toBe(845);
+    expect(withFx.estimated).toBe(true);
+    expect(withFx.warnings).toEqual([]);
   });
 
-  test('saldo USD sem cotação: parcela e lucro nulos, Steam (BRL) continua 4590 em balancesByStore', async () => {
+  test('saldo USD sem cotação: exato (1000); a Steam (BRL) fica sem US$ e o "≈ R$" nativo continua em balancesByStore', async () => {
     StoreBalance.create({ storeId: storeId('CSFloat'), balanceCents: 1000, fxRate: null, recordedAt: '2026-11-21T09:00:00.000Z' }, { now: NOW });
     StoreBalance.create({ storeId: storeId('Steam'), balanceCents: 4590, fxRate: null, recordedAt: '2026-11-21T09:00:00.000Z' }, { now: NOW });
     const data = await get('/api/profit/summary');
-    expect(data.platformBalanceEstimatedBrlCents).toBeNull();
-    expect(data.realProfitBrlCents).toBeNull();
-    expect(data.balancesByStore.find((r) => r.storeName === 'Steam').availableEstimatedBrlCents).toBe(4590);
-    expect(data.warnings).toContainEqual({ source: 'STORE', storeId: storeId('CSFloat'), storeName: 'CSFloat', code: 'FX_NOT_CONFIGURED', text: expect.any(String) });
+    expect(data.platformBalanceUsdCents).toBeNull();
+    expect(data.realProfitUsdCents).toBeNull();
+    expect(data.balancesByStore.find((r) => r.storeName === 'CSFloat')).toMatchObject({ availableUsdCents: 1000, availableApproxBrlCents: null });
+    expect(data.balancesByStore.find((r) => r.storeName === 'Steam')).toMatchObject({ availableUsdCents: null, availableApproxBrlCents: 4590 });
+    expect(data.warnings).toContainEqual({ source: 'STORE', storeId: storeId('Steam'), storeName: 'Steam', code: 'FX_NOT_CONFIGURED', text: expect.any(String) });
   });
 
   test('loja inativa (CSMoney) com saldo e venda retida continua contando', async () => {
@@ -49,28 +56,28 @@ describe('GET /api/profit/summary: complemento 8.4', () => {
     const before = await get('/api/profit/summary');
     getDb().prepare('UPDATE stores SET is_active = 0 WHERE id = ?').run(csm);
     const after = await get('/api/profit/summary');
-    expect(after.realProfitBrlCents).toBe(6000);
-    expect(after.realProfitBrlCents).toBe(before.realProfitBrlCents);
-    expect(after.pendingBalanceEstimatedBrlCents).toBe(1000);
+    expect(after.realProfitUsdCents).toBe(1200);
+    expect(after.realProfitUsdCents).toBe(before.realProfitUsdCents);
+    expect(after.pendingBalanceUsdCents).toBe(200);
   });
 
-  test('taxa paga do saque não entra: mudar feeCents não muda o resumo', async () => {
+  test('a taxa paga do saque reduz só o saque líquido; o valor recebido em R$ não entra', async () => {
     Setting.update({ usdBrlRate: 5 }, { now: NOW });
     const csf = storeId('CSFloat');
     const w = Withdrawal.create({ storeId: csf, amountStoreCents: 10000, feeCents: 250, amountBrlCents: 40000, withdrawnAt: '2026-11-10T12:00:00.000Z' }, { now: NOW });
     const a = await get('/api/profit/summary');
-    getDb().prepare('UPDATE withdrawals SET fee_cents = 9000 WHERE id = ?').run(w.id);
+    expect(a.realProfitUsdCents).toBe(9750);
+    getDb().prepare('UPDATE withdrawals SET fee_cents = 9000, amount_brl_cents = NULL WHERE id = ?').run(w.id);
     const b = await get('/api/profit/summary');
-    expect(b.realProfitBrlCents).toBe(a.realProfitBrlCents);
-    expect(b.realProfitBrlCents).toBe(40000);
+    expect(b.realProfitUsdCents).toBe(1000);
   });
 
   test('só aportes (sem saques): ratio 0 e lucro negativo; sem aportes: ratio null', async () => {
     Setting.update({ usdBrlRate: 5 }, { now: NOW });
-    Deposit.create({ amountBrlCents: 10000, depositedAt: '2026-11-01T12:00:00.000Z', storeId: null, note: null }, { now: NOW });
+    Deposit.create({ storeId: storeId('CSFloat'), amountStoreCents: 2000, amountBrlCents: null, depositedAt: '2026-11-01T12:00:00.000Z', note: null }, { now: NOW });
     const data = await get('/api/profit/summary');
-    expect(data.realProfitBrlCents).toBe(-10000);
-    expect(data.realProfitUsdCentsApprox).toBe(-2000);
+    expect(data.realProfitUsdCents).toBe(-2000);
+    expect(data.approxBrl.realProfit).toBe(-10000);
     expect(data.withdrawnVsDeposited.ratio).toBe(0);
   });
 
@@ -83,9 +90,11 @@ describe('GET /api/profit/summary: complemento 8.4', () => {
     const current = await get('/api/store-balances/current');
     expect(summary.balancesByStore).toEqual(current.stores);
     const sum = (pick) => current.stores.reduce((acc, row) => acc + pick(row), 0);
-    expect(summary.platformBalanceEstimatedBrlCents).toBe(sum((r) => r.availableEstimatedBrlCents));
-    expect(summary.pendingBalanceEstimatedBrlCents).toBe(sum((r) => r.pending.estimatedBrlCents));
-    expect(summary.releasedAfterBalanceEstimatedBrlCents).toBe(sum((r) => r.releasedAfterBalance.estimatedBrlCents));
+    expect(summary.platformBalanceUsdCents).toBe(sum((r) => r.availableUsdCents));
+    expect(summary.pendingBalanceUsdCents).toBe(sum((r) => r.pending.usdCents));
+    expect(summary.releasedAfterBalanceUsdCents).toBe(sum((r) => r.releasedAfterBalance.usdCents));
+    expect(summary.approxBrl.platformBalance).toBe(current.totals.approxBrl.available);
+    expect(summary.approxBrl.pendingBalance).toBe(current.totals.approxBrl.pending);
     expect(summary.counts.pendingSales).toBe(1);
     expect(summary.nextReleaseAt).toBe('2026-11-27T18:00:00.000Z');
     expect(summary.fx.usdBrlRate).toBe(5.4321);

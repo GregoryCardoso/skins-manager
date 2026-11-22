@@ -13,10 +13,14 @@ const withdrawal = (overrides: Partial<Withdrawal> = {}): Withdrawal => ({
   currency: 'USD',
   amountStoreCents: 10000,
   feeCents: 250,
+  netStoreCents: 9750,
   amountBrlCents: 52000,
   withdrawnAt: '2026-11-10T15:30:00.000Z',
   note: 'pix',
   legacyWithoutStore: false,
+  amountUsdCents: 9750,
+  approxBrlCents: null,
+  estimated: false,
   createdAt: '2026-11-10T15:30:00.000Z',
   updatedAt: '2026-11-10T15:30:00.000Z',
   ...overrides,
@@ -135,8 +139,8 @@ describe('validateWithdrawalForm', () => {
     }
   });
 
-  test('valor recebido: obrigatório e maior que zero', () => {
-    expect(validateWithdrawalForm(state({ receivedText: '' }), 'pt-BR')).toEqual({ amountBrlCents: 'withdrawals.form.receivedRequired' });
+  test('valor recebido: opcional; quando informado, maior que zero', () => {
+    expect(validateWithdrawalForm(state({ receivedText: '' }), 'pt-BR')).toEqual({}); // opcional e só informativo (8.5)
     expect(validateWithdrawalForm(state({ receivedText: '0' }), 'pt-BR')).toEqual({ amountBrlCents: 'withdrawals.form.invalidMoney' });
   });
 

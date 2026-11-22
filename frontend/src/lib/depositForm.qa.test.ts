@@ -12,13 +12,14 @@ import { ApiRequestError } from '@/services/api';
 import type { Deposit } from '@/types/api';
 
 const deposit = (overrides: Partial<Deposit> = {}): Deposit => ({
-  id: 1, amountBrlCents: 12345, depositedAt: '2026-11-10T15:30:45.123Z', storeId: 2, storeName: 'Steam', note: 'pix',
+  id: 1, storeId: 2, storeName: 'CSFloat', currency: 'USD', amountStoreCents: 12345, amountBrlCents: null,
+  depositedAt: '2026-11-10T15:30:45.123Z', note: 'pix', legacy: false, amountUsdCents: 12345, approxBrlCents: null, estimated: false,
   createdAt: '2026-11-10T15:30:45.123Z', updatedAt: '2026-11-10T15:30:45.123Z', ...overrides,
 });
 const state = (overrides: Partial<DepositFormState> = {}): DepositFormState => ({
-  amountText: '100,50', depositedAt: '2026-11-10T12:30', storeId: null, note: '', ...overrides,
+  storeId: 2, amountText: '100,50', paidText: '', depositedAt: '2026-11-10T12:30', note: '', ...overrides,
 });
-const cents = (text: string, language: string) => buildDepositCreateBody(state({ amountText: text }), language).amountBrlCents;
+const cents = (text: string, language: string) => buildDepositCreateBody(state({ amountText: text }), language).amountStoreCents;
 const valid = (text: string, language: string) => Object.keys(validateDepositForm(state({ amountText: text }), language)).length === 0;
 
 describe('conversão do valor por idioma', () => {
@@ -95,29 +96,29 @@ describe('PATCH com só o que mudou', () => {
     const original = deposit();
     const base = depositFormFromDeposit(original, 'pt-BR');
     expect(buildDepositPatchBody({ ...base, amountText: '123.45' }, original, 'pt-BR')).toEqual({});
-    expect(buildDepositPatchBody({ ...base, amountText: '1.234,50' }, original, 'pt-BR')).toEqual({ amountBrlCents: 123450 });
+    expect(buildDepositPatchBody({ ...base, amountText: '1.234,50' }, original, 'pt-BR')).toEqual({ amountStoreCents: 123450 });
   });
 
-  test('limpar loja e nota enviam null; trocar de loja e nota juntos; nota só com espaços em aporte sem nota = sem mudança', () => {
-    const original = deposit();
+  test('limpar a nota e o valor pago enviam null; trocar de loja e nota juntos; nota só com espaços em aporte sem nota = sem mudança', () => {
+    const original = deposit({ amountBrlCents: 50000 });
     const base = depositFormFromDeposit(original, 'pt-BR');
-    expect(buildDepositPatchBody({ ...base, storeId: null }, original, 'pt-BR')).toEqual({ storeId: null });
+    expect(buildDepositPatchBody({ ...base, paidText: '' }, original, 'pt-BR')).toEqual({ amountBrlCents: null });
     expect(buildDepositPatchBody({ ...base, note: '' }, original, 'pt-BR')).toEqual({ note: null });
     expect(buildDepositPatchBody({ ...base, storeId: 9, note: 'nova' }, original, 'pt-BR')).toEqual({ storeId: 9, note: 'nova' });
-    const bare = deposit({ note: null, storeId: null });
+    const bare = deposit({ note: null });
     expect(buildDepositPatchBody({ ...depositFormFromDeposit(bare, 'pt-BR'), note: '   ' }, bare, 'pt-BR')).toEqual({});
   });
 
-  test('colocar uma loja onde não havia envia só storeId', () => {
-    const bare = deposit({ storeId: null, storeName: null });
-    expect(buildDepositPatchBody({ ...depositFormFromDeposit(bare, 'pt-BR'), storeId: 4 }, bare, 'pt-BR')).toEqual({ storeId: 4 });
+  test('trocar para outra loja envia só storeId (o valor creditado é mantido)', () => {
+    const original = deposit();
+    expect(buildDepositPatchBody({ ...depositFormFromDeposit(original, 'pt-BR'), storeId: 4 }, original, 'pt-BR')).toEqual({ storeId: 4 });
   });
 
   test('valor inválido no PATCH não vira campo (a validação local barra antes)', () => {
     const original = deposit();
     const base = depositFormFromDeposit(original, 'pt-BR');
     expect(buildDepositPatchBody({ ...base, amountText: 'abc' }, original, 'pt-BR')).toEqual({});
-    expect(validateDepositForm({ ...base, amountText: 'abc' }, 'pt-BR')).toEqual({ amountBrlCents: 'deposits.form.invalidMoney' });
+    expect(validateDepositForm({ ...base, amountText: 'abc' }, 'pt-BR')).toEqual({ amountStoreCents: 'deposits.form.invalidMoney' });
   });
 
   test('o formulário em en preenche "123.45" e volta ao mesmo valor', () => {
@@ -155,13 +156,15 @@ describe('textos: chaves usadas nos componentes e erros dos aportes', () => {
     ['INVALID_DATE', undefined],
     ['DEPOSITED_AT_IN_FUTURE', undefined],
     ['DEPOSIT_NOT_FOUND', undefined],
+    ['DEPOSIT_STORE_CURRENCY_NOT_ALLOWED', undefined],
+    ['STORE_REQUIRED', undefined],
     ['REQUIRED_FIELD', undefined],
     ['UNSUPPORTED_MEDIA_TYPE', undefined],
     ['FORBIDDEN_HOST', undefined],
   ])('o código %s tem mensagem traduzida nos dois idiomas, sem placeholder sobrando', (code, params) => {
     for (const [dict, locale] of [[ptBR, 'pt-BR'], [en, 'en']] as const) {
       const t = (key: string, p?: Record<string, string | number>) => translate(dict, key, p);
-      const error = new ApiRequestError(code, 'm', 400, { field: 'amountBrlCents', params });
+      const error = new ApiRequestError(code, 'm', 400, { field: 'amountStoreCents', params });
       const message = errorMessageFor(error, t, locale);
       expect(message.length, `${locale} ${code}`).toBeGreaterThan(5);
       expect(message, `${locale} ${code}`).not.toMatch(/\{\w+\}|^errors\./);

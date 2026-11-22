@@ -63,12 +63,15 @@ describe('ordem das validações (POST)', () => {
     expectError(await post({ foo: 1 }), 400, 'UNKNOWN_FIELD', { field: 'foo' });
   });
 
-  test('ausentes: loja (service), depois valor sacado, recebido e data (nessa ordem)', async () => {
+  test('ausentes: loja (service), depois valor sacado e data (nessa ordem); o recebido em R$ é opcional', async () => {
     expectError(await post({ amountStoreCents: 5, amountBrlCents: 5, withdrawnAt: '2026-11-10T12:00:00.000Z' }), 400, 'STORE_REQUIRED', { field: 'storeId' });
     expectError(await post({ storeId: null, amountStoreCents: 5, amountBrlCents: 5, withdrawnAt: '2026-11-10T12:00:00.000Z' }), 400, 'STORE_REQUIRED', { field: 'storeId' });
     expectError(await post({ storeId: storeId('CSFloat') }), 400, 'REQUIRED_FIELD', { field: 'amountStoreCents' });
-    expectError(await post({ storeId: storeId('CSFloat'), amountStoreCents: 5 }), 400, 'REQUIRED_FIELD', { field: 'amountBrlCents' });
+    expectError(await post({ storeId: storeId('CSFloat'), amountStoreCents: 5 }), 400, 'REQUIRED_FIELD', { field: 'withdrawnAt' });
     expectError(await post({ storeId: storeId('CSFloat'), amountStoreCents: 5, amountBrlCents: 5 }), 400, 'REQUIRED_FIELD', { field: 'withdrawnAt' });
+    const ok = await post({ storeId: storeId('CSFloat'), amountStoreCents: 5, withdrawnAt: '2026-11-10T12:00:00.000Z' });
+    expect(ok.status).toBe(201);
+    expect(ok.body.data).toMatchObject({ amountBrlCents: null, netStoreCents: 5, amountUsdCents: 5 });
   });
 });
 
@@ -117,10 +120,11 @@ describe('valores e taxa', () => {
     expect((await post(body({ amountBrlCents: 99999999 }))).status).toBe(201);
   });
 
-  test('valor sacado, recebido e data nulos -> REQUIRED_FIELD', async () => {
-    for (const key of ['amountStoreCents', 'amountBrlCents', 'withdrawnAt']) {
+  test('valor sacado e data nulos -> REQUIRED_FIELD; recebido em R$ nulo é aceito (informativo)', async () => {
+    for (const key of ['amountStoreCents', 'withdrawnAt']) {
       expectError(await post(body({ [key]: null })), 400, 'REQUIRED_FIELD', { field: key });
     }
+    expect((await post(body({ amountBrlCents: null }))).body.data.amountBrlCents).toBeNull();
   });
 });
 
@@ -214,11 +218,12 @@ describe('PATCH parcial', () => {
     expectError(await patch(id, { feeCents: 0.5 }), 400, 'INVALID_AMOUNT', { field: 'feeCents' });
   });
 
-  test('nulos: só storeId (STORE_REQUIRED), feeCents e note aceitam null; os demais -> REQUIRED_FIELD', async () => {
+  test('nulos: storeId (STORE_REQUIRED), feeCents, amountBrlCents e note aceitam null; os demais -> REQUIRED_FIELD', async () => {
     const { id } = (await post(body())).body.data;
-    for (const key of ['amountStoreCents', 'amountBrlCents', 'withdrawnAt']) {
+    for (const key of ['amountStoreCents', 'withdrawnAt']) {
       expectError(await patch(id, { [key]: null }), 400, 'REQUIRED_FIELD', { field: key });
     }
+    expect((await patch(id, { amountBrlCents: null })).body.data.amountBrlCents).toBeNull();
     expectError(await patch(id, { storeId: null }), 400, 'STORE_REQUIRED', { field: 'storeId' });
   });
 
@@ -314,15 +319,17 @@ describe('listagem', () => {
     expect((await list()).withdrawals.map((w) => w.id)).toEqual([a.id, b.id]);
   });
 
-  test('totais somam o valor recebido (inclui saque antigo) e acompanham PATCH e DELETE', async () => {
-    const a = (await post(body({ amountBrlCents: 1000 }))).body.data;
-    await post(body({ amountBrlCents: 2500 }));
-    legacy({ amountBrlCents: 7000 });
-    expect((await list()).totals).toEqual({ count: 3, amountBrlCents: 10500 });
-    await patch(a.id, { amountBrlCents: 1500 });
-    expect((await list()).totals).toEqual({ count: 3, amountBrlCents: 11000 });
+  test('totais somam o líquido em US$ (inclui saque antigo convertido) e acompanham PATCH e DELETE', async () => {
+    await request(app).put('/api/settings/fx-rate').send({ usdBrlRate: 5 }).expect(200);
+    const a = (await post(body({ amountStoreCents: 1000, feeCents: 0 }))).body.data;
+    await post(body({ amountStoreCents: 2500, feeCents: 500 }));
+    legacy({ amountBrlCents: 7000 }); // 7000 / 5 = 1400
+    const totals = async () => { const t = (await list()).totals; return [t.count, t.netUsdCents, t.approxBrlCents]; };
+    expect(await totals()).toEqual([3, 1000 + 2000 + 1400, 22000]);
+    await patch(a.id, { amountStoreCents: 1500 });
+    expect(await totals()).toEqual([3, 1500 + 2000 + 1400, 24500]);
     await request(app).delete(`/api/withdrawals/${a.id}`);
-    expect((await list()).totals).toEqual({ count: 2, amountBrlCents: 9500 });
+    expect(await totals()).toEqual([2, 2000 + 1400, 17000]);
   });
 
   test('a view traz a moeda da loja (BRL) e currency nula no saque antigo', async () => {
@@ -358,7 +365,7 @@ describe('saque antigo sem loja', () => {
     const data = await list();
     expect(data.withdrawals).toHaveLength(1);
     expect(data.withdrawals[0].legacyWithoutStore).toBe(true);
-    expect(data.totals).toEqual({ count: 1, amountBrlCents: 30000 });
+    expect(data.totals).toEqual({ count: 1, legacyCount: 1, withoutFeeCount: 0, netUsdCents: null, approxBrlCents: null, estimated: true });
     expect((await request(app).delete(`/api/withdrawals/${old.id}`)).status).toBe(200);
   });
 

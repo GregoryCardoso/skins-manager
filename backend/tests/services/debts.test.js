@@ -8,7 +8,6 @@ const added = require('../../src/services/fees/addedSaleFee');
 const { computeSaleFee } = require('../../src/services/fees/saleFeeFormula');
 const { isValidFxRate, toUsdCents } = require('../../src/services/currencyService');
 const { findMinSalePriceCents, computeSale } = require('../../src/services/pricingService');
-const { estimateBalanceBrl } = require('../../src/services/withdrawalService');
 const {
   classifyStock, classifyTurnaround, sortByAge, sortByTurnaround, assertNotFutureDay,
 } = require('../../src/services/inventoryAgingService');
@@ -35,10 +34,9 @@ describe('T11 - códigos específicos', () => {
     expect(codeOf(() => roundCents(NaN, 'ROUND'))).toBe('INVALID_AMOUNT');
   });
 
-  test('pricing e saldo estimado', () => {
+  test('pricing', () => {
     expect(codeOf(() => findMinSalePriceCents(-1, CSF))).toBe('INVALID_AMOUNT');
     expect(codeOf(() => computeSale({ salePriceCents: 0, store: csfloat() }))).toBe('INVALID_AMOUNT');
-    expect(codeOf(() => estimateBalanceBrl({ balanceCents: -1, store: csfloat(), settings: {} }))).toBe('INVALID_AMOUNT');
   });
 
   test('nenhum service usa o código genérico VALIDATION_ERROR', () => {
@@ -181,20 +179,20 @@ describe('T22 - inteiros seguros', () => {
 describe('T23 - null explícito em computeRealProfit', () => {
   test('deposits/withdrawals/platformBalances/stockItems/settings nulos viram vazios', () => {
     const r = computeRealProfit({ deposits: null, withdrawals: null, platformBalances: null, stockItems: null, settings: null });
-    expect(r).toMatchObject({ depositsBrlCents: 0, withdrawalsBrlCents: 0, stockEstimatedBrlCents: 0, realProfitBrlCents: 0 });
-    expect(computeRealProfit().realProfitBrlCents).toBe(0);
+    expect(r).toMatchObject({ depositsUsdCents: 0, withdrawalsNetUsdCents: 0, stockUsdCents: 0, realProfitUsdCents: 0 });
+    expect(computeRealProfit().realProfitUsdCents).toBe(0);
   });
 });
 
 describe('T24 - testes faltantes', () => {
-  test('estoque USD com custo 0 sem cotação não anula o estoque (D46/M1)', () => {
+  test('estoque USD com custo 0 e item BRL pela cotação gravada, sem cotação atual, não anulam o estoque (D46/M1, D225)', () => {
     const r = computeRealProfit({
       stockItems: [usdItem({ purchasePriceCents: 0 }), usdItem({ id: 2, purchaseCurrency: 'BRL', purchasePriceCents: 300, fxRateAtPurchase: 5 })],
       settings: { usdBrlRate: null },
     });
-    expect(r.stockEstimatedBrlCents).toBe(300);
+    expect(r.stockUsdCents).toBe(60); // BRL 300 pela cotação gravada (5,0)
     expect(r.warnings).toEqual([]);
-    expect(r.realProfitBrlCents).toBe(300);
+    expect(r.realProfitUsdCents).toBe(60);
   });
 
   test('força bruta ADDED com fixedFee e minFee: net é o maior r com r + taxa(r) <= g', () => {

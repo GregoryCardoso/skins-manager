@@ -2,7 +2,6 @@
 
 // 8.3 (D206, D211, D215, D216): buildStoreBalanceRecord e buildCurrentBalances (puros, com `now` fixo).
 const { buildStoreBalanceRecord, buildCurrentBalances } = require('../../src/services/storeBalanceService');
-const { estimateBalanceBrl } = require('../../src/services/withdrawalService');
 const { MAX_AMOUNT_CENTS } = require('../../src/config/constants');
 const { csfloat, steam, csmoney } = require('../helpers/storeFixtures');
 
@@ -54,7 +53,7 @@ describe('buildStoreBalanceRecord', () => {
   });
 });
 
-// Cenário completo de D206 / D216.
+// Cenário completo de D206 / D216 / D226 (valores em US$ e "≈ R$" da 8.5).
 function d206() {
   const stores = [csfloat({ id: 1, saleHoldDays: 7 }), steam({ id: 2, saleHoldDays: 0 }), csmoney({ id: 3, saleHoldDays: 7 })];
   const latestBalances = [
@@ -83,35 +82,40 @@ describe('buildCurrentBalances: exemplo de D206 centavo a centavo', () => {
   test('CSFloat', () => {
     const c = byName.CSFloat;
     expect(c).toMatchObject({
-      availableCents: 12346, availableEstimatedBrlCents: 67065, allowsWithdrawal: true, estimated: true,
+      availableCents: 12346, availableUsdCents: 12346, availableApproxBrlCents: 67065, allowsWithdrawal: true, estimated: false,
       outdated: true, outdatedReasons: ['RELEASED_AFTER_BALANCE'], warningCode: 'BALANCE_MAYBE_OUTDATED', saleHoldDays: 7,
     });
-    expect(c.pending).toEqual({ cents: 7500, count: 3, nextReleaseAt: '2026-11-25T09:00:00.000Z', estimatedBrlCents: 40741 });
-    expect(c.releasedAfterBalance).toEqual({ cents: 1200, count: 1, earliestReleasedAt: '2026-11-20T20:00:00.000Z', estimatedBrlCents: 6519 });
+    expect(c.pending).toEqual({ cents: 7500, count: 3, nextReleaseAt: '2026-11-25T09:00:00.000Z', usdCents: 7500, approxBrlCents: 40741, estimated: false });
+    expect(c.releasedAfterBalance).toEqual({ cents: 1200, count: 1, earliestReleasedAt: '2026-11-20T20:00:00.000Z', usdCents: 1200, approxBrlCents: 6519, estimated: false });
   });
 
   test('Steam: venda H com retenção 0 só dispara ACTIVITY_AFTER_BALANCE', () => {
     expect(byName.Steam).toMatchObject({
-      availableCents: 4590, availableEstimatedBrlCents: 4590, allowsWithdrawal: false, estimated: false,
+      availableCents: 4590, availableUsdCents: 845, availableApproxBrlCents: 4590, allowsWithdrawal: false, estimated: true,
       outdated: true, outdatedReasons: ['ACTIVITY_AFTER_BALANCE'], warningCode: 'BALANCE_MAYBE_OUTDATED',
     });
-    expect(byName.Steam.pending).toEqual({ cents: 0, count: 0, nextReleaseAt: null, estimatedBrlCents: 0 });
-    expect(byName.Steam.releasedAfterBalance).toEqual({ cents: 0, count: 0, earliestReleasedAt: null, estimatedBrlCents: 0 });
+    expect(byName.Steam.pending).toEqual({ cents: 0, count: 0, nextReleaseAt: null, usdCents: 0, approxBrlCents: 0, estimated: false });
+    expect(byName.Steam.releasedAfterBalance).toEqual({ cents: 0, count: 0, earliestReleasedAt: null, usdCents: 0, approxBrlCents: 0, estimated: false });
   });
 
   test('CSMoney: sem saldo registrado, sem aviso', () => {
     const m = byName.CSMoney;
-    expect(m).toMatchObject({ balance: null, availableCents: 0, availableEstimatedBrlCents: 0, outdated: false, outdatedReasons: [], warningCode: null });
-    expect(m.pending).toEqual({ cents: 1000, count: 1, nextReleaseAt: '2026-11-26T12:00:00.000Z', estimatedBrlCents: 5432 });
-    expect(m.releasedAfterBalance).toEqual({ cents: 600, count: 1, earliestReleasedAt: '2026-11-17T12:00:00.000Z', estimatedBrlCents: 3259 });
+    expect(m).toMatchObject({ balance: null, availableCents: 0, availableUsdCents: 0, availableApproxBrlCents: 0, outdated: false, outdatedReasons: [], warningCode: null });
+    expect(m.pending).toEqual({ cents: 1000, count: 1, nextReleaseAt: '2026-11-26T12:00:00.000Z', usdCents: 1000, approxBrlCents: 5432, estimated: false });
+    expect(m.releasedAfterBalance).toEqual({ cents: 600, count: 1, earliestReleasedAt: '2026-11-17T12:00:00.000Z', usdCents: 600, approxBrlCents: 3259, estimated: false });
   });
 
   test('totais', () => {
     expect(result.totals).toEqual({
-      availableEstimatedBrlCents: 71655,
-      pendingEstimatedBrlCents: 46173,
-      releasedAfterBalanceEstimatedBrlCents: 9778,
-      nonWithdrawableEstimatedBrlCents: 4590,
+      availableUsdCents: 13191,
+      pendingUsdCents: 8500,
+      releasedAfterBalanceUsdCents: 1800,
+      nonWithdrawableUsdCents: 845,
+      availableEstimated: true,
+      pendingEstimated: false,
+      releasedAfterBalanceEstimated: false,
+      nonWithdrawableEstimated: true,
+      approxBrl: { available: 71655, pending: 46173, releasedAfterBalance: 9778, nonWithdrawable: 4590 },
       nextReleaseAt: '2026-11-25T09:00:00.000Z',
       estimated: true,
     });
@@ -190,22 +194,26 @@ describe('buildCurrentBalances: sem cotação e totais', () => {
     return buildCurrentBalances({ ...input, settings });
   };
 
-  test('sem cotação: parcelas USD null, cents preenchidos, FX_NOT_CONFIGURED; Steam segue', () => {
+  test('sem cotação: loja USD segue exata (sem "≈ R$"); só a Steam (BRL) fica sem US$ e com FX_NOT_CONFIGURED', () => {
     const r = noFx({ usdBrlRate: null });
     const csf = r.stores.find((s) => s.storeName === 'CSFloat');
-    expect(csf).toMatchObject({ availableCents: 12346, availableEstimatedBrlCents: null, warningCode: 'FX_NOT_CONFIGURED', estimated: true });
-    expect(csf.pending).toMatchObject({ cents: 7500, estimatedBrlCents: null });
-    expect(csf.releasedAfterBalance).toMatchObject({ cents: 1200, estimatedBrlCents: null });
-    expect(r.stores.find((s) => s.storeName === 'Steam')).toMatchObject({ availableEstimatedBrlCents: 4590 });
+    expect(csf).toMatchObject({
+      availableCents: 12346, availableUsdCents: 12346, availableApproxBrlCents: null, warningCode: 'BALANCE_MAYBE_OUTDATED', estimated: false,
+    });
+    expect(csf.pending).toMatchObject({ cents: 7500, usdCents: 7500, approxBrlCents: null });
+    expect(csf.releasedAfterBalance).toMatchObject({ cents: 1200, usdCents: 1200, approxBrlCents: null });
+    expect(r.stores.find((s) => s.storeName === 'Steam')).toMatchObject({
+      availableUsdCents: null, availableApproxBrlCents: 4590, warningCode: 'FX_NOT_CONFIGURED', estimated: true,
+    });
     expect(r.totals).toMatchObject({
-      availableEstimatedBrlCents: null, pendingEstimatedBrlCents: null, releasedAfterBalanceEstimatedBrlCents: null,
-      nonWithdrawableEstimatedBrlCents: 4590, estimated: true,
+      availableUsdCents: null, pendingUsdCents: 8500, releasedAfterBalanceUsdCents: 1800, nonWithdrawableUsdCents: null, estimated: true,
+      approxBrl: { available: null, pending: null, releasedAfterBalance: null, nonWithdrawable: null },
     });
     expect(r.usdBrlRate).toBeNull();
   });
 
   test('settings nulo equivale a sem cotação', () => {
-    expect(noFx(null).totals.availableEstimatedBrlCents).toBeNull();
+    expect(noFx(null).totals.availableUsdCents).toBeNull();
     expect(noFx(null).usdBrlRate).toBeNull();
   });
 
@@ -217,12 +225,13 @@ describe('buildCurrentBalances: sem cotação e totais', () => {
     input.items.push(sale(2, '2026-11-19T00:00:00.000Z', 200, 2)); // libera 21/11 00:00: antes do registro das 09:00 -> não conta
     input.items.push(sale(2, '2026-11-19T10:00:00.000Z', 50, 2)); // libera 21/11 10:00: depois do registro, antes de now
     const r = buildCurrentBalances(input);
-    expect(r.totals.nonWithdrawableEstimatedBrlCents).toBe(4590 + 300 + 50);
+    // cada parcela da loja BRL é convertida uma vez: 4590 -> 845, 300 -> 55, 50 -> 9
+    expect(r.totals.nonWithdrawableUsdCents).toBe(845 + 55 + 9);
   });
 
   test('nextReleaseAt é o menor entre lojas e nulo sem pendentes', () => {
     expect(buildCurrentBalances({ stores: [csfloat()], now: NOW, settings: RATE }).totals.nextReleaseAt).toBeNull();
-    expect(buildCurrentBalances({ stores: [], now: NOW }).totals).toMatchObject({ availableEstimatedBrlCents: 0, nonWithdrawableEstimatedBrlCents: 0, estimated: false });
+    expect(buildCurrentBalances({ stores: [], now: NOW }).totals).toMatchObject({ availableUsdCents: 0, nonWithdrawableUsdCents: 0, estimated: false });
   });
 
   test('retenção 0 na loja: nenhuma parcela pendente nem liberada', () => {
@@ -238,22 +247,13 @@ describe('buildCurrentBalances: sem cotação e totais', () => {
   });
 });
 
-describe('estimateBalanceBrl: ROUND (T82) e warningCode (T48)', () => {
-  test('12346 x 5,4321 -> 67065 (FLOOR daria 67064)', () => {
-    expect(estimateBalanceBrl({ balanceCents: 12346, store: csfloat(), settings: RATE })).toMatchObject({
-      estimatedBrlCents: 67065, estimated: true, warningCode: null,
-    });
-  });
-
-  test('metade arredonda para cima: 1 x 0,5 -> 1', () => {
-    expect(estimateBalanceBrl({ balanceCents: 1, store: csfloat(), settings: { usdBrlRate: 0.5 } }).estimatedBrlCents).toBe(1);
-  });
-
-  test('sem cotação: null + FX_NOT_CONFIGURED; saldo 0 e loja BRL não precisam de cotação', () => {
-    expect(estimateBalanceBrl({ balanceCents: 5, store: csfloat(), settings: { usdBrlRate: null } })).toMatchObject({
-      estimatedBrlCents: null, warningCode: 'FX_NOT_CONFIGURED', estimated: true,
-    });
-    expect(estimateBalanceBrl({ balanceCents: 0, store: csfloat(), settings: null })).toMatchObject({ estimatedBrlCents: 0, warningCode: null, estimated: false });
-    expect(estimateBalanceBrl({ balanceCents: 4590, store: steam(), settings: null })).toMatchObject({ estimatedBrlCents: 4590, warningCode: null, estimated: false });
+describe('buildCurrentBalances: flags de estimado por parcela (D225, D229)', () => {
+  test('loja BRL com saldo estima o disponível; loja USD não; totais refletem as parcelas', () => {
+    const r = buildCurrentBalances(d206());
+    const byName = Object.fromEntries(r.stores.map((s) => [s.storeName, s]));
+    expect(byName.Steam.availableEstimated).toBe(true);
+    expect(byName.CSFloat.availableEstimated).toBe(false);
+    expect(byName.Steam.pending.estimated).toBe(false);
+    expect(r.totals).toMatchObject({ availableEstimated: true, pendingEstimated: false, releasedAfterBalanceEstimated: false, nonWithdrawableEstimated: true });
   });
 });

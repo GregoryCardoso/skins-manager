@@ -4,10 +4,9 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
 import { resolveErrorTarget } from '@/lib/formErrors';
-import { formatMoney } from '@/lib/format';
 import {
   applyFeeSuggestion, buildWithdrawalCreateBody, buildWithdrawalPatchBody, editFee, feeSuggestionRequest,
-  initialWithdrawalState, validateWithdrawalForm, withdrawalFormFromWithdrawal, withdrawalStoreOptions,
+  initialWithdrawalState, validateWithdrawalForm, withdrawalAmountText, withdrawalFormFromWithdrawal, withdrawalStoreOptions,
   type WithdrawalFormState,
 } from '@/lib/withdrawalForm';
 import { ApiRequestError, createWithdrawal, getWithdrawalFeeSuggestion, updateWithdrawal } from '@/services/api';
@@ -127,7 +126,7 @@ export default function WithdrawalFormModal({ withdrawal, stores, onClose, onSav
     }
     setSaving(true);
     createWithdrawal(buildWithdrawalCreateBody(state, language))
-      .then((saved) => onSaved(t('withdrawals.created', { value: formatMoney(saved.amountBrlCents, 'BRL', language) })))
+      .then((saved) => onSaved(t('withdrawals.created', { value: withdrawalAmountText(saved, language) })))
       .catch((err: unknown) => {
         setSaving(false);
         showApiError(err);
@@ -200,7 +199,7 @@ export default function WithdrawalFormModal({ withdrawal, stores, onClose, onSav
               />
             )}
           </FormField>
-          <FormField label={t('withdrawals.form.received')} error={errors.amountBrlCents}>
+          <FormField label={t('withdrawals.amountBrlOptional')} error={errors.amountBrlCents}>
             {(c) => (
               <input
                 {...c}

@@ -49,16 +49,29 @@ function makeV5Backup(file) {
   ).run(csf, csf);
   old.prepare("INSERT INTO withdrawals (store_id, amount_store_cents, amount_brl_cents, withdrawn_at, created_at, updated_at) VALUES (?, 500, 2500, 'w', 'c', 'u')").run(csf);
   old.prepare("INSERT INTO withdrawals (amount_brl_cents, withdrawn_at, created_at, updated_at) VALUES (1000, 'w2', 'c', 'u')").run();
+  old.prepare("INSERT INTO deposits (amount_brl_cents, deposited_at, store_id, note, created_at, updated_at) VALUES (30000, '2026-10-05T12:00:00.000Z', ?, 'pix', 'c', 'u')").run(csf);
+  old.close();
+}
+
+// Backup na versão 6 (esquema anterior à 8.5), com aportes e saques antigos.
+function makeV6Backup(file) {
+  const { MIGRATIONS } = require('../../src/config/migrations');
+  const old = database.openDatabase(file, { migrations: MIGRATIONS.filter((m) => m.version <= 6) });
+  const csf = old.prepare("SELECT id FROM stores WHERE name = 'CSFloat'").get().id;
+  old.prepare("INSERT INTO deposits (amount_brl_cents, deposited_at, store_id, note, created_at, updated_at) VALUES (50000, '2026-10-01T12:00:00.000Z', NULL, 'sem loja', 'c', 'u')").run();
+  old.prepare("INSERT INTO deposits (amount_brl_cents, deposited_at, store_id, note, created_at, updated_at) VALUES (30000, '2026-10-05T12:00:00.000Z', ?, 'com loja', 'c', 'u')").run(csf);
+  old.prepare("INSERT INTO withdrawals (store_id, amount_store_cents, fee_cents, amount_brl_cents, withdrawn_at, created_at, updated_at) VALUES (?, 10000, 250, 52037, '2026-11-10T12:00:00.000Z', 'c', 'u')").run(csf);
+  old.prepare("INSERT INTO withdrawals (amount_brl_cents, withdrawn_at, created_at, updated_at) VALUES (10000, '2026-11-02T12:00:00.000Z', 'c', 'u')").run();
   old.close();
 }
 
 describe('backup e a retenção do saldo', () => {
-  test('importar um backup v5 migra para v6: lojas pelo nome, vendas antigas nulas, saques e itens preservados', async () => {
+  test('importar um backup v5 migra para v7: lojas pelo nome, vendas antigas nulas, saques e itens preservados, aporte legado', async () => {
     const v5 = path.join(dir, 'v5.sqlite');
     makeV5Backup(v5);
     const res = await octet(fs.readFileSync(v5));
     expect(res.status).toBe(200);
-    expect(res.body.data).toMatchObject({ fileVersion: 5, schemaVersion: 6, migrationsApplied: [6] });
+    expect(res.body.data).toMatchObject({ fileVersion: 5, schemaVersion: 7, migrationsApplied: [6, 7] });
 
     const db = database.getDb();
     expect(holds()).toEqual({ CSFloat: 7, csmoney: 7, Steam: 0 });
@@ -68,6 +81,10 @@ describe('backup e a retenção do saldo', () => {
     // o app segue funcionando e a venda antiga aparece sem retenção registrada
     const item = (await request(app).get('/api/items?status=VENDIDO')).body.data;
     expect(JSON.stringify(item)).toContain('"saleHoldDaysApplied":null');
+    // o aporte de um backup antigo vira legado (D234): só o valor em R$, sem valor creditado na loja
+    const deposits = (await request(app).get('/api/deposits')).body.data;
+    expect(deposits.deposits).toHaveLength(1);
+    expect(deposits.deposits[0]).toMatchObject({ legacy: true, amountStoreCents: null, amountBrlCents: 30000, note: 'pix', storeName: 'CSFloat' });
   });
 
   test('exportar um v6 e reimportar preserva sale_hold_days e os snapshots', async () => {
@@ -86,5 +103,23 @@ describe('backup e a retenção do saldo', () => {
     const after = database.getDb();
     expect(after.prepare("SELECT sale_hold_days AS d FROM stores WHERE name = 'CSFloat'").get().d).toBe(12);
     expect(after.prepare("SELECT sale_hold_days_applied AS h FROM items WHERE name = 'Vendida'").get().h).toBe(12);
+  });
+
+  test('importar um backup v6 migra para v7: aportes legados, saques e taxas intactos, app segue funcionando', async () => {
+    const v6 = path.join(dir, 'v6.sqlite');
+    makeV6Backup(v6);
+    const res = await octet(fs.readFileSync(v6));
+    expect(res.status).toBe(200);
+    expect(res.body.data).toMatchObject({ fileVersion: 6, schemaVersion: 7, migrationsApplied: [7] });
+
+    const deposits = (await request(app).get('/api/deposits')).body.data;
+    expect(deposits.totals).toMatchObject({ count: 2, legacyCount: 2 });
+    expect(deposits.deposits.every((d) => d.legacy && d.amountStoreCents === null)).toBe(true);
+    expect(deposits.deposits.map((d) => d.amountBrlCents).sort()).toEqual([30000, 50000]);
+    const withdrawals = (await request(app).get('/api/withdrawals')).body.data;
+    expect(withdrawals.withdrawals.map((w) => [w.amountStoreCents, w.feeCents, w.amountBrlCents, w.legacyWithoutStore]).sort())
+      .toEqual([[null, null, 10000, true], [10000, 250, 52037, false]]);
+    expect((await request(app).get('/api/profit/summary')).status).toBe(200);
+    expect(database.getDb().pragma('foreign_key_check')).toEqual([]);
   });
 });

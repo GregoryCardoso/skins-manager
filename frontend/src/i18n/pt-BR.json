@@ -172,11 +172,12 @@
     "INVALID_SALE_HOLD_DAYS": "A retenção deve ser um número inteiro de dias, de 0 a 30.",
     "DEPOSITED_AT_IN_FUTURE": "A data do aporte não pode estar no futuro.",
     "DEPOSIT_NOT_FOUND": "O aporte não foi encontrado.",
-    "STORE_REQUIRED": "Escolha a loja do saque.",
+    "STORE_REQUIRED": "Escolha a loja.",
     "WITHDRAWAL_FEE_ABOVE_AMOUNT": "A taxa paga não pode ser maior que o valor sacado.",
     "WITHDRAWN_AT_IN_FUTURE": "A data do saque não pode estar no futuro.",
     "WITHDRAWAL_NOT_ALLOWED": "Esta loja não permite saque. Ative \"Permite saque\" na tela de Lojas.",
     "WITHDRAWAL_NOT_FOUND": "O saque não foi encontrado.",
+    "DEPOSIT_STORE_CURRENCY_NOT_ALLOWED": "O aporte só pode ser registrado em loja em dólar (US$).",
     "RECORDED_AT_IN_FUTURE": "A data do saldo não pode estar no futuro.",
     "STORE_BALANCE_NOT_FOUND": "O registro de saldo não foi encontrado."
   },
@@ -440,12 +441,12 @@
     "isActive": "Ativa",
     "isPrimary": "Principal",
     "currency": "Moeda",
-    "amountBrlCents": "Valor",
+    "amountBrlCents": "Valor em R$",
     "depositedAt": "Data do aporte",
     "storeId": "Loja",
     "note": "Observação",
     "saleHoldDays": "Retenção do saldo",
-    "amountStoreCents": "Valor sacado",
+    "amountStoreCents": "Valor na loja",
     "feeCents": "Taxa paga",
     "withdrawnAt": "Data do saque",
     "balanceCents": "Saldo",
@@ -780,9 +781,9 @@
   "profit": {
     "title": "Lucro real",
     "subtitle": "Acompanhe o que você colocou, o que sacou, o saldo de cada loja e o seu lucro real.",
-    "pendingIncluded": "inclui ≈ {amount} pendente (libera a partir de {date})",
-    "pendingIncludedNoDate": "inclui ≈ {amount} pendente",
-    "releasedIncluded": "inclui ≈ {amount} liberado após o último saldo registrado (atualize o saldo)",
+    "pendingIncluded": "inclui {amount} pendente (libera a partir de {date})",
+    "pendingIncludedNoDate": "inclui {amount} pendente",
+    "releasedIncluded": "inclui {amount} liberado após o último saldo registrado (atualize o saldo)",
     "estimatedNote": "Valores com ≈ são estimados pela cotação {fx}.",
     "estimatedNoFx": "Valores com ≈ são estimados pela cotação do dólar, que ainda não está configurada.",
     "emptyHint": "Registre aportes e saldos para ver o lucro real.",
@@ -790,8 +791,7 @@
       "title": "Resumo",
       "loadError": "Não foi possível carregar o resumo: {reason}",
       "realProfit": "Lucro real",
-      "realProfitHint": "Saques + saldos (disponível, pendente e liberado) + estoque − aportes.",
-      "usdApprox": "≈ {value}",
+      "realProfitHint": "Saques líquidos + saldos (disponível, pendente e liberado) + estoque − aportes, tudo em dólar (US$).",
       "deposited": "Total colocado",
       "withdrawn": "Total retirado",
       "platformBalance": "Saldo nas plataformas",
@@ -804,12 +804,23 @@
       "pendingUnavailable": "inclui saldo pendente: indisponível (falta a cotação do dólar)",
       "releasedUnavailable": "inclui saldo liberado após o último registro: indisponível (falta a cotação do dólar)",
       "warningStore": "{store}: {message}",
-      "warningStock": "Estoque: {message}"
+      "warningStock": "Estoque: {message}",
+      "brlApprox": "≈ {value}",
+      "legacyDeposits": {
+        "one": "{count} aporte antigo em R$ convertido pela cotação (≈). Edite-o para informar a loja e o valor creditado.",
+        "other": "{count} aportes antigos em R$ convertidos pela cotação (≈). Edite-os para informar a loja e o valor creditado."
+      },
+      "withdrawalsWithoutFee": {
+        "one": "{count} saque sem taxa informada conta com taxa 0.",
+        "other": "{count} saques sem taxa informada contam com taxa 0."
+      },
+      "warningDeposits": "Aportes: {message}",
+      "warningWithdrawals": "Saques: {message}"
     }
   },
   "deposits": {
     "title": "Aportes",
-    "intro": "Dinheiro que você colocou do seu bolso. A loja é só informativa: o aporte é sempre em R$.",
+    "intro": "Dinheiro que você colocou nas lojas, na moeda da loja (hoje, só lojas em dólar). O valor pago em R$ é só informativo.",
     "count": {
       "one": "{count} aporte",
       "other": "{count} aportes"
@@ -825,10 +836,11 @@
     "deleted": "Aporte de {value} excluído.",
     "columns": {
       "date": "Data",
-      "amount": "Valor",
+      "amount": "Creditado na loja",
       "store": "Loja",
       "note": "Observação",
-      "actions": "Ações"
+      "actions": "Ações",
+      "paid": "Pago (R$)"
     },
     "noStore": "—",
     "inactiveStore": "{name} (inativa)",
@@ -842,25 +854,30 @@
     "form": {
       "createTitle": "Novo aporte",
       "editTitle": "Editar aporte",
-      "amount": "Valor (R$)",
       "date": "Data do aporte",
-      "store": "Loja (opcional)",
-      "noStore": "Sem loja",
-      "storeHint": "Só informativa: não muda a moeda do aporte nem o saldo da loja.",
+      "store": "Loja (em dólar)",
       "note": "Observação (opcional)",
-      "amountRequired": "Informe o valor do aporte.",
+      "amountRequired": "Informe o valor creditado na loja.",
       "invalidMoney": "Valor inválido. Use o formato 1,25, maior que zero.",
-      "invalidDate": "Data inválida."
-    }
+      "invalidDate": "Data inválida.",
+      "chooseStore": "Escolha a loja",
+      "storeRequired": "Escolha a loja do aporte."
+    },
+    "amountStore": "Valor creditado na loja (US$)",
+    "noUsdStores": "Nenhuma loja em dólar ativa. Cadastre uma em Lojas.",
+    "legacyStoreNotUsd": "A loja deste registro antigo não é em dólar. Escolha uma loja em US$.",
+    "amountBrlOptional": "Valor pago em R$ (opcional, só informativo)",
+    "legacyBadge": "Registro antigo em R$",
+    "legacyEditHint": "Este aporte foi registrado só em R$. Informe a loja e o valor creditado."
   },
   "withdrawals": {
     "title": "Saques",
-    "intro": "O que você sacou das lojas para a sua conta. O valor recebido em R$ é o que entra no lucro real.",
+    "intro": "O que você sacou das lojas para a sua conta, na moeda da loja. O líquido (sacado menos a taxa paga) é o que entra no lucro real; o valor recebido em R$ é só informativo.",
     "count": {
       "one": "{count} saque",
       "other": "{count} saques"
     },
-    "total": "Total recebido em saques: {value}",
+    "total": "Total líquido sacado: {value}",
     "new": "Novo saque",
     "empty": "Nenhum saque registrado",
     "emptyHint": "Registre cada saque feito de uma loja para a sua conta. Isso entra no cálculo do lucro real.",
@@ -901,16 +918,17 @@
       "feeHint": "Deixe vazio se não souber (\"não informada\"); 0 = não pagou taxa.",
       "feeSuggested": "Sugerida pela taxa de saque da loja. Você pode editar.",
       "feeNotConfigured": "A loja não tem taxa de saque configurada; informe a taxa paga, se souber.",
-      "received": "Valor recebido na conta (R$)",
       "date": "Data do saque",
       "note": "Observação (opcional)",
       "storeRequired": "Escolha a loja do saque.",
       "amountRequired": "Informe o valor sacado.",
       "invalidMoney": "Valor inválido. Use o formato 1,25, maior que zero.",
       "invalidFee": "Taxa inválida. Use o formato 1,25 (0 é permitido) ou deixe vazio.",
-      "receivedRequired": "Informe o valor recebido na conta.",
       "invalidDate": "Data inválida."
-    }
+    },
+    "amountBrlOptional": "Valor recebido em R$ (opcional, só informativo)",
+    "net": "Líquido",
+    "legacyRecordedBrl": "(registro antigo)"
   },
   "storeBalances": {
     "title": "Saldos das lojas",
@@ -933,8 +951,11 @@
     "outdatedReleased": "Vendas liberadas desde {date}. Registre o saldo atual.",
     "update": "Atualizar saldo",
     "created": "Saldo da loja {store} registrado: {value}.",
-    "nonWithdrawableTotal": "Não sacável: ≈ {value}",
+    "nonWithdrawableTotal": "Não sacável: {value}",
     "nonWithdrawableTotalLabel": "Não sacável:",
+    "totalAvailable": "Total disponível: {value}",
+    "totalPending": "Total pendente: {value}",
+    "totalReleased": "Total liberado após o registro: {value}",
     "form": {
       "title": "Atualizar saldo: {store}",
       "intro": "Digite o saldo disponível que aparece no site da loja. O histórico é preservado: para corrigir um erro, exclua o registro e registre de novo.",

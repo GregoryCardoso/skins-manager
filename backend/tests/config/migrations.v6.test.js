@@ -21,6 +21,7 @@ afterAll(() => {
 });
 
 const upTo5 = MIGRATIONS.filter((m) => m.version <= 5);
+const upTo6 = MIGRATIONS.filter((m) => m.version <= 6);
 const dbIn = (name) => path.join(tmpRoot, name, 'inventory.sqlite');
 const sha = (file) => crypto.createHash('sha256').update(fs.readFileSync(file, 'utf8').replace(/\r\n/g, '\n')).digest('hex');
 const holdOf = (db) => Object.fromEntries(db.prepare('SELECT name, sale_hold_days AS d FROM stores').all().map((r) => [r.name, r.d]));
@@ -39,9 +40,8 @@ const insertItem = (db, { name, status = 'EM_ESTOQUE', storeId }) => db.prepare(
 ).lastInsertRowid;
 
 describe('migração v6', () => {
-  test('o último user_version é 6 e as migrações v1 a v5 publicadas continuam idênticas (hash)', () => {
-    expect(MIGRATIONS[MIGRATIONS.length - 1].version).toBe(6);
-    expect(MIGRATIONS[MIGRATIONS.length - 1].name).toBe('withdrawal_fee_sale_hold');
+  test('a v6 existe e as migrações v1 a v5 publicadas continuam idênticas (hash)', () => {
+    expect(MIGRATIONS.find((m) => m.version === 6).name).toBe('withdrawal_fee_sale_hold');
     const dir = path.join(__dirname, '..', '..', 'src', 'config', 'migrations');
     expect(sha(path.join(dir, 'v001_initial.js'))).toBe('18514164a9ad3d10128e6b1c271ce7623d11835a9240fe9bf2f337bfced3eb1f');
     expect(sha(path.join(dir, 'v002_catalog.js'))).toBe('9e0718ac8ad78ee5e48a4bd41f591e3835ed3b1c653e95e6362f6041b56ba22f');
@@ -70,7 +70,7 @@ describe('migração v6', () => {
     expect(old.pragma('user_version', { simple: true })).toBe(5);
     old.close();
 
-    const db = openDatabase(dbPath, { now: new Date('2026-11-21T12:00:00.000Z') });
+    const db = openDatabase(dbPath, { migrations: upTo6, now: new Date('2026-11-21T12:00:00.000Z') });
     try {
       expect(db.pragma('user_version', { simple: true })).toBe(6);
       expect(holdOf(db)).toEqual({ CSFLOAT: 7, csmoney: 7, Steam: 0, Float: 0 });
@@ -98,7 +98,7 @@ describe('migração v6', () => {
     const old = openDatabase(dbPath, { migrations: upTo5 });
     old.prepare("UPDATE stores SET name = 'CSMONEY' WHERE name = 'CSMoney'").run();
     old.close();
-    const db = openDatabase(dbPath);
+    const db = openDatabase(dbPath, { migrations: upTo6 });
     try {
       expect(holdOf(db)).toEqual({ CSFloat: 7, Steam: 0, CSMONEY: 7 });
     } finally {
@@ -107,7 +107,7 @@ describe('migração v6', () => {
   });
 
   test('banco novo: o seed grava 7/0/7 e a v6 não deixa a retenção nula', () => {
-    const db = openDatabase(dbIn('novo'));
+    const db = openDatabase(dbIn('novo'), { migrations: upTo6 });
     try {
       expect(holdOf(db)).toEqual({ CSFloat: 7, Steam: 0, CSMoney: 7 });
       expect(db.prepare('SELECT COUNT(*) AS n FROM stores WHERE sale_hold_days IS NULL').get().n).toBe(0);
@@ -117,7 +117,7 @@ describe('migração v6', () => {
   });
 
   test('CHECKs: fee_cents >= 0, sale_hold_days de 0 a 30, snapshot só em item VENDIDO', () => {
-    const db = openDatabase(dbIn('checks'));
+    const db = openDatabase(dbIn('checks'), { migrations: upTo6 });
     try {
       const csfloat = db.prepare("SELECT id FROM stores WHERE name = 'CSFloat'").get().id;
       for (const ok of [0, 30]) db.prepare('UPDATE stores SET sale_hold_days = ? WHERE id = ?').run(ok, csfloat);
@@ -145,10 +145,10 @@ describe('migração v6', () => {
   test('reabrir um banco v6 não migra de novo nem cria outro backup', () => {
     const dbPath = dbIn('reabrir');
     openDatabase(dbPath, { migrations: upTo5 }).close();
-    openDatabase(dbPath).close();
+    openDatabase(dbPath, { migrations: upTo6 }).close();
     const backups = () => fs.readdirSync(path.join(path.dirname(dbPath), 'backups')).length;
     const first = backups();
-    const db = openDatabase(dbPath);
+    const db = openDatabase(dbPath, { migrations: upTo6 });
     try {
       expect(db.pragma('user_version', { simple: true })).toBe(6);
       expect(backups()).toBe(first);

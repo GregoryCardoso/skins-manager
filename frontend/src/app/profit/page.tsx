@@ -9,6 +9,7 @@ import SummaryCards from '@/components/SummaryCards';
 import WithdrawalsSection from '@/components/WithdrawalsSection';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
+import { useMoneyLine } from '@/components/MoneyApprox';
 import { formatDate, formatMoney } from '@/lib/format';
 import { ApiRequestError, deleteDeposit, listDeposits, listStores } from '@/services/api';
 import type { Deposit, DepositList, Store } from '@/types/api';
@@ -22,6 +23,12 @@ export default function ProfitPage() {
   const tLoose = useTLoose();
   const tPlural = useTPlural();
   const language = useLanguage();
+  const moneyLine = useMoneyLine();
+  // Valor creditado do aporte para mensagens (US$); aporte legado: o R$ gravado. Só formata.
+  const depositValueText = (deposit: Deposit) => {
+    if (deposit.amountStoreCents !== null) return formatMoney(deposit.amountStoreCents, 'USD', language);
+    return deposit.amountBrlCents === null ? '' : formatMoney(deposit.amountBrlCents, 'BRL', language);
+  };
 
   const [data, setData] = useState<DepositList | null>(null);
   const [stores, setStores] = useState<Store[]>([]);
@@ -83,7 +90,7 @@ export default function ProfitPage() {
     setConfirmBusy(true);
     setConfirmError(null);
     deleteDeposit(deposit.id)
-      .then(() => finish(t('deposits.deleted', { value: formatMoney(deposit.amountBrlCents, 'BRL', language) })))
+      .then(() => finish(t('deposits.deleted', { value: depositValueText(deposit) })))
       .catch((err: unknown) => {
         if (err instanceof ApiRequestError && err.code === 'DEPOSIT_NOT_FOUND') {
           depositGone();
@@ -114,7 +121,11 @@ export default function ProfitPage() {
         </div>
 
         {data && data.totals.count > 0 && (
-          <p className={styles.total}>{t('deposits.total', { value: formatMoney(data.totals.amountBrlCents, 'BRL', language) })}</p>
+          <p className={styles.total}>
+            {t('deposits.total', {
+              value: moneyLine({ cents: data.totals.amountUsdCents, estimated: data.totals.estimated, approxCents: data.totals.approxBrlCents }),
+            })}
+          </p>
         )}
 
         {notice && (
@@ -163,7 +174,7 @@ export default function ProfitPage() {
         <ConfirmDialog
           title={t('deposits.deleteTitle')}
           message={t('deposits.deleteMessage', {
-            value: formatMoney(dialog.deposit.amountBrlCents, 'BRL', language),
+            value: depositValueText(dialog.deposit),
             date: formatDate(dialog.deposit.depositedAt, language),
           })}
           confirmLabel={t('deposits.confirmDelete')}

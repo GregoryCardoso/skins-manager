@@ -21,3 +21,4 @@
 .danger { color: var(--danger); }
 .danger:hover:not(:disabled) { border-color: var(--danger); }
 .numeric { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.badge { display: inline-block; border: 1px solid var(--border); border-radius: 999px; padding: 0 0.5rem; font-weight: 500; color: var(--text-muted); }

@@ -25,22 +25,42 @@ describe('GET /api/withdrawals', () => {
   test('vazio: lista vazia e totais zerados', async () => {
     const res = await request(app).get('/api/withdrawals');
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ success: true, data: { withdrawals: [], totals: { count: 0, amountBrlCents: 0 } } });
+    expect(res.body).toEqual({
+      success: true,
+      data: { withdrawals: [], totals: { count: 0, legacyCount: 0, withoutFeeCount: 0, netUsdCents: 0, approxBrlCents: null, estimated: false } },
+    });
   });
 
   test('ordem withdrawnAt DESC e id DESC; totais; saque antigo sem loja na lista', async () => {
-    const a = (await post(body({ withdrawnAt: '2026-11-01T12:00:00.000Z', amountBrlCents: 100 }))).body.data;
-    const b = (await post(body({ withdrawnAt: '2026-11-05T12:00:00.000Z', amountBrlCents: 250 }))).body.data;
-    const c = (await post(body({ withdrawnAt: '2026-11-05T12:00:00.000Z', amountBrlCents: 50 }))).body.data;
+    const a = (await post(body({ withdrawnAt: '2026-11-01T12:00:00.000Z', amountStoreCents: 1000, feeCents: 0 }))).body.data;
+    const b = (await post(body({ withdrawnAt: '2026-11-05T12:00:00.000Z', amountStoreCents: 2500, feeCents: null }))).body.data;
+    const c = (await post(body({ withdrawnAt: '2026-11-05T12:00:00.000Z', amountStoreCents: 500, feeCents: 100 }))).body.data;
     const old = legacy();
     const res = await request(app).get('/api/withdrawals');
     expect(res.body.data.withdrawals.map((w) => w.id)).toEqual([c.id, b.id, a.id, old.id]);
-    expect(res.body.data.totals).toEqual({ count: 4, amountBrlCents: 100 + 250 + 50 + 30000 });
+    // sem cotação: o saque antigo (R$ 300,00) não converte; os três com loja somam 1000 + 2500 + 400
+    expect(res.body.data.totals).toEqual({
+      count: 4, legacyCount: 1, withoutFeeCount: 1, netUsdCents: null, approxBrlCents: null, estimated: true,
+    });
     expect(res.body.data.withdrawals[3]).toEqual({
-      id: old.id, storeId: null, storeName: null, currency: null, amountStoreCents: null, feeCents: null, amountBrlCents: 30000,
-      withdrawnAt: '2026-01-05T12:00:00.000Z', note: 'antigo', legacyWithoutStore: true,
+      id: old.id, storeId: null, storeName: null, currency: null, amountStoreCents: null, feeCents: null, netStoreCents: null,
+      amountBrlCents: 30000, withdrawnAt: '2026-01-05T12:00:00.000Z', note: 'antigo', legacyWithoutStore: true,
+      amountUsdCents: null, approxBrlCents: 30000, estimated: true,
       createdAt: NOW.toISOString(), updatedAt: NOW.toISOString(),
     });
+    expect(res.body.data.withdrawals.slice(0, 3).map((w) => w.amountUsdCents)).toEqual([400, 2500, 1000]);
+  });
+
+  test('com cotação: líquido em US$, "≈ R$" e o saque antigo convertido (≈) entram nos totais', async () => {
+    await request(app).put('/api/settings/fx-rate').send({ usdBrlRate: 5.4321 }).expect(200);
+    await post(body({ amountStoreCents: 10000, feeCents: 250, amountBrlCents: 52037 }));
+    legacy({ amountBrlCents: 10000 });
+    const res = (await request(app).get('/api/withdrawals')).body.data;
+    expect(res.withdrawals.find((w) => !w.legacyWithoutStore)).toMatchObject({
+      netStoreCents: 9750, amountUsdCents: 9750, approxBrlCents: 52963, estimated: false,
+    });
+    expect(res.withdrawals.find((w) => w.legacyWithoutStore)).toMatchObject({ amountUsdCents: 1841, approxBrlCents: 10000, estimated: true });
+    expect(res.totals).toEqual({ count: 2, legacyCount: 1, withoutFeeCount: 0, netUsdCents: 11591, approxBrlCents: 62963, estimated: true });
   });
 });
 
@@ -55,10 +75,14 @@ describe('POST /api/withdrawals', () => {
       currency: 'USD',
       amountStoreCents: 10000,
       feeCents: 250,
+      netStoreCents: 9750,
       amountBrlCents: 52000,
       withdrawnAt: '2026-11-10T12:00:00.000Z',
       note: 'pix',
       legacyWithoutStore: false,
+      amountUsdCents: 9750,
+      approxBrlCents: null,
+      estimated: false,
       createdAt: NOW.toISOString(),
       updatedAt: NOW.toISOString(),
     });
@@ -81,7 +105,6 @@ describe('POST /api/withdrawals', () => {
     expectError(await post(body({ amountStoreCents: '100' })), 400, 'INVALID_FIELD', { field: 'amountStoreCents' });
     expectError(await post(body({ feeCents: 10001 })), 400, 'WITHDRAWAL_FEE_ABOVE_AMOUNT', { field: 'feeCents' });
     expectError(await post(body({ feeCents: -1 })), 400, 'INVALID_AMOUNT', { field: 'feeCents' });
-    expectError(await post(body({ amountBrlCents: undefined })), 400, 'REQUIRED_FIELD', { field: 'amountBrlCents' });
     expectError(await post(body({ amountBrlCents: 0 })), 400, 'INVALID_AMOUNT', { field: 'amountBrlCents' });
     expectError(await post(body({ withdrawnAt: undefined })), 400, 'REQUIRED_FIELD', { field: 'withdrawnAt' });
     expectError(await post(body({ withdrawnAt: '10/11/2026' })), 400, 'INVALID_DATE', { field: 'withdrawnAt' });
