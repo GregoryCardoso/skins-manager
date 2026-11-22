@@ -69,6 +69,13 @@ function fetchLatestRelease(url = LATEST_RELEASE_API_URL) {
   return fetchJson(url);
 }
 
+// Argumentos do `quitAndInstall(isSilent, isForceRunAfter)` (D284). A atualização é sempre silenciosa (o NSIS roda com `/S`,
+// sem o assistente); só a primeira instalação usa o instalador assistido. No electron-updater, `isForceRunAfter` só vale
+// com `isSilent = true` (com `false`, reabrir depende de `autoRunAppAfterInstall` e o assistente aparece).
+const SILENT = true;
+const RUN_AFTER_RESTART = true; // "Reiniciar agora": reabre o app na versão nova
+const RUN_AFTER_QUIT = false; // "Instalar ao fechar o app": instala e não reabre
+
 function createUpdater({
   app,
   shell,
@@ -158,7 +165,8 @@ function createUpdater({
       return;
     }
     try {
-      getAutoUpdater().quitAndInstall(false, true);
+      // Silencioso e reabrindo o app (D284): sem o assistente do NSIS; ele volta sozinho já na versão nova.
+      getAutoUpdater().quitAndInstall(SILENT, RUN_AFTER_RESTART);
     } catch (err) {
       // O app continua aberto: sem o backend ele ficaria inutilizável. Religa e avisa.
       logger.error(`Falha ao reiniciar para instalar: ${errText(err)}`);
@@ -318,7 +326,8 @@ function createUpdater({
     installOnQuit = false;
     try {
       logger.info('Instalando a atualização ao fechar o app.');
-      getAutoUpdater().quitAndInstall(true, false);
+      // Silencioso e sem reabrir (D284): o usuário fechou o app de propósito.
+      getAutoUpdater().quitAndInstall(SILENT, RUN_AFTER_QUIT);
       return true;
     } catch (err) {
       logger.error(`Falha ao instalar ao fechar: ${errText(err)}`);

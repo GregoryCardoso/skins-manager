@@ -183,7 +183,7 @@ describe('fluxos com falha e nova tentativa', () => {
     expect(updater.getState().phase).toBe('ready');
     answer(updater, 'restart');
     await flush();
-    expect(calls.filter((c) => c[0] === 'quitAndInstall')).toEqual([['quitAndInstall', false, true]]);
+    expect(calls.filter((c) => c[0] === 'quitAndInstall')).toEqual([['quitAndInstall', true, true]]);
   });
 
   test('stopBackend lançando: vai a error/install e a próxima tentativa funciona', async () => {
@@ -255,7 +255,7 @@ describe('"Instalar ao fechar" e fechamento do app (V102-Q2)', () => {
     answer(updater, 'restart');
     await flush();
     expect(updater.installPendingOnQuit()).toBe(false);
-    expect(calls.filter((c) => c[0] === 'quitAndInstall')).toEqual([['quitAndInstall', false, true]]);
+    expect(calls.filter((c) => c[0] === 'quitAndInstall')).toEqual([['quitAndInstall', true, true]]);
   });
 
   test('esconder o modal em ready (sem IPC) e fechar o app: nada é instalado, e a verificação manual reabre', async () => {
@@ -513,7 +513,7 @@ describe('regressões do fluxo antigo (D181)', () => {
     expect(updater.getState().phase).toBe('ready');
     answer(updater, 'restart');
     await flush();
-    expect(autoUpdater.quitAndInstall).toHaveBeenCalledWith(false, true);
+    expect(autoUpdater.quitAndInstall).toHaveBeenCalledWith(true, true);
   });
 
   test('em modo dev, respond e getState existem e nenhuma ação é aceita', () => {

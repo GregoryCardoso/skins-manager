@@ -230,7 +230,7 @@ describe('fluxo do instalador', () => {
 
     expect(answer(updater, 'restart')).toMatchObject({ accepted: true, state: { phase: 'installing' } });
     await flush();
-    expect(calls).toEqual([['stopBackend'], ['quitAndInstall', false, true]]);
+    expect(calls).toEqual([['stopBackend'], ['quitAndInstall', true, true]]);
     const seqs = states.map((s) => s.seq);
     expect(seqs).toEqual([...seqs].sort((x, y) => x - y));
     expect(new Set(seqs).size).toBe(seqs.length);
@@ -451,7 +451,7 @@ describe('fluxo do instalador', () => {
 
     answer(updater, 'restart');
     await flush();
-    expect(calls).toEqual([['stopBackend'], ['quitAndInstall', false, true]]);
+    expect(calls).toEqual([['stopBackend'], ['quitAndInstall', true, true]]);
   });
 
   test('depois de erro de instalação, a verificação manual volta a ready', async () => {
