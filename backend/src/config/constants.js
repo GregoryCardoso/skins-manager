@@ -49,6 +49,8 @@ const CATALOG_SNAPSHOT_PATH = path.join(__dirname, '..', '..', 'data', 'seed', '
 // Continua aceito por compatibilidade com bancos que já o têm salvo; nenhuma migração é necessária.
 const THEMES = Object.freeze(['SYSTEM', 'LIGHT', 'DARK']);
 const LANGUAGES = Object.freeze(['pt-BR', 'en']);
+// Visão do inventário (D276): padrão 'GROUPED' (coluna NOT NULL com DEFAULT no banco).
+const INVENTORY_VIEWS = Object.freeze(['INDIVIDUAL', 'GROUPED']);
 
 // PTAX do Banco Central (D147).
 const PTAX_BASE_URL = 'https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoDolarDia(dataCotacao=@dataCotacao)';
@@ -113,4 +115,5 @@ module.exports = Object.freeze({
   CATALOG_SNAPSHOT_PATH,
   THEMES,
   LANGUAGES,
+  INVENTORY_VIEWS,
 });

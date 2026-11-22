@@ -118,10 +118,10 @@ describe('i18n: paridade e textos', () => {
   });
 
   test('os novos baldes seguem o padrão dos existentes (enums.agingBucket / enums.turnaroundBucket) e não há duplicata em aging.bucket', () => {
-    expect(flatPt['enums.agingBucket.FORA_DE_VENDA']).toBe('Fora de venda');
-    expect(flatEn['enums.agingBucket.FORA_DE_VENDA']).toBe('Not for sale');
-    expect(flatPt['enums.turnaroundBucket.SEM_GIRO']).toBe('Vendido fora de venda (sem giro)');
-    expect(flatEn['enums.turnaroundBucket.SEM_GIRO']).toBe('Sold while not for sale (no turnover)');
+    expect(flatPt['enums.agingBucket.FORA_DE_VENDA']).toBe('Holding');
+    expect(flatEn['enums.agingBucket.FORA_DE_VENDA']).toBe('Holding');
+    expect(flatPt['enums.turnaroundBucket.SEM_GIRO']).toBe('Vendido do holding (sem giro)');
+    expect(flatEn['enums.turnaroundBucket.SEM_GIRO']).toBe('Sold from holding (no turnover)');
     expect(Object.keys(flatPt).filter((k) => /^aging\.bucket\./.test(k))).toEqual([]);
     // os baldes antigos continuam ao lado dos novos
     for (const bucket of ['RECENTE', 'EM_TRADE_LOCK', 'AGARRADO']) expect(flatPt[`enums.agingBucket.${bucket}`], bucket).toBeTruthy();
@@ -131,7 +131,7 @@ describe('i18n: paridade e textos', () => {
     for (const dict of [flatPt, flatEn]) {
       for (const form of ['one', 'other']) expect(holders(dict[`history.soldOffSale.${form}`]), form).toEqual(['{count}']);
     }
-    expect(flatPt['history.soldOffSale.one']).toMatch(/fora de venda/);
+    expect(flatPt['history.soldOffSale.one']).toMatch(/holding/);
   });
 
   test('os textos de data usam {date} e os de nome usam {name}; ação não fala em "saldo inicial"', () => {
@@ -144,7 +144,7 @@ describe('i18n: paridade e textos', () => {
 });
 
 describe('botões, abas e exibição', () => {
-  test('ItemActions: "Não está à venda" só em FOR_SALE e "Colocar à venda" só em OFF_SALE; Vender, Editar e Excluir sempre', () => {
+  test('ItemActions: "Mover para holding" só em FOR_SALE e "Voltar para a venda" só em OFF_SALE; Vender, Editar e Excluir sempre', () => {
     const code = read('components/ItemActions.tsx');
     expect(code).toMatch(/item\.saleState === 'FOR_SALE' && onOffSale/);
     expect(code).toMatch(/item\.saleState === 'OFF_SALE' && onForSale/);
@@ -165,8 +165,8 @@ describe('botões, abas e exibição', () => {
     expect(page).not.toMatch(/\.filter\([^)]*saleState|\.length\s*\}\)/); // nada contado no frontend
   });
 
-  test('a tabela mostra "fora de venda desde" só com offSaleAt e a página de vendas mostra SEM_GIRO com tradução', () => {
-    expect(read('components/InventoryTable.tsx')).toMatch(/item\.offSaleAt && /);
+  test('a tabela mostra "no holding desde" só com offSaleAt e a página de vendas mostra SEM_GIRO com tradução', () => {
+    expect(read('components/InventoryUnitRow.tsx')).toMatch(/item\.offSaleAt && /);
     const sales = read('components/SalesTable.tsx');
     expect(sales).toContain('SEM_GIRO');
     expect(sales).toContain('enums.turnaroundBucket.');

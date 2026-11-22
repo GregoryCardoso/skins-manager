@@ -48,11 +48,11 @@ describe('migração v5', () => {
 
     const db = openDatabase(dbPath, { now: new Date('2026-11-20T12:00:00.000Z') });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(10);
+      expect(db.pragma('user_version', { simple: true })).toBe(11);
       expect(db.pragma('application_id', { simple: true })).toBe(1397444935);
       const after = db.prepare('SELECT * FROM settings').get();
       const { ptax_quoted_at: oldQuotedAt, ...beforeRest } = before;
-      expect(after).toEqual({ ...beforeRest, rate_quoted_at: oldQuotedAt, fx_refresh_source: 'AWESOMEAPI' });
+      expect(after).toEqual({ ...beforeRest, rate_quoted_at: oldQuotedAt, fx_refresh_source: 'AWESOMEAPI', inventory_view: 'GROUPED' });
       expect(after.rate_quoted_at).toBe('2026-11-19T16:04:28.123Z');
       expect(db.prepare("SELECT 1 FROM pragma_table_info('settings') WHERE name = 'ptax_quoted_at'").get()).toBeUndefined();
       expect(stripV6Rows(db.prepare('SELECT * FROM stores ORDER BY id').all())).toEqual(storesBefore);

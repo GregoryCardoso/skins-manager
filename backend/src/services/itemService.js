@@ -23,6 +23,7 @@ const {
 const { minPricesForItem, resolveSaleNet } = require('./pricingService');
 const { computeSaleProfitUsdCents, buildSaleInfo } = require('./profitService');
 const { buildStatsIndex, buildStatsKey, computeStats, computeSalesSummary } = require('./itemStatsService');
+const { groupByStatsKey, summarizeGroupCost, summarizeStockStates, countStagnant } = require('./inventoryGroupService');
 const { getStoreOrFail } = require('./storeService');
 const { getAgingThresholds } = require('./settingsService');
 
@@ -404,12 +405,12 @@ function findOrFail(id) {
   return item;
 }
 
-function listItems(query = {}, { now = new Date(), thresholds = getAgingThresholds() } = {}) {
-  const { items: all, stores, settings, statsIndex, catalogById } = loadContext();
+// Filtros e ordenação comuns à lista individual e à agrupada (D272), nesta ordem: category, status, saleState, stagnantOnly e ordenação.
+// `saleStateCounts` (D265, adendo 1 da revisão 8.6/8.7): sobre os itens em estoque, com a categoria, independente de status,
+// saleState e stagnantOnly.
+function selectItems(all, query, { now, thresholds }) {
   let items = all;
   if (query.category) items = items.filter((i) => i.category === query.category);
-  // Contagem das abas (D265, adendo 1 da revisão 8.6/8.7): sobre os itens em estoque, com a categoria,
-  // independentemente do filtro de `status` e sem `saleState` nem `stagnantOnly`.
   const stock = items.filter((i) => i.status === 'EM_ESTOQUE');
   if (query.status) items = items.filter((i) => i.status === query.status);
   const saleStateCounts = { forSale: stock.filter((i) => !isOffSale(i)).length, offSale: stock.filter((i) => isOffSale(i)).length };
@@ -418,11 +419,63 @@ function listItems(query = {}, { now = new Date(), thresholds = getAgingThreshol
   if (query.stagnantOnly) items = filterStagnant(items, thresholds, now);
   if (query.sortBy === 'age') items = sortByAge(items, query.order ?? 'desc', now);
   else if (query.sortBy === 'turnaround') items = sortByTurnaround(items, query.order ?? 'asc');
+  return { items, saleStateCounts };
+}
+
+function listItems(query = {}, { now = new Date(), thresholds = getAgingThresholds() } = {}) {
+  const { items: all, stores, settings, statsIndex, catalogById } = loadContext();
+  const { items, saleStateCounts } = selectItems(all, query, { now, thresholds });
 
   return {
     items: items.map((item) => toItemView(item, { stores, settings, statsIndex, catalogById, now, thresholds })),
     meta: {
       count: items.length,
+      saleStateCounts,
+      fastTurnoverDays: thresholds.fastTurnoverDays,
+      slowItemDays: thresholds.slowItemDays,
+      usdBrlRate: settings.usdBrlRate,
+      generatedAt: now.toISOString(),
+    },
+  };
+}
+
+// Visão agrupada (D271-D275): só itens em estoque, mesma seleção e ordenação da lista individual. Os grupos seguem a
+// ordem da primeira aparição na lista ordenada; `stock` conta todo o estoque da chave, independente da aba e dos filtros.
+function listItemGroups(query = {}, { now = new Date(), thresholds = getAgingThresholds() } = {}) {
+  const { items: all, stores, settings, statsIndex, catalogById } = loadContext();
+  const { items, saleStateCounts } = selectItems(all, { ...query, status: 'EM_ESTOQUE' }, { now, thresholds });
+
+  const stockByKey = new Map();
+  for (const item of all) {
+    if (item.status !== 'EM_ESTOQUE') continue;
+    const key = buildStatsKey(item);
+    if (!stockByKey.has(key)) stockByKey.set(key, []);
+    stockByKey.get(key).push(item);
+  }
+
+  const groups = groupByStatsKey(items).map(({ key, items: units }) => {
+    const first = units[0];
+    const withCatalog = units.find((u) => !isNil(u.catalogId) && catalogById.has(u.catalogId));
+    return {
+      key,
+      name: first.name,
+      category: first.category,
+      variant: first.variant,
+      exterior: first.exterior,
+      phase: first.phase,
+      catalog: withCatalog ? toCatalogSummary(catalogById.get(withCatalog.catalogId)) : null,
+      ...summarizeGroupCost(units, settings.usdBrlRate),
+      stagnantCount: countStagnant(units, thresholds, now),
+      stock: summarizeStockStates(stockByKey.get(key) ?? [], now),
+      units: units.map((item) => toItemView(item, { stores, settings, statsIndex, catalogById, now, thresholds })),
+    };
+  });
+
+  return {
+    groups,
+    meta: {
+      count: items.length,
+      groupCount: groups.length,
       saleStateCounts,
       fastTurnoverDays: thresholds.fastTurnoverDays,
       slowItemDays: thresholds.slowItemDays,
@@ -570,6 +623,7 @@ module.exports = {
   buildUnsellPatch,
   toItemView,
   listItems,
+  listItemGroups,
   listSales,
   getItem,
   createItem,

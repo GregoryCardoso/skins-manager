@@ -9,6 +9,7 @@ const router = Router();
 router.use(requireJsonForWrites);
 
 router.get('/', v.validateItemQuery, controller.list);
+router.get('/groups', v.validateGroupQuery, controller.groups); // antes de /:id
 router.get('/stats', v.validateStatsQuery, controller.stats); // antes de /:id
 router.get('/sales', v.validateSalesQuery, controller.sales); // antes de /:id
 router.post('/', v.validateCreateItemBody, controller.create);

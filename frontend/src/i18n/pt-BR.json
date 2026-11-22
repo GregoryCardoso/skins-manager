@@ -139,6 +139,7 @@
     "CATALOG_INVALID_FORMAT": "O catálogo baixado tem um formato inesperado.",
     "INVALID_THEME": "Tema inválido.",
     "INVALID_LANGUAGE": "Idioma inválido.",
+    "INVALID_INVENTORY_VIEW": "Visão do inventário inválida.",
     "NETWORK_ERROR": "Não foi possível conectar ao servidor. Verifique se o backend está rodando.",
     "TIMEOUT": "O servidor demorou demais para responder.",
     "INVALID_RESPONSE": "O servidor respondeu em um formato inesperado. Verifique se a porta 3001 pertence ao backend do app.",
@@ -193,6 +194,29 @@
   "inventory": {
     "title": "Inventário",
     "count": "{count} itens",
+    "groupCount": {
+      "one": "{count} item em {groups} grupo",
+      "other": "{count} itens em {groups} grupos",
+      "inOneGroup": "{count} itens em {groups} grupo"
+    },
+    "view": {
+      "label": "Visão",
+      "grouped": "Agrupado",
+      "individual": "Individual",
+      "onlyInStock": "A visão agrupada vale só para itens em estoque."
+    },
+    "group": {
+      "expand": "Mostrar unidades de {name}",
+      "collapse": "Ocultar unidades de {name}",
+      "forSale": "{count} à venda",
+      "tradeLocked": "{count} em trade lock (libera em {date})",
+      "offSale": "{count} no holding",
+      "stagnant": {
+        "one": "{count} agarrada",
+        "other": "{count} agarradas"
+      },
+      "convertedCost": "Inclui compras em R$ convertidas pela cotação da compra"
+    },
     "refresh": "Atualizar",
     "empty": "Nenhum item no inventário.",
     "emptyFiltered": "Nenhum item com estes filtros.",
@@ -200,6 +224,10 @@
     "loadError": "Não foi possível carregar os itens: {reason}",
     "columns": {
       "image": "Imagem",
+      "quantity": "Qtd.",
+      "avgCost": "Custo médio",
+      "totalCost": "Custo total",
+      "situation": "Situação",
       "item": "Item",
       "store": "Loja de compra",
       "cost": "Custo",
@@ -226,8 +254,8 @@
       "delete": "Excluir",
       "lockedHint": "Em trade lock até {date}",
       "history": "Histórico",
-      "offSale": "Não está à venda",
-      "forSale": "Colocar à venda"
+      "offSale": "Mover para holding",
+      "forSale": "Voltar para a venda"
     },
     "itemGone": "Este item não existe mais (talvez tenha sido excluído em outra aba). A lista foi atualizada.",
     "daysForSale": "à venda há {days}",
@@ -236,14 +264,15 @@
     "daysHeld": "{days} desde a compra",
     "tabs": {
       "forSale": "À venda ({count})",
-      "offSale": "Fora de venda ({count})"
+      "offSale": "Holding ({count})",
+      "offSaleHint": "Itens guardados esperando valorização."
     },
-    "offSaleConfirmTitle": "Tirar da venda?",
-    "offSaleConfirmMessage": "O item sai da lista à venda. Ao voltar à venda, a contagem de giro recomeça.",
-    "offSaleSince": "Fora de venda desde {date}",
-    "offSaleEmpty": "Nenhum item fora de venda.",
-    "offSaleDone": "{name} saiu da venda.",
-    "forSaleDone": "{name} voltou à venda."
+    "offSaleConfirmTitle": "Mover para holding?",
+    "offSaleConfirmMessage": "O item sai da lista à venda e vai para o holding. Ao voltar para a venda, a contagem de giro recomeça.",
+    "offSaleSince": "No holding desde {date}",
+    "offSaleEmpty": "Nenhum item no holding.",
+    "offSaleDone": "{name} foi movido para o holding.",
+    "forSaleDone": "{name} voltou para a venda."
   },
   "filters": {
     "label": "Filtros do inventário",
@@ -312,13 +341,13 @@
       "EM_GIRO": "Em giro",
       "AGARRADO": "Agarrado",
       "EM_TRADE_LOCK": "Em trade lock",
-      "FORA_DE_VENDA": "Fora de venda"
+      "FORA_DE_VENDA": "Holding"
     },
     "turnaroundBucket": {
       "GIRO_RAPIDO": "Giro rápido",
       "GIRO_NORMAL": "Giro normal",
       "DEMOROU_VENDER": "Demorou para vender",
-      "SEM_GIRO": "Vendido fora de venda (sem giro)"
+      "SEM_GIRO": "Vendido do holding (sem giro)"
     }
   },
   "fx": {
@@ -571,8 +600,8 @@
     "keyNote": "Mesmo nome, categoria, variante, exterior e fase.",
     "daysValue": "{days} dias",
     "soldOffSale": {
-      "one": "{count} venda fora de venda não entra no tempo médio",
-      "other": "{count} vendas fora de venda não entram no tempo médio"
+      "one": "{count} venda do holding não entra no tempo médio",
+      "other": "{count} vendas do holding não entram no tempo médio"
     }
   },
   "stores": {

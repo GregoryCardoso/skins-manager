@@ -53,9 +53,9 @@ function seedV9(dbPath, version = 9) {
 }
 
 describe('migração v10', () => {
-  test('é a última migração (off_sale), sem desligar as FKs, e as migrações v1 a v9 continuam idênticas (hash)', () => {
-    const last = MIGRATIONS[MIGRATIONS.length - 1];
-    expect(last).toMatchObject({ version: 10, name: 'off_sale' });
+  test('é a migração 10 (off_sale), sem desligar as FKs, e as migrações v1 a v9 continuam idênticas (hash)', () => {
+    expect(MIGRATIONS.find((m) => m.version === 10)).toMatchObject({ version: 10, name: 'off_sale' });
+    const last = MIGRATIONS.find((m) => m.version === 10);
     expect(last.disableForeignKeys).toBeUndefined();
     const dir = path.join(__dirname, '..', '..', 'src', 'config', 'migrations');
     expect(sha(path.join(dir, 'v001_initial.js'))).toBe('18514164a9ad3d10128e6b1c271ce7623d11835a9240fe9bf2f337bfced3eb1f');
@@ -69,7 +69,7 @@ describe('migração v10', () => {
     const snapshot = seedV9(dbPath);
     const db = openDatabase(dbPath, { now: NOW });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(10);
+      expect(db.pragma('user_version', { simple: true })).toBe(11);
       expect(db.pragma('foreign_key_check')).toEqual([]);
       const rows = db.prepare('SELECT * FROM items ORDER BY id').all();
       expect(rows).toHaveLength(snapshot.items.length);
@@ -95,7 +95,7 @@ describe('migração v10', () => {
     const csfSeed = seedV9(dbPath, version);
     const db = openDatabase(dbPath, { now: NOW });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(10);
+      expect(db.pragma('user_version', { simple: true })).toBe(11);
       expect(db.prepare('SELECT COUNT(*) AS n FROM items').get().n).toBe(csfSeed.items.length);
       expect(db.prepare('SELECT COUNT(*) AS n FROM items WHERE off_sale_at IS NOT NULL OR for_sale_since IS NOT NULL').get().n).toBe(0);
     } finally {

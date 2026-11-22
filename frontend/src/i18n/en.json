@@ -139,6 +139,7 @@
     "CATALOG_INVALID_FORMAT": "The downloaded catalog has an unexpected format.",
     "INVALID_THEME": "Invalid theme.",
     "INVALID_LANGUAGE": "Invalid language.",
+    "INVALID_INVENTORY_VIEW": "Invalid inventory view.",
     "NETWORK_ERROR": "Could not connect to the server. Check that the backend is running.",
     "TIMEOUT": "The server took too long to respond.",
     "INVALID_RESPONSE": "The server replied in an unexpected format. Check that port 3001 belongs to the app backend.",
@@ -193,6 +194,29 @@
   "inventory": {
     "title": "Inventory",
     "count": "{count} items",
+    "groupCount": {
+      "one": "{count} item in {groups} group",
+      "other": "{count} items in {groups} groups",
+      "inOneGroup": "{count} items in {groups} group"
+    },
+    "view": {
+      "label": "View",
+      "grouped": "Grouped",
+      "individual": "Individual",
+      "onlyInStock": "The grouped view is only for items in stock."
+    },
+    "group": {
+      "expand": "Show units of {name}",
+      "collapse": "Hide units of {name}",
+      "forSale": "{count} for sale",
+      "tradeLocked": "{count} trade locked (unlocks on {date})",
+      "offSale": "{count} in holding",
+      "stagnant": {
+        "one": "{count} stagnant",
+        "other": "{count} stagnant"
+      },
+      "convertedCost": "Includes BRL purchases converted at the purchase rate"
+    },
     "refresh": "Refresh",
     "empty": "No items in the inventory.",
     "emptyFiltered": "No items match these filters.",
@@ -200,6 +224,10 @@
     "loadError": "Could not load the items: {reason}",
     "columns": {
       "image": "Image",
+      "quantity": "Qty.",
+      "avgCost": "Average cost",
+      "totalCost": "Total cost",
+      "situation": "Status",
       "item": "Item",
       "store": "Purchase store",
       "cost": "Cost",
@@ -226,8 +254,8 @@
       "delete": "Delete",
       "lockedHint": "Trade locked until {date}",
       "history": "History",
-      "offSale": "Not for sale",
-      "forSale": "Put up for sale"
+      "offSale": "Move to holding",
+      "forSale": "Put back up for sale"
     },
     "itemGone": "This item no longer exists (it may have been deleted in another tab). The list was refreshed.",
     "daysForSale": "for sale for {days}",
@@ -236,13 +264,14 @@
     "daysHeld": "{days} since purchase",
     "tabs": {
       "forSale": "For sale ({count})",
-      "offSale": "Not for sale ({count})"
+      "offSale": "Holding ({count})",
+      "offSaleHint": "Items held while waiting for their value to rise."
     },
-    "offSaleConfirmTitle": "Take off sale?",
-    "offSaleConfirmMessage": "The item leaves the for-sale list. When put back up for sale, the turnover count restarts.",
-    "offSaleSince": "Not for sale since {date}",
-    "offSaleEmpty": "No items off sale.",
-    "offSaleDone": "{name} taken off sale.",
+    "offSaleConfirmTitle": "Move to holding?",
+    "offSaleConfirmMessage": "The item leaves the for-sale list and goes to holding. When put back up for sale, the turnover count restarts.",
+    "offSaleSince": "In holding since {date}",
+    "offSaleEmpty": "No items in holding.",
+    "offSaleDone": "{name} moved to holding.",
     "forSaleDone": "{name} put back up for sale."
   },
   "filters": {
@@ -312,13 +341,13 @@
       "EM_GIRO": "Moving",
       "AGARRADO": "Stagnant",
       "EM_TRADE_LOCK": "In trade lock",
-      "FORA_DE_VENDA": "Not for sale"
+      "FORA_DE_VENDA": "Holding"
     },
     "turnaroundBucket": {
       "GIRO_RAPIDO": "Fast turnover",
       "GIRO_NORMAL": "Normal turnover",
       "DEMOROU_VENDER": "Slow to sell",
-      "SEM_GIRO": "Sold while not for sale (no turnover)"
+      "SEM_GIRO": "Sold from holding (no turnover)"
     }
   },
   "fx": {
@@ -571,8 +600,8 @@
     "keyNote": "Same name, category, variant, exterior and phase.",
     "daysValue": "{days} days",
     "soldOffSale": {
-      "one": "{count} sale made while not for sale is not in the average time",
-      "other": "{count} sales made while not for sale are not in the average time"
+      "one": "{count} sale from holding is not in the average time",
+      "other": "{count} sales from holding are not in the average time"
     }
   },
   "stores": {

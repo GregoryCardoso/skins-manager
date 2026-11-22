@@ -71,7 +71,7 @@ describe('importar backups v1 a v8 chega à v9 sem nenhum INITIAL', () => {
   test.each([1, 2, 3, 4, 5, 6, 7, 8])('backup v%i: todos os registros viram CHECK; saldo calculado a partir de 0; app segue funcionando', async (version) => {
     const res = await octet(makeBackup(version));
     expect(res.status).toBe(200);
-    expect(res.body.data).toMatchObject({ fileVersion: version, schemaVersion: 10 });
+    expect(res.body.data).toMatchObject({ fileVersion: version, schemaVersion: 11 });
     expect(res.body.data.migrationsApplied).toEqual(MIGRATIONS.filter((m) => m.version > version).map((m) => m.version));
 
     const db = database.getDb();
@@ -132,7 +132,7 @@ describe('importar backups v1 a v8 chega à v9 sem nenhum INITIAL', () => {
 
     const file = path.join(dir, 'newer.sqlite');
     const old = database.openDatabase(file);
-    old.pragma('user_version = 11');
+    old.pragma('user_version = 12');
     old.close();
     const newer = await octet(fs.readFileSync(file));
     expect(newer.status).toBe(400);

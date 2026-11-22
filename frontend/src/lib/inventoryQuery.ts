@@ -1,4 +1,4 @@
-import type { Category, ItemListQuery, ItemStatus, SaleState } from '@/types/api';
+import type { Category, ItemGroupQuery, ItemListQuery, ItemStatus, SaleState } from '@/types/api';
 
 export type StatusFilter = ItemStatus | 'ALL';
 export type CategoryFilter = Category | 'ALL';
@@ -60,6 +60,18 @@ export function toApiQuery(filters: InventoryFilters): ItemListQuery {
   if (filters.stagnant && !isStagnantDisabled(filters)) query.stagnantOnly = true;
   if (filters.status === 'EM_ESTOQUE') query.saleState = filters.saleState;
   return query;
+}
+
+// Filtros -> consulta da visão agrupada (D277): igual à individual, sem `status` (a API só aceita estoque).
+export function toGroupQuery(filters: InventoryFilters): ItemGroupQuery {
+  const query = toApiQuery({ ...filters, status: 'EM_ESTOQUE' });
+  delete query.status;
+  return query;
+}
+
+// A visão agrupada vale só para itens em estoque (E8-Q35); com "Vendido" ou "Todos" a tabela é individual.
+export function isGroupedAvailable(filters: InventoryFilters): boolean {
+  return filters.status === 'EM_ESTOQUE';
 }
 
 // "Só agarrados" fica bloqueado para vendidos e só na aba "Fora de venda" com o status "Em estoque"

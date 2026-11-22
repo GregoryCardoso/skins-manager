@@ -16,6 +16,8 @@ import type {
   HealthStatus,
   ItemCreateBody,
   ItemList,
+  ItemGroupList,
+  ItemGroupQuery,
   ItemListQuery,
   ItemPatchBody,
   ItemView,
@@ -187,6 +189,19 @@ export const listItems = (query: ItemListQuery, signal?: AbortSignal) =>
     signal,
     query: {
       status: query.status,
+      category: query.category,
+      stagnantOnly: query.stagnantOnly ? 'true' : undefined,
+      saleState: query.saleState,
+      sortBy: 'age',
+      order: query.order,
+    },
+  });
+
+// Visão agrupada (D274): só estoque; sempre ordena por idade.
+export const listItemGroups = (query: ItemGroupQuery, signal?: AbortSignal) =>
+  request<ItemGroupList>('GET', '/items/groups', {
+    signal,
+    query: {
       category: query.category,
       stagnantOnly: query.stagnantOnly ? 'true' : undefined,
       saleState: query.saleState,

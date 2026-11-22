@@ -181,6 +181,29 @@ const validateItemQuery = wrap((req) => {
   };
 });
 
+// GET /api/items/groups (D274): só itens em estoque (status não é aceito) e só a ordenação por idade.
+const validateGroupQuery = wrap((req) => {
+  const q = req.query;
+  if (q.status !== undefined) {
+    throw fail('status não é aceito na visão agrupada (só itens em estoque).', 'INVALID_QUERY', { field: 'status' });
+  }
+  const category = queryValue(q, 'category', CATEGORIES);
+  const sortBy = queryValue(q, 'sortBy', ['age']);
+  const order = queryValue(q, 'order', ['asc', 'desc']);
+  const stagnantOnly = queryValue(q, 'stagnantOnly', ['true', 'false']);
+  const saleState = queryValue(q, 'saleState', ['FOR_SALE', 'OFF_SALE']);
+  if (order !== undefined && sortBy === undefined) {
+    throw fail('order só pode ser usado junto com sortBy.', 'INVALID_QUERY', { field: 'order' });
+  }
+  req.validatedQuery = {
+    category,
+    sortBy,
+    order: sortBy ? order ?? 'desc' : undefined,
+    stagnantOnly: stagnantOnly === 'true',
+    saleState,
+  };
+});
+
 const validateStatsQuery = wrap((req) => {
   const q = req.query;
   const name = queryValue(q, 'name');
@@ -250,6 +273,7 @@ const validateSalesQuery = wrap((req) => {
 
 module.exports = {
   validateItemQuery,
+  validateGroupQuery,
   validateStatsQuery,
   validateSalesQuery,
   validateCreateItemBody,

@@ -1,4 +1,4 @@
-import type { Language, ResolvedTheme, Theme, ThemeChoice } from '@/types/api';
+import type { InventoryView, Language, ResolvedTheme, Theme, ThemeChoice } from '@/types/api';
 
 export const THEME_STORAGE_KEY = 'sm.theme';
 export const LANGUAGE_STORAGE_KEY = 'sm.language';
@@ -30,6 +30,14 @@ export function toResolvedTheme(choice: ThemeChoice): ResolvedTheme {
 // Botão de dois estados: Claro <-> Escuro.
 export function nextTheme(theme: ThemeChoice): ThemeChoice {
   return theme === 'LIGHT' ? 'DARK' : 'LIGHT';
+}
+
+// Visão do inventário (D276): cache local para a tela abrir sem "piscar"; o banco prevalece.
+export const INVENTORY_VIEW_STORAGE_KEY = 'sm.inventoryView';
+export const DEFAULT_INVENTORY_VIEW: InventoryView = 'GROUPED';
+
+export function isInventoryView(value: unknown): value is InventoryView {
+  return value === 'GROUPED' || value === 'INDIVIDUAL';
 }
 
 export interface CachedPreferences {
@@ -77,6 +85,26 @@ export function writeCachedPreferences(
     if (prefs.theme === null) storage.removeItem(THEME_STORAGE_KEY);
     else if (prefs.theme) storage.setItem(THEME_STORAGE_KEY, prefs.theme);
     if (prefs.language) storage.setItem(LANGUAGE_STORAGE_KEY, prefs.language);
+  } catch {
+    // Sem permissão/espaço: o banco continua sendo a fonte da verdade.
+  }
+}
+
+// Cache ausente, inválido ou localStorage indisponível -> 'GROUPED'. Nunca lança.
+export function readInventoryView(storage: StorageLike | null = defaultStorage()): InventoryView {
+  if (!storage) return DEFAULT_INVENTORY_VIEW;
+  try {
+    const value = storage.getItem(INVENTORY_VIEW_STORAGE_KEY);
+    return isInventoryView(value) ? value : DEFAULT_INVENTORY_VIEW;
+  } catch {
+    return DEFAULT_INVENTORY_VIEW;
+  }
+}
+
+export function writeInventoryView(view: InventoryView, storage: StorageLike | null = defaultStorage()): void {
+  if (!storage) return;
+  try {
+    storage.setItem(INVENTORY_VIEW_STORAGE_KEY, view);
   } catch {
     // Sem permissão/espaço: o banco continua sendo a fonte da verdade.
   }

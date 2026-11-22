@@ -4,6 +4,8 @@ export type Theme = 'SYSTEM' | 'LIGHT' | 'DARK';
 // Tema escolhido/exibido na interface.
 export type ThemeChoice = 'LIGHT' | 'DARK';
 export type Language = 'pt-BR' | 'en';
+// Visão do inventário (D276): agrupada (padrão) ou individual.
+export type InventoryView = 'INDIVIDUAL' | 'GROUPED';
 export type ResolvedTheme = 'light' | 'dark';
 
 export type ErrorParams = Record<string, string | number>;
@@ -56,6 +58,7 @@ export interface Settings {
   catalogUpdatedAt: string | null;
   theme: Theme;
   language: Language;
+  inventoryView: InventoryView;
   // Limites de giro (D159): valores salvos (null = padrão), efetivos e padrões.
   fastTurnoverDaysCustom: number | null;
   slowItemDaysCustom: number | null;
@@ -69,6 +72,7 @@ export interface Settings {
 export interface PreferencesPatch {
   theme?: ThemeChoice;
   language?: Language;
+  inventoryView?: InventoryView;
   fxRefreshSource?: FxRefreshSource;
   // Inteiro ou null (volta ao padrão).
   fastTurnoverDays?: number | null;
@@ -226,6 +230,44 @@ export interface ItemListMeta {
   usdBrlRate: number | null;
   generatedAt: string;
 }
+// Visão agrupada (D274): uma linha por chave do itemStats, com as unidades da aba e dos filtros.
+export interface ItemGroupStock {
+  forSale: number;
+  tradeLocked: number;
+  offSale: number;
+  nextUnlockAt: string | null;
+}
+export interface ItemGroup {
+  key: string;
+  name: string;
+  category: Category;
+  variant: Variant | null;
+  exterior: Exterior | null;
+  phase: string | null;
+  catalog: CatalogSummary | null;
+  quantity: number;
+  totalCostUsdCents: number;
+  avgCostUsdCents: number;
+  costUsesRecordedFx: boolean;
+  approxBrl: { totalCostCents: number; avgCostCents: number } | null;
+  stagnantCount: number;
+  stock: ItemGroupStock;
+  units: ItemView[];
+}
+export interface ItemGroupListMeta {
+  count: number;
+  groupCount: number;
+  saleStateCounts: { forSale: number; offSale: number };
+  fastTurnoverDays: number;
+  slowItemDays: number;
+  usdBrlRate: number | null;
+  generatedAt: string;
+}
+export interface ItemGroupList {
+  groups: ItemGroup[];
+  meta: ItemGroupListMeta;
+}
+
 export interface ItemList {
   items: ItemView[];
   meta: ItemListMeta;
@@ -238,6 +280,9 @@ export interface ItemListQuery {
   saleState?: SaleState;
   order: 'asc' | 'desc';
 }
+
+// Consulta da visão agrupada: sem `status` (só estoque).
+export type ItemGroupQuery = Omit<ItemListQuery, 'status'>;
 
 // --- Vendas (4B.4, D124) ---
 

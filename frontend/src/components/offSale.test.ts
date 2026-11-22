@@ -29,9 +29,9 @@ describe('chaves i18n do "fora de venda"', () => {
   });
 
   test('textos confirmados em D266', () => {
-    expect(translate(ptBR, 'inventory.actions.offSale')).toBe('Não está à venda');
-    expect(translate(ptBR, 'inventory.actions.forSale')).toBe('Colocar à venda');
-    expect(translate(ptBR, 'inventory.tabs.offSale', { count: 3 })).toBe('Fora de venda (3)');
+    expect(translate(ptBR, 'inventory.actions.offSale')).toBe('Mover para holding');
+    expect(translate(ptBR, 'inventory.actions.forSale')).toBe('Voltar para a venda');
+    expect(translate(ptBR, 'inventory.tabs.offSale', { count: 3 })).toBe('Holding (3)');
     expect(translate(ptBR, 'inventory.offSaleConfirmMessage')).toContain('a contagem de giro recomeça');
     expect(translate(en, 'inventory.tabs.forSale', { count: 2 })).toBe('For sale (2)');
   });
@@ -68,9 +68,9 @@ describe('confirmação e botões', () => {
     expect(read('app/sales/page.tsx')).not.toMatch(/openOffSale|putForSale/);
   });
 
-  test('as abas usam a contagem do backend (meta.saleStateCounts) e a célula de giro mostra "Fora de venda desde"', () => {
+  test('as abas usam a contagem do backend (meta.saleStateCounts) e a célula de giro mostra "No holding desde"', () => {
     expect(read('app/page.tsx')).toContain('data.meta.saleStateCounts');
-    expect(read('components/InventoryTable.tsx')).toContain("t('inventory.offSaleSince'");
+    expect(read('components/InventoryUnitRow.tsx')).toContain("t('inventory.offSaleSince'");
     expect(read('components/ItemHistoryBox.tsx')).toContain('soldOffSaleCount');
   });
 });

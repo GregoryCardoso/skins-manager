@@ -7,6 +7,10 @@ function list(req, res) {
   ok(res, itemService.listItems(req.validatedQuery, ctx(req)));
 }
 
+function groups(req, res) {
+  ok(res, itemService.listItemGroups(req.validatedQuery, ctx(req)));
+}
+
 function sales(req, res) {
   ok(res, itemService.listSales(req.validatedQuery, ctx(req)));
 }
@@ -47,4 +51,4 @@ function forSale(req, res) {
   ok(res, itemService.markForSale(req.params.id, ctx(req)));
 }
 
-module.exports = { list, sales, stats, getById, create, update, remove, sell, unsell, offSale, forSale };
+module.exports = { list, groups, sales, stats, getById, create, update, remove, sell, unsell, offSale, forSale };

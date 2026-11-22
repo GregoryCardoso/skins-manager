@@ -1,0 +1,17 @@
+.groupTable { min-width: 52rem; }
+.groupRow td { vertical-align: middle; }
+.imageCell { display: flex; align-items: center; gap: 0.4rem; }
+.toggle {
+  font: inherit; line-height: 1; width: 1.8rem; height: 1.8rem; border: 1px solid var(--border); border-radius: 6px;
+  background: var(--surface); color: var(--text); cursor: pointer;
+}
+.toggle:hover { border-color: var(--accent); }
+.toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.number { font-variant-numeric: tabular-nums; font-weight: 600; }
+.money { display: inline-flex; flex-direction: column; gap: 0.1rem; font-variant-numeric: tabular-nums; }
+.moneyMain { font-weight: 600; }
+.moneySide { color: var(--text-muted); font-size: 0.78rem; }
+.situation { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.15rem; font-size: 0.9rem; }
+.unitsRow > td { background: var(--surface-alt); }
+.unitsCell { padding: 0.5rem 0.75rem 0.75rem 2.5rem !important; }
+.units { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }

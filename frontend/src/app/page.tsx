@@ -2,35 +2,52 @@
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { Suspense, useCallback, useMemo } from 'react';
+import { Suspense, useCallback, useMemo, useState } from 'react';
 import InventoryFilters from '@/components/InventoryFilters';
+import InventoryGroupTable from '@/components/InventoryGroupTable';
 import InventoryTable from '@/components/InventoryTable';
+import InventoryViewToggle from '@/components/InventoryViewToggle';
 import { usePreferences } from '@/components/PreferencesProvider';
 import { useItemDialogs } from '@/components/ItemDialogs';
 import SystemStatus from '@/components/SystemStatus';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
+import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import {
-  clearedFilters, hasActiveFilters, parseFilters, toApiQuery, toSearchString, type InventoryFilters as Filters,
+  clearedFilters, hasActiveFilters, isGroupedAvailable, parseFilters, toApiQuery, toGroupQuery, toSearchString, type InventoryFilters as Filters,
 } from '@/lib/inventoryQuery';
 import { queryKeys } from '@/lib/queryKeys';
-import { ApiRequestError, listItems, listStores } from '@/services/api';
+import { ApiRequestError, listItemGroups, listItems, listStores } from '@/services/api';
 import styles from './page.module.css';
 
 const CONNECTION_ERRORS = ['NETWORK_ERROR', 'TIMEOUT', 'INVALID_RESPONSE'];
 
-function InventoryView() {
+function InventoryPageContent() {
   const t = useT();
+  const tPlural = useTPlural();
   const tLoose = useTLoose();
   const language = useLanguage();
   const router = useRouter();
   const pathname = usePathname() ?? '/';
   const searchParams = useSearchParams();
-  const { reloadFxRate } = usePreferences();
+  const { reloadFxRate, inventoryView, setInventoryView } = usePreferences();
 
   const searchKey = searchParams.toString();
   const filters = useMemo(() => parseFilters(new URLSearchParams(searchKey)), [searchKey]);
   const apiQuery = useMemo(() => toApiQuery(filters), [filters]);
+  const groupQuery = useMemo(() => toGroupQuery(filters), [filters]);
+  // Visão agrupada (D277): só com o status "Em estoque"; com "Vendido"/"Todos" a tabela é individual e a preferência não muda.
+  const groupedAvailable = isGroupedAvailable(filters);
+  const grouped = inventoryView === 'GROUPED' && groupedAvailable;
+  // Grupos expandidos: só na página, sobrevivem às recargas (as chaves são estáveis) e não são salvos.
+  const [expandedKeys, setExpandedKeys] = useState<ReadonlySet<string>>(() => new Set());
+  const toggleGroup = useCallback((key: string) => {
+    setExpandedKeys((current) => {
+      const next = new Set(current);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }, []);
 
   // Itens e lojas vêm do cache compartilhado (D259): qualquer ação que mude o dinheiro os invalida.
   // Trocar o filtro mantém a lista anterior na tela (esmaecida) até a nova chegar; o foco da janela recarrega (D258).
@@ -38,16 +55,29 @@ function InventoryView() {
     queryKey: queryKeys.items.list(apiQuery),
     queryFn: ({ signal }) => listItems(apiQuery, signal),
     placeholderData: keepPreviousData,
+    enabled: !grouped,
+  });
+  const groupsQuery = useQuery({
+    queryKey: queryKeys.items.groups(groupQuery),
+    queryFn: ({ signal }) => listItemGroups(groupQuery, signal),
+    placeholderData: keepPreviousData,
+    enabled: grouped,
   });
   const storesQuery = useQuery({ queryKey: queryKeys.stores.all, queryFn: ({ signal }) => listStores(signal) });
-  const data = itemsQuery.data ?? null;
+  const activeQuery = grouped ? groupsQuery : itemsQuery;
+  const itemsData = itemsQuery.data ?? null;
+  const groupsData = groupsQuery.data ?? null;
+  // `meta` tem o mesmo formato nas duas visões (contagens das abas, limites e cotação).
+  const data = grouped ? groupsData : itemsData;
   const stores = storesQuery.data ?? [];
-  const error = itemsQuery.error ?? storesQuery.error;
-  const loading = itemsQuery.isFetching || storesQuery.isFetching;
+  const error = activeQuery.error ?? storesQuery.error;
+  const loading = activeQuery.isFetching || storesQuery.isFetching;
+  const isEmpty = grouped ? groupsData?.groups.length === 0 : itemsData?.items.length === 0;
+  const hasRows = grouped ? (groupsData?.groups.length ?? 0) > 0 : (itemsData?.items.length ?? 0) > 0;
   const reload = useCallback(() => {
-    itemsQuery.refetch();
+    activeQuery.refetch();
     storesQuery.refetch();
-  }, [itemsQuery, storesQuery]);
+  }, [activeQuery, storesQuery]);
 
   const {
     openCreate, openEdit, openSell, openUnsell, openDelete, openHistory, openOffSale, putForSale, forSalePendingId, notice, dismissNotice, dialogs,
@@ -85,7 +115,17 @@ function InventoryView() {
     <>
       <div className={styles.titleRow}>
         <h1>{t('inventory.title')}</h1>
-        {data && <span className={styles.count} aria-live="polite">{t('inventory.count', { count: data.meta.count })}</span>}
+        {data && (
+          <span className={styles.count} aria-live="polite">
+            {grouped && groupsData
+              ? groupsData.meta.count === 1
+                ? tPlural('inventory.groupCount', 1, { groups: groupsData.meta.groupCount })
+                : groupsData.meta.groupCount === 1
+                  ? t('inventory.groupCount.inOneGroup', { count: groupsData.meta.count, groups: groupsData.meta.groupCount })
+                  : tPlural('inventory.groupCount', groupsData.meta.count, { groups: groupsData.meta.groupCount })
+              : t('inventory.count', { count: data.meta.count })}
+          </span>
+        )}
         <button type="button" className={styles.newItem} onClick={openCreate}>
           {t('inventory.actions.newItem')}
         </button>
@@ -107,6 +147,8 @@ function InventoryView() {
         onRefresh={reload}
       />
 
+      <InventoryViewToggle value={inventoryView} onChange={setInventoryView} disabled={!groupedAvailable} />
+
       {filters.status === 'EM_ESTOQUE' && (
         <div className={styles.tabs} role="tablist" aria-label={t('inventory.title')}>
           {(['FOR_SALE', 'OFF_SALE'] as const).map((state) => {
@@ -118,6 +160,7 @@ function InventoryView() {
                 type="button"
                 role="tab"
                 aria-selected={selected}
+                title={state === 'OFF_SALE' ? t('inventory.tabs.offSaleHint') : undefined}
                 className={selected ? `${styles.tab} ${styles.tabActive}` : styles.tab}
                 onClick={() => setFilters({ ...filters, saleState: state, stagnant: state === 'OFF_SALE' ? false : filters.stagnant })}
               >
@@ -126,6 +169,10 @@ function InventoryView() {
             );
           })}
         </div>
+      )}
+
+      {filters.status === 'EM_ESTOQUE' && filters.saleState === 'OFF_SALE' && (
+        <p className={styles.muted}>{t('inventory.tabs.offSaleHint')}</p>
       )}
 
       {error !== null && (
@@ -137,7 +184,7 @@ function InventoryView() {
 
       {data === null && error === null && <p className={styles.muted}>{t('common.loading')}</p>}
 
-      {data !== null && data.items.length === 0 && error === null && (
+      {data !== null && isEmpty && error === null && (
         <div className={styles.empty}>
           <p>
             {filtered
@@ -152,20 +199,37 @@ function InventoryView() {
         </div>
       )}
 
-      {data !== null && data.items.length > 0 && (
+      {data !== null && hasRows && (
         <div className={loading ? styles.dim : undefined} aria-busy={loading}>
-          <InventoryTable
-            items={data.items}
-            stores={stores}
-            onEdit={openEdit}
-            onSell={openSell}
-            onUnsell={openUnsell}
-            onDelete={openDelete}
-            onHistory={openHistory}
-            onOffSale={openOffSale}
-            onForSale={putForSale}
-            forSalePendingId={forSalePendingId}
-          />
+          {grouped && groupsData ? (
+            <InventoryGroupTable
+              groups={groupsData.groups}
+              stores={stores}
+              expandedKeys={expandedKeys}
+              onToggle={toggleGroup}
+              onEdit={openEdit}
+              onSell={openSell}
+              onUnsell={openUnsell}
+              onDelete={openDelete}
+              onHistory={openHistory}
+              onOffSale={openOffSale}
+              onForSale={putForSale}
+              forSalePendingId={forSalePendingId}
+            />
+          ) : itemsData && (
+            <InventoryTable
+              items={itemsData.items}
+              stores={stores}
+              onEdit={openEdit}
+              onSell={openSell}
+              onUnsell={openUnsell}
+              onDelete={openDelete}
+              onHistory={openHistory}
+              onOffSale={openOffSale}
+              onForSale={putForSale}
+              forSalePendingId={forSalePendingId}
+            />
+          )}
         </div>
       )}
 
@@ -178,7 +242,7 @@ export default function InventoryPage() {
   const t = useT();
   return (
     <Suspense fallback={<p>{t('common.loading')}</p>}>
-      <InventoryView />
+      <InventoryPageContent />
     </Suspense>
   );
 }

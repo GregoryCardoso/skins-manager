@@ -16,7 +16,7 @@ describe('/api/settings', () => {
     const res = await request(app).get('/api/settings');
     expect(res.status).toBe(200);
     expect(res.body.data).toEqual({
-      usdBrlRate: null, usdBrlRateUpdatedAt: null, usdBrlRateSource: null, catalogUpdatedAt: null, theme: 'SYSTEM', language: 'pt-BR',
+      usdBrlRate: null, usdBrlRateUpdatedAt: null, usdBrlRateSource: null, catalogUpdatedAt: null, theme: 'SYSTEM', language: 'pt-BR', inventoryView: 'GROUPED',
       agingThresholdsAdjusted: false, fastTurnoverDays: 7, fastTurnoverDaysCustom: null, fastTurnoverDaysDefault: 7,
       slowItemDays: 21, slowItemDaysCustom: null, slowItemDaysDefault: 21, rateQuotedAt: null, fxRefreshSource: 'AWESOMEAPI', updatedAt: expect.any(String),
     });
@@ -29,7 +29,7 @@ describe('/api/settings', () => {
     expect(res.body.data).toEqual({
       usdBrlRate: 5.25,
       usdBrlRateUpdatedAt: '2026-11-19T15:00:00.000Z',
-      catalogUpdatedAt: null, theme: 'SYSTEM', language: 'pt-BR', usdBrlRateSource: 'MANUAL',
+      catalogUpdatedAt: null, theme: 'SYSTEM', language: 'pt-BR', inventoryView: 'GROUPED', usdBrlRateSource: 'MANUAL',
       agingThresholdsAdjusted: false, fastTurnoverDays: 7, fastTurnoverDaysCustom: null, fastTurnoverDaysDefault: 7,
       slowItemDays: 21, slowItemDaysCustom: null, slowItemDaysDefault: 21, rateQuotedAt: null, fxRefreshSource: 'AWESOMEAPI',
       updatedAt: '2026-11-19T15:00:00.000Z',
@@ -60,7 +60,7 @@ describe('/api/settings', () => {
 
     test('GET inicial traz theme SYSTEM, language pt-BR e catalogUpdatedAt nulo', async () => {
       const res = await request(app).get('/api/settings');
-      expect(res.body.data).toMatchObject({ theme: 'SYSTEM', language: 'pt-BR', catalogUpdatedAt: null });
+      expect(res.body.data).toMatchObject({ theme: 'SYSTEM', language: 'pt-BR', inventoryView: 'GROUPED', catalogUpdatedAt: null });
     });
 
     test.each([
@@ -73,7 +73,7 @@ describe('/api/settings', () => {
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
       expect(res.body.data).toEqual({
-        usdBrlRate: null, usdBrlRateUpdatedAt: null, usdBrlRateSource: null, catalogUpdatedAt: null, ...expected,
+        usdBrlRate: null, usdBrlRateUpdatedAt: null, usdBrlRateSource: null, catalogUpdatedAt: null, inventoryView: 'GROUPED', ...expected,
         agingThresholdsAdjusted: false, fastTurnoverDays: 7, fastTurnoverDaysCustom: null, fastTurnoverDaysDefault: 7,
       slowItemDays: 21, slowItemDaysCustom: null, slowItemDaysDefault: 21, rateQuotedAt: null, fxRefreshSource: 'AWESOMEAPI', updatedAt: '2026-11-19T15:00:00.000Z',
       });

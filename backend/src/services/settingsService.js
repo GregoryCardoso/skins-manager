@@ -9,6 +9,7 @@ const { getProvider } = require('./fxRates');
 const {
   THEMES,
   LANGUAGES,
+  INVENTORY_VIEWS,
   FX_REFRESH_SOURCES,
   DEFAULT_FAST_TURNOVER_DAYS,
   MIN_FAST_TURNOVER_DAYS,
@@ -142,6 +143,11 @@ function updatePreferences(partial, { now = new Date() } = {}) {
   if (partial.language !== undefined && !LANGUAGES.includes(partial.language)) {
     throw new ValidationError(`Idioma inválido. Use ${LANGUAGES.join(', ')}.`, 'INVALID_LANGUAGE');
   }
+  if (partial.inventoryView !== undefined && !INVENTORY_VIEWS.includes(partial.inventoryView)) {
+    throw new ValidationError(`Visão do inventário inválida. Use ${INVENTORY_VIEWS.join(', ')}.`, 'INVALID_INVENTORY_VIEW', {
+      field: 'inventoryView',
+    });
+  }
   if (partial.fxRefreshSource !== undefined && !FX_REFRESH_SOURCES.includes(partial.fxRefreshSource)) {
     throw new ValidationError(
       `Fonte de cotação inválida. Use ${FX_REFRESH_SOURCES.join(', ')}.`,
@@ -183,7 +189,7 @@ function updatePreferences(partial, { now = new Date() } = {}) {
     }
   }
   const changes = {};
-  for (const key of ['theme', 'language', 'fxRefreshSource', 'fastTurnoverDays', 'slowItemDays']) {
+  for (const key of ['theme', 'language', 'inventoryView', 'fxRefreshSource', 'fastTurnoverDays', 'slowItemDays']) {
     if (partial[key] !== undefined) changes[key] = partial[key];
   }
   Setting.update(changes, { now });
