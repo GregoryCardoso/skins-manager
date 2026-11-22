@@ -6,6 +6,7 @@ const { WARNINGS } = require('./warnings');
 const { depositBaseAmount } = require('./depositService');
 const { withdrawalBaseAmount } = require('./withdrawalService');
 const { buildCurrentBalances } = require('./storeBalanceService');
+const { isOffSale } = require('./inventoryAgingService');
 const Setting = require('../models/Setting');
 const Item = require('../models/Item');
 const Store = require('../models/Store');
@@ -65,6 +66,17 @@ function estimateStockUsd(stockItems) {
   return { totalUsdCents, estimated };
 }
 
+// Estoque pelo custo dividido em à venda e holding (8.9, D283), pela mesma regra de estimateStockUsd.
+// O total continua sendo o de estimateStockUsd (o lucro real não muda).
+function splitStockUsd(stockItems) {
+  const inStock = stockItems.filter((i) => i.status === 'EM_ESTOQUE');
+  const part = (items) => ({ ...estimateStockUsd(items), count: items.length });
+  return {
+    forSale: part(inStock.filter((i) => !isOffSale(i))),
+    offSale: part(inStock.filter((i) => isOffSale(i))),
+  };
+}
+
 // Lucro real em USD (2.10, D226, D229).
 // lucro = saques líquidos + saldo disponível calculado + pendente + estoque - aportes (Revisão 22, D245). Todos os aportes
 // e saques contam, de qualquer data.
@@ -114,6 +126,7 @@ function computeRealProfit(input = {}) {
 
   const stock = estimateStockUsd(stockItems);
   const stockUsdCents = stock.totalUsdCents;
+  const stockSplit = splitStockUsd(stockItems);
 
   const parts = [withdrawn.usdCents, platformBalanceUsdCents, pendingBalanceUsdCents, stockUsdCents, deposited.usdCents];
   const realProfitUsdCents = parts.every((part) => part !== null)
@@ -140,6 +153,21 @@ function computeRealProfit(input = {}) {
     pendingBalanceUsdCents,
     nextReleaseAt: nextReleases.length ? nextReleases[0] : null,
     stockUsdCents,
+    // Estoque à venda e em holding (8.9, D283); a soma dos dois é `stockUsdCents`.
+    stockBreakdown: {
+      forSale: {
+        usdCents: stockSplit.forSale.totalUsdCents,
+        estimated: stockSplit.forSale.estimated,
+        approxBrl: approxBrlOf(stockSplit.forSale.totalUsdCents, usdBrlRate),
+        count: stockSplit.forSale.count,
+      },
+      offSale: {
+        usdCents: stockSplit.offSale.totalUsdCents,
+        estimated: stockSplit.offSale.estimated,
+        approxBrl: approxBrlOf(stockSplit.offSale.totalUsdCents, usdBrlRate),
+        count: stockSplit.offSale.count,
+      },
+    },
     realProfitUsdCents,
     estimated: Object.values(estimatedParts).some(Boolean),
     estimatedParts,
@@ -192,4 +220,4 @@ function getProfitSummary({ now = new Date() } = {}) {
   };
 }
 
-module.exports = { computeSaleProfitUsdCents, buildSaleInfo, estimateStockUsd, computeRealProfit, getProfitSummary };
+module.exports = { computeSaleProfitUsdCents, buildSaleInfo, estimateStockUsd, splitStockUsd, computeRealProfit, getProfitSummary };

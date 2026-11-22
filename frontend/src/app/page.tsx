@@ -11,10 +11,11 @@ import { usePreferences } from '@/components/PreferencesProvider';
 import { useItemDialogs } from '@/components/ItemDialogs';
 import SystemStatus from '@/components/SystemStatus';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
+import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
 import {
   clearedFilters, hasActiveFilters, isGroupedAvailable, parseFilters, toApiQuery, toGroupQuery, toSearchString, type InventoryFilters as Filters,
 } from '@/lib/inventoryQuery';
+import { inventoryCountText } from '@/lib/inventoryCount';
 import { queryKeys } from '@/lib/queryKeys';
 import { ApiRequestError, listItemGroups, listItems, listStores } from '@/services/api';
 import styles from './page.module.css';
@@ -23,7 +24,6 @@ const CONNECTION_ERRORS = ['NETWORK_ERROR', 'TIMEOUT', 'INVALID_RESPONSE'];
 
 function InventoryPageContent() {
   const t = useT();
-  const tPlural = useTPlural();
   const tLoose = useTLoose();
   const language = useLanguage();
   const router = useRouter();
@@ -118,12 +118,8 @@ function InventoryPageContent() {
         {data && (
           <span className={styles.count} aria-live="polite">
             {grouped && groupsData
-              ? groupsData.meta.count === 1
-                ? tPlural('inventory.groupCount', 1, { groups: groupsData.meta.groupCount })
-                : groupsData.meta.groupCount === 1
-                  ? t('inventory.groupCount.inOneGroup', { count: groupsData.meta.count, groups: groupsData.meta.groupCount })
-                  : tPlural('inventory.groupCount', groupsData.meta.count, { groups: groupsData.meta.groupCount })
-              : t('inventory.count', { count: data.meta.count })}
+              ? inventoryCountText(groupsData.meta.count, groupsData.meta.groupCount, tLoose)
+              : inventoryCountText(data.meta.count, null, tLoose)}
           </span>
         )}
         <button type="button" className={styles.newItem} onClick={openCreate}>

@@ -28,6 +28,8 @@ function GroupMoney({ group, cents, approxBrlCents }: { group: ItemGroup; cents:
   return (
     <div className={groupStyles.money} title={group.costUsesRecordedFx ? t('inventory.group.convertedCost') : undefined}>
       <span className={groupStyles.moneyMain}>{group.costUsesRecordedFx ? t('common.approx', { value: main }) : main}</span>
+      {/* A dica do `title` não chega ao teclado nem ao leitor de tela (revisão da 8.8, item 6). */}
+      {group.costUsesRecordedFx && <span className={groupStyles.srOnly}>{t('inventory.group.convertedCost')}</span>}
       {approxBrlCents !== null && (
         <small className={groupStyles.moneySide}>{t('common.approx', { value: formatMoney(approxBrlCents, 'BRL', locale) })}</small>
       )}

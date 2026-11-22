@@ -38,14 +38,14 @@ describe('chaves i18n do "fora de venda"', () => {
 });
 
 describe('invalidação das ações da 8.7.2', () => {
-  test.each(['item.offSale', 'item.backOnSale'] as const)('%s invalida só inventário e vendas', async (action) => {
+  test.each(['item.offSale', 'item.backOnSale'] as const)('%s invalida inventário, vendas e resumo do lucro real (8.9), sem saldos', async (action) => {
     const client = new QueryClient();
     const samples = [
       queryKeys.items.list({}), queryKeys.sales.list({}), queryKeys.stores.all, queryKeys.storeBalances.current, queryKeys.profitSummary.all,
     ];
     for (const key of samples) client.setQueryData(key, {});
     await invalidateAfter(client, action);
-    expect(samples.map((key) => Boolean(client.getQueryState(key)?.isInvalidated))).toEqual([true, true, false, false, false]);
+    expect(samples.map((key) => Boolean(client.getQueryState(key)?.isInvalidated))).toEqual([true, true, false, false, true]);
   });
 });
 

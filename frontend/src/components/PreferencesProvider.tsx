@@ -174,25 +174,36 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   // Troca otimista (D276): estado e cache na hora; se o PATCH falhar, os dois voltam ao valor anterior e o erro fica em saveError.
   const inventoryViewRef = useRef(inventoryView);
   inventoryViewRef.current = inventoryView;
+  // Só a resposta da última troca vale (revisão da 8.8, item 4): numa troca rápida (G→I→G), a resposta ou o erro de uma
+  // troca anterior não zera `touched`, não recarrega e não desfaz para um valor que já não vale.
+  const inventoryViewSeq = useRef(0);
+  // Valor confirmado pelo backend (ou o inicial): é para ele que o rollback volta.
+  const confirmedInventoryView = useRef(inventoryView);
   const setInventoryView = useCallback(
     (next: InventoryView) => {
       const previous = inventoryViewRef.current;
       if (next === previous) return;
+      if (!touched.current.inventoryView) confirmedInventoryView.current = previous;
+      const seq = ++inventoryViewSeq.current;
       touched.current.inventoryView = true;
       inventoryViewRef.current = next;
       setInventoryViewState(next);
       writeInventoryView(next);
       updatePreferences({ inventoryView: next })
         .then(() => {
+          confirmedInventoryView.current = next;
+          if (seq !== inventoryViewSeq.current) return;
           touched.current.inventoryView = false;
           setSaveError(null);
           invalidate('settings.preferences');
         })
         .catch((error: unknown) => {
+          if (seq !== inventoryViewSeq.current) return;
+          const fallback = confirmedInventoryView.current;
           touched.current.inventoryView = false;
-          inventoryViewRef.current = previous;
-          setInventoryViewState(previous);
-          writeInventoryView(previous);
+          inventoryViewRef.current = fallback;
+          setInventoryViewState(fallback);
+          writeInventoryView(fallback);
           setSaveError(error);
         });
     },

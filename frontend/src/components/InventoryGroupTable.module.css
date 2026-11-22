@@ -15,3 +15,4 @@
 .unitsRow > td { background: var(--surface-alt); }
 .unitsCell { padding: 0.5rem 0.75rem 0.75rem 2.5rem !important; }
 .units { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+.srOnly { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

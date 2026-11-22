@@ -653,6 +653,14 @@ export interface ProfitWarning {
   text: string;
 }
 
+// Uma parte do estoque pelo custo (8.9): US$ (nulo sem cotação gravada), "≈" se houve conversão, "≈ R$" e unidades.
+export interface StockPart {
+  usdCents: number | null;
+  estimated: boolean;
+  approxBrl: number | null;
+  count: number;
+}
+
 export interface ProfitSummary {
   baseCurrency: 'USD';
   depositsUsdCents: number | null;
@@ -661,6 +669,11 @@ export interface ProfitSummary {
   pendingBalanceUsdCents: number | null;
   nextReleaseAt: string | null;
   stockUsdCents: number | null;
+  // Estoque à venda e em holding (8.9, D283); a soma dos dois é `stockUsdCents`.
+  stockBreakdown: {
+    forSale: StockPart;
+    offSale: StockPart;
+  };
   realProfitUsdCents: number | null;
   // true se qualquer parcela do lucro teve conversão R$ -> US$ ("≈" no valor principal).
   estimated: boolean;

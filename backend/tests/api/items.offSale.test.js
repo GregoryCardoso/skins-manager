@@ -192,7 +192,10 @@ describe('lucro real e saldos não mudam', () => {
   test('/profit/summary e /store-balances/current iguais antes e depois de tirar o item da venda', async () => {
     Setting.update({ usdBrlRate: 5 }, { now: NOW });
     const item = await create({ purchasePriceCents: 500 });
-    const strip = ({ computedAt, ...rest }) => rest;
+    // stockBreakdown (8.9, D283) muda de propósito; o resto do resumo e os saldos ficam iguais.
+    const strip = ({ computedAt, stockBreakdown, ...rest }) => rest;
+    const breakdown = async () => (await request(app).get('/api/profit/summary')).body.data.stockBreakdown;
+    const bBreak = await breakdown();
     const before = {
       summary: strip((await request(app).get('/api/profit/summary')).body.data),
       balances: strip((await request(app).get('/api/store-balances/current')).body.data),
@@ -204,6 +207,8 @@ describe('lucro real e saldos não mudam', () => {
     };
     expect(after).toEqual(before);
     expect(after.summary.stockUsdCents).toBe(500);
+    expect(bBreak).toMatchObject({ forSale: { usdCents: 500, count: 1 }, offSale: { usdCents: 0, count: 0 } });
+    expect(await breakdown()).toMatchObject({ forSale: { usdCents: 0, count: 0 }, offSale: { usdCents: 500, count: 1 } });
     expect(getDb().prepare('SELECT COUNT(*) AS n FROM items WHERE off_sale_at IS NOT NULL').get().n).toBe(1);
   });
 });

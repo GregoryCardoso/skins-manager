@@ -194,6 +194,7 @@
   "inventory": {
     "title": "Inventário",
     "count": "{count} itens",
+    "countOne": "{count} item",
     "groupCount": {
       "one": "{count} item em {groups} grupo",
       "other": "{count} itens em {groups} grupos",
@@ -845,6 +846,8 @@
       "withdrawn": "Total retirado",
       "platformBalance": "Saldo nas plataformas",
       "stock": "Estoque (pelo custo)",
+      "stockForSale": "Estoque à venda (custo)",
+      "stockOffSale": "Estoque em holding (custo)",
       "withdrawnVsDeposited": "Já sacado vs. colocado",
       "withdrawnVsDepositedNone": "sem aportes",
       "withdrawnVsDepositedDetail": "{withdrawn} de {deposited}",

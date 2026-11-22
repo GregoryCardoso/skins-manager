@@ -245,16 +245,22 @@ describe('estoque, lucro real e saldo iguais antes e depois; edição preserva a
     Setting.update({ usdBrlRate: 5 }, { now: NOW });
     const item = await create({ purchasePriceCents: 777 });
     await request(app).post('/api/deposits').send({ storeId: storeId('CSFloat'), amountStoreCents: 2000, depositedAt: iso(-30) });
-    const strip = ({ computedAt, ...rest }) => rest;
+    // stockBreakdown (8.9, D283) muda de propósito; o resto do resumo e os saldos ficam iguais.
+    const strip = ({ computedAt, stockBreakdown, ...rest }) => rest;
+    const breakdown = async () => (await request(app).get('/api/profit/summary')).body.data.stockBreakdown;
     const snap = async () => ({
       summary: strip((await request(app).get('/api/profit/summary')).body.data),
       balances: strip((await request(app).get('/api/store-balances/current')).body.data),
     });
     const before = await snap();
+    const start = await breakdown();
     await offSale(item.id);
     expect(await snap()).toEqual(before);
+    expect(await breakdown()).toMatchObject({ forSale: { usdCents: 0, count: 0 }, offSale: { usdCents: 777, count: 1 } });
     await forSale(item.id);
     expect(await snap()).toEqual(before);
+    expect(await breakdown()).toEqual(start);
+    expect(start).toMatchObject({ forSale: { usdCents: 777, count: 1 }, offSale: { usdCents: 0, count: 0 } });
     expect(before.summary).toMatchObject({ stockUsdCents: 777, depositsUsdCents: 2000, platformBalanceUsdCents: 2000 - 777 });
   });
 

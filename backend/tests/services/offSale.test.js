@@ -168,7 +168,14 @@ describe('lucro real e saldo não mudam ao tirar um item da venda', () => {
     };
     const before = run(bought);
     const after = run({ ...bought, offSaleAt: ago(1) });
-    expect(after).toEqual(before);
+    // Tudo igual, exceto a divisão do estoque (8.9, D283), que muda do jeito certo: o item passa de forSale para offSale.
+    const { stockBreakdown: bBreak, ...bRest } = before;
+    const { stockBreakdown: aBreak, ...aRest } = after;
+    expect(aRest).toEqual(bRest);
     expect(after).toMatchObject({ stockUsdCents: 400, platformBalanceUsdCents: 600, realProfitUsdCents: 0 });
+    expect(bBreak.forSale).toMatchObject({ usdCents: 400, count: 1 });
+    expect(bBreak.offSale).toMatchObject({ usdCents: 0, count: 0 });
+    expect(aBreak.forSale).toMatchObject({ usdCents: 0, count: 0 });
+    expect(aBreak.offSale).toMatchObject({ usdCents: 400, count: 1 });
   });
 });

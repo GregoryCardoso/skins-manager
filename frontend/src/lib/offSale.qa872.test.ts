@@ -76,8 +76,8 @@ describe('inventoryQuery: aba "Fora de venda"', () => {
 });
 
 describe('invalidação das ações de fora de venda', () => {
-  test.each(['item.offSale', 'item.backOnSale'] as const)('%s: inventário e vendas (histórico incluído) são rebuscados; dinheiro e saldos não', async (action) => {
-    expect(INVALIDATION_MAP[action]).toEqual([queryKeys.items.all, queryKeys.sales.all]);
+  test.each(['item.offSale', 'item.backOnSale'] as const)('%s: inventário, vendas e resumo do lucro real (divisão do estoque, 8.9) são rebuscados; saldos, lojas e configurações não', async (action) => {
+    expect(INVALIDATION_MAP[action]).toEqual([queryKeys.items.all, queryKeys.sales.all, queryKeys.profitSummary.all]);
     const client = new QueryClient();
     const keys = {
       items: queryKeys.items.list({ status: 'EM_ESTOQUE', saleState: 'OFF_SALE' }),
@@ -91,7 +91,7 @@ describe('invalidação das ações de fora de venda', () => {
     for (const key of Object.values(keys)) client.setQueryData(key, {});
     await invalidateAfter(client, action);
     const inv = Object.fromEntries(Object.entries(keys).map(([name, key]) => [name, Boolean(client.getQueryState(key)?.isInvalidated)]));
-    expect(inv).toEqual({ items: true, sales: true, stores: false, balances: false, history: false, summary: false, settings: false });
+    expect(inv).toEqual({ items: true, sales: true, stores: false, balances: false, history: false, summary: true, settings: false });
   });
 
   test('as duas ações são usadas no código (item.offSale no diálogo e item.backOnSale no putForSale)', () => {

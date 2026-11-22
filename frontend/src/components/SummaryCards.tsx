@@ -113,6 +113,19 @@ function SummaryBody({ data }: { data: ProfitSummary }) {
           <span className={styles.label}>{t('profit.summary.stock')}</span>
           <span className={styles.value}>{amount(data.stockUsdCents, data.approxBrl.stock, data.estimatedParts.stock)}</span>
         </div>
+        {/* Estoque à venda e em holding (8.9, D283): só exibição; a soma dos dois é o card acima. */}
+        <div className={styles.card}>
+          <span className={styles.label}>{t('profit.summary.stockForSale')}</span>
+          <span className={styles.value}>
+            {amount(data.stockBreakdown.forSale.usdCents, data.stockBreakdown.forSale.approxBrl, data.stockBreakdown.forSale.estimated)}
+          </span>
+        </div>
+        <div className={styles.card}>
+          <span className={styles.label}>{t('profit.summary.stockOffSale')}</span>
+          <span className={styles.value}>
+            {amount(data.stockBreakdown.offSale.usdCents, data.stockBreakdown.offSale.approxBrl, data.stockBreakdown.offSale.estimated)}
+          </span>
+        </div>
         <div className={styles.card}>
           <span className={styles.label}>{t('profit.summary.withdrawnVsDeposited')}</span>
           <span className={styles.value}>

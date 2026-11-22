@@ -21,8 +21,9 @@ export const INVALIDATION_MAP = {
   'item.delete': ITEM_MONEY,
   'item.sell': ITEM_MONEY,
   'item.unsell': ITEM_MONEY,
-  'item.offSale': [K.items.all, K.sales.all],
-  'item.backOnSale': [K.items.all, K.sales.all],
+  // O lucro real mostra o estoque à venda e em holding (8.9, D283).
+  'item.offSale': [K.items.all, K.sales.all, K.profitSummary.all],
+  'item.backOnSale': [K.items.all, K.sales.all, K.profitSummary.all],
   'deposit.create': DEPOSIT,
   'deposit.update': DEPOSIT,
   'deposit.delete': DEPOSIT,
