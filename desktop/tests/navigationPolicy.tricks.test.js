@@ -72,9 +72,25 @@ describe('navigationPolicy x botão Inspecionar', () => {
   });
 
   test('o frontend renderiza <a href={link}> sem target para steam: (cai no will-navigate)', () => {
-    const src = fs.readFileSync(path.join(__dirname, '..', '..', 'frontend', 'src', 'components', 'InventoryTable.tsx'), 'utf8');
-    expect(src).toMatch(/href=\{link\}/);
-    expect(src).toMatch(/isHttpsLink\(link\)/);
+    // Desde a 8.8 o botão fica na linha de unidade (InventoryUnitRow.tsx), usada pelas visões individual e agrupada.
+    const components = path.join(__dirname, '..', '..', 'frontend', 'src', 'components');
+    const src = fs.readFileSync(path.join(components, 'InventoryUnitRow.tsx'), 'utf8');
+    const start = src.indexOf('function InspectAction(');
+    expect(start).toBeGreaterThanOrEqual(0);
+    const rest = src.slice(start);
+    const block = rest.slice(0, rest.search(/\r?\n\}\r?\n/));
+    expect(block.length).toBeGreaterThan(0);
+    expect(block).toMatch(/href=\{link\}/);
+    expect(block).toMatch(/const external = isHttpsLink\(link\)/);
+    // target="_blank" só para https: (steam: fica sem target e passa pelo will-navigate).
+    expect(block).toMatch(/\{\.\.\.\(external \? \{ target: '_blank' \} : \{\}\)\}/);
+    expect(block.match(/target/g)).toHaveLength(1);
+    // As duas tabelas do inventário usam essa linha (o botão não foi duplicado em outro lugar).
+    for (const file of ['InventoryTable.tsx', 'InventoryGroupTable.tsx']) {
+      const table = fs.readFileSync(path.join(components, file), 'utf8');
+      expect(table).toMatch(/from '\.\/InventoryUnitRow'/);
+      expect(table).not.toMatch(/function InspectAction\(/);
+    }
   });
 
   // DEFEITO CONHECIDO (ver relatório): o formulário, a API e o safeUrl aceitam QUALQUER steam://, mas a política só
