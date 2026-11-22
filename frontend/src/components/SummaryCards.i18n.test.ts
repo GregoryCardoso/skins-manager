@@ -37,20 +37,29 @@ describe('SummaryCards: chaves i18n (8.4)', () => {
   });
 });
 
-describe('versão 1.1.0 (D209)', () => {
+// D209: todas as partes do app têm a mesma versão. Sem número fixo: o `desktop:release` sobe a versão (ex.: 1.1.0 -> 1.1.1)
+// antes de rodar os testes, e um número fixo aqui quebrava toda publicação nova.
+describe('versão do app (D209)', () => {
   const root = path.join(__dirname, '..', '..', '..');
   const read = (rel: string) => JSON.parse(fs.readFileSync(path.join(root, rel), 'utf8'));
+  const expected = read('package.json').version as string;
 
-  test.each(['package.json', 'backend/package.json', 'frontend/package.json', 'desktop/package.json'])('%s está em 1.1.0', (rel) => {
-    expect(read(rel).version).toBe('1.1.0');
+  test('a versão da raiz é semver x.y.z e pelo menos 1.1.0 (a versão do lucro real)', () => {
+    expect(expected).toMatch(/^\d+\.\d+\.\d+$/);
+    const [major, minor] = expected.split('.').map(Number);
+    expect(major > 1 || (major === 1 && minor >= 1)).toBe(true);
+  });
+
+  test.each(['backend/package.json', 'frontend/package.json', 'desktop/package.json'])('%s tem a mesma versão da raiz', (rel) => {
+    expect(read(rel).version).toBe(expected);
   });
 
   test.each(['package-lock.json', 'backend/package-lock.json', 'frontend/package-lock.json', 'desktop/package-lock.json'])(
-    '%s está em 1.1.0 (raiz e packages[""])',
+    '%s tem a mesma versão da raiz (raiz e packages[""])',
     (rel) => {
       const lock = read(rel);
-      expect(lock.version).toBe('1.1.0');
-      expect(lock.packages[''].version).toBe('1.1.0');
+      expect(lock.version).toBe(expected);
+      expect(lock.packages[''].version).toBe(expected);
     },
   );
 });
