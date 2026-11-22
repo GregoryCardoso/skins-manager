@@ -8,6 +8,7 @@ import { formatMoney } from '@/lib/format';
 import {
   buildCheckPreviewQuery, buildStoreBalanceBody, initialStoreBalanceState, validateStoreBalanceForm, type StoreBalanceFormState,
 } from '@/lib/storeBalanceForm';
+import { useInvalidate } from '@/lib/useInvalidate';
 import { ApiRequestError, createStoreBalanceCheck, getStoreBalanceCheckPreview } from '@/services/api';
 import type { StoreBalanceCheckPreview, StoreBalanceSummary } from '@/types/api';
 import FormField from './FormField';
@@ -35,6 +36,7 @@ export default function StoreBalanceFormModal({ store, onClose, onSaved }: Props
   const t = useT();
   const tLoose = useTLoose();
   const language = useLanguage();
+  const invalidate = useInvalidate();
 
   const [state, setState] = useState<StoreBalanceFormState>(() => initialStoreBalanceState());
   const [errors, setErrors] = useState<Partial<Record<string, string>>>({});
@@ -94,11 +96,14 @@ export default function StoreBalanceFormModal({ store, onClose, onSaved }: Props
     setErrors({});
     setSaving(true);
     createStoreBalanceCheck(buildStoreBalanceBody(state, store.storeId, language, adjust))
-      .then((saved) => onSaved(
-        saved.adjustmentCents !== null
-          ? t('storeBalances.checkAdjusted', { store: store.storeName, value: formatMoney(saved.adjustmentCents, store.currency, language) })
-          : t('storeBalances.checkSaved', { store: store.storeName })
-      ))
+      .then((saved) => {
+        invalidate('balanceCheck.create');
+        onSaved(
+          saved.adjustmentCents !== null
+            ? t('storeBalances.checkAdjusted', { store: store.storeName, value: formatMoney(saved.adjustmentCents, store.currency, language) })
+            : t('storeBalances.checkSaved', { store: store.storeName })
+        );
+      })
       .catch((err: unknown) => {
         setSaving(false);
         showApiError(err);

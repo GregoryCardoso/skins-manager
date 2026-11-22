@@ -1,11 +1,14 @@
 'use client';
 
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
 import { formatInteger } from '@/lib/format';
 import { saveBlobAs } from '@/lib/download';
 import { BACKUP_MAX_BYTES, isBackupTooLarge } from '@/lib/backupFile';
+import { queryKeys } from '@/lib/queryKeys';
+import { invalidateAfter } from '@/lib/queryInvalidation';
 import { ApiRequestError, exportBackup, getBackupInfo, importBackup, openBackupsFolder } from '@/services/api';
 import type { BackupImportResult, BackupInfo } from '@/types/api';
 import ConfirmDialog from './ConfirmDialog';
@@ -28,17 +31,11 @@ export default function BackupSettings() {
   const [importError, setImportError] = useState<unknown>(null);
   const [pickError, setPickError] = useState<unknown>(null);
   const [result, setResult] = useState<BackupImportResult | null>(null);
-  const [info, setInfo] = useState<BackupInfo | null>(null);
+  const queryClient = useQueryClient();
+  const infoQuery = useQuery({ queryKey: queryKeys.backupInfo.all, queryFn: ({ signal }) => getBackupInfo(signal) });
+  const info: BackupInfo | null = infoQuery.data ?? null; // sem o caminho a tela continua útil (só não o mostra)
   const [folderError, setFolderError] = useState<unknown>(null);
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
-
-  useEffect(() => {
-    const controller = new AbortController();
-    getBackupInfo(controller.signal)
-      .then(setInfo)
-      .catch(() => setInfo(null)); // sem o caminho a tela continua útil (só não o mostra)
-    return () => controller.abort();
-  }, []);
 
   const onOpenFolder = () => {
     setFolderError(null);
@@ -104,6 +101,8 @@ export default function BackupSettings() {
     setImportError(null);
     importBackup(file)
       .then((data) => {
+        // O banco inteiro mudou: limpa o cache antes da recarga da janela (D259).
+        invalidateAfter(queryClient, 'backup.import');
         setResult(data);
         setConfirming(false);
       })

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useState, type ReactNode } from 'react';
+import { useInvalidate } from '@/lib/useInvalidate';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
 import { ApiRequestError, deleteItem, unsellItem } from '@/services/api';
@@ -34,11 +35,12 @@ export interface ItemDialogsApi {
 }
 
 // Modais e confirmações de item compartilhados pelo inventário e pela página de vendas (D129).
-// Sucesso -> fecha, mostra a mensagem e recarrega; ITEM_NOT_FOUND -> avisa e recarrega.
-export function useItemDialogs(stores: Store[], reload: () => void): ItemDialogsApi {
+// Sucesso -> fecha, mostra a mensagem e invalida as consultas (D259); ITEM_NOT_FOUND -> avisa e atualiza as telas.
+export function useItemDialogs(stores: Store[]): ItemDialogsApi {
   const t = useT();
   const tLoose = useTLoose();
   const language = useLanguage();
+  const invalidate = useInvalidate();
   const [dialog, setDialog] = useState<Dialog | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [confirmBusy, setConfirmBusy] = useState(false);
@@ -54,18 +56,23 @@ export function useItemDialogs(stores: Store[], reload: () => void): ItemDialogs
     (message: string) => {
       closeDialog();
       setNotice(message);
-      reload();
     },
-    [closeDialog, reload],
+    [closeDialog],
   );
 
-  const itemGone = useCallback(() => finish(t('inventory.itemGone')), [finish, t]);
+  const itemGone = useCallback(() => {
+    invalidate('item.delete');
+    finish(t('inventory.itemGone'));
+  }, [finish, invalidate, t]);
 
-  const runConfirm = (action: Promise<unknown>, doneMessage: string) => {
+  const runConfirm = (action: Promise<unknown>, doneMessage: string, invalidation: 'item.delete' | 'item.unsell') => {
     setConfirmBusy(true);
     setConfirmError(null);
     action
-      .then(() => finish(doneMessage))
+      .then(() => {
+        invalidate(invalidation);
+        finish(doneMessage);
+      })
       .catch((err: unknown) => {
         if (err instanceof ApiRequestError && err.code === 'ITEM_NOT_FOUND') {
           itemGone();
@@ -102,7 +109,7 @@ export function useItemDialogs(stores: Store[], reload: () => void): ItemDialogs
           busy={confirmBusy}
           error={confirmError}
           onCancel={closeDialog}
-          onConfirm={() => runConfirm(deleteItem(dialog.item.id), t('confirm.deleted'))}
+          onConfirm={() => runConfirm(deleteItem(dialog.item.id), t('confirm.deleted'), 'item.delete')}
         />
       )}
       {dialog?.kind === 'unsell' && (
@@ -113,7 +120,7 @@ export function useItemDialogs(stores: Store[], reload: () => void): ItemDialogs
           busy={confirmBusy}
           error={confirmError}
           onCancel={closeDialog}
-          onConfirm={() => runConfirm(unsellItem(dialog.item.id), t('confirm.unsold'))}
+          onConfirm={() => runConfirm(unsellItem(dialog.item.id), t('confirm.unsold'), 'item.unsell')}
         />
       )}
     </>

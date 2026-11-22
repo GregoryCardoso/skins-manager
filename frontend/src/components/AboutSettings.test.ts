@@ -6,8 +6,12 @@ import { translate } from '@/i18n/translate';
 
 // O projeto não tem jsdom nem Testing Library. Para exercitar os ramos do componente, os hooks `useState` e
 // `useEffect` são simulados: cada chamada de useState devolve o valor preparado na mesma ordem do componente
-// (version, info, checking, result, failed) e os efeitos não rodam. O clique do botão (onCheck) não é coberto aqui.
-const hookState = vi.hoisted(() => ({ values: [] as unknown[], index: 0 }));
+// (info, checking, result, failed) e os efeitos não rodam. A versão vem de `useQuery` (D259), também simulado. O clique do botão (onCheck) não é coberto aqui.
+const hookState = vi.hoisted(() => ({ values: [] as unknown[], index: 0, version: null as string | null }));
+
+vi.mock('@tanstack/react-query', () => ({
+  useQuery: () => ({ data: hookState.version === null ? undefined : { version: hookState.version } }),
+}));
 
 vi.mock('react', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react')>();
@@ -34,7 +38,8 @@ type Info = { mode: 'installer' | 'portable' | 'dev'; version?: string } | null;
 type Result = { mode: 'installer' | 'portable' | 'dev'; status: string; latestVersion?: string; percent?: number | null } | null;
 
 function render(state: { version?: string | null; info?: Info; checking?: boolean; result?: Result; failed?: boolean }) {
-  hookState.values = [state.version ?? null, state.info ?? null, state.checking ?? false, state.result ?? null, state.failed ?? false];
+  hookState.version = state.version ?? null;
+  hookState.values = [state.info ?? null, state.checking ?? false, state.result ?? null, state.failed ?? false];
   hookState.index = 0;
   return renderToStaticMarkup(createElement(AboutSettings));
 }

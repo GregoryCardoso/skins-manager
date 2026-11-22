@@ -8,19 +8,20 @@ import {
   type AgingErrors, type AgingField, type AgingFormState,
 } from '@/lib/agingForm';
 import { ApiRequestError, updatePreferences } from '@/services/api';
+import { useInvalidate } from '@/lib/useInvalidate';
 import type { Settings } from '@/types/api';
 import styles from './settings.module.css';
 
 interface Props {
   settings: Settings;
-  onSaved: (settings: Settings) => void;
 }
 
 // Limites de giro (D159): "giro rápido até" e "agarrado acima de", cada um com "restaurar padrão".
-export default function AgingSettings({ settings, onSaved }: Props) {
+export default function AgingSettings({ settings }: Props) {
   const t = useT();
   const tLoose = useTLoose();
   const language = useLanguage();
+  const invalidate = useInvalidate();
   const fastId = useId();
   const slowId = useId();
   const [state, setState] = useState<AgingFormState>(() => agingStateFromSettings(settings));
@@ -48,8 +49,9 @@ export default function AgingSettings({ settings, onSaved }: Props) {
     setErrors({});
     setOk(null);
     updatePreferences(patch)
-      .then((saved) => {
-        onSaved(saved);
+      .then(() => {
+        // Os limites mudam as faixas de giro do inventário e das vendas, e as configurações (D259).
+        invalidate('settings.aging');
         setOk(done);
       })
       .catch((err: unknown) => setErrors(apiErrors(err)))

@@ -1,9 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useCallback, useState } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
 import { formatDateTime, formatInteger } from '@/lib/format';
+import { queryKeys } from '@/lib/queryKeys';
+import { useInvalidate } from '@/lib/useInvalidate';
 import { getCatalogStatus, refreshCatalog } from '@/services/api';
 import type { CatalogSource, CatalogStatus } from '@/types/api';
 import styles from './settings.module.css';
@@ -38,24 +41,13 @@ export default function CatalogSettings() {
   const t = useT();
   const tLoose = useTLoose();
   const locale = useLanguage();
-  const [status, setStatus] = useState<CatalogStatus | null>(null);
-  const [loadError, setLoadError] = useState<unknown>(null);
+  const invalidate = useInvalidate();
+  const statusQuery = useQuery({ queryKey: queryKeys.catalog.status, queryFn: ({ signal }) => getCatalogStatus(signal) });
+  const status = statusQuery.data ?? null;
+  const loadError = statusQuery.error ?? null;
   const [refreshing, setRefreshing] = useState(false);
   const [refreshError, setRefreshError] = useState<unknown>(null);
   const [info, setInfo] = useState<{ total: number; skipped: number; linked: number } | null>(null);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    getCatalogStatus(controller.signal)
-      .then((data) => {
-        setStatus(data);
-        setLoadError(null);
-      })
-      .catch((err: unknown) => {
-        if (!controller.signal.aborted) setLoadError(err);
-      });
-    return () => controller.abort();
-  }, []);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -63,13 +55,13 @@ export default function CatalogSettings() {
     setInfo(null);
     refreshCatalog()
       .then((result) => {
-        setStatus(result);
-        setLoadError(null);
+        // Atualizar o catálogo muda o status, os itens e as vendas (imagens e vínculos, D259).
+        invalidate('catalog.refresh');
         setInfo({ total: result.total, skipped: result.skipped, linked: result.linkedLegacyItems });
       })
       .catch((err: unknown) => setRefreshError(err))
       .finally(() => setRefreshing(false));
-  }, []);
+  }, [invalidate]);
 
   return (
     <section className={styles.card} aria-labelledby="settings-catalog-title">

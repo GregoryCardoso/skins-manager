@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import AppHeader from '@/components/AppHeader';
 import DesktopUpdateHost from '@/components/DesktopUpdateHost';
 import { PreferencesProvider } from '@/components/PreferencesProvider';
+import QueryProvider from '@/components/QueryProvider';
 import { I18nProvider } from '@/i18n/I18nProvider';
 import { bootstrapScript } from '@/lib/preferences';
 import './globals.css';
@@ -19,13 +20,15 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: bootstrapScript() }} />
       </head>
       <body>
-        <PreferencesProvider>
-          <I18nProvider>
-            <AppHeader />
-            <main>{children}</main>
-            <DesktopUpdateHost />
-          </I18nProvider>
-        </PreferencesProvider>
+        <QueryProvider>
+          <PreferencesProvider>
+            <I18nProvider>
+              <AppHeader />
+              <main>{children}</main>
+              <DesktopUpdateHost />
+            </I18nProvider>
+          </PreferencesProvider>
+        </QueryProvider>
       </body>
     </html>
   );

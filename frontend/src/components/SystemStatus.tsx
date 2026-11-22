@@ -1,10 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
 import { formatDateTime, formatInteger } from '@/lib/format';
+import { queryKeys } from '@/lib/queryKeys';
 import { getCatalogStatus, getHealth } from '@/services/api';
 import type { CatalogSource, CatalogStatus, HealthStatus } from '@/types/api';
 import styles from './SystemStatus.module.css';
@@ -17,39 +18,19 @@ interface Loadable<T> {
   error: unknown;
 }
 
-const initial = <T,>(): Loadable<T> => ({ loading: true, data: null, error: null });
-
 export default function SystemStatus() {
   const t = useT();
   const tLoose = useTLoose();
   const locale = useLanguage();
-  const [health, setHealth] = useState<Loadable<HealthStatus>>(initial);
-  const [catalog, setCatalog] = useState<Loadable<CatalogStatus>>(initial);
-  const controllerRef = useRef<AbortController | null>(null);
-
-  const check = useCallback(() => {
-    controllerRef.current?.abort();
-    const controller = new AbortController();
-    controllerRef.current = controller;
-    setHealth((prev) => ({ ...prev, loading: true }));
-    setCatalog((prev) => ({ ...prev, loading: true }));
-
-    getHealth(controller.signal)
-      .then((data) => setHealth({ loading: false, data, error: null }))
-      .catch((error: unknown) => {
-        if (!controller.signal.aborted) setHealth({ loading: false, data: null, error });
-      });
-    getCatalogStatus(controller.signal)
-      .then((data) => setCatalog({ loading: false, data, error: null }))
-      .catch((error: unknown) => {
-        if (!controller.signal.aborted) setCatalog({ loading: false, data: null, error });
-      });
-  }, []);
-
-  useEffect(() => {
-    check();
-    return () => controllerRef.current?.abort();
-  }, [check]);
+  // Saúde do backend e status do catálogo vêm do cache compartilhado (D259); "Verificar de novo" recarrega as duas.
+  const healthQuery = useQuery({ queryKey: queryKeys.health.all, queryFn: ({ signal }) => getHealth(signal) });
+  const catalogQuery = useQuery({ queryKey: queryKeys.catalog.status, queryFn: ({ signal }) => getCatalogStatus(signal) });
+  const health: Loadable<HealthStatus> = { loading: healthQuery.isFetching, data: healthQuery.data ?? null, error: healthQuery.error };
+  const catalog: Loadable<CatalogStatus> = { loading: catalogQuery.isFetching, data: catalogQuery.data ?? null, error: catalogQuery.error };
+  const check = () => {
+    healthQuery.refetch();
+    catalogQuery.refetch();
+  };
 
   const checking = health.loading || catalog.loading;
 

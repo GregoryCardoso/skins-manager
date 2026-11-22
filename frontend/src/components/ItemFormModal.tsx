@@ -13,6 +13,7 @@ import {
   type CatalogChoice, type FormContext, type FormErrors, type ItemFormState,
 } from '@/lib/itemForm';
 import { formatDecimalInput } from '@/lib/numberInput';
+import { useInvalidate } from '@/lib/useInvalidate';
 import { ApiRequestError, createItem, updateItem } from '@/services/api';
 import type { AcquisitionType, CatalogItem, Category, Currency, Exterior, ItemView, Store, Variant } from '@/types/api';
 import CatalogAutocomplete, { catalogDisplayName } from './CatalogAutocomplete';
@@ -45,6 +46,7 @@ export default function ItemFormModal({ item, stores, onClose, onSaved, onGone }
   const t = useT();
   const tLoose = useTLoose();
   const language = useLanguage();
+  const invalidate = useInvalidate();
   const { usdBrlRate } = usePreferences();
   const editing = item !== undefined;
   const ctx: FormContext = { stores, usdBrlRate, language };
@@ -129,7 +131,10 @@ export default function ItemFormModal({ item, stores, onClose, onSaved, onGone }
     setSaving(true);
     const request = editing ? updateItem(item.id, built.body) : createItem(built.body as Parameters<typeof createItem>[0]);
     request
-      .then(() => onSaved(editing ? t('itemForm.saved') : t('itemForm.created')))
+      .then(() => {
+        invalidate(editing ? 'item.update' : 'item.create');
+        onSaved(editing ? t('itemForm.saved') : t('itemForm.created'));
+      })
       .catch((err: unknown) => {
         setSaving(false);
         showApiError(err);

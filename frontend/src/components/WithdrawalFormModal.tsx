@@ -9,6 +9,7 @@ import {
   initialWithdrawalState, validateWithdrawalForm, withdrawalAmountText, withdrawalFormFromWithdrawal, withdrawalStoreOptions,
   type WithdrawalFormState,
 } from '@/lib/withdrawalForm';
+import { useInvalidate } from '@/lib/useInvalidate';
 import { ApiRequestError, createWithdrawal, getWithdrawalFeeSuggestion, updateWithdrawal } from '@/services/api';
 import type { Store, Withdrawal } from '@/types/api';
 import FormField from './FormField';
@@ -28,6 +29,7 @@ interface Props {
 }
 
 export default function WithdrawalFormModal({ withdrawal, stores, onClose, onSaved, onGone }: Props) {
+  const invalidate = useInvalidate();
   const t = useT();
   const tLoose = useTLoose();
   const language = useLanguage();
@@ -117,7 +119,10 @@ export default function WithdrawalFormModal({ withdrawal, stores, onClose, onSav
       }
       setSaving(true);
       updateWithdrawal(withdrawal.id, body)
-        .then(() => onSaved(t('withdrawals.updated')))
+        .then(() => {
+          invalidate('withdrawal.update');
+          onSaved(t('withdrawals.updated'));
+        })
         .catch((err: unknown) => {
           setSaving(false);
           showApiError(err);
@@ -126,7 +131,10 @@ export default function WithdrawalFormModal({ withdrawal, stores, onClose, onSav
     }
     setSaving(true);
     createWithdrawal(buildWithdrawalCreateBody(state, language))
-      .then((saved) => onSaved(t('withdrawals.created', { value: withdrawalAmountText(saved, language) })))
+      .then((saved) => {
+        invalidate('withdrawal.create');
+        onSaved(t('withdrawals.created', { value: withdrawalAmountText(saved, language) }));
+      })
       .catch((err: unknown) => {
         setSaving(false);
         showApiError(err);

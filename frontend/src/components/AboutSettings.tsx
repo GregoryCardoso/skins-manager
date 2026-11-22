@@ -1,28 +1,26 @@
 'use client';
 
+import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useT } from '@/i18n/I18nProvider';
 import { getDesktopBridge, type DesktopAppInfo, type UpdateCheckResult } from '@/lib/desktop';
+import { queryKeys } from '@/lib/queryKeys';
 import { getHealth } from '@/services/api';
 import styles from './settings.module.css';
 
 // Card "Sobre" (D181): versão do app e atualização. A verificação só existe no desktop (instalador/portátil).
 export default function AboutSettings() {
   const t = useT();
-  const [version, setVersion] = useState<string | null>(null);
+  const healthQuery = useQuery({ queryKey: queryKeys.health.all, queryFn: ({ signal }) => getHealth(signal) });
+  const version = healthQuery.data?.version ?? null;
   const [info, setInfo] = useState<DesktopAppInfo | null>(null);
   const [checking, setChecking] = useState(false);
   const [result, setResult] = useState<UpdateCheckResult | null>(null);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    const controller = new AbortController();
-    getHealth(controller.signal)
-      .then((health) => setVersion(health.version ?? null))
-      .catch(() => setVersion(null));
     const bridge = getDesktopBridge();
     if (bridge) bridge.getAppInfo().then(setInfo).catch(() => setInfo(null));
-    return () => controller.abort();
   }, []);
 
   const mode = info?.mode ?? null;

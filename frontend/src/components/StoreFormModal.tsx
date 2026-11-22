@@ -8,6 +8,7 @@ import {
   buildStoreCreateBody, buildStorePatchBody, initialStoreFormState, storeFormFromStore, storeFormRounds, validateStoreForm,
   type StoreFormState,
 } from '@/lib/storeForm';
+import { useInvalidate } from '@/lib/useInvalidate';
 import { ApiRequestError, createStore, updateStore } from '@/services/api';
 import type { SaleFeeRounding, SaleFeeType, Store } from '@/types/api';
 import FormField from './FormField';
@@ -30,6 +31,7 @@ interface Props {
 }
 
 export default function StoreFormModal({ store, onClose, onSaved, onGone }: Props) {
+  const invalidate = useInvalidate();
   const t = useT();
   const tLoose = useTLoose();
   const language = useLanguage();
@@ -86,7 +88,10 @@ export default function StoreFormModal({ store, onClose, onSaved, onGone }: Prop
       }
       setSaving(true);
       updateStore(store.id, body)
-        .then((saved) => onSaved(t('storeForm.updated', { name: saved.name })))
+        .then((saved) => {
+          invalidate('store.update');
+          onSaved(t('storeForm.updated', { name: saved.name }));
+        })
         .catch((err: unknown) => {
           setSaving(false);
           showApiError(err);
@@ -95,7 +100,10 @@ export default function StoreFormModal({ store, onClose, onSaved, onGone }: Prop
     }
     setSaving(true);
     createStore(buildStoreCreateBody(state, language))
-      .then((saved) => onSaved(t('storeForm.created', { name: saved.name })))
+      .then((saved) => {
+        invalidate('store.create');
+        onSaved(t('storeForm.created', { name: saved.name }));
+      })
       .catch((err: unknown) => {
         setSaving(false);
         showApiError(err);

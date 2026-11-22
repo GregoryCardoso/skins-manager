@@ -1,5 +1,6 @@
 'use client';
 
+import { useQuery } from '@tanstack/react-query';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   DEFAULT_LANGUAGE,
@@ -11,6 +12,8 @@ import {
   toResolvedTheme,
   writeCachedPreferences,
 } from '@/lib/preferences';
+import { queryKeys } from '@/lib/queryKeys';
+import { useInvalidate } from '@/lib/useInvalidate';
 import { getSettings, refreshFxRate, updateFxRate, updatePreferences } from '@/services/api';
 import type { FxRateSource, FxRefreshResult, FxRefreshSource, Language, Settings, ThemeChoice } from '@/types/api';
 
@@ -55,6 +58,10 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const [fxRefreshSource, setFxRefreshSource] = useState<FxRefreshSource>('AWESOMEAPI');
   // Campos trocados localmente: a resposta tardia do GET /settings não os sobrescreve.
   const touched = useRef({ theme: false, language: false });
+  const invalidate = useInvalidate();
+  // As configurações vêm do cache compartilhado (D259): mudar cotação, limites ou preferências as invalida.
+  const settingsQuery = useQuery({ queryKey: queryKeys.settings.all, queryFn: ({ signal }) => getSettings(signal) });
+  const settingsData = settingsQuery.data;
 
   const applyFx = useCallback(
     (settings: Pick<Settings, 'usdBrlRate' | 'usdBrlRateSource' | 'rateQuotedAt' | 'usdBrlRateUpdatedAt' | 'fxRefreshSource'>) => {
@@ -88,27 +95,29 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     };
     window.addEventListener('storage', onStorage);
 
-    const controller = new AbortController();
-    getSettings(controller.signal)
-      .then((settings) => {
-        applyFx(settings);
-        // 'SYSTEM' no banco (padrão ou valor antigo) = sem preferência: tema do sistema e cache limpo.
-        if (!touched.current.theme) setThemeState(effectiveTheme(settings.theme, systemDark));
-        if (!touched.current.language) setLanguageState(settings.language);
-        writeCachedPreferences({
-          theme: touched.current.theme ? undefined : isThemeChoice(settings.theme) ? settings.theme : null,
-          language: touched.current.language ? undefined : settings.language,
-        });
-      })
-      .catch(() => {
-        // Backend fora do ar: segue com o cache/sistema; o painel de status mostra o problema.
-      });
-
     return () => {
-      controller.abort();
       window.removeEventListener('storage', onStorage);
     };
-  }, [applyFx]);
+  }, []);
+
+  // Cada vez que as configurações chegam (ou são recarregadas), aplica cotação, tema e idioma.
+  useEffect(() => {
+    if (!settingsData) return;
+    let systemDark = false;
+    try {
+      systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    } catch {
+      // sem matchMedia: claro
+    }
+    applyFx(settingsData);
+    // 'SYSTEM' no banco (padrão ou valor antigo) = sem preferência: tema do sistema e cache limpo.
+    if (!touched.current.theme) setThemeState(effectiveTheme(settingsData.theme, systemDark));
+    if (!touched.current.language) setLanguageState(settingsData.language);
+    writeCachedPreferences({
+      theme: touched.current.theme ? undefined : isThemeChoice(settingsData.theme) ? settingsData.theme : null,
+      language: touched.current.language ? undefined : settingsData.language,
+    });
+  }, [settingsData, applyFx]);
 
   useEffect(() => {
     if (!ready) return;
@@ -122,9 +131,12 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const save = useCallback((patch: { theme?: ThemeChoice; language?: Language }) => {
     writeCachedPreferences(patch);
     updatePreferences(patch)
-      .then(() => setSaveError(null))
+      .then(() => {
+        setSaveError(null);
+        invalidate('settings.preferences');
+      })
       .catch((error: unknown) => setSaveError(error));
-  }, []);
+  }, [invalidate]);
 
   const setTheme = useCallback(
     (next: ThemeChoice) => {
@@ -146,25 +158,25 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
 
   const saveFxRate = useCallback(async (rate: number) => {
     applyFx(await updateFxRate(rate));
-  }, [applyFx]);
+    invalidate('settings.fx');
+  }, [applyFx, invalidate]);
 
   const saveFxRefreshSource = useCallback(async (source: FxRefreshSource) => {
     applyFx(await updatePreferences({ fxRefreshSource: source }));
-  }, [applyFx]);
+    invalidate('settings.fx');
+  }, [applyFx, invalidate]);
 
   const refreshFx = useCallback(async () => {
     const result = await refreshFxRate();
     applyFx(result.settings);
+    invalidate('settings.fx');
     return result;
-  }, [applyFx]);
+  }, [applyFx, invalidate]);
 
+  // Relê as configurações (ex.: tentar de novo depois de o backend ter ficado fora do ar).
   const reloadFxRate = useCallback(() => {
-    getSettings()
-      .then(applyFx)
-      .catch(() => {
-        // Backend fora do ar: a página mostra o painel de aviso.
-      });
-  }, [applyFx]);
+    invalidate('settings.preferences');
+  }, [invalidate]);
 
   const value = useMemo(
     () => ({

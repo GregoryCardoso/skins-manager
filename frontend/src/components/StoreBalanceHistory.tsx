@@ -1,9 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useCallback, useState } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
 import { formatDate, formatMoney } from '@/lib/format';
+import { queryKeys } from '@/lib/queryKeys';
+import { useInvalidate } from '@/lib/useInvalidate';
 import { ApiRequestError, deleteStoreBalanceEntry, listStoreBalances } from '@/services/api';
 import type { StoreBalanceEntry, StoreBalanceSummary } from '@/types/api';
 import ConfirmDialog from './ConfirmDialog';
@@ -14,53 +17,41 @@ import Modal from './Modal';
 interface Props {
   store: StoreBalanceSummary;
   onClose: () => void;
-  // Chamado depois de excluir um registro (o painel recarrega os saldos).
-  onChanged: () => void;
 }
 
 // Histórico da loja (D242, D247): conferências (com calculado, diferença e ajuste) e registros antigos,
 // do mais recente para o mais antigo. Só exclusão (append-only).
-export default function StoreBalanceHistory({ store, onClose, onChanged }: Props) {
+export default function StoreBalanceHistory({ store, onClose }: Props) {
   const t = useT();
   const tLoose = useTLoose();
   const language = useLanguage();
+  const invalidate = useInvalidate();
 
-  const [entries, setEntries] = useState<StoreBalanceEntry[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [reloadToken, setReloadToken] = useState(0);
+  const query = useQuery({
+    queryKey: queryKeys.storeBalances.history(store.storeId),
+    queryFn: ({ signal }) => listStoreBalances(store.storeId, signal),
+  });
+  const entries: StoreBalanceEntry[] | null = query.data ? query.data.balances : null;
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const error = deleteError ?? (query.error ? errorMessageFor(query.error, tLoose, language) : null);
   const [confirming, setConfirming] = useState<StoreBalanceEntry | null>(null);
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    const controller = new AbortController();
-    listStoreBalances(store.storeId, controller.signal)
-      .then((data) => {
-        setEntries(data.balances);
-        setError(null);
-      })
-      .catch((err: unknown) => {
-        if (controller.signal.aborted || (err instanceof ApiRequestError && err.code === 'ABORTED')) return;
-        setError(errorMessageFor(err, tLoose, language));
-      });
-    return () => controller.abort();
-  }, [store.storeId, reloadToken, tLoose, language]);
-
   const remove = useCallback((entry: StoreBalanceEntry) => {
     setBusy(true);
-    setError(null);
+    setDeleteError(null);
     deleteStoreBalanceEntry(entry.id)
       .catch((err: unknown) => {
         // Já excluído em outro lugar: só recarrega a lista.
         if (err instanceof ApiRequestError && err.code === 'STORE_BALANCE_NOT_FOUND') return;
-        setError(errorMessageFor(err, tLoose, language));
+        setDeleteError(errorMessageFor(err, tLoose, language));
       })
       .finally(() => {
         setBusy(false);
         setConfirming(null);
-        setReloadToken((n) => n + 1);
-        onChanged();
+        invalidate('balanceCheck.delete');
       });
-  }, [tLoose, language, onChanged]);
+  }, [tLoose, language, invalidate]);
 
   const money = (cents: number | null) => (cents === null ? '' : formatMoney(cents, store.currency, language));
   const kindLabel = (entry: StoreBalanceEntry) => t(entry.legacy ? 'storeBalances.kind.LEGACY' : 'storeBalances.kind.CHECK');

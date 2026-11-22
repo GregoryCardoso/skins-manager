@@ -1,7 +1,8 @@
 'use client';
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { Suspense, useCallback, useMemo } from 'react';
 import InventoryFilters from '@/components/InventoryFilters';
 import InventoryTable from '@/components/InventoryTable';
 import { usePreferences } from '@/components/PreferencesProvider';
@@ -12,8 +13,8 @@ import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
 import {
   DEFAULT_FILTERS, hasActiveFilters, parseFilters, toApiQuery, toSearchString, type InventoryFilters as Filters,
 } from '@/lib/inventoryQuery';
+import { queryKeys } from '@/lib/queryKeys';
 import { ApiRequestError, listItems, listStores } from '@/services/api';
-import type { ItemList, Store } from '@/types/api';
 import styles from './page.module.css';
 
 const CONNECTION_ERRORS = ['NETWORK_ERROR', 'TIMEOUT', 'INVALID_RESPONSE'];
@@ -25,48 +26,31 @@ function InventoryView() {
   const router = useRouter();
   const pathname = usePathname() ?? '/';
   const searchParams = useSearchParams();
-  const { usdBrlRate, reloadFxRate } = usePreferences();
+  const { reloadFxRate } = usePreferences();
 
   const searchKey = searchParams.toString();
   const filters = useMemo(() => parseFilters(new URLSearchParams(searchKey)), [searchKey]);
-  const apiKey = JSON.stringify(toApiQuery(filters));
+  const apiQuery = useMemo(() => toApiQuery(filters), [filters]);
 
-  const [data, setData] = useState<ItemList | null>(null);
-  const [stores, setStores] = useState<Store[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<unknown>(null);
-  const [reloadToken, setReloadToken] = useState(0);
-
-  const reload = useCallback(() => setReloadToken((n) => n + 1), []);
+  // Itens e lojas vêm do cache compartilhado (D259): qualquer ação que mude o dinheiro os invalida.
+  // Trocar o filtro mantém a lista anterior na tela (esmaecida) até a nova chegar; o foco da janela recarrega (D258).
+  const itemsQuery = useQuery({
+    queryKey: queryKeys.items.list(apiQuery),
+    queryFn: ({ signal }) => listItems(apiQuery, signal),
+    placeholderData: keepPreviousData,
+  });
+  const storesQuery = useQuery({ queryKey: queryKeys.stores.all, queryFn: ({ signal }) => listStores(signal) });
+  const data = itemsQuery.data ?? null;
+  const stores = storesQuery.data ?? [];
+  const error = itemsQuery.error ?? storesQuery.error;
+  const loading = itemsQuery.isFetching || storesQuery.isFetching;
+  const reload = useCallback(() => {
+    itemsQuery.refetch();
+    storesQuery.refetch();
+  }, [itemsQuery, storesQuery]);
 
   const { openCreate, openEdit, openSell, openUnsell, openDelete, openHistory, notice, dismissNotice, dialogs } =
-    useItemDialogs(stores, reload);
-
-  // Carrega itens e lojas; trocar filtro (ou cotação) cancela a requisição anterior.
-  useEffect(() => {
-    const controller = new AbortController();
-    setLoading(true);
-    Promise.all([listItems(JSON.parse(apiKey), controller.signal), listStores(controller.signal)])
-      .then(([list, storeList]) => {
-        setData(list);
-        setStores(storeList);
-        setError(null);
-        setLoading(false);
-      })
-      .catch((err: unknown) => {
-        if (controller.signal.aborted || (err instanceof ApiRequestError && err.code === 'ABORTED')) return;
-        setError(err);
-        setLoading(false);
-      });
-    return () => controller.abort();
-  }, [apiKey, usdBrlRate, reloadToken]);
-
-  // Ao voltar o foco da janela, relê a lista (o trade lock e a idade dependem do horário atual).
-  useEffect(() => {
-    const onFocus = () => reload();
-    window.addEventListener('focus', onFocus);
-    return () => window.removeEventListener('focus', onFocus);
-  }, [reload]);
+    useItemDialogs(stores);
 
   const setFilters = useCallback(
     (next: Filters) => {

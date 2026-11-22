@@ -1,11 +1,14 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useCallback, useState } from 'react';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import StoreFormModal from '@/components/StoreFormModal';
 import StoresTable from '@/components/StoresTable';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
+import { queryKeys } from '@/lib/queryKeys';
+import { useInvalidate } from '@/lib/useInvalidate';
 import { ApiRequestError, deleteStore, listStores, updateStore } from '@/services/api';
 import type { Store } from '@/types/api';
 import styles from './page.module.css';
@@ -18,35 +21,20 @@ export default function StoresPage() {
   const tPlural = useTPlural();
   const language = useLanguage();
 
-  const [stores, setStores] = useState<Store[] | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<unknown>(null);
-  const [reloadToken, setReloadToken] = useState(0);
+  const invalidate = useInvalidate();
+  const query = useQuery({ queryKey: queryKeys.stores.all, queryFn: ({ signal }) => listStores(signal) });
+  const stores = query.data ?? null;
+  const error = query.error ?? null;
+  const loading = query.isFetching;
+  const reload = () => {
+    query.refetch();
+  };
   const [dialog, setDialog] = useState<Dialog | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
   const [confirmBusy, setConfirmBusy] = useState(false);
   const [confirmError, setConfirmError] = useState<string | null>(null);
-
-  const reload = useCallback(() => setReloadToken((n) => n + 1), []);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    setLoading(true);
-    listStores(controller.signal)
-      .then((list) => {
-        setStores(list);
-        setError(null);
-        setLoading(false);
-      })
-      .catch((err: unknown) => {
-        if (controller.signal.aborted || (err instanceof ApiRequestError && err.code === 'ABORTED')) return;
-        setError(err);
-        setLoading(false);
-      });
-    return () => controller.abort();
-  }, [reloadToken]);
 
   const closeDialog = useCallback(() => {
     setDialog(null);
@@ -59,12 +47,14 @@ export default function StoresPage() {
       closeDialog();
       setNotice(message);
       setActionError(null);
-      reload();
     },
-    [closeDialog, reload],
+    [closeDialog],
   );
 
-  const storeGone = useCallback(() => finish(t('stores.storeGone')), [finish, t]);
+  const storeGone = useCallback(() => {
+    invalidate('store.delete');
+    finish(t('stores.storeGone'));
+  }, [finish, invalidate, t]);
 
   // Ativar/desativar e "tornar principal" não pedem confirmação: são reversíveis.
   const runInline = (store: Store, body: { isActive: boolean } | { isPrimary: true }, message: string) => {
@@ -74,7 +64,7 @@ export default function StoresPage() {
       .then(() => {
         setBusyId(null);
         setNotice(message);
-        reload();
+        invalidate('store.update');
       })
       .catch((err: unknown) => {
         setBusyId(null);
@@ -83,7 +73,7 @@ export default function StoresPage() {
           return;
         }
         setActionError(errorMessageFor(err, tLoose, language));
-        reload();
+        invalidate('store.update');
       });
   };
 
@@ -99,7 +89,10 @@ export default function StoresPage() {
     setConfirmBusy(true);
     setConfirmError(null);
     deleteStore(store.id)
-      .then(() => finish(t('stores.deleted', { name: store.name })))
+      .then(() => {
+        invalidate('store.delete');
+        finish(t('stores.deleted', { name: store.name }));
+      })
       .catch((err: unknown) => {
         if (err instanceof ApiRequestError && err.code === 'STORE_NOT_FOUND') {
           storeGone();

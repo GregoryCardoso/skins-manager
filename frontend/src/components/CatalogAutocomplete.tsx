@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
 import { formatDate } from '@/lib/format';
+import { useInvalidate } from '@/lib/useInvalidate';
 import { ApiRequestError, MIN_CATALOG_QUERY_LENGTH, refreshCatalog, searchCatalog } from '@/services/api';
 import type { CatalogItem, Category } from '@/types/api';
 import styles from './CatalogAutocomplete.module.css';
@@ -35,6 +36,7 @@ export default function CatalogAutocomplete({ label, fixedCategory, error, autoF
   const t = useT();
   const tLoose = useTLoose();
   const language = useLanguage();
+  const invalidate = useInvalidate();
   const listId = useId();
   const [query, setQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<Category | ''>('');
@@ -125,6 +127,7 @@ export default function CatalogAutocomplete({ label, fixedCategory, error, autoF
     setSearchError(null);
     refreshCatalog()
       .then((res) => {
+        invalidate('catalog.refresh');
         if (!mounted.current) return;
         const date = formatDate(res.catalogUpdatedAt ?? new Date().toISOString(), language);
         setRefreshNote(t('itemForm.catalogRefreshed', { date }));

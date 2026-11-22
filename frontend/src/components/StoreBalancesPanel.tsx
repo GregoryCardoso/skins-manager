@@ -1,11 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useCallback, useState } from 'react';
 import pageStyles from '@/app/profit/page.module.css';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import { formatDate, formatMoney } from '@/lib/format';
-import { ApiRequestError, getCurrentStoreBalances } from '@/services/api';
+import { queryKeys } from '@/lib/queryKeys';
+import { getCurrentStoreBalances } from '@/services/api';
 import type { Currency, CurrentStoreBalances, StoreBalanceSummary } from '@/types/api';
 import { Badge } from './badges';
 import { useMoneyLine } from './MoneyApprox';
@@ -119,51 +121,29 @@ function StoreRow({ store, onCheck, onHistory }: {
 
 // Seção Saldos da página Lucro real (8.6, D246, D247): saldo calculado (disponível + pendente) por loja,
 // "última conferência há X dias", detalhes e histórico, tudo vindo pronto do backend. Os totais ficam no topo (D255). Carrega os próprios dados.
-// `reloadKey`: a página o incrementa quando algo externo (aportes, saques, itens) muda, para o saldo atualizar sem F5.
-export default function StoreBalancesPanel({ onDataChanged, reloadKey = 0 }: { onDataChanged?: () => void; reloadKey?: number }) {
+// A consulta é invalidada por qualquer ação que mude aportes, saques, itens, lojas ou conferências (D259).
+export default function StoreBalancesPanel() {
   const t = useT();
   const tLoose = useTLoose();
   const tPlural = useTPlural();
   const language = useLanguage();
   const moneyLine = useMoneyLine();
 
-  const [data, setData] = useState<CurrentStoreBalances | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<unknown>(null);
-  const [reloadToken, setReloadToken] = useState(0);
+  const query = useQuery({ queryKey: queryKeys.storeBalances.current, queryFn: ({ signal }) => getCurrentStoreBalances(signal) });
+  const data = query.data ?? null;
+  const error = query.error ?? null;
+  const loading = query.isFetching;
   const [dialog, setDialog] = useState<Dialog | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  const reload = useCallback(() => setReloadToken((n) => n + 1), []);
-  // Mudança de saldo: recarrega o painel e avisa a página (o resumo do topo depende dos saldos).
-  const changed = useCallback(() => {
-    setReloadToken((n) => n + 1);
-    onDataChanged?.();
-  }, [onDataChanged]);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    setLoading(true);
-    getCurrentStoreBalances(controller.signal)
-      .then((current) => {
-        setData(current);
-        setError(null);
-        setLoading(false);
-      })
-      .catch((err: unknown) => {
-        if (controller.signal.aborted || (err instanceof ApiRequestError && err.code === 'ABORTED')) return;
-        setError(err);
-        setLoading(false);
-      });
-    return () => controller.abort();
-  }, [reloadToken, reloadKey]);
-
+  const reload = () => {
+    query.refetch();
+  };
   const closeDialog = useCallback(() => setDialog(null), []);
   const saved = useCallback((message: string) => {
     setDialog(null);
     setNotice(message);
-    changed();
-  }, [changed]);
+  }, []);
 
   const nonWithdrawable = data ? data.totals.nonWithdrawableUsdCents : null;
   const hasNonWithdrawable = data !== null && data.stores.some((store) => !store.allowsWithdrawal);
@@ -244,7 +224,7 @@ export default function StoreBalancesPanel({ onDataChanged, reloadKey = 0 }: { o
       )}
 
       {dialog?.kind === 'check' && <StoreBalanceFormModal store={dialog.store} onClose={closeDialog} onSaved={saved} />}
-      {dialog?.kind === 'history' && <StoreBalanceHistory store={dialog.store} onClose={closeDialog} onChanged={changed} />}
+      {dialog?.kind === 'history' && <StoreBalanceHistory store={dialog.store} onClose={closeDialog} />}
     </section>
   );
 }

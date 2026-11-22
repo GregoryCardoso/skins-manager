@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useCallback, useState } from 'react';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import DepositFormModal from '@/components/DepositFormModal';
 import DepositsTable from '@/components/DepositsTable';
@@ -11,8 +12,10 @@ import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import { useMoneyLine } from '@/components/MoneyApprox';
 import { formatDate, formatMoney } from '@/lib/format';
+import { queryKeys } from '@/lib/queryKeys';
+import { useInvalidate } from '@/lib/useInvalidate';
 import { ApiRequestError, deleteDeposit, listDeposits, listStores } from '@/services/api';
-import type { Deposit, DepositList, Store } from '@/types/api';
+import type { Deposit } from '@/types/api';
 import styles from './page.module.css';
 
 type Dialog = { kind: 'create' } | { kind: 'edit'; deposit: Deposit } | { kind: 'delete'; deposit: Deposit };
@@ -30,43 +33,22 @@ export default function ProfitPage() {
     return deposit.amountBrlCents === null ? '' : formatMoney(deposit.amountBrlCents, 'BRL', language);
   };
 
-  const [data, setData] = useState<DepositList | null>(null);
-  const [stores, setStores] = useState<Store[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<unknown>(null);
-  const [reloadToken, setReloadToken] = useState(0);
-  // Qualquer mudança em aportes, saques ou saldos recarrega o resumo do topo.
-  const [summaryToken, setSummaryToken] = useState(0);
-  const refreshSummary = useCallback(() => setSummaryToken((n) => n + 1), []);
-  const [balancesToken, setBalancesToken] = useState(0);
-  const withdrawalsChanged = useCallback(() => {
-    setSummaryToken((n) => n + 1);
-    setBalancesToken((n) => n + 1);
-  }, []);
+  const invalidate = useInvalidate();
+  // Aportes e lojas vêm do cache compartilhado; o que muda (aportes, saques, saldos, itens) o invalida (D259, D260).
+  const depositsQuery = useQuery({ queryKey: queryKeys.deposits.all, queryFn: ({ signal }) => listDeposits(signal) });
+  const storesQuery = useQuery({ queryKey: queryKeys.stores.all, queryFn: ({ signal }) => listStores(signal) });
+  const data = depositsQuery.data ?? null;
+  const stores = storesQuery.data ?? [];
+  const error = depositsQuery.error ?? storesQuery.error;
+  const loading = depositsQuery.isFetching || storesQuery.isFetching;
+  const reload = () => {
+    depositsQuery.refetch();
+    storesQuery.refetch();
+  };
   const [dialog, setDialog] = useState<Dialog | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [confirmBusy, setConfirmBusy] = useState(false);
   const [confirmError, setConfirmError] = useState<string | null>(null);
-
-  const reload = useCallback(() => setReloadToken((n) => n + 1), []);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    setLoading(true);
-    Promise.all([listDeposits(controller.signal), listStores(controller.signal)])
-      .then(([list, storeList]) => {
-        setData(list);
-        setStores(storeList);
-        setError(null);
-        setLoading(false);
-      })
-      .catch((err: unknown) => {
-        if (controller.signal.aborted || (err instanceof ApiRequestError && err.code === 'ABORTED')) return;
-        setError(err);
-        setLoading(false);
-      });
-    return () => controller.abort();
-  }, [reloadToken]);
 
   const closeDialog = useCallback(() => {
     setDialog(null);
@@ -78,19 +60,24 @@ export default function ProfitPage() {
     (message: string) => {
       closeDialog();
       setNotice(message);
-      reload();
-      refreshSummary();
     },
-    [closeDialog, reload, refreshSummary],
+    [closeDialog],
   );
 
-  const depositGone = useCallback(() => finish(t('deposits.gone')), [finish, t]);
+  // Já excluído em outro lugar: só atualiza as telas.
+  const depositGone = useCallback(() => {
+    invalidate('deposit.delete');
+    finish(t('deposits.gone'));
+  }, [finish, invalidate, t]);
 
   const confirmDelete = (deposit: Deposit) => {
     setConfirmBusy(true);
     setConfirmError(null);
     deleteDeposit(deposit.id)
-      .then(() => finish(t('deposits.deleted', { value: depositValueText(deposit) })))
+      .then(() => {
+        invalidate('deposit.delete');
+        finish(t('deposits.deleted', { value: depositValueText(deposit) }));
+      })
       .catch((err: unknown) => {
         if (err instanceof ApiRequestError && err.code === 'DEPOSIT_NOT_FOUND') {
           depositGone();
@@ -106,7 +93,7 @@ export default function ProfitPage() {
       <h1>{t('profit.title')}</h1>
       <p className={styles.subtitle}>{t('profit.subtitle')}</p>
 
-      <SummaryCards reloadKey={summaryToken} />
+      <SummaryCards />
 
       <section className={styles.section} aria-labelledby="deposits-heading">
         <div className={styles.titleRow}>
@@ -162,9 +149,9 @@ export default function ProfitPage() {
         )}
       </section>
 
-      <WithdrawalsSection onDataChanged={withdrawalsChanged} />
+      <WithdrawalsSection />
 
-      <StoreBalancesPanel onDataChanged={refreshSummary} reloadKey={balancesToken} />
+      <StoreBalancesPanel />
 
       {dialog?.kind === 'create' && <DepositFormModal stores={stores} onClose={closeDialog} onSaved={finish} onGone={depositGone} />}
       {dialog?.kind === 'edit' && (

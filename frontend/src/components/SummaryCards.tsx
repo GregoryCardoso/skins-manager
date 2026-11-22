@@ -1,43 +1,26 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import pageStyles from '@/app/profit/page.module.css';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import { describeFxRate } from '@/lib/fxDisplay';
 import { formatDate, formatPercent } from '@/lib/format';
 import MoneyApprox, { useMoneyLine } from './MoneyApprox';
-import { ApiRequestError, getProfitSummary } from '@/services/api';
+import { queryKeys } from '@/lib/queryKeys';
+import { getProfitSummary } from '@/services/api';
 import type { ProfitSummary } from '@/types/api';
 import styles from './SummaryCards.module.css';
 
-interface Props {
-  // Muda quando aportes, saques ou saldos são alterados: o resumo é recarregado.
-  reloadKey: number;
-}
-
 // Resumo do lucro real em USD (8.5, D226, D229, D231). Tudo vem pronto do backend, inclusive o "≈ R$": o frontend só formata e traduz.
-export default function SummaryCards({ reloadKey }: Props) {
+// A consulta `profitSummary` é invalidada por qualquer ação que mude aportes, saques, saldos, itens ou lojas (D259).
+export default function SummaryCards() {
   const t = useT();
   const tLoose = useTLoose();
   const language = useLanguage();
-  const [data, setData] = useState<ProfitSummary | null>(null);
-  const [error, setError] = useState<unknown>(null);
-  const [retryToken, setRetryToken] = useState(0);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    getProfitSummary(controller.signal)
-      .then((summary) => {
-        setData(summary);
-        setError(null);
-      })
-      .catch((err: unknown) => {
-        if (controller.signal.aborted || (err instanceof ApiRequestError && err.code === 'ABORTED')) return;
-        setError(err);
-      });
-    return () => controller.abort();
-  }, [reloadKey, retryToken]);
+  const query = useQuery({ queryKey: queryKeys.profitSummary.all, queryFn: ({ signal }) => getProfitSummary(signal) });
+  const data = query.data ?? null;
+  const error = query.error ?? null;
 
   return (
     <section className={styles.wrap} aria-labelledby="summary-heading">
@@ -46,7 +29,7 @@ export default function SummaryCards({ reloadKey }: Props) {
       {error !== null && (
         <div className={pageStyles.error} role="alert">
           <p>{t('profit.summary.loadError', { reason: errorMessageFor(error, tLoose, language) })}</p>
-          <button type="button" className={pageStyles.retry} onClick={() => setRetryToken((n) => n + 1)}>{t('common.retry')}</button>
+          <button type="button" className={pageStyles.retry} onClick={() => query.refetch()}>{t('common.retry')}</button>
         </div>
       )}
 

@@ -1,14 +1,17 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useCallback, useState } from 'react';
 import styles from '@/app/profit/page.module.css';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import { formatDate } from '@/lib/format';
+import { queryKeys } from '@/lib/queryKeys';
+import { useInvalidate } from '@/lib/useInvalidate';
 import { withdrawalAmountText, withdrawalStoreOptions } from '@/lib/withdrawalForm';
 import { ApiRequestError, deleteWithdrawal, listStores, listWithdrawals } from '@/services/api';
-import type { Store, Withdrawal, WithdrawalList } from '@/types/api';
+import type { Withdrawal } from '@/types/api';
 import ConfirmDialog from './ConfirmDialog';
 import { useMoneyLine } from './MoneyApprox';
 import WithdrawalFormModal from './WithdrawalFormModal';
@@ -17,42 +20,28 @@ import WithdrawalsTable from './WithdrawalsTable';
 type Dialog = { kind: 'create' } | { kind: 'edit'; withdrawal: Withdrawal } | { kind: 'delete'; withdrawal: Withdrawal };
 
 // Seção Saques da página Lucro real (8.2): lista, cadastro, edição e exclusão. Carrega os próprios dados.
-export default function WithdrawalsSection({ onDataChanged }: { onDataChanged?: () => void }) {
+export default function WithdrawalsSection() {
   const t = useT();
   const tLoose = useTLoose();
   const tPlural = useTPlural();
   const language = useLanguage();
   const moneyLine = useMoneyLine();
 
-  const [data, setData] = useState<WithdrawalList | null>(null);
-  const [stores, setStores] = useState<Store[] | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<unknown>(null);
-  const [reloadToken, setReloadToken] = useState(0);
+  const invalidate = useInvalidate();
+  const withdrawalsQuery = useQuery({ queryKey: queryKeys.withdrawals.all, queryFn: ({ signal }) => listWithdrawals(signal) });
+  const storesQuery = useQuery({ queryKey: queryKeys.stores.all, queryFn: ({ signal }) => listStores(signal) });
+  const data = withdrawalsQuery.data ?? null;
+  const stores = storesQuery.data ?? null;
+  const error = withdrawalsQuery.error ?? storesQuery.error;
+  const loading = withdrawalsQuery.isFetching || storesQuery.isFetching;
+  const reload = () => {
+    withdrawalsQuery.refetch();
+    storesQuery.refetch();
+  };
   const [dialog, setDialog] = useState<Dialog | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [confirmBusy, setConfirmBusy] = useState(false);
   const [confirmError, setConfirmError] = useState<string | null>(null);
-
-  const reload = useCallback(() => setReloadToken((n) => n + 1), []);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    setLoading(true);
-    Promise.all([listWithdrawals(controller.signal), listStores(controller.signal)])
-      .then(([list, storeList]) => {
-        setData(list);
-        setStores(storeList);
-        setError(null);
-        setLoading(false);
-      })
-      .catch((err: unknown) => {
-        if (controller.signal.aborted || (err instanceof ApiRequestError && err.code === 'ABORTED')) return;
-        setError(err);
-        setLoading(false);
-      });
-    return () => controller.abort();
-  }, [reloadToken]);
 
   const closeDialog = useCallback(() => {
     setDialog(null);
@@ -64,19 +53,24 @@ export default function WithdrawalsSection({ onDataChanged }: { onDataChanged?: 
     (message: string) => {
       closeDialog();
       setNotice(message);
-      reload();
-      onDataChanged?.();
     },
-    [closeDialog, reload, onDataChanged],
+    [closeDialog],
   );
 
-  const gone = useCallback(() => finish(t('withdrawals.gone')), [finish, t]);
+  // Já excluído em outro lugar: só atualiza as telas.
+  const gone = useCallback(() => {
+    invalidate('withdrawal.delete');
+    finish(t('withdrawals.gone'));
+  }, [finish, invalidate, t]);
 
   const confirmDelete = (withdrawal: Withdrawal) => {
     setConfirmBusy(true);
     setConfirmError(null);
     deleteWithdrawal(withdrawal.id)
-      .then(() => finish(t('withdrawals.deleted', { value: withdrawalAmountText(withdrawal, language) })))
+      .then(() => {
+        invalidate('withdrawal.delete');
+        finish(t('withdrawals.deleted', { value: withdrawalAmountText(withdrawal, language) }));
+      })
       .catch((err: unknown) => {
         if (err instanceof ApiRequestError && err.code === 'WITHDRAWAL_NOT_FOUND') {
           gone();

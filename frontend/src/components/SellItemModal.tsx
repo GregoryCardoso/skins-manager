@@ -11,6 +11,7 @@ import {
   applySaleStore, buildSellBody, feesConfigured, initialSellState, needsFx, netTextFromQuote, priceLabelKey,
   recalculate, referenceFor, type SellContext, type SellFormState,
 } from '@/lib/sellForm';
+import { useInvalidate } from '@/lib/useInvalidate';
 import { ApiRequestError, getSaleQuote, sellItem } from '@/services/api';
 import type { ItemView, Store } from '@/types/api';
 import { Badge } from './badges';
@@ -35,6 +36,7 @@ export default function SellItemModal({ item, stores, onClose, onSold, onGone }:
   const t = useT();
   const tLoose = useTLoose();
   const language = useLanguage();
+  const invalidate = useInvalidate();
   const { usdBrlRate } = usePreferences();
   const ctx: SellContext = useMemo(() => ({ stores, usdBrlRate, language }), [stores, usdBrlRate, language]);
 
@@ -119,6 +121,7 @@ export default function SellItemModal({ item, stores, onClose, onSold, onGone }:
           ? t('common.none')
           : formatMoney(result.sale.saleProfitUsdCents, 'USD', language);
         const note = result.sale.netReceivedManual ? ` ${t('sellForm.manualNetNote')}` : '';
+        invalidate('item.sell');
         onSold(`${t('sellForm.success', { net, profit })}${note}`);
       })
       .catch((err: unknown) => {

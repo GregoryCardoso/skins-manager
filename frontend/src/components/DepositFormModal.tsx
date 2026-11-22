@@ -9,6 +9,7 @@ import {
 } from '@/lib/depositForm';
 import { resolveErrorTarget } from '@/lib/formErrors';
 import { formatMoney } from '@/lib/format';
+import { useInvalidate } from '@/lib/useInvalidate';
 import { ApiRequestError, createDeposit, updateDeposit } from '@/services/api';
 import type { Deposit, Store } from '@/types/api';
 import Link from 'next/link';
@@ -32,6 +33,7 @@ export default function DepositFormModal({ deposit, stores, onClose, onSaved, on
   const tLoose = useTLoose();
   const language = useLanguage();
   const editing = deposit !== undefined;
+  const invalidate = useInvalidate();
 
   const [state, setState] = useState<DepositFormState>(() => (deposit ? depositFormFromDeposit(deposit, language) : initialDepositState()));
   const [errors, setErrors] = useState<Partial<Record<string, string>>>({});
@@ -78,7 +80,10 @@ export default function DepositFormModal({ deposit, stores, onClose, onSaved, on
       }
       setSaving(true);
       updateDeposit(deposit.id, body)
-        .then(() => onSaved(t('deposits.updated')))
+        .then(() => {
+          invalidate('deposit.update');
+          onSaved(t('deposits.updated'));
+        })
         .catch((err: unknown) => {
           setSaving(false);
           showApiError(err);
@@ -87,7 +92,10 @@ export default function DepositFormModal({ deposit, stores, onClose, onSaved, on
     }
     setSaving(true);
     createDeposit(buildDepositCreateBody(state, language))
-      .then((saved) => onSaved(t('deposits.created', { value: saved.amountStoreCents === null ? '' : formatMoney(saved.amountStoreCents, 'USD', language) })))
+      .then((saved) => {
+        invalidate('deposit.create');
+        onSaved(t('deposits.created', { value: saved.amountStoreCents === null ? '' : formatMoney(saved.amountStoreCents, 'USD', language) }));
+      })
       .catch((err: unknown) => {
         setSaving(false);
         showApiError(err);

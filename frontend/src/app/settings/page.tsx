@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import AboutSettings from '@/components/AboutSettings';
 import AgingSettings from '@/components/AgingSettings';
 import BackupSettings from '@/components/BackupSettings';
@@ -9,33 +9,17 @@ import FxRateSettings from '@/components/FxRateSettings';
 import PreferencesSettings from '@/components/PreferencesSettings';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
-import { usePreferences } from '@/components/PreferencesProvider';
-import { ApiRequestError, getSettings } from '@/services/api';
-import type { Settings } from '@/types/api';
+import { queryKeys } from '@/lib/queryKeys';
+import { getSettings } from '@/services/api';
 import styles from './page.module.css';
 
 export default function SettingsPage() {
   const t = useT();
   const tLoose = useTLoose();
   const language = useLanguage();
-  const [settings, setSettings] = useState<Settings | null>(null);
-  const [error, setError] = useState<unknown>(null);
-  const [reloadToken, setReloadToken] = useState(0);
-  const { reloadFxRate } = usePreferences();
-
-  useEffect(() => {
-    const controller = new AbortController();
-    getSettings(controller.signal)
-      .then((data) => {
-        setSettings(data);
-        setError(null);
-      })
-      .catch((err: unknown) => {
-        if (controller.signal.aborted || (err instanceof ApiRequestError && err.code === 'ABORTED')) return;
-        setError(err);
-      });
-    return () => controller.abort();
-  }, [reloadToken]);
+  const query = useQuery({ queryKey: queryKeys.settings.all, queryFn: ({ signal }) => getSettings(signal) });
+  const settings = query.data ?? null;
+  const error = query.error ?? null;
 
   return (
     <>
@@ -45,8 +29,7 @@ export default function SettingsPage() {
         <div className={styles.error} role="alert">
           <p>{t('settings.loadError', { reason: errorMessageFor(error, tLoose, language) })}</p>
           <button type="button" className={styles.retry} onClick={() => {
-              reloadFxRate();
-              setReloadToken((n) => n + 1);
+              query.refetch();
             }}>
             {t('common.retry')}
           </button>
@@ -57,7 +40,7 @@ export default function SettingsPage() {
 
       <FxRateSettings />
       <PreferencesSettings />
-      {settings && <AgingSettings settings={settings} onSaved={setSettings} />}
+      {settings && <AgingSettings settings={settings} />}
       <CatalogSettings />
       <BackupSettings />
       <AboutSettings />
