@@ -58,6 +58,7 @@ export default function FxRateSettings() {
     refreshFxRate()
       .then((result) => {
         setTouched(false);
+        if (!result.quote) return; // o botão manual sempre traz a cotação; só a atualização ao abrir é pulada
         setOk(
           t('settings.fx.refreshed', {
             source: tLoose(`fx.sourceName.${result.quote.source}`),
@@ -111,6 +112,10 @@ export default function FxRateSettings() {
           <option value="AWESOMEAPI">{t('settings.fx.refreshSource.AWESOMEAPI')}</option>
           <option value="PTAX">{t('settings.fx.refreshSource.PTAX')}</option>
         </select>
+        {/* D338: com uma fonte automática, a cotação é atualizada sozinha ao abrir o app; a digitada à mão, não. */}
+        <p className={styles.muted} data-testid="fx-auto-refresh-hint">
+          {fxSource === 'MANUAL' ? t('settings.fx.autoRefreshPausedManual') : t('settings.fx.autoRefreshHint')}
+        </p>
       </div>
 
       <form className={styles.form} onSubmit={onSave}>

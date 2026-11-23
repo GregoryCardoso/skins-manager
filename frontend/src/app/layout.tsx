@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import AppHeader from '@/components/AppHeader';
 import CsfloatAutoImportHost from '@/components/CsfloatAutoImportHost';
+import FxAutoRefreshHost from '@/components/FxAutoRefreshHost';
 import DesktopUpdateHost from '@/components/DesktopUpdateHost';
 import { PreferencesProvider } from '@/components/PreferencesProvider';
 import QueryProvider from '@/components/QueryProvider';
@@ -28,6 +29,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               <main>{children}</main>
               <DesktopUpdateHost />
               <CsfloatAutoImportHost />
+              <FxAutoRefreshHost />
             </I18nProvider>
           </PreferencesProvider>
         </QueryProvider>

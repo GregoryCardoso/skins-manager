@@ -788,7 +788,7 @@
       "manualLabel": "Manual rate",
       "save": "Save rate",
       "saved": "Rate saved (manual).",
-      "refreshSourceLabel": "Source of the \"Update rate\" button",
+      "refreshSourceLabel": "Automatic rate source (\"Update rate\" button and on app open)",
       "refreshSource": {
         "AWESOMEAPI": "Real-time commercial rate (AwesomeAPI) — default, close to CSFloat/Google",
         "PTAX": "Central Bank PTAX — official, once a day"
@@ -797,7 +797,11 @@
       "refresh": "Update rate",
       "refreshing": "Querying the rate...",
       "refreshed": "Rate updated ({source}): US$ 1 = {rate}.",
-      "note": "The rate is only queried when you click the button and is saved right away. Rates already stored on items do not change."
+      "note": "The rate is only queried when you click the button and is saved right away. Rates already stored on items do not change.",
+      "autoRefreshHint": "With this source, the rate is updated by itself every time the app opens (once per opening). If you type the rate by hand, it takes effect and is no longer updated on opening, until you click \"Update rate\".",
+      "autoRefreshPausedManual": "The current rate was typed by hand, so it is not updated when the app opens. Click \"Update rate\" to use the source above again; from then on, it is updated by itself every time the app opens.",
+      "autoFailed": "Could not update the rate when opening the app: {reason}",
+      "autoFailedWithRate": "Could not update the rate when opening the app ({reason}). Using the last one: {rate}."
     },
     "preferences": {
       "title": "Preferences",

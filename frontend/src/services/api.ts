@@ -301,8 +301,9 @@ export const updateFxRate = (usdBrlRate: number) =>
 
 // Atualiza a cotação pela fonte salva (D162; AwesomeAPI ou PTAX, até 20 s no backend); salva direto.
 // Corpo `{}` JSON obrigatório.
-export const refreshFxRate = () =>
-  request<FxRefreshResult>('POST', '/settings/fx-rate/refresh', { body: {}, timeoutMs: 30000 });
+// `trigger: 'AUTO'` = ao abrir o app (D338): uma vez por processo e nunca sobre a cotação digitada à mão (devolve `skipped`).
+export const refreshFxRate = (body: { trigger?: 'MANUAL' | 'AUTO' } = {}) =>
+  request<FxRefreshResult>('POST', '/settings/fx-rate/refresh', { body, timeoutMs: 30000 });
 
 // "Não está à venda" e "Colocar à venda" (D265): a data é a do servidor; o corpo é `{}` (JSON obrigatório).
 export const markItemOffSale = (id: number) => request<{ item: ItemView }>('POST', `/items/${id}/off-sale`, { body: {} });

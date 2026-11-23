@@ -788,7 +788,7 @@
       "manualLabel": "Cotação manual",
       "save": "Salvar cotação",
       "saved": "Cotação salva (manual).",
-      "refreshSourceLabel": "Fonte do botão \"Atualizar cotação\"",
+      "refreshSourceLabel": "Fonte da cotação automática (botão \"Atualizar cotação\" e ao abrir o app)",
       "refreshSource": {
         "AWESOMEAPI": "Comercial em tempo real (AwesomeAPI) — padrão, próxima da CSFloat/Google",
         "PTAX": "PTAX do Banco Central — oficial, 1 vez por dia"
@@ -797,7 +797,11 @@
       "refresh": "Atualizar cotação",
       "refreshing": "Consultando a cotação...",
       "refreshed": "Cotação atualizada ({source}): US$ 1 = {rate}.",
-      "note": "A cotação só é consultada quando você clica no botão e é salva na hora. Cotações já gravadas em itens não mudam."
+      "note": "A cotação só é consultada quando você clica no botão e é salva na hora. Cotações já gravadas em itens não mudam.",
+      "autoRefreshHint": "Com esta fonte, a cotação é atualizada sozinha sempre que o app é aberto (uma vez por abertura). Se você digitar a cotação à mão, ela passa a valer e não é mais atualizada ao abrir, até você clicar em \"Atualizar cotação\".",
+      "autoRefreshPausedManual": "A cotação atual foi digitada à mão, então ela não é atualizada ao abrir o app. Clique em \"Atualizar cotação\" para voltar a usar a fonte acima; a partir daí, ela é atualizada sozinha sempre que o app é aberto.",
+      "autoFailed": "Não foi possível atualizar a cotação ao abrir o app: {reason}",
+      "autoFailedWithRate": "Não foi possível atualizar a cotação ao abrir o app ({reason}). Usando a última: {rate}."
     },
     "preferences": {
       "title": "Preferências",

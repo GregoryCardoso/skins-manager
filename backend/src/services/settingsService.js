@@ -90,7 +90,27 @@ function isFxRefreshInProgress() {
   return fxRefreshInProgress;
 }
 
-async function refreshFxRate({ fetchFn = globalThis.fetch, now = new Date(), timeouts } = {}) {
+// Atualização ao abrir o app (D338): no máximo uma por processo do backend (um F5 não repete; vale no desktop e no
+// start-app.bat). Pula em silêncio, sem chamar a fonte, quando a cotação gravada foi digitada à mão (origem MANUAL: nunca é
+// sobrescrita) ou quando já há uma atualização em andamento. Erro de rede ou da fonte: nada é gravado (fica a cotação anterior).
+let autoFxAttempted = false;
+const resetAutoFxForTests = () => {
+  autoFxAttempted = false;
+};
+
+function autoFxSkipReason() {
+  if (autoFxAttempted) return 'ALREADY_RAN';
+  if (Setting.get().usdBrlRateSource === 'MANUAL') return 'MANUAL_RATE';
+  if (fxRefreshInProgress) return 'BUSY';
+  return null;
+}
+
+async function refreshFxRate({ fetchFn = globalThis.fetch, now = new Date(), timeouts, trigger = 'MANUAL' } = {}) {
+  if (trigger === 'AUTO') {
+    const skipped = autoFxSkipReason();
+    if (skipped) return { settings: getSettings(), quote: null, skipped };
+    autoFxAttempted = true; // conta como "a" automática do processo, mesmo que falhe
+  }
   const source = Setting.get().fxRefreshSource;
   if (fxRefreshInProgress) {
     throw new ConflictError('Já existe uma atualização da cotação em andamento.', 'FX_REFRESH_IN_PROGRESS', {
@@ -197,6 +217,7 @@ function updatePreferences(partial, { now = new Date() } = {}) {
 }
 
 module.exports = {
+  resetAutoFxForTests,
   getSettings,
   getAgingThresholds,
   updateFxRate,

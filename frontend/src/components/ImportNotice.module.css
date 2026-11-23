@@ -11,3 +11,5 @@
 .link { background: none; border: none; padding: 0; color: var(--accent); cursor: pointer; font: inherit; text-decoration: underline; }
 .close { background: none; border: none; cursor: pointer; font-size: 1.1rem; line-height: 1; color: var(--text-muted); padding: 0 0.2rem; }
 .notice { flex-wrap: wrap; }
+/* Aviso da cotação (D338): no canto esquerdo, para não cobrir o da importação. */
+.left { right: auto; left: 1rem; }

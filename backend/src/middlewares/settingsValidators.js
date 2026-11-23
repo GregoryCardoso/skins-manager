@@ -33,11 +33,16 @@ function validatePreferencesBody(req, res, next) {
 }
 
 // POST /api/settings/fx-rate/refresh (D147, D162): corpo `{}` e Content-Type JSON obrigatório.
+// POST fx-rate/refresh: `{}` (botão "atualizar cotação") ou `{ trigger: 'AUTO' }` (ao abrir o app, D338).
 function validateFxRefreshBody(req, res, next) {
   requireJsonContentType(req);
   const body = req.body === undefined ? {} : req.body;
   if (!isPlainObject(body)) throw invalidBody('O corpo da requisição deve ser um objeto JSON.');
-  rejectUnknownFields(body, []);
+  rejectUnknownFields(body, ['trigger']);
+  if (body.trigger !== undefined && !['MANUAL', 'AUTO'].includes(body.trigger)) {
+    throw new ValidationError('trigger deve ser MANUAL ou AUTO.', 'INVALID_FIELD', { field: 'trigger' });
+  }
+  req.body = body;
   return next();
 }
 

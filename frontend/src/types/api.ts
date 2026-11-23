@@ -82,7 +82,10 @@ export interface PreferencesPatch {
 // Resposta de POST /settings/fx-rate/refresh (D162): cotação da fonte salva em `fxRefreshSource`.
 export interface FxRefreshResult {
   settings: Settings;
-  quote: { source: FxRefreshSource; rate: number; buyRate: number | null; sellRate: number; quotedAt: string };
+  // Nulo quando a atualização ao abrir o app foi pulada (`skipped`).
+  quote: { source: FxRefreshSource | null; rate: number; buyRate: number | null; sellRate: number; quotedAt: string } | null;
+  // Atualização ao abrir o app (D338) que não rodou: já rodou neste processo, cotação digitada à mão ou outra em andamento.
+  skipped?: 'ALREADY_RAN' | 'MANUAL_RATE' | 'BUSY';
 }
 
 // --- Itens, lojas e cotação (4B.2; espelham D49/D72 do backend) ---

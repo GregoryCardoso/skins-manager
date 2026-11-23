@@ -18,6 +18,7 @@ async function refreshFxRate(req, res) {
   const data = await settingsService.refreshFxRate({
     fetchFn: req.app.locals.fetchFn,
     now: req.app.locals.now(),
+    trigger: req.body && req.body.trigger === 'AUTO' ? 'AUTO' : 'MANUAL',
   });
   res.json({ success: true, data });
 }
