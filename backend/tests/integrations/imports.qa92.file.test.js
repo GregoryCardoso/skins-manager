@@ -216,7 +216,7 @@ describe('BACKUP_BUSY nos dois sentidos', () => {
     await settle();
     const exportedCalls = fetchFn.mock.calls.length;
     // uma exportação em andamento é uma trava de módulo: a mesma que o backupService consulta
-    const spy = jest.spyOn(backupService, 'isBackupBusy').mockReturnValue(true);
+    const spy = jest.spyOn(backupService, 'isExportInProgress').mockReturnValue(true);
     const res = await run({});
     expect(res.status).toBe(409);
     expect(code(res)).toBe('BACKUP_BUSY');

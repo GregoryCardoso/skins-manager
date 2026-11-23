@@ -28,8 +28,8 @@ describe('shouldRunAutoImport', () => {
 });
 
 describe('autoImportNotice', () => {
-  test('nada novo: sem aviso; criados: compras + vendas; senão ligados; senão pendências', () => {
-    expect(autoImportNotice(null)).toBeNull();
+  test('nada novo: aviso curto; criados: compras + vendas; senão ligados; senão pendências', () => {
+    expect(autoImportNotice(null)).toEqual({ kind: 'NOTHING_NEW' });
     expect(autoImportNotice(batch({ purchasesCreated: 2, salesCreated: 1 }))).toEqual({ kind: 'CREATED', count: 3 });
     expect(autoImportNotice(batch({ matched: 2 }))).toEqual({ kind: 'MATCHED', count: 2 });
     expect(autoImportNotice(batch({ reverted: 1 }))).toEqual({ kind: 'ATTENTION' });

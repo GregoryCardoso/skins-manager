@@ -901,8 +901,7 @@
         "switchConfirmBody": "A próxima importação vai perguntar de novo a data de corte, e a importação ao abrir o app fica pausada até lá. Tudo o que já foi lançado continua no app.",
         "switched": "Conta trocada. Conectado como {username}.",
         "switchedNoName": "Conta trocada.",
-        "help": "Onde gerar a chave?",
-        "helpText": "No site do CSFloat, abra o seu perfil e procure a área de desenvolvedor (API) para criar uma chave. O caminho pode mudar no site.",
+        "help": "Como gerar a chave?",
         "privacy": "A chave nunca é mostrada de novo, não vai para os backups e não aparece nos registros do app.",
         "saleFeeMismatch": "Sua taxa de venda no CSFloat é {account}; a loja {store} no app usa {configured}.",
         "withdrawalFeeMismatch": "Sua taxa de saque no CSFloat é {account}; a loja {store} usa {configured} (só serve de sugestão no saque).",
@@ -1445,7 +1444,12 @@
       },
       "attention": "A importação do CSFloat trouxe pendências para conferir.",
       "failed": "Importação automática do CSFloat não concluída: {reason}",
-      "seeSummary": "Ver resumo"
+      "seeSummary": "Ver resumo",
+      "transfers": {
+        "one": "{count} aporte ou saque importado do CSFloat",
+        "other": "{count} aportes e saques importados do CSFloat"
+      },
+      "nothingNew": "CSFloat conferido: nada novo desde a última importação."
     },
     "launch": {
       "title": "Lançar compra",
@@ -1606,5 +1610,31 @@
       "contract_sale_refund": "estorno de venda",
       "rollback": "rollback"
     }
+  },
+  "startup": {
+    "offline": {
+      "title": "Sem conexão com a internet",
+      "intro": "Ao abrir o app não foi possível falar com a internet, então isto não foi atualizado:",
+      "fx": "A cotação do dólar (US$ → R$). O app segue com a última cotação salva.",
+      "csfloat": "A importação do CSFloat (compras, vendas, aportes e saques novos).",
+      "hint": "Nada foi alterado. Quando a conexão voltar, use \"Atualizar cotação\" em Configurações e \"Importar agora\" em Importações.",
+      "ok": "Entendi"
+    }
+  },
+  "csfloatSetup": {
+    "button": "Importar automaticamente",
+    "modalTitle": "Importar automaticamente do CSFloat",
+    "modalBody": "Em vez de digitar, você pode importar suas compras, vendas, aportes e saques direto do CSFloat.",
+    "modalHint": "Para isso, ligue o CSFloat em Configurações: o passo a passo está lá e leva um minuto.",
+    "configure": "Configurar o CSFloat",
+    "later": "Agora não",
+    "title": "Como ligar o CSFloat",
+    "step1": "Entre no CSFloat com a sua conta Steam.",
+    "step2": "Abra o seu perfil e vá na aba \"Developers\".",
+    "step3": "Clique em \"New Key\" e copie a chave.",
+    "step4": "Cole a chave aqui embaixo, clique em \"Salvar chave\" e depois em \"Testar conexão\".",
+    "step5": "Em Importações, escolha a data de corte e importe.",
+    "open": "Abrir o CSFloat",
+    "safety": "A chave dá acesso de leitura à sua conta: não compartilhe com ninguém. Se ela vazar, apague-a no CSFloat e gere outra."
   }
 }

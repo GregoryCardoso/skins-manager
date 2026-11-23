@@ -1,0 +1,12 @@
+/* Passo a passo para ligar o CSFloat (configurações). */
+.guide { border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: 8px; padding: 0.6rem 0.8rem; margin: 0.5rem 0; }
+.title { margin: 0 0 0.3rem; font-weight: 600; }
+.steps { margin: 0.2rem 0 0.4rem; padding-left: 1.3rem; }
+.steps li { margin: 0.15rem 0; }
+.open {
+  display: inline-block; padding: 0.3rem 0.8rem; border: 1px solid var(--accent); border-radius: 6px; color: var(--accent);
+  text-decoration: none;
+}
+.open:hover { background: var(--surface); }
+.safety { margin: 0.4rem 0 0; color: var(--text-muted); font-size: 0.85rem; }
+.details summary { cursor: pointer; color: var(--accent); }

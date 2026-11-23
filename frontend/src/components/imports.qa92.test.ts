@@ -192,12 +192,13 @@ describe('botão "Importar do CSFloat"', () => {
     const ok = render(createElement(ImportButton));
     expect(ok).toContain(translate(ptBR, 'imports.button'));
     expect(ok).not.toContain('disabled');
+    // sem chave ou sem loja: vira "Importar automaticamente" (habilitado), que abre o modal com o caminho das configurações
     const noKey = render(createElement(ImportButton), { ...baseView, hasApiKey: false });
-    expect(noKey).toContain('disabled');
-    expect(noKey).toContain(translate(ptBR, 'imports.disabled.noKey'));
+    expect(noKey).not.toContain('disabled');
+    expect(noKey).toContain(translate(ptBR, 'csfloatSetup.button'));
     const noStore = render(createElement(ImportButton), { ...baseView, storeId: null }, 'en');
-    expect(noStore).toContain('disabled');
-    expect(noStore).toContain(translate(en, 'imports.disabled.noStore').replace(/"/g, '&quot;'));
+    expect(noStore).not.toContain('disabled');
+    expect(noStore).toContain(translate(en, 'csfloatSetup.button'));
     const running = render(createElement(ImportButton), { ...baseView, importInProgress: true });
     expect(running).toContain('disabled');
     expect(running).toContain(translate(ptBR, 'imports.running'));

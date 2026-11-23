@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import AppHeader from '@/components/AppHeader';
 import CsfloatAutoImportHost from '@/components/CsfloatAutoImportHost';
 import FxAutoRefreshHost from '@/components/FxAutoRefreshHost';
+import StartupOfflineModal from '@/components/StartupOfflineModal';
 import DesktopUpdateHost from '@/components/DesktopUpdateHost';
 import { PreferencesProvider } from '@/components/PreferencesProvider';
 import QueryProvider from '@/components/QueryProvider';
@@ -30,6 +31,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               <DesktopUpdateHost />
               <CsfloatAutoImportHost />
               <FxAutoRefreshHost />
+              <StartupOfflineModal />
             </I18nProvider>
           </PreferencesProvider>
         </QueryProvider>

@@ -985,7 +985,7 @@ describe('concorrência e recuperação', () => {
 
   test('importação recusada por BACKUP_BUSY quando há exportação/importação de backup em andamento; nada é lido', async () => {
     const backupService = require('../../src/services/backupService');
-    jest.spyOn(backupService, 'isBackupBusy').mockReturnValue(true);
+    jest.spyOn(backupService, 'isExportInProgress').mockReturnValue(true);
     expectError(await firstRun(), 409, 'BACKUP_BUSY');
     expect(fetchFn).not.toHaveBeenCalled();
     expect(count('import_batches')).toBe(0);

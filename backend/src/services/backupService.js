@@ -83,6 +83,13 @@ function isBackupBusy() {
   return exportInProgress || BUSY_CHECKS.some((check) => check());
 }
 
+// O que impede a importação do CSFloat (revisão da Etapa 9): só a exportação do backup, que é assíncrona (a restauração é
+// síncrona e não intercala). A cotação e o catálogo gravam outras tabelas e não bloqueiam a importação: antes, a cotação
+// buscada ao abrir o app (D338) fazia a importação automática ser pulada em silêncio.
+function isExportInProgress() {
+  return exportInProgress;
+}
+
 // Uma exportação por vez (e nenhuma importação durante ela). Liberada em `cleanup` (fim, erro ou aborto).
 let exportInProgress = false;
 
@@ -311,6 +318,7 @@ module.exports = {
   REQUIRED_COLUMNS,
   hasSqliteSignature,
   isBackupBusy,
+  isExportInProgress,
   createExport,
   importBackup,
 };

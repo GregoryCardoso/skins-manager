@@ -13,13 +13,15 @@ const MONEY: readonly Prefix[] = [
 // O card da integração mostra o nome e as taxas da loja (D316).
 const STORE_CHANGE: readonly Prefix[] = [...MONEY, K.integrations.all];
 const ITEM_MONEY: readonly Prefix[] = [K.items.all, K.sales.all, K.stores.all, K.storeBalances.all, K.profitSummary.all];
-const DEPOSIT: readonly Prefix[] = [K.deposits.all, K.stores.all, K.storeBalances.all, K.profitSummary.all];
-const WITHDRAWAL: readonly Prefix[] = [K.withdrawals.all, K.stores.all, K.storeBalances.all, K.profitSummary.all];
+// Aportes e saques podem vir do CSFloat (9.6): mexer num deles muda as pendências e o card da importação.
+const DEPOSIT: readonly Prefix[] = [K.deposits.all, K.stores.all, K.storeBalances.all, K.profitSummary.all, K.imports.all, K.integrations.all];
+const WITHDRAWAL: readonly Prefix[] = [K.withdrawals.all, K.stores.all, K.storeBalances.all, K.profitSummary.all, K.imports.all, K.integrations.all];
 const CHECK: readonly Prefix[] = [K.storeBalances.all, K.profitSummary.all];
 
 // Importação (9.2, D318): o card, os lotes, as pendências e tudo o que muda com itens. Editar, excluir ou desfazer a venda de um
 // item importado muda o desfazer e as pendências; por isso essas ações também invalidam `imports`.
-const IMPORT_CHANGE: readonly Prefix[] = [K.integrations.all, K.imports.all, ...ITEM_MONEY];
+// Desde a 9.6 a importação também cria e exclui aportes e saques: por isso todo o dinheiro (MONEY).
+const IMPORT_CHANGE: readonly Prefix[] = [K.integrations.all, K.imports.all, ...MONEY];
 const ITEM_IMPORTS: readonly Prefix[] = [...ITEM_MONEY, K.imports.all];
 
 export const INVALIDATION_MAP = {

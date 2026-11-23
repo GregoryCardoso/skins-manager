@@ -12,7 +12,6 @@ const ExternalLink = require('../../models/ExternalLink');
 const Integration = require('../../models/Integration');
 const CatalogItem = require('../../models/CatalogItem');
 const Item = require('../../models/Item');
-const Store = require('../../models/Store');
 const { runInTransaction } = require('../../models/modelHelpers');
 const { AppError, ValidationError, ConflictError, UpstreamError, NotFoundError } = require('../../errors/AppError');
 const {
@@ -56,17 +55,7 @@ const toMs = (iso) => (iso ? Date.parse(iso) : null);
 
 // --- Pré-condições ----------------------------------------------------------------------------------------------------
 
-function requireImportStore(row) {
-  if (row.storeId === null || row.storeId === undefined) {
-    throw new ConflictError('Crie, em Lojas, uma loja em US$ chamada "CSFloat".', 'IMPORT_STORE_REQUIRED');
-  }
-  const store = Store.findById(row.storeId);
-  if (!store) throw new ConflictError('Crie, em Lojas, uma loja em US$ chamada "CSFloat".', 'IMPORT_STORE_REQUIRED');
-  if (store.currency !== 'USD') {
-    throw new ValidationError('A loja da integração precisa ser em dólar (US$).', 'IMPORT_STORE_CURRENCY_NOT_ALLOWED', { field: 'storeId' });
-  }
-  return store;
-}
+const { requireImportStore } = require('./importStore');
 
 // --- Leitura (rede) ---------------------------------------------------------------------------------------------------
 
@@ -329,11 +318,21 @@ function applyImport(env, read) {
   };
 
   // Trades com dados essenciais ausentes: registro tentado de novo e entrada para conferir (sem payload bruto).
+  // Registro já decidido (ignorado, excluído no app, ligado, fechado ou em revisão): uma resposta ruim da fonte não o reabre.
+  // Só marca que foi visto. Sem isto, "Ignorar" não pegava e uma compra excluída podia voltar (revisão da Etapa 9).
+  const isDecided = (existing, linked) => Boolean(existing) && (
+    linked || tradeClassifier.FROZEN_TRACKINGS.includes(existing.tracking) || tradeClassifier.CLOSED_TRACKINGS.includes(existing.tracking)
+  );
+  const touchSeen = (existing) => ExternalRecord.update(existing.id, { lastBatchId: batch.id, lastSeenAt: stamp }, { now });
+
   for (const bad of read.invalidTrades) {
-    counts.failed += 1;
     let record = null;
     if (bad.externalId) {
       const existing = ExternalRecord.find(SOURCE, 'TRADE', bad.externalId);
+      if (existing && isDecided(existing, ExternalLink.findByRecordIds([existing.id]).has(existing.id))) {
+        touchSeen(existing);
+        continue;
+      }
       const fields = { tracking: 'RETRY', lastBatchId: batch.id, lastSeenAt: stamp };
       record = existing
         ? ExternalRecord.update(existing.id, fields, { now })
@@ -342,6 +341,7 @@ function applyImport(env, read) {
           { now }
         );
     }
+    counts.failed += 1;
     addEntry(record, { outcome: 'FAILED', reasonCode: 'SOURCE_RECORD_INVALID', display: { direction: null, marketHashName: null, priceCents: null, currency: 'USD', date: null } });
   }
 
@@ -353,6 +353,10 @@ function applyImport(env, read) {
     if (direction) bump(diagnostics.trades[direction], `${trade.rawState || 'null'}|${tradeClassifier.isAccepted(trade) ? 'accepted' : 'not_accepted'}`);
 
     if (direction === null) {
+      if (isDecided(existing, Boolean(existing && linksByRecord.get(existing.id)))) {
+        touchSeen(existing);
+        continue;
+      }
       const record = saveTrade(trade, null, 'RETRY', existing);
       counts.failed += 1;
       addEntry(record, { outcome: 'FAILED', reasonCode: 'DIRECTION_UNKNOWN', display: buildDisplay(trade, null, null) });
@@ -719,7 +723,7 @@ function autoSkipReason(row) {
   if (autoAttempted) return 'AUTO_ALREADY_RAN';
   if (!row.autoImportOnOpen || !row.hasApiKey || row.storeId === null || row.tradesCutoffAt === null) return 'AUTO_NOT_CONFIGURED';
   if (row.autoImportPaused) return 'AUTO_PAUSED';
-  if (importLock.isImportInProgress() || backupService.isBackupBusy()) return 'BUSY';
+  if (importLock.isImportInProgress() || backupService.isExportInProgress()) return 'BUSY';
   return null;
 }
 
@@ -741,8 +745,8 @@ async function runImport({
   const store = requireImportStore(row);
   const apiKey = integrationService.requireApiKey(source);
   importLock.assertIdle();
-  if (backupService.isBackupBusy()) {
-    throw new ConflictError('Há uma operação em andamento (catálogo, cotação ou backup). Aguarde terminar e tente de novo.', 'BACKUP_BUSY');
+  if (backupService.isExportInProgress()) {
+    throw new ConflictError('Há uma exportação de backup em andamento. Aguarde terminar e tente de novo.', 'BACKUP_BUSY');
   }
   const firstImport = row.tradesCutoffAt === null;
   if ((newCutoffAt !== undefined || newTransactionsCutoffAt !== undefined) && firstImport) {

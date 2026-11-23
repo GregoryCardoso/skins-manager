@@ -12,6 +12,7 @@ import { useInvalidate } from '@/lib/useInvalidate';
 import { withdrawalAmountText, withdrawalStoreOptions } from '@/lib/withdrawalForm';
 import { ApiRequestError, deleteWithdrawal, listStores, listWithdrawals } from '@/services/api';
 import type { Withdrawal } from '@/types/api';
+import ImportButton from './ImportButton';
 import ConfirmDialog from './ConfirmDialog';
 import { useMoneyLine } from './MoneyApprox';
 import WithdrawalFormModal from './WithdrawalFormModal';
@@ -92,9 +93,12 @@ export default function WithdrawalsSection() {
       </div>
       <div className={styles.toolbar}>
         <p className={styles.note}>{t('withdrawals.intro')}</p>
-        <button type="button" className={styles.primaryButton} onClick={() => setDialog({ kind: 'create' })} disabled={noWithdrawalStores}>
-          {t('withdrawals.new')}
-        </button>
+        <span className={styles.toolbarActions}>
+          <ImportButton />
+          <button type="button" className={styles.primaryButton} onClick={() => setDialog({ kind: 'create' })} disabled={noWithdrawalStores}>
+            {t('withdrawals.new')}
+          </button>
+        </span>
       </div>
 
       {noWithdrawalStores && (

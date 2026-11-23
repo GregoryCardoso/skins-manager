@@ -210,27 +210,38 @@ function reopenTransfersFrom(source, cutoffAt, { now = new Date() } = {}) {
   return ids;
 }
 
-// Troca de conta (D293): os trades abertos da conta anterior viram IGNORED. Devolve os ids afetados.
+// Troca de conta (D293): os trades abertos da conta anterior viram IGNORED, e também os aportes e saques dela ainda sem
+// lançamento (vistos, a tentar, em revisão ou antes do corte; revisão da Etapa 9), para não entrarem na loja da conta nova.
+// Devolve os ids afetados.
+const TRANSFER_OPEN = ['SEEN', 'RETRY', 'NEEDS_REVIEW', 'BEFORE_CUTOFF'];
 function ignoreOpenForAccountSwitch(source, { now = new Date() } = {}) {
   const ids = getDb()
-    .prepare(`SELECT id FROM external_records WHERE source = ? AND kind = 'TRADE' AND tracking IN (${marks(OPEN_TRACKINGS)})`)
-    .all(source, ...OPEN_TRACKINGS)
+    .prepare(`SELECT r.id FROM external_records r WHERE r.source = ? AND (
+        (r.kind = 'TRADE' AND r.tracking IN (${marks(OPEN_TRACKINGS)}))
+        OR (${TRANSFER_TX} AND r.tracking IN (${marks(TRANSFER_OPEN)}) AND ${UNLINKED}))`)
+    .all(source, ...OPEN_TRACKINGS, ...TRANSFER_OPEN)
     .map((r) => r.id);
-  if (ids.length) {
-    getDb()
-      .prepare(`UPDATE external_records SET tracking = 'IGNORED', updated_at = ? WHERE source = ? AND kind = 'TRADE' AND tracking IN (${marks(OPEN_TRACKINGS)})`)
-      .run(now.toISOString(), source, ...OPEN_TRACKINGS);
-  }
+  const stamp = now.toISOString();
+  const stmt = getDb().prepare("UPDATE external_records SET tracking = 'IGNORED', updated_at = ? WHERE id = ?");
+  for (const id of ids) stmt.run(stamp, id);
   return ids;
 }
 
+// Decisões do usuário que o desfazer não apaga (revisão da Etapa 9): "excluído no app" e "ignorado" continuam valendo, para a
+// próxima importação não trazer de volta o que ele já tirou.
+const USER_DECISIONS = ['REMOVED_IN_APP', 'IGNORED'];
+
 function deleteByFirstBatch(batchId) {
-  return getDb().prepare('DELETE FROM external_records WHERE first_batch_id = ?').run(batchId).changes;
+  return getDb()
+    .prepare(`DELETE FROM external_records WHERE first_batch_id = ? AND tracking NOT IN (${marks(USER_DECISIONS)})`)
+    .run(batchId, ...USER_DECISIONS).changes;
 }
 
-// Recomeço completo (desfazer o último lote com mudanças): apaga todos os registros da fonte.
+// Recomeço completo (desfazer o último lote com mudanças): apaga os registros da fonte, menos as decisões do usuário.
 function deleteAllForSource(source) {
-  return getDb().prepare('DELETE FROM external_records WHERE source = ?').run(source).changes;
+  return getDb()
+    .prepare(`DELETE FROM external_records WHERE source = ? AND tracking NOT IN (${marks(USER_DECISIONS)})`)
+    .run(source, ...USER_DECISIONS).changes;
 }
 
 // Data de criação do registro de uma transação (cursor do extrato).

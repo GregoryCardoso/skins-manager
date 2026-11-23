@@ -54,8 +54,8 @@ const INVENTORY_VIEWS = Object.freeze(['INDIVIDUAL', 'GROUPED']);
 
 // PTAX do Banco Central (D147).
 const PTAX_BASE_URL = 'https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoDolarDia(dataCotacao=@dataCotacao)';
-const PTAX_CALL_TIMEOUT_MS = 10000;
-const PTAX_TOTAL_TIMEOUT_MS = 20000;
+const PTAX_CALL_TIMEOUT_MS = 25000;
+const PTAX_TOTAL_TIMEOUT_MS = 50000;
 const PTAX_MAX_LOOKBACK_DAYS = 7;
 
 // Fontes da cotação USD→BRL (D162): limites comuns, AwesomeAPI e valores aceitos nas colunas.
@@ -63,7 +63,7 @@ const FX_MIN_RATE = 1;
 const FX_MAX_RATE = 50;
 const FX_MAX_RESPONSE_BYTES = 64 * 1024;
 const AWESOMEAPI_URL = 'https://economia.awesomeapi.com.br/json/last/USD-BRL';
-const AWESOMEAPI_TIMEOUT_MS = 10000;
+const AWESOMEAPI_TIMEOUT_MS = 25000;
 const FX_REFRESH_SOURCES = Object.freeze(['AWESOMEAPI', 'PTAX']); // fx_refresh_source
 const FX_RATE_SOURCES = Object.freeze(['MANUAL', 'PTAX', 'AWESOMEAPI']); // usd_brl_rate_source
 
@@ -74,15 +74,15 @@ const SQLITE_APPLICATION_ID = 1397444935; // 'SKMG' (v4, D143)
 
 // Integração CSFloat (D288, D289, D316).
 const CSFLOAT_API_BASE_URL = 'https://csfloat.com/api/v1';
-const CSFLOAT_CALL_TIMEOUT_MS = 15000;
-const CSFLOAT_TEST_TOTAL_TIMEOUT_MS = 20000;
+const CSFLOAT_CALL_TIMEOUT_MS = 30000;
+const CSFLOAT_TEST_TOTAL_TIMEOUT_MS = 40000;
 const CSFLOAT_MAX_RESPONSE_BYTES = 5 * 1024 * 1024;
 const CSFLOAT_RATE_LIMIT_MAX_WAIT_MS = 30000;
 const API_KEY_MIN_LENGTH = 8;
 const API_KEY_MAX_LENGTH = 512;
 const CSFLOAT_HELP_URL = 'https://csfloat.com/profile';
 // Importação (D318, 9.2).
-const CSFLOAT_IMPORT_TOTAL_TIMEOUT_MS = 120000;
+const CSFLOAT_IMPORT_TOTAL_TIMEOUT_MS = 240000;
 const CSFLOAT_PAGE_LIMIT = 50;
 const CSFLOAT_MAX_PAGES = 200;
 const CSFLOAT_PAGE_DELAY_MS = 250;

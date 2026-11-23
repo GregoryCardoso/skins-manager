@@ -7,10 +7,12 @@ import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
 import { formatRate } from '@/lib/format';
 import { queryKeys } from '@/lib/queryKeys';
 import { useInvalidate } from '@/lib/useInvalidate';
-import { getSettings, refreshFxRate } from '@/services/api';
+import { browserOnline, isOfflineFailure, reportStartup } from '@/lib/startupStatus';
+import { ApiRequestError, getSettings, refreshFxRate } from '@/services/api';
 import styles from './ImportNotice.module.css';
 
-// Espera a tela carregar antes de buscar a cotação em segundo plano.
+// Espera a tela carregar antes de buscar a cotação em segundo plano. Não é um limite: a busca corre junto com a importação do
+// CSFloat e espera o tempo que a conexão precisar (até o limite do backend).
 const START_DELAY_MS = 1000;
 // Uma tentativa por carga da página; o backend garante uma por processo (um F5 não repete).
 let attemptedThisPage = false;
@@ -35,8 +37,16 @@ export default function FxAutoRefreshHost() {
       started.current = true;
       attemptedThisPage = true;
       refreshFxRate({ trigger: 'AUTO' })
-        .then((result) => (result.quote ? invalidate('settings.fx') : undefined))
-        .catch((err: unknown) => setError(errorMessageFor(err, tLoose, language)));
+        .then((result) => {
+          if (!result.quote) return undefined;
+          reportStartup('fx', 'OK');
+          return invalidate('settings.fx');
+        })
+        .catch((err: unknown) => {
+          // Sem internet: o modal único "Sem conexão" avisa (junto com o CSFloat); outros erros, o aviso discreto.
+          if (isOfflineFailure(err instanceof ApiRequestError ? err.code : null, browserOnline())) reportStartup('fx', 'OFFLINE');
+          else setError(errorMessageFor(err, tLoose, language));
+        });
     }, START_DELAY_MS);
     return () => clearTimeout(timer);
   }, [settings, invalidate, tLoose, language]);

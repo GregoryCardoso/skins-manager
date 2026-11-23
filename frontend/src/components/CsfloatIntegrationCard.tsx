@@ -10,12 +10,13 @@ import { validateApiKeyInput } from '@/lib/apiKeyInput';
 import { pausedReason } from '@/lib/autoImport';
 import { applyFeeUpdate, buildFeeUpdateBody, buildFeeWarnings } from '@/lib/feeCheck';
 import { queryKeys } from '@/lib/queryKeys';
-import { isHttpsLink } from '@/lib/safeUrl';
 import { useInvalidate } from '@/lib/useInvalidate';
 import {
   getCsfloatIntegration, removeCsfloatApiKey, saveCsfloatApiKey, switchCsfloatAccount, testCsfloatConnection, updateCsfloatIntegration, updateStore,
 } from '@/services/api';
 import type { CsfloatTestResult } from '@/types/api';
+import CsfloatSetupGuide from './CsfloatSetupGuide';
+import guideStyles from './CsfloatSetupGuide.module.css';
 import ConfirmDialog from './ConfirmDialog';
 import { useCsfloatImport } from './useCsfloatImport';
 import cardStyles from './CsfloatIntegrationCard.module.css';
@@ -168,7 +169,7 @@ export default function CsfloatIntegrationCard() {
   const warnings = buildFeeWarnings(testResult?.feeCheck ?? null, storeName, language, tLoose);
 
   return (
-    <section className={styles.card} aria-labelledby="settings-csfloat-title">
+    <section className={styles.card} aria-labelledby="settings-csfloat-title" id="csfloat">
       <h3 id="settings-csfloat-title" className={styles.cardTitle}>{t('settings.integrations.csfloat.title')}</h3>
 
       {integrationQuery.error !== null && (
@@ -178,6 +179,7 @@ export default function CsfloatIntegrationCard() {
 
       {integration && (
         <>
+          {!integration.hasApiKey && <CsfloatSetupGuide />}
           <p className={cardStyles.savedKey} data-testid="csfloat-key-status">
             {integration.hasApiKey && integration.apiKeyMasked
               ? t('settings.integrations.csfloat.savedKey', { masked: integration.apiKeyMasked })
@@ -339,16 +341,12 @@ export default function CsfloatIntegrationCard() {
           {error !== null && <p className={styles.error} role="alert">{errorMessageFor(error, tLoose, language)}</p>}
 
           <p className={styles.muted}>{t('settings.integrations.csfloat.privacy')}</p>
-          <p className={styles.muted}>
-            {isHttpsLink(integration.helpUrl) ? (
-              <a className={cardStyles.helpLink} href={integration.helpUrl} target="_blank" rel="noopener noreferrer">
-                {t('settings.integrations.csfloat.help')}
-              </a>
-            ) : (
-              t('settings.integrations.csfloat.help')
-            )}{' '}
-            {t('settings.integrations.csfloat.helpText')}
-          </p>
+          {integration.hasApiKey && (
+            <details className={guideStyles.details}>
+              <summary>{t('settings.integrations.csfloat.help')}</summary>
+              <CsfloatSetupGuide />
+            </details>
+          )}
         </>
       )}
 

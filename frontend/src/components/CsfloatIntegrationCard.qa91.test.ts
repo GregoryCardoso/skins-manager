@@ -77,7 +77,8 @@ describe('estados do card (renderização)', () => {
   });
 
   test('não lista outras lojas: sem seletor, e os nomes das outras lojas do cache não aparecem (D317)', () => {
-    const html = render(baseView);
+    // o passo a passo cita a "conta Steam" (o login); fora dele, nenhum nome de outra loja aparece
+    const html = render(baseView).replace(/<div[^>]*data-testid="csfloat-setup-guide"[\s\S]*?<\/div>/, '');
     expect(html).not.toContain('<select');
     expect(html).not.toContain('<option');
     expect(html).not.toContain('Steam');
@@ -97,13 +98,14 @@ describe('estados do card (renderização)', () => {
     expect(render({ ...baseView, storeId: null, storeName: null, storeCurrency: null }, 'en')).toContain('The CSFloat store was not found');
   });
 
-  test('link de ajuda abre em nova aba com rel seguro; URL que não é https vira texto simples', () => {
+  test('"Abrir o CSFloat" abre em nova aba com rel seguro, sempre no endereço fixo (a helpUrl da API não é usada)', () => {
     const ok = render(baseView);
     expect(ok).toMatch(/<a[^>]*href="https:\/\/csfloat\.com\/profile"[^>]*target="_blank"[^>]*rel="noopener noreferrer"/);
     const bad = render({ ...baseView, helpUrl: 'javascript:alert(1)' });
     expect(bad).not.toContain('javascript:');
-    expect(bad).not.toContain('<a ');
-    expect(bad).toContain('Onde gerar a chave?');
+    expect(bad).toContain('Abrir o CSFloat');
+    // com a chave salva, o passo a passo fica recolhido em "Como gerar a chave?"
+    expect(render({ ...baseView, hasApiKey: true, apiKeyMasked: '••••1234' })).toContain('Como gerar a chave?');
   });
 
   test('mostra o aviso de privacidade (chave fora dos backups e dos registros)', () => {
@@ -185,7 +187,7 @@ describe('i18n do card e das integrações', () => {
   test('chaves do aviso de taxa e de atualização da loja existem nos dois idiomas', () => {
     for (const key of [
       'saleFeeMismatch', 'withdrawalFeeMismatch', 'updateStore', 'updateStoreConfirm', 'accountMismatch', 'switchAccount', 'switchConfirmTitle',
-      'switchConfirmBody', 'switched', 'help', 'helpText', 'privacy', 'linkedStore', 'noStore', 'removeConfirmTitle', 'removeConfirmBody',
+      'switchConfirmBody', 'switched', 'help', 'privacy', 'linkedStore', 'noStore', 'removeConfirmTitle', 'removeConfirmBody',
     ]) {
       expect(translate(ptBR, `settings.integrations.csfloat.${key}`)).not.toBe(`settings.integrations.csfloat.${key}`);
       expect(translate(en, `settings.integrations.csfloat.${key}`)).not.toBe(`settings.integrations.csfloat.${key}`);

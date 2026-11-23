@@ -7,8 +7,7 @@
 //   - explainDifference: lê o extrato inteiro e lista as transações sem lançamento no app (antes do corte, ignoradas, multas...).
 const ExternalRecord = require('../../models/ExternalRecord');
 const ExternalLink = require('../../models/ExternalLink');
-const Store = require('../../models/Store');
-const { ConflictError, ValidationError } = require('../../errors/AppError');
+const { ConflictError } = require('../../errors/AppError');
 const { CSFLOAT_IMPORT_TOTAL_TIMEOUT_MS, CSFLOAT_PAGE_LIMIT, CSFLOAT_PAGE_DELAY_MS } = require('../../config/constants');
 const integrationService = require('../integrationService');
 const storeBalanceService = require('../storeBalanceService');
@@ -21,13 +20,14 @@ const BID_TYPES = Object.freeze(['bid_posted', 'bid_accepted']);
 const MAX_LISTED = 200;
 const WAITING = Object.freeze(['WAITING_TRANSFER']);
 
-function requireStore(row) {
-  const store = row.storeId ? Store.findById(row.storeId) : null;
-  if (!store) throw new ConflictError('Crie, em Lojas, uma loja em US$ chamada "CSFloat".', 'IMPORT_STORE_REQUIRED');
-  if (store.currency !== 'USD') {
-    throw new ValidationError('A loja da integração precisa ser em dólar (US$).', 'IMPORT_STORE_CURRENCY_NOT_ALLOWED', { field: 'storeId' });
-  }
-  return store;
+const { requireImportStore: requireStore } = require('./importStore');
+
+// Só as transações da conta atual e a partir do corte dos trades contam no "em trânsito" (revisão da Etapa 9): as da conta
+// anterior não pertencem à loja de hoje, e as de antes do corte têm o trade fora da leitura (dariam um "em trânsito" eterno).
+function currentTransactions(transactions, row) {
+  const cutoffMs = row.tradesCutoffAt ? Date.parse(row.tradesCutoffAt) : null;
+  return transactions.filter((tx) => (!row.accountFingerprint || !tx.accountFingerprint || tx.accountFingerprint === row.accountFingerprint)
+    && (cutoffMs === null || !tx.externalCreatedAt || Date.parse(tx.externalCreatedAt) >= cutoffMs));
 }
 
 // "Em trânsito" (D313), função pura sobre os registros já gravados:
@@ -83,7 +83,7 @@ async function checkBalance({ fetchFn, nowFn, now = new Date() } = {}) {
   const csfloat = { balanceCents: account.balanceCents, pendingBalanceCents: account.pendingBalanceCents };
   const records = ExternalRecord.listTrades(SOURCE);
   const tradesByContract = new Map(records.filter((r) => r.contractId).map((r) => [r.contractId, r]));
-  const inTransit = computeInTransit(ExternalRecord.listTransactions(SOURCE), tradesByContract);
+  const inTransit = computeInTransit(currentTransactions(ExternalRecord.listTransactions(SOURCE), row), tradesByContract);
   return {
     checkedAt: now.toISOString(),
     storeId: store.id,

@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
+import ImportButton from '@/components/ImportButton';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import DepositFormModal from '@/components/DepositFormModal';
 import DepositsTable from '@/components/DepositsTable';
@@ -102,9 +103,12 @@ export default function ProfitPage() {
         </div>
         <div className={styles.toolbar}>
           <p className={styles.note}>{t('deposits.intro')}</p>
-          <button type="button" className={styles.primaryButton} onClick={() => setDialog({ kind: 'create' })}>
-            {t('deposits.new')}
-          </button>
+          <span className={styles.toolbarActions}>
+            <ImportButton />
+            <button type="button" className={styles.primaryButton} onClick={() => setDialog({ kind: 'create' })}>
+              {t('deposits.new')}
+            </button>
+          </span>
         </div>
 
         {data && data.totals.count > 0 && (

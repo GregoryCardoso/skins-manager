@@ -1,6 +1,7 @@
 'use client';
 
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import Link from 'next/link';
 import { useState } from 'react';
 import { Badge } from '@/components/badges';
 import ImportEntriesList from '@/components/ImportEntriesList';
@@ -107,6 +108,13 @@ export default function ImportsPage() {
       <div className={styles.titleRow}>
         <h1>{t('imports.page.title')}</h1>
       </div>
+
+      {(importer.disabledReason === 'NO_KEY' || importer.disabledReason === 'NO_STORE') && (
+        <section className={styles.section} data-testid="imports-setup">
+          <p>{t('csfloatSetup.modalBody')}</p>
+          <p><Link href="/settings/#csfloat">{t('csfloatSetup.configure')}</Link></p>
+        </section>
+      )}
 
       {cutoffAt && (
         <section className={styles.section} aria-labelledby="imports-cutoff-title" id="cutoff">

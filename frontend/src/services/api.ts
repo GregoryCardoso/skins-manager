@@ -303,7 +303,7 @@ export const updateFxRate = (usdBrlRate: number) =>
 // Corpo `{}` JSON obrigatório.
 // `trigger: 'AUTO'` = ao abrir o app (D338): uma vez por processo e nunca sobre a cotação digitada à mão (devolve `skipped`).
 export const refreshFxRate = (body: { trigger?: 'MANUAL' | 'AUTO' } = {}) =>
-  request<FxRefreshResult>('POST', '/settings/fx-rate/refresh', { body, timeoutMs: 30000 });
+  request<FxRefreshResult>('POST', '/settings/fx-rate/refresh', { body, timeoutMs: 60000 });
 
 // "Não está à venda" e "Colocar à venda" (D265): a data é a do servidor; o corpo é `{}` (JSON obrigatório).
 export const markItemOffSale = (id: number) => request<{ item: ItemView }>('POST', `/items/${id}/off-sale`, { body: {} });
@@ -404,16 +404,16 @@ export const removeCsfloatApiKey = () => request<IntegrationView>('DELETE', '/in
 
 // O servidor espera até 20 s pelo CSFloat; o cliente espera um pouco mais.
 export const testCsfloatConnection = () =>
-  request<CsfloatTestResult>('POST', '/integrations/csfloat/test', { body: {}, timeoutMs: 30000 });
+  request<CsfloatTestResult>('POST', '/integrations/csfloat/test', { body: {}, timeoutMs: 50000 });
 
 export const switchCsfloatAccount = () =>
-  request<CsfloatSwitchAccountResult>('POST', '/integrations/csfloat/switch-account', { body: { confirm: true }, timeoutMs: 30000 });
+  request<CsfloatSwitchAccountResult>('POST', '/integrations/csfloat/switch-account', { body: { confirm: true }, timeoutMs: 50000 });
 
 // --- Importação (9.2, D318) ------------------------------------------------------------------------
 
 // O servidor espera até 120 s pelo CSFloat (muitas páginas); o cliente espera um pouco mais.
 export const runCsfloatImport = (body: ImportRunBody = {}) =>
-  request<ImportRunResult>('POST', '/imports/csfloat/run', { body, timeoutMs: 150000 });
+  request<ImportRunResult>('POST', '/imports/csfloat/run', { body, timeoutMs: 270000 });
 
 // Data de corte (9.5.1c, D325): pré-visualização local (sem rede) e a mudança, que roda uma importação com varredura completa.
 export const previewCutoffChange = (cutoffAt: string, signal?: AbortSignal) =>
@@ -422,13 +422,13 @@ export const previewCutoffChange = (cutoffAt: string, signal?: AbortSignal) =>
 export const previewTransferCutoff = (cutoffAt: string, signal?: AbortSignal) =>
   request<TransferCutoffPreview>('GET', '/imports/csfloat/cutoff-preview', { signal, query: { cutoffAt, target: 'TRANSACTIONS' } });
 export const changeCutoff = (cutoffAt: string, target: CutoffTarget = 'TRADES') =>
-  request<ImportRunResult>('POST', '/imports/csfloat/change-cutoff', { body: { cutoffAt, confirm: true, target }, timeoutMs: 150000 });
+  request<ImportRunResult>('POST', '/imports/csfloat/change-cutoff', { body: { cutoffAt, confirm: true, target }, timeoutMs: 270000 });
 
-// Conferência do saldo com o CSFloat (9.7): só leitura; a explicação relê o extrato inteiro (pode levar até 2 minutos).
+// Conferência do saldo com o CSFloat (9.7): só leitura; a explicação relê o extrato inteiro (pode levar alguns minutos).
 export const checkCsfloatBalance = (signal?: AbortSignal) =>
-  request<CsfloatBalanceCheckResult>('GET', '/integrations/csfloat/balance-check', { signal, timeoutMs: 60000 });
+  request<CsfloatBalanceCheckResult>('GET', '/integrations/csfloat/balance-check', { signal, timeoutMs: 90000 });
 export const explainCsfloatBalance = (signal?: AbortSignal) =>
-  request<CsfloatBalanceExplanation>('GET', '/integrations/csfloat/balance-check/explain', { signal, timeoutMs: 150000 });
+  request<CsfloatBalanceExplanation>('GET', '/integrations/csfloat/balance-check/explain', { signal, timeoutMs: 270000 });
 
 // Opção "Importar ao abrir o app" e "Reativar" (9.5).
 export const updateCsfloatIntegration = (body: IntegrationPatchBody) =>

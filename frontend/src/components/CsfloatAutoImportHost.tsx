@@ -5,17 +5,19 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
-import { autoImportNotice, shouldRunAutoImport, type AutoImportNotice } from '@/lib/autoImport';
+import { autoImportNotice, NOTHING_NEW_DISMISS_MS, shouldRunAutoImport, type AutoImportNotice } from '@/lib/autoImport';
+import { browserOnline, isOfflineFailure, reportStartup } from '@/lib/startupStatus';
 import { queryKeys } from '@/lib/queryKeys';
 import { useInvalidate } from '@/lib/useInvalidate';
-import { getCsfloatIntegration, runCsfloatImport } from '@/services/api';
+import { ApiRequestError, getCsfloatIntegration, runCsfloatImport } from '@/services/api';
 import type { ImportBatchView, IntegrationView } from '@/types/api';
 import ImportSummaryModal from './ImportSummaryModal';
 import UndoImportDialog from './UndoImportDialog';
 import styles from './ImportNotice.module.css';
 
-// Espera a tela carregar antes de importar em segundo plano (não disputa a primeira renderização).
-const START_DELAY_MS = 1500;
+// Espera a tela carregar antes de importar em segundo plano (não disputa a primeira renderização). Não é um limite: a importação
+// corre junto com a busca da cotação e espera o tempo que a conexão precisar (até o limite do backend).
+const START_DELAY_MS = 1000;
 // Uma tentativa por carga da página; o backend garante uma por processo (um F5 não repete).
 let attemptedThisPage = false;
 
@@ -51,12 +53,18 @@ export default function CsfloatAutoImportHost() {
       queryClient.setQueryData<IntegrationView>(queryKeys.integrations.csfloat, (current) => (current ? { ...current, importInProgress: true } : current));
       runCsfloatImport({ trigger: 'AUTO' })
         .then((result) => {
-          setBatch(result.batch);
-          setNotice(autoImportNotice(result.batch));
+          // Pulada (já rodou, pausada, ocupada): sem aviso. Rodou sem nada novo: o aviso curto "nada novo".
+          if (!result.skipped) {
+            reportStartup('csfloat', 'OK');
+            setBatch(result.batch);
+            setNotice(autoImportNotice(result.batch));
+          }
           return result.batch ? invalidate('import.run') : invalidate('integration.update');
         })
         .catch((err: unknown) => {
-          setError(errorMessageFor(err, tLoose, language));
+          // Sem internet: o modal único "Sem conexão" avisa (junto com a cotação); outros erros, o aviso discreto.
+          if (isOfflineFailure(err instanceof ApiRequestError ? err.code : null, browserOnline())) reportStartup('csfloat', 'OFFLINE');
+          else setError(errorMessageFor(err, tLoose, language));
           invalidate('integration.update').catch(() => undefined);
         });
     }, START_DELAY_MS);
@@ -68,6 +76,13 @@ export default function CsfloatAutoImportHost() {
     setError(null);
   };
 
+  // "Nada novo" é só informativo: some sozinho.
+  useEffect(() => {
+    if (notice?.kind !== 'NOTHING_NEW') return undefined;
+    const timer = setTimeout(() => setNotice(null), NOTHING_NEW_DISMISS_MS);
+    return () => clearTimeout(timer);
+  }, [notice]);
+
   if (!notice && !error && !showSummary && !showUndo) return null;
   return (
     <>
@@ -78,9 +93,13 @@ export default function CsfloatAutoImportHost() {
               ? t('imports.auto.failed', { reason: error })
               : notice?.kind === 'CREATED'
                 ? tPlural('imports.auto.created', notice.count)
-                : notice?.kind === 'MATCHED'
-                  ? tPlural('imports.auto.matched', notice.count)
-                  : t('imports.auto.attention')}
+                : notice?.kind === 'TRANSFERS'
+                  ? tPlural('imports.auto.transfers', notice.count)
+                  : notice?.kind === 'MATCHED'
+                    ? tPlural('imports.auto.matched', notice.count)
+                    : notice?.kind === 'NOTHING_NEW'
+                      ? t('imports.auto.nothingNew')
+                      : t('imports.auto.attention')}
           </span>
           {!error && batch && (
             <span className={styles.links}>

@@ -10,7 +10,6 @@ const ExternalRecord = require('../../models/ExternalRecord');
 const ExternalLink = require('../../models/ExternalLink');
 const Integration = require('../../models/Integration');
 const Item = require('../../models/Item');
-const Store = require('../../models/Store');
 const { runInTransaction } = require('../../models/modelHelpers');
 const { AppError, NotFoundError, ConflictError, ValidationError } = require('../../errors/AppError');
 const itemService = require('../itemService');
@@ -45,11 +44,10 @@ function checkAction(entry, action) {
   return null;
 }
 
+const { requireImportStore } = require('./importStore');
+
 function loadStore() {
-  const row = Integration.get(SOURCE);
-  const store = row && row.storeId ? Store.findById(row.storeId) : null;
-  if (!store) throw new ConflictError('Crie, em Lojas, uma loja em US$ chamada "CSFloat".', 'IMPORT_STORE_REQUIRED');
-  return store;
+  return requireImportStore(Integration.get(SOURCE));
 }
 
 // O registro como "trade" para as regras de acompanhamento (D294).
@@ -329,8 +327,8 @@ function markWonLaunch(entry, display, { acquiredAt = null }, { now }) {
 function guardBusy() {
   // A trava da importação também conta como "ocupado" para o backup: confere o backup antes de pegá-la.
   importLock.assertIdle();
-  if (backupService.isBackupBusy()) {
-    throw new ConflictError('Há uma operação em andamento (catálogo, cotação ou backup). Aguarde terminar e tente de novo.', 'BACKUP_BUSY');
+  if (backupService.isExportInProgress()) {
+    throw new ConflictError('Há uma exportação de backup em andamento. Aguarde terminar e tente de novo.', 'BACKUP_BUSY');
   }
 }
 

@@ -901,8 +901,7 @@
         "switchConfirmBody": "The next import will ask for the cutoff date again, and importing on app start is paused until then. Everything already recorded stays in the app.",
         "switched": "Account switched. Connected as {username}.",
         "switchedNoName": "Account switched.",
-        "help": "Where do I get the key?",
-        "helpText": "On the CSFloat website, open your profile and look for the developer (API) area to create a key. The path may change on the site.",
+        "help": "How to create the key?",
         "privacy": "The key is never shown again, is not included in backups and does not appear in the app logs.",
         "saleFeeMismatch": "Your CSFloat sale fee is {account}; the {store} store in the app uses {configured}.",
         "withdrawalFeeMismatch": "Your CSFloat withdrawal fee is {account}; the {store} store uses {configured} (only a suggestion for withdrawals).",
@@ -1445,7 +1444,12 @@
       },
       "attention": "The CSFloat import brought pending items to review.",
       "failed": "Automatic CSFloat import did not finish: {reason}",
-      "seeSummary": "See summary"
+      "seeSummary": "See summary",
+      "transfers": {
+        "one": "{count} deposit or withdrawal imported from CSFloat",
+        "other": "{count} deposits and withdrawals imported from CSFloat"
+      },
+      "nothingNew": "CSFloat checked: nothing new since the last import."
     },
     "launch": {
       "title": "Enter purchase",
@@ -1606,5 +1610,31 @@
       "contract_sale_refund": "sale refund",
       "rollback": "rollback"
     }
+  },
+  "startup": {
+    "offline": {
+      "title": "No internet connection",
+      "intro": "The app could not reach the internet when it opened, so this was not updated:",
+      "fx": "The dollar rate (US$ → R$). The app keeps using the last saved rate.",
+      "csfloat": "The CSFloat import (new purchases, sales, deposits and withdrawals).",
+      "hint": "Nothing was changed. When the connection is back, use \"Update rate\" in Settings and \"Import now\" in Imports.",
+      "ok": "Got it"
+    }
+  },
+  "csfloatSetup": {
+    "button": "Import automatically",
+    "modalTitle": "Import automatically from CSFloat",
+    "modalBody": "Instead of typing, you can import your purchases, sales, deposits and withdrawals straight from CSFloat.",
+    "modalHint": "To do that, connect CSFloat in Settings: the step-by-step guide is there and takes a minute.",
+    "configure": "Set up CSFloat",
+    "later": "Not now",
+    "title": "How to connect CSFloat",
+    "step1": "Sign in to CSFloat with your Steam account.",
+    "step2": "Open your profile and go to the \"Developers\" tab.",
+    "step3": "Click \"New Key\" and copy the key.",
+    "step4": "Paste the key below, click \"Save key\" and then \"Test connection\".",
+    "step5": "In Imports, choose the cutoff date and import.",
+    "open": "Open CSFloat",
+    "safety": "The key gives read access to your account: do not share it with anyone. If it leaks, delete it on CSFloat and create another one."
   }
 }
