@@ -38,6 +38,7 @@ const EXPECTED: Record<string, string[]> = {
   // Importação (9.2, D318): o card, os lotes e as pendências, mais tudo o que muda com itens.
   'import.run': ['integrations', 'imports', 'items', 'sales', 'stores', 'storeBalances', 'profitSummary'],
   'import.undo': ['integrations', 'imports', 'items', 'sales', 'stores', 'storeBalances', 'profitSummary'],
+  'integration.update': ['integrations'],
   'import.resolve': ['integrations', 'imports', 'items', 'sales', 'stores', 'storeBalances', 'profitSummary'],
   'item.offSale': ['items', 'sales', 'profitSummary'],
   'item.backOnSale': ['items', 'sales', 'profitSummary'],

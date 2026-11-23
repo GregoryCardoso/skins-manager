@@ -63,7 +63,7 @@ export function useCsfloatImport(): CsfloatImportControls {
       runCsfloatImport(body)
         .then(({ batch }) => {
           setCutoffFor(null);
-          setResult(batch);
+          setResult(batch); // a manual sempre devolve o lote
           return invalidate('import.run');
         })
         .catch((err: unknown) => {

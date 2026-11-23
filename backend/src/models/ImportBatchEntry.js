@@ -101,6 +101,15 @@ function findLatestDisplayJson(recordId) {
   return row ? row.display_json : null;
 }
 
+// O registro já tem uma pendência aberta (de outro lote)? Uma falha repetida não é "novidade" para a importação automática.
+function hasOpenForRecord(recordId) {
+  return Boolean(
+    getDb()
+      .prepare(`SELECT 1 FROM import_batch_entries WHERE record_id = ? AND resolution IS NULL AND outcome IN (${OPEN_OUTCOMES_SQL}) LIMIT 1`)
+      .get(recordId)
+  );
+}
+
 function findById(id) {
   return toEntry(getDb().prepare('SELECT * FROM import_batch_entries WHERE id = ?').get(id));
 }
@@ -122,7 +131,7 @@ function listResolvedOpenTypeByBatch(batchId) {
 }
 
 module.exports = {
-  recordIdsWithResolution, findLatestDisplayJson, findById, resolve, listResolvedOpenTypeByBatch,
+  hasOpenForRecord, recordIdsWithResolution, findLatestDisplayJson, findById, resolve, listResolvedOpenTypeByBatch,
   OPEN_OUTCOMES, create, listByBatch, listOpen, countOpen, countOpenByBatch, resolveOpenForRecord, resolveOpenForBatch,
   resolveOpenForRecordsOfBatch, resolveAllOpen,
 };

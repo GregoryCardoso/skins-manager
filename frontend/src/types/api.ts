@@ -736,6 +736,8 @@ export interface IntegrationView {
   lastImportStatus: 'OK' | 'FAILED' | null;
   lastImportErrorCode: string | null;
   importInProgress: boolean;
+  // Importação ao abrir pausada por desfazer (9.5): data do último lote desfeito; nula se a pausa veio da troca de conta.
+  lastUndoneAt?: string | null;
   openEntriesCount: number;
   // Valor inicial (editável) da data de corte da primeira importação; nulo se não há sugestão ou o corte já existe.
   suggestedCutoffAt: string | null;
@@ -851,8 +853,22 @@ export interface ImportBatchView extends ImportBatchSummary {
 }
 
 export interface ImportRunBody {
+  // MANUAL (padrão) ou AUTO (ao abrir o app, 9.5: sem corte e sem varredura completa).
+  trigger?: 'MANUAL' | 'AUTO';
   cutoffAt?: string;
   fullScan?: boolean;
+}
+
+// Resposta do run: a manual sempre traz o lote; a automática traz null quando nada novo entrou, ou `skipped` quando não rodou.
+export interface ImportRunResult {
+  batch: ImportBatchView | null;
+  skipped?: 'AUTO_ALREADY_RAN' | 'AUTO_NOT_CONFIGURED' | 'AUTO_PAUSED' | 'BUSY';
+}
+
+// PATCH da integração (9.5): a opção "Importar ao abrir o app" e "Reativar" (autoImportPaused: false).
+export interface IntegrationPatchBody {
+  autoImportOnOpen?: boolean;
+  autoImportPaused?: false;
 }
 
 export interface ImportBatchList {

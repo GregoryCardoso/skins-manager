@@ -27,6 +27,15 @@ function validateRunBody(req, res, next) {
   if (body.cutoffAt !== undefined && body.cutoffAt !== null && typeof body.cutoffAt !== 'string') {
     throw new ValidationError('A data de corte é inválida.', 'INVALID_DATE', { field: 'cutoffAt' });
   }
+  // A automática (9.5) só busca o que é novo: sem corte (precisa já existir) e sem varredura completa.
+  if (body.trigger === 'AUTO') {
+    if (body.cutoffAt !== undefined && body.cutoffAt !== null) {
+      throw new ValidationError('A importação automática não define a data de corte.', 'INVALID_FIELD', { field: 'cutoffAt' });
+    }
+    if (body.fullScan === true) {
+      throw new ValidationError('A importação automática não faz varredura completa.', 'INVALID_FIELD', { field: 'fullScan' });
+    }
+  }
   req.body = body;
   return next();
 }

@@ -51,6 +51,8 @@ export const INVALIDATION_MAP = {
   'settings.preferences': [K.settings.all],
   // Integrações (9.1, D316): chave, loja, teste de conexão e troca de conta só mudam o card.
   'integration.apiKey': [K.integrations.all],
+  // "Importar ao abrir o app" e "Reativar" (9.5); também depois de uma importação automática sem nada novo.
+  'integration.update': [K.integrations.all],
   'integration.test': [K.integrations.all],
   'integration.switchAccount': [K.integrations.all],
   'catalog.refresh': [K.catalog.all, K.items.all, K.sales.all, K.health.all],

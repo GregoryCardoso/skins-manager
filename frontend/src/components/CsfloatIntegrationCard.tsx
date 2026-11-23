@@ -7,12 +7,13 @@ import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import { formatDateTime } from '@/lib/format';
 import { validateApiKeyInput } from '@/lib/apiKeyInput';
+import { pausedReason } from '@/lib/autoImport';
 import { applyFeeUpdate, buildFeeUpdateBody, buildFeeWarnings } from '@/lib/feeCheck';
 import { queryKeys } from '@/lib/queryKeys';
 import { isHttpsLink } from '@/lib/safeUrl';
 import { useInvalidate } from '@/lib/useInvalidate';
 import {
-  getCsfloatIntegration, removeCsfloatApiKey, saveCsfloatApiKey, switchCsfloatAccount, testCsfloatConnection, updateStore,
+  getCsfloatIntegration, removeCsfloatApiKey, saveCsfloatApiKey, switchCsfloatAccount, testCsfloatConnection, updateCsfloatIntegration, updateStore,
 } from '@/services/api';
 import type { CsfloatTestResult } from '@/types/api';
 import ConfirmDialog from './ConfirmDialog';
@@ -48,6 +49,16 @@ export default function CsfloatIntegrationCard() {
   const [testResult, setTestResult] = useState<CsfloatTestResult | null>(null);
 
   const working = busy || testing;
+
+  // "Importar ao abrir o app" (9.5, começa desligada) e "Reativar" depois de uma pausa.
+  const patchIntegration = (body: { autoImportOnOpen?: boolean; autoImportPaused?: false }) => {
+    clearMessages();
+    setBusy(true);
+    updateCsfloatIntegration(body)
+      .then(() => invalidate('integration.update'))
+      .catch((err: unknown) => setError(err))
+      .finally(() => setBusy(false));
+  };
   const clearMessages = () => {
     setError(null);
     setKeyError(null);
@@ -223,12 +234,46 @@ export default function CsfloatIntegrationCard() {
 
           <div className={cardStyles.importBox} data-testid="csfloat-import-box">
             <p className={styles.muted} data-testid="csfloat-last-import">
-              {integration.lastImportStatus === 'FAILED'
-                ? t('settings.integrations.csfloat.lastImportFailed', { reason: failedReason(integration.lastImportErrorCode) })
-                : integration.lastImportAt
-                  ? t('settings.integrations.csfloat.lastImport', { date: formatDateTime(integration.lastImportAt, language) })
-                  : t('settings.integrations.csfloat.neverImported')}
+              {integration.lastImportAt
+                ? t('settings.integrations.csfloat.lastImport', { date: formatDateTime(integration.lastImportAt, language) })
+                : t('settings.integrations.csfloat.neverImported')}
             </p>
+            {integration.lastImportStatus === 'FAILED' && (
+              <p className={styles.warning} role="status" data-testid="csfloat-last-import-failed">
+                {t('settings.integrations.csfloat.lastImportFailed', { reason: failedReason(integration.lastImportErrorCode) })}
+              </p>
+            )}
+            <label className={cardStyles.toggle}>
+              <input
+                type="checkbox"
+                checked={integration.autoImportOnOpen}
+                disabled={working}
+                onChange={(event) => patchIntegration({ autoImportOnOpen: event.target.checked })}
+                data-testid="csfloat-auto-import"
+              />
+              {t('settings.integrations.csfloat.autoImport')}
+            </label>
+            <p className={styles.muted}>
+              {integration.tradesCutoffAt
+                ? t('settings.integrations.csfloat.autoImportHint')
+                : t('settings.integrations.csfloat.autoImportNeedsFirst')}
+            </p>
+            {(() => {
+              const reason = pausedReason(integration);
+              if (!reason) return null;
+              return (
+                <div className={styles.warning} role="status" data-testid="csfloat-auto-paused">
+                  <p>
+                    {reason.kind === 'UNDO'
+                      ? t('settings.integrations.csfloat.autoPausedUndo', { date: formatDateTime(reason.at, language) })
+                      : t('settings.integrations.csfloat.autoPausedSwitch')}
+                  </p>
+                  <button type="button" className={styles.button} onClick={() => patchIntegration({ autoImportPaused: false })} disabled={working}>
+                    {t('settings.integrations.csfloat.autoResume')}
+                  </button>
+                </div>
+              );
+            })()}
             {integration.tradesCutoffAt && (
               <p className={styles.muted}>{t('settings.integrations.csfloat.cutoffInfo', { date: formatDateTime(integration.tradesCutoffAt, language) })}</p>
             )}

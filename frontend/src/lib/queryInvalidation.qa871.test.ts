@@ -43,7 +43,7 @@ describe('cada função de escrita do api.ts invalida a ação certa onde é usa
     saveCsfloatApiKey: ['integration.apiKey'], removeCsfloatApiKey: ['integration.apiKey'],
     testCsfloatConnection: ['integration.test'],
     switchCsfloatAccount: ['integration.switchAccount'],
-    runCsfloatImport: ['import.run'], undoImportBatch: ['import.undo'], resolveImportEntry: ['import.resolve'],
+    runCsfloatImport: ['import.run'], undoImportBatch: ['import.undo'], resolveImportEntry: ['import.resolve'], updateCsfloatIntegration: ['integration.update'],
   };
   // Só quem importa a função do api.ts (o PreferencesProvider expõe refreshFxRate/saveFxRate já com a invalidação).
   const callers = (fn: string) => prod.filter((f) => !rel(f).startsWith('services/') && new RegExp(`\\b${fn}\\(`).test(read(f))

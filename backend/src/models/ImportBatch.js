@@ -70,4 +70,16 @@ function findLatestDone(source) {
   return toBatch(getDb().prepare("SELECT * FROM import_batches WHERE source = ? AND status = 'DONE' ORDER BY id DESC LIMIT 1").get(source));
 }
 
-module.exports = { create, update, findById, list, findLatestUndoable, findLatestDone, countDone, countDoneWithChanges };
+// `undone_at` do lote desfeito mais recente (ou null).
+function findLatestUndoneAt(source) {
+  const row = getDb().prepare("SELECT MAX(undone_at) AS at FROM import_batches WHERE source = ? AND status = 'UNDONE'").get(source);
+  return row ? row.at : null;
+}
+
+// Apaga um lote (importação automática sem nada para mostrar, D300). As entradas vão junto (CASCADE); os registros perdem a
+// referência (SET NULL). Nunca chamado com vínculos no lote.
+function remove(id) {
+  return getDb().prepare('DELETE FROM import_batches WHERE id = ?').run(id).changes > 0;
+}
+
+module.exports = { findLatestUndoneAt, remove, create, update, findById, list, findLatestUndoable, findLatestDone, countDone, countDoneWithChanges };

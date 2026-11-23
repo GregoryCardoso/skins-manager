@@ -207,7 +207,8 @@ describe('seção Integrações (D317)', () => {
 
   test('o card não usa mais o seletor de loja nem a lista de lojas', () => {
     const card = fs.readFileSync(path.join(__dirname, 'CsfloatIntegrationCard.tsx'), 'utf8');
-    expect(card).not.toMatch(/listStores|<select|updateCsfloatIntegration/);
+    // 9.5: o PATCH da integração volta ao card só para a opção "Importar ao abrir o app" e "Reativar", nunca para a loja.
+    expect(card).not.toMatch(/listStores|<select|storeId:/);
   });
 
   test('as chaves removidas não existem mais nos dois idiomas', () => {

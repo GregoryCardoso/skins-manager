@@ -27,6 +27,8 @@ import type {
   ImportEntryView,
   ImportResolveBody,
   ImportRunBody,
+  ImportRunResult,
+  IntegrationPatchBody,
   IntegrationView,
   ItemView,
   PreferencesPatch,
@@ -398,7 +400,11 @@ export const switchCsfloatAccount = () =>
 
 // O servidor espera até 120 s pelo CSFloat (muitas páginas); o cliente espera um pouco mais.
 export const runCsfloatImport = (body: ImportRunBody = {}) =>
-  request<{ batch: ImportBatchView }>('POST', '/imports/csfloat/run', { body, timeoutMs: 150000 });
+  request<ImportRunResult>('POST', '/imports/csfloat/run', { body, timeoutMs: 150000 });
+
+// Opção "Importar ao abrir o app" e "Reativar" (9.5).
+export const updateCsfloatIntegration = (body: IntegrationPatchBody) =>
+  request<IntegrationView>('PATCH', '/integrations/csfloat', { body });
 
 export const listImportBatches = (query: { limit?: number; before?: number | null } = {}, signal?: AbortSignal) =>
   request<ImportBatchList>('GET', '/imports/batches', { signal, query: { limit: query.limit, before: query.before } });

@@ -884,7 +884,13 @@
           "one": "{count} pendência",
           "other": "{count} pendências"
         },
-        "cutoffInfo": "Data de corte: {date}"
+        "cutoffInfo": "Data de corte: {date}",
+        "autoImport": "Importar ao abrir o app",
+        "autoImportHint": "Ao abrir, o app busca só o que é novo no CSFloat, em segundo plano, sem travar a tela. Se não houver nada novo, nada aparece.",
+        "autoImportNeedsFirst": "Faça a primeira importação pelo botão (ela define a data de corte); depois a importação ao abrir passa a valer.",
+        "autoPausedUndo": "A importação ao abrir está pausada porque você desfez uma importação em {date}, para o que foi desfeito não voltar sozinho. Reative quando quiser.",
+        "autoPausedSwitch": "A importação ao abrir está pausada porque a conta do CSFloat foi trocada. Faça a primeira importação da conta nova e reative.",
+        "autoResume": "Reativar importação ao abrir"
       }
     },
     "loadError": "Não foi possível carregar as configurações: {reason}"
@@ -1351,6 +1357,19 @@
         "RECORD_NOT_FOUND": "O registro do CSFloat desta pendência não existe mais. Importe de novo.",
         "CATALOG_NOT_FOUND": "O item não está mais no catálogo. Atualize o catálogo e tente de novo."
       }
+    },
+    "auto": {
+      "created": {
+        "one": "{count} trade importado do CSFloat",
+        "other": "{count} trades importados do CSFloat"
+      },
+      "matched": {
+        "one": "{count} trade do CSFloat ligado a um lançamento seu",
+        "other": "{count} trades do CSFloat ligados a lançamentos seus"
+      },
+      "attention": "A importação do CSFloat trouxe pendências para conferir.",
+      "failed": "Importação automática do CSFloat não concluída: {reason}",
+      "seeSummary": "Ver resumo"
     }
   }
 }

@@ -7,6 +7,7 @@
 const crypto = require('crypto');
 const Integration = require('../models/Integration');
 const Store = require('../models/Store');
+const ImportBatch = require('../models/ImportBatch');
 const ImportBatchEntry = require('../models/ImportBatchEntry');
 const csfloatAdapter = require('./imports/adapters/csfloatAdapter');
 const importLock = require('./imports/importLock');
@@ -124,6 +125,8 @@ function toView(row, source) {
     lastImportStatus: row.lastImportStatus,
     lastImportErrorCode: row.lastImportErrorCode,
     importInProgress: importLock.isImportInProgress(),
+    // Pausada por desfazer (D302): a data do último lote desfeito, para a tela explicar o motivo; sem ele, foi a troca de conta.
+    lastUndoneAt: row.autoImportPaused ? ImportBatch.findLatestUndoneAt(source) : null,
     openEntriesCount: ImportBatchEntry.countOpen(),
     // Só o valor inicial do campo da primeira importação (D296); depois que o corte existe, não há sugestão.
     suggestedCutoffAt: row.tradesCutoffAt === null && store ? cutoffService.suggest({ storeId: store.id }) : null,
@@ -145,11 +148,17 @@ function requireStoreForIntegration(storeId) {
   return store;
 }
 
-// Na 9.1 só `storeId` (inteiro positivo ou null). A loja precisa existir e ser em US$.
+// `storeId` (a loja precisa existir e ser em US$), `autoImportOnOpen` e `autoImportPaused: false` (9.5, D303). A pausa (depois
+// de desfazer um lote ou trocar de conta) só sai por ação do usuário: "Reativar", ou ligar de novo a opção.
 function updateSettings(partial, { source = SOURCE, now = new Date() } = {}) {
   getAdapter(source);
-  loadRow(source, { relink: false });
+  const current = loadRow(source, { relink: false });
   const patch = {};
+  if (partial.autoImportOnOpen !== undefined) {
+    patch.autoImportOnOpen = partial.autoImportOnOpen === true;
+    if (patch.autoImportOnOpen && !current.autoImportOnOpen) patch.autoImportPaused = false;
+  }
+  if (partial.autoImportPaused === false) patch.autoImportPaused = false;
   if (partial.storeId !== undefined) {
     if (partial.storeId !== null) {
       if (!Number.isInteger(partial.storeId) || partial.storeId <= 0) {

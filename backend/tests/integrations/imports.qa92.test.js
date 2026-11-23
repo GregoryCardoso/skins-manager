@@ -788,11 +788,11 @@ describe('desfazer importação', () => {
     expect((await call(request(app).get('/api/integrations/csfloat'))).body.data).toMatchObject({ tradesCutoffAt: CUTOFF, autoImportPaused: true });
     expect(count('items')).toBe(1);
     expect(trackings().map((t) => t.external_id)).toEqual(['1001']);
-    // reimportar: o item volta, o primeiro não duplica, e o pause da importação ao abrir sai
+    // reimportar: o item volta e o primeiro não duplica; a pausa da importação ao abrir só sai por "Reativar" (9.5)
     const again = (await run({})).body.data.batch;
     expect(again.counts).toMatchObject({ purchasesCreated: 1, known: 1 });
     expect(count('items')).toBe(2);
-    expect((await call(request(app).get('/api/integrations/csfloat'))).body.data.autoImportPaused).toBe(false);
+    expect((await call(request(app).get('/api/integrations/csfloat'))).body.data.autoImportPaused).toBe(true);
     // o primeiro lote já não é o último que mudou algo
     expectError(await undo(first.id), 409, 'IMPORT_UNDO_NOT_LATEST');
   });

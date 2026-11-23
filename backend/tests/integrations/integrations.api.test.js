@@ -103,6 +103,7 @@ describe('GET inicial', () => {
       lastImportStatus: null,
       lastImportErrorCode: null,
       importInProgress: false,
+      lastUndoneAt: null,
       openEntriesCount: 0,
       suggestedCutoffAt: null,
       helpUrl: 'https://csfloat.com/profile',
@@ -227,11 +228,13 @@ describe('PATCH loja', () => {
   test('sem storeId -> INVALID_BODY', async () => {
     expectError(await patch({}), 400, 'INVALID_BODY');
   });
-  test('autoImportOnOpen (e outros campos) -> UNKNOWN_FIELD até a 9.5', async () => {
-    expectError(await patch({ autoImportOnOpen: true }), 400, 'UNKNOWN_FIELD');
-    expectError(await patch({ storeId: storeId('CSFloat'), autoImportOnOpen: true }), 400, 'UNKNOWN_FIELD');
+  test('9.5: autoImportOnOpen é aceito (booleano); autoImportPaused só false; outros campos -> UNKNOWN_FIELD', async () => {
+    expect(integrationRow().auto_import_on_open).toBe(0); // começa desligada
+    expect((await patch({ autoImportOnOpen: true })).body.data.autoImportOnOpen).toBe(true);
+    expect(integrationRow().auto_import_on_open).toBe(1);
+    expectError(await patch({ autoImportOnOpen: 'sim' }), 400, 'INVALID_FIELD', { field: 'autoImportOnOpen' });
+    expectError(await patch({ autoImportPaused: true }), 400, 'INVALID_FIELD', { field: 'autoImportPaused' });
     expectError(await patch({ apiKey: KEY }), 400, 'UNKNOWN_FIELD');
-    expect(integrationRow().auto_import_on_open).toBe(0);
     expect(integrationRow().api_key).toBeNull();
   });
   test('corpo que não é objeto -> INVALID_BODY', async () => {

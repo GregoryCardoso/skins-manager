@@ -884,7 +884,13 @@
           "one": "{count} pending item",
           "other": "{count} pending items"
         },
-        "cutoffInfo": "Cutoff date: {date}"
+        "cutoffInfo": "Cutoff date: {date}",
+        "autoImport": "Import when the app opens",
+        "autoImportHint": "On opening, the app fetches only what is new on CSFloat, in the background, without blocking the screen. If there is nothing new, nothing shows up.",
+        "autoImportNeedsFirst": "Do the first import with the button (it sets the cutoff date); after that, importing on open takes effect.",
+        "autoPausedUndo": "Importing on open is paused because you undid an import on {date}, so what was undone does not come back by itself. Resume it when you want.",
+        "autoPausedSwitch": "Importing on open is paused because the CSFloat account was switched. Do the first import of the new account and resume it.",
+        "autoResume": "Resume importing on open"
       }
     },
     "loadError": "Could not load the settings: {reason}"
@@ -1351,6 +1357,19 @@
         "RECORD_NOT_FOUND": "The CSFloat record of this pending item no longer exists. Import again.",
         "CATALOG_NOT_FOUND": "The item is no longer in the catalog. Update the catalog and try again."
       }
+    },
+    "auto": {
+      "created": {
+        "one": "{count} trade imported from CSFloat",
+        "other": "{count} trades imported from CSFloat"
+      },
+      "matched": {
+        "one": "{count} CSFloat trade linked to one of your entries",
+        "other": "{count} CSFloat trades linked to your entries"
+      },
+      "attention": "The CSFloat import brought pending items to review.",
+      "failed": "Automatic CSFloat import did not finish: {reason}",
+      "seeSummary": "See summary"
     }
   }
 }

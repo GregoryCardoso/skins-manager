@@ -10,14 +10,23 @@ function requireObjectBody(body) {
   if (!isPlainObject(body)) throw invalidBody('O corpo da requisição deve ser um objeto JSON.');
 }
 
-// PATCH: só `storeId` (inteiro positivo ou null). `autoImportOnOpen` entra na 9.5 (até lá é UNKNOWN_FIELD).
+// PATCH: `storeId` (inteiro positivo ou null), `autoImportOnOpen` (booleano, 9.5) e `autoImportPaused` (só `false`: "Reativar" a
+// importação ao abrir depois de um desfazer ou de uma troca de conta; pausar é só o app que faz). Pelo menos um campo.
 function validateIntegrationPatchBody(req, res, next) {
   const body = req.body;
   requireObjectBody(body);
-  rejectUnknownFields(body, ['storeId']);
-  if (body.storeId === undefined) throw invalidBody('Informe o campo storeId.');
-  if (body.storeId !== null && (!Number.isInteger(body.storeId) || body.storeId <= 0)) {
+  rejectUnknownFields(body, ['storeId', 'autoImportOnOpen', 'autoImportPaused']);
+  if (body.storeId === undefined && body.autoImportOnOpen === undefined && body.autoImportPaused === undefined) {
+    throw invalidBody('Informe o campo storeId, autoImportOnOpen ou autoImportPaused.');
+  }
+  if (body.storeId !== undefined && body.storeId !== null && (!Number.isInteger(body.storeId) || body.storeId <= 0)) {
     throw new ValidationError('storeId deve ser um inteiro positivo ou nulo.', 'INVALID_FIELD', { field: 'storeId' });
+  }
+  if (body.autoImportOnOpen !== undefined && typeof body.autoImportOnOpen !== 'boolean') {
+    throw new ValidationError('autoImportOnOpen deve ser verdadeiro ou falso.', 'INVALID_FIELD', { field: 'autoImportOnOpen' });
+  }
+  if (body.autoImportPaused !== undefined && body.autoImportPaused !== false) {
+    throw new ValidationError('autoImportPaused só aceita false (reativar).', 'INVALID_FIELD', { field: 'autoImportPaused' });
   }
   return next();
 }

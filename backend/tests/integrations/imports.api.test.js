@@ -504,8 +504,9 @@ describe('item importado e removido no app', () => {
 });
 
 describe('pré-condições, concorrência e falhas de rede', () => {
-  test('sem chave -> CSFLOAT_API_KEY_REQUIRED (409); trigger AUTO -> IMPORT_AUTO_NOT_AVAILABLE', async () => {
-    expectError(await run({ trigger: 'AUTO', cutoffAt: CUTOFF }), 409, 'IMPORT_AUTO_NOT_AVAILABLE');
+  test('sem chave -> CSFLOAT_API_KEY_REQUIRED (409); AUTO não aceita corte nem varredura completa', async () => {
+    expectError(await run({ trigger: 'AUTO', cutoffAt: CUTOFF }), 400, 'INVALID_FIELD', { field: 'cutoffAt' });
+    expectError(await run({ trigger: 'AUTO', fullScan: true }), 400, 'INVALID_FIELD', { field: 'fullScan' });
     expectError(await run({ trigger: 'OUTRO' }), 400, 'INVALID_FIELD', { field: 'trigger' });
     expectError(await run({ fullScan: 'sim' }), 400, 'INVALID_FIELD', { field: 'fullScan' });
     expectError(await run({ surpresa: 1 }), 400, 'UNKNOWN_FIELD');

@@ -43,6 +43,13 @@ const CLOSED = tradeClassifier.CLOSED_TRACKINGS;
 const FAILURE_TRACKINGS = ['RETRY', 'UNKNOWN_STATE'];
 
 const isImportInProgress = importLock.isImportInProgress;
+
+// Importação ao abrir o app (9.5, D303): no máximo uma por processo do backend (um F5 não repete). Vale no desktop (o processo
+// do app) e no start-app.bat (o da sessão).
+let autoAttempted = false;
+const resetAutoForTests = () => {
+  autoAttempted = false;
+};
 const tradeMoment = (trade) => trade.soldAt || trade.createdAt;
 const toMs = (iso) => (iso ? Date.parse(iso) : null);
 
@@ -144,6 +151,13 @@ async function readTrades(env, { transactions }) {
   }
   if (orderBroken) warnings.push('ORDER_NOT_GUARANTEED');
   return { trades: [...trades.values()], invalid, pages, orderBroken, warnings };
+}
+
+// Alguma transação lida ainda não está gravada?
+function hasNewTransactions(transactions) {
+  if (!transactions.length) return false;
+  const known = ExternalRecord.findManyByExternalIds(SOURCE, 'TRANSACTION', transactions.map((t) => t.externalId));
+  return transactions.some((t) => !known.has(t.externalId));
 }
 
 // --- Aplicação (síncrona, numa transação) -----------------------------------------------------------------------------
@@ -259,8 +273,12 @@ function applyImport(env, read) {
       { now }
     );
   };
-  const addEntry = (record, data) =>
-    ImportBatchEntry.create(
+  // Pendência nova (não repetida de um lote anterior): conta como "algo para mostrar" na automática (D300).
+  let newIssues = 0;
+  const OPEN_TYPES = ImportBatchEntry.OPEN_OUTCOMES;
+  const addEntry = (record, data) => {
+    if (OPEN_TYPES.includes(data.outcome) && !(record && ImportBatchEntry.hasOpenForRecord(record.id))) newIssues += 1;
+    return ImportBatchEntry.create(
       {
         batchId: batch.id, recordId: record ? record.id : null, outcome: data.outcome, reasonCode: data.reasonCode ?? null,
         entityType: data.entityType ?? null, entityId: data.entityId ?? null,
@@ -268,6 +286,7 @@ function applyImport(env, read) {
       },
       { now }
     );
+  };
 
   // Trades com dados essenciais ausentes: registro tentado de novo e entrada para conferir (sem payload bruto).
   for (const bad of read.invalidTrades) {
@@ -432,7 +451,8 @@ function applyImport(env, read) {
   Integration.update(
     SOURCE,
     {
-      ...(cursor ? { lastTransactionId: cursor } : {}), lastImportAt: stamp, lastImportStatus: 'OK', lastImportErrorCode: null, autoImportPaused: false,
+      // A pausa da importação ao abrir (desfazer, troca de conta) não sai sozinha: só por "Reativar" (9.5).
+      ...(cursor ? { lastTransactionId: cursor } : {}), lastImportAt: stamp, lastImportStatus: 'OK', lastImportErrorCode: null,
     },
     { now }
   );
@@ -445,6 +465,12 @@ function applyImport(env, read) {
     deferredCount: counts.deferred, salesCreated: counts.salesCreated, withoutPurchaseCount: counts.withoutPurchase, unknownTypesJson: JSON.stringify(unknownTypes), diagnosticsJson: JSON.stringify(diagnostics),
     warningsJson: JSON.stringify(warnings),
   });
+  // A automática só guarda o lote se houver algo para mostrar (D300): criado, ligado, para conferir, revertido ou pendência nova.
+  const changed = counts.purchasesCreated + counts.salesCreated + counts.matched + counts.review + counts.reverted;
+  if (trigger === 'AUTO' && changed === 0 && newIssues === 0) {
+    ImportBatch.remove(batch.id);
+    return { batchId: null };
+  }
   return { batchId: batch.id };
 }
 
@@ -625,7 +651,8 @@ function recordFailure({ trigger, fullScan, now, nowFn, cutoffAt, errorCode }) {
   try {
     const finishedAt = new Date(Math.max(now.getTime(), nowFn()));
     runInTransaction(() => {
-      ImportBatch.create(
+      // A automática não grava lote FAILED (D304); o card mostra a falha pelo estado da integração.
+      if (trigger !== 'AUTO') ImportBatch.create(
         { source: SOURCE, trigger, status: 'FAILED', startedAt: now.toISOString(), finishedAt: finishedAt.toISOString(), fullScan, cutoffAt, errorCode },
         { now }
       );
@@ -638,6 +665,17 @@ function recordFailure({ trigger, fullScan, now, nowFn, cutoffAt, errorCode }) {
 
 // --- Execução ---------------------------------------------------------------------------------------------------------
 
+// Por que a automática não roda agora (ou null). Silenciosa: não é erro.
+//   AUTO_ALREADY_RAN: já rodou neste processo; AUTO_NOT_CONFIGURED: opção desligada, sem chave, sem loja ou sem a primeira
+//   importação (o corte); AUTO_PAUSED: pausada depois de desfazer/trocar de conta; BUSY: importação manual ou backup em andamento.
+function autoSkipReason(row) {
+  if (autoAttempted) return 'AUTO_ALREADY_RAN';
+  if (!row.autoImportOnOpen || !row.hasApiKey || row.storeId === null || row.tradesCutoffAt === null) return 'AUTO_NOT_CONFIGURED';
+  if (row.autoImportPaused) return 'AUTO_PAUSED';
+  if (importLock.isImportInProgress() || backupService.isBackupBusy()) return 'BUSY';
+  return null;
+}
+
 // `now`: Date do relógio do app. `nowFn`/`sleepFn`/`fetchFn` são injetáveis (testes).
 async function runImport({
   trigger = 'MANUAL', cutoffAt, fullScan = false, source = SOURCE, fetchFn, now = new Date(), nowFn = Date.now, sleepFn,
@@ -646,8 +684,13 @@ async function runImport({
   const adapter = integrationService.getAdapter(source);
   const problems = validateAdapter(adapter);
   if (problems.length) throw new Error(`Adapter inválido: ${problems.join(', ')}`);
-  if (trigger !== 'MANUAL') throw new ConflictError('A importação automática ainda não está disponível.', 'IMPORT_AUTO_NOT_AVAILABLE');
+  if (trigger !== 'MANUAL' && trigger !== 'AUTO') throw new ValidationError('trigger deve ser MANUAL ou AUTO.', 'INVALID_FIELD', { field: 'trigger' });
   const row = integrationService.loadRow(source, { now });
+  if (trigger === 'AUTO') {
+    const skipped = autoSkipReason(row);
+    if (skipped) return { batch: null, skipped };
+    autoAttempted = true; // a partir daqui conta como "a" automática do processo, mesmo que falhe
+  }
   const store = requireImportStore(row);
   const apiKey = integrationService.requireApiKey(source);
   importLock.assertIdle();
@@ -685,7 +728,10 @@ async function runImport({
       env.account = account;
       env.steamId = account.steamId; // só em memória; nunca é gravado (D309)
       const tx = await readTransactions(env);
-      const tr = await readTrades(env, { transactions: tx.transactions });
+      // Atalho da automática (D295): sem transação nova no extrato, nem busca os trades.
+      const tr = trigger === 'AUTO' && !hasNewTransactions(tx.transactions)
+        ? { trades: [], invalid: [], pages: 0, orderBroken: false, warnings: [] }
+        : await readTrades(env, { transactions: tx.transactions });
       read = {
         transactions: tx.transactions, invalidTransactions: tx.invalid, transactionPages: tx.pages, trades: tr.trades, invalidTrades: tr.invalid, tradePages: tr.pages,
         orderBroken: tr.orderBroken, warnings: [...tx.warnings, ...tr.warnings],
@@ -705,7 +751,7 @@ async function runImport({
       failure('INTERNAL_ERROR');
       throw err;
     }
-    return { batch: getBatchView(applied.batchId) };
+    return { batch: applied.batchId === null ? null : getBatchView(applied.batchId) };
   } finally {
     clearTimeout(timer);
     release();
@@ -784,6 +830,7 @@ function undoBatch(batchId, { confirmWarnings = false, now = new Date() } = {}) 
 module.exports = {
   SOURCE,
   isImportInProgress,
+  resetAutoForTests,
   runImport,
   getBatchView,
   listBatches,
