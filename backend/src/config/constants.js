@@ -81,10 +81,27 @@ const CSFLOAT_RATE_LIMIT_MAX_WAIT_MS = 30000;
 const API_KEY_MIN_LENGTH = 8;
 const API_KEY_MAX_LENGTH = 512;
 const CSFLOAT_HELP_URL = 'https://csfloat.com/profile';
+// Importação (D318, 9.2).
+const CSFLOAT_IMPORT_TOTAL_TIMEOUT_MS = 120000;
+const CSFLOAT_PAGE_LIMIT = 50;
+const CSFLOAT_MAX_PAGES = 200;
+const CSFLOAT_PAGE_DELAY_MS = 250;
+const IMPORT_RECHECK_WINDOW_MS = 2 * 86400000;
+const IMPORT_OPEN_GRACE_MS = 2 * 86400000;
+const IMPORT_DEFAULT_TRADE_LOCK_DAYS = 7;
+const IMPORT_BATCHES_PAGE_SIZE = 20;
 // Colunas com segredo (D290): zeradas em todo arquivo de backup que sai do banco (exportação e backups automáticos).
 const SECRET_COLUMNS = Object.freeze([Object.freeze({ table: 'integrations', column: 'api_key' })]);
 
 module.exports = Object.freeze({
+  CSFLOAT_IMPORT_TOTAL_TIMEOUT_MS,
+  CSFLOAT_PAGE_LIMIT,
+  CSFLOAT_MAX_PAGES,
+  CSFLOAT_PAGE_DELAY_MS,
+  IMPORT_RECHECK_WINDOW_MS,
+  IMPORT_OPEN_GRACE_MS,
+  IMPORT_DEFAULT_TRADE_LOCK_DAYS,
+  IMPORT_BATCHES_PAGE_SIZE,
   CSFLOAT_API_BASE_URL,
   CSFLOAT_CALL_TIMEOUT_MS,
   CSFLOAT_TEST_TOTAL_TIMEOUT_MS,

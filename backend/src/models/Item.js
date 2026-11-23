@@ -81,4 +81,35 @@ function countAll() {
   return getDb().prepare('SELECT COUNT(*) AS n FROM items').get().n;
 }
 
-module.exports = { countAll, create, findById, findAll, findStatsCandidates, findLegacy, update, remove };
+// Compras (`COMPRA`) da loja, sem vínculo de importação, a partir de `acquiredFrom` (ISO), em qualquer status.
+// Candidatas ao casamento com os trades importados.
+function findUnlinkedPurchases(storeId, { acquiredFrom }) {
+  return getDb()
+    .prepare(
+      `SELECT * FROM items i WHERE i.acquisition_type = 'COMPRA' AND i.purchase_store_id = ? AND i.acquired_at >= ?
+         AND NOT EXISTS (SELECT 1 FROM external_links l WHERE l.entity_type = 'ITEM_PURCHASE' AND l.entity_id = i.id)
+       ORDER BY i.acquired_at ASC, i.id ASC`
+    )
+    .all(storeId, acquiredFrom)
+    .map(toItem);
+}
+
+// Data mais recente de compra (sem vínculo) e de venda (sem vínculo) na loja: sugestão da data de corte.
+function latestUnlinkedDates(storeId) {
+  const db = getDb();
+  const purchase = db
+    .prepare(
+      `SELECT MAX(i.acquired_at) AS latest FROM items i WHERE i.acquisition_type = 'COMPRA' AND i.purchase_store_id = ?
+         AND NOT EXISTS (SELECT 1 FROM external_links l WHERE l.entity_type = 'ITEM_PURCHASE' AND l.entity_id = i.id)`
+    )
+    .get(storeId);
+  const sale = db
+    .prepare(
+      `SELECT MAX(i.sold_at) AS latest FROM items i WHERE i.status = 'VENDIDO' AND i.sale_store_id = ?
+         AND NOT EXISTS (SELECT 1 FROM external_links l WHERE l.entity_type = 'ITEM_SALE' AND l.entity_id = i.id)`
+    )
+    .get(storeId);
+  return { purchaseAt: purchase ? purchase.latest : null, saleAt: sale ? sale.latest : null };
+}
+
+module.exports = { findUnlinkedPurchases, latestUnlinkedDates, countAll, create, findById, findAll, findStatsCandidates, findLegacy, update, remove };

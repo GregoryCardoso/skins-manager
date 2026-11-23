@@ -11,11 +11,12 @@ const { errorHandler, notFoundHandler } = require('./middlewares/errorHandler');
 // (D70; `undefined` = fetch global do Node). `staticDir` é a pasta do frontend exportado (D134).
 const DEFAULT_STATIC_DIR = path.join(__dirname, '..', '..', 'frontend', 'out');
 
-function createApp({ now = () => new Date(), fetchFn, catalogValidation, staticDir = DEFAULT_STATIC_DIR, backupMaxBytes, openFolderFn, canOpenFolderFn } = {}) {
+function createApp({ now = () => new Date(), fetchFn, catalogValidation, staticDir = DEFAULT_STATIC_DIR, backupMaxBytes, openFolderFn, canOpenFolderFn, sleepFn } = {}) {
   const app = express();
   app.disable('x-powered-by');
   app.locals.now = now;
   app.locals.fetchFn = fetchFn;
+  app.locals.sleepFn = sleepFn; // `undefined` = espera real entre as páginas da importação (testes injetam uma espera imediata)
   app.locals.staticDir = staticDir;
   app.locals.backupMaxBytes = backupMaxBytes; // `undefined` = BACKUP_MAX_BYTES (D151)
   app.locals.openFolderFn = openFolderFn; // `undefined` = Explorer real (D175)

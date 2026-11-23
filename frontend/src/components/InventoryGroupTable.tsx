@@ -17,6 +17,8 @@ interface Props extends UnitRowHandlers {
   expandedKeys: ReadonlySet<string>;
   onToggle: (key: string) => void;
   forSalePendingId?: number | null;
+  // Linha apontada por `?item=<id>` (destaque).
+  highlightedItemId?: number | null;
 }
 
 const COLUMNS = 6;
@@ -60,13 +62,14 @@ function SituationCell({ group }: { group: ItemGroup }) {
 }
 
 function GroupRow({
-  group, stores, expanded, onToggle, forSalePendingId, handlers,
+  group, stores, expanded, onToggle, forSalePendingId, highlightedItemId, handlers,
 }: {
   group: ItemGroup;
   stores: Store[];
   expanded: boolean;
   onToggle: (key: string) => void;
   forSalePendingId: number | null;
+  highlightedItemId: number | null;
   handlers: UnitRowHandlers;
 }) {
   const t = useT();
@@ -135,7 +138,14 @@ function GroupRow({
                 <UnitTableHead />
                 <tbody>
                   {group.units.map((unit) => (
-                    <InventoryUnitRow key={unit.id} item={unit} stores={stores} forSalePendingId={forSalePendingId} {...handlers} />
+                    <InventoryUnitRow
+                      key={unit.id}
+                      item={unit}
+                      stores={stores}
+                      forSalePendingId={forSalePendingId}
+                      highlighted={highlightedItemId === unit.id}
+                      {...handlers}
+                    />
                   ))}
                 </tbody>
               </table>
@@ -149,7 +159,7 @@ function GroupRow({
 
 // Visão agrupada (D277): uma linha por chave do itemStats; ao expandir, as unidades com as ações atuais.
 export default function InventoryGroupTable({
-  groups, stores, expandedKeys, onToggle, forSalePendingId = null, ...handlers
+  groups, stores, expandedKeys, onToggle, forSalePendingId = null, highlightedItemId = null, ...handlers
 }: Props) {
   const t = useT();
   return (
@@ -174,6 +184,7 @@ export default function InventoryGroupTable({
               expanded={expandedKeys.has(group.key)}
               onToggle={onToggle}
               forSalePendingId={forSalePendingId}
+              highlightedItemId={highlightedItemId}
               handlers={handlers}
             />
           ))}

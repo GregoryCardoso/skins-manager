@@ -44,6 +44,7 @@ function ItemCell({ item }: { item: ItemView }) {
       <span className={styles.badges}>
         <Badge>{tLoose(`enums.category.${item.category}`)}</Badge>
         {item.isLegacy && <Badge tone="warning">{t('inventory.legacy')}</Badge>}
+        {item.externalSource === 'CSFLOAT' && <Badge tone="info" title={t('imports.badgeHint')}>{t('imports.badge')}</Badge>}
       </span>
     </div>
   );
@@ -94,7 +95,7 @@ function SaleRow({ item, stores, onEdit, onUnsell, onDelete, onHistory }: Props 
   const profitUsd = info ? info.netReceivedUsdCents - info.purchaseCostUsdCents : item.saleProfitUsdCents;
 
   return (
-    <tr className={styles.row}>
+    <tr id={`item-row-${item.id}`} className={styles.row}>
       <td><ItemImage category={item.category} url={item.catalog?.imageUrl} /></td>
       <td><ItemCell item={item} /></td>
       <td><PurchaseStoreCell item={item} stores={stores} /></td>

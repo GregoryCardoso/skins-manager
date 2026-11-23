@@ -29,4 +29,10 @@ function remove(id) {
   return getDb().prepare('DELETE FROM deposits WHERE id = ?').run(id).changes > 0;
 }
 
-module.exports = { create, findById, findAll, update, remove };
+// Data do aporte mais recente de uma loja (sugestão da data de corte da importação).
+function maxDepositedAt(storeId) {
+  const row = getDb().prepare('SELECT MAX(deposited_at) AS latest FROM deposits WHERE store_id = ?').get(storeId);
+  return row ? row.latest : null;
+}
+
+module.exports = { maxDepositedAt, create, findById, findAll, update, remove };

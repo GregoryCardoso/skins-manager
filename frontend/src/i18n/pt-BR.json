@@ -156,7 +156,7 @@
     "INVALID_FAST_TURNOVER_DAYS": "O giro rápido deve ser um número inteiro de 1 a 364 dias.",
     "INVALID_SLOW_ITEM_DAYS": "O limite de agarrado deve ser um número inteiro de 2 a 365 dias.",
     "AGING_THRESHOLDS_ORDER": "O giro rápido deve ser menor que o limite de agarrado.",
-    "BACKUP_BUSY": "Há uma operação em andamento (catálogo, cotação ou exportação). Aguarde terminar e tente de novo.",
+    "BACKUP_BUSY": "Há uma operação em andamento (catálogo, cotação, importação do CSFloat ou exportação). Aguarde terminar e tente de novo.",
     "BACKUP_UNAVAILABLE": "O backup não está disponível: o banco está em memória.",
     "BACKUP_INVALID_FILE": "Este arquivo não é um backup do Skins Manager.",
     "BACKUP_CORRUPTED": "O arquivo de backup está corrompido e não foi importado.",
@@ -193,7 +193,21 @@
     "IMPORT_STORE_CURRENCY_NOT_ALLOWED": "A loja da integração precisa ser em dólar (US$).",
     "CONFIRMATION_REQUIRED": "Confirme a operação.",
     "CSFLOAT_ACCOUNT_NOT_CHANGED": "A chave é da mesma conta já ligada; não há o que trocar.",
-    "INTEGRATION_NOT_FOUND": "Integração não encontrada."
+    "INTEGRATION_NOT_FOUND": "Integração não encontrada.",
+    "IMPORT_IN_PROGRESS": "Já há uma importação em andamento. Aguarde terminar.",
+    "IMPORT_STORE_REQUIRED": "Crie, em Lojas, uma loja em US$ chamada \"CSFloat\".",
+    "IMPORT_CUTOFF_REQUIRED": "Informe a data de corte.",
+    "IMPORT_CUTOFF_ALREADY_SET": "A data de corte já foi definida.",
+    "CSFLOAT_ACCOUNT_CHANGED": "A chave é de outra conta CSFloat. Use \"Trocar de conta\" nas configurações.",
+    "IMPORT_AUTO_NOT_AVAILABLE": "A importação automática ainda não está disponível.",
+    "IMPORT_BATCH_NOT_FOUND": "Importação não encontrada.",
+    "IMPORT_UNDO_NOT_LATEST": "Só a última importação pode ser desfeita.",
+    "IMPORT_UNDO_CONFLICT": "Não dá para desfazer: há itens vendidos no app depois da importação.",
+    "IMPORT_UNDO_WARNINGS_NOT_CONFIRMED": "Confirme os avisos para desfazer.",
+    "DATE_IN_FUTURE": "A data não pode ser futura.",
+    "ITEM_SOLD_IN_APP": "Item vendido no app depois da importação.",
+    "ITEM_EDITED": "Item editado depois da importação.",
+    "ITEM_IN_HOLDING": "Item movido para o holding depois da importação."
   },
   "warnings": {
     "FEES_NOT_CONFIGURED": "As taxas da loja não estão configuradas.",
@@ -854,7 +868,18 @@
         "updateStoreConfirm": "Atualizar as taxas da loja {store} para as da sua conta? As vendas já registradas não mudam.",
         "storeUpdated": "Taxas da loja atualizadas.",
         "linkedStore": "Lançamentos vão para a loja: {store}",
-        "noStore": "A loja CSFloat não foi encontrada. Crie (ou recrie), em Lojas, uma loja em US$ chamada \"CSFloat\" para ela ser ligada automaticamente."
+        "noStore": "A loja CSFloat não foi encontrada. Crie (ou recrie), em Lojas, uma loja em US$ chamada \"CSFloat\" para ela ser ligada automaticamente.",
+        "importNow": "Importar agora",
+        "fullScan": "Varredura completa",
+        "fullScanHint": "Relê todo o histórico do CSFloat (mais lento). Use se achar que algo ficou de fora.",
+        "lastImport": "Última importação: {date}",
+        "lastImportFailed": "A última importação falhou: {reason}",
+        "neverImported": "Ainda não importado.",
+        "openEntries": {
+          "one": "{count} pendência",
+          "other": "{count} pendências"
+        },
+        "cutoffInfo": "Data de corte: {date}"
       }
     },
     "loadError": "Não foi possível carregar as configurações: {reason}"
@@ -1126,5 +1151,140 @@
     "startHint": "Não quer lançar o histórico antigo? Registre um aporte com o saldo atual da loja. O lucro real passa a ser medido a partir dessa data.",
     "totalsTitle": "Total nas lojas",
     "totalPendingDate": "Total pendente (libera a partir de {date}): {value}"
+  },
+  "imports": {
+    "button": "Importar do CSFloat",
+    "running": "Importando do CSFloat…",
+    "errorTitle": "Não foi possível importar",
+    "badge": "CSFloat",
+    "badgeHint": "Lançamento importado do CSFloat",
+    "seeInInventory": "Ver no inventário",
+    "seeCandidate": "Ver lançamento #{id}",
+    "unknownItem": "Item sem nome",
+    "disabled": {
+      "noKey": "Salve a chave do CSFloat em Configurações para importar.",
+      "noStore": "Crie, em Lojas, uma loja em US$ chamada \"CSFloat\".",
+      "running": "Já há uma importação em andamento."
+    },
+    "cutoff": {
+      "title": "Primeira importação do CSFloat",
+      "question": "Já lancei à mão tudo até qual data?",
+      "help": "Compras e vendas do CSFloat antes desta data serão ignoradas. A sugestão é o seu último lançamento manual ou aporte no CSFloat; você pode mudar.",
+      "baseDepositHint": "Se você começou com um aporte do saldo atual, use uma data a partir dele, para não contar o dinheiro duas vezes.",
+      "noSuggestion": "Sem lançamentos na loja do CSFloat: informe a data.",
+      "confirm": "Importar"
+    },
+    "summary": {
+      "title": "Importação do CSFloat",
+      "nothingNew": "Nada novo para importar.",
+      "details": "Ver detalhes"
+    },
+    "counts": {
+      "purchasesCreated": {
+        "one": "{count} compra importada",
+        "other": "{count} compras importadas"
+      },
+      "matched": {
+        "one": "{count} ligada a um lançamento que você já tinha",
+        "other": "{count} ligadas a lançamentos que você já tinha"
+      },
+      "review": {
+        "one": "{count} para conferir (possível duplicado)",
+        "other": "{count} para conferir (possível duplicado)"
+      },
+      "reverted": {
+        "one": "{count} trade revertido",
+        "other": "{count} trades revertidos"
+      },
+      "failed": {
+        "one": "{count} não importada (veja o motivo)",
+        "other": "{count} não importadas (veja o motivo)"
+      },
+      "unknownState": {
+        "one": "{count} com estado desconhecido (ignorada por segurança)",
+        "other": "{count} com estado desconhecido (ignoradas por segurança)"
+      },
+      "deferredSales": {
+        "one": "{count} venda encontrada: será importada na próxima versão",
+        "other": "{count} vendas encontradas: serão importadas na próxima versão"
+      },
+      "known": {
+        "one": "{count} já importada (ignorada)",
+        "other": "{count} já importadas (ignoradas)"
+      },
+      "notTransferred": {
+        "one": "{count} ainda não transferida (será verificada de novo)",
+        "other": "{count} ainda não transferidas (serão verificadas de novo)"
+      },
+      "beforeCutoff": {
+        "one": "{count} antes da data de corte",
+        "other": "{count} antes da data de corte"
+      }
+    },
+    "warnings": {
+      "SCAN_LIMIT_REACHED": "A leitura parou no limite de páginas. O restante fica para a próxima importação.",
+      "ORDER_NOT_GUARANTEED": "O CSFloat devolveu os trades fora de ordem; o app leu todo o histórico para não perder nada."
+    },
+    "undo": {
+      "button": "Desfazer importação",
+      "title": "Desfazer esta importação?",
+      "blocked": "Não dá para desfazer: estes itens foram vendidos no app depois da importação. Desfaça a venda deles antes.",
+      "warningsAck": "Entendi: as alterações feitas nesses itens serão perdidas.",
+      "ITEM_EDITED": "editado depois da importação",
+      "ITEM_IN_HOLDING": "no holding",
+      "ITEM_SOLD_IN_APP": "vendido no app",
+      "done": "Importação desfeita. A importação ao abrir o app fica pausada até a próxima importação manual.",
+      "reasons": {
+        "NOT_LATEST": "Só a última importação que mudou algo pode ser desfeita.",
+        "NOTHING_TO_UNDO": "Esta importação não criou nem ligou nada.",
+        "ALREADY_UNDONE": "Esta importação já foi desfeita.",
+        "FAILED_BATCH": "Esta importação falhou e não alterou nada."
+      },
+      "bodyItems": {
+        "one": "{count} item criado será excluído.",
+        "other": "{count} itens criados serão excluídos."
+      },
+      "bodyLinks": {
+        "one": "{count} lançamento seu será só desligado (não é apagado).",
+        "other": "{count} lançamentos seus serão só desligados (não são apagados)."
+      }
+    },
+    "page": {
+      "title": "Importações",
+      "open": "Pendências",
+      "noOpen": "Nenhuma pendência.",
+      "batches": "Histórico de importações",
+      "noBatches": "Nenhuma importação ainda.",
+      "undone": "Desfeita",
+      "failed": "Falhou",
+      "manual": "Manual",
+      "auto": "Automática",
+      "fullScan": "Varredura completa",
+      "loadMore": "Carregar mais",
+      "showDetails": "Ver detalhes",
+      "hideDetails": "Esconder detalhes",
+      "noEntries": "Esta importação não gerou itens para mostrar.",
+      "pendingCount": {
+        "one": "{count} pendência",
+        "other": "{count} pendências"
+      }
+    },
+    "groups": {
+      "CREATED": "Importadas",
+      "MATCHED": "Ligadas a lançamentos seus",
+      "POSSIBLE_DUPLICATE": "Possível duplicado",
+      "REVERTED": "Trade revertido",
+      "FAILED": "Não importadas"
+    },
+    "reasons": {
+      "CATALOG_NOT_FOUND": "Item não encontrado no catálogo. Atualize o catálogo; a próxima importação tenta de novo.",
+      "CATALOG_AMBIGUOUS": "Mais de um item do catálogo serve (ex.: fase da Doppler). Tentaremos de novo.",
+      "DIRECTION_UNKNOWN": "Não foi possível saber se é compra ou venda.",
+      "TRADE_SENT_TO_OTHER_USER": "O item foi enviado para outra pessoa. Confira no CSFloat.",
+      "SOURCE_RECORD_INVALID": "Dados incompletos vindos do CSFloat.",
+      "PRICE_MISMATCH": "O valor debitado no extrato é diferente do preço do anúncio.",
+      "REVERTED_PENDING_ACTION": "O CSFloat indica que este trade foi desfeito. A opção de remover o lançamento chega na próxima versão; por enquanto, confira e exclua o item à mão, se for o caso.",
+      "UNKNOWN_STATE": "Estado novo do CSFloat ({state}). Ignorado por segurança."
+    }
   }
 }

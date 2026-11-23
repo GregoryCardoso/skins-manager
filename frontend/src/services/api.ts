@@ -22,6 +22,10 @@ import type {
   ItemGroupQuery,
   ItemListQuery,
   ItemPatchBody,
+  ImportBatchList,
+  ImportBatchView,
+  ImportEntryView,
+  ImportRunBody,
   IntegrationView,
   ItemView,
   PreferencesPatch,
@@ -39,6 +43,7 @@ import type {
   StoreBalanceHistory,
   StoreCreateBody,
   StorePatchBody,
+  UndoPreview,
   Withdrawal,
   WithdrawalCreateBody,
   WithdrawalList,
@@ -387,3 +392,23 @@ export const testCsfloatConnection = () =>
 
 export const switchCsfloatAccount = () =>
   request<CsfloatSwitchAccountResult>('POST', '/integrations/csfloat/switch-account', { body: { confirm: true }, timeoutMs: 30000 });
+
+// --- Importação (9.2, D318) ------------------------------------------------------------------------
+
+// O servidor espera até 120 s pelo CSFloat (muitas páginas); o cliente espera um pouco mais.
+export const runCsfloatImport = (body: ImportRunBody = {}) =>
+  request<{ batch: ImportBatchView }>('POST', '/imports/csfloat/run', { body, timeoutMs: 150000 });
+
+export const listImportBatches = (query: { limit?: number; before?: number | null } = {}, signal?: AbortSignal) =>
+  request<ImportBatchList>('GET', '/imports/batches', { signal, query: { limit: query.limit, before: query.before } });
+
+export const getImportBatch = (id: number, signal?: AbortSignal) => request<ImportBatchView>('GET', `/imports/batches/${id}`, { signal });
+
+export const getUndoPreview = (id: number, signal?: AbortSignal) =>
+  request<UndoPreview>('GET', `/imports/batches/${id}/undo-preview`, { signal });
+
+export const undoImportBatch = (id: number, confirmWarnings: boolean) =>
+  request<ImportBatchView>('POST', `/imports/batches/${id}/undo`, { body: { confirmWarnings } });
+
+export const listOpenImportEntries = (signal?: AbortSignal) =>
+  request<{ entries: ImportEntryView[] }>('GET', '/imports/entries', { signal, query: { open: 'true' } });

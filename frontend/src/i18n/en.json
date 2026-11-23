@@ -156,7 +156,7 @@
     "INVALID_FAST_TURNOVER_DAYS": "Fast turnover must be a whole number from 1 to 364 days.",
     "INVALID_SLOW_ITEM_DAYS": "The stagnant limit must be a whole number from 2 to 365 days.",
     "AGING_THRESHOLDS_ORDER": "Fast turnover must be lower than the stagnant limit.",
-    "BACKUP_BUSY": "An operation is in progress (catalog, exchange rate or export). Wait for it to finish and try again.",
+    "BACKUP_BUSY": "An operation is in progress (catalog, exchange rate, CSFloat import or export). Wait for it to finish and try again.",
     "BACKUP_UNAVAILABLE": "Backup is not available: the database is in memory.",
     "BACKUP_INVALID_FILE": "This file is not a Skins Manager backup.",
     "BACKUP_CORRUPTED": "The backup file is corrupted and was not imported.",
@@ -193,7 +193,21 @@
     "IMPORT_STORE_CURRENCY_NOT_ALLOWED": "The integration store must be in US dollars.",
     "CONFIRMATION_REQUIRED": "Please confirm the operation.",
     "CSFLOAT_ACCOUNT_NOT_CHANGED": "The key belongs to the account already linked; nothing to switch.",
-    "INTEGRATION_NOT_FOUND": "Integration not found."
+    "INTEGRATION_NOT_FOUND": "Integration not found.",
+    "IMPORT_IN_PROGRESS": "An import is already running. Wait for it to finish.",
+    "IMPORT_STORE_REQUIRED": "Create, in Stores, a USD store named \"CSFloat\".",
+    "IMPORT_CUTOFF_REQUIRED": "Enter the cutoff date.",
+    "IMPORT_CUTOFF_ALREADY_SET": "The cutoff date is already set.",
+    "CSFLOAT_ACCOUNT_CHANGED": "The key belongs to another CSFloat account. Use \"Switch account\" in settings.",
+    "IMPORT_AUTO_NOT_AVAILABLE": "Automatic import is not available yet.",
+    "IMPORT_BATCH_NOT_FOUND": "Import not found.",
+    "IMPORT_UNDO_NOT_LATEST": "Only the latest import can be undone.",
+    "IMPORT_UNDO_CONFLICT": "Cannot undo: some items were sold in the app after the import.",
+    "IMPORT_UNDO_WARNINGS_NOT_CONFIRMED": "Confirm the warnings to undo.",
+    "DATE_IN_FUTURE": "The date cannot be in the future.",
+    "ITEM_SOLD_IN_APP": "Item sold in the app after the import.",
+    "ITEM_EDITED": "Item edited after the import.",
+    "ITEM_IN_HOLDING": "Item moved to holding after the import."
   },
   "warnings": {
     "FEES_NOT_CONFIGURED": "The store fees are not configured.",
@@ -854,7 +868,18 @@
         "updateStoreConfirm": "Update the {store} store fees to your account's? Sales already recorded do not change.",
         "storeUpdated": "Store fees updated.",
         "linkedStore": "Entries go to the store: {store}",
-        "noStore": "The CSFloat store was not found. Create (or recreate), in Stores, a USD store named \"CSFloat\" so it is linked automatically."
+        "noStore": "The CSFloat store was not found. Create (or recreate), in Stores, a USD store named \"CSFloat\" so it is linked automatically.",
+        "importNow": "Import now",
+        "fullScan": "Full scan",
+        "fullScanHint": "Re-reads the whole CSFloat history (slower). Use it if you think something was missed.",
+        "lastImport": "Last import: {date}",
+        "lastImportFailed": "The last import failed: {reason}",
+        "neverImported": "Not imported yet.",
+        "openEntries": {
+          "one": "{count} pending item",
+          "other": "{count} pending items"
+        },
+        "cutoffInfo": "Cutoff date: {date}"
       }
     },
     "loadError": "Could not load the settings: {reason}"
@@ -1126,5 +1151,140 @@
     "startHint": "Don't want to enter your old history? Record a deposit with the store's current balance. Real profit will be measured from that date on.",
     "totalsTitle": "Total in stores",
     "totalPendingDate": "Total pending (releases from {date}): {value}"
+  },
+  "imports": {
+    "button": "Import from CSFloat",
+    "running": "Importing from CSFloat…",
+    "errorTitle": "Could not import",
+    "badge": "CSFloat",
+    "badgeHint": "Entry imported from CSFloat",
+    "seeInInventory": "See in inventory",
+    "seeCandidate": "See entry #{id}",
+    "unknownItem": "Unnamed item",
+    "disabled": {
+      "noKey": "Save the CSFloat key in Settings to import.",
+      "noStore": "Create, in Stores, a USD store named \"CSFloat\".",
+      "running": "An import is already running."
+    },
+    "cutoff": {
+      "title": "First CSFloat import",
+      "question": "Up to which date have I already entered everything by hand?",
+      "help": "CSFloat purchases and sales before this date will be ignored. The suggestion is your last manual entry or deposit on CSFloat; you can change it.",
+      "baseDepositHint": "If you started with a deposit of your current balance, pick a date from it onward, so money isn't counted twice.",
+      "noSuggestion": "No entries in the CSFloat store yet: enter the date.",
+      "confirm": "Import"
+    },
+    "summary": {
+      "title": "CSFloat import",
+      "nothingNew": "Nothing new to import.",
+      "details": "See details"
+    },
+    "counts": {
+      "purchasesCreated": {
+        "one": "{count} purchase imported",
+        "other": "{count} purchases imported"
+      },
+      "matched": {
+        "one": "{count} linked to an entry you already had",
+        "other": "{count} linked to entries you already had"
+      },
+      "review": {
+        "one": "{count} to review (possible duplicate)",
+        "other": "{count} to review (possible duplicate)"
+      },
+      "reverted": {
+        "one": "{count} reverted trade",
+        "other": "{count} reverted trades"
+      },
+      "failed": {
+        "one": "{count} not imported (see why)",
+        "other": "{count} not imported (see why)"
+      },
+      "unknownState": {
+        "one": "{count} with an unknown state (skipped for safety)",
+        "other": "{count} with an unknown state (skipped for safety)"
+      },
+      "deferredSales": {
+        "one": "{count} sale found: it will be imported in the next version",
+        "other": "{count} sales found: they will be imported in the next version"
+      },
+      "known": {
+        "one": "{count} already imported (skipped)",
+        "other": "{count} already imported (skipped)"
+      },
+      "notTransferred": {
+        "one": "{count} not transferred yet (will be checked again)",
+        "other": "{count} not transferred yet (will be checked again)"
+      },
+      "beforeCutoff": {
+        "one": "{count} before the cutoff date",
+        "other": "{count} before the cutoff date"
+      }
+    },
+    "warnings": {
+      "SCAN_LIMIT_REACHED": "Reading stopped at the page limit. The rest is left for the next import.",
+      "ORDER_NOT_GUARANTEED": "CSFloat returned the trades out of order; the app read the whole history so nothing is missed."
+    },
+    "undo": {
+      "button": "Undo import",
+      "title": "Undo this import?",
+      "blocked": "Cannot undo: these items were sold in the app after the import. Undo their sale first.",
+      "warningsAck": "I understand: changes made to these items will be lost.",
+      "ITEM_EDITED": "edited after the import",
+      "ITEM_IN_HOLDING": "in holding",
+      "ITEM_SOLD_IN_APP": "sold in the app",
+      "done": "Import undone. Importing on app start is paused until the next manual import.",
+      "reasons": {
+        "NOT_LATEST": "Only the latest import that changed something can be undone.",
+        "NOTHING_TO_UNDO": "This import did not create or link anything.",
+        "ALREADY_UNDONE": "This import was already undone.",
+        "FAILED_BATCH": "This import failed and changed nothing."
+      },
+      "bodyItems": {
+        "one": "{count} created item will be deleted.",
+        "other": "{count} created items will be deleted."
+      },
+      "bodyLinks": {
+        "one": "{count} of your entries will only be unlinked (not deleted).",
+        "other": "{count} of your entries will only be unlinked (not deleted)."
+      }
+    },
+    "page": {
+      "title": "Imports",
+      "open": "Pending items",
+      "noOpen": "No pending items.",
+      "batches": "Import history",
+      "noBatches": "No imports yet.",
+      "undone": "Undone",
+      "failed": "Failed",
+      "manual": "Manual",
+      "auto": "Automatic",
+      "fullScan": "Full scan",
+      "loadMore": "Load more",
+      "showDetails": "See details",
+      "hideDetails": "Hide details",
+      "noEntries": "This import has no items to show.",
+      "pendingCount": {
+        "one": "{count} pending item",
+        "other": "{count} pending items"
+      }
+    },
+    "groups": {
+      "CREATED": "Imported",
+      "MATCHED": "Linked to your entries",
+      "POSSIBLE_DUPLICATE": "Possible duplicate",
+      "REVERTED": "Reverted trade",
+      "FAILED": "Not imported"
+    },
+    "reasons": {
+      "CATALOG_NOT_FOUND": "Item not found in the catalog. Update the catalog; the next import will try again.",
+      "CATALOG_AMBIGUOUS": "More than one catalog item fits (e.g., Doppler phase). We will try again.",
+      "DIRECTION_UNKNOWN": "Could not tell whether it is a purchase or a sale.",
+      "TRADE_SENT_TO_OTHER_USER": "The item was sent to someone else. Check on CSFloat.",
+      "SOURCE_RECORD_INVALID": "Incomplete data from CSFloat.",
+      "PRICE_MISMATCH": "The amount debited in the statement differs from the listing price.",
+      "REVERTED_PENDING_ACTION": "CSFloat shows this trade was reversed. The option to remove the entry comes in the next version; for now, check and delete the item by hand if needed.",
+      "UNKNOWN_STATE": "New CSFloat state ({state}). Skipped for safety."
+    }
   }
 }

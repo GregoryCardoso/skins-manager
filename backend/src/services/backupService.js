@@ -18,6 +18,7 @@ const folderOpener = require('./system/folderOpener');
 const catalogService = require('./catalogService');
 const integrationService = require('./integrationService');
 const settingsService = require('./settingsService');
+const importLock = require('./imports/importLock');
 const Item = require('../models/Item');
 const Store = require('../models/Store');
 
@@ -75,6 +76,7 @@ function hasSqliteSignature(buffer) {
 const BUSY_CHECKS = Object.freeze([
   () => catalogService.isCatalogRefreshInProgress(),
   () => settingsService.isFxRefreshInProgress(),
+  () => importLock.isImportInProgress(), // importação do CSFloat (D303, D318)
 ]);
 
 function isBackupBusy() {
@@ -195,7 +197,7 @@ function importBackup(buffer, { now = new Date() } = {}) {
   ensureFileDatabase();
   // 1. Operação longa em andamento.
   if (isBackupBusy()) {
-    throw new ConflictError('Há uma operação em andamento (catálogo, cotação ou exportação). Aguarde terminar e tente de novo.', 'BACKUP_BUSY');
+    throw new ConflictError('Há uma operação em andamento (catálogo, cotação, importação do CSFloat ou exportação). Aguarde terminar e tente de novo.', 'BACKUP_BUSY');
   }
   // 2. Assinatura SQLite.
   if (!hasSqliteSignature(buffer)) {

@@ -7,7 +7,11 @@
 const crypto = require('crypto');
 const Integration = require('../models/Integration');
 const Store = require('../models/Store');
+const ImportBatchEntry = require('../models/ImportBatchEntry');
 const csfloatAdapter = require('./imports/adapters/csfloatAdapter');
+const importLock = require('./imports/importLock');
+const cutoffService = require('./imports/cutoffService');
+const externalLinkService = require('./externalLinkService');
 const { AppError, ValidationError, ConflictError } = require('../errors/AppError');
 const {
   API_KEY_MIN_LENGTH,
@@ -45,6 +49,11 @@ function normalizeApiKey(raw) {
 // HMAC-SHA256 (hex) do Steam ID com o sal da instalação (hex de 32 bytes). Só serve para detectar troca de conta (D309).
 function computeFingerprint(steamId, saltHex) {
   return crypto.createHmac('sha256', Buffer.from(String(saltHex), 'hex')).update(String(steamId)).digest('hex');
+}
+
+// A conta da chave é a ligada? Sem impressão digital gravada, qualquer conta serve (a primeira vez grava).
+function accountMatchesRow(account, row) {
+  return row.accountFingerprint === null || computeFingerprint(account.steamId, row.accountSalt) === row.accountFingerprint;
 }
 
 // Compara as taxas da conta (`/me`) com as da loja no app (D314), tolerância 0. Sem loja: tudo nulo. Taxa nula de um lado:
@@ -114,8 +123,10 @@ function toView(row, source) {
     lastImportAt: row.lastImportAt,
     lastImportStatus: row.lastImportStatus,
     lastImportErrorCode: row.lastImportErrorCode,
-    importInProgress: false, // a importação entra na 9.2
-    openEntriesCount: 0, // idem
+    importInProgress: importLock.isImportInProgress(),
+    openEntriesCount: ImportBatchEntry.countOpen(),
+    // Só o valor inicial do campo da primeira importação (D296); depois que o corte existe, não há sugestão.
+    suggestedCutoffAt: row.tradesCutoffAt === null && store ? cutoffService.suggest({ storeId: store.id }) : null,
     helpUrl: CSFLOAT_HELP_URL,
   };
 }
@@ -198,19 +209,27 @@ async function fetchAccount(source, { fetchFn, nowFn }) {
   }
 }
 
+// Recusa se a chave é de outra conta que a ligada (D293). A importação usa a mesma regra do "Testar conexão".
+function assertSameAccount(account, row) {
+  if (!accountMatchesRow(account, row)) {
+    throw new ConflictError('A chave é de outra conta CSFloat. Use "Trocar de conta" nas configurações.', 'CSFLOAT_ACCOUNT_CHANGED');
+  }
+}
+
+// Primeira vez: grava o sal e a impressão digital da conta (nunca o Steam ID). Devolve true se ligou agora.
+function ensureAccountLinked(account, row, { source = SOURCE, now = new Date() } = {}) {
+  if (row.accountFingerprint !== null) return false;
+  const salt = crypto.randomBytes(32).toString('hex');
+  Integration.update(source, { accountSalt: salt, accountFingerprint: computeFingerprint(account.steamId, salt) }, { now });
+  return true;
+}
+
 // "Testar conexão" (D288): GET /me. Primeira vez grava só a impressão digital da conta (o nome nunca é gravado).
 async function testConnection({ source = SOURCE, fetchFn, now = new Date(), nowFn } = {}) {
   const row = loadRow(source);
   const account = await fetchAccount(source, { fetchFn, nowFn });
-  let accountMatches = true;
-  let accountLinkedNow = false;
-  if (row.accountFingerprint === null) {
-    const salt = crypto.randomBytes(32).toString('hex');
-    Integration.update(source, { accountSalt: salt, accountFingerprint: computeFingerprint(account.steamId, salt) }, { now });
-    accountLinkedNow = true;
-  } else {
-    accountMatches = computeFingerprint(account.steamId, row.accountSalt) === row.accountFingerprint;
-  }
+  const accountLinkedNow = ensureAccountLinked(account, row, { source, now });
+  const accountMatches = accountLinkedNow ? true : accountMatchesRow(account, row);
   const current = loadRow(source, { now });
   const store = current.storeId ? Store.findById(current.storeId) : null;
   return {
@@ -227,12 +246,18 @@ async function testConnection({ source = SOURCE, fetchFn, now = new Date(), nowF
 async function switchAccount({ source = SOURCE, confirm, fetchFn, now = new Date(), nowFn } = {}) {
   const row = loadRow(source);
   if (confirm !== true) throw new ValidationError('Confirme a operação.', 'CONFIRMATION_REQUIRED', { field: 'confirm' });
+  importLock.assertIdle();
   const account = await fetchAccount(source, { fetchFn, nowFn });
-  if (row.accountFingerprint !== null && computeFingerprint(account.steamId, row.accountSalt) === row.accountFingerprint) {
+  importLock.assertIdle(); // uma importação pode ter começado durante a chamada
+  if (row.accountFingerprint !== null && accountMatchesRow(account, row)) {
     throw new ConflictError('A chave é da mesma conta já ligada; não há o que trocar.', 'CSFLOAT_ACCOUNT_NOT_CHANGED');
   }
   const salt = crypto.randomBytes(32).toString('hex');
-  Integration.resetForAccountSwitch(source, { fingerprint: computeFingerprint(account.steamId, salt), salt }, { now });
+  // Os trades abertos da conta anterior viram IGNORED na mesma transação da troca (D293).
+  Integration.resetForAccountSwitch(source, { fingerprint: computeFingerprint(account.steamId, salt), salt }, {
+    now,
+    alsoInTransaction: () => externalLinkService.ignoreOpenForAccountSwitch({ source, now }),
+  });
   return { integration: toView(loadRow(source), source), username: account.username };
 }
 
@@ -257,6 +282,11 @@ module.exports = {
   normalizeApiKey,
   computeFingerprint,
   buildFeeCheck,
+  getAdapter,
+  loadRow,
+  requireApiKey,
+  assertSameAccount,
+  ensureAccountLinked,
   getStatus,
   updateSettings,
   saveApiKey,

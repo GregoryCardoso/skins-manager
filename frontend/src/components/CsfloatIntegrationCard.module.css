@@ -5,4 +5,5 @@
 .savedKey { margin: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 .warnings { display: flex; flex-direction: column; gap: 0.5rem; }
 .helpLink { color: var(--accent); }
+.importBox { display: flex; flex-direction: column; gap: 0.5rem; border-top: 1px solid var(--border); padding-top: 0.75rem; }
 .actions { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center; }

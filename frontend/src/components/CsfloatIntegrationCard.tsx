@@ -1,9 +1,11 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import Link from 'next/link';
 import { useId, useState, type FormEvent } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
+import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
+import { formatDateTime } from '@/lib/format';
 import { validateApiKeyInput } from '@/lib/apiKeyInput';
 import { applyFeeUpdate, buildFeeUpdateBody, buildFeeWarnings } from '@/lib/feeCheck';
 import { queryKeys } from '@/lib/queryKeys';
@@ -14,6 +16,7 @@ import {
 } from '@/services/api';
 import type { CsfloatTestResult } from '@/types/api';
 import ConfirmDialog from './ConfirmDialog';
+import { useCsfloatImport } from './useCsfloatImport';
 import cardStyles from './CsfloatIntegrationCard.module.css';
 import styles from './settings.module.css';
 
@@ -23,12 +26,15 @@ type Dialog = 'remove' | 'switch' | 'updateStore' | null;
 export default function CsfloatIntegrationCard() {
   const t = useT();
   const tLoose = useTLoose();
+  const tPlural = useTPlural();
   const language = useLanguage();
   const invalidate = useInvalidate();
   const keyId = useId();
 
   const integrationQuery = useQuery({ queryKey: queryKeys.integrations.csfloat, queryFn: ({ signal }) => getCsfloatIntegration(signal) });
   const integration = integrationQuery.data ?? null;
+  // Importação (9.2): o mesmo fluxo do botão do Inventário e de Vendas (corte na primeira vez, resumo e erro).
+  const importer = useCsfloatImport();
 
   // A chave digitada vive só neste estado (nunca no cache de consultas) e é limpa depois de salvar.
   const [keyText, setKeyText] = useState('');
@@ -139,6 +145,14 @@ export default function CsfloatIntegrationCard() {
       .finally(() => setBusy(false));
   };
 
+  // Motivo da última falha de importação, traduzido pelo código (cai no próprio código se faltar a tradução).
+  const failedReason = (code: string | null): string => {
+    if (!code) return t('errors.UNKNOWN');
+    const key = `errors.${code}`;
+    const text = tLoose(key);
+    return text !== key ? text : code;
+  };
+
   const storeName = integration?.storeName ?? '';
   const warnings = buildFeeWarnings(testResult?.feeCheck ?? null, storeName, language, tLoose);
 
@@ -207,6 +221,44 @@ export default function CsfloatIntegrationCard() {
             )}
           </div>
 
+          <div className={cardStyles.importBox} data-testid="csfloat-import-box">
+            <p className={styles.muted} data-testid="csfloat-last-import">
+              {integration.lastImportStatus === 'FAILED'
+                ? t('settings.integrations.csfloat.lastImportFailed', { reason: failedReason(integration.lastImportErrorCode) })
+                : integration.lastImportAt
+                  ? t('settings.integrations.csfloat.lastImport', { date: formatDateTime(integration.lastImportAt, language) })
+                  : t('settings.integrations.csfloat.neverImported')}
+            </p>
+            {integration.tradesCutoffAt && (
+              <p className={styles.muted}>{t('settings.integrations.csfloat.cutoffInfo', { date: formatDateTime(integration.tradesCutoffAt, language) })}</p>
+            )}
+            {integration.openEntriesCount > 0 && (
+              <p className={styles.muted}>
+                <Link href="/imports/">{tPlural('settings.integrations.csfloat.openEntries', integration.openEntriesCount)}</Link>
+              </p>
+            )}
+            <div className={cardStyles.actions}>
+              <button
+                type="button"
+                className={`${styles.button} ${styles.primary}`}
+                onClick={() => importer.start()}
+                disabled={working || importer.disabledReason !== null}
+              >
+                {importer.running || importer.disabledReason === 'RUNNING' ? t('imports.running') : t('settings.integrations.csfloat.importNow')}
+              </button>
+              <button
+                type="button"
+                className={styles.button}
+                onClick={() => importer.start({ fullScan: true })}
+                disabled={working || importer.disabledReason !== null}
+                title={t('settings.integrations.csfloat.fullScanHint')}
+              >
+                {t('settings.integrations.csfloat.fullScan')}
+              </button>
+            </div>
+            <p className={styles.muted}>{t('settings.integrations.csfloat.fullScanHint')}</p>
+          </div>
+
           {testResult && (
             <div className={cardStyles.warnings}>
               <p className={styles.ok} role="status">
@@ -252,6 +304,7 @@ export default function CsfloatIntegrationCard() {
         </>
       )}
 
+      {importer.dialogs}
       {dialog === 'remove' && (
         <ConfirmDialog
           title={t('settings.integrations.csfloat.removeConfirmTitle')}

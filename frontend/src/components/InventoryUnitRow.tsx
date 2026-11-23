@@ -24,6 +24,8 @@ interface Props extends UnitRowHandlers {
   item: ItemView;
   stores: Store[];
   forSalePendingId?: number | null;
+  // Destaque da linha apontada por `?item=<id>` (link do resumo da importação).
+  highlighted?: boolean;
 }
 
 const BUCKET_TONES: Record<string, BadgeTone> = {
@@ -71,6 +73,7 @@ function ItemCell({ item }: { item: ItemView }) {
         <Badge>{tLoose(`enums.category.${item.category}`)}</Badge>
         {item.isLegacy && <Badge tone="warning">{t('inventory.legacy')}</Badge>}
         {item.status === 'VENDIDO' && <Badge tone="info">{t('inventory.sold')}</Badge>}
+        {item.externalSource === 'CSFLOAT' && <Badge tone="info" title={t('imports.badgeHint')}>{t('imports.badge')}</Badge>}
       </span>
     </div>
   );
@@ -206,15 +209,16 @@ export function UnitTableHead() {
 
 // Linha de uma unidade (extraída do InventoryTable na 8.8, sem mudar o visual).
 export default function InventoryUnitRow({
-  item, stores, onEdit, onSell, onUnsell, onDelete, onHistory, onOffSale, onForSale, forSalePendingId = null,
+  item, stores, onEdit, onSell, onUnsell, onDelete, onHistory, onOffSale, onForSale, forSalePendingId = null, highlighted = false,
 }: Props) {
   const t = useT();
   const locale = useLanguage();
   const classes = [styles.row];
   if (isStagnant(item)) classes.push(styles.stagnant);
   if (isLockedStock(item)) classes.push(styles.locked);
+  if (highlighted) classes.push(styles.highlighted);
   return (
-    <tr className={classes.join(' ')}>
+    <tr id={`item-row-${item.id}`} className={classes.join(' ')} aria-current={highlighted ? 'true' : undefined}>
       <td><ItemImage category={item.category} url={item.catalog?.imageUrl} /></td>
       <td><ItemCell item={item} /></td>
       <td><StoreCell item={item} stores={stores} /></td>

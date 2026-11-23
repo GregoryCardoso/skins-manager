@@ -26,6 +26,7 @@ const { buildStatsIndex, buildStatsKey, computeStats, computeSalesSummary } = re
 const { groupByStatsKey, summarizeGroupCost, summarizeStockStates, countStagnant } = require('./inventoryGroupService');
 const { getStoreOrFail } = require('./storeService');
 const { getAgingThresholds } = require('./settingsService');
+const externalLinkService = require('./externalLinkService');
 
 const ACQUISITION_TYPES = ['GANHEI', 'COMPRA'];
 
@@ -350,11 +351,13 @@ function toCatalogSummary(entry) {
 
 function toItemView(
   item,
-  { stores, settings, statsIndex, catalogById = new Map(), now = new Date(), thresholds }
+  { stores, settings, statsIndex, catalogById = new Map(), externalSources = new Map(), now = new Date(), thresholds }
 ) {
   const inStock = item.status === 'EM_ESTOQUE';
   return {
     ...item,
+    // Origem da importação (D318): 'CSFLOAT' se o item tem vínculo de compra ou venda com a loja externa; senão null.
+    externalSource: externalSources.get(item.id) ?? null,
     // Legado: sem vínculo com o catálogo numa categoria que o exige (D82).
     // Estado de venda (D265): só itens em estoque; vendido = null. `soldWhileOffSale`: vendido sem passar pela venda (sem giro).
     saleState: inStock ? (isOffSale(item) ? 'OFF_SALE' : 'FOR_SALE') : null,
@@ -377,7 +380,10 @@ function loadContext() {
   const items = Item.findAll();
   const catalogIds = items.map((i) => i.catalogId).filter((id) => !isNil(id));
   const catalogById = new Map(catalogService.getCatalogItemsByIds(catalogIds).map((c) => [c.id, c]));
-  return { items, stores: Store.findAll(), settings: Setting.get(), statsIndex: buildStatsIndex(items), catalogById };
+  return {
+    items, stores: Store.findAll(), settings: Setting.get(), statsIndex: buildStatsIndex(items), catalogById,
+    externalSources: externalLinkService.sourcesByItemIds(),
+  };
 }
 
 // Grava e monta a resposta na mesma transação: se a montagem falhar, nada é gravado.
@@ -396,7 +402,8 @@ function viewOf(item, { now, thresholds }) {
   const catalogById = new Map(
     isNil(item.catalogId) ? [] : catalogService.getCatalogItemsByIds([item.catalogId]).map((c) => [c.id, c])
   );
-  return toItemView(item, { stores: Store.findAll(), settings: Setting.get(), statsIndex, catalogById, now, thresholds });
+  const externalSources = externalLinkService.sourcesByItemIds([item.id]);
+  return toItemView(item, { stores: Store.findAll(), settings: Setting.get(), statsIndex, catalogById, externalSources, now, thresholds });
 }
 
 function findOrFail(id) {
@@ -423,11 +430,11 @@ function selectItems(all, query, { now, thresholds }) {
 }
 
 function listItems(query = {}, { now = new Date(), thresholds = getAgingThresholds() } = {}) {
-  const { items: all, stores, settings, statsIndex, catalogById } = loadContext();
+  const { items: all, stores, settings, statsIndex, catalogById, externalSources } = loadContext();
   const { items, saleStateCounts } = selectItems(all, query, { now, thresholds });
 
   return {
-    items: items.map((item) => toItemView(item, { stores, settings, statsIndex, catalogById, now, thresholds })),
+    items: items.map((item) => toItemView(item, { stores, settings, statsIndex, catalogById, externalSources, now, thresholds })),
     meta: {
       count: items.length,
       saleStateCounts,
@@ -442,7 +449,7 @@ function listItems(query = {}, { now = new Date(), thresholds = getAgingThreshol
 // Visão agrupada (D271-D275): só itens em estoque, mesma seleção e ordenação da lista individual. Os grupos seguem a
 // ordem da primeira aparição na lista ordenada; `stock` conta todo o estoque da chave, independente da aba e dos filtros.
 function listItemGroups(query = {}, { now = new Date(), thresholds = getAgingThresholds() } = {}) {
-  const { items: all, stores, settings, statsIndex, catalogById } = loadContext();
+  const { items: all, stores, settings, statsIndex, catalogById, externalSources } = loadContext();
   const { items, saleStateCounts } = selectItems(all, { ...query, status: 'EM_ESTOQUE' }, { now, thresholds });
 
   const stockByKey = new Map();
@@ -467,7 +474,7 @@ function listItemGroups(query = {}, { now = new Date(), thresholds = getAgingThr
       ...summarizeGroupCost(units, settings.usdBrlRate),
       stagnantCount: countStagnant(units, thresholds, now),
       stock: summarizeStockStates(stockByKey.get(key) ?? [], now),
-      units: units.map((item) => toItemView(item, { stores, settings, statsIndex, catalogById, now, thresholds })),
+      units: units.map((item) => toItemView(item, { stores, settings, statsIndex, catalogById, externalSources, now, thresholds })),
     };
   });
 
@@ -487,7 +494,7 @@ function listItemGroups(query = {}, { now = new Date(), thresholds = getAgingThr
 
 // Vendas (D124/D127): lista filtrada/ordenada + resumo sobre o mesmo conjunto. Estatísticas usam todos os itens.
 function listSales(query = {}, { now = new Date(), thresholds = getAgingThresholds() } = {}) {
-  const { items: all, stores, settings, statsIndex, catalogById } = loadContext();
+  const { items: all, stores, settings, statsIndex, catalogById, externalSources } = loadContext();
   let items = all.filter((i) => i.status === 'VENDIDO');
   if (!isNil(query.saleStoreId)) items = items.filter((i) => i.saleStoreId === query.saleStoreId);
   items = filterSoldInPeriod(items, { soldFrom: query.soldFrom, soldTo: query.soldTo });
@@ -495,7 +502,7 @@ function listSales(query = {}, { now = new Date(), thresholds = getAgingThreshol
   if (sortKey === 'turnaround') items = sortByTurnaround(items, query.order ?? 'asc');
   else items = sortBySoldAt(items, query.order ?? 'desc');
   return {
-    items: items.map((item) => toItemView(item, { stores, settings, statsIndex, catalogById, now, thresholds })),
+    items: items.map((item) => toItemView(item, { stores, settings, statsIndex, catalogById, externalSources, now, thresholds })),
     summary: computeSalesSummary(items, { usdBrlRate: settings.usdBrlRate }),
     meta: {
       count: items.length,
@@ -570,9 +577,15 @@ function updateItem(id, partial, ctx = {}) {
   return inTransaction(() => viewOf(Item.update(id, { ...record, catalogId: identity.catalogId }, { now }), { now, thresholds }));
 }
 
-function deleteItem(id) {
-  if (!Item.remove(id)) throw new NotFoundError('Item não encontrado.', 'ITEM_NOT_FOUND');
-  return { id };
+// Excluir um item importado desliga o vínculo e marca o registro externo como REMOVED_IN_APP (não volta a ser importado, D318).
+function deleteItem(id, ctx = {}) {
+  const { now = new Date() } = ctx;
+  return inTransaction(() => {
+    externalLinkService.detachOnRemove('ITEM_PURCHASE', id, { now });
+    externalLinkService.detachOnRemove('ITEM_SALE', id, { now });
+    if (!Item.remove(id)) throw new NotFoundError('Item não encontrado.', 'ITEM_NOT_FOUND');
+    return { id };
+  });
 }
 
 function sellItem(id, input, ctx = {}) {
@@ -589,7 +602,10 @@ function unsellItem(id, ctx = {}) {
   const { now = new Date(), thresholds = getAgingThresholds() } = ctx;
   const item = findOrFail(id);
   if (item.status !== 'VENDIDO') throw new ConflictError('Item não está vendido.', 'ITEM_NOT_SOLD');
-  return inTransaction(() => viewOf(Item.update(id, buildUnsellPatch(), { now }), { now, thresholds }));
+  return inTransaction(() => {
+    externalLinkService.detachOnRemove('ITEM_SALE', id, { now });
+    return viewOf(Item.update(id, buildUnsellPatch(), { now }), { now, thresholds });
+  });
 }
 
 // "Não está à venda" (D263, D265): grava `offSaleAt = now`. Só em estoque; já fora de venda = sem mudança (idempotente).

@@ -17,12 +17,19 @@ const DEPOSIT: readonly Prefix[] = [K.deposits.all, K.stores.all, K.storeBalance
 const WITHDRAWAL: readonly Prefix[] = [K.withdrawals.all, K.stores.all, K.storeBalances.all, K.profitSummary.all];
 const CHECK: readonly Prefix[] = [K.storeBalances.all, K.profitSummary.all];
 
+// Importação (9.2, D318): o card, os lotes, as pendências e tudo o que muda com itens. Editar, excluir ou desfazer a venda de um
+// item importado muda o desfazer e as pendências; por isso essas ações também invalidam `imports`.
+const IMPORT_CHANGE: readonly Prefix[] = [K.integrations.all, K.imports.all, ...ITEM_MONEY];
+const ITEM_IMPORTS: readonly Prefix[] = [...ITEM_MONEY, K.imports.all];
+
 export const INVALIDATION_MAP = {
   'item.create': ITEM_MONEY,
-  'item.update': ITEM_MONEY,
-  'item.delete': ITEM_MONEY,
+  'item.update': ITEM_IMPORTS,
+  'item.delete': ITEM_IMPORTS,
   'item.sell': ITEM_MONEY,
-  'item.unsell': ITEM_MONEY,
+  'item.unsell': ITEM_IMPORTS,
+  'import.run': IMPORT_CHANGE,
+  'import.undo': IMPORT_CHANGE,
   // O lucro real mostra o estoque à venda e em holding (8.9, D283).
   'item.offSale': [K.items.all, K.sales.all, K.profitSummary.all],
   'item.backOnSale': [K.items.all, K.sales.all, K.profitSummary.all],

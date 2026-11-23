@@ -104,6 +104,7 @@ describe('GET inicial', () => {
       lastImportErrorCode: null,
       importInProgress: false,
       openEntriesCount: 0,
+      suggestedCutoffAt: null,
       helpUrl: 'https://csfloat.com/profile',
     });
   });

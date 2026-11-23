@@ -13,7 +13,8 @@ const v009 = require('./v009_remove_initial_balance');
 const v010 = require('./v010_off_sale');
 const v011 = require('./v011_inventory_view');
 const v012 = require('./v012_integrations');
+const v013 = require('./v013_imports');
 
-const MIGRATIONS = Object.freeze([v001, v002, v003, v004, v005, v006, v007, v008, v009, v010, v011, v012]);
+const MIGRATIONS = Object.freeze([v001, v002, v003, v004, v005, v006, v007, v008, v009, v010, v011, v012, v013]);
 
 module.exports = { MIGRATIONS };

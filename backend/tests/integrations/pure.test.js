@@ -223,10 +223,10 @@ describe('parseCentsString / parseRate / auxiliares (prontos para a 9.2)', () =>
 });
 
 describe('contrato do Adapter (D287)', () => {
-  test('csfloatAdapter cumpre o contrato e declara só getAccount', () => {
+  test('csfloatAdapter cumpre o contrato e declara conta, trades e extrato', () => {
     expect(validateAdapter(csfloatAdapter)).toEqual([]);
     expect(csfloatAdapter.id).toBe('CSFLOAT');
-    expect(csfloatAdapter.capabilities).toEqual({ account: true, trades: false, transactions: false });
+    expect(csfloatAdapter.capabilities).toEqual({ account: true, trades: true, transactions: true });
   });
   test('validateAdapter acusa problemas', () => {
     expect(validateAdapter(null)).toEqual(['adapter ausente']);

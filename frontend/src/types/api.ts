@@ -174,6 +174,8 @@ export interface SaleRelease {
   isHeld: boolean;
 }
 
+export type ExternalSource = 'CSFLOAT';
+
 export interface ItemView {
   id: number;
   name: string;
@@ -218,6 +220,8 @@ export interface ItemView {
   offSaleAt: string | null;
   forSaleSince: string | null;
   soldWhileOffSale: boolean;
+  // Origem da importação (9.2, D318): 'CSFLOAT' se há vínculo de compra ou venda com a loja; senão nulo.
+  externalSource: ExternalSource | null;
   stats: ItemStats;
 }
 
@@ -731,6 +735,8 @@ export interface IntegrationView {
   lastImportErrorCode: string | null;
   importInProgress: boolean;
   openEntriesCount: number;
+  // Valor inicial (editável) da data de corte da primeira importação; nulo se não há sugestão ou o corte já existe.
+  suggestedCutoffAt: string | null;
   helpUrl: string;
 }
 
@@ -757,4 +763,104 @@ export interface CsfloatTestResult {
 export interface CsfloatSwitchAccountResult {
   integration: IntegrationView;
   username: string | null;
+}
+
+// --- Importação (9.2, D318): lotes, entradas do resumo e desfazer ---
+
+export type ImportOutcome = 'CREATED' | 'MATCHED' | 'POSSIBLE_DUPLICATE' | 'REVERTED' | 'FAILED' | 'UNKNOWN_STATE';
+export type ImportBatchStatus = 'DONE' | 'FAILED' | 'UNDONE';
+
+// Dados neutros do trade (sem dados pessoais); nome traduzido e imagem vêm do catálogo na resposta.
+export interface ImportEntryDisplay {
+  direction: 'BUY' | 'SELL' | null;
+  marketHashName: string | null;
+  name: string | null;
+  namePtBr: string | null;
+  imageUrl: string | null;
+  catalogId: string | null;
+  category: Category | null;
+  variant: Variant | null;
+  floatValue: number | null;
+  paintSeed: number | null;
+  phase: string | null;
+  priceCents: number | null;
+  currency: Currency;
+  date: string | null;
+  // Estado bruto do trade (texto curto do CSFloat), usado na mensagem de "estado desconhecido".
+  state: string | null;
+}
+
+export interface ImportEntryView {
+  id: number;
+  batchId: number;
+  outcome: ImportOutcome;
+  reasonCode: string | null;
+  entityType: 'ITEM_PURCHASE' | 'ITEM_SALE' | 'DEPOSIT' | 'WITHDRAWAL' | null;
+  entityId: number | null;
+  candidateIds: number[];
+  resolution: string | null;
+  resolvedAt: string | null;
+  display: ImportEntryDisplay;
+}
+
+export interface ImportBatchCounts {
+  purchasesCreated: number;
+  salesCreated: number;
+  matched: number;
+  known: number;
+  beforeCutoff: number;
+  notTransferred: number;
+  review: number;
+  reverted: number;
+  failed: number;
+  unknownState: number;
+  deferredSales: number;
+  withoutPurchase: number;
+}
+
+export interface ImportBatchSummary {
+  id: number;
+  source: 'CSFLOAT';
+  trigger: 'MANUAL' | 'AUTO';
+  status: ImportBatchStatus;
+  startedAt: string;
+  finishedAt: string;
+  fullScan: boolean;
+  cutoffAt: string | null;
+  pagesRead: { trades: number; transactions: number };
+  warnings: string[];
+  counts: ImportBatchCounts;
+  unknownTypes: Record<string, number>;
+  errorCode: string | null;
+  undoneAt: string | null;
+  undoable: boolean;
+  openEntriesCount: number;
+}
+
+export interface ImportBatchView extends ImportBatchSummary {
+  entries: ImportEntryView[];
+}
+
+export interface ImportRunBody {
+  cutoffAt?: string;
+  fullScan?: boolean;
+}
+
+export interface ImportBatchList {
+  batches: ImportBatchSummary[];
+  nextBefore: number | null;
+}
+
+export interface UndoPreviewIssue {
+  code: string;
+  itemId: number;
+  name: string;
+}
+
+export interface UndoPreview {
+  undoable: boolean;
+  reason: 'NOT_LATEST' | 'NOTHING_TO_UNDO' | 'ALREADY_UNDONE' | 'FAILED_BATCH' | null;
+  blockers: UndoPreviewIssue[];
+  warnings: UndoPreviewIssue[];
+  counts: { itemsToDelete: number; linksToRemove: number };
 }

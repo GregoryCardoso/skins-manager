@@ -23,17 +23,21 @@ const SAMPLE_KEYS: Array<readonly unknown[]> = [
   queryKeys.health.all,
   queryKeys.backupInfo.all,
   queryKeys.integrations.csfloat,
+  queryKeys.imports.batches,
 ];
-const GROUPS = ['items', 'sales', 'stores', 'settings', 'deposits', 'withdrawals', 'storeBalances', 'profitSummary', 'catalog', 'health', 'backupInfo', 'integrations'];
+const GROUPS = ['items', 'sales', 'stores', 'settings', 'deposits', 'withdrawals', 'storeBalances', 'profitSummary', 'catalog', 'health', 'backupInfo', 'integrations', 'imports'];
 const MONEY = ['items', 'sales', 'stores', 'deposits', 'withdrawals', 'storeBalances', 'profitSummary'];
 
 // Grupos que cada ação deve invalidar (tabela de D259).
 const EXPECTED: Record<string, string[]> = {
   'item.create': ['items', 'sales', 'stores', 'storeBalances', 'profitSummary'],
-  'item.update': ['items', 'sales', 'stores', 'storeBalances', 'profitSummary'],
-  'item.delete': ['items', 'sales', 'stores', 'storeBalances', 'profitSummary'],
+  'item.update': ['items', 'sales', 'stores', 'storeBalances', 'profitSummary', 'imports'],
+  'item.delete': ['items', 'sales', 'stores', 'storeBalances', 'profitSummary', 'imports'],
   'item.sell': ['items', 'sales', 'stores', 'storeBalances', 'profitSummary'],
-  'item.unsell': ['items', 'sales', 'stores', 'storeBalances', 'profitSummary'],
+  'item.unsell': ['items', 'sales', 'stores', 'storeBalances', 'profitSummary', 'imports'],
+  // Importação (9.2, D318): o card, os lotes e as pendências, mais tudo o que muda com itens.
+  'import.run': ['integrations', 'imports', 'items', 'sales', 'stores', 'storeBalances', 'profitSummary'],
+  'import.undo': ['integrations', 'imports', 'items', 'sales', 'stores', 'storeBalances', 'profitSummary'],
   'item.offSale': ['items', 'sales', 'profitSummary'],
   'item.backOnSale': ['items', 'sales', 'profitSummary'],
   'deposit.create': ['deposits', 'stores', 'storeBalances', 'profitSummary'],

@@ -14,8 +14,9 @@ export default function AppHeader() {
   const isProfit = pathname.startsWith('/profit');
   const isStores = pathname.startsWith('/stores');
   const isSettings = pathname.startsWith('/settings');
+  const isImports = pathname.startsWith('/imports');
   const isInventory = pathname === '/' || pathname === '';
-  const pageTitle = isSales ? t('nav.sales') : isProfit ? t('nav.profit') : isStores ? t('nav.stores') : isSettings ? t('nav.settings') : isInventory ? t('nav.inventory') : null;
+  const pageTitle = isSales ? t('nav.sales') : isProfit ? t('nav.profit') : isStores ? t('nav.stores') : isSettings ? t('nav.settings') : isImports ? t('imports.page.title') : isInventory ? t('nav.inventory') : null;
   const appName = t('common.appName');
 
   useEffect(() => {

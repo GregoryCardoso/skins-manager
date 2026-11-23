@@ -6,7 +6,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import en from '@/i18n/en.json';
 import ptBR from '@/i18n/pt-BR.json';
-import { translate } from '@/i18n/translate';
+import { translate, translatePlural } from '@/i18n/translate';
 import { queryKeys } from '@/lib/queryKeys';
 import type { IntegrationView, Store } from '@/types/api';
 
@@ -16,7 +16,8 @@ const LANG = { current: 'pt-BR' as 'pt-BR' | 'en' };
 const dict = () => (LANG.current === 'en' ? en : ptBR);
 vi.mock('@/i18n/I18nProvider', () => {
   const t = (key: string, params?: Record<string, string | number>) => translate(dict(), key, params);
-  return { useT: () => t, useTLoose: () => t, useLanguage: () => LANG.current };
+  const tPlural = (key: string, count: number, params?: Record<string, string | number>) => translatePlural(dict(), key, count, LANG.current, params);
+  return { useT: () => t, useTLoose: () => t, useTPlural: () => tPlural, useLanguage: () => LANG.current };
 });
 
 import CsfloatIntegrationCard from './CsfloatIntegrationCard';
@@ -26,7 +27,7 @@ const baseView: IntegrationView = {
   source: 'CSFLOAT', storeId: 1, storeName: 'CSFloat', storeCurrency: 'USD', storeSaleFeeRate: 0.02, storeWithdrawalFeeRate: 0.025,
   hasApiKey: false, apiKeyMasked: null, apiKeySavedAt: null, accountLinked: false, autoImportOnOpen: false, autoImportPaused: false,
   tradesCutoffAt: null, transactionsCutoffAt: null, lastImportAt: null, lastImportStatus: null, lastImportErrorCode: null,
-  importInProgress: false, openEntriesCount: 0, helpUrl: 'https://csfloat.com/profile',
+  importInProgress: false, openEntriesCount: 0, suggestedCutoffAt: null, helpUrl: 'https://csfloat.com/profile',
 };
 const stores = [
   { id: 1, name: 'CSFloat', currency: 'USD' },

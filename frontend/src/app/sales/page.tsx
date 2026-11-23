@@ -3,6 +3,7 @@
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Suspense, useCallback, useMemo } from 'react';
+import ImportButton from '@/components/ImportButton';
 import { useItemDialogs } from '@/components/ItemDialogs';
 import { usePreferences } from '@/components/PreferencesProvider';
 import SalesFilters from '@/components/SalesFilters';
@@ -84,6 +85,9 @@ function SalesView() {
       <div className={styles.titleRow}>
         <h1>{t('sales.title')}</h1>
         {data && <span className={styles.count} aria-live="polite">{tPlural('sales.count', data.meta.count)}</span>}
+        <div className={styles.titleActions}>
+          <ImportButton />
+        </div>
       </div>
 
       {notice && (

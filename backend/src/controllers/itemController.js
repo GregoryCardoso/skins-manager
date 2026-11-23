@@ -32,7 +32,7 @@ function update(req, res) {
 }
 
 function remove(req, res) {
-  ok(res, itemService.deleteItem(req.params.id));
+  ok(res, itemService.deleteItem(req.params.id, ctx(req)));
 }
 
 function sell(req, res) {

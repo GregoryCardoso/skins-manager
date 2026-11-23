@@ -9,6 +9,7 @@ const withdrawalRoutes = require('./withdrawalRoutes');
 const storeBalanceRoutes = require('./storeBalanceRoutes');
 const profitRoutes = require('./profitRoutes');
 const integrationRoutes = require('./integrationRoutes');
+const importRoutes = require('./importRoutes');
 
 const { APP_NAME, APP_VERSION } = require('../config/appInfo');
 
@@ -28,5 +29,6 @@ router.use('/withdrawals', withdrawalRoutes);
 router.use('/store-balances', storeBalanceRoutes);
 router.use('/profit', profitRoutes);
 router.use('/integrations', integrationRoutes);
+router.use('/imports', importRoutes);
 
 module.exports = router;

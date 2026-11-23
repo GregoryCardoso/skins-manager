@@ -43,7 +43,8 @@ function update(source, partial = {}, { now = new Date() } = {}) {
 
 // Troca de conta (D293): grava a nova impressão digital e recomeça como numa primeira importação, numa transação.
 // Mantém a chave, a loja e `auto_import_on_open`.
-function resetForAccountSwitch(source, { fingerprint, salt }, { now = new Date() } = {}) {
+// `alsoInTransaction` (opcional): função executada na mesma transação (ex.: ignorar os registros abertos da conta anterior).
+function resetForAccountSwitch(source, { fingerprint, salt }, { now = new Date(), alsoInTransaction = null } = {}) {
   const stamp = now.toISOString();
   getDb().transaction(() => {
     getDb()
@@ -53,6 +54,7 @@ function resetForAccountSwitch(source, { fingerprint, salt }, { now = new Date()
            auto_import_paused = 1, updated_at = ? WHERE source = ?`
       )
       .run(fingerprint, salt, stamp, source);
+    if (typeof alsoInTransaction === 'function') alsoInTransaction();
   })();
   return get(source);
 }

@@ -1,9 +1,10 @@
 'use strict';
 
 // Normalização pura das respostas do CSFloat (D287, D309). Por ALLOWLIST: só os campos listados são lidos; todo o resto do
-// JSON (e-mail, telefone, trade_token, payment_accounts, stripe_connect, avatar...) é descartado aqui e nunca sai do mapper.
-// Na 9.1 só existe `mapAccount` (GET /me); `parseCentsString` e `parseRate` ficam prontos para a 9.2.
+// JSON (e-mail, telefone, trade_token, payment_accounts, stripe_connect, avatar, dados da outra parte...) é descartado aqui e
+// nunca sai do mapper. `mapAccount` (GET /me, 9.1) e `mapTradesPage`/`mapTransactionsPage` (9.2).
 const { formatChanged } = require('./csfloatHttp');
+const { parseDate } = require('../../dateUtils');
 
 const isPlainObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
 
@@ -58,4 +59,175 @@ function mapAccount(json) {
   };
 }
 
-module.exports = { mapAccount, parseCentsString, parseRate, parseNonNegativeInt, parseDigitsId };
+// --- Trades e extrato (9.2, D318 seção 3) ----------------------------------------------------------------------------
+
+const SOURCE_RECORD_INVALID = 'SOURCE_RECORD_INVALID';
+
+// ISO 8601 com fuso -> ISO em UTC; qualquer outra coisa -> null.
+function parseIsoDate(value) {
+  if (typeof value !== 'string') return null;
+  try {
+    return parseDate(value.trim()).toISOString();
+  } catch (err) {
+    return null;
+  }
+}
+
+// Número finito em [0, 1] ou null (float da skin).
+function parseOptionalFloat(value) {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1 ? value : null;
+}
+
+// Texto aparado com 1 a `max` caracteres ou null.
+function parseText(value, max) {
+  if (typeof value !== 'string') return null;
+  const text = value.trim();
+  return text !== '' && text.length <= max ? text : null;
+}
+
+// Id em texto de dígitos; número só se for inteiro seguro (convertido em texto). Número inseguro perderia precisão -> null.
+function parseIdText(value) {
+  if (typeof value === 'number') return Number.isSafeInteger(value) && value >= 0 ? String(value) : null;
+  return parseDigitsId(value);
+}
+
+// Id de transação: dígitos ou um token curto (letras, números, `_` e `-`), até 40 caracteres.
+function parseTransactionId(value) {
+  if (typeof value === 'number') return Number.isSafeInteger(value) && value >= 0 ? String(value) : null;
+  return typeof value === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(value) ? value : null;
+}
+
+// Inteiro com sinal (número ou texto de inteiro). Ausente -> 0; qualquer outra coisa -> NaN (inválido).
+function parseSignedCents(value) {
+  if (value === undefined || value === null) return 0;
+  if (typeof value === 'number') return Number.isSafeInteger(value) ? value : NaN;
+  if (typeof value === 'string' && /^-?\d{1,15}$/.test(value)) return Number(value);
+  return NaN;
+}
+
+const invalidRecord = (externalId) => ({ ok: false, externalId: externalId ?? null, reason: SOURCE_RECORD_INVALID });
+
+// Um trade de GET /me/trades -> { ok: true, trade } ou { ok: false, externalId, reason }. Só os campos da allowlist.
+// `buyerId`/`sellerId` saem só para o service calcular a direção e nunca são gravados.
+function mapTrade(raw) {
+  if (!isPlainObject(raw)) return invalidRecord(null);
+  const externalId = parseIdText(raw.id);
+  const contractId = parseIdText(raw.contract_id);
+  const buyerId = parseIdText(raw.buyer_id);
+  const sellerId = parseIdText(raw.seller_id);
+  const createdAt = parseIsoDate(raw.created_at);
+  const contract = isPlainObject(raw.contract) ? raw.contract : null;
+  const item = contract && isPlainObject(contract.item) ? contract.item : null;
+  const priceCents = contract ? parseCentsString(contract.price) : null;
+  const marketHashName = item ? parseText(item.market_hash_name, 200) : null;
+  if (!externalId || !contractId || !buyerId || !sellerId || !createdAt || priceCents === null || !marketHashName) {
+    return invalidRecord(externalId);
+  }
+  const offer = isPlainObject(raw.steam_offer) ? raw.steam_offer : null;
+  const different = raw.sent_to_different_user_id;
+  const seed = Number.isInteger(item.paint_seed) && item.paint_seed >= 0 && item.paint_seed <= 1000 ? item.paint_seed : null;
+  return {
+    ok: true,
+    trade: {
+      externalId,
+      contractId,
+      buyerId,
+      sellerId,
+      rawState: parseText(raw.state, 60),
+      offerState: offer ? parseNonNegativeInt(offer.state) : null,
+      createdAt,
+      soldAt: parseIsoDate(contract.sold_at),
+      acceptedAt: parseIsoDate(raw.accepted_at),
+      protectionEndsAt: parseIsoDate(raw.trade_protection_ends_at),
+      verifySaleAt: parseIsoDate(raw.verify_sale_at),
+      sentToDifferentUser: (typeof different === 'string' && different !== '') || (typeof different === 'number' && different !== 0),
+      priceCents,
+      listingType: parseText(contract.type, 30),
+      item: {
+        marketHashName,
+        itemName: parseText(item.item_name, 200),
+        wearName: parseText(item.wear_name, 60),
+        type: parseText(item.type, 30),
+        isCommodity: item.is_commodity === true,
+        defIndex: parseNonNegativeInt(item.def_index),
+        paintIndex: parseNonNegativeInt(item.paint_index),
+        floatValue: parseOptionalFloat(item.float_value),
+        paintSeed: seed,
+        phase: parseText(item.phase, 40),
+        isStattrak: item.is_stattrak === true,
+        isSouvenir: item.is_souvenir === true,
+      },
+    },
+  };
+}
+
+// GET /me/trades -> { trades: [ { ok, trade } | { ok: false, ... } ], count }. Formato fora do esperado -> FORMAT_CHANGED.
+function mapTradesPage(json) {
+  if (!isPlainObject(json) || !Array.isArray(json.trades) || !Number.isInteger(json.count) || json.count < 0) throw formatChanged();
+  const seen = new Set();
+  const trades = json.trades.map((raw) => {
+    const result = mapTrade(raw);
+    if (result.ok) {
+      if (seen.has(result.trade.externalId)) throw formatChanged(); // id repetido na mesma página
+      seen.add(result.trade.externalId);
+    }
+    return result;
+  });
+  return { trades, count: json.count };
+}
+
+// Uma transação do extrato -> { ok: true, transaction } ou { ok: false, ... }. Fora da allowlist: session_id, transfer_id,
+// payment_*, exchange_rate, bid_id, listing_id etc. nunca são lidos.
+function mapTransaction(raw) {
+  if (!isPlainObject(raw)) return invalidRecord(null);
+  const externalId = parseTransactionId(raw.id);
+  const createdAt = parseIsoDate(raw.created_at);
+  const type = parseText(raw.type, 60);
+  const balance = parseSignedCents(raw.balance_offset);
+  const pending = parseSignedCents(raw.pending_offset);
+  if (!externalId || !createdAt || !type || Number.isNaN(balance) || Number.isNaN(pending)) return invalidRecord(externalId);
+  const details = isPlainObject(raw.details) ? raw.details : {};
+  const feeAmount = parseCentsString(details.fee_amount);
+  const fee = parseCentsString(details.fee);
+  const floatFee = parseCentsString(details.float_fee);
+  const processorFee = parseCentsString(details.processor_fee);
+  let feeCents = null;
+  if (feeAmount !== null) feeCents = feeAmount;
+  else if (fee !== null) feeCents = fee;
+  else if (floatFee !== null || processorFee !== null) feeCents = (floatFee ?? 0) + (processorFee ?? 0);
+  return {
+    ok: true,
+    transaction: {
+      externalId,
+      createdAt,
+      type,
+      balanceOffsetCents: balance,
+      pendingOffsetCents: pending,
+      contractId: parseIdText(details.contract_id),
+      tradeId: parseIdText(details.trade_id),
+      feeCents,
+      detailsType: parseText(details.type, 30),
+    },
+  };
+}
+
+// GET /me/transactions -> { transactions: [ { ok, transaction } | { ok: false, ... } ], count }.
+function mapTransactionsPage(json) {
+  if (!isPlainObject(json) || !Array.isArray(json.transactions) || !Number.isInteger(json.count) || json.count < 0) throw formatChanged();
+  return { transactions: json.transactions.map(mapTransaction), count: json.count };
+}
+
+module.exports = {
+  mapAccount,
+  mapTrade,
+  mapTradesPage,
+  mapTransaction,
+  mapTransactionsPage,
+  parseIsoDate,
+  parseOptionalFloat,
+  parseCentsString,
+  parseRate,
+  parseNonNegativeInt,
+  parseDigitsId,
+  SOURCE_RECORD_INVALID,
+};

@@ -2,7 +2,8 @@
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { Suspense, useCallback, useMemo, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import ImportButton from '@/components/ImportButton';
 import InventoryFilters from '@/components/InventoryFilters';
 import InventoryGroupTable from '@/components/InventoryGroupTable';
 import InventoryTable from '@/components/InventoryTable';
@@ -16,6 +17,7 @@ import {
   clearedFilters, hasActiveFilters, isGroupedAvailable, parseFilters, toApiQuery, toGroupQuery, toSearchString, type InventoryFilters as Filters,
 } from '@/lib/inventoryQuery';
 import { inventoryCountText } from '@/lib/inventoryCount';
+import { parseItemParam } from '@/lib/importSummary';
 import { queryKeys } from '@/lib/queryKeys';
 import { ApiRequestError, listItemGroups, listItems, listStores } from '@/services/api';
 import styles from './page.module.css';
@@ -79,6 +81,28 @@ function InventoryPageContent() {
     storesQuery.refetch();
   }, [activeQuery, storesQuery]);
 
+  // `?item=<id>` (link do resumo da importação): não é filtro. Expande o grupo do item (visão agrupada), rola até a linha uma vez
+  // e a destaca.
+  const focusItemId = parseItemParam(searchParams.get('item'));
+  const scrolledFor = useRef<number | null>(null);
+  useEffect(() => {
+    if (focusItemId === null || !grouped || !groupsData) return;
+    const group = groupsData.groups.find((g) => g.units.some((u) => u.id === focusItemId));
+    if (group) setExpandedKeys((current) => (current.has(group.key) ? current : new Set(current).add(group.key)));
+  }, [focusItemId, grouped, groupsData]);
+  useEffect(() => {
+    if (focusItemId === null) {
+      scrolledFor.current = null;
+      return;
+    }
+    if (scrolledFor.current === focusItemId) return;
+    const row = document.getElementById(`item-row-${focusItemId}`);
+    if (row) {
+      scrolledFor.current = focusItemId;
+      row.scrollIntoView({ block: 'center' });
+    }
+  }, [focusItemId, itemsData, groupsData, expandedKeys]);
+
   const {
     openCreate, openEdit, openSell, openUnsell, openDelete, openHistory, openOffSale, putForSale, forSalePendingId, notice, dismissNotice, dialogs,
   } = useItemDialogs(stores);
@@ -122,9 +146,12 @@ function InventoryPageContent() {
               : inventoryCountText(data.meta.count, null, tLoose)}
           </span>
         )}
-        <button type="button" className={styles.newItem} onClick={openCreate}>
-          {t('inventory.actions.newItem')}
-        </button>
+        <div className={styles.titleActions}>
+          <ImportButton />
+          <button type="button" className={styles.newItem} onClick={openCreate}>
+            {t('inventory.actions.newItem')}
+          </button>
+        </div>
       </div>
 
       {notice && (
@@ -211,6 +238,7 @@ function InventoryPageContent() {
               onOffSale={openOffSale}
               onForSale={putForSale}
               forSalePendingId={forSalePendingId}
+              highlightedItemId={focusItemId}
             />
           ) : itemsData && (
             <InventoryTable
@@ -224,6 +252,7 @@ function InventoryPageContent() {
               onOffSale={openOffSale}
               onForSale={putForSale}
               forSalePendingId={forSalePendingId}
+              highlightedItemId={focusItemId}
             />
           )}
         </div>

@@ -21,5 +21,13 @@ export const queryKeys = {
   catalog: { all: ['catalog'] as const, status: ['catalog', 'status'] as const },
   health: { all: ['health'] as const },
   integrations: { all: ['integrations'] as const, csfloat: ['integrations', 'csfloat'] as const },
+  // Importação (9.2, D318): lotes, um lote e as pendências abertas.
+  imports: {
+    all: ['imports'] as const,
+    batches: ['imports', 'batches'] as const,
+    batch: (id: number) => ['imports', 'batch', id] as const,
+    entries: ['imports', 'entries'] as const,
+    undoPreview: (id: number) => ['imports', 'undoPreview', id] as const,
+  },
   backupInfo: { all: ['backupInfo'] as const },
 };

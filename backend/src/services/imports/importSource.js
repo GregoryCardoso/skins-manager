@@ -5,8 +5,8 @@
 //   capabilities: { account, trades, transactions } (booleanos)
 //   getAccount({ apiKey, fetchFn, ... })      -> ExternalAccount { steamId, username, balanceCents, pendingBalanceCents,
 //                                                saleFeeRate, withdrawalFeeRate, statistics }       (se capabilities.account)
-//   pageTrades({ apiKey, page, limit, ... })        -> { trades, count, rateLimit }               (se capabilities.trades; 9.2)
-//   pageTransactions({ apiKey, page, limit, ... })  -> { transactions, count, rateLimit }         (se capabilities.transactions; 9.6)
+//   pageTrades({ apiKey, page, limit, ... })        -> { trades, count, rateLimit }               (se capabilities.trades; 9.2, GET /me/trades)
+//   pageTransactions({ apiKey, page, limit, ... })  -> { transactions, count, rateLimit }         (se capabilities.transactions; 9.2, GET /me/transactions)
 // O Adapter nunca acessa o banco e devolve só campos da allowlist do mapper.
 const CAPABILITY_METHODS = Object.freeze({ account: 'getAccount', trades: 'pageTrades', transactions: 'pageTransactions' });
 
