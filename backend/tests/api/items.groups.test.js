@@ -71,12 +71,13 @@ describe('GET /api/items/groups', () => {
     expect(off.groups[0].stock).toMatchObject({ forSale: 0, offSale: 1 });
   });
 
-  test('stagnantOnly conta só as unidades agarradas; com OFF_SALE a lista é vazia', async () => {
+  test('stagnantOnly filtra os grupos e o stagnantCount conta só as agarradas; a QTD é do grupo inteiro (9.5.1a); com OFF_SALE a lista é vazia', async () => {
     await create({ acquiredAt: iso(-60) });
     await create({ acquiredAt: iso(-2) });
     const data = await groups('?stagnantOnly=true');
     expect(data.groups).toHaveLength(1);
-    expect(data.groups[0]).toMatchObject({ quantity: 1, stagnantCount: 1 });
+    expect(data.groups[0]).toMatchObject({ quantity: 2, stagnantCount: 1 });
+    expect(data.groups[0].units).toHaveLength(1); // ao expandir, só as unidades do filtro
     expect((await groups('?stagnantOnly=true&saleState=OFF_SALE')).groups).toEqual([]);
   });
 

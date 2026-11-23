@@ -51,4 +51,13 @@ function forSale(req, res) {
   ok(res, itemService.markForSale(req.params.id, ctx(req)));
 }
 
-module.exports = { list, groups, sales, stats, getById, create, update, remove, sell, unsell, offSale, forSale };
+// Holding em lote (9.5.1a).
+function bulkOffSale(req, res) {
+  ok(res, itemService.bulkMarkOffSale(req.body, ctx(req)));
+}
+
+function bulkForSale(req, res) {
+  ok(res, itemService.bulkMarkForSale(req.body, ctx(req)));
+}
+
+module.exports = { list, groups, sales, stats, getById, create, update, remove, sell, unsell, offSale, forSale, bulkOffSale, bulkForSale };

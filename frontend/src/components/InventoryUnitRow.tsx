@@ -189,11 +189,22 @@ function InspectAction({ link }: { link: string | null }) {
 }
 
 // Cabeçalho da tabela de unidades (usado pela tabela individual e pelas unidades expandidas de um grupo).
-export function UnitTableHead() {
+// `selection`: caixa "Selecionar todas" (9.5.1a, D333), só nas unidades de um grupo.
+export function UnitTableHead({ selection }: { selection?: { checked: boolean; onChange: (checked: boolean) => void } } = {}) {
   const t = useT();
   return (
     <thead>
       <tr>
+        {selection && (
+          <th scope="col">
+            <input
+              type="checkbox"
+              checked={selection.checked}
+              onChange={(event) => selection.onChange(event.target.checked)}
+              aria-label={t('inventory.bulk.selectAll')}
+            />
+          </th>
+        )}
         <th scope="col"><span className={styles.srOnly}>{t('inventory.columns.image')}</span></th>
         <th scope="col">{t('inventory.columns.item')}</th>
         <th scope="col">{t('inventory.columns.store')}</th>
@@ -209,8 +220,8 @@ export function UnitTableHead() {
 
 // Linha de uma unidade (extraída do InventoryTable na 8.8, sem mudar o visual).
 export default function InventoryUnitRow({
-  item, stores, onEdit, onSell, onUnsell, onDelete, onHistory, onOffSale, onForSale, forSalePendingId = null, highlighted = false,
-}: Props) {
+  item, stores, onEdit, onSell, onUnsell, onDelete, onHistory, onOffSale, onForSale, forSalePendingId = null, highlighted = false, selection,
+}: Props & { selection?: { checked: boolean; onChange: (checked: boolean) => void } }) {
   const t = useT();
   const locale = useLanguage();
   const classes = [styles.row];
@@ -219,6 +230,16 @@ export default function InventoryUnitRow({
   if (highlighted) classes.push(styles.highlighted);
   return (
     <tr id={`item-row-${item.id}`} className={classes.join(' ')} aria-current={highlighted ? 'true' : undefined}>
+      {selection && (
+        <td>
+          <input
+            type="checkbox"
+            checked={selection.checked}
+            onChange={(event) => selection.onChange(event.target.checked)}
+            aria-label={t('inventory.bulk.selectUnit', { name: item.name, id: item.id })}
+          />
+        </td>
+      )}
       <td><ItemImage category={item.category} url={item.catalog?.imageUrl} /></td>
       <td><ItemCell item={item} /></td>
       <td><StoreCell item={item} stores={stores} /></td>

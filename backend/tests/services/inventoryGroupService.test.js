@@ -63,7 +63,7 @@ describe('summarizeStockStates', () => {
       unit(6, { tradeUnlockAt: NOW.toISOString() }), // igualdade = liberado
       unit(7, { status: 'VENDIDO' }),
     ];
-    expect(summarizeStockStates(items, NOW)).toEqual({ forSale: 2, tradeLocked: 2, offSale: 2, nextUnlockAt: ahead(2) });
+    expect(summarizeStockStates(items, NOW)).toEqual({ total: 6, forSale: 2, tradeLocked: 2, offSale: 2, nextUnlockAt: ahead(2) });
   });
 
   test('sem bloqueados: nextUnlockAt nulo', () => {

@@ -34,6 +34,9 @@ export const INVALIDATION_MAP = {
   'import.resolve': IMPORT_CHANGE,
   // O lucro real mostra o estoque à venda e em holding (8.9, D283).
   'item.offSale': [K.items.all, K.sales.all, K.profitSummary.all],
+  // Holding em lote (9.5.1a): os mesmos alvos, numa única invalidação no fim.
+  'item.offSaleBulk': [K.items.all, K.sales.all, K.profitSummary.all],
+  'item.backOnSaleBulk': [K.items.all, K.sales.all, K.profitSummary.all],
   'item.backOnSale': [K.items.all, K.sales.all, K.profitSummary.all],
   'deposit.create': DEPOSIT,
   'deposit.update': DEPOSIT,

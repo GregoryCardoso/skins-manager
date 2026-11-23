@@ -23,7 +23,7 @@ const {
 const { minPricesForItem, resolveSaleNet } = require('./pricingService');
 const { computeSaleProfitUsdCents, buildSaleInfo } = require('./profitService');
 const { buildStatsIndex, buildStatsKey, computeStats, computeSalesSummary } = require('./itemStatsService');
-const { groupByStatsKey, summarizeGroupCost, summarizeStockStates, countStagnant } = require('./inventoryGroupService');
+const { groupByStatsKey, summarizeGroupCost, summarizeStockStates, countStagnant, pickUnitsForSaleState } = require('./inventoryGroupService');
 const { getStoreOrFail } = require('./storeService');
 const { getAgingThresholds } = require('./settingsService');
 const externalLinkService = require('./externalLinkService');
@@ -472,7 +472,9 @@ function listItemGroups(query = {}, { now = new Date(), thresholds = getAgingThr
       exterior: first.exterior,
       phase: first.phase,
       catalog: withCatalog ? toCatalogSummary(catalogById.get(withCatalog.catalogId)) : null,
-      ...summarizeGroupCost(units, settings.usdBrlRate),
+      // QTD e custos do grupo inteiro em estoque (9.5.1a, D334 revista pelo usuário): batem com "X à venda · Y no holding";
+      // ao expandir aparecem só as unidades da aba e dos filtros.
+      ...summarizeGroupCost(stockByKey.get(key) ?? units, settings.usdBrlRate),
       stagnantCount: countStagnant(units, thresholds, now),
       stock: summarizeStockStates(stockByKey.get(key) ?? [], now),
       units: units.map((item) => toItemView(item, { stores, settings, statsIndex, catalogById, externalSources, now, thresholds })),
@@ -521,6 +523,47 @@ function getItem(id, ctx = {}) {
   const { now = new Date(), thresholds = getAgingThresholds() } = ctx;
   return viewOf(findOrFail(id), { now, thresholds });
 }
+
+// --- Holding em lote (9.5.1a, D332) --------------------------------------------------------------------------------------
+
+// Unidades do pedido: por grupo (`groupKey` + `quantity`, a escolha é a de `pickUnitsForSaleState`) ou por seleção (`itemIds`).
+// Tudo numa transação (tudo ou nada), com o mesmo `now`. Devolve { movedIds, movedCount, unchangedCount }.
+function bulkChangeSaleState(direction, body, ctx = {}) {
+  const { now = new Date() } = ctx;
+  let targetIds;
+  let unchangedCount = 0;
+  if (body.groupKey !== undefined) {
+    const units = Item.findAll({ status: 'EM_ESTOQUE' }).filter((item) => buildStatsKey(item) === body.groupKey);
+    const pick = pickUnitsForSaleState(units, { direction, quantity: body.quantity ?? null });
+    if (pick.exceeded) {
+      throw new ConflictError(
+        `Só há ${pick.available} unidade(s) disponível(is) para mover. Recarregue a lista e tente de novo.`,
+        'BULK_QUANTITY_EXCEEDS_AVAILABLE',
+        { field: 'quantity', params: { available: pick.available } }
+      );
+    }
+    targetIds = pick.picked;
+  } else {
+    targetIds = [];
+    for (const id of body.itemIds) {
+      const item = Item.findById(id);
+      if (!item) throw new NotFoundError('Item não encontrado.', 'ITEM_NOT_FOUND', { params: { itemId: id } });
+      if (item.status !== 'EM_ESTOQUE') throw new ConflictError('Item já vendido.', 'ITEM_ALREADY_SOLD', { params: { itemId: id } });
+      const alreadyThere = direction === 'OFF_SALE' ? isOffSale(item) : !isOffSale(item);
+      if (alreadyThere) unchangedCount += 1;
+      else targetIds.push(id);
+    }
+  }
+  const stamp = now.toISOString();
+  const patch = direction === 'OFF_SALE' ? { offSaleAt: stamp } : { forSaleSince: stamp, offSaleAt: null };
+  inTransaction(() => {
+    for (const id of targetIds) Item.update(id, patch, { now });
+  });
+  return { movedIds: targetIds, movedCount: targetIds.length, unchangedCount };
+}
+
+const bulkMarkOffSale = (body, ctx) => bulkChangeSaleState('OFF_SALE', body, ctx);
+const bulkMarkForSale = (body, ctx) => bulkChangeSaleState('FOR_SALE', body, ctx);
 
 // Ordem real das validações do POST /api/items (T28; a primeira falha vence):
 //  1. Forma do corpo, em middlewares/itemValidators (tipos, campos desconhecidos, formatos): 400.
@@ -665,5 +708,7 @@ module.exports = {
   updateImportedSaleRelease,
   markOffSale,
   markForSale,
+  bulkMarkOffSale,
+  bulkMarkForSale,
   getItemStats,
 };

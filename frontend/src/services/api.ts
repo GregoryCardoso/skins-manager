@@ -1,4 +1,6 @@
 import type {
+  BulkSaleStateBody,
+  BulkSaleStateResult,
   BackupImportResult,
   BackupInfo,
   Category,
@@ -239,6 +241,10 @@ export const listStores = (signal?: AbortSignal) => request<Store[]>('GET', '/st
 export const getStore = (id: number, signal?: AbortSignal) => request<Store>('GET', `/stores/${id}`, { signal });
 
 export const createStore = (body: StoreCreateBody) => request<Store>('POST', '/stores', { body });
+
+// Holding em lote (9.5.1a): tudo ou nada.
+export const bulkMarkOffSale = (body: BulkSaleStateBody) => request<BulkSaleStateResult>('POST', '/items/bulk/off-sale', { body });
+export const bulkMarkForSale = (body: BulkSaleStateBody) => request<BulkSaleStateResult>('POST', '/items/bulk/for-sale', { body });
 
 export const updateStore = (id: number, body: StorePatchBody) => request<Store>('PATCH', `/stores/${id}`, { body });
 

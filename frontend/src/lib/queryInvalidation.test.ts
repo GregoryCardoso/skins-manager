@@ -39,6 +39,8 @@ const EXPECTED: Record<string, string[]> = {
   'import.run': ['integrations', 'imports', 'items', 'sales', 'stores', 'storeBalances', 'profitSummary'],
   'import.undo': ['integrations', 'imports', 'items', 'sales', 'stores', 'storeBalances', 'profitSummary'],
   'integration.update': ['integrations'],
+  'item.offSaleBulk': ['items', 'sales', 'profitSummary'],
+  'item.backOnSaleBulk': ['items', 'sales', 'profitSummary'],
   'import.resolve': ['integrations', 'imports', 'items', 'sales', 'stores', 'storeBalances', 'profitSummary'],
   'item.offSale': ['items', 'sales', 'profitSummary'],
   'item.backOnSale': ['items', 'sales', 'profitSummary'],

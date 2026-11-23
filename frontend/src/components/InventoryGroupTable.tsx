@@ -1,9 +1,11 @@
 'use client';
 
-import { useId } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import { formatDate, formatMoney } from '@/lib/format';
-import type { ItemGroup, Store } from '@/types/api';
+import { forSaleCount, groupBulkAction, holdingCount } from '@/lib/bulkSaleState';
+import type { ItemGroup, SaleState, Store } from '@/types/api';
+import BulkSaleStateDialog, { type BulkDirection } from './BulkSaleStateDialog';
 import { Badge } from './badges';
 import ItemImage from './ItemImage';
 import InventoryUnitRow, { UnitTableHead, type UnitRowHandlers } from './InventoryUnitRow';
@@ -19,6 +21,8 @@ interface Props extends UnitRowHandlers {
   forSalePendingId?: number | null;
   // Linha apontada por `?item=<id>` (destaque).
   highlightedItemId?: number | null;
+  // Aba atual (9.5.1a): decide a ação em lote da linha ("Mover para o holding" ou "Voltar para a venda").
+  saleState?: SaleState;
 }
 
 const COLUMNS = 6;
@@ -62,7 +66,7 @@ function SituationCell({ group }: { group: ItemGroup }) {
 }
 
 function GroupRow({
-  group, stores, expanded, onToggle, forSalePendingId, highlightedItemId, handlers,
+  group, stores, expanded, onToggle, forSalePendingId, highlightedItemId, handlers, saleState,
 }: {
   group: ItemGroup;
   stores: Store[];
@@ -71,12 +75,28 @@ function GroupRow({
   forSalePendingId: number | null;
   highlightedItemId: number | null;
   handlers: UnitRowHandlers;
+  saleState: SaleState;
 }) {
   const t = useT();
   const tLoose = useTLoose();
   const tPlural = useTPlural();
   const id = useId();
   const unitsId = `${id}-units`;
+  const bulkAction = groupBulkAction(group, saleState);
+  // Seleção das unidades (D333): só dentro do grupo; limpa ao trocar de aba e depois de cada ação.
+  const [selected, setSelected] = useState<ReadonlySet<number>>(new Set());
+  const [dialog, setDialog] = useState<{ direction: BulkDirection; target: { groupKey: string; available: number } | { itemIds: number[] } } | null>(null);
+  useEffect(() => setSelected(new Set()), [saleState]);
+  const unitIds = group.units.map((u) => u.id);
+  const visibleSelected = unitIds.filter((unitId) => selected.has(unitId));
+  const toggleUnit = (unitId: number, checked: boolean) =>
+    setSelected((current) => {
+      const next = new Set(current);
+      if (checked) next.add(unitId);
+      else next.delete(unitId);
+      return next;
+    });
+  const selectionDirection: BulkDirection = saleState === 'OFF_SALE' ? 'FOR_SALE' : 'OFF_SALE';
 
   const details: string[] = [];
   if (group.variant && group.variant !== 'NORMAL') details.push(tLoose(`enums.variant.${group.variant}`));
@@ -121,21 +141,71 @@ function GroupRow({
             </span>
           </div>
         </td>
-        <td className={groupStyles.number}>{group.quantity}</td>
+        <td className={groupStyles.number}>
+          <div className={groupStyles.quantityCell}>
+            <span>{group.quantity}</span>
+            <small className={groupStyles.quantitySide}>
+              {t('inventory.group.quantitySplit', { forSale: forSaleCount(group), holding: holdingCount(group) })}
+            </small>
+          </div>
+        </td>
         <td className={styles.nowrap}>
           <GroupMoney group={group} cents={group.avgCostUsdCents} approxBrlCents={group.approxBrl?.avgCostCents ?? null} />
         </td>
         <td className={styles.nowrap}>
           <GroupMoney group={group} cents={group.totalCostUsdCents} approxBrlCents={group.approxBrl?.totalCostCents ?? null} />
         </td>
-        <td><SituationCell group={group} /></td>
+        <td>
+          <SituationCell group={group} />
+          {bulkAction && (
+            <button
+              type="button"
+              className={groupStyles.bulkButton}
+              onClick={() => setDialog({ direction: bulkAction.direction, target: { groupKey: group.key, available: bulkAction.available } })}
+            >
+              {t(bulkAction.direction === 'OFF_SALE' ? 'inventory.bulk.offSaleButton' : 'inventory.bulk.forSaleButton')}
+            </button>
+          )}
+          {dialog && (
+            <BulkSaleStateDialog
+              direction={dialog.direction}
+              name={group.name}
+              target={dialog.target}
+              onClose={() => setDialog(null)}
+              onDone={() => {
+                setDialog(null);
+                setSelected(new Set());
+              }}
+            />
+          )}
+        </td>
       </tr>
       {expanded && (
         <tr id={unitsId} className={groupStyles.unitsRow}>
           <td colSpan={COLUMNS} className={groupStyles.unitsCell}>
             <div className={groupStyles.units}>
+              {visibleSelected.length > 0 && (
+                <div className={groupStyles.selectionBar} role="region" aria-label={t('inventory.bulk.selectionBar')}>
+                  <span>{tPlural('inventory.bulk.selected', visibleSelected.length)}</span>
+                  <button
+                    type="button"
+                    className={groupStyles.bulkButton}
+                    onClick={() => setDialog({ direction: selectionDirection, target: { itemIds: visibleSelected } })}
+                  >
+                    {t(selectionDirection === 'OFF_SALE' ? 'inventory.bulk.offSaleButton' : 'inventory.bulk.forSaleButton')}
+                  </button>
+                  <button type="button" className={groupStyles.bulkButton} onClick={() => setSelected(new Set())}>
+                    {t('inventory.bulk.clearSelection')}
+                  </button>
+                </div>
+              )}
               <table className={styles.table}>
-                <UnitTableHead />
+                <UnitTableHead
+                  selection={{
+                    checked: unitIds.length > 0 && visibleSelected.length === unitIds.length,
+                    onChange: (checked) => setSelected(checked ? new Set(unitIds) : new Set()),
+                  }}
+                />
                 <tbody>
                   {group.units.map((unit) => (
                     <InventoryUnitRow
@@ -144,6 +214,7 @@ function GroupRow({
                       stores={stores}
                       forSalePendingId={forSalePendingId}
                       highlighted={highlightedItemId === unit.id}
+                      selection={{ checked: selected.has(unit.id), onChange: (checked) => toggleUnit(unit.id, checked) }}
                       {...handlers}
                     />
                   ))}
@@ -159,7 +230,7 @@ function GroupRow({
 
 // Visão agrupada (D277): uma linha por chave do itemStats; ao expandir, as unidades com as ações atuais.
 export default function InventoryGroupTable({
-  groups, stores, expandedKeys, onToggle, forSalePendingId = null, highlightedItemId = null, ...handlers
+  groups, stores, expandedKeys, onToggle, forSalePendingId = null, highlightedItemId = null, saleState = 'FOR_SALE', ...handlers
 }: Props) {
   const t = useT();
   return (
@@ -186,6 +257,7 @@ export default function InventoryGroupTable({
               forSalePendingId={forSalePendingId}
               highlightedItemId={highlightedItemId}
               handlers={handlers}
+              saleState={saleState}
             />
           ))}
         </tbody>

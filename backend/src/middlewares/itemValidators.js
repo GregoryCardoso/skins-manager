@@ -148,6 +148,34 @@ const validateUnsellBody = wrap((req) => {
 // Os POSTs off-sale e for-sale aceitam só o corpo vazio `{}` (D265); `offSaleAt`/`forSaleSince` não são editáveis no PATCH.
 const validateSaleStateBody = validateUnsellBody;
 
+const MAX_BULK_IDS = 500;
+
+// POST bulk/off-sale e bulk/for-sale (9.5.1a, D332): `{ groupKey, quantity? }` ou `{ itemIds }`, exatamente um dos dois.
+const validateBulkSaleStateBody = wrap((req) => {
+  const body = req.body;
+  if (!isObject(body)) throw fail('O corpo da requisição deve ser um objeto JSON.', 'INVALID_BODY');
+  const extra = Object.keys(body).find((key) => !['groupKey', 'quantity', 'itemIds'].includes(key));
+  if (extra) throw fail(`Campo desconhecido: ${extra}`, 'UNKNOWN_FIELD', { field: extra });
+  const byGroup = body.groupKey !== undefined;
+  const bySelection = body.itemIds !== undefined;
+  if (byGroup === bySelection) throw fail('Informe groupKey ou itemIds (um dos dois).', 'INVALID_FIELD', { field: byGroup ? 'itemIds' : 'groupKey' });
+  if (byGroup) {
+    if (typeof body.groupKey !== 'string' || body.groupKey.trim() === '' || body.groupKey.length > 500) {
+      throw fail('groupKey inválido.', 'INVALID_FIELD', { field: 'groupKey' });
+    }
+    if (body.quantity !== undefined && body.quantity !== null && (!Number.isSafeInteger(body.quantity) || body.quantity < 1)) {
+      throw fail('A quantidade deve ser um inteiro maior que zero.', 'INVALID_FIELD', { field: 'quantity' });
+    }
+    return;
+  }
+  if (body.quantity !== undefined) throw fail('quantity só vale com groupKey.', 'INVALID_FIELD', { field: 'quantity' });
+  const ids = body.itemIds;
+  if (!Array.isArray(ids) || ids.length < 1 || ids.length > MAX_BULK_IDS
+    || !ids.every((id) => Number.isSafeInteger(id) && id > 0) || new Set(ids).size !== ids.length) {
+    throw fail(`itemIds deve ter de 1 a ${MAX_BULK_IDS} ids inteiros positivos, sem repetição.`, 'INVALID_FIELD', { field: 'itemIds' });
+  }
+});
+
 function queryValue(query, key, allowed) {
   const raw = query[key];
   if (raw === undefined) return undefined;
@@ -281,4 +309,5 @@ module.exports = {
   validateSellBody,
   validateUnsellBody,
   validateSaleStateBody,
+  validateBulkSaleStateBody,
 };

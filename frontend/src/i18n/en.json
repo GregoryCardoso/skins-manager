@@ -212,7 +212,8 @@
     "IMPORT_ENTRY_ALREADY_RESOLVED": "This pending item was already resolved.",
     "IMPORT_ENTRY_ACTION_NOT_ALLOWED": "This action does not apply to this pending item.",
     "IMPORT_ENTRY_CONFLICT": "This pending item cannot be resolved right now.",
-    "ENTRY_RESOLVED": "Import pending item already resolved."
+    "ENTRY_RESOLVED": "Import pending item already resolved.",
+    "BULK_QUANTITY_EXCEEDS_AVAILABLE": "The quantity is larger than the available units. Reload the list and try again."
   },
   "warnings": {
     "FEES_NOT_CONFIGURED": "The store fees are not configured.",
@@ -246,7 +247,8 @@
         "one": "{count} stagnant",
         "other": "{count} stagnant"
       },
-      "convertedCost": "Includes BRL purchases converted at the purchase rate"
+      "convertedCost": "Includes BRL purchases converted at the purchase rate",
+      "quantitySplit": "{forSale} for sale · {holding} in holding"
     },
     "refresh": "Refresh",
     "empty": "No items in the inventory.",
@@ -303,7 +305,29 @@
     "offSaleSince": "In holding since {date}",
     "offSaleEmpty": "No items in holding.",
     "offSaleDone": "{name} moved to holding.",
-    "forSaleDone": "{name} put back up for sale."
+    "forSaleDone": "{name} put back up for sale.",
+    "bulk": {
+      "offSaleButton": "Move to holding",
+      "forSaleButton": "Back to sale",
+      "offSaleTitle": "Move to holding",
+      "forSaleTitle": "Back to sale",
+      "quantity": "Quantity (1 to {max})",
+      "whichOffSale": "The most recent units go to holding; the oldest stay for sale.",
+      "whichForSale": "The oldest units in holding go back to sale.",
+      "turnoverRestarts": "Back on sale, the turnover count restarts.",
+      "selectedCount": "{count} unit(s) selected.",
+      "invalidQuantity": "Enter a whole number from 1 to {max}.",
+      "offSaleConfirm": "Move",
+      "forSaleConfirm": "Back to sale",
+      "selectAll": "Select all units",
+      "selectUnit": "Select {name} (#{id})",
+      "selectionBar": "Selected units",
+      "selected": {
+        "one": "{count} selected",
+        "other": "{count} selected"
+      },
+      "clearSelection": "Clear selection"
+    }
   },
   "filters": {
     "label": "Inventory filters",

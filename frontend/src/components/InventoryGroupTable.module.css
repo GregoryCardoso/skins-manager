@@ -16,3 +16,10 @@
 .unitsCell { padding: 0.5rem 0.75rem 0.75rem 2.5rem !important; }
 .units { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
 .srOnly { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+/* 9.5.1a: QTD do grupo inteiro com a divisão logo abaixo; ação em lote e barra da seleção. */
+.quantityCell { display: flex; flex-direction: column; align-items: flex-end; gap: 0.1rem; }
+.quantitySide { font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; }
+.bulkButton { margin-top: 0.35rem; padding: 0.25rem 0.6rem; font-size: 0.8rem; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); cursor: pointer; }
+.bulkButton:hover { border-color: var(--accent); }
+.selectionBar { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; padding: 0.4rem 0.6rem; margin-bottom: 0.4rem; border: 1px solid var(--accent); border-radius: 8px; }
+.selectionBar .bulkButton { margin-top: 0; }

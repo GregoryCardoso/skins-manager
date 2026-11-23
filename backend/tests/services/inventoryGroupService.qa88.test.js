@@ -101,7 +101,7 @@ describe('summarizeGroupCost (bordas)', () => {
 
 describe('summarizeStockStates (bordas)', () => {
   test('lista vazia', () => {
-    expect(summarizeStockStates([], NOW)).toEqual({ forSale: 0, tradeLocked: 0, offSale: 0, nextUnlockAt: null });
+    expect(summarizeStockStates([], NOW)).toEqual({ total: 0, forSale: 0, tradeLocked: 0, offSale: 0, nextUnlockAt: null });
   });
 
   test('a soma das três contagens = número de unidades em estoque (sem sobreposição)', () => {
@@ -111,7 +111,7 @@ describe('summarizeStockStates (bordas)', () => {
     ];
     const r = summarizeStockStates(items, NOW);
     expect(r.forSale + r.tradeLocked + r.offSale).toBe(5);
-    expect(r).toEqual({ forSale: 2, tradeLocked: 1, offSale: 2, nextUnlockAt: ahead(1) });
+    expect(r).toEqual({ total: 5, forSale: 2, tradeLocked: 1, offSale: 2, nextUnlockAt: ahead(1) });
   });
 
   test('nextUnlockAt ignora trade lock de itens em holding e já liberados', () => {

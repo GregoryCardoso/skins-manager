@@ -212,7 +212,8 @@
     "IMPORT_ENTRY_ALREADY_RESOLVED": "Esta pendência já foi resolvida.",
     "IMPORT_ENTRY_ACTION_NOT_ALLOWED": "Esta ação não vale para esta pendência.",
     "IMPORT_ENTRY_CONFLICT": "Não foi possível resolver esta pendência agora.",
-    "ENTRY_RESOLVED": "Pendência da importação já resolvida."
+    "ENTRY_RESOLVED": "Pendência da importação já resolvida.",
+    "BULK_QUANTITY_EXCEEDS_AVAILABLE": "A quantidade é maior que as unidades disponíveis. Recarregue a lista e tente de novo."
   },
   "warnings": {
     "FEES_NOT_CONFIGURED": "As taxas da loja não estão configuradas.",
@@ -246,7 +247,8 @@
         "one": "{count} agarrada",
         "other": "{count} agarradas"
       },
-      "convertedCost": "Inclui compras em R$ convertidas pela cotação da compra"
+      "convertedCost": "Inclui compras em R$ convertidas pela cotação da compra",
+      "quantitySplit": "{forSale} à venda · {holding} no holding"
     },
     "refresh": "Atualizar",
     "empty": "Nenhum item no inventário.",
@@ -303,7 +305,29 @@
     "offSaleSince": "No holding desde {date}",
     "offSaleEmpty": "Nenhum item no holding.",
     "offSaleDone": "{name} foi movido para o holding.",
-    "forSaleDone": "{name} voltou para a venda."
+    "forSaleDone": "{name} voltou para a venda.",
+    "bulk": {
+      "offSaleButton": "Mover para o holding",
+      "forSaleButton": "Voltar para a venda",
+      "offSaleTitle": "Mover para o holding",
+      "forSaleTitle": "Voltar para a venda",
+      "quantity": "Quantidade (de 1 a {max})",
+      "whichOffSale": "Vão para o holding as unidades mais recentes; as mais antigas continuam à venda.",
+      "whichForSale": "Voltam para a venda as unidades mais antigas do holding.",
+      "turnoverRestarts": "Ao voltar à venda, a contagem de giro recomeça.",
+      "selectedCount": "{count} unidade(s) selecionada(s).",
+      "invalidQuantity": "Informe um número inteiro de 1 a {max}.",
+      "offSaleConfirm": "Mover",
+      "forSaleConfirm": "Voltar para a venda",
+      "selectAll": "Selecionar todas as unidades",
+      "selectUnit": "Selecionar {name} (#{id})",
+      "selectionBar": "Unidades selecionadas",
+      "selected": {
+        "one": "{count} selecionada",
+        "other": "{count} selecionadas"
+      },
+      "clearSelection": "Limpar seleção"
+    }
   },
   "filters": {
     "label": "Filtros do inventário",

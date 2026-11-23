@@ -106,14 +106,16 @@ describe('custos e moedas', () => {
     expect((await groups()).groups[0]).toMatchObject({ quantity: 1, totalCostUsdCents: 777, avgCostUsdCents: 777 });
   });
 
-  test('o custo da aba é só das unidades listadas; o stock cobre as duas abas', async () => {
+  test('9.5.1a: QTD e custos são do grupo inteiro em estoque, nas duas abas; ao expandir, só as unidades da aba', async () => {
     const a = await create({ purchasePriceCents: 1000 });
     await create({ purchasePriceCents: 300 });
     await offSale(a.id);
     const forSale = (await groups('?saleState=FOR_SALE')).groups[0];
-    expect(forSale).toMatchObject({ quantity: 1, totalCostUsdCents: 300, stock: { forSale: 1, offSale: 1, tradeLocked: 0 } });
+    expect(forSale).toMatchObject({ quantity: 2, totalCostUsdCents: 1300, stock: { total: 2, forSale: 1, offSale: 1, tradeLocked: 0 } });
+    expect(forSale.units.map((u) => u.purchasePriceCents)).toEqual([300]);
     const off = (await groups('?saleState=OFF_SALE')).groups[0];
-    expect(off).toMatchObject({ quantity: 1, totalCostUsdCents: 1000, stock: { forSale: 1, offSale: 1 } });
+    expect(off).toMatchObject({ quantity: 2, totalCostUsdCents: 1300, stock: { forSale: 1, offSale: 1 } });
+    expect(off.units.map((u) => u.purchasePriceCents)).toEqual([1000]);
   });
 });
 
@@ -125,7 +127,7 @@ describe('stock (D273) independe de aba e de stagnantOnly', () => {
     const off = await create({ acquiredAt: iso(-90) });
     await offSale(off.id);
     const g = (await groups('?stagnantOnly=true&saleState=FOR_SALE')).groups[0];
-    expect(g).toMatchObject({ quantity: 1, stagnantCount: 1, stock: { forSale: 2, tradeLocked: 1, offSale: 1, nextUnlockAt: iso(2) } });
+    expect(g).toMatchObject({ quantity: 4, stagnantCount: 1, stock: { total: 4, forSale: 2, tradeLocked: 1, offSale: 1, nextUnlockAt: iso(2) } });
     const all = (await groups()).groups[0];
     expect(all.stock).toEqual(g.stock);
     expect(all.stagnantCount).toBe(1);
@@ -138,7 +140,7 @@ describe('stock (D273) independe de aba e de stagnantOnly', () => {
     const o = await create({ tradeUnlockAt: iso(0.5) });
     await offSale(o.id); // holding: não entra em tradeLocked nem em nextUnlockAt
     const { stock } = (await groups()).groups[0];
-    expect(stock).toEqual({ forSale: 1, tradeLocked: 2, offSale: 1, nextUnlockAt: iso(1) });
+    expect(stock).toEqual({ total: 4, forSale: 1, tradeLocked: 2, offSale: 1, nextUnlockAt: iso(1) });
     expect(stock.forSale + stock.tradeLocked + stock.offSale).toBe(4);
   });
 
@@ -159,7 +161,7 @@ describe('stock (D273) independe de aba e de stagnantOnly', () => {
     const a = await create({ tradeUnlockAt: iso(3) });
     await offSale(a.id);
     const g = (await groups('?saleState=OFF_SALE')).groups[0];
-    expect(g.stock).toEqual({ forSale: 0, tradeLocked: 0, offSale: 1, nextUnlockAt: null });
+    expect(g.stock).toEqual({ total: 1, forSale: 0, tradeLocked: 0, offSale: 1, nextUnlockAt: null });
     expect((await groups('?saleState=FOR_SALE')).groups).toEqual([]);
   });
 });
@@ -308,7 +310,7 @@ describe('formato, rota e segurança', () => {
       'key', 'name', 'category', 'variant', 'exterior', 'phase', 'catalog', 'quantity', 'totalCostUsdCents', 'avgCostUsdCents',
       'costUsesRecordedFx', 'approxBrl', 'stagnantCount', 'stock', 'units',
     ]) expect(g).toHaveProperty(field);
-    expect(Object.keys(g.stock).sort()).toEqual(['forSale', 'nextUnlockAt', 'offSale', 'tradeLocked']);
+    expect(Object.keys(g.stock).sort()).toEqual(['forSale', 'nextUnlockAt', 'offSale', 'total', 'tradeLocked']);
     expect(g.units[0]).toHaveProperty('saleState');
     expect(g.units[0]).toHaveProperty('id');
   });

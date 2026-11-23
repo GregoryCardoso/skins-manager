@@ -13,6 +13,8 @@ router.get('/groups', v.validateGroupQuery, controller.groups); // antes de /:id
 router.get('/stats', v.validateStatsQuery, controller.stats); // antes de /:id
 router.get('/sales', v.validateSalesQuery, controller.sales); // antes de /:id
 router.post('/', v.validateCreateItemBody, controller.create);
+router.post('/bulk/off-sale', v.validateBulkSaleStateBody, controller.bulkOffSale); // antes de /:id
+router.post('/bulk/for-sale', v.validateBulkSaleStateBody, controller.bulkForSale); // antes de /:id
 router.get('/:id', validateIdParam, controller.getById);
 router.patch('/:id', validateIdParam, v.validateUpdateItemBody, controller.update);
 router.delete('/:id', validateIdParam, controller.remove);

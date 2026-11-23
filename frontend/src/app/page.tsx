@@ -239,6 +239,7 @@ function InventoryPageContent() {
               onForSale={putForSale}
               forSalePendingId={forSalePendingId}
               highlightedItemId={focusItemId}
+              saleState={filters.saleState}
             />
           ) : itemsData && (
             <InventoryTable

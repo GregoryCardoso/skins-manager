@@ -238,6 +238,8 @@ export interface ItemListMeta {
 }
 // Visão agrupada (D274): uma linha por chave do itemStats, com as unidades da aba e dos filtros.
 export interface ItemGroupStock {
+  // Total do grupo em estoque (9.5.1a): à venda + em trade lock + no holding. É também a QTD do grupo.
+  total: number;
   forSale: number;
   tradeLocked: number;
   offSale: number;
@@ -269,6 +271,14 @@ export interface ItemGroupListMeta {
   usdBrlRate: number | null;
   generatedAt: string;
 }
+// Holding em lote (9.5.1a, D332): por grupo (a chave + quantidade) ou por seleção (ids).
+export type BulkSaleStateBody = { groupKey: string; quantity?: number } | { itemIds: number[] };
+export interface BulkSaleStateResult {
+  movedIds: number[];
+  movedCount: number;
+  unchangedCount: number;
+}
+
 export interface ItemGroupList {
   groups: ItemGroup[];
   meta: ItemGroupListMeta;
