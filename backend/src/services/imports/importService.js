@@ -812,10 +812,30 @@ function listOpenEntries() {
   return { entries: entries.map((e) => importViews.toEntryView(e, catalogById, linkKinds)) };
 }
 
-// Resolve uma pendência (9.4, D301) e devolve a entrada atualizada.
-function resolveEntry(entryId, { action, targetId = null } = {}, { now = new Date() } = {}) {
-  const entry = entryResolutionService.resolveEntry(entryId, { action, targetId }, { now });
-  return importViews.toEntryView(entry, catalogMapForRawEntries([entry]), linkKindsFor([entry]));
+const entryViews = (entries, options) => {
+  const catalogById = catalogMapForRawEntries(entries);
+  const linkKinds = linkKindsFor(entries);
+  return entries.map((e) => importViews.toEntryView(e, catalogById, linkKinds, options));
+};
+
+// Resolve uma pendência (9.4, D301; 9.5.1b, D327/D328) e devolve a entrada atualizada.
+function resolveEntry(entryId, body = {}, { now = new Date() } = {}) {
+  return entryViews([entryResolutionService.resolveEntry(entryId, body, { now })])[0];
+}
+
+// Ignoradas que podem voltar para as pendências (9.5.1b, D329).
+function listIgnoredEntries() {
+  return { entries: entryViews(entryResolutionService.listIgnored(), { reopenable: true }) };
+}
+
+function reopenEntry(entryId, { now = new Date() } = {}) {
+  return entryViews([entryResolutionService.reopenEntry(entryId, { now })])[0];
+}
+
+// Lote (D330): tudo ou nada.
+function bulkResolveEntries(body, { now = new Date() } = {}) {
+  const entries = entryViews(entryResolutionService.bulkResolve(body, { now }));
+  return { entries, count: entries.length };
 }
 
 function getUndoPreview(batchId) {
@@ -836,6 +856,9 @@ module.exports = {
   listBatches,
   listOpenEntries,
   resolveEntry,
+  listIgnoredEntries,
+  reopenEntry,
+  bulkResolveEntries,
   getUndoPreview,
   undoBatch,
   directionOf,

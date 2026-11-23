@@ -809,6 +809,8 @@ export interface ImportEntryDisplay {
 
 export interface ImportEntryView {
   id: number;
+  // Ações que valem agora para esta pendência (9.5.1b, D331), calculadas pelo backend.
+  allowedActions?: ImportEntryAction[];
   // Tipo do vínculo do lançamento (9.4): CREATED = criado pela importação; MATCHED = lançamento feito à mão e ligado.
   linkKind?: 'CREATED' | 'MATCHED' | null;
   batchId: number;
@@ -894,12 +896,33 @@ export interface UndoPreviewIssue {
   entryId?: number;
 }
 
-// Ações de uma pendência (9.4, D301).
-export type ImportEntryAction = 'REMOVE' | 'KEEP' | 'CREATE' | 'LINK' | 'IGNORE';
+// Ações de uma pendência (9.4, D301; 9.5.1b, D327 a D331). SPLIT_FROM_ITEM ("Separar de um item que comprei", D321) fica
+// reservado: o backend ainda não o oferece nem aceita.
+export type ImportEntryAction =
+  | 'REMOVE' | 'KEEP' | 'CREATE' | 'LINK' | 'IGNORE' | 'CREATE_PURCHASE' | 'MARK_WON' | 'REOPEN' | 'SPLIT_FROM_ITEM';
 
 export interface ImportResolveBody {
   action: ImportEntryAction;
   targetId?: number;
+  // "Lançar compra" (CREATE_PURCHASE): só o que o usuário informa; a identidade vem da pendência.
+  purchase?: {
+    purchaseStoreId: number;
+    purchasePriceCents: number;
+    fxRateAtPurchase?: number;
+    acquiredAt: string;
+    tradeUnlockAt: string | null;
+  };
+  confirmWarnings?: boolean;
+  // "Salvar só a compra" (sem o crédito no extrato ainda): a pendência continua aberta.
+  purchaseOnly?: boolean;
+  // "Foi drop" (MARK_WON): data da aquisição; ausente = a data da venda.
+  acquiredAt?: string;
+}
+
+export interface ImportBulkResolveBody {
+  action: 'MARK_WON' | 'IGNORE' | 'REOPEN';
+  entryIds: number[];
+  acquiredAt?: string;
 }
 
 export interface UndoPreview {

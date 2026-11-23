@@ -3,6 +3,8 @@
 // Monta as visões `ImportBatchView`, `ImportBatchSummary` e `ImportEntryView` (D318 seção 10). Funções puras.
 // O `display_json` guardado é neutro (sem dados pessoais); o nome traduzido e a imagem saem do catálogo na hora da resposta.
 
+const { allowedActionsFor } = require('./entryActions');
+
 function parseJson(text, fallback) {
   if (typeof text !== 'string' || text === '') return fallback;
   try {
@@ -39,8 +41,10 @@ function toDisplay(displayJson, catalogById) {
 }
 
 // `linkKinds`: Map recordId -> 'CREATED' | 'MATCHED' (o lançamento ligado foi criado pela importação ou é manual).
-function toEntryView(entry, catalogById, linkKinds = new Map()) {
+// `reopenable`: a entrada está na lista de ignoradas e pode voltar (D329). `allowedActions` vem daqui (D331).
+function toEntryView(entry, catalogById, linkKinds = new Map(), { reopenable = false } = {}) {
   return {
+    allowedActions: allowedActionsFor(entry, { reopenable }),
     linkKind: (entry.recordId && linkKinds.get(entry.recordId)) || null,
     id: entry.id,
     batchId: entry.batchId,

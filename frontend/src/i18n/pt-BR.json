@@ -213,7 +213,13 @@
     "IMPORT_ENTRY_ACTION_NOT_ALLOWED": "Esta ação não vale para esta pendência.",
     "IMPORT_ENTRY_CONFLICT": "Não foi possível resolver esta pendência agora.",
     "ENTRY_RESOLVED": "Pendência da importação já resolvida.",
-    "BULK_QUANTITY_EXCEEDS_AVAILABLE": "A quantidade é maior que as unidades disponíveis. Recarregue a lista e tente de novo."
+    "BULK_QUANTITY_EXCEEDS_AVAILABLE": "A quantidade é maior que as unidades disponíveis. Recarregue a lista e tente de novo.",
+    "PURCHASE_AFTER_SALE": "A data da compra não pode ser depois da venda.",
+    "PURCHASE_UNLOCK_AFTER_SALE": "Com esta data, o trade lock terminaria depois da venda.",
+    "IMPORT_ENTRY_WARNINGS_NOT_CONFIRMED": "Confirme o aviso para continuar.",
+    "IMPORT_ENTRY_NOT_REOPENABLE": "Esta pendência não pode voltar para a lista.",
+    "IMPORT_BULK_CONFLICT": "Algumas pendências não puderam ser resolvidas; nada foi gravado.",
+    "PURCHASE_IN_INTEGRATION_STORE_BEFORE_CUTOFF": "Compra na loja CSFloat anterior à data de corte."
   },
   "warnings": {
     "FEES_NOT_CONFIGURED": "As taxas da loja não estão configuradas.",
@@ -1320,7 +1326,9 @@
       "pendingCount": {
         "one": "{count} pendência",
         "other": "{count} pendências"
-      }
+      },
+      "ignored": "Ignoradas ({count})",
+      "ignoredHint": "Pendências que você ignorou. Elas não voltam sozinhas; use \"Voltar para pendências\" para tratá-las de novo."
     },
     "groups": {
       "CREATED": "Importadas",
@@ -1328,7 +1336,8 @@
       "POSSIBLE_DUPLICATE": "Possível duplicado",
       "REVERTED": "Trade revertido",
       "WITHOUT_PURCHASE": "Venda sem compra no app",
-      "FAILED": "Não importadas"
+      "FAILED": "Não importadas",
+      "IGNORED": "Ignoradas"
     },
     "reasons": {
       "CATALOG_NOT_FOUND": "Item não encontrado no catálogo. Atualize o catálogo; a próxima importação tenta de novo.",
@@ -1368,7 +1377,9 @@
         "KEPT": "Mantido. O app não acusa mais este trade.",
         "CREATED": "Lançamento criado.",
         "LINKED": "Ligado ao lançamento.",
-        "IGNORED": "Ignorado."
+        "IGNORED": "Ignorado.",
+        "PURCHASE_ONLY": "Compra salva. A venda entra na próxima importação, quando o extrato trouxer o crédito.",
+        "REOPENED": "De volta às pendências."
       },
       "conflict": {
         "ITEM_SOLD_IN_APP": "Este item já foi vendido no app depois da compra. Desfaça a venda dele (em Vendas) antes de remover a compra revertida.",
@@ -1379,8 +1390,14 @@
         "TARGET_ALREADY_LINKED": "Esse lançamento já está ligado a outro trade do CSFloat.",
         "ALREADY_LINKED": "Este trade já está ligado a um lançamento.",
         "RECORD_NOT_FOUND": "O registro do CSFloat desta pendência não existe mais. Importe de novo.",
-        "CATALOG_NOT_FOUND": "O item não está mais no catálogo. Atualize o catálogo e tente de novo."
-      }
+        "CATALOG_NOT_FOUND": "O item não está mais no catálogo. Atualize o catálogo e tente de novo.",
+        "UNIT_IN_STOCK": "Esta unidade já está no estoque. Importe de novo para registrar a venda nela.",
+        "NOT_IGNORED": "Esta pendência não está entre as ignoradas.",
+        "OTHER_ACCOUNT": "Esta pendência é de outra conta do CSFloat e não pode voltar."
+      },
+      "CREATE_PURCHASE": "Lançar compra",
+      "MARK_WON": "Foi drop (ganhei)",
+      "REOPEN": "Voltar para pendências"
     },
     "auto": {
       "created": {
@@ -1394,6 +1411,58 @@
       "attention": "A importação do CSFloat trouxe pendências para conferir.",
       "failed": "Importação automática do CSFloat não concluída: {reason}",
       "seeSummary": "Ver resumo"
+    },
+    "launch": {
+      "title": "Lançar compra",
+      "saleInfo": "Vendida no CSFloat por {price} em {date}.",
+      "identityLocked": "Os dados do item vêm da venda e não podem ser trocados. Informe a loja, o preço e a data da compra.",
+      "store": "Loja da compra",
+      "price": "Preço pago ({currency})",
+      "fxRate": "Cotação USD→BRL da compra (opcional; vazio = a das configurações)",
+      "acquiredAt": "Data da compra",
+      "acquiredHint": "Não pode ser depois da venda.",
+      "tradeUnlockAt": "Fim do trade lock",
+      "unlockHint": "Precisa terminar até a venda ({date}). Vazio = sem trade lock.",
+      "plusSeven": "Compra + 7 dias",
+      "submit": "Lançar compra e registrar a venda",
+      "storeRequired": "Escolha a loja.",
+      "priceRequired": "Informe o preço pago.",
+      "fxInvalid": "Cotação inválida.",
+      "dateRequired": "Informe a data.",
+      "dateInvalid": "Data inválida.",
+      "afterSale": "A data da compra não pode ser depois da venda ({date}).",
+      "unlockAfterSale": "Com esta data, o trade lock terminaria depois da venda ({date}). A Steam não teria deixado vender: confira a data da compra ou o fim do trade lock.",
+      "warnBeforeCutoff": "Esta compra é na loja CSFloat e é anterior à data de corte ({date}). Se o saldo dessa época já está num aporte seu, o saldo calculado vai descontar este valor de novo; nesse caso, registre uma conferência depois.",
+      "confirmAnyway": "Entendi, lançar mesmo assim",
+      "noCredit": "O extrato do CSFloat ainda não trouxe o crédito desta venda, então ela não pode ser registrada agora. Você pode salvar só a compra: a próxima importação registra a venda nela.",
+      "purchaseOnly": "Salvar só a compra",
+      "unitInStock": "Esta unidade já está no estoque (veja abaixo). Importe de novo para registrar a venda nela, em vez de lançar outra compra."
+    },
+    "won": {
+      "title": "Foi drop (ganhei)",
+      "body": {
+        "one": "O item será lançado como ganho (custo 0, sem trade lock) e a venda será registrada na hora.",
+        "other": "{count} itens serão lançados como ganhos (custo 0, sem trade lock) e as vendas serão registradas na hora. O lucro real ganha o líquido dessas vendas."
+      },
+      "saleDate": "Data de aquisição = a data da venda",
+      "customDate": "Informar a data de aquisição",
+      "acquiredAt": "Data de aquisição",
+      "turnoverHint": "Com a data da venda, o giro dessa venda fica em 0 dia.",
+      "confirm": "Confirmar"
+    },
+    "bulk": {
+      "bar": "Pendências selecionadas",
+      "selected": {
+        "one": "{count} selecionada",
+        "other": "{count} selecionadas"
+      },
+      "clear": "Limpar seleção",
+      "selectEntry": "Selecionar {name}",
+      "selectGroup": "Selecionar todas de {group}",
+      "failed": {
+        "one": "{count} pendência não pôde ser resolvida (marcada abaixo). Nada foi gravado: desmarque-a e repita.",
+        "other": "{count} pendências não puderam ser resolvidas (marcadas abaixo). Nada foi gravado: desmarque-as e repita."
+      }
     }
   }
 }

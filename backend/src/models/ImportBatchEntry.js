@@ -110,6 +110,28 @@ function hasOpenForRecord(recordId) {
   );
 }
 
+// Volta uma entrada ignorada para as pendências (9.5.1b, D329).
+function reopen(id) {
+  return getDb()
+    .prepare("UPDATE import_batch_entries SET resolution = NULL, resolved_at = NULL WHERE id = ? AND resolution = 'IGNORED'")
+    .run(id).changes;
+}
+
+// Ignoradas que podem voltar (D329): a entrada IGNORED mais recente de cada registro que continua IGNORED e é da conta atual
+// (`fingerprint` nulo casa com registro sem conta). As ignoradas pela troca de conta ficam de fora (outra impressão digital).
+function listIgnored(source, fingerprint) {
+  return getDb()
+    .prepare(
+      `SELECT e.* FROM import_batch_entries e JOIN external_records r ON r.id = e.record_id
+        WHERE r.source = ? AND e.resolution = 'IGNORED' AND r.tracking = 'IGNORED' AND r.account_fingerprint IS ?
+          AND e.outcome IN (${OPEN_OUTCOMES_SQL})
+          AND NOT EXISTS (SELECT 1 FROM import_batch_entries n WHERE n.record_id = e.record_id AND n.id > e.id AND n.resolution = 'IGNORED')
+        ORDER BY e.id DESC`
+    )
+    .all(source, fingerprint)
+    .map(toEntry);
+}
+
 function findById(id) {
   return toEntry(getDb().prepare('SELECT * FROM import_batch_entries WHERE id = ?').get(id));
 }
@@ -131,7 +153,7 @@ function listResolvedOpenTypeByBatch(batchId) {
 }
 
 module.exports = {
-  hasOpenForRecord, recordIdsWithResolution, findLatestDisplayJson, findById, resolve, listResolvedOpenTypeByBatch,
+  reopen, listIgnored, hasOpenForRecord, recordIdsWithResolution, findLatestDisplayJson, findById, resolve, listResolvedOpenTypeByBatch,
   OPEN_OUTCOMES, create, listByBatch, listOpen, countOpen, countOpenByBatch, resolveOpenForRecord, resolveOpenForBatch,
   resolveOpenForRecordsOfBatch, resolveAllOpen,
 };

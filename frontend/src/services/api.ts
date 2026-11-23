@@ -27,6 +27,7 @@ import type {
   ImportBatchList,
   ImportBatchView,
   ImportEntryView,
+  ImportBulkResolveBody,
   ImportResolveBody,
   ImportRunBody,
   ImportRunResult,
@@ -426,6 +427,17 @@ export const undoImportBatch = (id: number, confirmWarnings: boolean) =>
 // Resolve uma pendência (9.4): remover/manter (trade revertido), criar/ligar/ignorar (possível duplicado), ignorar (falha).
 export const resolveImportEntry = (id: number, body: ImportResolveBody) =>
   request<ImportEntryView>('POST', `/imports/entries/${id}/resolve`, { body });
+
+// "Voltar para pendências" de uma ignorada (9.5.1b, D329).
+export const reopenImportEntry = (id: number) => request<ImportEntryView>('POST', `/imports/entries/${id}/reopen`, { body: {} });
+
+// Ações em lote nas pendências (9.5.1b, D330): tudo ou nada.
+export const bulkResolveImportEntries = (body: ImportBulkResolveBody) =>
+  request<{ entries: ImportEntryView[]; count: number }>('POST', '/imports/entries/bulk-resolve', { body });
+
+// Ignoradas que podem voltar para as pendências (9.5.1b, D329).
+export const listIgnoredImportEntries = (signal?: AbortSignal) =>
+  request<{ entries: ImportEntryView[] }>('GET', '/imports/entries', { signal, query: { ignored: 'true' } });
 
 export const listOpenImportEntries = (signal?: AbortSignal) =>
   request<{ entries: ImportEntryView[] }>('GET', '/imports/entries', { signal, query: { open: 'true' } });

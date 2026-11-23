@@ -35,12 +35,28 @@ function undo(req, res) {
 }
 
 function listEntries(req, res) {
-  ok(res, importService.listOpenEntries());
+  ok(res, req.importQuery && req.importQuery.ignored ? importService.listIgnoredEntries() : importService.listOpenEntries());
 }
 
 function resolveEntry(req, res) {
-  const { action, targetId } = req.body;
-  ok(res, importService.resolveEntry(req.params.id, { action, targetId: targetId ?? null }, { now: req.app.locals.now() }));
+  const { action, targetId, purchase, confirmWarnings, purchaseOnly, acquiredAt } = req.body;
+  ok(res, importService.resolveEntry(
+    req.params.id,
+    {
+      action, targetId: targetId ?? null, purchase, confirmWarnings: confirmWarnings === true, purchaseOnly: purchaseOnly === true,
+      acquiredAt: acquiredAt ?? null,
+    },
+    { now: req.app.locals.now() }
+  ));
 }
 
-module.exports = { run, listBatches, getBatch, undoPreview, undo, listEntries, resolveEntry };
+function reopenEntry(req, res) {
+  ok(res, importService.reopenEntry(req.params.id, { now: req.app.locals.now() }));
+}
+
+function bulkResolve(req, res) {
+  const { action, entryIds, acquiredAt } = req.body;
+  ok(res, importService.bulkResolveEntries({ action, entryIds, acquiredAt: acquiredAt ?? null }, { now: req.app.locals.now() }));
+}
+
+module.exports = { run, listBatches, getBatch, undoPreview, undo, listEntries, resolveEntry, reopenEntry, bulkResolve };

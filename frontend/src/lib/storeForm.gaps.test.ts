@@ -21,7 +21,7 @@ describe('percentTextToRate: bordas', () => {
         expect(percentTextToRate(rateToPercentText((parsed as { rate: number }).rate, lang), lang)).toEqual(parsed);
       }
     }
-  });
+  }, 30000); // 40 mil verificações: mais tempo que os 5 s padrão quando a suíte roda em paralelo
 
   test('0,5 -> 0.005, 15 -> 0.15, 2,5 -> 0.025 e o texto volta igual', () => {
     expect(percentTextToRate('0,5', 'pt-BR')).toEqual({ ok: true, rate: 0.005 });

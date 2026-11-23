@@ -71,7 +71,9 @@ const ACTIONS_BY_OUTCOME: Partial<Record<ImportEntryView['outcome'], readonly Im
   UNKNOWN_STATE: ['IGNORE'],
 };
 
+// O backend manda `allowedActions` (9.5.1b, D331); a tabela local fica só para respostas antigas sem o campo.
 export function entryActions(entry: ImportEntryView): readonly ImportEntryAction[] {
+  if (entry.allowedActions) return entry.allowedActions.filter((action) => action !== 'SPLIT_FROM_ITEM');
   if (entry.resolution !== null) return [];
   return ACTIONS_BY_OUTCOME[entry.outcome] ?? [];
 }

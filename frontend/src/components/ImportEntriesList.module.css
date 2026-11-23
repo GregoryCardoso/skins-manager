@@ -16,3 +16,11 @@
 .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.3rem; }
 .resolved { font-size: 0.85rem; color: var(--text-muted); }
 .error { font-size: 0.85rem; color: var(--danger); }
+/* 9.5.1b: seleção e barra das ações em lote. */
+.check { margin-top: 0.7rem; flex-shrink: 0; }
+.groupTitle .check { margin: 0 0.4rem 0 0; vertical-align: middle; }
+.bulkBar {
+  position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; padding: 0.5rem 0.7rem;
+  border: 1px solid var(--accent); border-radius: 8px; background: var(--surface);
+}
+.failedEntry { border-color: var(--danger); }

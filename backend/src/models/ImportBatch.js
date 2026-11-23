@@ -11,7 +11,10 @@ const FIELDS = [
   'unknownTypesJson', 'diagnosticsJson', 'warningsJson', 'previousTransactionCursor', 'errorCode', 'undoneAt',
 ];
 const BOOLEANS = ['fullScan'];
-const CHANGE_COLUMNS = 'purchases_created + matched_count + sales_created + deposits_created + withdrawals_created';
+// "Mudou algo": criou ou ligou lançamentos na importação, ou ganhou um vínculo depois, pela resolução de uma pendência dele
+// (9.5.1b: "Lançar compra", "Foi drop", "Criar mesmo assim", "Ligar").
+const CHANGE_COLUMNS = `purchases_created + matched_count + sales_created + deposits_created + withdrawals_created
+  + (SELECT COUNT(*) FROM external_links l WHERE l.batch_id = import_batches.id)`;
 
 const toBatch = (row) => mapRow(row, BOOLEANS);
 

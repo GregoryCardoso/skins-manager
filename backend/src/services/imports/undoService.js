@@ -62,7 +62,7 @@ function assessUndo(links, itemsById) {
   return { blockers, warnings, counts: { itemsToDelete, linksToRemove, salesToUndo } };
 }
 
-const hasChanges = (batch) =>
+const hasChanges = (batch) => ExternalLink.listByBatch(batch.id).length > 0 ||
   batch.purchasesCreated + batch.matchedCount + batch.salesCreated + batch.depositsCreated + batch.withdrawalsCreated > 0;
 
 // Motivo de o lote não poder ser desfeito (ou null).

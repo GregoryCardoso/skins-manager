@@ -1,8 +1,10 @@
 'use strict';
 
-// Resolução das pendências da importação (9.4, D301, E9-Q22): "Remover lançamento" e "Manter" (trade revertido); "Criar mesmo
-// assim", "Ligar a este lançamento" e "Ignorar" (possível duplicado); "Ignorar" (falhas e estado desconhecido). Nada é apagado
-// sozinho: só esta ação do usuário remove um lançamento. Roda sob a mesma trava da importação (D303) e numa transação.
+// Resolução das pendências da importação (9.4, D301, E9-Q22; 9.5.1b, D327 a D331): "Remover lançamento" e "Manter" (trade
+// revertido); "Criar mesmo assim", "Ligar a este lançamento" e "Ignorar" (possível duplicado); "Lançar compra", "Foi drop" e
+// "Ignorar" (venda sem compra no app); "Ignorar" (outras falhas e estado desconhecido); "Voltar para pendências" (ignoradas) e as
+// ações em lote. Nada é apagado sozinho: só a ação do usuário remove um lançamento. Roda sob a trava da importação (D303), numa
+// transação.
 const ImportBatchEntry = require('../../models/ImportBatchEntry');
 const ExternalRecord = require('../../models/ExternalRecord');
 const ExternalLink = require('../../models/ExternalLink');
@@ -10,7 +12,7 @@ const Integration = require('../../models/Integration');
 const Item = require('../../models/Item');
 const Store = require('../../models/Store');
 const { runInTransaction } = require('../../models/modelHelpers');
-const { NotFoundError, ConflictError, ValidationError } = require('../../errors/AppError');
+const { AppError, NotFoundError, ConflictError, ValidationError } = require('../../errors/AppError');
 const itemService = require('../itemService');
 const catalogService = require('../catalogService');
 const backupService = require('../backupService');
@@ -21,24 +23,22 @@ const tradeClassifier = require('./tradeClassifier');
 const externalItemMapper = require('./externalItemMapper');
 const manualMatchService = require('./manualMatchService');
 const { saleMoment, saleReleaseOf, saleCreditOf } = require('./saleImportHelpers');
+const { openActionsFor, RESERVED_ACTIONS } = require('./entryActions');
+const { isWeaponCategory } = require('../itemAttributesService');
+const { parseDate, formatDateTimeBr } = require('../dateUtils');
 
 const SOURCE = 'CSFLOAT';
 
-// Ações permitidas por resultado da entrada.
-const ACTIONS_BY_OUTCOME = Object.freeze({
-  REVERTED: Object.freeze(['REMOVE', 'KEEP']),
-  POSSIBLE_DUPLICATE: Object.freeze(['CREATE', 'LINK', 'IGNORE']),
-  FAILED: Object.freeze(['IGNORE']),
-  UNKNOWN_STATE: Object.freeze(['IGNORE']),
-});
+const MAX_BULK = 200;
+// Tracking do registro ao voltar para as pendências (D329), pelo resultado da entrada.
+const REOPEN_TRACKING = Object.freeze({ POSSIBLE_DUPLICATE: 'NEEDS_REVIEW', FAILED: 'RETRY', UNKNOWN_STATE: 'UNKNOWN_STATE' });
 
 const conflict = (message, reason, params = {}) => new ConflictError(message, 'IMPORT_ENTRY_CONFLICT', { params: { reason, ...params } });
 
-// Função pura: a ação vale para a entrada? Devolve o código do erro (ou null).
+// Função pura: a ação vale para a entrada? Devolve o código do erro (ou null). As reservadas (SPLIT_FROM_ITEM) nunca valem ainda.
 function checkAction(entry, action) {
   if (entry.resolution !== null && entry.resolution !== undefined) return 'IMPORT_ENTRY_ALREADY_RESOLVED';
-  const allowed = ACTIONS_BY_OUTCOME[entry.outcome];
-  if (!allowed || !allowed.includes(action)) return 'IMPORT_ENTRY_ACTION_NOT_ALLOWED';
+  if (RESERVED_ACTIONS.includes(action) || !openActionsFor(entry).includes(action)) return 'IMPORT_ENTRY_ACTION_NOT_ALLOWED';
   return null;
 }
 
@@ -184,48 +184,237 @@ function ignoreEntry(entry, { now }) {
   if (entry.recordId && ExternalRecord.findById(entry.recordId)) ExternalRecord.update(entry.recordId, { tracking: 'IGNORED' }, { now });
 }
 
+// --- Venda sem compra no app: "Lançar compra" e "Foi drop" (D327, D328) ------------------------------------------------
+
+const hasFloat = (category, floatValue) => isWeaponCategory(category) && floatValue !== null && floatValue !== undefined;
+
+// Identidade do item a criar, do `display_json` (nunca do corpo): catálogo ou nome livre, e os atributos de arma.
+function identityInput(mapped) {
+  const input = mapped.catalogEntry ? { catalogId: mapped.catalogEntry.id } : { category: mapped.category, name: mapped.name };
+  if (isWeaponCategory(mapped.category)) {
+    input.variant = mapped.variant;
+    if (mapped.floatValue !== null) input.floatValue = mapped.floatValue;
+    if (mapped.paintSeed !== null) input.paintSeed = mapped.paintSeed;
+    if (mapped.phase) input.phase = mapped.phase;
+  }
+  return input;
+}
+
+// A unidade já está no estoque? (ajuste do usuário na E951-Q5) Com float: só a de MESMO float (a mesma unidade física); outra do
+// mesmo item com float diferente não bloqueia. Sem float: qualquer unidade do item, e a mensagem indica qual.
+function assertNoUnitInStock(mapped, saleAt) {
+  const trade = {
+    catalogId: mapped.catalogEntry ? mapped.catalogEntry.id : null, category: mapped.category, nameKey: normalizeSearchText(mapped.name),
+    variant: mapped.variant, phase: (mapped.catalogEntry && mapped.catalogEntry.phase) || mapped.phase, floatValue: mapped.floatValue,
+    paintSeed: mapped.paintSeed, date: saleAt,
+  };
+  const units = Item.findInStockByCatalogOrCategory({ catalogId: trade.catalogId, category: mapped.category });
+  let itemIds;
+  if (hasFloat(mapped.category, mapped.floatValue)) {
+    itemIds = units
+      .filter((u) => manualMatchService.sameItem(trade, u) && hasFloat(u.category, u.floatValue) && manualMatchService.sameUnit(trade, u))
+      .map((u) => u.id);
+  } else {
+    const pick = manualMatchService.pickSoldUnit(trade, units);
+    itemIds = pick.kind === 'UNIT' ? [pick.itemId] : pick.kind === 'AMBIGUOUS' ? pick.candidateIds : [];
+  }
+  if (itemIds.length) {
+    throw conflict('Esta unidade já está no estoque. Importe de novo para registrar a venda nela.', 'UNIT_IN_STOCK', { itemIds });
+  }
+}
+
+function parseLaunchDate(value, label, field) {
+  return parseDate(value, label, { field });
+}
+
+// Datas da compra contra a da venda (D327 3 e 4). A igualdade é permitida.
+function assertDatesBeforeSale({ acquiredAt, tradeUnlockAt = null }, saleAt) {
+  const saleMs = Date.parse(saleAt);
+  const params = { soldAt: saleAt };
+  if (parseLaunchDate(acquiredAt, 'Data da compra', 'acquiredAt').getTime() > saleMs) {
+    throw new ValidationError(`A data da compra não pode ser depois da venda (${formatDateTimeBr(saleAt)}).`, 'PURCHASE_AFTER_SALE', { field: 'acquiredAt', params });
+  }
+  if (tradeUnlockAt !== null && tradeUnlockAt !== undefined
+    && parseLaunchDate(tradeUnlockAt, 'Fim do trade lock', 'tradeUnlockAt').getTime() > saleMs) {
+    throw new ValidationError(
+      `Com esta data, o trade lock terminaria depois da venda (${formatDateTimeBr(saleAt)}). A Steam não teria deixado vender: confira a data da compra ou o fim do trade lock.`,
+      'PURCHASE_UNLOCK_AFTER_SALE',
+      { field: 'tradeUnlockAt', params }
+    );
+  }
+}
+
+// Cria a compra (ou o drop) e registra nela a venda importada, numa transação (a de quem chama). `check` roda antes de gravar
+// (avisos). `purchaseOnly` ("Salvar só a compra", quando o extrato ainda não trouxe o crédito): grava só a compra e devolve null
+// (a pendência continua aberta; a próxima importação registra a venda nessa unidade).
+function launchAndSell(entry, display, buildInput, { now, check = null, purchaseOnly = false }) {
+  const record = requireRecord(entry);
+  const store = loadStore();
+  const mapped = mappedOfDisplay(display);
+  const saleAt = new Date(saleMoment(tradeOfRecord(record))).toISOString();
+  assertNoUnitInStock(mapped, saleAt);
+  const input = buildInput(mapped, saleAt);
+  assertDatesBeforeSale(input, saleAt);
+  if (check) check({ store, input });
+  const created = itemService.createItem(input, { now });
+  if (purchaseOnly) return null;
+  const sold = sellImported(record, Item.findById(created.id), store, { now });
+  linkRecord(record, 'ITEM_SALE', sold, 'CREATED', entry.batchId, { now });
+  return 'CREATED';
+}
+
+// "Lançar compra" (D327): loja, preço, cotação, data e trade lock vêm do formulário; a identidade, da pendência.
+function createPurchaseLaunch(entry, display, { purchase, confirmWarnings = false, purchaseOnly = false }, { now }) {
+  return launchAndSell(
+    entry, display,
+    (mapped) => {
+      const input = {
+        ...identityInput(mapped), acquisitionType: 'COMPRA', purchaseStoreId: purchase.purchaseStoreId,
+        purchasePriceCents: purchase.purchasePriceCents, acquiredAt: purchase.acquiredAt, tradeUnlockAt: purchase.tradeUnlockAt ?? null,
+      };
+      if (purchase.fxRateAtPurchase !== undefined && purchase.fxRateAtPurchase !== null) input.fxRateAtPurchase = purchase.fxRateAtPurchase;
+      return input;
+    },
+    {
+      now,
+      purchaseOnly,
+      // Aviso (E951-Q6): compra na loja da integração antes da data de corte pode contar o dinheiro de novo no saldo calculado.
+      check: ({ store, input }) => {
+        const cutoff = Integration.get(SOURCE).tradesCutoffAt;
+        const early = input.purchaseStoreId === store.id && cutoff && Date.parse(input.acquiredAt) < Date.parse(cutoff);
+        if (early && confirmWarnings !== true) {
+          throw new ConflictError('Confirme o aviso para lançar a compra.', 'IMPORT_ENTRY_WARNINGS_NOT_CONFIRMED', {
+            params: { warnings: [{ code: 'PURCHASE_IN_INTEGRATION_STORE_BEFORE_CUTOFF', cutoffAt: cutoff }] },
+          });
+        }
+      },
+    }
+  );
+}
+
+// "Foi drop (ganhei)" (D328): GANHEI com custo 0 e sem trade lock; a data padrão é a da venda.
+function markWonLaunch(entry, display, { acquiredAt = null }, { now }) {
+  return launchAndSell(
+    entry, display,
+    (mapped, saleAt) => ({ ...identityInput(mapped), acquisitionType: 'GANHEI', acquiredAt: acquiredAt || saleAt }),
+    { now }
+  );
+}
+
 // --- Entrada ------------------------------------------------------------------------------------------------------------
 
-// Resolve a pendência. Devolve a entrada atualizada (crua; a visão é montada por quem chama).
-function resolveEntry(entryId, { action, targetId = null } = {}, { now = new Date() } = {}) {
+function guardBusy() {
   // A trava da importação também conta como "ocupado" para o backup: confere o backup antes de pegá-la.
   importLock.assertIdle();
   if (backupService.isBackupBusy()) {
     throw new ConflictError('Há uma operação em andamento (catálogo, cotação ou backup). Aguarde terminar e tente de novo.', 'BACKUP_BUSY');
   }
+}
+
+// Sob a trava e numa transação.
+function underLock(fn) {
+  guardBusy();
   const release = importLock.acquire();
   try {
-    return runInTransaction(() => {
-      const entry = ImportBatchEntry.findById(entryId);
-      if (!entry) throw new NotFoundError('Pendência não encontrada.', 'IMPORT_ENTRY_NOT_FOUND');
-      const problem = checkAction(entry, action);
-      if (problem === 'IMPORT_ENTRY_ALREADY_RESOLVED') throw new ConflictError('Esta pendência já foi resolvida.', problem);
-      if (problem) throw new ValidationError('Esta ação não vale para esta pendência.', problem, { field: 'action' });
-      const display = importViews.parseJson(entry.displayJson, {});
-
-      let resolution;
-      if (action === 'REMOVE') {
-        removeLaunch(entry, { now });
-        resolution = 'REMOVED';
-      } else if (action === 'KEEP') {
-        keepLaunch(entry, { now });
-        resolution = 'KEPT';
-      } else if (action === 'CREATE') {
-        resolution = createLaunch(entry, display, { now });
-      } else if (action === 'LINK') {
-        resolution = linkLaunch(entry, targetId, { now });
-      } else {
-        ignoreEntry(entry, { now });
-        resolution = 'IGNORED';
-      }
-      // Esta entrada e as outras pendências abertas do mesmo registro ficam resolvidas juntas.
-      ImportBatchEntry.resolve(entry.id, resolution, { now });
-      if (entry.recordId) ImportBatchEntry.resolveOpenForRecord(entry.recordId, resolution, { now });
-      return ImportBatchEntry.findById(entry.id);
-    });
+    return runInTransaction(fn);
   } finally {
     release();
   }
 }
 
-module.exports = { ACTIONS_BY_OUTCOME, checkAction, resolveEntry };
+// Resolve uma entrada (dentro da transação de quem chama).
+function resolveOne(entryId, body, { now }) {
+  const { action, targetId = null } = body;
+  const entry = ImportBatchEntry.findById(entryId);
+  if (!entry) throw new NotFoundError('Pendência não encontrada.', 'IMPORT_ENTRY_NOT_FOUND', { params: { entryId } });
+  const problem = checkAction(entry, action);
+  if (problem === 'IMPORT_ENTRY_ALREADY_RESOLVED') throw new ConflictError('Esta pendência já foi resolvida.', problem);
+  if (problem) throw new ValidationError('Esta ação não vale para esta pendência.', problem, { field: 'action' });
+  const display = importViews.parseJson(entry.displayJson, {});
+
+  let resolution;
+  if (action === 'REMOVE') {
+    removeLaunch(entry, { now });
+    resolution = 'REMOVED';
+  } else if (action === 'KEEP') {
+    keepLaunch(entry, { now });
+    resolution = 'KEPT';
+  } else if (action === 'CREATE') {
+    resolution = createLaunch(entry, display, { now });
+  } else if (action === 'LINK') {
+    resolution = linkLaunch(entry, targetId, { now });
+  } else if (action === 'CREATE_PURCHASE') {
+    resolution = createPurchaseLaunch(entry, display, body, { now });
+  } else if (action === 'MARK_WON') {
+    resolution = markWonLaunch(entry, display, body, { now });
+  } else {
+    ignoreEntry(entry, { now });
+    resolution = 'IGNORED';
+  }
+  // "Salvar só a compra": a pendência continua aberta.
+  if (resolution === null) return ImportBatchEntry.findById(entry.id);
+  // Esta entrada e as outras pendências abertas do mesmo registro ficam resolvidas juntas.
+  ImportBatchEntry.resolve(entry.id, resolution, { now });
+  if (entry.recordId) ImportBatchEntry.resolveOpenForRecord(entry.recordId, resolution, { now });
+  return ImportBatchEntry.findById(entry.id);
+}
+
+// Resolve a pendência. Devolve a entrada atualizada (crua; a visão é montada por quem chama).
+function resolveEntry(entryId, body = {}, { now = new Date() } = {}) {
+  return underLock(() => resolveOne(entryId, body, { now }));
+}
+
+// --- Ignoradas: "Voltar para pendências" (D329) ------------------------------------------------------------------------
+
+const notReopenable = (reason) => new ConflictError('Esta pendência não pode voltar para a lista.', 'IMPORT_ENTRY_NOT_REOPENABLE', { params: { reason } });
+
+function reopenOne(entryId, { now }) {
+  const entry = ImportBatchEntry.findById(entryId);
+  if (!entry) throw new NotFoundError('Pendência não encontrada.', 'IMPORT_ENTRY_NOT_FOUND', { params: { entryId } });
+  if (entry.resolution !== 'IGNORED' || !REOPEN_TRACKING[entry.outcome]) throw notReopenable('NOT_IGNORED');
+  const record = entry.recordId ? ExternalRecord.findById(entry.recordId) : null;
+  if (!record) throw notReopenable('RECORD_NOT_FOUND');
+  if (record.tracking !== 'IGNORED') throw notReopenable('NOT_IGNORED');
+  if ((record.accountFingerprint ?? null) !== (Integration.get(SOURCE).accountFingerprint ?? null)) throw notReopenable('OTHER_ACCOUNT');
+  ImportBatchEntry.reopen(entry.id);
+  ExternalRecord.update(record.id, { tracking: REOPEN_TRACKING[entry.outcome] }, { now });
+  return ImportBatchEntry.findById(entry.id);
+}
+
+function reopenEntry(entryId, { now = new Date() } = {}) {
+  return underLock(() => reopenOne(entryId, { now }));
+}
+
+// Ignoradas que podem voltar: da conta atual, com o registro ainda IGNORED.
+function listIgnored() {
+  return ImportBatchEntry.listIgnored(SOURCE, Integration.get(SOURCE).accountFingerprint ?? null);
+}
+
+// --- Lote (D330) -------------------------------------------------------------------------------------------------------
+
+// Tudo ou nada: cada entrada num savepoint; se alguma falhar, a transação inteira volta e a resposta lista as falhas.
+function bulkResolve({ action, entryIds, acquiredAt = null }, { now = new Date() } = {}) {
+  if (entryIds.length > MAX_BULK) throw new ValidationError(`No máximo ${MAX_BULK} por vez.`, 'INVALID_FIELD', { field: 'entryIds' });
+  return underLock(() => {
+    const results = [];
+    const failures = [];
+    for (const entryId of entryIds) {
+      try {
+        results.push(runInTransaction(() => (action === 'REOPEN'
+          ? reopenOne(entryId, { now })
+          : resolveOne(entryId, { action, acquiredAt }, { now }))));
+      } catch (err) {
+        if (!(err instanceof AppError)) throw err;
+        failures.push({ entryId, code: err.code, reason: (err.params && err.params.reason) || null });
+      }
+    }
+    if (failures.length) {
+      throw new ConflictError(`${failures.length} pendência(s) não puderam ser resolvidas; nada foi gravado.`, 'IMPORT_BULK_CONFLICT', {
+        params: { failures },
+      });
+    }
+    return results;
+  });
+}
+
+module.exports = { checkAction, resolveEntry, reopenEntry, listIgnored, bulkResolve, MAX_BULK };

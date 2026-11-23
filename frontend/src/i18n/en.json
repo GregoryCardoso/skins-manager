@@ -213,7 +213,13 @@
     "IMPORT_ENTRY_ACTION_NOT_ALLOWED": "This action does not apply to this pending item.",
     "IMPORT_ENTRY_CONFLICT": "This pending item cannot be resolved right now.",
     "ENTRY_RESOLVED": "Import pending item already resolved.",
-    "BULK_QUANTITY_EXCEEDS_AVAILABLE": "The quantity is larger than the available units. Reload the list and try again."
+    "BULK_QUANTITY_EXCEEDS_AVAILABLE": "The quantity is larger than the available units. Reload the list and try again.",
+    "PURCHASE_AFTER_SALE": "The purchase date cannot be after the sale.",
+    "PURCHASE_UNLOCK_AFTER_SALE": "With this date, the trade lock would end after the sale.",
+    "IMPORT_ENTRY_WARNINGS_NOT_CONFIRMED": "Confirm the warning to continue.",
+    "IMPORT_ENTRY_NOT_REOPENABLE": "This pending item cannot come back to the list.",
+    "IMPORT_BULK_CONFLICT": "Some pending items could not be resolved; nothing was saved.",
+    "PURCHASE_IN_INTEGRATION_STORE_BEFORE_CUTOFF": "Purchase in the CSFloat store before the cutoff date."
   },
   "warnings": {
     "FEES_NOT_CONFIGURED": "The store fees are not configured.",
@@ -1320,7 +1326,9 @@
       "pendingCount": {
         "one": "{count} pending item",
         "other": "{count} pending items"
-      }
+      },
+      "ignored": "Ignored ({count})",
+      "ignoredHint": "Pending items you ignored. They do not come back by themselves; use \"Back to pending\" to handle them again."
     },
     "groups": {
       "CREATED": "Imported",
@@ -1328,7 +1336,8 @@
       "POSSIBLE_DUPLICATE": "Possible duplicate",
       "REVERTED": "Reverted trade",
       "WITHOUT_PURCHASE": "Sale without a purchase in the app",
-      "FAILED": "Not imported"
+      "FAILED": "Not imported",
+      "IGNORED": "Ignored"
     },
     "reasons": {
       "CATALOG_NOT_FOUND": "Item not found in the catalog. Update the catalog; the next import will try again.",
@@ -1368,7 +1377,9 @@
         "KEPT": "Kept. The app will not flag this trade again.",
         "CREATED": "Entry created.",
         "LINKED": "Linked to the entry.",
-        "IGNORED": "Ignored."
+        "IGNORED": "Ignored.",
+        "PURCHASE_ONLY": "Purchase saved. The sale comes in on the next import, once the statement shows the credit.",
+        "REOPENED": "Back in pending items."
       },
       "conflict": {
         "ITEM_SOLD_IN_APP": "This item was already sold in the app after the purchase. Undo its sale (in Sales) before removing the reversed purchase.",
@@ -1379,8 +1390,14 @@
         "TARGET_ALREADY_LINKED": "That entry is already linked to another CSFloat trade.",
         "ALREADY_LINKED": "This trade is already linked to an entry.",
         "RECORD_NOT_FOUND": "The CSFloat record of this pending item no longer exists. Import again.",
-        "CATALOG_NOT_FOUND": "The item is no longer in the catalog. Update the catalog and try again."
-      }
+        "CATALOG_NOT_FOUND": "The item is no longer in the catalog. Update the catalog and try again.",
+        "UNIT_IN_STOCK": "This unit is already in stock. Import again to record the sale on it.",
+        "NOT_IGNORED": "This pending item is not among the ignored ones.",
+        "OTHER_ACCOUNT": "This pending item belongs to another CSFloat account and cannot come back."
+      },
+      "CREATE_PURCHASE": "Enter purchase",
+      "MARK_WON": "It was a drop (won)",
+      "REOPEN": "Back to pending"
     },
     "auto": {
       "created": {
@@ -1394,6 +1411,58 @@
       "attention": "The CSFloat import brought pending items to review.",
       "failed": "Automatic CSFloat import did not finish: {reason}",
       "seeSummary": "See summary"
+    },
+    "launch": {
+      "title": "Enter purchase",
+      "saleInfo": "Sold on CSFloat for {price} on {date}.",
+      "identityLocked": "The item data comes from the sale and cannot be changed. Enter the store, price and purchase date.",
+      "store": "Purchase store",
+      "price": "Price paid ({currency})",
+      "fxRate": "USD→BRL rate of the purchase (optional; empty = the one in settings)",
+      "acquiredAt": "Purchase date",
+      "acquiredHint": "Cannot be after the sale.",
+      "tradeUnlockAt": "Trade lock end",
+      "unlockHint": "Must end by the sale ({date}). Empty = no trade lock.",
+      "plusSeven": "Purchase + 7 days",
+      "submit": "Enter purchase and record the sale",
+      "storeRequired": "Choose the store.",
+      "priceRequired": "Enter the price paid.",
+      "fxInvalid": "Invalid rate.",
+      "dateRequired": "Enter the date.",
+      "dateInvalid": "Invalid date.",
+      "afterSale": "The purchase date cannot be after the sale ({date}).",
+      "unlockAfterSale": "With this date, the trade lock would end after the sale ({date}). Steam would not have allowed the sale: check the purchase date or the trade lock end.",
+      "warnBeforeCutoff": "This purchase is in the CSFloat store and before the cutoff date ({date}). If that period is already in one of your deposits, the calculated balance will deduct this amount again; in that case, record a balance check afterwards.",
+      "confirmAnyway": "I understand, enter it anyway",
+      "noCredit": "The CSFloat statement has not shown the credit for this sale yet, so it cannot be recorded now. You can save only the purchase: the next import records the sale on it.",
+      "purchaseOnly": "Save only the purchase",
+      "unitInStock": "This unit is already in stock (see below). Import again to record the sale on it instead of entering another purchase."
+    },
+    "won": {
+      "title": "It was a drop (won)",
+      "body": {
+        "one": "The item will be entered as won (cost 0, no trade lock) and the sale recorded right away.",
+        "other": "{count} items will be entered as won (cost 0, no trade lock) and the sales recorded right away. The real profit gains the net amount of these sales."
+      },
+      "saleDate": "Acquisition date = the sale date",
+      "customDate": "Enter the acquisition date",
+      "acquiredAt": "Acquisition date",
+      "turnoverHint": "With the sale date, the turnover of this sale is 0 days.",
+      "confirm": "Confirm"
+    },
+    "bulk": {
+      "bar": "Selected pending items",
+      "selected": {
+        "one": "{count} selected",
+        "other": "{count} selected"
+      },
+      "clear": "Clear selection",
+      "selectEntry": "Select {name}",
+      "selectGroup": "Select all in {group}",
+      "failed": {
+        "one": "{count} pending item could not be resolved (marked below). Nothing was saved: unselect it and try again.",
+        "other": "{count} pending items could not be resolved (marked below). Nothing was saved: unselect them and try again."
+      }
     }
   }
 }

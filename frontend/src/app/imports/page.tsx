@@ -10,7 +10,7 @@ import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import { formatDateTime } from '@/lib/format';
 import { summaryLines } from '@/lib/importSummary';
 import { queryKeys } from '@/lib/queryKeys';
-import { getImportBatch, listImportBatches, listOpenImportEntries } from '@/services/api';
+import { getImportBatch, listIgnoredImportEntries, listImportBatches, listOpenImportEntries } from '@/services/api';
 import type { ImportBatchSummary } from '@/types/api';
 import styles from './page.module.css';
 
@@ -74,6 +74,10 @@ export default function ImportsPage() {
   const [undoId, setUndoId] = useState<number | null>(null);
 
   const entriesQuery = useQuery({ queryKey: queryKeys.imports.entries, queryFn: ({ signal }) => listOpenImportEntries(signal) });
+  // Ignoradas (9.5.1b, D329): a contagem aparece sempre; a lista, ao abrir a seção.
+  const ignoredQuery = useQuery({ queryKey: queryKeys.imports.ignored, queryFn: ({ signal }) => listIgnoredImportEntries(signal) });
+  const [showIgnored, setShowIgnored] = useState(false);
+  const ignored = ignoredQuery.data?.entries ?? [];
   const batchesQuery = useInfiniteQuery({
     queryKey: queryKeys.imports.batches,
     initialPageParam: null as number | null,
@@ -97,6 +101,22 @@ export default function ImportsPage() {
         {entriesQuery.data && entries.length === 0 && <div className={styles.empty}>{t('imports.page.noOpen')}</div>}
         {entries.length > 0 && <ImportEntriesList entries={entries} />}
       </section>
+
+      {ignored.length > 0 && (
+        <section className={styles.section} aria-labelledby="imports-ignored-title">
+          <h2 id="imports-ignored-title" className={styles.sectionTitle}>
+            <button type="button" className={styles.button} onClick={() => setShowIgnored((v) => !v)} aria-expanded={showIgnored}>
+              {showIgnored ? '▾' : '▸'} {t('imports.page.ignored', { count: ignored.length })}
+            </button>
+          </h2>
+          {showIgnored && (
+            <>
+              <p className={styles.muted}>{t('imports.page.ignoredHint')}</p>
+              <ImportEntriesList entries={ignored} ignoredList />
+            </>
+          )}
+        </section>
+      )}
 
       <section className={styles.section} aria-labelledby="imports-history-title">
         <h2 id="imports-history-title" className={styles.sectionTitle}>{t('imports.page.batches')}</h2>

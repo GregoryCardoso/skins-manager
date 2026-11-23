@@ -27,6 +27,7 @@ export const queryKeys = {
     batches: ['imports', 'batches'] as const,
     batch: (id: number) => ['imports', 'batch', id] as const,
     entries: ['imports', 'entries'] as const,
+    ignored: ['imports', 'ignored'] as const,
     undoPreview: (id: number) => ['imports', 'undoPreview', id] as const,
   },
   backupInfo: { all: ['backupInfo'] as const },
