@@ -6,6 +6,7 @@ import AgingSettings from '@/components/AgingSettings';
 import BackupSettings from '@/components/BackupSettings';
 import CatalogSettings from '@/components/CatalogSettings';
 import FxRateSettings from '@/components/FxRateSettings';
+import IntegrationsSettings from '@/components/IntegrationsSettings';
 import PreferencesSettings from '@/components/PreferencesSettings';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
@@ -42,6 +43,7 @@ export default function SettingsPage() {
       <PreferencesSettings />
       {settings && <AgingSettings settings={settings} />}
       <CatalogSettings />
+      <IntegrationsSettings />
       <BackupSettings />
       <AboutSettings />
     </>

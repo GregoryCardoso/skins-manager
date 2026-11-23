@@ -42,7 +42,7 @@ describe('v11 com dados', () => {
 
     const db = openDatabase(dbPath, { now: new Date('2026-11-22T12:00:00.000Z') });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(11);
+      expect(db.pragma('user_version', { simple: true })).toBe(12);
       expect(dump(db)).toEqual(before);
       const { inventory_view: view, ...rest } = db.prepare('SELECT * FROM settings').get();
       expect(view).toBe('GROUPED');
@@ -62,7 +62,7 @@ describe('v11 com dados', () => {
     first.close();
     const second = openDatabase(dbPath);
     try {
-      expect(second.pragma('user_version', { simple: true })).toBe(11);
+      expect(second.pragma('user_version', { simple: true })).toBe(12);
       expect(second.prepare('SELECT inventory_view AS v FROM settings').get().v).toBe('INDIVIDUAL');
     } finally {
       second.close();
@@ -72,7 +72,7 @@ describe('v11 com dados', () => {
   test('banco novo (sem migração anterior) já nasce em v11 com GROUPED', () => {
     const db = openDatabase(dbIn('novo'));
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(11);
+      expect(db.pragma('user_version', { simple: true })).toBe(12);
       expect(db.prepare('SELECT inventory_view AS v FROM settings').get().v).toBe('GROUPED');
     } finally {
       db.close();

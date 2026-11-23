@@ -4,6 +4,7 @@ const Database = require('better-sqlite3');
 const env = require('./env');
 const { MIGRATIONS } = require('./migrations');
 const { runSeed } = require('./seed');
+const { SECRET_COLUMNS } = require('./constants');
 const {
   AUTO_BACKUP_KEEP,
   MIGRATION_BACKUP_PREFIX,
@@ -88,6 +89,33 @@ function cleanStaleTempFiles(dbPath, now = new Date(), maxAgeMs = STALE_TMP_MAX_
   return removed;
 }
 
+function removeWalFiles(dbPath) {
+  for (const suffix of ['-wal', '-shm']) fs.rmSync(`${dbPath}${suffix}`, { force: true });
+}
+
+// Zera as colunas secretas (SECRET_COLUMNS, D290) de uma CÓPIA do banco e compacta o arquivo (VACUUM), para o segredo não
+// sobrar em páginas livres. Tabela ou coluna ausente (esquema antigo) é ignorada. Lança se não conseguir: quem chama deve
+// apagar a cópia e nunca entregá-la.
+function stripSecretsInFile(filePath) {
+  const db = new Database(filePath, { fileMustExist: true });
+  try {
+    db.pragma('journal_mode = DELETE'); // alterações no próprio arquivo, sem sobras no -wal
+    db.pragma('secure_delete = ON');
+    for (const { table, column } of SECRET_COLUMNS) {
+      const hasColumn = db.prepare('SELECT 1 FROM pragma_table_info(?) WHERE name = ?').get(table, column) !== undefined;
+      if (hasColumn) db.prepare(`UPDATE ${table} SET ${column} = NULL WHERE ${column} IS NOT NULL`).run();
+    }
+    db.exec('VACUUM');
+  } finally {
+    db.close();
+    try {
+      removeWalFiles(filePath); // com journal_mode = DELETE nem existem; falha ao apagar (Windows) não pode derrubar o backup
+    } catch (err) {
+      // sobra inofensiva
+    }
+  }
+}
+
 // Cópia consistente do banco antes de migrar (VACUUM INTO). Não roda dentro de transação.
 function backupBeforeMigrating(db, dbPath, fromVersion, now) {
   const dir = path.join(path.dirname(dbPath), 'backups');
@@ -100,6 +128,16 @@ function backupBeforeMigrating(db, dbPath, fromVersion, now) {
     target = path.join(dir, `${MIGRATION_BACKUP_PREFIX}${fromVersion}-${backupStamp(new Date(moment))}.sqlite`);
   }
   db.exec(`VACUUM INTO ${sqlQuote(target)}`);
+  try {
+    stripSecretsInFile(target); // o backup automático nunca leva a chave da API (D290)
+  } catch (err) {
+    try {
+      fs.rmSync(target, { force: true });
+    } catch (rmErr) {
+      // o erro original (que aborta a migração) é o relevante
+    }
+    throw err;
+  }
   pruneAutoBackups(dir, MIGRATION_BACKUP_PREFIX);
   return target;
 }
@@ -176,9 +214,22 @@ function getSchemaVersion() {
   return getDb().pragma('user_version', { simple: true });
 }
 
-// Cópia consistente e compacta do banco aberto (D150). O destino não pode existir.
-function exportDatabaseTo(targetPath) {
+// Cópia consistente e compacta do banco aberto (D150). O destino não pode existir. Por padrão a cópia sai sem os segredos
+// (chave da API, D290); se a limpeza falhar, a cópia é apagada e o erro sobe (nunca sobra um arquivo com a chave).
+function exportDatabaseTo(targetPath, { stripSecrets = true } = {}) {
   getDb().exec(`VACUUM INTO ${sqlQuote(targetPath)}`);
+  if (!stripSecrets) return;
+  try {
+    stripSecretsInFile(targetPath);
+  } catch (err) {
+    try {
+      fs.rmSync(targetPath, { force: true });
+      removeWalFiles(targetPath);
+    } catch (rmErr) {
+      // a cópia com segredo pode ter sobrado: o erro original (que impede a entrega) continua sendo o relevante
+    }
+    throw err;
+  }
 }
 
 // Colunas de cada tabela: { tabela: [colunas] } (pragma_table_info).
@@ -213,10 +264,6 @@ function inspectDatabaseFile(filePath) {
 
 function sleepSync(ms) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
-}
-
-function removeWalFiles(dbPath) {
-  for (const suffix of ['-wal', '-shm']) fs.rmSync(`${dbPath}${suffix}`, { force: true });
 }
 
 // Troca o arquivo do banco (D151, passo 6): fecha a conexão, apaga -wal/-shm e move `sourcePath` para o lugar.
@@ -264,6 +311,7 @@ module.exports = {
   getLatestSchemaVersion,
   getSchemaVersion,
   exportDatabaseTo,
+  stripSecretsInFile,
   inspectDatabaseFile,
   replaceDatabaseFile,
   restoreDatabaseFile,

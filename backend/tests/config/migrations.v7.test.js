@@ -81,7 +81,7 @@ describe('migração v7', () => {
     const { snapshot } = seedV6(dbPath);
     const db = openDatabase(dbPath, { now: new Date('2026-11-21T12:00:00.000Z') });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(11);
+      expect(db.pragma('user_version', { simple: true })).toBe(12);
       const deposits = db.prepare('SELECT * FROM deposits ORDER BY id').all();
       expect(deposits).toHaveLength(3);
       expect(deposits.map((d) => d.id)).toEqual(snapshot.deposits.map((d) => d.id));
@@ -152,7 +152,7 @@ describe('migração v7', () => {
     const first = backups(dbPath).length;
     const db = openDatabase(dbPath);
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(11);
+      expect(db.pragma('user_version', { simple: true })).toBe(12);
       expect(backups(dbPath).length).toBe(first);
       expect(db.prepare('SELECT COUNT(*) AS n FROM deposits').get().n).toBe(3);
     } finally {

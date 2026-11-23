@@ -19,8 +19,8 @@ const dbIn = (name) => path.join(tmpRoot, name, 'inventory.sqlite');
 const sha = (file) => crypto.createHash('sha256').update(fs.readFileSync(file, 'utf8').replace(/\r\n/g, '\n')).digest('hex');
 
 describe('migração v11', () => {
-  test('é a última migração (inventory_view) e a v10 não foi editada', () => {
-    const last = MIGRATIONS[MIGRATIONS.length - 1];
+  test('é a migração 11 (inventory_view) e a v10 não foi editada', () => {
+    const last = MIGRATIONS.find((m) => m.version === 11);
     expect(last).toMatchObject({ version: 11, name: 'inventory_view' });
     expect(last.disableForeignKeys).toBeUndefined();
     const dir = path.join(__dirname, '..', '..', 'src', 'config', 'migrations');
@@ -36,7 +36,7 @@ describe('migração v11', () => {
     old.close();
     const db = openDatabase(dbPath, { now: new Date('2026-11-22T12:00:00.000Z') });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(11);
+      expect(db.pragma('user_version', { simple: true })).toBe(12);
       const { inventory_view: view, ...rest } = db.prepare('SELECT * FROM settings').get();
       expect(view).toBe('GROUPED');
       expect(rest).toEqual(before);

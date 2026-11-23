@@ -65,13 +65,14 @@ describe('migração v5: lacunas', () => {
 
     const db = openDatabase(dbPath, { now: NOW5 });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(11);
-      expect(Object.fromEntries(Object.entries(snapshot(db)).map(([t, list]) => [t, stripV6Rows(list)]))).toEqual(rows);
+      expect(db.pragma('user_version', { simple: true })).toBe(12);
+      expect(Object.fromEntries(Object.entries(snapshot(db)).filter(([t]) => t !== 'integrations').map(([t, list]) => [t, stripV6Rows(list)]))).toEqual(rows);
       // A v6, a v7 e a v8 só alteram o DDL de stores, items, withdrawals, deposits e store_balances (e o índice único da v8);
       // o das demais tabelas e os índices ficam iguais.
       const unchangedByV6 = (list) => list.filter(
         (r) => !(r.type === 'table' && ['stores', 'items', 'withdrawals', 'deposits', 'store_balances'].includes(r.name))
           && r.name !== 'ux_store_balances_initial' && r.name !== 'idx_items_off_sale_at'
+          && r.name !== 'integrations' && r.name !== 'sqlite_autoindex_integrations_1'
       );
       expect(unchangedByV6(schemaOf(db))).toEqual(unchangedByV6(schema));
       expect(db.prepare('SELECT COUNT(*) AS n FROM settings').get().n).toBe(1);

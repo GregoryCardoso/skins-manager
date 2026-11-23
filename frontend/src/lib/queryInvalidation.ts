@@ -10,6 +10,8 @@ const K = queryKeys;
 const MONEY: readonly Prefix[] = [
   K.items.all, K.sales.all, K.stores.all, K.deposits.all, K.withdrawals.all, K.storeBalances.all, K.profitSummary.all,
 ];
+// O card da integração mostra o nome e as taxas da loja (D316).
+const STORE_CHANGE: readonly Prefix[] = [...MONEY, K.integrations.all];
 const ITEM_MONEY: readonly Prefix[] = [K.items.all, K.sales.all, K.stores.all, K.storeBalances.all, K.profitSummary.all];
 const DEPOSIT: readonly Prefix[] = [K.deposits.all, K.stores.all, K.storeBalances.all, K.profitSummary.all];
 const WITHDRAWAL: readonly Prefix[] = [K.withdrawals.all, K.stores.all, K.storeBalances.all, K.profitSummary.all];
@@ -32,12 +34,16 @@ export const INVALIDATION_MAP = {
   'withdrawal.delete': WITHDRAWAL,
   'balanceCheck.create': CHECK,
   'balanceCheck.delete': CHECK,
-  'store.create': MONEY,
-  'store.update': MONEY,
-  'store.delete': MONEY,
+  'store.create': STORE_CHANGE,
+  'store.update': STORE_CHANGE,
+  'store.delete': STORE_CHANGE,
   'settings.fx': [K.settings.all, ...MONEY],
   'settings.aging': [K.settings.all, K.items.all, K.sales.all],
   'settings.preferences': [K.settings.all],
+  // Integrações (9.1, D316): chave, loja, teste de conexão e troca de conta só mudam o card.
+  'integration.apiKey': [K.integrations.all],
+  'integration.test': [K.integrations.all],
+  'integration.switchAccount': [K.integrations.all],
   'catalog.refresh': [K.catalog.all, K.items.all, K.sales.all, K.health.all],
   // O banco inteiro mudou: limpa o cache (o chamador recarrega a janela em seguida).
   'backup.import': 'clear',

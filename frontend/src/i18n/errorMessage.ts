@@ -1,7 +1,10 @@
-import { formatDate, formatFloat, formatMoney } from '@/lib/format';
+import { formatDate, formatDateTime, formatFloat, formatMoney } from '@/lib/format';
 import { ApiRequestError } from '@/services/api';
 
 type LooseT = (key: string, params?: Record<string, string | number>) => string;
+
+// Nome de uma fonte de importação para as mensagens (D316).
+const sourceDisplayName = (source: string) => (source === 'CSFLOAT' ? 'CSFloat' : source);
 
 // Valores do backend (`error.params`) já formatados para interpolar na mensagem, por código (D120).
 // Devolve null quando o código não tem texto detalhado ou faltam os valores necessários.
@@ -50,6 +53,16 @@ export function errorDetailParams(
       const key = `fx.sourceName.${p.source}`;
       const name = t(key);
       return { source: name !== key ? name : p.source };
+    }
+    case 'IMPORT_SOURCE_UNREACHABLE':
+    case 'IMPORT_SOURCE_UNAVAILABLE':
+    case 'IMPORT_SOURCE_FORMAT_CHANGED':
+      // `params.source` (CSFLOAT) vira o nome da loja na mensagem (D316).
+      return typeof p.source === 'string' ? { source: sourceDisplayName(p.source) } : null;
+    case 'IMPORT_RATE_LIMITED': {
+      if (typeof p.source !== 'string' || typeof p.retryAt !== 'string') return null;
+      const when = formatDateTime(p.retryAt, locale);
+      return when ? { source: sourceDisplayName(p.source), retryAt: when } : null;
     }
     case 'UNKNOWN_FIELD': {
       if (!error.field) return null;

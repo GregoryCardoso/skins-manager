@@ -708,3 +708,53 @@ export interface ProfitSummary {
   fx: { usdBrlRate: number | null; source: FxRateSource | null; updatedAt: string | null; quotedAt: string | null };
   computedAt: string;
 }
+
+// --- Integrações (9.1, D316): a chave da API nunca volta completa, só `apiKeyMasked` ---
+
+export interface IntegrationView {
+  source: 'CSFLOAT';
+  storeId: number | null;
+  storeName: string | null;
+  storeCurrency: Currency | null;
+  storeSaleFeeRate: number | null;
+  storeWithdrawalFeeRate: number | null;
+  hasApiKey: boolean;
+  apiKeyMasked: string | null;
+  apiKeySavedAt: string | null;
+  accountLinked: boolean;
+  autoImportOnOpen: boolean;
+  autoImportPaused: boolean;
+  tradesCutoffAt: string | null;
+  transactionsCutoffAt: string | null;
+  lastImportAt: string | null;
+  lastImportStatus: 'OK' | 'FAILED' | null;
+  lastImportErrorCode: string | null;
+  importInProgress: boolean;
+  openEntriesCount: number;
+  helpUrl: string;
+}
+
+// Comparação das taxas da conta (`/me`) com as da loja no app (D314); `null` = sem como comparar.
+export interface FeeCheck {
+  accountSaleFeeRate: number | null;
+  storeSaleFeeRate: number | null;
+  saleFeeMatches: boolean | null;
+  accountWithdrawalFeeRate: number | null;
+  storeWithdrawalFeeRate: number | null;
+  withdrawalFeeMatches: boolean | null;
+}
+
+export interface CsfloatTestResult {
+  ok: boolean;
+  checkedAt: string;
+  // Só para mostrar "Conectado como ..."; nunca é gravado.
+  username: string | null;
+  accountMatches: boolean;
+  accountLinkedNow: boolean;
+  feeCheck: FeeCheck;
+}
+
+export interface CsfloatSwitchAccountResult {
+  integration: IntegrationView;
+  username: string | null;
+}

@@ -3,6 +3,8 @@ import type {
   BackupInfo,
   Category,
   CatalogRefreshResult,
+  CsfloatSwitchAccountResult,
+  CsfloatTestResult,
   CatalogSearchResult,
   CatalogStatus,
   CurrentStoreBalances,
@@ -20,6 +22,7 @@ import type {
   ItemGroupQuery,
   ItemListQuery,
   ItemPatchBody,
+  IntegrationView,
   ItemView,
   PreferencesPatch,
   FxRefreshResult,
@@ -366,3 +369,21 @@ export const openBackupsFolder = () => request<{ path: string }>('POST', '/backu
 
 // Resumo do lucro real (D205): total acumulado.
 export const getProfitSummary = (signal?: AbortSignal) => request<ProfitSummary>('GET', '/profit/summary', { signal });
+
+// --- Integrações (9.1, D316) ----------------------------------------------------------------------
+
+export const getCsfloatIntegration = (signal?: AbortSignal) =>
+  request<IntegrationView>('GET', '/integrations/csfloat', { signal });
+
+// A chave só trafega neste PUT; quem chama não a guarda em estado nem no cache de consultas.
+export const saveCsfloatApiKey = (apiKey: string) =>
+  request<IntegrationView>('PUT', '/integrations/csfloat/api-key', { body: { apiKey } });
+
+export const removeCsfloatApiKey = () => request<IntegrationView>('DELETE', '/integrations/csfloat/api-key');
+
+// O servidor espera até 20 s pelo CSFloat; o cliente espera um pouco mais.
+export const testCsfloatConnection = () =>
+  request<CsfloatTestResult>('POST', '/integrations/csfloat/test', { body: {}, timeoutMs: 30000 });
+
+export const switchCsfloatAccount = () =>
+  request<CsfloatSwitchAccountResult>('POST', '/integrations/csfloat/switch-account', { body: { confirm: true }, timeoutMs: 30000 });

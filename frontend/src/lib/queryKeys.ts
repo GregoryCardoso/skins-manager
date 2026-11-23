@@ -20,5 +20,6 @@ export const queryKeys = {
   profitSummary: { all: ['profitSummary'] as const },
   catalog: { all: ['catalog'] as const, status: ['catalog', 'status'] as const },
   health: { all: ['health'] as const },
+  integrations: { all: ['integrations'] as const, csfloat: ['integrations', 'csfloat'] as const },
   backupInfo: { all: ['backupInfo'] as const },
 };

@@ -36,6 +36,16 @@ function runSeed(db, now = new Date()) {
       }
       if (hasFlag) db.prepare('UPDATE settings SET stores_seeded = 1 WHERE id = 1').run();
     }
+    // Integração CSFloat (D316): a linha nasce aqui (a migração v12 só cria a tabela). Só existe com o esquema >= v12.
+    const hasIntegrations = db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'integrations'").get() !== undefined;
+    if (hasIntegrations) {
+      db.prepare(
+        `INSERT OR IGNORE INTO integrations (source, store_id, created_at, updated_at)
+         VALUES ('CSFLOAT',
+                 (SELECT id FROM stores WHERE name = 'CSFloat' COLLATE NOCASE AND currency = 'USD' ORDER BY id LIMIT 1),
+                 @now, @now)`
+      ).run({ now: nowIso });
+    }
   })();
 }
 

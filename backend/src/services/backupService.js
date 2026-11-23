@@ -16,6 +16,7 @@ const { AUTO_BACKUP_KEEP } = require('../config/backupRetention');
 const { AppError, ValidationError, ConflictError } = require('../errors/AppError');
 const folderOpener = require('./system/folderOpener');
 const catalogService = require('./catalogService');
+const integrationService = require('./integrationService');
 const settingsService = require('./settingsService');
 const Item = require('../models/Item');
 const Store = require('../models/Store');
@@ -203,6 +204,7 @@ function importBackup(buffer, { now = new Date() } = {}) {
 
   const latestVersion = DatabaseFile.getLatestSchemaVersion();
   const tempPath = tempFilePath('import');
+  let secrets = null; // chave(s) atual(is) da API, só em memória durante a importação (D290)
   try {
     // 3 e 4. Cópia temporária, verificação de integridade e avaliação.
     fs.writeFileSync(tempPath, buffer);
@@ -222,12 +224,15 @@ function importBackup(buffer, { now = new Date() } = {}) {
     }
     DatabaseFile.pruneAutoBackups(backupsDir, IMPORT_BACKUP_PREFIX);
 
-    // 6 e 7. Troca o arquivo, reabre (migrações + seed) e sincroniza o catálogo embutido.
+    // 6 e 7. Troca o arquivo, reabre (migrações + seed), sincroniza o catálogo embutido e regrava a chave da API atual (D290):
+    // a chave nunca entra por backup; qualquer chave do arquivo importado é sobrescrita.
     let result;
+    secrets = integrationService.captureSecrets();
     try {
       DatabaseFile.replaceFile(tempPath);
       DatabaseFile.open({ now, skipMigrationBackup: true });
       catalogService.syncBundledCatalog({ now });
+      integrationService.restoreSecrets(secrets, { now });
       result = {
         fileVersion: info.userVersion,
         schemaVersion: DatabaseFile.getSchemaVersion(),
@@ -240,6 +245,7 @@ function importBackup(buffer, { now = new Date() } = {}) {
       try {
         DatabaseFile.restoreFile(preImportPath);
         DatabaseFile.open({ now, skipMigrationBackup: true });
+        integrationService.restoreSecrets(secrets, { now }); // o backup automático está sem a chave
       } catch (restoreErr) {
         console.error(`Falha ao restaurar os dados anteriores: ${restoreErr && restoreErr.message ? restoreErr.message : restoreErr}`);
         throw new AppError(
@@ -252,7 +258,8 @@ function importBackup(buffer, { now = new Date() } = {}) {
     }
     return result;
   } finally {
-    // 8. O temporário some em todos os caminhos (depois do rename ele já não existe).
+    // 8. O temporário some em todos os caminhos (depois do rename ele já não existe); a chave some da memória.
+    secrets = null;
     removeQuietly(tempPath);
   }
 }

@@ -22,8 +22,9 @@ const SAMPLE_KEYS: Array<readonly unknown[]> = [
   queryKeys.catalog.status,
   queryKeys.health.all,
   queryKeys.backupInfo.all,
+  queryKeys.integrations.csfloat,
 ];
-const GROUPS = ['items', 'sales', 'stores', 'settings', 'deposits', 'withdrawals', 'storeBalances', 'profitSummary', 'catalog', 'health', 'backupInfo'];
+const GROUPS = ['items', 'sales', 'stores', 'settings', 'deposits', 'withdrawals', 'storeBalances', 'profitSummary', 'catalog', 'health', 'backupInfo', 'integrations'];
 const MONEY = ['items', 'sales', 'stores', 'deposits', 'withdrawals', 'storeBalances', 'profitSummary'];
 
 // Grupos que cada ação deve invalidar (tabela de D259).
@@ -43,13 +44,16 @@ const EXPECTED: Record<string, string[]> = {
   'withdrawal.delete': ['withdrawals', 'stores', 'storeBalances', 'profitSummary'],
   'balanceCheck.create': ['storeBalances', 'profitSummary'],
   'balanceCheck.delete': ['storeBalances', 'profitSummary'],
-  'store.create': MONEY,
-  'store.update': MONEY,
-  'store.delete': MONEY,
+  'store.create': [...MONEY, 'integrations'],
+  'store.update': [...MONEY, 'integrations'],
+  'store.delete': [...MONEY, 'integrations'],
   'settings.fx': ['settings', ...MONEY],
   'settings.aging': ['settings', 'items', 'sales'],
   'settings.preferences': ['settings'],
   'catalog.refresh': ['catalog', 'items', 'sales', 'health'],
+  'integration.apiKey': ['integrations'],
+  'integration.test': ['integrations'],
+  'integration.switchAccount': ['integrations'],
 };
 
 function populated(): QueryClient {

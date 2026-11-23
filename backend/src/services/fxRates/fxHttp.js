@@ -72,7 +72,8 @@ async function readBodyText(response, source, maxBytes = FX_MAX_RESPONSE_BYTES) 
 }
 
 // Executa `task(signal)` com prazo próprio e o prazo total; a primeira expiração aborta e vira FX_FETCH_FAILED.
-function runWithDeadline(task, { source, callTimeoutMs, totalSignal }) {
+// `timeoutError` (opcional, D316): função que cria o erro do prazo; o padrão é `fetchFailed(source)`.
+function runWithDeadline(task, { source, callTimeoutMs, totalSignal, timeoutError = () => fetchFailed(source) }) {
   const controller = new AbortController();
   let timer;
   let onTotalAbort;
@@ -83,7 +84,7 @@ function runWithDeadline(task, { source, callTimeoutMs, totalSignal }) {
   const expired = new Promise((_, reject) => {
     const abort = () => {
       controller.abort();
-      reject(fetchFailed(source));
+      reject(timeoutError());
     };
     timer = setTimeout(abort, callTimeoutMs);
     if (totalSignal && totalSignal.aborted) abort();
@@ -100,7 +101,7 @@ function runWithDeadline(task, { source, callTimeoutMs, totalSignal }) {
 
 // GET `url` e devolve o JSON. Falha de rede, timeout ou HTTP diferente de 200 -> FX_FETCH_FAILED; 429 -> FX_RATE_LIMITED;
 // corpo grande demais ou JSON inválido -> FX_INVALID_RESPONSE.
-async function fetchJson(url, { fetchFn, source, callTimeoutMs, totalSignal }) {
+async function fetchJson(url, { fetchFn, source, callTimeoutMs, totalSignal, timeoutError }) {
   if (typeof fetchFn !== 'function') throw fetchFailed(source);
   const text = await runWithDeadline(
     async (signal) => {
@@ -121,7 +122,7 @@ async function fetchJson(url, { fetchFn, source, callTimeoutMs, totalSignal }) {
         throw fetchFailed(source);
       }
     },
-    { source, callTimeoutMs, totalSignal }
+    { source, callTimeoutMs, totalSignal, timeoutError }
   );
   try {
     return JSON.parse(text);

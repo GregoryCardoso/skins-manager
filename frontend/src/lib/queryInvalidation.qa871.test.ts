@@ -40,13 +40,16 @@ describe('cada função de escrita do api.ts invalida a ação certa onde é usa
     updateFxRate: ['settings.fx'], refreshFxRate: ['settings.fx'],
     updatePreferences: ['settings.preferences', 'settings.aging', 'settings.fx'],
     refreshCatalog: ['catalog.refresh'],
+    saveCsfloatApiKey: ['integration.apiKey'], removeCsfloatApiKey: ['integration.apiKey'],
+    testCsfloatConnection: ['integration.test'],
+    switchCsfloatAccount: ['integration.switchAccount'],
   };
   // Só quem importa a função do api.ts (o PreferencesProvider expõe refreshFxRate/saveFxRate já com a invalidação).
   const callers = (fn: string) => prod.filter((f) => !rel(f).startsWith('services/') && new RegExp(`\\b${fn}\\(`).test(read(f))
     && new RegExp(`import[^;]*\\b${fn}\\b[^;]*from '@/services/api'`, 's').test(read(f)));
   const actionsIn = (file: string) => {
     const code = read(file);
-    return new Set([...code.matchAll(/'((?:item|deposit|withdrawal|balanceCheck|store|settings|catalog|backup)\.\w+)'/g)].map((m) => m[1]));
+    return new Set([...code.matchAll(/'((?:item|deposit|withdrawal|balanceCheck|store|settings|catalog|backup|integration)\.\w+)'/g)].map((m) => m[1]));
   };
 
   test.each(Object.entries(WRITES))('%s: todo arquivo que a chama usa uma das ações esperadas', (fn, accepted) => {

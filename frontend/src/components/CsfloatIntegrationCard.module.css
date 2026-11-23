@@ -1,0 +1,8 @@
+.keyRow { display: flex; align-items: flex-end; gap: 0.6rem; flex-wrap: wrap; }
+.keyField { display: flex; flex-direction: column; gap: 0.25rem; flex: 1 1 18rem; min-width: 12rem; }
+.keyInput { width: 100%; box-sizing: border-box; }
+.storeSelect { min-width: 12rem; }
+.savedKey { margin: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.warnings { display: flex; flex-direction: column; gap: 0.5rem; }
+.helpLink { color: var(--accent); }
+.actions { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center; }
