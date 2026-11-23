@@ -797,6 +797,8 @@ export interface ImportEntryDisplay {
 
 export interface ImportEntryView {
   id: number;
+  // Tipo do vínculo do lançamento (9.4): CREATED = criado pela importação; MATCHED = lançamento feito à mão e ligado.
+  linkKind?: 'CREATED' | 'MATCHED' | null;
   batchId: number;
   outcome: ImportOutcome;
   reasonCode: string | null;
@@ -821,6 +823,8 @@ export interface ImportBatchCounts {
   unknownState: number;
   deferredSales: number;
   withoutPurchase: number;
+  // Aceitos e revertidos antes de importar (9.4).
+  revertedBeforeImport?: number;
 }
 
 export interface ImportBatchSummary {
@@ -858,8 +862,18 @@ export interface ImportBatchList {
 
 export interface UndoPreviewIssue {
   code: string;
-  itemId: number;
-  name: string;
+  itemId: number | null;
+  name: string | null;
+  // ENTRY_RESOLVED (9.4): a pendência já resolvida.
+  entryId?: number;
+}
+
+// Ações de uma pendência (9.4, D301).
+export type ImportEntryAction = 'REMOVE' | 'KEEP' | 'CREATE' | 'LINK' | 'IGNORE';
+
+export interface ImportResolveBody {
+  action: ImportEntryAction;
+  targetId?: number;
 }
 
 export interface UndoPreview {

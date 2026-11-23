@@ -26,7 +26,7 @@ function IssueList({ issues }: { issues: UndoPreviewIssue[] }) {
       {issues.map((issue) => {
         const key = `imports.undo.${issue.code}`;
         const label = tLoose(key);
-        return <li key={`${issue.code}-${issue.itemId}`}>{issue.name}{label !== key ? ` — ${label}` : ''}</li>;
+        return <li key={`${issue.code}-${issue.entryId ?? issue.itemId}`}>{issue.name ?? ''}{label !== key ? ` — ${label}` : ''}</li>;
       })}
     </ul>
   );

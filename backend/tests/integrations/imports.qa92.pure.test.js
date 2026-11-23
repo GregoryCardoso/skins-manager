@@ -41,7 +41,8 @@ describe('tradeClassifier: matriz estado x oferta (compra, nunca importada)', ()
     ['failed', 3, 'yes', 'MARK', 'CLOSED_NOT_TRANSFERRED'],
     ['cancelled', 3, 'yes', 'MARK', 'CLOSED_NOT_TRANSFERRED'],
   ])('state=%s offer=%s aceite=%s -> %s/%s', (state, offerState, accepted, kind, tracking) => {
-    const raw = fakeTrade({ id: '1', state, offerState, acceptedAt: accepted === 'yes' ? '2026-11-20T14:00:00.000Z' : null });
+    // sem fim de proteção informado: o verified fecha na hora (com a proteção no futuro, segue OPEN; ver imports.reversals)
+    const raw = fakeTrade({ id: '1', state, offerState, protectionEndsAt: null, acceptedAt: accepted === 'yes' ? '2026-11-20T14:00:00.000Z' : null });
     expect(classify(norm(raw), 'BUY', null, ctx())).toMatchObject({ kind, tracking });
   });
 

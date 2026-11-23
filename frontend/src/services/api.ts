@@ -25,6 +25,7 @@ import type {
   ImportBatchList,
   ImportBatchView,
   ImportEntryView,
+  ImportResolveBody,
   ImportRunBody,
   IntegrationView,
   ItemView,
@@ -409,6 +410,10 @@ export const getUndoPreview = (id: number, signal?: AbortSignal) =>
 
 export const undoImportBatch = (id: number, confirmWarnings: boolean) =>
   request<ImportBatchView>('POST', `/imports/batches/${id}/undo`, { body: { confirmWarnings } });
+
+// Resolve uma pendência (9.4): remover/manter (trade revertido), criar/ligar/ignorar (possível duplicado), ignorar (falha).
+export const resolveImportEntry = (id: number, body: ImportResolveBody) =>
+  request<ImportEntryView>('POST', `/imports/entries/${id}/resolve`, { body });
 
 export const listOpenImportEntries = (signal?: AbortSignal) =>
   request<{ entries: ImportEntryView[] }>('GET', '/imports/entries', { signal, query: { open: 'true' } });

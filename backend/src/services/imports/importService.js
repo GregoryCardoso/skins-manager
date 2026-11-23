@@ -25,7 +25,7 @@ const backupService = require('../backupService');
 const { normalizeSearchText } = require('../catalog/csgoApiAdapter');
 const { waitForRateLimit } = require('./adapters/csfloatHttp');
 const { KNOWN_TX_TYPES, PURCHASE_REVERSAL_TX_TYPES, SALE_REVERSAL_TX_TYPES } = require('./adapters/csfloatStates');
-const { resolveSaleNet } = require('../pricingService');
+const { saleMoment, saleReleaseOf, syncSaleRelease, syncReleasesFromTransactions, expectedFeeCents, saleCreditOf } = require('./saleImportHelpers');
 const { validateAdapter } = require('./importSource');
 const importLock = require('./importLock');
 const scanPolicy = require('./scanPolicy');
@@ -34,6 +34,7 @@ const externalItemMapper = require('./externalItemMapper');
 const manualMatchService = require('./manualMatchService');
 const cutoffService = require('./cutoffService');
 const undoService = require('./undoService');
+const entryResolutionService = require('./entryResolutionService');
 const importViews = require('./importViews');
 
 const SOURCE = 'CSFLOAT';
@@ -190,7 +191,7 @@ function applyImport(env, read) {
   const { row, store, now, finishedAt, cutoffToStore, effectiveCutoff, steamId, account, trigger } = env;
   const counts = {
     purchasesCreated: 0, salesCreated: 0, matched: 0, known: 0, beforeCutoff: 0, notTransferred: 0, review: 0, reverted: 0, failed: 0,
-    unknownState: 0, deferred: 0, withoutPurchase: 0,
+    unknownState: 0, deferred: 0, withoutPurchase: 0, revertedBeforeImport: 0,
   };
   const unknownTypes = {};
   const warnings = [...new Set(read.warnings)];
@@ -239,6 +240,8 @@ function applyImport(env, read) {
   };
   const diagnostics = { trades: { BUY: {}, SELL: {} }, duplicateContractIds: 0, tradesRead: trades.length, transactionsRead: read.transactions.length,
     invalidTrades: read.invalidTrades.length, invalidTransactions: read.invalidTransactions };
+  // Reversões em que o usuário escolheu "Manter" (9.4, D301): não voltam a ser acusadas.
+  const keptRecords = ImportBatchEntry.recordIdsWithResolution('KEPT', [...existingTrades.values()].map((r) => r.id));
   const contractSeen = new Set();
   const cutoffMs = Date.parse(effectiveCutoff);
   const toImport = [];
@@ -300,6 +303,7 @@ function applyImport(env, read) {
     const link = existing ? linksByRecord.get(existing.id) : null;
     const cls = tradeClassifier.classify(trade, direction, existing, {
       now, cutoffMs, refundSignal: refundContracts[direction].has(trade.contractId), hasLink: Boolean(link),
+      keptReversal: Boolean(existing && keptRecords.has(existing.id)),
     });
     if (cls.entry && cls.entry.reasonCode === 'UNKNOWN_STATE') {
       bump(unknownTypes, tradeClassifier.stateKind(trade.rawState) === 'UNKNOWN' ? `state:${trade.rawState}` : `offer:${trade.offerState}`);
@@ -326,9 +330,13 @@ function applyImport(env, read) {
       ImportBatchEntry.resolveOpenForRecord(record.id, 'IGNORED', { now });
     }
     if (cls.entry && (cls.kind === 'MARK' || previousTracking !== cls.tracking || cls.tracking === 'UNKNOWN_STATE')) {
+      // Trade revertido: os dados do item (catálogo, float) vêm da entrada que o importou; o estado é o atual.
+      const display = cls.tracking === 'REVERTED'
+        ? { ...lastDisplayOf(record.id, buildDisplay(trade, direction, null)), state: trade.rawState }
+        : buildDisplay(trade, direction, null);
       addEntry(record, {
         outcome: cls.entry.outcome, reasonCode: cls.entry.reasonCode, entityType: link ? link.entityType : null,
-        entityId: link ? link.entityId : null, display: buildDisplay(trade, direction, null),
+        entityId: link ? link.entityId : null, display,
       });
     }
   }
@@ -415,6 +423,10 @@ function applyImport(env, read) {
   // (f3) liberação real das vendas importadas pelo `trade_verified` lido agora (mesmo que o trade não tenha sido relido).
   syncReleasesFromTransactions(read.transactions, { now });
 
+  // (f4) estorno/rollback tardio no extrato de um trade já importado e que não foi relido (ex.: já fechado): também é reversão.
+  detectReversalsFromTransactions(read.transactions, { batch, now, counts, addEntry });
+  diagnostics.revertedBeforeImport = counts.revertedBeforeImport;
+
   // (h) cursor do extrato: a transação mais nova lida.
   const cursor = newestTransactionId(read.transactions);
   Integration.update(
@@ -436,10 +448,47 @@ function applyImport(env, read) {
   return { batchId: batch.id };
 }
 
-// --- Vendas (9.3, D299, D312) -----------------------------------------------------------------------------------------
+// --- Reversões (9.4, D294, D301) --------------------------------------------------------------------------------------
 
-// Data da venda importada: `contract.sold_at` (ou o aceite, ou a criação do trade).
-const saleMoment = (trade) => trade.soldAt || trade.acceptedAt || trade.createdAt;
+// Display guardado na entrada que importou o trade (catálogo, float etc.), ou o `fallback`.
+function lastDisplayOf(recordId, fallback) {
+  const stored = ImportBatchEntry.findLatestDisplayJson(recordId);
+  const parsed = stored ? importViews.parseJson(stored, null) : null;
+  return parsed && parsed.marketHashName !== undefined ? parsed : fallback;
+}
+
+// Estornos do extrato lidos neste lote (`contract_purchase_refund`/`rollback` para compras, `contract_sale_refund`/`rollback`
+// para vendas) cujo trade já foi importado: entrada REVERTED (nada é apagado sozinho). Trades já marcados, removidos, ignorados
+// ou mantidos pelo usuário ficam de fora.
+function detectReversalsFromTransactions(transactions, { batch, now, counts, addEntry }) {
+  const refunds = transactions.filter(
+    (tx) => tx.contractId && (PURCHASE_REVERSAL_TX_TYPES.includes(tx.type) || SALE_REVERSAL_TX_TYPES.includes(tx.type))
+  );
+  if (!refunds.length) return;
+  const records = ExternalRecord.findTradesByContractIds(SOURCE, refunds.map((tx) => tx.contractId));
+  const links = ExternalLink.findByRecordIds([...records.values()].map((r) => r.id));
+  const kept = ImportBatchEntry.recordIdsWithResolution('KEPT', [...records.values()].map((r) => r.id));
+  const done = new Set();
+  for (const tx of refunds) {
+    const record = records.get(tx.contractId);
+    if (!record || done.has(record.id)) continue;
+    const link = links.get(record.id);
+    const types = record.direction === 'SELL' ? SALE_REVERSAL_TX_TYPES : PURCHASE_REVERSAL_TX_TYPES;
+    if (!link || !types.includes(tx.type) || kept.has(record.id)) continue;
+    if (['REVERTED', 'REMOVED_IN_APP', 'IGNORED'].includes(record.tracking)) continue;
+    done.add(record.id);
+    ExternalRecord.update(record.id, { tracking: 'REVERTED', lastBatchId: batch.id }, { now });
+    counts.reverted += 1;
+    addEntry(record, {
+      outcome: 'REVERTED', reasonCode: tradeClassifier.REVERT_REASONS.REFUND, entityType: link.entityType, entityId: link.entityId,
+      display: lastDisplayOf(record.id, {
+        direction: record.direction, marketHashName: record.displayName, priceCents: record.amountCents, currency: 'USD', date: record.soldAt,
+      }),
+    });
+  }
+}
+
+// --- Vendas (9.3, D299, D312) -----------------------------------------------------------------------------------------
 
 // Trade normalizado para o casamento e a escolha da unidade.
 function matchTradeOf(trade, mapped) {
@@ -455,60 +504,6 @@ function matchTradeOf(trade, mapped) {
     priceCents: trade.priceCents,
     date: tradeMoment(trade),
   };
-}
-
-// Liberação real da venda (D312): a data do `trade_verified` do contrato, quando já veio; senão, o `verify_sale_at`; senão nula
-// (vale a retenção da loja).
-function saleReleaseOf(contractId, verifySaleAt) {
-  const verified = contractId ? ExternalRecord.findTransactionsByContract(SOURCE, contractId, ['trade_verified']) : [];
-  if (verified.length) {
-    return verified.map((tx) => tx.externalCreatedAt).sort((a, b) => Date.parse(a) - Date.parse(b))[0];
-  }
-  return verifySaleAt || null;
-}
-
-// Atualiza a liberação de uma venda CRIADA pela importação (a manual ligada nunca é alterada, E9-Q10). A atualização do próprio
-// import não conta como "editado" no desfazer: o `entity_updated_at` acompanha, se o item ainda não tinha sido editado.
-function syncSaleRelease(link, record, { now }) {
-  if (!link || link.entityType !== 'ITEM_SALE' || link.linkKind !== 'CREATED') return;
-  const item = Item.findById(link.entityId);
-  if (!item || item.status !== 'VENDIDO') return;
-  const next = saleReleaseOf(record.contractId, record.verifySaleAt);
-  if ((item.saleReleaseAt ?? null) === (next ? new Date(next).toISOString() : null)) return;
-  const wasClean = item.updatedAt === link.entityUpdatedAt;
-  const updated = itemService.updateImportedSaleRelease(item.id, next, { now });
-  if (wasClean) ExternalLink.update(link.id, { entityUpdatedAt: updated.updatedAt });
-}
-
-// `trade_verified` lidos neste lote: atualiza a liberação das vendas importadas desses contratos.
-function syncReleasesFromTransactions(transactions, { now }) {
-  const contractIds = transactions.filter((tx) => tx.type === 'trade_verified' && tx.contractId).map((tx) => tx.contractId);
-  if (!contractIds.length) return;
-  const records = ExternalRecord.findTradesByContractIds(SOURCE, contractIds);
-  const links = ExternalLink.findByRecordIds([...records.values()].map((r) => r.id));
-  for (const record of records.values()) syncSaleRelease(links.get(record.id), record, { now });
-}
-
-// Taxa que as regras da loja dariam para o preço (só para o aviso FEE_MISMATCH), ou null se a loja não tem taxa configurada.
-function expectedFeeCents(priceCents, store) {
-  try {
-    return resolveSaleNet({ salePriceCents: priceCents, store }).feeCents;
-  } catch (err) {
-    if (err instanceof AppError) return null;
-    throw err;
-  }
-}
-
-// Crédito da venda no extrato (`contract_sold` do mesmo contrato): `{ netCents, feeCents }`, `{ missing: true }` (o extrato ainda
-// não trouxe) ou `{ inconsistent: true }` (o pendente não bate com preço − taxa).
-function saleCreditOf(trade) {
-  const sold = ExternalRecord.findTransactionsByContract(SOURCE, trade.contractId, ['contract_sold']);
-  if (!sold.length) return { missing: true };
-  const tx = sold[0];
-  const netCents = tx.pendingOffsetCents;
-  if (!Number.isSafeInteger(netCents)) return { inconsistent: true };
-  if (tx.feeCents !== null && tx.feeCents !== undefined && netCents !== trade.priceCents - tx.feeCents) return { inconsistent: true };
-  return { netCents, feeCents: trade.priceCents - netCents };
 }
 
 // Vendas a importar (D299): 1) casa com a venda manual já lançada; 2) senão, escolhe a unidade em estoque e registra a venda com
@@ -733,11 +728,18 @@ function isUndoable(batch) {
   return Boolean(latest && latest.id === batch.id && batch.status === 'DONE');
 }
 
+// Map recordId -> tipo do vínculo (CREATED/MATCHED), para o aviso "lançamento feito à mão" ao remover.
+function linkKindsFor(entries) {
+  const links = ExternalLink.findByRecordIds(entries.map((e) => e.recordId).filter(Boolean));
+  return new Map([...links.entries()].map(([recordId, link]) => [recordId, link.linkKind]));
+}
+
 function getBatchView(batchId) {
   const batch = ImportBatch.findById(batchId);
   if (!batch) throw new NotFoundError('Importação não encontrada.', 'IMPORT_BATCH_NOT_FOUND');
   const entries = ImportBatchEntry.listByBatch(batchId);
   return importViews.toBatchView(batch, entries, {
+    linkKinds: linkKindsFor(entries),
     catalogById: catalogMapForRawEntries(entries),
     undoable: isUndoable(batch),
     openEntriesCount: ImportBatchEntry.countOpenByBatch([batchId]).get(batchId) || 0,
@@ -760,7 +762,14 @@ function listBatches({ limit = IMPORT_BATCHES_PAGE_SIZE, before = null } = {}) {
 function listOpenEntries() {
   const entries = ImportBatchEntry.listOpen();
   const catalogById = catalogMapForRawEntries(entries);
-  return { entries: entries.map((e) => importViews.toEntryView(e, catalogById)) };
+  const linkKinds = linkKindsFor(entries);
+  return { entries: entries.map((e) => importViews.toEntryView(e, catalogById, linkKinds)) };
+}
+
+// Resolve uma pendência (9.4, D301) e devolve a entrada atualizada.
+function resolveEntry(entryId, { action, targetId = null } = {}, { now = new Date() } = {}) {
+  const entry = entryResolutionService.resolveEntry(entryId, { action, targetId }, { now });
+  return importViews.toEntryView(entry, catalogMapForRawEntries([entry]), linkKindsFor([entry]));
 }
 
 function getUndoPreview(batchId) {
@@ -779,6 +788,7 @@ module.exports = {
   getBatchView,
   listBatches,
   listOpenEntries,
+  resolveEntry,
   getUndoPreview,
   undoBatch,
   directionOf,

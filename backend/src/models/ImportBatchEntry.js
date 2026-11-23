@@ -78,7 +78,51 @@ function resolveOpenForRecordsOfBatch(batchId, resolution, { now = new Date() } 
     .run(resolution, now.toISOString(), batchId).changes;
 }
 
+// Ids (entre os informados) de registros com alguma entrada resolvida como `resolution` (ex.: KEPT = "Manter").
+function recordIdsWithResolution(resolution, recordIds) {
+  const out = new Set();
+  const unique = [...new Set(recordIds)];
+  for (let i = 0; i < unique.length; i += 500) {
+    const chunk = unique.slice(i, i + 500);
+    const marks = chunk.map(() => '?').join(',');
+    const rows = getDb()
+      .prepare(`SELECT DISTINCT record_id FROM import_batch_entries WHERE resolution = ? AND record_id IN (${marks})`)
+      .all(resolution, ...chunk);
+    for (const row of rows) out.add(row.record_id);
+  }
+  return out;
+}
+
+// `display_json` da entrada CREATED/MATCHED mais recente do registro (a que importou o trade), ou null.
+function findLatestDisplayJson(recordId) {
+  const row = getDb()
+    .prepare("SELECT display_json FROM import_batch_entries WHERE record_id = ? AND outcome IN ('CREATED','MATCHED') ORDER BY id DESC LIMIT 1")
+    .get(recordId);
+  return row ? row.display_json : null;
+}
+
+function findById(id) {
+  return toEntry(getDb().prepare('SELECT * FROM import_batch_entries WHERE id = ?').get(id));
+}
+
+// Marca uma entrada como resolvida (ação do usuário na pendência).
+function resolve(id, resolution, { now = new Date() } = {}) {
+  return getDb()
+    .prepare('UPDATE import_batch_entries SET resolution = ?, resolved_at = ? WHERE id = ? AND resolution IS NULL')
+    .run(resolution, now.toISOString(), id).changes;
+}
+
+// Pendências do lote já resolvidas (fora as do desfazer): aviso ENTRY_RESOLVED no desfazer.
+function listResolvedOpenTypeByBatch(batchId) {
+  return getDb()
+    .prepare(`SELECT * FROM import_batch_entries WHERE batch_id = ? AND outcome IN (${OPEN_OUTCOMES_SQL})
+      AND resolution IS NOT NULL AND resolution <> 'UNDONE' ORDER BY id`)
+    .all(batchId)
+    .map(toEntry);
+}
+
 module.exports = {
+  recordIdsWithResolution, findLatestDisplayJson, findById, resolve, listResolvedOpenTypeByBatch,
   OPEN_OUTCOMES, create, listByBatch, listOpen, countOpen, countOpenByBatch, resolveOpenForRecord, resolveOpenForBatch,
   resolveOpenForRecordsOfBatch, resolveAllOpen,
 };

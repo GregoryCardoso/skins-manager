@@ -90,14 +90,36 @@ function loadItems(links) {
   return itemsById;
 }
 
+// Aviso ENTRY_RESOLVED (9.4, D302): pendências do lote que o usuário já resolveu (remover, manter, criar, ligar, ignorar). Desfazer
+// o lote apaga os registros dele, e essas decisões se perdem.
+function resolvedEntryWarnings(batchId) {
+  return ImportBatchEntry.listResolvedOpenTypeByBatch(batchId).map((entry) => {
+    const display = parseJson(entry.displayJson);
+    return { code: 'ENTRY_RESOLVED', itemId: entry.entityId ?? null, name: display.marketHashName ?? null, entryId: entry.id };
+  });
+}
+
+function parseJson(text) {
+  try {
+    return JSON.parse(text) || {};
+  } catch (err) {
+    return {};
+  }
+}
+
+function assessBatch(batchId) {
+  const links = ExternalLink.listByBatch(batchId);
+  const assessed = assessUndo(links, loadItems(links));
+  return { ...assessed, warnings: [...assessed.warnings, ...resolvedEntryWarnings(batchId)], links };
+}
+
 // Pré-visualização: { undoable, reason, blockers, warnings, counts }.
 function preview(batchId, { source = SOURCE } = {}) {
   const batch = findBatchOrFail(batchId);
   const reason = undoReason(batch, ImportBatch.findLatestUndoable(source));
   if (reason) return { undoable: false, reason, blockers: [], warnings: [], counts: { itemsToDelete: 0, linksToRemove: 0, salesToUndo: 0 } };
-  const links = ExternalLink.listByBatch(batchId);
-  const assessed = assessUndo(links, loadItems(links));
-  return { undoable: assessed.blockers.length === 0, reason: null, ...assessed };
+  const { blockers, warnings, counts } = assessBatch(batchId);
+  return { undoable: blockers.length === 0, reason: null, blockers, warnings, counts };
 }
 
 // Desfaz o lote. Sob a trava da importação; tudo numa transação (qualquer falha volta tudo).
@@ -110,8 +132,7 @@ function undo(batchId, { confirmWarnings = false, now = new Date(), source = SOU
       if (reason) {
         throw new ConflictError('Só a última importação que mudou algo pode ser desfeita.', 'IMPORT_UNDO_NOT_LATEST', { params: { reason } });
       }
-      const links = ExternalLink.listByBatch(batchId);
-      const { blockers, warnings } = assessUndo(links, loadItems(links));
+      const { blockers, warnings, links } = assessBatch(batchId);
       if (blockers.length) {
         throw new ConflictError('Há itens vendidos no app depois da importação. Desfaça a venda deles antes.', 'IMPORT_UNDO_CONFLICT', {
           params: { items: blockers },

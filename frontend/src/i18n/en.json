@@ -207,7 +207,12 @@
     "DATE_IN_FUTURE": "The date cannot be in the future.",
     "ITEM_SOLD_IN_APP": "Item sold in the app after the import.",
     "ITEM_EDITED": "Item edited after the import.",
-    "ITEM_IN_HOLDING": "Item moved to holding after the import."
+    "ITEM_IN_HOLDING": "Item moved to holding after the import.",
+    "IMPORT_ENTRY_NOT_FOUND": "Pending item not found.",
+    "IMPORT_ENTRY_ALREADY_RESOLVED": "This pending item was already resolved.",
+    "IMPORT_ENTRY_ACTION_NOT_ALLOWED": "This action does not apply to this pending item.",
+    "IMPORT_ENTRY_CONFLICT": "This pending item cannot be resolved right now.",
+    "ENTRY_RESOLVED": "Import pending item already resolved."
   },
   "warnings": {
     "FEES_NOT_CONFIGURED": "The store fees are not configured.",
@@ -1213,6 +1218,10 @@
         "one": "{count} with an unknown state (skipped for safety)",
         "other": "{count} with an unknown state (skipped for safety)"
       },
+      "revertedBeforeImport": {
+        "one": "{count} reversed before import (not imported)",
+        "other": "{count} reversed before import (not imported)"
+      },
       "deferredSales": {
         "one": "{count} sale found and left for the next version",
         "other": "{count} sales found and left for the next version"
@@ -1242,6 +1251,7 @@
       "ITEM_EDITED": "edited after the import",
       "ITEM_IN_HOLDING": "in holding",
       "ITEM_SOLD_IN_APP": "sold in the app",
+      "ENTRY_RESOLVED": "pending item already resolved (the decision is lost)",
       "done": "Import undone. Importing on app start is paused until the next manual import.",
       "reasons": {
         "NOT_LATEST": "Only the latest import that changed something can be undone.",
@@ -1297,13 +1307,50 @@
       "TRADE_SENT_TO_OTHER_USER": "The item was sent to someone else. Check on CSFloat.",
       "SOURCE_RECORD_INVALID": "Incomplete data from CSFloat.",
       "PRICE_MISMATCH": "The amount debited in the statement differs from the listing price.",
-      "REVERTED_PENDING_ACTION": "CSFloat shows this trade was reversed. The option to remove the entry comes in the next version; for now, check and delete the item by hand if needed.",
+      "REVERTED_PENDING_ACTION": "CSFloat shows this trade was reversed. Check it and choose \"Remove entry\" or \"Keep\".",
       "UNKNOWN_STATE": "New CSFloat state ({state}). Skipped for safety.",
       "PURCHASE_NOT_FOUND": "Enter the purchase of this item by hand; the next import records the sale.",
       "SALE_TX_NOT_FOUND": "The CSFloat statement has not shown the credit for this sale yet. The next import will try again.",
       "FEE_MISMATCH": "CSFloat charged {fee}; by the store rules it would be {expected}. The real amount was recorded.",
       "FEE_INCONSISTENT": "The sale credit in the statement does not match the price minus the fee. Check on CSFloat; the next import will try again.",
-      "ITEM_TRADE_LOCKED": "In the app, this item was still trade locked on the sale date. Check the item release date; the next import will try again."
+      "ITEM_TRADE_LOCKED": "In the app, this item was still trade locked on the sale date. Check the item release date; the next import will try again.",
+      "REVERTED_STATE_FAILED": "CSFloat marked this trade as failed or cancelled ({state}) after the import. Check it and choose \"Remove entry\" or \"Keep\".",
+      "REVERTED_OFFER_CHANGED": "The Steam offer of this trade is no longer shown as accepted. It may have been reversed: check it and choose \"Remove entry\" or \"Keep\".",
+      "REVERTED_REFUND": "The CSFloat statement shows a refund for this trade. Check it and choose \"Remove entry\" or \"Keep\"."
+    },
+    "actions": {
+      "REMOVE": "Remove entry",
+      "KEEP": "Keep",
+      "CREATE": "Create anyway",
+      "LINK": "Link",
+      "IGNORE": "Ignore",
+      "linkTo": "Link to entry #{id}",
+      "removeTitle": "Remove entry?",
+      "manualLaunch": "Note: this is an entry you made by hand that was linked to the trade.",
+      "removeConfirm": {
+        "purchase": "The purchase will be deleted from the inventory. The store balance stops deducting it and the item leaves the stock in the real profit.",
+        "purchaseManual": "You entered this purchase by hand. It will be deleted from the inventory: the store balance stops deducting it and the item leaves the stock.",
+        "sale": "The sale will be undone: the item goes back to stock (or holding) and the net amount leaves the store balance and pending amount.",
+        "saleManual": "You entered this sale by hand. It will be undone: the item goes back to stock and the net amount leaves the store balance."
+      },
+      "resolved": {
+        "REMOVED": "Entry removed.",
+        "KEPT": "Kept. The app will not flag this trade again.",
+        "CREATED": "Entry created.",
+        "LINKED": "Linked to the entry.",
+        "IGNORED": "Ignored."
+      },
+      "conflict": {
+        "ITEM_SOLD_IN_APP": "This item was already sold in the app after the purchase. Undo its sale (in Sales) before removing the reversed purchase.",
+        "SALE_TX_NOT_FOUND": "The CSFloat statement has not shown the credit for this sale yet. Import again later.",
+        "FEE_INCONSISTENT": "The sale credit in the statement does not match the price minus the fee. Check on CSFloat.",
+        "PURCHASE_NOT_FOUND": "There is no unit of this item in stock in the app. Enter the purchase first.",
+        "CHOOSE_UNIT": "There is more than one identical unit in stock: use \"Link to entry\" to choose.",
+        "TARGET_ALREADY_LINKED": "That entry is already linked to another CSFloat trade.",
+        "ALREADY_LINKED": "This trade is already linked to an entry.",
+        "RECORD_NOT_FOUND": "The CSFloat record of this pending item no longer exists. Import again.",
+        "CATALOG_NOT_FOUND": "The item is no longer in the catalog. Update the catalog and try again."
+      }
     }
   }
 }

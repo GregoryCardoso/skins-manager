@@ -38,8 +38,10 @@ function toDisplay(displayJson, catalogById) {
   };
 }
 
-function toEntryView(entry, catalogById) {
+// `linkKinds`: Map recordId -> 'CREATED' | 'MATCHED' (o lançamento ligado foi criado pela importação ou é manual).
+function toEntryView(entry, catalogById, linkKinds = new Map()) {
   return {
+    linkKind: (entry.recordId && linkKinds.get(entry.recordId)) || null,
     id: entry.id,
     batchId: entry.batchId,
     outcome: entry.outcome,
@@ -78,6 +80,8 @@ function toBatchSummary(batch, { undoable = false, openEntriesCount = 0 } = {}) 
       unknownState: batch.unknownStateCount,
       deferredSales: batch.deferredCount,
       withoutPurchase: batch.withoutPurchaseCount,
+      // Aceitos e revertidos antes de importar (9.4): guardado no diagnóstico (a v13 não tem coluna própria).
+      revertedBeforeImport: Number(parseJson(batch.diagnosticsJson, {}).revertedBeforeImport) || 0,
     },
     unknownTypes: parseJson(batch.unknownTypesJson, {}),
     diagnostics: parseJson(batch.diagnosticsJson, {}),
@@ -88,8 +92,11 @@ function toBatchSummary(batch, { undoable = false, openEntriesCount = 0 } = {}) 
   };
 }
 
-function toBatchView(batch, entries, { catalogById = new Map(), undoable = false, openEntriesCount = 0 } = {}) {
-  return { ...toBatchSummary(batch, { undoable, openEntriesCount }), entries: entries.map((entry) => toEntryView(entry, catalogById)) };
+function toBatchView(batch, entries, { catalogById = new Map(), undoable = false, openEntriesCount = 0, linkKinds = new Map() } = {}) {
+  return {
+    ...toBatchSummary(batch, { undoable, openEntriesCount }),
+    entries: entries.map((entry) => toEntryView(entry, catalogById, linkKinds)),
+  };
 }
 
 module.exports = { parseJson, toDisplay, toEntryView, toBatchSummary, toBatchView };

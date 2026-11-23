@@ -30,6 +30,8 @@ export const INVALIDATION_MAP = {
   'item.unsell': ITEM_IMPORTS,
   'import.run': IMPORT_CHANGE,
   'import.undo': IMPORT_CHANGE,
+  // Resolver uma pendência (9.4) pode excluir um item, desfazer uma venda ou criar/ligar um lançamento.
+  'import.resolve': IMPORT_CHANGE,
   // O lucro real mostra o estoque à venda e em holding (8.9, D283).
   'item.offSale': [K.items.all, K.sales.all, K.profitSummary.all],
   'item.backOnSale': [K.items.all, K.sales.all, K.profitSummary.all],

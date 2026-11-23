@@ -4,7 +4,9 @@ const { Router } = require('express');
 const controller = require('../controllers/importController');
 const validateIdParam = require('../middlewares/validateIdParam');
 const { requireJsonForWrites } = require('../middlewares/validationHelpers');
-const { validateRunBody, validateUndoBody, validateBatchesQuery, validateEntriesQuery } = require('../middlewares/importValidators');
+const {
+  validateRunBody, validateUndoBody, validateResolveBody, validateBatchesQuery, validateEntriesQuery,
+} = require('../middlewares/importValidators');
 
 const router = Router();
 router.use(requireJsonForWrites);
@@ -15,5 +17,6 @@ router.get('/batches/:id', validateIdParam, controller.getBatch);
 router.get('/batches/:id/undo-preview', validateIdParam, controller.undoPreview);
 router.post('/batches/:id/undo', validateIdParam, validateUndoBody, controller.undo);
 router.get('/entries', validateEntriesQuery, controller.listEntries);
+router.post('/entries/:id/resolve', validateIdParam, validateResolveBody, controller.resolveEntry);
 
 module.exports = router;

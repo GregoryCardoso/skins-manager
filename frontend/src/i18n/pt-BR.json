@@ -207,7 +207,12 @@
     "DATE_IN_FUTURE": "A data não pode ser futura.",
     "ITEM_SOLD_IN_APP": "Item vendido no app depois da importação.",
     "ITEM_EDITED": "Item editado depois da importação.",
-    "ITEM_IN_HOLDING": "Item movido para o holding depois da importação."
+    "ITEM_IN_HOLDING": "Item movido para o holding depois da importação.",
+    "IMPORT_ENTRY_NOT_FOUND": "Pendência não encontrada.",
+    "IMPORT_ENTRY_ALREADY_RESOLVED": "Esta pendência já foi resolvida.",
+    "IMPORT_ENTRY_ACTION_NOT_ALLOWED": "Esta ação não vale para esta pendência.",
+    "IMPORT_ENTRY_CONFLICT": "Não foi possível resolver esta pendência agora.",
+    "ENTRY_RESOLVED": "Pendência da importação já resolvida."
   },
   "warnings": {
     "FEES_NOT_CONFIGURED": "As taxas da loja não estão configuradas.",
@@ -1213,6 +1218,10 @@
         "one": "{count} com estado desconhecido (ignorada por segurança)",
         "other": "{count} com estado desconhecido (ignoradas por segurança)"
       },
+      "revertedBeforeImport": {
+        "one": "{count} revertido antes de importar (não importado)",
+        "other": "{count} revertidos antes de importar (não importados)"
+      },
       "deferredSales": {
         "one": "{count} venda encontrada e deixada para a versão seguinte",
         "other": "{count} vendas encontradas e deixadas para a versão seguinte"
@@ -1242,6 +1251,7 @@
       "ITEM_EDITED": "editado depois da importação",
       "ITEM_IN_HOLDING": "no holding",
       "ITEM_SOLD_IN_APP": "vendido no app",
+      "ENTRY_RESOLVED": "pendência já resolvida (a decisão se perde)",
       "done": "Importação desfeita. A importação ao abrir o app fica pausada até a próxima importação manual.",
       "reasons": {
         "NOT_LATEST": "Só a última importação que mudou algo pode ser desfeita.",
@@ -1297,13 +1307,50 @@
       "TRADE_SENT_TO_OTHER_USER": "O item foi enviado para outra pessoa. Confira no CSFloat.",
       "SOURCE_RECORD_INVALID": "Dados incompletos vindos do CSFloat.",
       "PRICE_MISMATCH": "O valor debitado no extrato é diferente do preço do anúncio.",
-      "REVERTED_PENDING_ACTION": "O CSFloat indica que este trade foi desfeito. A opção de remover o lançamento chega na próxima versão; por enquanto, confira e exclua o item à mão, se for o caso.",
+      "REVERTED_PENDING_ACTION": "O CSFloat indica que este trade foi desfeito. Confira e escolha \"Remover lançamento\" ou \"Manter\".",
       "UNKNOWN_STATE": "Estado novo do CSFloat ({state}). Ignorado por segurança.",
       "PURCHASE_NOT_FOUND": "Lance a compra deste item à mão; a próxima importação registra a venda.",
       "SALE_TX_NOT_FOUND": "O extrato do CSFloat ainda não trouxe o crédito desta venda. A próxima importação tenta de novo.",
       "FEE_MISMATCH": "CSFloat cobrou {fee}; pela loja seriam {expected}. Foi registrado o valor real.",
       "FEE_INCONSISTENT": "O crédito da venda no extrato não bate com o preço menos a taxa. Confira no CSFloat; a próxima importação tenta de novo.",
-      "ITEM_TRADE_LOCKED": "No app, este item ainda estava em trade lock na data da venda. Confira a data de liberação do item; a próxima importação tenta de novo."
+      "ITEM_TRADE_LOCKED": "No app, este item ainda estava em trade lock na data da venda. Confira a data de liberação do item; a próxima importação tenta de novo.",
+      "REVERTED_STATE_FAILED": "O CSFloat marcou este trade como falho ou cancelado ({state}) depois da importação. Confira e escolha \"Remover lançamento\" ou \"Manter\".",
+      "REVERTED_OFFER_CHANGED": "A oferta da Steam deste trade deixou de constar como aceita. Pode ter sido revertida: confira e escolha \"Remover lançamento\" ou \"Manter\".",
+      "REVERTED_REFUND": "O extrato do CSFloat mostra um estorno deste trade. Confira e escolha \"Remover lançamento\" ou \"Manter\"."
+    },
+    "actions": {
+      "REMOVE": "Remover lançamento",
+      "KEEP": "Manter",
+      "CREATE": "Criar mesmo assim",
+      "LINK": "Ligar",
+      "IGNORE": "Ignorar",
+      "linkTo": "Ligar ao lançamento #{id}",
+      "removeTitle": "Remover lançamento?",
+      "manualLaunch": "Atenção: este é um lançamento que você fez à mão e que foi ligado ao trade.",
+      "removeConfirm": {
+        "purchase": "A compra será excluída do inventário. O saldo da loja deixa de descontar essa compra e o item sai do estoque no lucro real.",
+        "purchaseManual": "Esta compra foi lançada por você à mão. Ela será excluída do inventário: o saldo da loja deixa de descontá-la e o item sai do estoque.",
+        "sale": "A venda será desfeita: o item volta ao estoque (ou ao holding) e o líquido sai do saldo e do pendente da loja.",
+        "saleManual": "Esta venda foi lançada por você à mão. Ela será desfeita: o item volta ao estoque e o líquido sai do saldo da loja."
+      },
+      "resolved": {
+        "REMOVED": "Lançamento removido.",
+        "KEPT": "Mantido. O app não acusa mais este trade.",
+        "CREATED": "Lançamento criado.",
+        "LINKED": "Ligado ao lançamento.",
+        "IGNORED": "Ignorado."
+      },
+      "conflict": {
+        "ITEM_SOLD_IN_APP": "Este item já foi vendido no app depois da compra. Desfaça a venda dele (em Vendas) antes de remover a compra revertida.",
+        "SALE_TX_NOT_FOUND": "O extrato do CSFloat ainda não trouxe o crédito desta venda. Importe de novo mais tarde.",
+        "FEE_INCONSISTENT": "O crédito da venda no extrato não bate com o preço menos a taxa. Confira no CSFloat.",
+        "PURCHASE_NOT_FOUND": "Não há unidade deste item em estoque no app. Lance a compra antes.",
+        "CHOOSE_UNIT": "Há mais de uma unidade igual em estoque: use \"Ligar ao lançamento\" para escolher.",
+        "TARGET_ALREADY_LINKED": "Esse lançamento já está ligado a outro trade do CSFloat.",
+        "ALREADY_LINKED": "Este trade já está ligado a um lançamento.",
+        "RECORD_NOT_FOUND": "O registro do CSFloat desta pendência não existe mais. Importe de novo.",
+        "CATALOG_NOT_FOUND": "O item não está mais no catálogo. Atualize o catálogo e tente de novo."
+      }
     }
   }
 }

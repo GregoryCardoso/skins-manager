@@ -38,4 +38,9 @@ function listEntries(req, res) {
   ok(res, importService.listOpenEntries());
 }
 
-module.exports = { run, listBatches, getBatch, undoPreview, undo, listEntries };
+function resolveEntry(req, res) {
+  const { action, targetId } = req.body;
+  ok(res, importService.resolveEntry(req.params.id, { action, targetId: targetId ?? null }, { now: req.app.locals.now() }));
+}
+
+module.exports = { run, listBatches, getBatch, undoPreview, undo, listEntries, resolveEntry };

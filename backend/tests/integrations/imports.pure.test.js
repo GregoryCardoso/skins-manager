@@ -64,8 +64,9 @@ describe('tradeClassifier (D294)', () => {
   test('pending + oferta 3 + aceite = importar', () => {
     expect(classify(trade({ state: 'pending' }), 'BUY', null, ctx())).toMatchObject({ kind: 'IMPORT', tracking: 'OPEN' });
   });
-  test('verified com aceite importa e fecha', () => {
-    expect(classify(trade({ state: 'verified' }), 'BUY', null, ctx())).toMatchObject({ kind: 'IMPORT', tracking: 'SETTLED' });
+  test('verified com aceite importa; fecha só depois da proteção + 2 dias (9.4), ou na hora se não há datas', () => {
+    expect(classify(trade({ state: 'verified', protectionEndsAt: null }), 'BUY', null, ctx())).toMatchObject({ kind: 'IMPORT', tracking: 'SETTLED' });
+    expect(classify(trade({ state: 'verified' }), 'BUY', null, ctx())).toMatchObject({ kind: 'IMPORT', tracking: 'OPEN' });
   });
   test('sem aceite: espera (queued sem oferta, oferta 2); failed sem aceite fecha', () => {
     expect(classify(trade({ state: 'queued', offerState: null, acceptedAt: null }), 'BUY', null, ctx())).toMatchObject({ kind: 'MARK', tracking: 'WAITING_TRANSFER' });
@@ -92,7 +93,8 @@ describe('tradeClassifier (D294)', () => {
     expect(classify(trade({ state: 'failed', offerState: 3 }), 'BUY', { tracking: 'OPEN' }, ctx(linked))).toMatchObject({ kind: 'LINKED', tracking: 'REVERTED', entry: { outcome: 'REVERTED' } });
     expect(classify(trade({ state: 'pending', offerState: 7 }), 'BUY', { tracking: 'OPEN' }, ctx(linked))).toMatchObject({ tracking: 'REVERTED' });
     expect(classify(trade(), 'BUY', { tracking: 'SETTLED' }, ctx({ ...linked, refundSignal: true }))).toMatchObject({ tracking: 'REVERTED' });
-    expect(classify(trade({ state: 'verified' }), 'BUY', { tracking: 'OPEN' }, ctx(linked))).toMatchObject({ tracking: 'SETTLED', count: 'known' });
+    expect(classify(trade({ state: 'verified', protectionEndsAt: null }), 'BUY', { tracking: 'OPEN' }, ctx(linked))).toMatchObject({ tracking: 'SETTLED', count: 'known' });
+    expect(classify(trade({ state: 'verified' }), 'BUY', { tracking: 'OPEN' }, ctx(linked))).toMatchObject({ tracking: 'OPEN', count: 'known' });
     expect(classify(trade({ state: 'pending' }), 'BUY', { tracking: 'OPEN' }, ctx(linked))).toMatchObject({ tracking: 'OPEN', count: 'known' });
     expect(classify(trade({ state: 'failed' }), 'BUY', { tracking: 'REVERTED' }, ctx(linked))).toMatchObject({ kind: 'KEEP' }); // não repete a entrada
   });

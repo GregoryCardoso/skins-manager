@@ -19,6 +19,7 @@
     "test:backend": "npm --prefix backend test",
     "catalog:snapshot": "npm --prefix backend run catalog:snapshot",
     "seed:dev": "npm --prefix backend run seed:dev",
+    "sim:csfloat": "npm --prefix backend run sim:csfloat --",
     "desktop:install": "npm --prefix desktop install",
     "desktop:stage": "npm --prefix desktop run stage",
     "desktop:dist": "npm --prefix desktop run dist",

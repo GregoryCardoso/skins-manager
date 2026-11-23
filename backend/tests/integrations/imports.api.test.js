@@ -160,7 +160,7 @@ describe('deduplicação e leitura incremental', () => {
     const txs = [];
     for (let i = 0; i < 120; i += 1) {
       const day = String(20 - Math.floor(i / 10)).padStart(2, '0');
-      trades.push(fakeTrade({ id: String(2000 + i), state: 'verified', createdAt: `2026-11-${day}T1${i % 10}:00:00.000Z`, item: { float_value: 0.2 + i / 1000, paint_seed: i } }));
+      trades.push(fakeTrade({ id: String(2000 + i), state: 'verified', protectionEndsAt: null, createdAt: `2026-11-${day}T1${i % 10}:00:00.000Z`, item: { float_value: 0.2 + i / 1000, paint_seed: i } }));
       txs.push(purchaseTx(String(92000 + i), 1250, { createdAt: `2026-11-${day}T1${i % 10}:00:01.000Z`, id: `tx-${i}` }));
     }
     // ordem: da mais nova para a mais antiga
@@ -203,13 +203,16 @@ describe('deduplicação e leitura incremental', () => {
     expect(itemsCount()).toBe(1);
   });
 
-  test('compra em proteção que vira verified fecha (SETTLED)', async () => {
+  test('compra em proteção que vira verified segue acompanhada (OPEN) até a proteção + 2 dias; depois fecha (SETTLED)', async () => {
     state.trades = [fakeTrade({ id: '1005', state: 'pending' })];
     await firstRun();
     expect(dbRows('SELECT tracking FROM external_records WHERE kind = ?', 'TRADE')[0].tracking).toBe('OPEN');
     state.trades = [fakeTrade({ id: '1005', state: 'verified' })];
     const res = await run({});
     expect(res.body.data.batch.counts).toMatchObject({ known: 1, reverted: 0 });
+    expect(dbRows('SELECT tracking FROM external_records WHERE kind = ?', 'TRADE')[0].tracking).toBe('OPEN');
+    clock = new Date('2026-11-29T14:00:01.000Z'); // proteção até 27/11 14:00 + 2 dias
+    await run({});
     expect(dbRows('SELECT tracking FROM external_records WHERE kind = ?', 'TRADE')[0].tracking).toBe('SETTLED');
   });
 
@@ -219,7 +222,7 @@ describe('deduplicação e leitura incremental', () => {
     state.trades = [fakeTrade({ id: '1006', state: 'failed', offerState: 6 })];
     const res = await run({});
     expect(res.body.data.batch.counts.reverted).toBe(1);
-    expect(res.body.data.batch.entries[0]).toMatchObject({ outcome: 'REVERTED', reasonCode: 'REVERTED_PENDING_ACTION', entityType: 'ITEM_PURCHASE' });
+    expect(res.body.data.batch.entries[0]).toMatchObject({ outcome: 'REVERTED', reasonCode: 'REVERTED_STATE_FAILED', entityType: 'ITEM_PURCHASE' });
     expect(itemsCount()).toBe(1);
     const open = (await call(request(app).get('/api/imports/entries?open=true'))).body.data.entries;
     expect(open).toHaveLength(1);
@@ -247,7 +250,7 @@ describe('estados especiais', () => {
       fakeTrade({ id: '4004', state: 'pending', offerState: 12, createdAt: '2026-11-17T10:00:00.000Z' }),
     ];
     const res = await firstRun();
-    expect(res.body.data.batch.counts).toMatchObject({ notTransferred: 2, unknownState: 2, purchasesCreated: 0 });
+    expect(res.body.data.batch.counts).toMatchObject({ notTransferred: 1, revertedBeforeImport: 1, unknownState: 2, purchasesCreated: 0 });
     expect(res.body.data.batch.unknownTypes).toEqual({ 'state:weird_state': 1, 'offer:12': 1 });
     expect(itemsCount()).toBe(0);
     const open = (await call(request(app).get('/api/imports/entries?open=true'))).body.data.entries;

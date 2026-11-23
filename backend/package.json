@@ -12,7 +12,8 @@
     "test": "jest",
     "catalog:snapshot": "node scripts/buildCatalogSnapshot.js",
     "seed:dev": "node scripts/seedDev.js",
-    "dev:demo": "nodemon scripts/startDevDb.js"
+    "dev:demo": "nodemon scripts/startDevDb.js",
+    "sim:csfloat": "node scripts/simulateCsfloat.js"
   },
   "jest": {
     "testEnvironment": "node",

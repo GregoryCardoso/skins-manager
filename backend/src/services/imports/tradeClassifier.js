@@ -31,27 +31,32 @@ const isAccepted = (trade) => Boolean(trade.acceptedAt) && trade.offerState === 
 // Data da operação usada contra o corte: `contract.sold_at` (ou a criação do trade, sem ela).
 const operationAt = (trade) => trade.soldAt || trade.createdAt;
 
-// Fecha (SETTLED) ou mantém aberto (OPEN) um trade já ligado a um lançamento: `verified`, ou passada a folga depois do maior entre o
-// fim da proteção e o `verify_sale_at`.
+// Fecha (SETTLED) ou mantém aberto (OPEN) um trade já ligado a um lançamento (9.4, D294): ele é acompanhado até o maior entre o fim
+// da proteção e o `verify_sale_at`, mais a folga de 2 dias, mesmo já `verified` (a proteção da Steam ainda pode desfazer o trade).
+// Depois disso, deixa de ser reverificado (só um estorno no extrato o reabre). Sem nenhuma das duas datas, `verified` fecha.
 function settleTracking(trade, now) {
-  if (lower(trade.rawState) === 'verified') return 'SETTLED';
   const limits = [ms(trade.protectionEndsAt), ms(trade.verifySaleAt)].filter((value) => !Number.isNaN(value));
-  if (limits.length && now.getTime() > Math.max(...limits) + IMPORT_OPEN_GRACE_MS) return 'SETTLED';
-  return 'OPEN';
+  if (limits.length) return now.getTime() > Math.max(...limits) + IMPORT_OPEN_GRACE_MS ? 'SETTLED' : 'OPEN';
+  return lower(trade.rawState) === 'verified' ? 'SETTLED' : 'OPEN';
 }
+
+// Motivo da reversão (o sinal que a acusou), para o resumo.
+const REVERT_REASONS = Object.freeze({ STATE: 'REVERTED_STATE_FAILED', OFFER: 'REVERTED_OFFER_CHANGED', REFUND: 'REVERTED_REFUND' });
+const reverted = (reasonCode) => ({ kind: 'LINKED', tracking: 'REVERTED', count: 'reverted', entry: { outcome: 'REVERTED', reasonCode } });
 
 // Decide o que fazer com um trade.
 //   trade:    ExternalTrade (já normalizado pelo mapper)
 //   direction: 'BUY' | 'SELL' (a direção desconhecida é tratada antes, pelo service)
 //   existing: registro gravado (ou null); `hasLink`: já ligado a um lançamento do app
-//   ctx:      { now: Date, cutoffMs: number, refundSignal: boolean }
+//   ctx:      { now: Date, cutoffMs: number, refundSignal: boolean, hasLink: boolean, keptReversal: boolean }
+//             `keptReversal`: o usuário já escolheu "Manter" numa reversão deste trade (não volta a acusar).
 // Devolve { kind, tracking, count, entry? }:
 //   kind 'KEEP'   = nada muda (registro já decidido); `count` diz onde contar ('known', 'deferred'...)
 //   kind 'MARK'   = grava o `tracking` (sem lançamento)
 //   kind 'IMPORT' = compra ou venda aceita e segura: criar o lançamento ou ligar a um manual
 //   kind 'LINKED' = trade já ligado: atualiza o `tracking` e, se for o caso, abre a entrada
 // `entry`: { outcome, reasonCode } quando o resumo deve mostrar algo.
-function classify(trade, direction, existing, { now, cutoffMs, refundSignal = false, hasLink = false }) {
+function classify(trade, direction, existing, { now, cutoffMs, refundSignal = false, hasLink = false, keptReversal = false }) {
   const kind = stateKind(trade.rawState);
   const offerKnown = isOfferKnown(trade.offerState);
   const stateKnown = kind !== 'UNKNOWN';
@@ -62,10 +67,16 @@ function classify(trade, direction, existing, { now, cutoffMs, refundSignal = fa
     if (existing && existing.tracking === 'REVERTED') return { kind: 'KEEP', tracking: 'REVERTED', count: 'known' };
     if (existing && existing.tracking === 'REMOVED_IN_APP') return { kind: 'KEEP', tracking: 'REMOVED_IN_APP', count: 'known' };
     if (existing && existing.tracking === 'IGNORED') return { kind: 'KEEP', tracking: 'IGNORED', count: 'known' };
-    const offerLost = trade.offerState !== null && trade.offerState !== undefined && trade.offerState !== STEAM_OFFER_STATES.accepted;
-    if (kind === 'FAILED' || offerLost || refundSignal) {
-      return { kind: 'LINKED', tracking: 'REVERTED', count: 'reverted', entry: { outcome: 'REVERTED', reasonCode: 'REVERTED_PENDING_ACTION' } };
+    if (keptReversal) return { kind: 'LINKED', tracking: 'SETTLED', count: 'known' };
+    // Fechado e já passada a proteção/liberação + 2 dias: não é mais reverificado; só o estorno do extrato reabre. (Um SETTLED ainda
+    // dentro da janela, fechado pela regra antiga do `verified`, volta a ser acompanhado.)
+    if (existing && existing.tracking === 'SETTLED' && settleTracking(trade, now) === 'SETTLED') {
+      return refundSignal ? reverted(REVERT_REASONS.REFUND) : { kind: 'KEEP', tracking: 'SETTLED', count: 'known' };
     }
+    const offerLost = trade.offerState !== null && trade.offerState !== undefined && trade.offerState !== STEAM_OFFER_STATES.accepted;
+    if (refundSignal) return reverted(REVERT_REASONS.REFUND);
+    if (kind === 'FAILED') return reverted(REVERT_REASONS.STATE);
+    if (offerLost) return reverted(REVERT_REASONS.OFFER);
     if (!stateKnown || !offerKnown) {
       return { kind: 'LINKED', tracking: 'UNKNOWN_STATE', count: 'unknownState', entry: { outcome: 'UNKNOWN_STATE', reasonCode: 'UNKNOWN_STATE' } };
     }
@@ -83,8 +94,8 @@ function classify(trade, direction, existing, { now, cutoffMs, refundSignal = fa
     return { kind: 'MARK', tracking: 'RETRY', count: 'failed', entry: { outcome: 'FAILED', reasonCode: 'TRADE_SENT_TO_OTHER_USER' } };
   }
 
-  // 6. Estorno ou rollback no extrato antes de importar: não importa.
-  if (refundSignal) return { kind: 'MARK', tracking: 'CLOSED_NOT_TRANSFERRED', count: 'notTransferred' };
+  // 6. Estorno ou rollback no extrato antes de importar: não importa ("revertido antes de importar").
+  if (refundSignal) return { kind: 'MARK', tracking: 'CLOSED_NOT_TRANSFERRED', count: 'revertedBeforeImport' };
 
   // 7. Estado ou oferta desconhecidos: nunca importa por segurança.
   if (!stateKnown || !offerKnown) {
@@ -96,8 +107,9 @@ function classify(trade, direction, existing, { now, cutoffMs, refundSignal = fa
     // Falhou sem nunca ter sido aceita: não reverifica mais. Senão, o vendedor ainda pode enviar.
     return { kind: 'MARK', tracking: kind === 'FAILED' ? 'CLOSED_NOT_TRANSFERRED' : 'WAITING_TRANSFER', count: 'notTransferred' };
   }
-  if (kind === 'FAILED') return { kind: 'MARK', tracking: 'CLOSED_NOT_TRANSFERRED', count: 'notTransferred' };
+  // Aceito e depois falhou/cancelado, nunca importado: "revertido antes de importar" (D294); não reverifica mais.
+  if (kind === 'FAILED') return { kind: 'MARK', tracking: 'CLOSED_NOT_TRANSFERRED', count: 'revertedBeforeImport' };
   return { kind: 'IMPORT', tracking: settleTracking(trade, now), count: 'import' };
 }
 
-module.exports = { classify, settleTracking, stateKind, isAccepted, isOfferKnown, operationAt, FROZEN_TRACKINGS, CLOSED_TRACKINGS };
+module.exports = { REVERT_REASONS, classify, settleTracking, stateKind, isAccepted, isOfferKnown, operationAt, FROZEN_TRACKINGS, CLOSED_TRACKINGS };

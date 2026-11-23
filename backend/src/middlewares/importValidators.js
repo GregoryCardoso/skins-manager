@@ -43,6 +43,30 @@ function validateUndoBody(req, res, next) {
   return next();
 }
 
+const RESOLVE_ACTIONS = ['REMOVE', 'KEEP', 'CREATE', 'LINK', 'IGNORE'];
+
+// POST entries/:id/resolve: { action, targetId? } (targetId obrigatório só no LINK).
+function validateResolveBody(req, res, next) {
+  const body = req.body === undefined ? {} : req.body;
+  requireObjectBody(body);
+  rejectUnknownFields(body, ['action', 'targetId']);
+  if (body.action === undefined) throw new ValidationError('Informe a ação.', 'REQUIRED_FIELD', { field: 'action' });
+  if (!RESOLVE_ACTIONS.includes(body.action)) {
+    throw new ValidationError('Ação inválida.', 'INVALID_FIELD', { field: 'action' });
+  }
+  if (body.action === 'LINK') {
+    if (body.targetId === undefined || body.targetId === null) throw new ValidationError('Escolha o lançamento.', 'REQUIRED_FIELD', { field: 'targetId' });
+  }
+  if (body.targetId !== undefined && body.targetId !== null && (!Number.isSafeInteger(body.targetId) || body.targetId < 1)) {
+    throw new ValidationError('Lançamento inválido.', 'INVALID_FIELD', { field: 'targetId' });
+  }
+  if (body.action !== 'LINK' && body.targetId !== undefined && body.targetId !== null) {
+    throw new ValidationError('targetId só vale para LINK.', 'INVALID_FIELD', { field: 'targetId' });
+  }
+  req.body = body;
+  return next();
+}
+
 const invalidQuery = (field) => new ValidationError(`Parâmetro inválido: ${field}.`, 'INVALID_QUERY', { field });
 
 // GET batches?limit=20&before=<id>: guarda `req.importQuery` (o `req.query` do Express 5 é só leitura).
@@ -73,4 +97,4 @@ function validateEntriesQuery(req, res, next) {
   return next();
 }
 
-module.exports = { validateRunBody, validateUndoBody, validateBatchesQuery, validateEntriesQuery };
+module.exports = { validateRunBody, validateUndoBody, validateResolveBody, validateBatchesQuery, validateEntriesQuery };

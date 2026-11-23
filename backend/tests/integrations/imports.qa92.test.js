@@ -315,7 +315,7 @@ describe('critério da oferta aceita (D294)', () => {
       fakeTrade({ id: '4303', state: 'failed', offerState: null, acceptedAt: null, createdAt: '2026-11-18T10:00:00.000Z', item: { float_value: 0.5, paint_seed: 5 } }),
     ];
     const first = await firstRun();
-    expect(first.body.data.batch.counts).toMatchObject({ notTransferred: 3, purchasesCreated: 0 });
+    expect(first.body.data.batch.counts).toMatchObject({ notTransferred: 2, revertedBeforeImport: 1, purchasesCreated: 0 });
     expect(trackings().map((t) => t.tracking)).toEqual(['CLOSED_NOT_TRANSFERRED', 'CLOSED_NOT_TRANSFERRED', 'CLOSED_NOT_TRANSFERRED']);
     // mesmo que o CSFloat depois mostre o trade como aceito, a decisão fechada não muda sozinha
     state.trades = state.trades.map((t) => fakeTrade({ id: t.id, state: 'pending', createdAt: t.created_at, item: t.contract.item }));
@@ -325,13 +325,13 @@ describe('critério da oferta aceita (D294)', () => {
     expect(await openEntries()).toEqual([]);
   });
 
-  test('pending que vira verified entre duas importações sem ter sido aceito antes: importa na segunda e fecha', async () => {
+  test('pending que vira verified entre duas importações sem ter sido aceito antes: importa na segunda e segue acompanhado na proteção', async () => {
     state.trades = [fakeTrade({ id: '4401', state: 'pending', offerState: 2, acceptedAt: null })];
     await firstRun();
     state.trades = [fakeTrade({ id: '4401', state: 'verified', offerState: 3 })];
     const res = await run({});
     expect(res.body.data.batch.counts.purchasesCreated).toBe(1);
-    expect(trackings()).toEqual([{ external_id: '4401', tracking: 'SETTLED' }]);
+    expect(trackings()).toEqual([{ external_id: '4401', tracking: 'OPEN' }]);
   });
 
   test('o nome do estado não diferencia maiúsculas', async () => {
@@ -355,7 +355,7 @@ describe('critério da oferta aceita (D294)', () => {
     state.trades = [fakeTrade({ id: '4701' })];
     state.transactions = [fakeTransaction({ id: 'tx-ref', type: 'contract_purchase_refund', details: { contract_id: '94701' } })];
     const res = await firstRun();
-    expect(res.body.data.batch.counts).toMatchObject({ purchasesCreated: 0, notTransferred: 1 });
+    expect(res.body.data.batch.counts).toMatchObject({ purchasesCreated: 0, notTransferred: 0, revertedBeforeImport: 1 });
     expect(count('items')).toBe(0);
   });
 });
@@ -381,7 +381,7 @@ describe('direção pela impressão digital e conta', () => {
     expect(sold).toMatchObject({ status: 'VENDIDO', salePriceCents: 1500, netReceivedCents: 1470, soldAt: '2026-11-21T10:00:00.000Z', externalSource: 'CSFLOAT' });
     expect(count('external_links')).toBe(1);
     expect((await call(request(app).get('/api/store-balances/current'))).body.data).not.toEqual(balanceBefore);
-    expect(trackings().map((t) => t.tracking).sort()).toEqual(['RETRY', 'SETTLED']);
+    expect(trackings().map((t) => t.tracking).sort()).toEqual(['OPEN', 'RETRY']); // vendida ainda na proteção: acompanhada
   });
 
   test('9.3: compra e venda do mesmo item no mesmo lote: a compra vira item; sem o contract_sold a venda espera (SALE_TX_NOT_FOUND)', async () => {
@@ -648,7 +648,7 @@ describe('reversão de compra já importada: avisa, não apaga', () => {
   });
 
   test('rollback no extrato com o mesmo contract_id reverte um trade já fechado (SETTLED)', async () => {
-    state.trades = [fakeTrade({ id: '9101', state: 'verified' })];
+    state.trades = [fakeTrade({ id: '9101', state: 'verified', protectionEndsAt: null })];
     await firstRun();
     expect(trackings()[0].tracking).toBe('SETTLED');
     state.transactions = [fakeTransaction({ id: 'tx-rb', type: 'rollback', details: { contract_id: '99101' }, createdAt: '2026-11-22T10:00:00.000Z' })];
@@ -692,7 +692,9 @@ describe('leitura incremental', () => {
       const day = String(21 - Math.floor(i / 60)).padStart(2, '0');
       const createdAt = `2026-11-${day}T10:${minute}:00.000Z`;
       trades.push(fakeTrade({
-        id: String(20000 + i), state: i === openIndex ? 'pending' : 'verified', createdAt, protectionEndsAt: '2026-11-21T00:00:00.000Z',
+        id: String(20000 + i), state: i === openIndex ? 'pending' : 'verified', createdAt,
+        // fora da janela de acompanhamento (proteção + 2 dias já passou), menos o trade aberto
+        protectionEndsAt: i === openIndex ? '2026-11-27T00:00:00.000Z' : '2026-11-19T00:00:00.000Z',
         item: { float_value: 0.2 + i / 1000, paint_seed: i },
       }));
       txs.push(purchaseTx(String(920000 + i), 1250, { id: `tx-big-${i}`, createdAt: `2026-11-${day}T10:${minute}:01.000Z` }));
