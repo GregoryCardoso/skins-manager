@@ -1159,6 +1159,7 @@
     "badge": "CSFloat",
     "badgeHint": "Lançamento importado do CSFloat",
     "seeInInventory": "Ver no inventário",
+    "seeInSales": "Ver nas vendas",
     "seeCandidate": "Ver lançamento #{id}",
     "unknownItem": "Item sem nome",
     "disabled": {
@@ -1184,6 +1185,10 @@
         "one": "{count} compra importada",
         "other": "{count} compras importadas"
       },
+      "salesCreated": {
+        "one": "{count} venda importada",
+        "other": "{count} vendas importadas"
+      },
       "matched": {
         "one": "{count} ligada a um lançamento que você já tinha",
         "other": "{count} ligadas a lançamentos que você já tinha"
@@ -1196,6 +1201,10 @@
         "one": "{count} trade revertido",
         "other": "{count} trades revertidos"
       },
+      "withoutPurchase": {
+        "one": "{count} venda sem compra no app (lance a compra à mão)",
+        "other": "{count} vendas sem compra no app (lance as compras à mão)"
+      },
       "failed": {
         "one": "{count} não importada (veja o motivo)",
         "other": "{count} não importadas (veja o motivo)"
@@ -1205,8 +1214,8 @@
         "other": "{count} com estado desconhecido (ignoradas por segurança)"
       },
       "deferredSales": {
-        "one": "{count} venda encontrada: será importada na próxima versão",
-        "other": "{count} vendas encontradas: serão importadas na próxima versão"
+        "one": "{count} venda encontrada e deixada para a versão seguinte",
+        "other": "{count} vendas encontradas e deixadas para a versão seguinte"
       },
       "known": {
         "one": "{count} já importada (ignorada)",
@@ -1247,6 +1256,10 @@
       "bodyLinks": {
         "one": "{count} lançamento seu será só desligado (não é apagado).",
         "other": "{count} lançamentos seus serão só desligados (não são apagados)."
+      },
+      "bodySales": {
+        "one": "{count} venda importada será desfeita (o item volta ao estoque).",
+        "other": "{count} vendas importadas serão desfeitas (os itens voltam ao estoque)."
       }
     },
     "page": {
@@ -1274,6 +1287,7 @@
       "MATCHED": "Ligadas a lançamentos seus",
       "POSSIBLE_DUPLICATE": "Possível duplicado",
       "REVERTED": "Trade revertido",
+      "WITHOUT_PURCHASE": "Venda sem compra no app",
       "FAILED": "Não importadas"
     },
     "reasons": {
@@ -1284,7 +1298,12 @@
       "SOURCE_RECORD_INVALID": "Dados incompletos vindos do CSFloat.",
       "PRICE_MISMATCH": "O valor debitado no extrato é diferente do preço do anúncio.",
       "REVERTED_PENDING_ACTION": "O CSFloat indica que este trade foi desfeito. A opção de remover o lançamento chega na próxima versão; por enquanto, confira e exclua o item à mão, se for o caso.",
-      "UNKNOWN_STATE": "Estado novo do CSFloat ({state}). Ignorado por segurança."
+      "UNKNOWN_STATE": "Estado novo do CSFloat ({state}). Ignorado por segurança.",
+      "PURCHASE_NOT_FOUND": "Lance a compra deste item à mão; a próxima importação registra a venda.",
+      "SALE_TX_NOT_FOUND": "O extrato do CSFloat ainda não trouxe o crédito desta venda. A próxima importação tenta de novo.",
+      "FEE_MISMATCH": "CSFloat cobrou {fee}; pela loja seriam {expected}. Foi registrado o valor real.",
+      "FEE_INCONSISTENT": "O crédito da venda no extrato não bate com o preço menos a taxa. Confira no CSFloat; a próxima importação tenta de novo.",
+      "ITEM_TRADE_LOCKED": "No app, este item ainda estava em trade lock na data da venda. Confira a data de liberação do item; a próxima importação tenta de novo."
     }
   }
 }

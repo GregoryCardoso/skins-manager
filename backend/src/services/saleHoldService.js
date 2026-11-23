@@ -1,13 +1,23 @@
 'use strict';
 
 // Retenção do saldo após a venda (2.8, D214, D239). Funções puras com `now`: nada é gravado, tudo é calculado na hora.
-// A liberação é um instante exato em UTC: `soldAt + saleHoldDaysApplied × 24 h` (não é dia de calendário).
+// A liberação é um instante exato em UTC: `soldAt + saleHoldDaysApplied × 24 h` (não é dia de calendário). Venda importada do
+// CSFloat (D312): vale a liberação real `saleReleaseAt` (o `verify_sale_at` ou o `trade_verified`), quando informada.
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 const isNil = (value) => value === null || value === undefined;
 
+// Liberação real gravada pela importação (ms), ou null.
+function informedReleaseMs(item) {
+  if (isNil(item.saleReleaseAt)) return null;
+  const ms = Date.parse(item.saleReleaseAt);
+  return Number.isNaN(ms) ? null : ms;
+}
+
 // Instante (ms) da liberação de uma venda, ou null quando a retenção não foi registrada (venda anterior à v6).
 function releaseMsOf(item) {
+  const informed = informedReleaseMs(item);
+  if (informed !== null) return informed;
   if (isNil(item.saleHoldDaysApplied) || isNil(item.soldAt)) return null;
   const soldMs = Date.parse(item.soldAt);
   if (Number.isNaN(soldMs)) return null;
@@ -26,11 +36,14 @@ function computeSaleRelease(item, now = new Date()) {
 const toMs = (value) => (value instanceof Date ? value.getTime() : Date.parse(value));
 
 // Instante (ms) da liberação de uma venda para o saldo calculado (D239, D244): `soldAt + retenção × 24 h`, com a
-// retenção nula (venda anterior à v6) valendo 0. `null` se a data da venda for inválida.
+// retenção nula (venda anterior à v6) valendo 0; na venda importada, a liberação real (D312). `null` se a data da venda for
+// inválida.
 function releaseInstantOf(item) {
   if (isNil(item.soldAt)) return null;
   const soldMs = Date.parse(item.soldAt);
   if (Number.isNaN(soldMs)) return null;
+  const informed = informedReleaseMs(item);
+  if (informed !== null) return informed;
   return soldMs + (isNil(item.saleHoldDaysApplied) ? 0 : item.saleHoldDaysApplied) * DAY_MS;
 }
 

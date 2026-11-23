@@ -44,6 +44,7 @@ const SALE_FIELDS_NULL = {
   netReceivedManual: false,
   soldAt: null,
   saleHoldDaysApplied: null,
+  saleReleaseAt: null, // liberação real da venda importada (D312); desfazer a venda limpa
 };
 
 const isNil = (v) => v === null || v === undefined;
@@ -588,12 +589,15 @@ function deleteItem(id, ctx = {}) {
   });
 }
 
+// `ctx.saleReleaseAt` (ISO ou null): só a importação do CSFloat informa a liberação real (D312). Nunca vem do corpo da API
+// (o validador recusa o campo), então as vendas manuais continuam com a retenção da loja.
 function sellItem(id, input, ctx = {}) {
-  const { now = new Date(), thresholds = getAgingThresholds() } = ctx;
+  const { now = new Date(), thresholds = getAgingThresholds(), saleReleaseAt = null } = ctx;
   const item = findOrFail(id);
   if (item.status !== 'EM_ESTOQUE') throw new ConflictError('Item já vendido.', 'ITEM_ALREADY_SOLD');
   const store = getStoreOrFail(input.saleStoreId, { field: 'saleStoreId' });
   const { record, sale } = buildSaleRecord(item, input, { store, settings: Setting.get(), now });
+  if (saleReleaseAt !== null) record.saleReleaseAt = toIso(saleReleaseAt);
   const view = inTransaction(() => viewOf(Item.update(id, record, { now }), { now, thresholds }));
   return { item: view, sale: { ...sale, saleProfitUsdCents: view.saleProfitUsdCents } };
 }
@@ -606,6 +610,17 @@ function unsellItem(id, ctx = {}) {
     externalLinkService.detachOnRemove('ITEM_SALE', id, { now });
     return viewOf(Item.update(id, buildUnsellPatch(), { now }), { now, thresholds });
   });
+}
+
+// Atualiza a liberação real de uma venda importada (D312): o CSFloat mudou o `verify_sale_at` ou chegou o `trade_verified`.
+// Só para itens vendidos; devolve o item gravado (ou o mesmo, se nada mudou).
+function updateImportedSaleRelease(id, saleReleaseAt, ctx = {}) {
+  const { now = new Date() } = ctx;
+  const item = findOrFail(id);
+  if (item.status !== 'VENDIDO') throw new ConflictError('Item não está vendido.', 'ITEM_NOT_SOLD');
+  const next = isNil(saleReleaseAt) ? null : toIso(saleReleaseAt);
+  if ((item.saleReleaseAt ?? null) === next) return item;
+  return Item.update(id, { saleReleaseAt: next }, { now });
 }
 
 // "Não está à venda" (D263, D265): grava `offSaleAt = now`. Só em estoque; já fora de venda = sem mudança (idempotente).
@@ -647,6 +662,7 @@ module.exports = {
   deleteItem,
   sellItem,
   unsellItem,
+  updateImportedSaleRelease,
   markOffSale,
   markForSale,
   getItemStats,

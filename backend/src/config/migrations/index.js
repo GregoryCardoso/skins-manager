@@ -14,7 +14,8 @@ const v010 = require('./v010_off_sale');
 const v011 = require('./v011_inventory_view');
 const v012 = require('./v012_integrations');
 const v013 = require('./v013_imports');
+const v014 = require('./v014_sale_release_at');
 
-const MIGRATIONS = Object.freeze([v001, v002, v003, v004, v005, v006, v007, v008, v009, v010, v011, v012, v013]);
+const MIGRATIONS = Object.freeze([v001, v002, v003, v004, v005, v006, v007, v008, v009, v010, v011, v012, v013, v014]);
 
 module.exports = { MIGRATIONS };

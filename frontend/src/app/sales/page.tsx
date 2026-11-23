@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { Suspense, useCallback, useMemo } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef } from 'react';
 import ImportButton from '@/components/ImportButton';
 import { useItemDialogs } from '@/components/ItemDialogs';
 import { usePreferences } from '@/components/PreferencesProvider';
@@ -16,6 +16,7 @@ import {
   DEFAULT_SALES_FILTERS, hasActiveSalesFilters, parseSalesFilters, toSalesApiQuery, toSalesSearchString,
   type SalesFilters as Filters,
 } from '@/lib/salesQuery';
+import { parseItemParam } from '@/lib/importSummary';
 import { queryKeys } from '@/lib/queryKeys';
 import { ApiRequestError, listSales, listStores } from '@/services/api';
 import styles from './page.module.css';
@@ -52,6 +53,22 @@ function SalesView() {
     storesQuery.refetch();
   }, [salesQuery, storesQuery]);
   const { openEdit, openUnsell, openDelete, openHistory, notice, dismissNotice, dialogs } = useItemDialogs(stores);
+
+  // `?item=<id>` (link "Ver nas vendas" do resumo da importação): não é filtro. Rola até a linha uma vez e a destaca.
+  const focusItemId = parseItemParam(searchParams.get('item'));
+  const scrolledFor = useRef<number | null>(null);
+  useEffect(() => {
+    if (focusItemId === null) {
+      scrolledFor.current = null;
+      return;
+    }
+    if (scrolledFor.current === focusItemId) return;
+    const row = document.getElementById(`item-row-${focusItemId}`);
+    if (row) {
+      scrolledFor.current = focusItemId;
+      row.scrollIntoView({ block: 'center' });
+    }
+  }, [focusItemId, data]);
 
   const setFilters = useCallback(
     (next: Filters) => {
@@ -135,6 +152,7 @@ function SalesView() {
               onUnsell={openUnsell}
               onDelete={openDelete}
               onHistory={openHistory}
+              highlightedItemId={focusItemId}
             />
           )}
         </div>

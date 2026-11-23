@@ -1,7 +1,8 @@
 'use strict';
 
-// Desfazer importação (D302, D318 seção 9). Só o último lote que mudou algo. Itens criados pelo lote são excluídos; os lançamentos
-// manuais ligados só são desligados (nunca apagados). Regra de negócio aqui; os models só fazem SQL.
+// Desfazer importação (D302, D318 seção 9). Só o último lote que mudou algo. Itens criados pelo lote são excluídos; vendas criadas
+// pelo lote em itens que já existiam são desfeitas (o item volta ao estoque ou ao holding); os lançamentos manuais ligados só são
+// desligados (nunca apagados). Regra de negócio aqui; os models só fazem SQL.
 const ImportBatch = require('../../models/ImportBatch');
 const ImportBatchEntry = require('../../models/ImportBatchEntry');
 const ExternalLink = require('../../models/ExternalLink');
@@ -11,30 +12,54 @@ const Item = require('../../models/Item');
 const { runInTransaction } = require('../../models/modelHelpers');
 const { NotFoundError, ConflictError } = require('../../errors/AppError');
 const importLock = require('./importLock');
+const { buildUnsellPatch } = require('../itemService');
 
 const SOURCE = 'CSFLOAT';
 
-// Função pura. `links`: vínculos do lote; `itemsById`: Map id -> item. Só os itens CRIADOS pelo lote contam.
-// Bloqueio: o item criado foi vendido no app. Avisos: editado depois da importação, ou movido para o holding.
+const isCreated = (link, entityType) => link.linkKind === 'CREATED' && link.entityType === entityType;
+
+// Função pura. `links`: vínculos do lote; `itemsById`: Map id -> item.
+// - Compra criada: o item será excluído. Bloqueio: vendido no app fora deste lote. Avisos: editado depois da importação, ou no holding.
+// - Venda criada num item que já existia: a venda será desfeita. Aviso: editado depois da importação.
+// - Vínculo com lançamento manual (MATCHED): só é desligado.
+// "Editado" compara com o vínculo mais recente do lote para o item (compra e venda do mesmo item no mesmo lote).
 function assessUndo(links, itemsById) {
   const blockers = [];
   const warnings = [];
   let itemsToDelete = 0;
   let linksToRemove = 0;
+  let salesToUndo = 0;
+  const createdItems = new Set(links.filter((l) => isCreated(l, 'ITEM_PURCHASE')).map((l) => l.entityId));
+  const soldByBatch = new Set(links.filter((l) => isCreated(l, 'ITEM_SALE')).map((l) => l.entityId));
+  const stampOf = new Map();
   for (const link of links) {
-    if (link.linkKind !== 'CREATED' || link.entityType !== 'ITEM_PURCHASE') {
+    const previous = stampOf.get(link.entityId);
+    if (link.entityType.startsWith('ITEM_') && (!previous || Date.parse(link.entityUpdatedAt) > Date.parse(previous))) stampOf.set(link.entityId, link.entityUpdatedAt);
+  }
+  for (const link of links) {
+    if (link.linkKind !== 'CREATED') {
       linksToRemove += 1;
       continue;
     }
-    itemsToDelete += 1;
     const item = itemsById.get(link.entityId);
-    if (!item) continue;
-    const base = { itemId: item.id, name: item.name };
-    if (item.status === 'VENDIDO') blockers.push({ code: 'ITEM_SOLD_IN_APP', ...base });
-    if (item.updatedAt !== link.entityUpdatedAt) warnings.push({ code: 'ITEM_EDITED', ...base });
-    if (item.offSaleAt) warnings.push({ code: 'ITEM_IN_HOLDING', ...base });
+    const base = item ? { itemId: item.id, name: item.name } : null;
+    if (link.entityType === 'ITEM_PURCHASE') {
+      itemsToDelete += 1;
+      if (!item) continue;
+      if (item.status === 'VENDIDO' && !soldByBatch.has(item.id)) blockers.push({ code: 'ITEM_SOLD_IN_APP', ...base });
+      if (item.updatedAt !== stampOf.get(item.id)) warnings.push({ code: 'ITEM_EDITED', ...base });
+      if (item.offSaleAt) warnings.push({ code: 'ITEM_IN_HOLDING', ...base });
+      continue;
+    }
+    if (link.entityType === 'ITEM_SALE') {
+      if (createdItems.has(link.entityId)) continue; // o item inteiro sai junto com a compra
+      salesToUndo += 1;
+      if (item && item.updatedAt !== link.entityUpdatedAt) warnings.push({ code: 'ITEM_EDITED', ...base });
+      continue;
+    }
+    linksToRemove += 1;
   }
-  return { blockers, warnings, counts: { itemsToDelete, linksToRemove } };
+  return { blockers, warnings, counts: { itemsToDelete, linksToRemove, salesToUndo } };
 }
 
 const hasChanges = (batch) =>
@@ -58,7 +83,7 @@ function findBatchOrFail(batchId) {
 function loadItems(links) {
   const itemsById = new Map();
   for (const link of links) {
-    if (link.entityType !== 'ITEM_PURCHASE' || itemsById.has(link.entityId)) continue;
+    if (!link.entityType.startsWith('ITEM_') || itemsById.has(link.entityId)) continue;
     const item = Item.findById(link.entityId);
     if (item) itemsById.set(item.id, item);
   }
@@ -69,7 +94,7 @@ function loadItems(links) {
 function preview(batchId, { source = SOURCE } = {}) {
   const batch = findBatchOrFail(batchId);
   const reason = undoReason(batch, ImportBatch.findLatestUndoable(source));
-  if (reason) return { undoable: false, reason, blockers: [], warnings: [], counts: { itemsToDelete: 0, linksToRemove: 0 } };
+  if (reason) return { undoable: false, reason, blockers: [], warnings: [], counts: { itemsToDelete: 0, linksToRemove: 0, salesToUndo: 0 } };
   const links = ExternalLink.listByBatch(batchId);
   const assessed = assessUndo(links, loadItems(links));
   return { undoable: assessed.blockers.length === 0, reason: null, ...assessed };
@@ -96,9 +121,12 @@ function undo(batchId, { confirmWarnings = false, now = new Date(), source = SOU
         throw new ConflictError('Confirme os avisos para desfazer a importação.', 'IMPORT_UNDO_WARNINGS_NOT_CONFIRMED', { params: { warnings } });
       }
 
-      // Itens criados pelo lote são excluídos; os ligados só perdem o vínculo. O registro de cada vínculo volta a ser reavaliado.
+      // Itens criados pelo lote são excluídos; vendas criadas em itens que já existiam são desfeitas (como "desfazer a venda", que
+      // também limpa a liberação real); os ligados só perdem o vínculo. O registro de cada vínculo volta a ser reavaliado.
+      const createdItems = new Set(links.filter((l) => isCreated(l, 'ITEM_PURCHASE')).map((l) => l.entityId));
       for (const link of links) {
-        if (link.linkKind === 'CREATED' && link.entityType === 'ITEM_PURCHASE') Item.remove(link.entityId);
+        if (isCreated(link, 'ITEM_SALE') && !createdItems.has(link.entityId)) Item.update(link.entityId, buildUnsellPatch(), { now });
+        if (isCreated(link, 'ITEM_PURCHASE')) Item.remove(link.entityId);
         ExternalRecord.update(link.recordId, { tracking: 'WAITING_TRANSFER' }, { now });
       }
       ExternalLink.removeByBatch(batchId);

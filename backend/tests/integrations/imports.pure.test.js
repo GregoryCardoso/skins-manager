@@ -80,9 +80,10 @@ describe('tradeClassifier (D294)', () => {
     expect(classify(trade({ offerState: 12 }), 'BUY', null, ctx())).toMatchObject({ tracking: 'UNKNOWN_STATE' });
     expect(classify(trade({ offerState: 1 }), 'BUY', null, ctx())).toMatchObject({ tracking: 'UNKNOWN_STATE' });
   });
-  test('corte, venda adiada, enviado a outra pessoa, estorno', () => {
+  test('corte, venda aceita importada (9.3), enviado a outra pessoa, estorno', () => {
     expect(classify(trade({ createdAt: '2026-10-01T00:00:00.000Z' }), 'BUY', null, ctx())).toMatchObject({ tracking: 'BEFORE_CUTOFF', count: 'beforeCutoff' });
-    expect(classify(trade(), 'SELL', null, ctx())).toMatchObject({ tracking: 'DEFERRED', count: 'deferred' });
+    expect(classify(trade(), 'SELL', null, ctx())).toMatchObject({ kind: 'IMPORT', count: 'import' });
+    expect(classify(trade(), 'SELL', { tracking: 'DEFERRED' }, ctx())).toMatchObject({ kind: 'IMPORT' });
     expect(classify(trade({ sentToDifferentUser: '7656' }), 'BUY', null, ctx())).toMatchObject({ tracking: 'RETRY', entry: { reasonCode: 'TRADE_SENT_TO_OTHER_USER' } });
     expect(classify(trade(), 'BUY', null, ctx({ refundSignal: true }))).toMatchObject({ tracking: 'CLOSED_NOT_TRANSFERRED' });
   });
@@ -263,7 +264,7 @@ describe('undo, corte e views (puros)', () => {
     const res = assessUndo(links, items);
     expect(res.blockers).toEqual([{ code: 'ITEM_SOLD_IN_APP', itemId: 1, name: 'A' }]);
     expect(res.warnings.map((w) => w.code)).toEqual(['ITEM_EDITED', 'ITEM_IN_HOLDING']);
-    expect(res.counts).toEqual({ itemsToDelete: 2, linksToRemove: 1 });
+    expect(res.counts).toEqual({ itemsToDelete: 2, linksToRemove: 1, salesToUndo: 0 });
   });
   test('pickLatest', () => {
     expect(pickLatest([null, '2026-11-05T00:00:00.000Z', '2026-11-08T00:00:00.000Z'])).toBe('2026-11-08T00:00:00.000Z');

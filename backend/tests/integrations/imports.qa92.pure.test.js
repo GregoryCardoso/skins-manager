@@ -51,10 +51,11 @@ describe('tradeClassifier: matriz estado x oferta (compra, nunca importada)', ()
     expect(classify(trade({ state: 'failed', offerState: 6, acceptedAt: null }), 'BUY', null, ctx()).entry).toBeUndefined();
   });
 
-  test('venda é sempre adiada (DEFERRED) e nunca IMPORT, em qualquer estado aceito', () => {
+  test('9.3: venda aceita é importada (IMPORT) em qualquer estado aceito e sem falha; venda falhada sem aceite não', () => {
     for (const state of ['pending', 'verified', 'queued']) {
-      expect(classify(trade({ state, direction: 'SELL' }), 'SELL', null, ctx())).toMatchObject({ kind: 'MARK', tracking: 'DEFERRED' });
+      expect(classify(trade({ state, direction: 'SELL' }), 'SELL', null, ctx())).toMatchObject({ kind: 'IMPORT' });
     }
+    expect(classify(trade({ state: 'failed', direction: 'SELL', offerState: null, acceptedAt: null }), 'SELL', null, ctx())).toMatchObject({ tracking: 'CLOSED_NOT_TRANSFERRED' });
   });
 
   test('antes do corte vence qualquer outro tratamento (inclusive aceito e verified); o corte é por sold_at', () => {

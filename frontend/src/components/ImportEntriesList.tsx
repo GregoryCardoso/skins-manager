@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
 import { formatDate, formatFloat, formatMoney } from '@/lib/format';
-import { entryLink, groupEntries, reasonKey } from '@/lib/importSummary';
+import { entryLink, entryLinkLabelKey, groupEntries, reasonKey } from '@/lib/importSummary';
 import type { Category, ImportEntryView } from '@/types/api';
 import ItemImage from './ItemImage';
 import styles from './ImportEntriesList.module.css';
@@ -29,7 +29,8 @@ function EntryRow({ entry, onNavigate }: { entry: ImportEntryView; onNavigate?: 
   if (display.date) details.push(formatDate(display.date, language));
 
   const key = reasonKey(entry);
-  const reason = key ? tLoose(key, { state: display.state ?? '' }) : null;
+  const money = (cents: number | null | undefined) => (cents === null || cents === undefined ? '' : formatMoney(cents, display.currency, language));
+  const reason = key ? tLoose(key, { state: display.state ?? '', fee: money(display.feeCents), expected: money(display.expectedFeeCents) }) : null;
   // Sem texto próprio, o motivo pode ser um código de erro do app (ex.: FLOAT_OUT_OF_RANGE); senão mostra só o código.
   const errorKey = entry.reasonCode ? `errors.${entry.reasonCode}` : null;
   const errorText = errorKey ? tLoose(errorKey) : null;
@@ -51,7 +52,7 @@ function EntryRow({ entry, onNavigate }: { entry: ImportEntryView; onNavigate?: 
         )}
         {(link !== null || entry.candidateIds.length > 0) && (
           <span className={styles.links}>
-            {link !== null && <Link href={link} onClick={onNavigate}>{t('imports.seeInInventory')}</Link>}
+            {link !== null && <Link href={link} onClick={onNavigate}>{t(entryLinkLabelKey(entry))}</Link>}
             {entry.candidateIds.map((id) => (
               <Link key={id} href={`/?item=${id}`} onClick={onNavigate}>{t('imports.seeCandidate', { id })}</Link>
             ))}

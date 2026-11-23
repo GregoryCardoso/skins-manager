@@ -8,8 +8,9 @@ const { IMPORT_OPEN_GRACE_MS } = require('../../config/constants');
 
 // Registros já decididos que a importação não reavalia.
 const FROZEN_TRACKINGS = Object.freeze(['REMOVED_IN_APP', 'IGNORED', 'NEEDS_REVIEW', 'REVERTED', 'BEFORE_CUTOFF', 'CLOSED_NOT_TRANSFERRED']);
-// Trackings "fechados" para a parada incremental da varredura (D295).
-const CLOSED_TRACKINGS = Object.freeze(['SETTLED', 'CLOSED_NOT_TRANSFERRED', 'BEFORE_CUTOFF', 'REMOVED_IN_APP', 'IGNORED', 'DEFERRED']);
+// Trackings "fechados" para a parada incremental da varredura (D295). Desde a 9.3, DEFERRED (venda vista na 9.2) não é fechado:
+// a venda é reavaliada e importada (a primeira importação da 9.3 faz a varredura completa).
+const CLOSED_TRACKINGS = Object.freeze(['SETTLED', 'CLOSED_NOT_TRANSFERRED', 'BEFORE_CUTOFF', 'REMOVED_IN_APP', 'IGNORED']);
 
 const lower = (state) => (typeof state === 'string' ? state.toLowerCase() : null);
 const ms = (iso) => (iso ? Date.parse(iso) : NaN);
@@ -47,7 +48,7 @@ function settleTracking(trade, now) {
 // Devolve { kind, tracking, count, entry? }:
 //   kind 'KEEP'   = nada muda (registro já decidido); `count` diz onde contar ('known', 'deferred'...)
 //   kind 'MARK'   = grava o `tracking` (sem lançamento)
-//   kind 'IMPORT' = compra aceita e segura: criar o lançamento ou ligar a um manual
+//   kind 'IMPORT' = compra ou venda aceita e segura: criar o lançamento ou ligar a um manual
 //   kind 'LINKED' = trade já ligado: atualiza o `tracking` e, se for o caso, abre a entrada
 // `entry`: { outcome, reasonCode } quando o resumo deve mostrar algo.
 function classify(trade, direction, existing, { now, cutoffMs, refundSignal = false, hasLink = false }) {
@@ -77,9 +78,6 @@ function classify(trade, direction, existing, { now, cutoffMs, refundSignal = fa
   // 3. Antes da data de corte.
   if (Date.parse(operationAt(trade)) < cutoffMs) return { kind: 'MARK', tracking: 'BEFORE_CUTOFF', count: 'beforeCutoff' };
 
-  // 4. Venda: lida e registrada, mas só processada na 9.3.
-  if (direction === 'SELL') return { kind: 'MARK', tracking: 'DEFERRED', count: 'deferred' };
-
   // 5. Enviado a outra pessoa.
   if (trade.sentToDifferentUser) {
     return { kind: 'MARK', tracking: 'RETRY', count: 'failed', entry: { outcome: 'FAILED', reasonCode: 'TRADE_SENT_TO_OTHER_USER' } };
@@ -93,7 +91,7 @@ function classify(trade, direction, existing, { now, cutoffMs, refundSignal = fa
     return { kind: 'MARK', tracking: 'UNKNOWN_STATE', count: 'unknownState', entry: { outcome: 'UNKNOWN_STATE', reasonCode: 'UNKNOWN_STATE' } };
   }
 
-  // 8. Compra.
+  // 8. Compra ou venda: a mesma regra da oferta aceita (D294). A venda é importada desde a 9.3 (D299).
   if (!accepted) {
     // Falhou sem nunca ter sido aceita: não reverifica mais. Senão, o vendedor ainda pode enviar.
     return { kind: 'MARK', tracking: kind === 'FAILED' ? 'CLOSED_NOT_TRANSFERRED' : 'WAITING_TRANSFER', count: 'notTransferred' };

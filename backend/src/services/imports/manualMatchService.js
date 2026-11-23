@@ -45,14 +45,15 @@ function sameUnit(trade, candidate) {
 }
 
 // trades: [{ key, catalogId, category, nameKey, variant, phase, floatValue, paintSeed, priceCents, date (ISO) }]
-// candidates: itens (`id`, `catalogId`, `name`, `category`, `variant`, `phase`, `floatValue`, `paintSeed`, `purchasePriceCents`, `acquiredAt`)
+// candidates: itens (`id`, `catalogId`, `name`, `category`, `variant`, `phase`, `floatValue`, `paintSeed` e o preço/data da operação)
+// `priceOf`/`dateOf`: preço e data da operação no candidato (compra: custo e aquisição; venda: preço e data da venda).
 // Devolve Map key -> { kind: 'MATCH', itemId } | { kind: 'NONE' } | { kind: 'AMBIGUOUS', candidateIds }.
-function matchPurchases(trades, candidates, { localDayOf = localDayNumber } = {}) {
+function matchTrades(trades, candidates, { localDayOf = localDayNumber, priceOf, dateOf }) {
   const results = new Map();
   const taken = new Set(); // candidatos ligados neste lote
   const available = (list) => list.filter((c) => !taken.has(c.id));
   const dayOfTrade = (trade) => localDayOf(trade.date);
-  const dayOfCandidate = (candidate) => localDayOf(candidate.acquiredAt);
+  const dayOfCandidate = (candidate) => localDayOf(dateOf(candidate));
   const ordered = [...trades].sort((a, b) => Date.parse(a.date) - Date.parse(b.date));
 
   // 1. Com float: os dois lados com float (SKIN/FACA/LUVA).
@@ -95,7 +96,7 @@ function matchPurchases(trades, candidates, { localDayOf = localDayNumber } = {}
     const pool = available(candidates).filter(
       (c) =>
         sameItem(sample, c)
-        && c.purchasePriceCents === sample.priceCents
+        && priceOf(c) === sample.priceCents
         && (!hasFloat(sample) || !hasFloat(c))
         && (hasFloat(sample) || phaseKey(sample.phase) === phaseKey(c.phase))
         && days.some((d) => Math.abs(dayOfCandidate(c) - d) <= 1)
@@ -105,7 +106,7 @@ function matchPurchases(trades, candidates, { localDayOf = localDayNumber } = {}
       continue;
     }
     const sortedTrades = [...groupTrades].sort((a, b) => Date.parse(a.date) - Date.parse(b.date));
-    const sortedPool = [...pool].sort((a, b) => Date.parse(a.acquiredAt) - Date.parse(b.acquiredAt) || a.id - b.id);
+    const sortedPool = [...pool].sort((a, b) => Date.parse(dateOf(a)) - Date.parse(dateOf(b)) || a.id - b.id);
     const fits = sortedTrades.length === sortedPool.length
       && sortedTrades.every((t, i) => Math.abs(dayOfCandidate(sortedPool[i]) - dayOfTrade(t)) <= 1);
     if (fits) {
@@ -121,4 +122,49 @@ function matchPurchases(trades, candidates, { localDayOf = localDayNumber } = {}
   return results;
 }
 
-module.exports = { matchPurchases, localDayNumber, floatsMatch, sameItem, sameUnit };
+// Compras: candidatos `COMPRA` da loja sem vínculo; preço = custo, data = aquisição (D298).
+function matchPurchases(trades, candidates, { localDayOf = localDayNumber } = {}) {
+  return matchTrades(trades, candidates, { localDayOf, priceOf: (c) => c.purchasePriceCents, dateOf: (c) => c.acquiredAt });
+}
+
+// Vendas (D299, primeiro passo): candidatos `VENDIDO` na loja sem vínculo de venda; preço = preço de venda, data = data da venda.
+function matchSales(trades, candidates, { localDayOf = localDayNumber } = {}) {
+  return matchTrades(trades, candidates, { localDayOf, priceOf: (c) => c.salePriceCents, dateOf: (c) => c.soldAt });
+}
+
+const sameVariant = (trade, unit) =>
+  !isWeaponCategory(trade.category) || (trade.variant || 'NORMAL') === (unit.variant || 'NORMAL');
+
+// Ordem da venda sem float (E9-Q11): as unidades à venda antes das do holding; dentro de cada grupo, a mais antiga.
+function bySaleOrder(a, b) {
+  const holdA = isNil(a.offSaleAt) ? 0 : 1;
+  const holdB = isNil(b.offSaleAt) ? 0 : 1;
+  return holdA - holdB || Date.parse(a.acquiredAt) - Date.parse(b.acquiredAt) || a.id - b.id;
+}
+
+// Unidade vendida por uma venda importada sem lançamento manual (D299). Função pura.
+//   trade: { catalogId, category, nameKey, variant, phase, floatValue, paintSeed, date (ISO da venda) }
+//   units: itens EM_ESTOQUE (de qualquer loja de compra); só contam os do mesmo item, comprados até a data da venda.
+// Com float: a unidade de float igual (mesma regra da D298); duas ou mais -> AMBIGUOUS. Sem unidade de float igual, vale a regra
+// sem float entre as unidades lançadas sem float. Sem float: a primeira na ordem de venda (à venda, depois holding; mais antiga).
+// Devolve { kind: 'UNIT', itemId } | { kind: 'NONE' } | { kind: 'AMBIGUOUS', candidateIds }.
+function pickSoldUnit(trade, units) {
+  const saleMs = Date.parse(trade.date);
+  const pool = units.filter(
+    (u) => u.status === 'EM_ESTOQUE' && sameItem(trade, u) && !(Date.parse(u.acquiredAt) > saleMs) && sameVariant(trade, u)
+  );
+  let candidates = pool;
+  if (hasFloat(trade)) {
+    const exact = pool.filter((u) => hasFloat(u) && sameUnit(trade, u));
+    if (exact.length === 1) return { kind: 'UNIT', itemId: exact[0].id };
+    if (exact.length > 1) return { kind: 'AMBIGUOUS', candidateIds: exact.map((u) => u.id) };
+    candidates = pool.filter((u) => !hasFloat(u) && phaseKey(u.phase) === phaseKey(trade.phase));
+  } else {
+    candidates = pool.filter((u) => phaseKey(u.phase) === phaseKey(trade.phase));
+  }
+  if (candidates.length === 0) return { kind: 'NONE' };
+  return { kind: 'UNIT', itemId: [...candidates].sort(bySaleOrder)[0].id };
+}
+
+module.exports = { matchPurchases, matchSales, pickSoldUnit, localDayNumber, floatsMatch, sameItem, sameUnit };
+

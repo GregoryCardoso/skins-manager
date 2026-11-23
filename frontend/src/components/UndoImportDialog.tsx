@@ -98,6 +98,7 @@ export default function UndoImportDialog({ batchId, onClose, onFinished }: Props
               <>
                 {preview.counts.itemsToDelete > 0 && <p>{tPlural('imports.undo.bodyItems', preview.counts.itemsToDelete)}</p>}
                 {preview.counts.linksToRemove > 0 && <p>{tPlural('imports.undo.bodyLinks', preview.counts.linksToRemove)}</p>}
+                {(preview.counts.salesToUndo ?? 0) > 0 && <p>{tPlural('imports.undo.bodySales', preview.counts.salesToUndo)}</p>}
               </>
             )}
             {!blocked && needsAck && (

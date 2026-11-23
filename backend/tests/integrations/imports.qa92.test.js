@@ -363,7 +363,7 @@ describe('critério da oferta aceita (D294)', () => {
 // --- Direção e conta -------------------------------------------------------------------------------------------------------
 
 describe('direção pela impressão digital e conta', () => {
-  test('vendas ficam DEFERRED: nenhuma venda gravada, itens em estoque intactos, saldo e vendas sem efeito', async () => {
+  test('9.3: a venda com unidade e crédito no extrato é registrada; a sem unidade vira "venda sem compra no app"', async () => {
     const stock = await createManual(manual({ floatValue: 0.31, paintSeed: 1 }));
     const balanceBefore = (await call(request(app).get('/api/store-balances/current'))).body.data;
     state.trades = [
@@ -372,24 +372,26 @@ describe('direção pela impressão digital e conta', () => {
     ];
     state.transactions = [fakeTransaction({ id: 'tx-sold', type: 'contract_sold', pendingOffset: 1470, details: { contract_id: '95001', fee_amount: '30' } })];
     const res = await firstRun();
-    expect(res.body.data.batch.counts).toMatchObject({ deferredSales: 2, salesCreated: 0, purchasesCreated: 0, matched: 0 });
-    expect(res.body.data.batch.entries).toEqual([]);
-    const items = await getItems();
-    expect(items).toHaveLength(1);
-    expect(items[0]).toMatchObject({ id: stock.id, status: 'EM_ESTOQUE', salePriceCents: null, soldAt: null, externalSource: null });
-    expect(dbRows("SELECT COUNT(*) AS n FROM items WHERE status = 'VENDIDO'")[0].n).toBe(0);
-    expect(count('external_links')).toBe(0);
-    expect((await call(request(app).get('/api/store-balances/current'))).body.data).toEqual(balanceBefore);
-    expect(trackings().map((t) => t.tracking)).toEqual(['DEFERRED', 'DEFERRED']);
+    expect(res.body.data.batch.counts).toMatchObject({ deferredSales: 0, salesCreated: 1, withoutPurchase: 1, purchasesCreated: 0, matched: 0 });
+    expect(res.body.data.batch.entries.map((e) => [e.outcome, e.reasonCode, e.entityType])).toEqual([
+      ['FAILED', 'PURCHASE_NOT_FOUND', null],
+      ['CREATED', null, 'ITEM_SALE'],
+    ]);
+    const sold = (await call(request(app).get(`/api/items/${stock.id}`))).body.data;
+    expect(sold).toMatchObject({ status: 'VENDIDO', salePriceCents: 1500, netReceivedCents: 1470, soldAt: '2026-11-21T10:00:00.000Z', externalSource: 'CSFLOAT' });
+    expect(count('external_links')).toBe(1);
+    expect((await call(request(app).get('/api/store-balances/current'))).body.data).not.toEqual(balanceBefore);
+    expect(trackings().map((t) => t.tracking).sort()).toEqual(['RETRY', 'SETTLED']);
   });
 
-  test('compra e venda do mesmo item no mesmo lote: só a compra vira item; a venda não o vende', async () => {
+  test('9.3: compra e venda do mesmo item no mesmo lote: a compra vira item; sem o contract_sold a venda espera (SALE_TX_NOT_FOUND)', async () => {
     state.trades = [
-      fakeTrade({ id: '5101', createdAt: '2026-11-20T10:00:00.000Z' }),
+      fakeTrade({ id: '5101', createdAt: '2026-11-20T10:00:00.000Z', protectionEndsAt: '2026-11-20T12:00:00.000Z' }),
       fakeTrade({ id: '5102', direction: 'SELL', createdAt: '2026-11-21T10:00:00.000Z', price: 1400 }),
     ];
     const res = await firstRun();
-    expect(res.body.data.batch.counts).toMatchObject({ purchasesCreated: 1, deferredSales: 1 });
+    expect(res.body.data.batch.counts).toMatchObject({ purchasesCreated: 1, salesCreated: 0, failed: 1 });
+    expect(res.body.data.batch.entries.find((e) => e.outcome === 'FAILED').reasonCode).toBe('SALE_TX_NOT_FOUND');
     expect((await getItems())[0]).toMatchObject({ status: 'EM_ESTOQUE', salePriceCents: null });
   });
 

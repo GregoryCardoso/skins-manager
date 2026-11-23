@@ -1,10 +1,11 @@
-// Resumo da importação (9.2, D318): linhas de contagem, grupos de entradas, chave do motivo e link para o lançamento.
+// Resumo da importação (9.2 e 9.3, D318): linhas de contagem, grupos de entradas, chave do motivo e link para o lançamento.
 // Funções puras (sem React nem rede); o texto é montado na tela com as chaves i18n.
 import type { ImportBatchCounts, ImportEntryView } from '@/types/api';
 
 // Ordem e chave (`imports.counts.<key>`) de cada linha do resumo.
 export const COUNT_LINES = [
-  'purchasesCreated', 'matched', 'review', 'reverted', 'failed', 'unknownState', 'deferredSales', 'known', 'notTransferred', 'beforeCutoff',
+  'purchasesCreated', 'salesCreated', 'matched', 'review', 'reverted', 'withoutPurchase', 'failed', 'unknownState', 'deferredSales', 'known',
+  'notTransferred', 'beforeCutoff',
 ] as const;
 export type CountKey = (typeof COUNT_LINES)[number];
 
@@ -20,20 +21,27 @@ export function summaryLines(counts: ImportBatchCounts): CountLine[] {
 
 // "Nada novo": nada foi criado, ligado nem exige atenção (as contagens de já importadas e de antes do corte não contam).
 export function isNothingNew(counts: ImportBatchCounts): boolean {
-  return counts.purchasesCreated + counts.salesCreated + counts.matched + counts.review + counts.reverted + counts.failed + counts.unknownState === 0;
+  return (
+    counts.purchasesCreated + counts.salesCreated + counts.matched + counts.review + counts.reverted + counts.failed + counts.unknownState
+    + counts.withoutPurchase === 0
+  );
 }
 
-export type EntryGroupKey = 'CREATED' | 'MATCHED' | 'POSSIBLE_DUPLICATE' | 'REVERTED' | 'FAILED';
+export type EntryGroupKey = 'CREATED' | 'MATCHED' | 'POSSIBLE_DUPLICATE' | 'REVERTED' | 'WITHOUT_PURCHASE' | 'FAILED';
 
 export interface EntryGroup {
   key: EntryGroupKey;
   entries: ImportEntryView[];
 }
 
-const GROUP_ORDER: readonly EntryGroupKey[] = ['POSSIBLE_DUPLICATE', 'REVERTED', 'FAILED', 'CREATED', 'MATCHED'];
+const GROUP_ORDER: readonly EntryGroupKey[] = ['POSSIBLE_DUPLICATE', 'REVERTED', 'WITHOUT_PURCHASE', 'FAILED', 'CREATED', 'MATCHED'];
+
+// Venda importada sem unidade em estoque (E9-Q12): grupo próprio "Venda sem compra no app".
+export const WITHOUT_PURCHASE_REASON = 'PURCHASE_NOT_FOUND';
 
 // Estado desconhecido entra no grupo "Não importadas" (as pendências que exigem conferência vêm primeiro).
 function groupOf(entry: ImportEntryView): EntryGroupKey {
+  if (entry.outcome === 'FAILED' && entry.reasonCode === WITHOUT_PURCHASE_REASON) return 'WITHOUT_PURCHASE';
   return entry.outcome === 'UNKNOWN_STATE' ? 'FAILED' : entry.outcome;
 }
 
@@ -47,10 +55,17 @@ export function reasonKey(entry: ImportEntryView): string | null {
   return entry.reasonCode ? `imports.reasons.${entry.reasonCode}` : null;
 }
 
-// Link para o lançamento no app (o item, no inventário); vendas e outros tipos chegam nas próximas partes.
+// Link para o lançamento no app: a compra no inventário e a venda na página de vendas; aportes e saques chegam na 9.6.
 export function entryLink(entry: ImportEntryView): string | null {
-  if (entry.entityType === 'ITEM_PURCHASE' && entry.entityId !== null) return `/?item=${entry.entityId}`;
+  if (entry.entityId === null) return null;
+  if (entry.entityType === 'ITEM_PURCHASE') return `/?item=${entry.entityId}`;
+  if (entry.entityType === 'ITEM_SALE') return `/sales?item=${entry.entityId}`;
   return null;
+}
+
+// Rótulo do link (`imports.seeInInventory` ou `imports.seeInSales`).
+export function entryLinkLabelKey(entry: ImportEntryView): 'imports.seeInInventory' | 'imports.seeInSales' {
+  return entry.entityType === 'ITEM_SALE' ? 'imports.seeInSales' : 'imports.seeInInventory';
 }
 
 // Parâmetro `?item=<id>` da página do inventário: inteiro positivo ou null (não é filtro).

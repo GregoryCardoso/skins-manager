@@ -17,6 +17,8 @@ interface Props {
   onUnsell: (item: ItemView) => void;
   onDelete: (item: ItemView) => void;
   onHistory: (item: ItemView) => void;
+  // Linha apontada por `?item=<id>` (link do resumo da importação): destaque.
+  highlightedItemId?: number | null;
 }
 
 const BUCKET_TONES: Record<string, BadgeTone> = {
@@ -83,7 +85,7 @@ function DaysCell({ item }: { item: ItemView }) {
   );
 }
 
-function SaleRow({ item, stores, onEdit, onUnsell, onDelete, onHistory }: Props & { item: ItemView }) {
+function SaleRow({ item, stores, onEdit, onUnsell, onDelete, onHistory, highlightedItemId = null }: Props & { item: ItemView }) {
   const t = useT();
   const locale = useLanguage();
   const info = item.saleInfo;
@@ -95,7 +97,11 @@ function SaleRow({ item, stores, onEdit, onUnsell, onDelete, onHistory }: Props 
   const profitUsd = info ? info.netReceivedUsdCents - info.purchaseCostUsdCents : item.saleProfitUsdCents;
 
   return (
-    <tr id={`item-row-${item.id}`} className={styles.row}>
+    <tr
+      id={`item-row-${item.id}`}
+      className={highlightedItemId === item.id ? `${styles.row} ${styles.highlighted}` : styles.row}
+      aria-current={highlightedItemId === item.id ? 'true' : undefined}
+    >
       <td><ItemImage category={item.category} url={item.catalog?.imageUrl} /></td>
       <td><ItemCell item={item} /></td>
       <td><PurchaseStoreCell item={item} stores={stores} /></td>

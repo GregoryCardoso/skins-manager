@@ -2,7 +2,7 @@
 
 // Acesso à tabela `external_links` (D318): liga um registro externo ao lançamento do app. Só SQL.
 const { getDb } = require('../config/database');
-const { mapRow, insertRow } = require('./modelHelpers');
+const { mapRow, insertRow, updateRow } = require('./modelHelpers');
 
 const FIELDS = ['recordId', 'entityType', 'entityId', 'linkKind', 'batchId', 'entityUpdatedAt'];
 const CHUNK = 500;
@@ -12,6 +12,10 @@ const marks = (list) => list.map(() => '?').join(',');
 function create(data, { now = new Date() } = {}) {
   const id = insertRow(getDb(), 'external_links', data, FIELDS, { created_at: now.toISOString() });
   return toLink(getDb().prepare('SELECT * FROM external_links WHERE id = ?').get(Number(id)));
+}
+
+function update(id, partial = {}) {
+  return updateRow(getDb(), 'external_links', id, partial, FIELDS) > 0;
 }
 
 function findByRecordId(recordId) {
@@ -64,4 +68,4 @@ function sourcesByItemIds(itemIds = null) {
   return out;
 }
 
-module.exports = { create, findByRecordId, findByRecordIds, findByEntity, removeByEntity, listByBatch, removeByBatch, sourcesByItemIds };
+module.exports = { create, update, findByRecordId, findByRecordIds, findByEntity, removeByEntity, listByBatch, removeByBatch, sourcesByItemIds };

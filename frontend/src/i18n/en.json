@@ -1159,6 +1159,7 @@
     "badge": "CSFloat",
     "badgeHint": "Entry imported from CSFloat",
     "seeInInventory": "See in inventory",
+    "seeInSales": "See in sales",
     "seeCandidate": "See entry #{id}",
     "unknownItem": "Unnamed item",
     "disabled": {
@@ -1184,6 +1185,10 @@
         "one": "{count} purchase imported",
         "other": "{count} purchases imported"
       },
+      "salesCreated": {
+        "one": "{count} sale imported",
+        "other": "{count} sales imported"
+      },
       "matched": {
         "one": "{count} linked to an entry you already had",
         "other": "{count} linked to entries you already had"
@@ -1196,6 +1201,10 @@
         "one": "{count} reverted trade",
         "other": "{count} reverted trades"
       },
+      "withoutPurchase": {
+        "one": "{count} sale without a purchase in the app (enter the purchase by hand)",
+        "other": "{count} sales without a purchase in the app (enter the purchases by hand)"
+      },
       "failed": {
         "one": "{count} not imported (see why)",
         "other": "{count} not imported (see why)"
@@ -1205,8 +1214,8 @@
         "other": "{count} with an unknown state (skipped for safety)"
       },
       "deferredSales": {
-        "one": "{count} sale found: it will be imported in the next version",
-        "other": "{count} sales found: they will be imported in the next version"
+        "one": "{count} sale found and left for the next version",
+        "other": "{count} sales found and left for the next version"
       },
       "known": {
         "one": "{count} already imported (skipped)",
@@ -1247,6 +1256,10 @@
       "bodyLinks": {
         "one": "{count} of your entries will only be unlinked (not deleted).",
         "other": "{count} of your entries will only be unlinked (not deleted)."
+      },
+      "bodySales": {
+        "one": "{count} imported sale will be undone (the item goes back to stock).",
+        "other": "{count} imported sales will be undone (the items go back to stock)."
       }
     },
     "page": {
@@ -1274,6 +1287,7 @@
       "MATCHED": "Linked to your entries",
       "POSSIBLE_DUPLICATE": "Possible duplicate",
       "REVERTED": "Reverted trade",
+      "WITHOUT_PURCHASE": "Sale without a purchase in the app",
       "FAILED": "Not imported"
     },
     "reasons": {
@@ -1284,7 +1298,12 @@
       "SOURCE_RECORD_INVALID": "Incomplete data from CSFloat.",
       "PRICE_MISMATCH": "The amount debited in the statement differs from the listing price.",
       "REVERTED_PENDING_ACTION": "CSFloat shows this trade was reversed. The option to remove the entry comes in the next version; for now, check and delete the item by hand if needed.",
-      "UNKNOWN_STATE": "New CSFloat state ({state}). Skipped for safety."
+      "UNKNOWN_STATE": "New CSFloat state ({state}). Skipped for safety.",
+      "PURCHASE_NOT_FOUND": "Enter the purchase of this item by hand; the next import records the sale.",
+      "SALE_TX_NOT_FOUND": "The CSFloat statement has not shown the credit for this sale yet. The next import will try again.",
+      "FEE_MISMATCH": "CSFloat charged {fee}; by the store rules it would be {expected}. The real amount was recorded.",
+      "FEE_INCONSISTENT": "The sale credit in the statement does not match the price minus the fee. Check on CSFloat; the next import will try again.",
+      "ITEM_TRADE_LOCKED": "In the app, this item was still trade locked on the sale date. Check the item release date; the next import will try again."
     }
   }
 }

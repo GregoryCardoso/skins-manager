@@ -97,6 +97,23 @@ function findContractIdsWithTransactionTypes(source, contractIds, txTypes) {
   return out;
 }
 
+// Trades da fonte com um dos `contract_id` informados: Map contractId -> registro.
+function findTradesByContractIds(source, contractIds) {
+  const unique = [...new Set(contractIds.filter(Boolean))];
+  const out = new Map();
+  for (let i = 0; i < unique.length; i += IDS_CHUNK) {
+    const chunk = unique.slice(i, i + IDS_CHUNK);
+    const sql = `SELECT * FROM external_records WHERE source = ? AND kind = 'TRADE' AND contract_id IN (${marks(chunk)}) ORDER BY id ASC`;
+    for (const row of getDb().prepare(sql).all(source, ...chunk)) if (!out.has(row.contract_id)) out.set(row.contract_id, toRecord(row));
+  }
+  return out;
+}
+
+// Quantos trades da fonte estão num `tracking` (ex.: DEFERRED, vendas vistas na 9.2 e ainda não processadas).
+function countTradesByTracking(source, tracking) {
+  return getDb().prepare("SELECT COUNT(*) AS n FROM external_records WHERE source = ? AND kind = 'TRADE' AND tracking = ?").get(source, tracking).n;
+}
+
 // Troca de conta (D293): os trades abertos da conta anterior viram IGNORED. Devolve os ids afetados.
 function ignoreOpenForAccountSwitch(source, { now = new Date() } = {}) {
   const ids = getDb()
@@ -139,6 +156,8 @@ module.exports = {
   findKnownTradeContractIds,
   findTransactionsByContract,
   findContractIdsWithTransactionTypes,
+  findTradesByContractIds,
+  countTradesByTracking,
   ignoreOpenForAccountSwitch,
   deleteByFirstBatch,
   deleteAllForSource,

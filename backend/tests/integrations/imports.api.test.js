@@ -266,13 +266,13 @@ describe('estados especiais', () => {
     expect(itemsCount()).toBe(0);
   });
 
-  test('vendas são lidas e adiadas (deferredSales), sem itens vendidos', async () => {
+  test('9.3: venda sem unidade no app vira "venda sem compra no app" (RETRY), sem itens vendidos', async () => {
     state.trades = [fakeTrade({ id: '4201', direction: 'SELL', state: 'verified' })];
     const res = await firstRun();
-    expect(res.body.data.batch.counts).toMatchObject({ deferredSales: 1, purchasesCreated: 0, salesCreated: 0 });
-    expect(res.body.data.batch.entries).toHaveLength(0);
+    expect(res.body.data.batch.counts).toMatchObject({ deferredSales: 0, purchasesCreated: 0, salesCreated: 0, withoutPurchase: 1 });
+    expect(res.body.data.batch.entries.map((e) => e.reasonCode)).toEqual(['PURCHASE_NOT_FOUND']);
     expect(itemsCount()).toBe(0);
-    expect(dbRows('SELECT tracking, direction FROM external_records WHERE kind = ?', 'TRADE')[0]).toMatchObject({ tracking: 'DEFERRED', direction: 'SELL' });
+    expect(dbRows('SELECT tracking, direction FROM external_records WHERE kind = ?', 'TRADE')[0]).toMatchObject({ tracking: 'RETRY', direction: 'SELL' });
   });
 
   test('dado essencial ausente: SOURCE_RECORD_INVALID, sem derrubar o resto', async () => {

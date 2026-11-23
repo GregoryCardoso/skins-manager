@@ -32,6 +32,9 @@ function toDisplay(displayJson, catalogById) {
     currency: display.currency ?? 'USD',
     date: display.date ?? null,
     state: display.state ?? null,
+    // Venda importada com taxa diferente da calculada pela loja (FEE_MISMATCH, D299): a cobrada pelo CSFloat e a das regras.
+    feeCents: display.feeCents ?? null,
+    expectedFeeCents: display.expectedFeeCents ?? null,
   };
 }
 

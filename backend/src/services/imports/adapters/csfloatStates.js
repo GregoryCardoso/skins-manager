@@ -25,6 +25,9 @@ const KNOWN_TX_TYPES = Object.freeze([
 // Transações que, com o mesmo `contract_id`, indicam que uma compra foi desfeita (D294).
 const PURCHASE_REVERSAL_TX_TYPES = Object.freeze(['contract_purchase_refund', 'rollback']);
 
+// Transações que, com o mesmo `contract_id`, indicam que uma venda foi desfeita (D294, D301).
+const SALE_REVERSAL_TX_TYPES = Object.freeze(['contract_sale_refund', 'rollback']);
+
 // `paint_index` das fases da Doppler e da Gamma Doppler (conhecidas do jogo; "conferir com exemplo real", D318).
 const DOPPLER_PHASES = Object.freeze({
   415: 'Ruby',
@@ -41,4 +44,4 @@ const DOPPLER_PHASES = Object.freeze({
   572: 'Phase 4',
 });
 
-module.exports = { CSFLOAT_TRADE_STATES, STEAM_OFFER_STATES, KNOWN_TX_TYPES, PURCHASE_REVERSAL_TX_TYPES, DOPPLER_PHASES };
+module.exports = { CSFLOAT_TRADE_STATES, STEAM_OFFER_STATES, KNOWN_TX_TYPES, PURCHASE_REVERSAL_TX_TYPES, SALE_REVERSAL_TX_TYPES, DOPPLER_PHASES };

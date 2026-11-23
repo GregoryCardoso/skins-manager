@@ -208,6 +208,8 @@ export interface ItemView {
   soldAt: string | null;
   // Snapshot da retenção do saldo na venda (D214); nulo em estoque e em vendas anteriores à v6. Só leitura.
   saleHoldDaysApplied?: number | null;
+  // Liberação real da venda importada do CSFloat (D312); nula nas vendas manuais (valem os dias de retenção). Só leitura.
+  saleReleaseAt?: string | null;
   tradeLock: TradeLock;
   aging: Aging;
   minPrices: MinPrice[] | null;
@@ -788,6 +790,9 @@ export interface ImportEntryDisplay {
   date: string | null;
   // Estado bruto do trade (texto curto do CSFloat), usado na mensagem de "estado desconhecido".
   state: string | null;
+  // Venda com taxa diferente da calculada pela loja (FEE_MISMATCH, 9.3): a cobrada pelo CSFloat e a das regras da loja.
+  feeCents?: number | null;
+  expectedFeeCents?: number | null;
 }
 
 export interface ImportEntryView {
@@ -862,5 +867,5 @@ export interface UndoPreview {
   reason: 'NOT_LATEST' | 'NOTHING_TO_UNDO' | 'ALREADY_UNDONE' | 'FAILED_BATCH' | null;
   blockers: UndoPreviewIssue[];
   warnings: UndoPreviewIssue[];
-  counts: { itemsToDelete: number; linksToRemove: number };
+  counts: { itemsToDelete: number; linksToRemove: number; salesToUndo: number };
 }

@@ -1,6 +1,6 @@
 'use strict';
 
-// Importação de lojas externas, parte 9.2: compras do CSFloat (D285 a D318). Duas fases:
+// Importação de lojas externas: compras (9.2) e vendas (9.3) do CSFloat (D285 a D318). Duas fases:
 //   1. leitura (rede): conta, extrato e trades, página a página, sem gravar nada;
 //   2. aplicação: tudo numa única transação síncrona (falha no meio = nada gravado).
 // Regra de negócio aqui; o Adapter fala com a rede (e nunca vê o banco) e os models só fazem SQL. A chave da API nunca passa por
@@ -24,7 +24,8 @@ const catalogService = require('../catalogService');
 const backupService = require('../backupService');
 const { normalizeSearchText } = require('../catalog/csgoApiAdapter');
 const { waitForRateLimit } = require('./adapters/csfloatHttp');
-const { KNOWN_TX_TYPES, PURCHASE_REVERSAL_TX_TYPES } = require('./adapters/csfloatStates');
+const { KNOWN_TX_TYPES, PURCHASE_REVERSAL_TX_TYPES, SALE_REVERSAL_TX_TYPES } = require('./adapters/csfloatStates');
+const { resolveSaleNet } = require('../pricingService');
 const { validateAdapter } = require('./importSource');
 const importLock = require('./importLock');
 const scanPolicy = require('./scanPolicy');
@@ -160,9 +161,10 @@ function startOfPreviousLocalDay(iso) {
   return date.toISOString();
 }
 
-function buildDisplay(trade, direction, mapped) {
+function buildDisplay(trade, direction, mapped, extra = {}) {
   const catalogEntry = mapped && mapped.catalogEntry;
   return {
+    ...extra,
     direction,
     marketHashName: trade.item.marketHashName,
     catalogId: catalogEntry ? catalogEntry.id : null,
@@ -187,8 +189,8 @@ function bump(counter, key) {
 function applyImport(env, read) {
   const { row, store, now, finishedAt, cutoffToStore, effectiveCutoff, steamId, account, trigger } = env;
   const counts = {
-    purchasesCreated: 0, matched: 0, known: 0, beforeCutoff: 0, notTransferred: 0, review: 0, reverted: 0, failed: 0,
-    unknownState: 0, deferred: 0,
+    purchasesCreated: 0, salesCreated: 0, matched: 0, known: 0, beforeCutoff: 0, notTransferred: 0, review: 0, reverted: 0, failed: 0,
+    unknownState: 0, deferred: 0, withoutPurchase: 0,
   };
   const unknownTypes = {};
   const warnings = [...new Set(read.warnings)];
@@ -231,9 +233,10 @@ function applyImport(env, read) {
   const trades = [...read.trades].sort((a, b) => Date.parse(tradeMoment(a)) - Date.parse(tradeMoment(b)));
   const existingTrades = ExternalRecord.findManyByExternalIds(SOURCE, 'TRADE', trades.map((t) => t.externalId));
   const linksByRecord = ExternalLink.findByRecordIds([...existingTrades.values()].map((r) => r.id));
-  const refundContracts = ExternalRecord.findContractIdsWithTransactionTypes(
-    SOURCE, trades.map((t) => t.contractId), PURCHASE_REVERSAL_TX_TYPES
-  );
+  const refundContracts = {
+    BUY: ExternalRecord.findContractIdsWithTransactionTypes(SOURCE, trades.map((t) => t.contractId), PURCHASE_REVERSAL_TX_TYPES),
+    SELL: ExternalRecord.findContractIdsWithTransactionTypes(SOURCE, trades.map((t) => t.contractId), SALE_REVERSAL_TX_TYPES),
+  };
   const diagnostics = { trades: { BUY: {}, SELL: {} }, duplicateContractIds: 0, tradesRead: trades.length, transactionsRead: read.transactions.length,
     invalidTrades: read.invalidTrades.length, invalidTransactions: read.invalidTransactions };
   const contractSeen = new Set();
@@ -296,7 +299,7 @@ function applyImport(env, read) {
 
     const link = existing ? linksByRecord.get(existing.id) : null;
     const cls = tradeClassifier.classify(trade, direction, existing, {
-      now, cutoffMs, refundSignal: refundContracts.has(trade.contractId), hasLink: Boolean(link),
+      now, cutoffMs, refundSignal: refundContracts[direction].has(trade.contractId), hasLink: Boolean(link),
     });
     if (cls.entry && cls.entry.reasonCode === 'UNKNOWN_STATE') {
       bump(unknownTypes, tradeClassifier.stateKind(trade.rawState) === 'UNKNOWN' ? `state:${trade.rawState}` : `offer:${trade.offerState}`);
@@ -317,6 +320,8 @@ function applyImport(env, read) {
     const previousTracking = existing ? existing.tracking : null;
     const record = saveTrade(trade, direction, cls.tracking, existing);
     counts[cls.count] += 1;
+    // Venda importada ainda aberta: a liberação real acompanha o CSFloat (D312).
+    if (cls.kind === 'LINKED' && link && cls.tracking !== 'REVERTED') syncSaleRelease(link, record, { now });
     if (previousTracking && FAILURE_TRACKINGS.includes(previousTracking) && !FAILURE_TRACKINGS.includes(cls.tracking)) {
       ImportBatchEntry.resolveOpenForRecord(record.id, 'IGNORED', { now });
     }
@@ -328,10 +333,13 @@ function applyImport(env, read) {
     }
   }
 
-  // (f) compras a importar: catálogo, casamento com manuais e criação.
-  if (toImport.length) {
+  // (f) compras a importar: catálogo, casamento com manuais e criação. Primeiro as compras, depois as vendas (D299), cada grupo
+  // na ordem de `sold_at`: assim uma compra e a venda do mesmo item depois do corte entram no mesmo lote.
+  const purchasesToImport = toImport.filter((entry) => entry.direction === 'BUY');
+  const salesToImport = toImport.filter((entry) => entry.direction === 'SELL');
+  if (purchasesToImport.length) {
     const prepared = [];
-    for (const entry of toImport) {
+    for (const entry of purchasesToImport) {
       const mapped = externalItemMapper.mapTradeItem(entry.trade.item, { findByNameKeyAnyCategory: (key) => CatalogItem.findByNameKeyAnyCategory(key) });
       if (!mapped.ok) {
         counts.failed += 1;
@@ -400,6 +408,13 @@ function applyImport(env, read) {
     }
   }
 
+  // (f2) vendas a importar.
+  const ctx = { batch, store, now, counts, addEntry, effectiveCutoff };
+  if (salesToImport.length) importSales(salesToImport, ctx);
+
+  // (f3) liberação real das vendas importadas pelo `trade_verified` lido agora (mesmo que o trade não tenha sido relido).
+  syncReleasesFromTransactions(read.transactions, { now });
+
   // (h) cursor do extrato: a transação mais nova lida.
   const cursor = newestTransactionId(read.transactions);
   Integration.update(
@@ -415,10 +430,184 @@ function applyImport(env, read) {
     tradePagesRead: read.tradePages, transactionPagesRead: read.transactionPages, purchasesCreated: counts.purchasesCreated,
     matchedCount: counts.matched, knownCount: counts.known, beforeCutoffCount: counts.beforeCutoff, notTransferredCount: counts.notTransferred,
     reviewCount: counts.review, revertedCount: counts.reverted, failedCount: counts.failed, unknownStateCount: counts.unknownState,
-    deferredCount: counts.deferred, unknownTypesJson: JSON.stringify(unknownTypes), diagnosticsJson: JSON.stringify(diagnostics),
+    deferredCount: counts.deferred, salesCreated: counts.salesCreated, withoutPurchaseCount: counts.withoutPurchase, unknownTypesJson: JSON.stringify(unknownTypes), diagnosticsJson: JSON.stringify(diagnostics),
     warningsJson: JSON.stringify(warnings),
   });
   return { batchId: batch.id };
+}
+
+// --- Vendas (9.3, D299, D312) -----------------------------------------------------------------------------------------
+
+// Data da venda importada: `contract.sold_at` (ou o aceite, ou a criação do trade).
+const saleMoment = (trade) => trade.soldAt || trade.acceptedAt || trade.createdAt;
+
+// Trade normalizado para o casamento e a escolha da unidade.
+function matchTradeOf(trade, mapped) {
+  return {
+    key: trade.externalId,
+    catalogId: mapped.catalogEntry ? mapped.catalogEntry.id : null,
+    category: mapped.category,
+    nameKey: normalizeSearchText(mapped.name),
+    variant: mapped.variant,
+    phase: (mapped.catalogEntry && mapped.catalogEntry.phase) || mapped.phase,
+    floatValue: mapped.floatValue,
+    paintSeed: mapped.paintSeed,
+    priceCents: trade.priceCents,
+    date: tradeMoment(trade),
+  };
+}
+
+// Liberação real da venda (D312): a data do `trade_verified` do contrato, quando já veio; senão, o `verify_sale_at`; senão nula
+// (vale a retenção da loja).
+function saleReleaseOf(contractId, verifySaleAt) {
+  const verified = contractId ? ExternalRecord.findTransactionsByContract(SOURCE, contractId, ['trade_verified']) : [];
+  if (verified.length) {
+    return verified.map((tx) => tx.externalCreatedAt).sort((a, b) => Date.parse(a) - Date.parse(b))[0];
+  }
+  return verifySaleAt || null;
+}
+
+// Atualiza a liberação de uma venda CRIADA pela importação (a manual ligada nunca é alterada, E9-Q10). A atualização do próprio
+// import não conta como "editado" no desfazer: o `entity_updated_at` acompanha, se o item ainda não tinha sido editado.
+function syncSaleRelease(link, record, { now }) {
+  if (!link || link.entityType !== 'ITEM_SALE' || link.linkKind !== 'CREATED') return;
+  const item = Item.findById(link.entityId);
+  if (!item || item.status !== 'VENDIDO') return;
+  const next = saleReleaseOf(record.contractId, record.verifySaleAt);
+  if ((item.saleReleaseAt ?? null) === (next ? new Date(next).toISOString() : null)) return;
+  const wasClean = item.updatedAt === link.entityUpdatedAt;
+  const updated = itemService.updateImportedSaleRelease(item.id, next, { now });
+  if (wasClean) ExternalLink.update(link.id, { entityUpdatedAt: updated.updatedAt });
+}
+
+// `trade_verified` lidos neste lote: atualiza a liberação das vendas importadas desses contratos.
+function syncReleasesFromTransactions(transactions, { now }) {
+  const contractIds = transactions.filter((tx) => tx.type === 'trade_verified' && tx.contractId).map((tx) => tx.contractId);
+  if (!contractIds.length) return;
+  const records = ExternalRecord.findTradesByContractIds(SOURCE, contractIds);
+  const links = ExternalLink.findByRecordIds([...records.values()].map((r) => r.id));
+  for (const record of records.values()) syncSaleRelease(links.get(record.id), record, { now });
+}
+
+// Taxa que as regras da loja dariam para o preço (só para o aviso FEE_MISMATCH), ou null se a loja não tem taxa configurada.
+function expectedFeeCents(priceCents, store) {
+  try {
+    return resolveSaleNet({ salePriceCents: priceCents, store }).feeCents;
+  } catch (err) {
+    if (err instanceof AppError) return null;
+    throw err;
+  }
+}
+
+// Crédito da venda no extrato (`contract_sold` do mesmo contrato): `{ netCents, feeCents }`, `{ missing: true }` (o extrato ainda
+// não trouxe) ou `{ inconsistent: true }` (o pendente não bate com preço − taxa).
+function saleCreditOf(trade) {
+  const sold = ExternalRecord.findTransactionsByContract(SOURCE, trade.contractId, ['contract_sold']);
+  if (!sold.length) return { missing: true };
+  const tx = sold[0];
+  const netCents = tx.pendingOffsetCents;
+  if (!Number.isSafeInteger(netCents)) return { inconsistent: true };
+  if (tx.feeCents !== null && tx.feeCents !== undefined && netCents !== trade.priceCents - tx.feeCents) return { inconsistent: true };
+  return { netCents, feeCents: trade.priceCents - netCents };
+}
+
+// Vendas a importar (D299): 1) casa com a venda manual já lançada; 2) senão, escolhe a unidade em estoque e registra a venda com
+// o líquido real do extrato; 3) sem unidade = "venda sem compra no app" (tentada de novo a cada importação).
+function importSales(entries, ctx) {
+  const { batch, store, now, counts, addEntry, effectiveCutoff } = ctx;
+  const prepared = [];
+  for (const entry of entries) {
+    const mapped = externalItemMapper.mapTradeItem(entry.trade.item, { findByNameKeyAnyCategory: (key) => CatalogItem.findByNameKeyAnyCategory(key) });
+    if (!mapped.ok) {
+      counts.failed += 1;
+      addEntry(entry.record, { outcome: 'FAILED', reasonCode: mapped.reason, display: buildDisplay(entry.trade, entry.direction, null) });
+      continue;
+    }
+    prepared.push({ ...entry, mapped, matchTrade: matchTradeOf(entry.trade, mapped) });
+  }
+  if (!prepared.length) return;
+
+  const candidates = Item.findUnlinkedSales(store.id, { soldFrom: startOfPreviousLocalDay(effectiveCutoff) });
+  const matches = manualMatchService.matchSales(prepared.map((p) => p.matchTrade), candidates);
+  const link = (record, entityType, item, linkKind) =>
+    ExternalLink.create({ recordId: record.id, entityType, entityId: item.id, linkKind, batchId: batch.id, entityUpdatedAt: item.updatedAt }, { now });
+  const review = (record, candidateIds, display) => {
+    ExternalRecord.update(record.id, { tracking: 'NEEDS_REVIEW' }, { now });
+    counts.review += 1;
+    addEntry(record, { outcome: 'POSSIBLE_DUPLICATE', reasonCode: null, candidateIds, display });
+  };
+  const fail = (record, reasonCode, display, extra = {}) => {
+    counts.failed += 1;
+    addEntry(record, { outcome: 'FAILED', reasonCode, display, ...extra });
+  };
+
+  for (const entry of prepared) {
+    const { trade, direction, record, mapped, matchTrade } = entry;
+    const display = buildDisplay(trade, direction, mapped);
+    const match = matches.get(trade.externalId) || { kind: 'NONE' };
+    if (match.kind === 'AMBIGUOUS') {
+      review(record, match.candidateIds, display);
+      continue;
+    }
+    if (match.kind === 'MATCH') {
+      // Venda manual já lançada: só o vínculo (a venda manual não é alterada, nem a liberação, E9-Q10/D312).
+      const item = Item.findById(match.itemId);
+      link(record, 'ITEM_SALE', item, 'MATCHED');
+      ExternalRecord.update(record.id, { tracking: entry.tracking }, { now });
+      ImportBatchEntry.resolveOpenForRecord(record.id, 'LINKED', { now });
+      counts.matched += 1;
+      addEntry(record, { outcome: 'MATCHED', reasonCode: null, entityType: 'ITEM_SALE', entityId: item.id, display });
+      continue;
+    }
+
+    const pick = manualMatchService.pickSoldUnit(matchTrade, Item.findInStockByCatalogOrCategory({ catalogId: matchTrade.catalogId, category: mapped.category }));
+    if (pick.kind === 'AMBIGUOUS') {
+      review(record, pick.candidateIds, display);
+      continue;
+    }
+    if (pick.kind === 'NONE') {
+      // "Venda sem compra no app" (E9-Q12): não importa; o registro fica RETRY e a próxima importação tenta de novo.
+      counts.withoutPurchase += 1;
+      addEntry(record, { outcome: 'FAILED', reasonCode: 'PURCHASE_NOT_FOUND', display });
+      continue;
+    }
+
+    // Líquido real do extrato: sem o `contract_sold`, a venda fica para a próxima importação (nunca grava uma taxa estimada).
+    const credit = saleCreditOf(trade);
+    if (credit.missing) {
+      fail(record, 'SALE_TX_NOT_FOUND', display);
+      continue;
+    }
+    if (credit.inconsistent) {
+      fail(record, 'FEE_INCONSISTENT', display);
+      continue;
+    }
+
+    const releaseAt = saleReleaseOf(trade.contractId, trade.verifySaleAt);
+    try {
+      itemService.sellItem(
+        pick.itemId,
+        { saleStoreId: store.id, salePriceCents: trade.priceCents, soldAt: saleMoment(trade), netReceivedCents: credit.netCents },
+        { now, saleReleaseAt: releaseAt }
+      );
+    } catch (err) {
+      if (!(err instanceof AppError)) throw err;
+      // Ex.: ITEM_TRADE_LOCKED (o trade lock do app termina depois da venda): leva o link da unidade para conferir a data.
+      fail(record, String(err.code || 'ITEM_INVALID').slice(0, 60), display, { entityType: 'ITEM_PURCHASE', entityId: pick.itemId });
+      continue;
+    }
+    const expected = expectedFeeCents(trade.priceCents, store);
+    const feeMismatch = expected !== null && expected !== credit.feeCents;
+    const saleDisplay = feeMismatch ? buildDisplay(trade, direction, mapped, { feeCents: credit.feeCents, expectedFeeCents: expected }) : display;
+    const item = Item.findById(pick.itemId);
+    link(record, 'ITEM_SALE', item, 'CREATED');
+    ExternalRecord.update(record.id, { tracking: entry.tracking }, { now });
+    ImportBatchEntry.resolveOpenForRecord(record.id, 'CREATED', { now });
+    counts.salesCreated += 1;
+    addEntry(record, {
+      outcome: 'CREATED', reasonCode: feeMismatch ? 'FEE_MISMATCH' : null, entityType: 'ITEM_SALE', entityId: item.id, display: saleDisplay,
+    });
+  }
 }
 
 // A transação do extrato com a data mais recente (a primeira, em caso de empate).
@@ -477,6 +666,8 @@ async function runImport({
     throw new ValidationError('A data de corte já foi definida.', 'IMPORT_CUTOFF_ALREADY_SET', { field: 'cutoffAt' });
   }
   const effectiveCutoff = row.tradesCutoffAt ?? cutoffToStore;
+  // Vendas vistas na 9.2 e adiadas (DEFERRED): a primeira importação da 9.3 relê todo o histórico para processá-las (D318 seção 15).
+  const scanAll = fullScan || ExternalRecord.countTradesByTracking(source, 'DEFERRED') > 0;
 
   // 2. Trava e prazo total.
   const release = importLock.acquire();
@@ -485,7 +676,7 @@ async function runImport({
   const failure = (errorCode) => recordFailure({ trigger, fullScan, now, nowFn, cutoffAt: row.tradesCutoffAt, errorCode });
   try {
     const env = {
-      adapter, apiKey, row, store, now, nowFn, sleepFn, fetchFn, trigger, fullScan, firstImport, cutoffToStore, effectiveCutoff,
+      adapter, apiKey, row, store, now, nowFn, sleepFn, fetchFn, trigger, fullScan: scanAll, firstImport, cutoffToStore, effectiveCutoff,
       cutoffMs: Date.parse(effectiveCutoff), signal: controller.signal, deadlineAt: nowFn() + CSFLOAT_IMPORT_TOTAL_TIMEOUT_MS,
     };
 

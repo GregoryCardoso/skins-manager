@@ -129,13 +129,13 @@ describe('buildSaleRecord', () => {
 });
 
 describe('buildUnsellPatch', () => {
-  test('status EM_ESTOQUE, os 12 campos de venda null e netReceivedManual false (D122)', () => {
+  test('status EM_ESTOQUE, os 13 campos de venda null e netReceivedManual false (D122)', () => {
     const patch = buildUnsellPatch();
     const { status, ...rest } = patch;
     expect(status).toBe('EM_ESTOQUE');
     expect(Object.keys(rest).sort()).toEqual([
       'fxRateAtSale', 'netReceivedCents', 'netReceivedManual', 'saleCurrency', 'saleFeeRateApplied', 'saleFeeRoundingApplied',
-      'saleFeeTypeApplied', 'saleFixedFeeCentsApplied', 'saleHoldDaysApplied', 'saleMinFeeCentsApplied', 'salePriceCents', 'saleStoreId', 'soldAt',
+      'saleFeeTypeApplied', 'saleFixedFeeCentsApplied', 'saleHoldDaysApplied', 'saleMinFeeCentsApplied', 'salePriceCents', 'saleReleaseAt', 'saleStoreId', 'soldAt',
     ]);
     expect(patch.netReceivedManual).toBe(false);
     const { netReceivedManual, ...nulls } = rest;
