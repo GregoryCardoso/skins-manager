@@ -1300,7 +1300,9 @@
     },
     "warnings": {
       "SCAN_LIMIT_REACHED": "A leitura parou no limite de páginas. O restante fica para a próxima importação.",
-      "ORDER_NOT_GUARANTEED": "O CSFloat devolveu os trades fora de ordem; o app leu todo o histórico para não perder nada."
+      "ORDER_NOT_GUARANTEED": "O CSFloat devolveu os trades fora de ordem; o app leu todo o histórico para não perder nada.",
+      "ACCOUNT_SALE_FEE_DIFFERS": "Sua taxa de venda no CSFloat é diferente da cadastrada na loja do app. Confira em Configurações → CSFloat → Testar conexão (a loja não muda sozinha).",
+      "ACCOUNT_WITHDRAWAL_FEE_DIFFERS": "Sua taxa de saque no CSFloat é diferente da cadastrada na loja do app (só informativo)."
     },
     "undo": {
       "button": "Desfazer importação",
@@ -1549,6 +1551,56 @@
       "define": "Definir data de corte de aportes e saques",
       "change": "Alterar data de corte de aportes e saques",
       "history": "Esta importação definiu ou alterou a data de corte dos aportes e saques."
+    }
+  },
+  "balanceCheck": {
+    "button": "Conferir com o CSFloat",
+    "again": "Conferir de novo",
+    "checking": "Conferindo…",
+    "explain": "Explicar diferença",
+    "explaining": "Lendo o extrato…",
+    "register": "Registrar conferência com estes valores",
+    "matches": "O saldo bate com o CSFloat.",
+    "differs": "Diferença com o CSFloat: {available} (disponível) / {pending} (pendente).",
+    "csfloat": "CSFloat: {available} disponível · {pending} pendente",
+    "app": "App: {available} disponível · {pending} pendente",
+    "inTransit": "Em trânsito (já no CSFloat, ainda não no app): compras {purchases} · vendas {sales} · lances abertos {bids}",
+    "saleFeeDiffers": "Sua taxa de venda no CSFloat é diferente da cadastrada na loja. Confira em Configurações → CSFloat → Testar conexão.",
+    "checkedAt": "Conferido em {date}. Nada foi gravado.",
+    "explainTitle": {
+      "one": "{count} transação lida no extrato. O que não tem lançamento no app:",
+      "other": "{count} transações lidas no extrato. O que não tem lançamento no app:"
+    },
+    "nothingUnmatched": "Todas as transações do extrato têm lançamento no app.",
+    "groupCount": {
+      "one": "{count} transação",
+      "other": "{count} transações"
+    },
+    "groupBalance": "disponível {value}",
+    "groupPending": "pendente {value}",
+    "openBids": "Lances abertos (saldo reservado): {value}.",
+    "explainHint": "Antes da data de corte, ignoradas e multas são diferenças esperadas. Para acertar o saldo, registre uma conferência com ajuste.",
+    "reasons": {
+      "BEFORE_CUTOFF": "Antes da data de corte",
+      "NOT_IMPORTED": "Ainda não importado",
+      "NOT_READ": "Trade ainda não lido pelo app",
+      "IN_TRANSIT": "Em trânsito",
+      "IGNORED": "Ignorado por você",
+      "REMOVED_IN_APP": "Excluído no app",
+      "FINE": "Multa",
+      "REFUND": "Estorno",
+      "UNKNOWN_TYPE": "Tipo desconhecido"
+    },
+    "types": {
+      "deposit": "aporte",
+      "withdrawal": "saque",
+      "contract_purchased": "compra",
+      "contract_sold": "venda",
+      "trade_verified": "liberação de venda",
+      "fine": "multa",
+      "contract_purchase_refund": "estorno de compra",
+      "contract_sale_refund": "estorno de venda",
+      "rollback": "rollback"
     }
   }
 }

@@ -7,15 +7,18 @@ import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import { formatDate, formatMoney } from '@/lib/format';
 import { queryKeys } from '@/lib/queryKeys';
-import { getCurrentStoreBalances } from '@/services/api';
+import { getCsfloatIntegration, getCurrentStoreBalances } from '@/services/api';
 import type { Currency, CurrentStoreBalances, StoreBalanceSummary } from '@/types/api';
 import { Badge } from './badges';
 import { useMoneyLine } from './MoneyApprox';
+import CsfloatBalanceCheck from './CsfloatBalanceCheck';
 import StoreBalanceFormModal from './StoreBalanceFormModal';
 import StoreBalanceHistory from './StoreBalanceHistory';
 import styles from './StoreBalancesPanel.module.css';
 
-type Dialog = { kind: 'check'; store: StoreBalanceSummary } | { kind: 'history'; store: StoreBalanceSummary };
+type Dialog =
+  | { kind: 'check'; store: StoreBalanceSummary; initialAmountCents?: number }
+  | { kind: 'history'; store: StoreBalanceSummary };
 
 // Valor na moeda da loja (2.8) com o aproximado discreto ao lado, calculado no backend (D229): "≈ R$" em loja USD,
 // "≈ US$" em loja BRL. Sem cotação, o aproximado some. Saldo negativo aparece em vermelho.
@@ -35,10 +38,13 @@ function Amount({ cents, currency, usdCents, approxBrlCents, negative = false }:
   );
 }
 
-function StoreRow({ store, onCheck, onHistory }: {
+function StoreRow({ store, onCheck, onHistory, csfloat = false, onRegisterCsfloat }: {
   store: StoreBalanceSummary;
   onCheck: (store: StoreBalanceSummary) => void;
   onHistory: (store: StoreBalanceSummary) => void;
+  // A loja da integração CSFloat, com chave salva: ganha "Conferir com o CSFloat" (9.7).
+  csfloat?: boolean;
+  onRegisterCsfloat?: (store: StoreBalanceSummary, balanceCents: number) => void;
 }) {
   const t = useT();
   const tLoose = useTLoose();
@@ -115,6 +121,7 @@ function StoreRow({ store, onCheck, onHistory }: {
         </button>
         <button type="button" className={pageStyles.retry} onClick={() => onHistory(store)}>{t('storeBalances.history.open')}</button>
       </div>
+      {csfloat && onRegisterCsfloat && <CsfloatBalanceCheck onRegister={(cents) => onRegisterCsfloat(store, cents)} />}
     </li>
   );
 }
@@ -134,6 +141,8 @@ export default function StoreBalancesPanel() {
   const error = query.error ?? null;
   const loading = query.isFetching;
   const [dialog, setDialog] = useState<Dialog | null>(null);
+  // A conferência com o CSFloat aparece só na loja da integração, com a chave salva (9.7).
+  const integration = useQuery({ queryKey: queryKeys.integrations.csfloat, queryFn: ({ signal }) => getCsfloatIntegration(signal) }).data ?? null;
   const [notice, setNotice] = useState<string | null>(null);
 
   const reload = () => {
@@ -216,6 +225,8 @@ export default function StoreBalancesPanel() {
                   store={store}
                   onCheck={(target) => setDialog({ kind: 'check', store: target })}
                   onHistory={(target) => setDialog({ kind: 'history', store: target })}
+                  csfloat={Boolean(integration && integration.hasApiKey && integration.storeId === store.storeId)}
+                  onRegisterCsfloat={(target, cents) => setDialog({ kind: 'check', store: target, initialAmountCents: cents })}
                 />
               ))}
             </ul>
@@ -223,7 +234,9 @@ export default function StoreBalancesPanel() {
         </div>
       )}
 
-      {dialog?.kind === 'check' && <StoreBalanceFormModal store={dialog.store} onClose={closeDialog} onSaved={saved} />}
+      {dialog?.kind === 'check' && (
+        <StoreBalanceFormModal store={dialog.store} onClose={closeDialog} onSaved={saved} initialAmountCents={dialog.initialAmountCents ?? null} />
+      )}
       {dialog?.kind === 'history' && <StoreBalanceHistory store={dialog.store} onClose={closeDialog} />}
     </section>
   );

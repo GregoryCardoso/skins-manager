@@ -5,6 +5,7 @@ import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
 import { resolveErrorTarget } from '@/lib/formErrors';
 import { formatMoney } from '@/lib/format';
+import { formatCentsInput } from '@/lib/numberInput';
 import {
   buildCheckPreviewQuery, buildStoreBalanceBody, initialStoreBalanceState, validateStoreBalanceForm, type StoreBalanceFormState,
 } from '@/lib/storeBalanceForm';
@@ -27,19 +28,24 @@ type PreviewState =
 
 interface Props {
   store: StoreBalanceSummary;
+  // Saldo real já preenchido (9.7: "Registrar conferência com estes valores", com o saldo do CSFloat).
+  initialAmountCents?: number | null;
   onClose: () => void;
   onSaved: (message: string) => void;
 }
 
 // Conferência do saldo (D242, D247): o usuário digita o saldo REAL do site; o backend calcula o saldo na data e a diferença
 // (prévia com debounce, nada é calculado aqui). Dois caminhos: só registrar a conferência ou registrar também o ajuste.
-export default function StoreBalanceFormModal({ store, onClose, onSaved }: Props) {
+export default function StoreBalanceFormModal({ store, onClose, onSaved, initialAmountCents = null }: Props) {
   const t = useT();
   const tLoose = useTLoose();
   const language = useLanguage();
   const invalidate = useInvalidate();
 
-  const [state, setState] = useState<StoreBalanceFormState>(() => initialStoreBalanceState());
+  const [state, setState] = useState<StoreBalanceFormState>(() => {
+    const initial = initialStoreBalanceState();
+    return initialAmountCents === null ? initial : { ...initial, amountText: formatCentsInput(initialAmountCents, language) };
+  });
   const [errors, setErrors] = useState<Partial<Record<string, string>>>({});
   const [topError, setTopError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);

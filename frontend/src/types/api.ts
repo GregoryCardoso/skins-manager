@@ -912,6 +912,32 @@ export interface TransferCutoffPreview {
 
 export type CutoffTarget = 'TRADES' | 'TRANSACTIONS';
 
+// Conferência do saldo com o CSFloat (9.7, D313): só leitura.
+export interface CsfloatBalanceCheckResult {
+  checkedAt: string;
+  storeId: number;
+  store: { availableCents: number; pendingCents: number };
+  csfloat: { balanceCents: number | null; pendingBalanceCents: number | null };
+  inTransit: { purchasesCents: number; salesPendingCents: number; openBidsCents: number; count: number };
+  expected: { availableCents: number; pendingCents: number };
+  difference: { availableCents: number | null; pendingCents: number | null };
+  explained: boolean;
+  feeCheck: { saleFeeMatches: boolean | null; withdrawalFeeMatches: boolean | null };
+}
+
+export interface CsfloatBalanceExplanation {
+  checkedAt: string;
+  pagesRead: number;
+  transactionsRead: number;
+  totals: { balanceCents: number; pendingCents: number };
+  groups: { reason: string; type: string; count: number; balanceCents: number; pendingCents: number }[];
+  unmatched: { type: string; reason: string; createdAt: string; balanceOffsetCents: number; pendingOffsetCents: number }[];
+  truncated: boolean;
+  sumBalanceCents: number;
+  sumPendingCents: number;
+  openBidsCents: number;
+}
+
 export interface ImportBatchView extends ImportBatchSummary {
   entries: ImportEntryView[];
 }

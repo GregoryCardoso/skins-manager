@@ -16,5 +16,7 @@ router.put('/csfloat/api-key', validateApiKeyBody, controller.saveApiKey);
 router.delete('/csfloat/api-key', controller.removeApiKey);
 router.post('/csfloat/test', validateEmptyBody, controller.testConnection);
 router.post('/csfloat/switch-account', validateSwitchAccountBody, controller.switchAccount);
+router.get('/csfloat/balance-check', controller.balanceCheck); // 9.7: conferência com o CSFloat (só leitura)
+router.get('/csfloat/balance-check/explain', controller.balanceExplain);
 
 module.exports = router;

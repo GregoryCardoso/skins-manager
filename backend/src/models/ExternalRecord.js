@@ -163,6 +163,11 @@ function restoreCutoffTrackings(source, cutoffAt, { now = new Date() } = {}) {
   return before;
 }
 
+// Todas as transações do extrato já gravadas da fonte (conferência de saldo, 9.7).
+function listTransactions(source) {
+  return getDb().prepare("SELECT * FROM external_records WHERE source = ? AND kind = 'TRANSACTION' ORDER BY id ASC").all(source).map(toRecord);
+}
+
 // --- Aportes e saques do extrato (9.6) -----------------------------------------------------------------------------------
 const TRANSFER_TX = "r.kind = 'TRANSACTION' AND r.tx_type IN ('deposit','withdrawal')";
 
@@ -250,6 +255,7 @@ module.exports = {
   findTradesByContractIds,
   countTradesByTracking,
   listTrades,
+  listTransactions,
   listUnlinkedTransfers,
   countUnlinkedTransfers,
   closeTransfersBefore,

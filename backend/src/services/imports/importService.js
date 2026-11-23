@@ -154,6 +154,16 @@ async function readTrades(env, { transactions }) {
   return { trades: [...trades.values()], invalid, pages, orderBroken, warnings };
 }
 
+// Taxas da conta (/me) diferentes das da loja (D314): só aviso, na importação manual. Nunca muda a loja sozinho.
+function feeWarnings(account, store, trigger) {
+  if (trigger !== 'MANUAL') return [];
+  const check = integrationService.buildFeeCheck(account, store);
+  const out = [];
+  if (check.saleFeeMatches === false) out.push('ACCOUNT_SALE_FEE_DIFFERS');
+  if (check.withdrawalFeeMatches === false) out.push('ACCOUNT_WITHDRAWAL_FEE_DIFFERS');
+  return out;
+}
+
 // Alguma transação lida ainda não está gravada?
 function hasNewTransactions(transactions) {
   if (!transactions.length) return false;
@@ -794,7 +804,7 @@ async function runImport({
         : await readTrades(env, { transactions: tx.transactions });
       read = {
         transactions: tx.transactions, invalidTransactions: tx.invalid, transactionPages: tx.pages, trades: tr.trades, invalidTrades: tr.invalid, tradePages: tr.pages,
-        orderBroken: tr.orderBroken, warnings: [...tx.warnings, ...tr.warnings],
+        orderBroken: tr.orderBroken, warnings: [...tx.warnings, ...tr.warnings, ...feeWarnings(account, store, trigger)],
       };
     } catch (err) {
       if (err instanceof UpstreamError) failure(err.code);

@@ -294,6 +294,7 @@ module.exports = {
   getAdapter,
   loadRow,
   requireApiKey,
+  fetchAccount,
   assertSameAccount,
   ensureAccountLinked,
   getStatus,

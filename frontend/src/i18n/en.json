@@ -1300,7 +1300,9 @@
     },
     "warnings": {
       "SCAN_LIMIT_REACHED": "Reading stopped at the page limit. The rest is left for the next import.",
-      "ORDER_NOT_GUARANTEED": "CSFloat returned the trades out of order; the app read the whole history so nothing is missed."
+      "ORDER_NOT_GUARANTEED": "CSFloat returned the trades out of order; the app read the whole history so nothing is missed.",
+      "ACCOUNT_SALE_FEE_DIFFERS": "Your CSFloat sale fee differs from the one set in the app store. Check it in Settings → CSFloat → Test connection (the store does not change by itself).",
+      "ACCOUNT_WITHDRAWAL_FEE_DIFFERS": "Your CSFloat withdrawal fee differs from the one set in the app store (informational only)."
     },
     "undo": {
       "button": "Undo import",
@@ -1549,6 +1551,56 @@
       "define": "Set deposits and withdrawals cutoff date",
       "change": "Change deposits and withdrawals cutoff date",
       "history": "This import set or changed the deposits and withdrawals cutoff date."
+    }
+  },
+  "balanceCheck": {
+    "button": "Check against CSFloat",
+    "again": "Check again",
+    "checking": "Checking…",
+    "explain": "Explain difference",
+    "explaining": "Reading the statement…",
+    "register": "Record a balance check with these values",
+    "matches": "The balance matches CSFloat.",
+    "differs": "Difference from CSFloat: {available} (available) / {pending} (pending).",
+    "csfloat": "CSFloat: {available} available · {pending} pending",
+    "app": "App: {available} available · {pending} pending",
+    "inTransit": "In transit (already on CSFloat, not yet in the app): purchases {purchases} · sales {sales} · open bids {bids}",
+    "saleFeeDiffers": "Your CSFloat sale fee differs from the one set in the store. Check it in Settings → CSFloat → Test connection.",
+    "checkedAt": "Checked on {date}. Nothing was saved.",
+    "explainTitle": {
+      "one": "{count} transaction read in the statement. What has no entry in the app:",
+      "other": "{count} transactions read in the statement. What has no entry in the app:"
+    },
+    "nothingUnmatched": "Every statement transaction has an entry in the app.",
+    "groupCount": {
+      "one": "{count} transaction",
+      "other": "{count} transactions"
+    },
+    "groupBalance": "available {value}",
+    "groupPending": "pending {value}",
+    "openBids": "Open bids (reserved balance): {value}.",
+    "explainHint": "Before the cutoff date, ignored items and fines are expected differences. To fix the balance, record a balance check with an adjustment.",
+    "reasons": {
+      "BEFORE_CUTOFF": "Before the cutoff date",
+      "NOT_IMPORTED": "Not imported yet",
+      "NOT_READ": "Trade not read by the app yet",
+      "IN_TRANSIT": "In transit",
+      "IGNORED": "Ignored by you",
+      "REMOVED_IN_APP": "Deleted in the app",
+      "FINE": "Fine",
+      "REFUND": "Refund",
+      "UNKNOWN_TYPE": "Unknown type"
+    },
+    "types": {
+      "deposit": "deposit",
+      "withdrawal": "withdrawal",
+      "contract_purchased": "purchase",
+      "contract_sold": "sale",
+      "trade_verified": "sale release",
+      "fine": "fine",
+      "contract_purchase_refund": "purchase refund",
+      "contract_sale_refund": "sale refund",
+      "rollback": "rollback"
     }
   }
 }

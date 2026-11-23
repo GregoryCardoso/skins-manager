@@ -7,6 +7,8 @@ import type {
   CatalogRefreshResult,
   CsfloatSwitchAccountResult,
   CutoffPreview,
+  CsfloatBalanceCheckResult,
+  CsfloatBalanceExplanation,
   CutoffTarget,
   TransferCutoffPreview,
   CsfloatTestResult,
@@ -420,6 +422,12 @@ export const previewTransferCutoff = (cutoffAt: string, signal?: AbortSignal) =>
   request<TransferCutoffPreview>('GET', '/imports/csfloat/cutoff-preview', { signal, query: { cutoffAt, target: 'TRANSACTIONS' } });
 export const changeCutoff = (cutoffAt: string, target: CutoffTarget = 'TRADES') =>
   request<ImportRunResult>('POST', '/imports/csfloat/change-cutoff', { body: { cutoffAt, confirm: true, target }, timeoutMs: 150000 });
+
+// Conferência do saldo com o CSFloat (9.7): só leitura; a explicação relê o extrato inteiro (pode levar até 2 minutos).
+export const checkCsfloatBalance = (signal?: AbortSignal) =>
+  request<CsfloatBalanceCheckResult>('GET', '/integrations/csfloat/balance-check', { signal, timeoutMs: 60000 });
+export const explainCsfloatBalance = (signal?: AbortSignal) =>
+  request<CsfloatBalanceExplanation>('GET', '/integrations/csfloat/balance-check/explain', { signal, timeoutMs: 150000 });
 
 // Opção "Importar ao abrir o app" e "Reativar" (9.5).
 export const updateCsfloatIntegration = (body: IntegrationPatchBody) =>
