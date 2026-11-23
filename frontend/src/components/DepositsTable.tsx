@@ -36,6 +36,17 @@ export default function DepositsTable({ deposits, onEdit, onDelete }: Props) {
               <td className={styles.amount}>
                 {/* Valor creditado em US$ com "≈ R$" (tudo calculado no backend). Legado: "≈ US$" + selo + R$ gravado. */}
                 <MoneyApprox cents={deposit.amountUsdCents} estimated={deposit.estimated} approxCents={deposit.legacy ? null : deposit.approxBrlCents} />
+                {!deposit.legacy && deposit.feeCents !== null && deposit.feeCents !== undefined && deposit.amountStoreCents !== null && (
+                  <>
+                    <br />
+                    <small className={styles.muted}>
+                      {t('deposits.creditedAndFee', {
+                        credited: formatMoney(deposit.amountStoreCents, 'USD', language),
+                        fee: formatMoney(deposit.feeCents, 'USD', language),
+                      })}
+                    </small>
+                  </>
+                )}
                 {deposit.legacy && (
                   <>
                     <br />

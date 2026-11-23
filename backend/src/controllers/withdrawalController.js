@@ -19,7 +19,7 @@ function update(req, res) {
 }
 
 function remove(req, res) {
-  res.json({ success: true, data: withdrawalService.deleteWithdrawal(req.params.id) });
+  res.json({ success: true, data: withdrawalService.deleteWithdrawal(req.params.id, { now: req.app.locals.now() }) });
 }
 
 module.exports = { list, feeSuggestion, create, update, remove };

@@ -18,7 +18,7 @@ const fails = (fn, code, field) => expect(fn).toThrow(expect.objectContaining({ 
 describe('buildDepositRecord: criação', () => {
   test('registro mínimo: sem valor pago em R$ e sem nota', () => {
     expect(build(valid())).toEqual({
-      storeId: 1, amountStoreCents: 9200, amountBrlCents: null, depositedAt: '2026-11-10T12:00:00.000Z', note: null,
+      storeId: 1, amountStoreCents: 9200, feeCents: null, amountBrlCents: null, depositedAt: '2026-11-10T12:00:00.000Z', note: null,
     });
   });
 
@@ -116,7 +116,7 @@ describe('buildDepositRecord: edição (registro mesclado)', () => {
 
   test('parcial mantém o resto e devolve só as colunas do model', () => {
     expect(build({ amountStoreCents: 7000 }, { existing })).toEqual({
-      storeId: 1, amountStoreCents: 7000, amountBrlCents: 26000, depositedAt: '2026-01-05T12:00:00.000Z', note: 'antigo',
+      storeId: 1, amountStoreCents: 7000, feeCents: null, amountBrlCents: 26000, depositedAt: '2026-01-05T12:00:00.000Z', note: 'antigo',
     });
   });
 

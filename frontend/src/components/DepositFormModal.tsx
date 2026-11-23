@@ -18,7 +18,7 @@ import FormField from './FormField';
 import styles from './forms.module.css';
 import Modal from './Modal';
 
-const FORM_FIELDS = ['storeId', 'amountStoreCents', 'amountBrlCents', 'depositedAt', 'note'] as const;
+const FORM_FIELDS = ['storeId', 'amountStoreCents', 'feeCents', 'amountBrlCents', 'depositedAt', 'note'] as const;
 
 interface Props {
   // Sem `deposit` = novo aporte.
@@ -156,6 +156,20 @@ export default function DepositFormModal({ deposit, stores, onClose, onSaved, on
                 onChange={(e) => {
                   patch({ amountText: e.target.value });
                   clearError('amountStoreCents');
+                }}
+              />
+            )}
+          </FormField>
+          <FormField label={t('deposits.feeOptional')} error={errors.feeCents}>
+            {(c) => (
+              <input
+                {...c}
+                className={styles.input}
+                inputMode="decimal"
+                value={state.feeText}
+                onChange={(e) => {
+                  patch({ feeText: e.target.value });
+                  clearError('feeCents');
                 }}
               />
             )}

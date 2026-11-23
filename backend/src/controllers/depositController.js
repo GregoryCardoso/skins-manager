@@ -15,7 +15,7 @@ function update(req, res) {
 }
 
 function remove(req, res) {
-  res.json({ success: true, data: depositService.deleteDeposit(req.params.id) });
+  res.json({ success: true, data: depositService.deleteDeposit(req.params.id, { now: req.app.locals.now() }) });
 }
 
 module.exports = { list, create, update, remove };

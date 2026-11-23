@@ -11,19 +11,21 @@ export interface DepositFormState {
   amountText: string;
   // Valor pago em R$ (opcional, só informativo).
   paidText: string;
+  // Taxa do aporte em US$ (opcional, D311): entra no total colocado e no lucro real, não no saldo.
+  feeText: string;
   // datetime-local (hora local)
   depositedAt: string;
   note: string;
 }
 
-export type DepositFormField = 'storeId' | 'amountStoreCents' | 'amountBrlCents' | 'depositedAt';
+export type DepositFormField = 'storeId' | 'amountStoreCents' | 'feeCents' | 'amountBrlCents' | 'depositedAt';
 
 // Chaves de tradução dos erros locais.
 export type DepositFormErrors = Partial<Record<DepositFormField, string>>;
 
 // Aporte novo: data padrão = agora; sem loja escolhida.
 export function initialDepositState(now: Date = new Date()): DepositFormState {
-  return { storeId: null, amountText: '', paidText: '', depositedAt: nowLocalInput(now), note: '' };
+  return { storeId: null, amountText: '', paidText: '', feeText: '', depositedAt: nowLocalInput(now), note: '' };
 }
 
 // Edição: o gravado manda. Aporte legado (só R$): o valor pago vem pré-preenchido e a loja informativa só vem
@@ -34,6 +36,7 @@ export function depositFormFromDeposit(deposit: Deposit, language: string): Depo
     storeId: deposit.storeId !== null && storeIsUsd ? deposit.storeId : null,
     amountText: deposit.amountStoreCents === null ? '' : formatCentsInput(deposit.amountStoreCents, language),
     paidText: deposit.amountBrlCents === null ? '' : formatCentsInput(deposit.amountBrlCents, language),
+    feeText: deposit.feeCents === null || deposit.feeCents === undefined ? '' : formatCentsInput(deposit.feeCents, language),
     depositedAt: isoToLocalInput(deposit.depositedAt),
     note: deposit.note ?? '',
   };
@@ -63,6 +66,10 @@ export function validateDepositForm(state: DepositFormState, language: string): 
     const cents = parseMoneyToCents(state.paidText, language);
     if (cents === null || cents <= 0) errors.amountBrlCents = 'deposits.form.invalidMoney';
   }
+  if (state.feeText.trim() !== '') {
+    const cents = parseMoneyToCents(state.feeText, language);
+    if (cents === null || cents < 0) errors.feeCents = 'deposits.form.invalidFee';
+  }
   if (state.depositedAt.trim() === '' || localInputToIso(state.depositedAt) === null) {
     errors.depositedAt = 'deposits.form.invalidDate';
   }
@@ -77,6 +84,7 @@ export function buildDepositCreateBody(state: DepositFormState, language: string
     depositedAt: localInputToIso(state.depositedAt) ?? '',
   };
   if (state.paidText.trim() !== '') body.amountBrlCents = parseMoneyToCents(state.paidText, language) ?? 0;
+  if (state.feeText.trim() !== '') body.feeCents = parseMoneyToCents(state.feeText, language) ?? 0;
   const note = state.note.trim();
   if (note !== '') body.note = note;
   return body;
@@ -95,6 +103,12 @@ export function buildDepositPatchBody(state: DepositFormState, original: Deposit
   } else {
     const paid = parseMoneyToCents(state.paidText, language);
     if (paid !== null && paid !== original.amountBrlCents) patch.amountBrlCents = paid;
+  }
+  if (state.feeText.trim() === '') {
+    if (original.feeCents !== null && original.feeCents !== undefined) patch.feeCents = null;
+  } else {
+    const fee = parseMoneyToCents(state.feeText, language);
+    if (fee !== null && fee !== (original.feeCents ?? null)) patch.feeCents = fee;
   }
   if (state.depositedAt !== isoToLocalInput(original.depositedAt)) {
     const iso = localInputToIso(state.depositedAt);

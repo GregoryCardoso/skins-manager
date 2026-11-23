@@ -140,11 +140,16 @@ function validateBulkResolveBody(req, res, next) {
   return next();
 }
 
-// POST csfloat/change-cutoff: { cutoffAt, confirm } (a data é validada no service).
+const CUTOFF_TARGETS = ['TRADES', 'TRANSACTIONS'];
+
+// POST csfloat/change-cutoff: { cutoffAt, confirm, target? } (a data é validada no service).
 function validateChangeCutoffBody(req, res, next) {
   const body = req.body;
   requireObjectBody(body);
-  rejectUnknownFields(body, ['cutoffAt', 'confirm']);
+  rejectUnknownFields(body, ['cutoffAt', 'confirm', 'target']);
+  if (body.target !== undefined && !CUTOFF_TARGETS.includes(body.target)) {
+    throw new ValidationError('target deve ser TRADES ou TRANSACTIONS.', 'INVALID_FIELD', { field: 'target' });
+  }
   if (body.cutoffAt !== undefined && body.cutoffAt !== null && typeof body.cutoffAt !== 'string') {
     throw new ValidationError('A data de corte é inválida.', 'INVALID_DATE', { field: 'cutoffAt' });
   }
@@ -177,11 +182,12 @@ function validateBatchesQuery(req, res, next) {
 
 // GET csfloat/cutoff-preview?cutoffAt=<ISO>
 function validateCutoffPreviewQuery(req, res, next) {
-  const { cutoffAt, ...rest } = req.query;
+  const { cutoffAt, target, ...rest } = req.query;
   const unknown = Object.keys(rest)[0];
   if (unknown) throw invalidQuery(unknown);
   if (typeof cutoffAt !== 'string' || cutoffAt === '') throw new ValidationError('Informe a data de corte.', 'IMPORT_CUTOFF_REQUIRED', { field: 'cutoffAt' });
-  req.importQuery = { cutoffAt };
+  if (target !== undefined && !CUTOFF_TARGETS.includes(target)) throw invalidQuery('target');
+  req.importQuery = { cutoffAt, target: target ?? 'TRADES' };
   return next();
 }
 

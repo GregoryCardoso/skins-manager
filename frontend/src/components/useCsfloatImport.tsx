@@ -8,7 +8,7 @@ import { queryKeys } from '@/lib/queryKeys';
 import { useInvalidate } from '@/lib/useInvalidate';
 import { formatDateTime } from '@/lib/format';
 import { changeCutoff, getCsfloatIntegration, runCsfloatImport } from '@/services/api';
-import type { ImportBatchView, IntegrationView } from '@/types/api';
+import type { CutoffTarget, ImportBatchView, IntegrationView } from '@/types/api';
 import forms from './forms.module.css';
 import ConfirmDialog from './ConfirmDialog';
 import CutoffChangeModal from './CutoffChangeModal';
@@ -33,8 +33,9 @@ export interface CsfloatImportControls {
   disabledReason: ImportDisabledReason | null;
   // Começa a importação: na primeira vez abre o modal do corte; senão importa direto.
   start: (options?: { fullScan?: boolean }) => void;
-  // Abre a mudança da data de corte (9.5.1c), com a pré-visualização e a mesma trava "importando…".
-  openCutoffChange: () => void;
+  // Abre a mudança da data de corte (9.5.3) ou a definição/mudança da data dos aportes e saques (9.6), com a pré-visualização e a
+  // mesma trava "importando…".
+  openCutoffChange: (target?: CutoffTarget) => void;
   // Modais do fluxo (corte, confirmação da varredura, mudança de corte, resumo e erro): o chamador os renderiza uma vez.
   dialogs: ReactNode;
 }
@@ -57,23 +58,23 @@ export function useCsfloatImport(): CsfloatImportControls {
   const [running, setRunning] = useState(false);
   const [cutoffFor, setCutoffFor] = useState<{ fullScan: boolean } | null>(null);
   const [confirmFullScan, setConfirmFullScan] = useState(false);
-  const [changingCutoff, setChangingCutoff] = useState(false);
+  const [changingCutoff, setChangingCutoff] = useState<CutoffTarget | null>(null);
   const [result, setResult] = useState<ImportBatchView | null>(null);
   const [error, setError] = useState<unknown>(null);
 
   const disabledReason = importDisabledReason(integration, running);
 
   const execute = useCallback(
-    (body: { cutoffAt?: string; fullScan?: boolean; newCutoffAt?: string }) => {
+    (body: { cutoffAt?: string; fullScan?: boolean; newCutoffAt?: string; target?: CutoffTarget }) => {
       setRunning(true);
       setError(null);
-      const { newCutoffAt, ...runBody } = body;
-      const call = newCutoffAt ? changeCutoff(newCutoffAt) : runCsfloatImport(runBody);
+      const { newCutoffAt, target, ...runBody } = body;
+      const call = newCutoffAt ? changeCutoff(newCutoffAt, target ?? 'TRADES') : runCsfloatImport(runBody);
       call
         .then(({ batch }) => {
           setCutoffFor(null);
           setConfirmFullScan(false);
-          setChangingCutoff(false);
+          setChangingCutoff(null);
           setResult(batch); // a manual (e a mudança de corte) sempre devolve o lote
           return newCutoffAt ? invalidate('import.changeCutoff') : invalidate('import.run');
         })
@@ -107,14 +108,14 @@ export function useCsfloatImport(): CsfloatImportControls {
     [disabledReason, integration, execute],
   );
 
-  const openCutoffChange = useCallback(() => {
+  const openCutoffChange = useCallback((target: CutoffTarget = 'TRADES') => {
     if (disabledReason !== null || integration === null || integration.tradesCutoffAt === null) return;
     setError(null);
-    setChangingCutoff(true);
+    setChangingCutoff(target);
   }, [disabledReason, integration]);
 
   const errorText = error === null ? null : errorMessageFor(error, tLoose, language);
-  const inlineError = cutoffFor !== null || confirmFullScan || changingCutoff;
+  const inlineError = cutoffFor !== null || confirmFullScan || changingCutoff !== null;
 
   const dialogs = (
     <>
@@ -144,14 +145,15 @@ export function useCsfloatImport(): CsfloatImportControls {
           }}
         />
       )}
-      {changingCutoff && integration?.tradesCutoffAt && (
+      {changingCutoff !== null && integration?.tradesCutoffAt && (
         <CutoffChangeModal
-          currentCutoffAt={integration.tradesCutoffAt}
+          target={changingCutoff}
+          currentCutoffAt={changingCutoff === 'TRANSACTIONS' ? integration.transactionsCutoffAt ?? null : integration.tradesCutoffAt}
           busy={running}
           error={errorText}
-          onConfirm={(newCutoffAt) => execute({ newCutoffAt })}
+          onConfirm={(newCutoffAt) => execute({ newCutoffAt, target: changingCutoff })}
           onCancel={() => {
-            setChangingCutoff(false);
+            setChangingCutoff(null);
             setError(null);
           }}
         />

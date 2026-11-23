@@ -4,6 +4,8 @@
 // o resto orquestra os models. O saque é na moeda da loja; o valor recebido em R$ é opcional e só informativo (8.5).
 // A taxa de saque pertence ao saque e só é registrada quando ele acontece.
 const Withdrawal = require('../models/Withdrawal');
+const externalLinkService = require('./externalLinkService');
+const { runInTransaction } = require('../models/modelHelpers');
 const Store = require('../models/Store');
 const Setting = require('../models/Setting');
 const { ValidationError, NotFoundError } = require('../errors/AppError');
@@ -201,10 +203,14 @@ function updateWithdrawal(id, partial, { now = new Date() } = {}) {
   return toWithdrawalView(Withdrawal.update(id, record, { now }), storesMap(), Setting.get().usdBrlRate);
 }
 
-function deleteWithdrawal(id) {
+// Excluir um saque importado desliga o vínculo e marca o registro externo como REMOVED_IN_APP (não volta a ser importado).
+function deleteWithdrawal(id, { now = new Date() } = {}) {
   findOrFail(id);
-  Withdrawal.remove(id);
-  return { id };
+  return runInTransaction(() => {
+    externalLinkService.detachOnRemove('WITHDRAWAL', id, { now });
+    Withdrawal.remove(id);
+    return { id };
+  });
 }
 
 // Loja inexistente na consulta: 400 STORE_NOT_FOUND com field (referência na query, como no corpo).

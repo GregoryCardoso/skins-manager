@@ -35,6 +35,7 @@ const manualMatchService = require('./manualMatchService');
 const cutoffService = require('./cutoffService');
 const undoService = require('./undoService');
 const entryResolutionService = require('./entryResolutionService');
+const transferImport = require('./transferImport');
 const importViews = require('./importViews');
 
 const SOURCE = 'CSFLOAT';
@@ -205,7 +206,7 @@ function applyImport(env, read) {
   const { row, store, now, finishedAt, cutoffToStore, effectiveCutoff, steamId, account, trigger, previousCutoff = null } = env;
   const counts = {
     purchasesCreated: 0, salesCreated: 0, matched: 0, known: 0, beforeCutoff: 0, notTransferred: 0, review: 0, reverted: 0, failed: 0,
-    unknownState: 0, deferred: 0, withoutPurchase: 0, revertedBeforeImport: 0,
+    unknownState: 0, deferred: 0, withoutPurchase: 0, revertedBeforeImport: 0, depositsCreated: 0, withdrawalsCreated: 0,
   };
   const unknownTypes = {};
   const warnings = [...new Set(read.warnings)];
@@ -216,8 +217,10 @@ function applyImport(env, read) {
     {
       source: SOURCE, trigger, status: 'DONE', startedAt: stamp, finishedAt: finishedAt.toISOString(), fullScan: effectiveFullScan,
       cutoffAt: effectiveCutoff, previousTransactionCursor: row.lastTransactionId ?? null,
-      // Mudança de corte (9.5.1c, D326): o corte anterior, para o desfazer restaurá-lo.
+      // Mudança de corte (9.5.3, D326): o corte anterior, para o desfazer restaurá-lo.
       previousTradesCutoffAt: previousCutoff,
+      // O mesmo para o corte dos aportes e saques (9.6); texto vazio = ele ainda não existia.
+      previousTransactionsCutoffAt: env.previousTxCutoff ?? null,
     },
     { now }
   );
@@ -226,21 +229,33 @@ function applyImport(env, read) {
   integrationService.ensureAccountLinked(account, row, { now });
   const fingerprint = Integration.get(SOURCE).accountFingerprint;
   if (cutoffToStore) Integration.update(SOURCE, { tradesCutoffAt: cutoffToStore }, { now });
+  // Corte dos aportes e saques (9.6, E9-Q20): definido pela primeira vez ou antecipado, os que estavam antes dele voltam a ser
+  // processados; adiado, o processamento fecha os que ficaram antes (transferImport.processTransfers).
+  if (env.txCutoffToStore) {
+    Integration.update(SOURCE, { transactionsCutoffAt: env.txCutoffToStore }, { now });
+    if (env.previousTxCutoff === '' || Date.parse(env.txCutoffToStore) < Date.parse(env.previousTxCutoff)) {
+      ExternalRecord.reopenTransfersFrom(SOURCE, env.txCutoffToStore, { now });
+    }
+  }
 
   // (d) extrato: cada transação vira um registro "visto". Nenhum lançamento nasce dele na 9.2.
+  // Desde a 9.6 o tracking de uma transação já gravada não é sobrescrito (um aporte importado, antes do corte ou ignorado continua
+  // como está). Multas (`fine`) novas não viram lançamento (E9-Q26): só são contadas no resumo.
   const existingTx = ExternalRecord.findManyByExternalIds(SOURCE, 'TRANSACTION', read.transactions.map((t) => t.externalId));
+  let newFines = 0;
   for (const tx of read.transactions) {
     if (!KNOWN_TX_TYPES.includes(tx.type)) bump(unknownTypes, tx.type);
     const fields = {
-      contractId: tx.contractId, relatedTradeId: tx.tradeId, txType: tx.type, tracking: 'SEEN', externalCreatedAt: tx.createdAt,
+      contractId: tx.contractId, relatedTradeId: tx.tradeId, txType: tx.type, externalCreatedAt: tx.createdAt,
       balanceOffsetCents: tx.balanceOffsetCents, pendingOffsetCents: tx.pendingOffsetCents, feeCents: tx.feeCents,
       lastBatchId: batch.id, lastSeenAt: stamp,
     };
     const existing = existingTx.get(tx.externalId);
     if (existing) ExternalRecord.update(existing.id, fields, { now });
     else {
+      if (tx.type === 'fine') newFines += 1;
       ExternalRecord.create(
-        { source: SOURCE, kind: 'TRANSACTION', externalId: tx.externalId, accountFingerprint: fingerprint, firstBatchId: batch.id, ...fields },
+        { source: SOURCE, kind: 'TRANSACTION', externalId: tx.externalId, accountFingerprint: fingerprint, firstBatchId: batch.id, tracking: 'SEEN', ...fields },
         { now }
       );
     }
@@ -462,6 +477,10 @@ function applyImport(env, read) {
   detectReversalsFromTransactions(read.transactions, { batch, now, counts, addEntry });
   diagnostics.revertedBeforeImport = counts.revertedBeforeImport;
 
+  // (f5) aportes e saques do extrato (9.6), com a data de corte própria.
+  transferImport.processTransfers({ batch, store, now, counts, addEntry, cutoffAt: env.effectiveTxCutoff ?? null, diagnostics });
+  diagnostics.finesNotImported = newFines;
+
   // (h) cursor do extrato: a transação mais nova lida.
   const cursor = newestTransactionId(read.transactions);
   Integration.update(
@@ -478,11 +497,13 @@ function applyImport(env, read) {
     tradePagesRead: read.tradePages, transactionPagesRead: read.transactionPages, purchasesCreated: counts.purchasesCreated,
     matchedCount: counts.matched, knownCount: counts.known, beforeCutoffCount: counts.beforeCutoff, notTransferredCount: counts.notTransferred,
     reviewCount: counts.review, revertedCount: counts.reverted, failedCount: counts.failed, unknownStateCount: counts.unknownState,
-    deferredCount: counts.deferred, salesCreated: counts.salesCreated, withoutPurchaseCount: counts.withoutPurchase, unknownTypesJson: JSON.stringify(unknownTypes), diagnosticsJson: JSON.stringify(diagnostics),
+    deferredCount: counts.deferred, salesCreated: counts.salesCreated, withoutPurchaseCount: counts.withoutPurchase,
+    depositsCreated: counts.depositsCreated, withdrawalsCreated: counts.withdrawalsCreated, unknownTypesJson: JSON.stringify(unknownTypes), diagnosticsJson: JSON.stringify(diagnostics),
     warningsJson: JSON.stringify(warnings),
   });
   // A automática só guarda o lote se houver algo para mostrar (D300): criado, ligado, para conferir, revertido ou pendência nova.
-  const changed = counts.purchasesCreated + counts.salesCreated + counts.matched + counts.review + counts.reverted;
+  const changed = counts.purchasesCreated + counts.salesCreated + counts.depositsCreated + counts.withdrawalsCreated + counts.matched
+    + counts.review + counts.reverted;
   if (trigger === 'AUTO' && changed === 0 && newIssues === 0) {
     ImportBatch.remove(batch.id);
     return { batchId: null };
@@ -694,7 +715,7 @@ function autoSkipReason(row) {
 
 // `now`: Date do relógio do app. `nowFn`/`sleepFn`/`fetchFn` são injetáveis (testes).
 async function runImport({
-  trigger = 'MANUAL', cutoffAt, newCutoffAt, fullScan = false, source = SOURCE, fetchFn, now = new Date(), nowFn = Date.now, sleepFn,
+  trigger = 'MANUAL', cutoffAt, newCutoffAt, newTransactionsCutoffAt, fullScan = false, source = SOURCE, fetchFn, now = new Date(), nowFn = Date.now, sleepFn,
 } = {}) {
   // 1. Pré-condições (síncronas, antes de qualquer rede).
   const adapter = integrationService.getAdapter(source);
@@ -714,7 +735,7 @@ async function runImport({
     throw new ConflictError('Há uma operação em andamento (catálogo, cotação ou backup). Aguarde terminar e tente de novo.', 'BACKUP_BUSY');
   }
   const firstImport = row.tradesCutoffAt === null;
-  if (newCutoffAt !== undefined && firstImport) {
+  if ((newCutoffAt !== undefined || newTransactionsCutoffAt !== undefined) && firstImport) {
     throw new ConflictError('Faça a primeira importação antes de mudar a data de corte.', 'IMPORT_CUTOFF_NOT_SET');
   }
   let cutoffToStore = null;
@@ -730,8 +751,20 @@ async function runImport({
     previousCutoff = row.tradesCutoffAt;
   }
   const effectiveCutoff = previousCutoff ? cutoffToStore : row.tradesCutoffAt ?? cutoffToStore;
+  // Corte dos aportes e saques (9.6, E9-Q20): definido ou mudado só pela ação manual, sempre com varredura completa (o extrato
+  // antigo nunca foi lido). `previousTxCutoff`: '' = ainda não existia.
+  let txCutoffToStore = null;
+  let previousTxCutoff = null;
+  if (newTransactionsCutoffAt !== undefined) {
+    if (trigger !== 'MANUAL') throw new ValidationError('A importação automática não muda a data de corte.', 'INVALID_FIELD', { field: 'cutoffAt' });
+    txCutoffToStore = row.transactionsCutoffAt
+      ? cutoffService.validateCutoffChange(newTransactionsCutoffAt, row.transactionsCutoffAt, { now }).iso
+      : cutoffService.validateCutoff(newTransactionsCutoffAt, { now });
+    previousTxCutoff = row.transactionsCutoffAt ?? '';
+  }
+  const effectiveTxCutoff = txCutoffToStore ?? row.transactionsCutoffAt ?? null;
   // Vendas vistas na 9.2 e adiadas (DEFERRED): a primeira importação da 9.3 relê todo o histórico para processá-las (D318 seção 15).
-  const scanAll = fullScan || newCutoffAt !== undefined || ExternalRecord.countTradesByTracking(source, 'DEFERRED') > 0;
+  const scanAll = fullScan || newCutoffAt !== undefined || newTransactionsCutoffAt !== undefined || ExternalRecord.countTradesByTracking(source, 'DEFERRED') > 0;
 
   // 2. Trava e prazo total.
   const release = importLock.acquire();
@@ -741,6 +774,7 @@ async function runImport({
   try {
     const env = {
       adapter, apiKey, row, store, now, nowFn, sleepFn, fetchFn, trigger, fullScan: scanAll, firstImport, cutoffToStore, effectiveCutoff, previousCutoff,
+      txCutoffToStore, previousTxCutoff, effectiveTxCutoff,
       cutoffMs: Date.parse(effectiveCutoff), signal: controller.signal, deadlineAt: nowFn() + CSFLOAT_IMPORT_TOTAL_TIMEOUT_MS,
     };
 
@@ -864,22 +898,35 @@ function bulkResolveEntries(body, { now = new Date() } = {}) {
   return { entries, count: entries.length };
 }
 
-// Pré-visualização local da mudança de corte (D325): sem rede.
-function previewCutoffChange({ cutoffAt, now = new Date() } = {}) {
+// Pré-visualização local da mudança de corte (D325): sem rede. `target`: TRADES (compras e vendas) ou TRANSACTIONS (aportes e
+// saques, 9.6).
+function previewCutoffChange({ cutoffAt, target = 'TRADES', now = new Date() } = {}) {
   const row = integrationService.loadRow(SOURCE, { now });
   if (row.tradesCutoffAt === null) throw new ConflictError('Faça a primeira importação antes de mudar a data de corte.', 'IMPORT_CUTOFF_NOT_SET');
   const store = requireImportStore(row);
+  if (target === 'TRANSACTIONS') {
+    const current = row.transactionsCutoffAt ?? null;
+    const iso = current
+      ? cutoffService.validateCutoffChange(cutoffAt, current, { now }).iso
+      : cutoffService.validateCutoff(cutoffAt, { now });
+    const direction = !current ? 'FIRST' : Date.parse(iso) < Date.parse(current) ? 'BACKWARD' : 'FORWARD';
+    return {
+      target, currentCutoffAt: current, newCutoffAt: iso, direction,
+      transfers: transferImport.previewTransferCutoff({ storeId: store.id, currentCutoffAt: current, newCutoffAt: iso }),
+    };
+  }
   const { iso } = cutoffService.validateCutoffChange(cutoffAt, row.tradesCutoffAt, { now });
   return cutoffService.previewCutoffChange({ storeId: store.id, currentCutoffAt: row.tradesCutoffAt, newCutoffAt: iso });
 }
 
 // Muda a data de corte (D325): uma importação manual com varredura completa; o corte só é gravado se a leitura der certo.
-function changeCutoff({ cutoffAt, confirm, ...options } = {}) {
+function changeCutoff({ cutoffAt, confirm, target = 'TRADES', ...options } = {}) {
   if (confirm !== true) throw new ValidationError('Confirme a mudança da data de corte.', 'CONFIRMATION_REQUIRED', { field: 'confirm' });
   if (cutoffAt === undefined || cutoffAt === null || cutoffAt === '') {
     throw new ValidationError('Informe a data de corte.', 'IMPORT_CUTOFF_REQUIRED', { field: 'cutoffAt' });
   }
-  return runImport({ ...options, trigger: 'MANUAL', newCutoffAt: cutoffAt, fullScan: true });
+  const change = target === 'TRANSACTIONS' ? { newTransactionsCutoffAt: cutoffAt } : { newCutoffAt: cutoffAt };
+  return runImport({ ...options, trigger: 'MANUAL', ...change, fullScan: true });
 }
 
 function getUndoPreview(batchId) {

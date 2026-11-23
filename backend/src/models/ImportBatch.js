@@ -8,7 +8,7 @@ const FIELDS = [
   'source', 'trigger', 'status', 'startedAt', 'finishedAt', 'fullScan', 'cutoffAt', 'tradePagesRead', 'transactionPagesRead',
   'purchasesCreated', 'salesCreated', 'depositsCreated', 'withdrawalsCreated', 'matchedCount', 'knownCount', 'beforeCutoffCount',
   'notTransferredCount', 'reviewCount', 'revertedCount', 'failedCount', 'unknownStateCount', 'deferredCount', 'withoutPurchaseCount',
-  'unknownTypesJson', 'diagnosticsJson', 'warningsJson', 'previousTransactionCursor', 'previousTradesCutoffAt', 'errorCode', 'undoneAt',
+  'unknownTypesJson', 'diagnosticsJson', 'warningsJson', 'previousTransactionCursor', 'previousTradesCutoffAt', 'previousTransactionsCutoffAt', 'errorCode', 'undoneAt',
 ];
 const BOOLEANS = ['fullScan'];
 // "Mudou algo": criou ou ligou lançamentos na importação, ou ganhou um vínculo depois, pela resolução de uma pendência dele

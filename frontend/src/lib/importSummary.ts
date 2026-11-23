@@ -4,8 +4,8 @@ import type { ImportBatchCounts, ImportEntryAction, ImportEntryView } from '@/ty
 
 // Ordem e chave (`imports.counts.<key>`) de cada linha do resumo.
 export const COUNT_LINES = [
-  'purchasesCreated', 'salesCreated', 'matched', 'review', 'reverted', 'withoutPurchase', 'failed', 'unknownState', 'revertedBeforeImport',
-  'deferredSales', 'known', 'notTransferred', 'beforeCutoff',
+  'purchasesCreated', 'salesCreated', 'depositsCreated', 'withdrawalsCreated', 'matched', 'review', 'reverted', 'withoutPurchase', 'failed', 'unknownState', 'revertedBeforeImport',
+  'deferredSales', 'known', 'notTransferred', 'beforeCutoff', 'transfersAwaitingCutoff', 'finesNotImported',
 ] as const;
 export type CountKey = (typeof COUNT_LINES)[number];
 
@@ -22,7 +22,7 @@ export function summaryLines(counts: ImportBatchCounts): CountLine[] {
 // "Nada novo": nada foi criado, ligado nem exige atenção (as contagens de já importadas e de antes do corte não contam).
 export function isNothingNew(counts: ImportBatchCounts): boolean {
   return (
-    counts.purchasesCreated + counts.salesCreated + counts.matched + counts.review + counts.reverted + counts.failed + counts.unknownState
+    counts.purchasesCreated + counts.salesCreated + (counts.depositsCreated ?? 0) + (counts.withdrawalsCreated ?? 0) + counts.matched + counts.review + counts.reverted + counts.failed + counts.unknownState
     + counts.withoutPurchase === 0
   );
 }
@@ -60,6 +60,8 @@ export function entryLink(entry: ImportEntryView): string | null {
   if (entry.entityId === null) return null;
   if (entry.entityType === 'ITEM_PURCHASE') return `/?item=${entry.entityId}`;
   if (entry.entityType === 'ITEM_SALE') return `/sales?item=${entry.entityId}`;
+  // Aportes e saques (9.6): ficam na página do lucro real.
+  if (entry.entityType === 'DEPOSIT' || entry.entityType === 'WITHDRAWAL') return '/profit';
   return null;
 }
 
@@ -85,8 +87,14 @@ export function removeConfirmKey(entry: ImportEntryView): string {
 }
 
 // Rótulo do link (`imports.seeInInventory` ou `imports.seeInSales`).
-export function entryLinkLabelKey(entry: ImportEntryView): 'imports.seeInInventory' | 'imports.seeInSales' {
+export function entryLinkLabelKey(entry: ImportEntryView): 'imports.seeInInventory' | 'imports.seeInSales' | 'imports.seeInProfit' {
+  if (entry.entityType === 'DEPOSIT' || entry.entityType === 'WITHDRAWAL') return 'imports.seeInProfit';
   return entry.entityType === 'ITEM_SALE' ? 'imports.seeInSales' : 'imports.seeInInventory';
+}
+
+// Link de um candidato ("possível duplicado"): item no inventário; aporte ou saque no lucro real (9.6).
+export function candidateLink(entry: ImportEntryView, id: number): string {
+  return entry.display.txKind ? '/profit' : `/?item=${id}`;
 }
 
 // Parâmetro `?item=<id>` da página do inventário: inteiro positivo ou null (não é filtro).

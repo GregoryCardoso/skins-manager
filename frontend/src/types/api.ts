@@ -384,12 +384,15 @@ export interface Deposit {
   currency: Currency | null;
   // Valor creditado na loja (USD). Nulo no aporte legado (registrado só em R$ antes da 8.5).
   amountStoreCents: number | null;
+  // Taxa do aporte (D311, 9.6): opcional; nula = não informada (conta 0). O saldo recebe só o creditado.
+  feeCents?: number | null;
   // Valor pago em R$: informativo; nulo quando não informado.
   amountBrlCents: number | null;
   depositedAt: string;
   note: string | null;
   legacy: boolean;
   // Valor em US$ e "≈ R$" calculados pelo backend (nulos sem cotação); estimated = houve conversão R$ -> US$.
+  // Desde a 9.6 é o "total colocado": creditado + taxa.
   amountUsdCents: number | null;
   approxBrlCents: number | null;
   estimated: boolean;
@@ -399,12 +402,17 @@ export interface Deposit {
 
 export interface DepositList {
   deposits: Deposit[];
-  totals: { count: number; legacyCount: number; amountUsdCents: number | null; approxBrlCents: number | null; estimated: boolean };
+  totals: {
+    count: number; legacyCount: number; amountUsdCents: number | null; approxBrlCents: number | null; estimated: boolean;
+    // Taxas de aporte informadas (US$) e quantos aportes não informaram a taxa (9.6).
+    feeCents?: number; feeMissingCount?: number;
+  };
 }
 
 export interface DepositCreateBody {
   storeId: number;
   amountStoreCents: number;
+  feeCents?: number | null;
   amountBrlCents?: number | null;
   depositedAt: string;
   note?: string | null;
@@ -802,6 +810,8 @@ export interface ImportEntryDisplay {
   date: string | null;
   // Estado bruto do trade (texto curto do CSFloat), usado na mensagem de "estado desconhecido".
   state: string | null;
+  // Aporte ou saque do extrato (9.6); nulo nos trades.
+  txKind?: 'DEPOSIT' | 'WITHDRAWAL' | null;
   // Venda com taxa diferente da calculada pela loja (FEE_MISMATCH, 9.3): a cobrada pelo CSFloat e a das regras da loja.
   feeCents?: number | null;
   expectedFeeCents?: number | null;
@@ -839,6 +849,11 @@ export interface ImportBatchCounts {
   withoutPurchase: number;
   // Aceitos e revertidos antes de importar (9.4).
   revertedBeforeImport?: number;
+  // Aportes e saques do extrato (9.6).
+  depositsCreated?: number;
+  withdrawalsCreated?: number;
+  transfersAwaitingCutoff?: number;
+  finesNotImported?: number;
 }
 
 export interface ImportBatchSummary {
@@ -860,6 +875,8 @@ export interface ImportBatchSummary {
   openEntriesCount: number;
   // O lote mudou a data de corte (9.5.1c, D326).
   cutoffChange?: { from: string; to: string | null } | null;
+  // O lote definiu (from nulo) ou mudou a data de corte dos aportes e saques (9.6).
+  transactionsCutoffChange?: { from: string | null } | null;
 }
 
 // Pré-visualização local da mudança de corte (9.5.1c, D325).
@@ -876,6 +893,24 @@ export interface CutoffPreview {
   } | null;
   forward: { importedKept: number; openToClose: number } | null;
 }
+
+// Pré-visualização da data de corte dos aportes e saques (9.6).
+export interface TransferCutoffPreview {
+  target: 'TRANSACTIONS';
+  currentCutoffAt: string | null;
+  newCutoffAt: string;
+  direction: 'FIRST' | 'BACKWARD' | 'FORWARD';
+  transfers: {
+    deposits: { count: number; amountCents: number };
+    withdrawals: { count: number; amountCents: number };
+    openToClose: number;
+    mayHaveUnseen: boolean;
+    manualDeposits: { id: number; depositedAt: string; amountStoreCents: number }[];
+    manualWithdrawals: number;
+  };
+}
+
+export type CutoffTarget = 'TRADES' | 'TRANSACTIONS';
 
 export interface ImportBatchView extends ImportBatchSummary {
   entries: ImportEntryView[];
@@ -947,5 +982,5 @@ export interface UndoPreview {
   reason: 'NOT_LATEST' | 'NOTHING_TO_UNDO' | 'ALREADY_UNDONE' | 'FAILED_BATCH' | null;
   blockers: UndoPreviewIssue[];
   warnings: UndoPreviewIssue[];
-  counts: { itemsToDelete: number; linksToRemove: number; salesToUndo: number };
+  counts: { itemsToDelete: number; linksToRemove: number; salesToUndo: number; transfersToDelete?: number };
 }

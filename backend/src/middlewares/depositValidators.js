@@ -7,6 +7,7 @@ const { isPlainObject, rejectUnknownFields } = require('./validationHelpers');
 const BODY_FIELDS = Object.freeze({
   storeId: { type: 'number', nullable: true },
   amountStoreCents: { type: 'number', nullable: false },
+  feeCents: { type: 'number', nullable: true }, // taxa do aporte (D311, 9.6)
   amountBrlCents: { type: 'number', nullable: true },
   depositedAt: { type: 'string', nullable: false },
   note: { type: 'string', nullable: true },

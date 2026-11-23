@@ -96,7 +96,7 @@ describe('assessUndo com vendas', () => {
     const links = [{ linkKind: 'CREATED', entityType: 'ITEM_SALE', entityId: 1, entityUpdatedAt: T0 }];
     const items = new Map([[1, { id: 1, name: 'A', status: 'VENDIDO', updatedAt: T1, offSaleAt: null }]]);
     expect(assessUndo(links, items)).toEqual({
-      blockers: [], warnings: [{ code: 'ITEM_EDITED', itemId: 1, name: 'A' }], counts: { itemsToDelete: 0, linksToRemove: 0, salesToUndo: 1 },
+      blockers: [], warnings: [{ code: 'ITEM_EDITED', itemId: 1, name: 'A' }], counts: { itemsToDelete: 0, linksToRemove: 0, salesToUndo: 1, transfersToDelete: 0 },
     });
   });
   test('compra e venda do mesmo item no lote: sem bloqueio, só o item a excluir', () => {
@@ -105,11 +105,11 @@ describe('assessUndo com vendas', () => {
       { linkKind: 'CREATED', entityType: 'ITEM_SALE', entityId: 1, entityUpdatedAt: T1 },
     ];
     const items = new Map([[1, { id: 1, name: 'A', status: 'VENDIDO', updatedAt: T1, offSaleAt: null }]]);
-    expect(assessUndo(links, items)).toEqual({ blockers: [], warnings: [], counts: { itemsToDelete: 1, linksToRemove: 0, salesToUndo: 0 } });
+    expect(assessUndo(links, items)).toEqual({ blockers: [], warnings: [], counts: { itemsToDelete: 1, linksToRemove: 0, salesToUndo: 0, transfersToDelete: 0 } });
   });
   test('venda manual ligada (MATCHED) só desliga', () => {
     const links = [{ linkKind: 'MATCHED', entityType: 'ITEM_SALE', entityId: 1, entityUpdatedAt: T0 }];
-    expect(assessUndo(links, new Map()).counts).toEqual({ itemsToDelete: 0, linksToRemove: 1, salesToUndo: 0 });
+    expect(assessUndo(links, new Map()).counts).toEqual({ itemsToDelete: 0, linksToRemove: 1, salesToUndo: 0, transfersToDelete: 0 });
   });
 });
 

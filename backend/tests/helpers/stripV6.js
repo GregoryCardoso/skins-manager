@@ -14,6 +14,8 @@ const V14_COLUMNS = ['sale_release_at'];
 const stripV6 = (row) => Object.fromEntries(
   Object.entries(row).filter(([key]) => !V6_COLUMNS.includes(key)
     && !(key === 'amount_store_cents' && 'deposited_at' in row)
+    // a v16 acrescenta `fee_cents` (taxa do aporte, D311) em deposits; o fee_cents dos saques é antigo e fica
+    && !(key === 'fee_cents' && 'deposited_at' in row)
     && !(V8_COLUMNS.includes(key) && 'balance_cents' in row)
     && !V10_COLUMNS.includes(key)
     && !V14_COLUMNS.includes(key))

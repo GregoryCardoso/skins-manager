@@ -39,6 +39,9 @@ export default function ImportSummaryModal({ batch, onClose }: Props) {
               })}
             </p>
           )}
+          {batch.transactionsCutoffChange && (
+            <p role="status">{t('imports.transferCutoff.history')}</p>
+          )}
           {nothingNew && <p role="status">{t('imports.summary.nothingNew')}</p>}
           {lines.length > 0 && (
             <ul>

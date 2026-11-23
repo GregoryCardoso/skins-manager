@@ -21,7 +21,7 @@ describe('GET /api/deposits', () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual({
       success: true,
-      data: { deposits: [], totals: { count: 0, legacyCount: 0, amountUsdCents: 0, approxBrlCents: null, estimated: false } },
+      data: { deposits: [], totals: { count: 0, legacyCount: 0, feeCents: 0, feeMissingCount: 0, amountUsdCents: 0, approxBrlCents: null, estimated: false } },
     });
   });
 
@@ -31,7 +31,7 @@ describe('GET /api/deposits', () => {
     const c = (await post(body({ depositedAt: '2026-11-05T12:00:00.000Z', amountStoreCents: 50 }))).body.data;
     const res = await request(app).get('/api/deposits');
     expect(res.body.data.deposits.map((d) => d.id)).toEqual([c.id, b.id, a.id]);
-    expect(res.body.data.totals).toEqual({ count: 3, legacyCount: 0, amountUsdCents: 400, approxBrlCents: null, estimated: false });
+    expect(res.body.data.totals).toEqual({ count: 3, legacyCount: 0, feeCents: 0, feeMissingCount: 3, amountUsdCents: 400, approxBrlCents: null, estimated: false });
     expect(res.body.data.deposits[1]).toMatchObject({ storeId: storeId('CSFloat'), storeName: 'CSFloat', currency: 'USD' });
     expect(res.body.data.deposits[2]).toMatchObject({ storeId: storeId('CSMoney'), storeName: 'CSMoney' });
   });
@@ -41,7 +41,7 @@ describe('GET /api/deposits', () => {
     await post(body({ amountStoreCents: 9200, amountBrlCents: 1 }));
     const res = (await request(app).get('/api/deposits')).body.data;
     expect(res.deposits[0]).toMatchObject({ amountUsdCents: 9200, approxBrlCents: 49975, estimated: false, legacy: false });
-    expect(res.totals).toEqual({ count: 1, legacyCount: 0, amountUsdCents: 9200, approxBrlCents: 49975, estimated: false });
+    expect(res.totals).toEqual({ count: 1, legacyCount: 0, feeCents: 0, feeMissingCount: 1, amountUsdCents: 9200, approxBrlCents: 49975, estimated: false });
   });
 
   test('aporte legado entra convertido (≈) e sem cotação deixa o total nulo', async () => {
@@ -51,12 +51,12 @@ describe('GET /api/deposits', () => {
     ).run(now, now);
     await post(body({ amountStoreCents: 9200 }));
     let res = (await request(app).get('/api/deposits')).body.data;
-    expect(res.totals).toEqual({ count: 2, legacyCount: 1, amountUsdCents: null, approxBrlCents: null, estimated: true });
+    expect(res.totals).toEqual({ count: 2, legacyCount: 1, feeCents: 0, feeMissingCount: 1, amountUsdCents: null, approxBrlCents: null, estimated: true });
     expect(res.deposits[1]).toMatchObject({ legacy: true, amountStoreCents: null, amountBrlCents: 30000, amountUsdCents: null, estimated: true });
     await request(app).put('/api/settings/fx-rate').send({ usdBrlRate: 5.4321 }).expect(200);
     res = (await request(app).get('/api/deposits')).body.data;
     expect(res.deposits[1]).toMatchObject({ amountUsdCents: 5523, approxBrlCents: 30000, estimated: true });
-    expect(res.totals).toEqual({ count: 2, legacyCount: 1, amountUsdCents: 14723, approxBrlCents: 79977, estimated: true });
+    expect(res.totals).toEqual({ count: 2, legacyCount: 1, feeCents: 0, feeMissingCount: 1, amountUsdCents: 14723, approxBrlCents: 79977, estimated: true });
   });
 });
 
@@ -71,6 +71,7 @@ describe('POST /api/deposits', () => {
       storeName: 'CSFloat',
       currency: 'USD',
       amountStoreCents: 10000,
+      feeCents: null,
       amountBrlCents: 50000,
       depositedAt: '2026-11-10T12:00:00.000Z',
       note: 'pix',

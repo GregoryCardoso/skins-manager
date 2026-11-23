@@ -17,7 +17,7 @@ const deposit = (overrides: Partial<Deposit> = {}): Deposit => ({
   createdAt: '2026-11-10T15:30:45.123Z', updatedAt: '2026-11-10T15:30:45.123Z', ...overrides,
 });
 const state = (overrides: Partial<DepositFormState> = {}): DepositFormState => ({
-  storeId: 2, amountText: '100,50', paidText: '', depositedAt: '2026-11-10T12:30', note: '', ...overrides,
+  storeId: 2, amountText: '100,50', paidText: '', feeText: '', depositedAt: '2026-11-10T12:30', note: '', ...overrides,
 });
 const cents = (text: string, language: string) => buildDepositCreateBody(state({ amountText: text }), language).amountStoreCents;
 const valid = (text: string, language: string) => Object.keys(validateDepositForm(state({ amountText: text }), language)).length === 0;

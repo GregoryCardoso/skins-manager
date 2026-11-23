@@ -166,5 +166,16 @@ function pickSoldUnit(trade, units) {
   return { kind: 'UNIT', itemId: [...candidates].sort(bySaleOrder)[0].id };
 }
 
-module.exports = { matchPurchases, matchSales, pickSoldUnit, localDayNumber, floatsMatch, sameItem, sameUnit };
+// Aportes e saques (9.6, D306): mesma loja (os candidatos já vêm filtrados), mesmo valor e dia vizinho, com a regra de quantidade
+// da D298 (sem float). `transfers`: [{ key, kind, amountCents, date }]; `candidates`: aportes/saques com `catalogId = kind`,
+// `amountStoreCents` e `opAt` (data da operação).
+function matchTransfers(transfers, candidates, { localDayOf = localDayNumber } = {}) {
+  const trades = transfers.map((t) => ({
+    key: t.key, catalogId: t.kind, category: 'OUTRO', nameKey: t.kind, variant: null, phase: null, floatValue: null, paintSeed: null,
+    priceCents: t.amountCents, date: t.date,
+  }));
+  return matchTrades(trades, candidates, { localDayOf, priceOf: (c) => c.amountStoreCents, dateOf: (c) => c.opAt });
+}
+
+module.exports = { matchTransfers, matchPurchases, matchSales, pickSoldUnit, localDayNumber, floatsMatch, sameItem, sameUnit };
 

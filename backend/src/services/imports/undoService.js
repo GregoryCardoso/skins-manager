@@ -9,6 +9,8 @@ const ExternalLink = require('../../models/ExternalLink');
 const ExternalRecord = require('../../models/ExternalRecord');
 const Integration = require('../../models/Integration');
 const Item = require('../../models/Item');
+const Deposit = require('../../models/Deposit');
+const Withdrawal = require('../../models/Withdrawal');
 const { runInTransaction } = require('../../models/modelHelpers');
 const { NotFoundError, ConflictError } = require('../../errors/AppError');
 const importLock = require('./importLock');
@@ -17,6 +19,7 @@ const { buildUnsellPatch } = require('../itemService');
 const SOURCE = 'CSFLOAT';
 
 const isCreated = (link, entityType) => link.linkKind === 'CREATED' && link.entityType === entityType;
+const isTransfer = (link) => link.entityType === 'DEPOSIT' || link.entityType === 'WITHDRAWAL';
 
 // Função pura. `links`: vínculos do lote; `itemsById`: Map id -> item.
 // - Compra criada: o item será excluído. Bloqueio: vendido no app fora deste lote. Avisos: editado depois da importação, ou no holding.
@@ -29,6 +32,7 @@ function assessUndo(links, itemsById) {
   let itemsToDelete = 0;
   let linksToRemove = 0;
   let salesToUndo = 0;
+  let transfersToDelete = 0;
   const createdItems = new Set(links.filter((l) => isCreated(l, 'ITEM_PURCHASE')).map((l) => l.entityId));
   const soldByBatch = new Set(links.filter((l) => isCreated(l, 'ITEM_SALE')).map((l) => l.entityId));
   const stampOf = new Map();
@@ -57,9 +61,14 @@ function assessUndo(links, itemsById) {
       if (item && item.updatedAt !== link.entityUpdatedAt) warnings.push({ code: 'ITEM_EDITED', ...base });
       continue;
     }
+    // Aporte ou saque criado pelo lote (9.6): é excluído.
+    if (isTransfer(link)) {
+      transfersToDelete += 1;
+      continue;
+    }
     linksToRemove += 1;
   }
-  return { blockers, warnings, counts: { itemsToDelete, linksToRemove, salesToUndo } };
+  return { blockers, warnings, counts: { itemsToDelete, linksToRemove, salesToUndo, transfersToDelete } };
 }
 
 const hasChanges = (batch) => ExternalLink.listByBatch(batch.id).length > 0 ||
@@ -117,7 +126,7 @@ function assessBatch(batchId) {
 function preview(batchId, { source = SOURCE } = {}) {
   const batch = findBatchOrFail(batchId);
   const reason = undoReason(batch, ImportBatch.findLatestUndoable(source));
-  if (reason) return { undoable: false, reason, blockers: [], warnings: [], counts: { itemsToDelete: 0, linksToRemove: 0, salesToUndo: 0 } };
+  if (reason) return { undoable: false, reason, blockers: [], warnings: [], counts: { itemsToDelete: 0, linksToRemove: 0, salesToUndo: 0, transfersToDelete: 0 } };
   const { blockers, warnings, counts } = assessBatch(batchId);
   return { undoable: blockers.length === 0, reason: null, blockers, warnings, counts };
 }
@@ -148,7 +157,10 @@ function undo(batchId, { confirmWarnings = false, now = new Date(), source = SOU
       for (const link of links) {
         if (isCreated(link, 'ITEM_SALE') && !createdItems.has(link.entityId)) Item.update(link.entityId, buildUnsellPatch(), { now });
         if (isCreated(link, 'ITEM_PURCHASE')) Item.remove(link.entityId);
-        ExternalRecord.update(link.recordId, { tracking: 'WAITING_TRANSFER' }, { now });
+        // Aportes e saques criados pelo lote (9.6) são excluídos; o registro do extrato volta a "visto".
+        if (isCreated(link, 'DEPOSIT')) Deposit.remove(link.entityId);
+        if (isCreated(link, 'WITHDRAWAL')) Withdrawal.remove(link.entityId);
+        ExternalRecord.update(link.recordId, { tracking: isTransfer(link) ? 'SEEN' : 'WAITING_TRANSFER' }, { now });
       }
       ExternalLink.removeByBatch(batchId);
 
@@ -159,7 +171,10 @@ function undo(batchId, { confirmWarnings = false, now = new Date(), source = SOU
         ExternalRecord.deleteAllForSource(source);
         Integration.update(
           source,
-          { tradesCutoffAt: null, lastTransactionId: null, lastImportAt: null, lastImportStatus: null, lastImportErrorCode: null, autoImportPaused: true },
+          {
+            tradesCutoffAt: null, transactionsCutoffAt: null, lastTransactionId: null, lastImportAt: null, lastImportStatus: null,
+            lastImportErrorCode: null, autoImportPaused: true,
+          },
           { now }
         );
       } else {
@@ -173,6 +188,15 @@ function undo(batchId, { confirmWarnings = false, now = new Date(), source = SOU
           for (const id of ExternalRecord.restoreCutoffTrackings(source, batch.previousTradesCutoffAt, { now })) {
             ImportBatchEntry.resolveOpenForRecord(id, 'UNDONE', { now });
           }
+        }
+        // O lote definiu ou mudou o corte dos aportes e saques (9.6): volta o anterior ('' = não existia; tudo volta a "visto").
+        if (batch.previousTransactionsCutoffAt !== null && batch.previousTransactionsCutoffAt !== undefined) {
+          const previous = batch.previousTransactionsCutoffAt || null;
+          Integration.update(source, { transactionsCutoffAt: previous }, { now });
+          if (previous) {
+            for (const id of ExternalRecord.closeTransfersBefore(source, previous, { now })) ImportBatchEntry.resolveOpenForRecord(id, 'UNDONE', { now });
+          }
+          ExternalRecord.reopenTransfersFrom(source, previous, { now });
         }
       }
       return ImportBatch.update(batchId, { status: 'UNDONE', undoneAt: now.toISOString() });

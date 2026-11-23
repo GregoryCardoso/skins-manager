@@ -23,6 +23,9 @@ const tradeClassifier = require('./tradeClassifier');
 const externalItemMapper = require('./externalItemMapper');
 const manualMatchService = require('./manualMatchService');
 const { saleMoment, saleReleaseOf, saleCreditOf } = require('./saleImportHelpers');
+const transferImport = require('./transferImport');
+const Deposit = require('../../models/Deposit');
+const Withdrawal = require('../../models/Withdrawal');
 const { openActionsFor, RESERVED_ACTIONS } = require('./entryActions');
 const { isWeaponCategory } = require('../itemAttributesService');
 const { parseDate, formatDateTimeBr } = require('../dateUtils');
@@ -130,8 +133,27 @@ function sellImported(record, item, store, { now }) {
 }
 
 // "Criar mesmo assim": como se não houvesse candidato. Compra -> cria o item; venda -> escolhe a unidade em estoque.
+// Aporte ou saque do extrato (9.6): "Criar mesmo assim" cria o lançamento; "Ligar" liga a um aporte/saque manual sugerido.
+function createTransferLaunchInBatch(entry, record, { now }) {
+  const transfer = transferImport.transferOf(record);
+  if (transfer.error) throw conflict('Os dados deste aporte ou saque não servem para criar o lançamento.', transfer.error);
+  const entity = transferImport.createTransfer(transfer, loadStore(), { now });
+  transferImport.linkTransfer(record, transfer.kind, entity, 'CREATED', entry.batchId, { now });
+  return 'CREATED';
+}
+
+function linkTransferLaunch(entry, record, targetId, { now }) {
+  const kind = transferImport.TRANSFER_TYPES[record.txType];
+  const entity = kind === 'DEPOSIT' ? Deposit.findById(targetId) : Withdrawal.findById(targetId);
+  if (!entity) throw new NotFoundError('Lançamento não encontrado.', kind === 'DEPOSIT' ? 'DEPOSIT_NOT_FOUND' : 'WITHDRAWAL_NOT_FOUND');
+  if (ExternalLink.findByEntity(kind, entity.id)) throw conflict('Este lançamento já está ligado a outro registro do CSFloat.', 'TARGET_ALREADY_LINKED');
+  transferImport.linkTransfer(record, kind, entity, 'MATCHED', entry.batchId, { now });
+  return 'LINKED';
+}
+
 function createLaunch(entry, display, { now }) {
   const record = requireRecord(entry);
+  if (record.kind === 'TRANSACTION') return createTransferLaunchInBatch(entry, record, { now });
   const store = loadStore();
   const mapped = mappedOfDisplay(display);
   if (record.direction === 'BUY') {
@@ -162,6 +184,7 @@ function linkLaunch(entry, targetId, { now }) {
     throw new ValidationError('Escolha um dos lançamentos sugeridos.', 'IMPORT_ENTRY_ACTION_NOT_ALLOWED', { field: 'targetId' });
   }
   const record = requireRecord(entry);
+  if (record.kind === 'TRANSACTION') return linkTransferLaunch(entry, record, targetId, { now });
   const store = loadStore();
   const item = Item.findById(targetId);
   if (!item) throw new NotFoundError('Item não encontrado.', 'ITEM_NOT_FOUND');

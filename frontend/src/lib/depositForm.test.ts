@@ -29,13 +29,13 @@ const legacyDeposit = (overrides: Partial<Deposit> = {}): Deposit =>
 const store = (overrides: Partial<Store> = {}): Store => ({ id: 1, name: 'CSFloat', currency: 'USD', isActive: true, ...overrides } as Store);
 
 const state = (overrides: Partial<DepositFormState> = {}): DepositFormState => ({
-  storeId: 2, amountText: '100,50', paidText: '', depositedAt: '2026-11-10T12:30', note: '', ...overrides,
+  storeId: 2, amountText: '100,50', paidText: '', feeText: '', depositedAt: '2026-11-10T12:30', note: '', ...overrides,
 });
 
 describe('initialDepositState', () => {
   test('data padrão = agora (hora local, minutos), sem loja, valores e nota', () => {
     const now = new Date(2026, 10, 21, 9, 5, 40);
-    expect(initialDepositState(now)).toEqual({ storeId: null, amountText: '', paidText: '', depositedAt: '2026-11-21T09:05', note: '' });
+    expect(initialDepositState(now)).toEqual({ storeId: null, amountText: '', paidText: '', feeText: '', depositedAt: '2026-11-21T09:05', note: '' });
   });
 });
 

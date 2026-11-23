@@ -81,12 +81,12 @@ describe('migração v7', () => {
     const { snapshot } = seedV6(dbPath);
     const db = openDatabase(dbPath, { now: new Date('2026-11-21T12:00:00.000Z') });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(15);
+      expect(db.pragma('user_version', { simple: true })).toBe(16);
       const deposits = db.prepare('SELECT * FROM deposits ORDER BY id').all();
       expect(deposits).toHaveLength(3);
       expect(deposits.map((d) => d.id)).toEqual(snapshot.deposits.map((d) => d.id));
       deposits.forEach((row, i) => {
-        const { amount_store_cents: stored, ...rest } = row;
+        const { amount_store_cents: stored, fee_cents: feeCents, ...rest } = row; // fee_cents: v16 (nula)
         expect(stored).toBeNull(); // todo aporte antigo vira legado
         expect(rest).toEqual(snapshot.deposits[i]); // valor em R$, loja informativa, nota e carimbos intactos
       });
@@ -152,7 +152,7 @@ describe('migração v7', () => {
     const first = backups(dbPath).length;
     const db = openDatabase(dbPath);
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(15);
+      expect(db.pragma('user_version', { simple: true })).toBe(16);
       expect(backups(dbPath).length).toBe(first);
       expect(db.prepare('SELECT COUNT(*) AS n FROM deposits').get().n).toBe(3);
     } finally {

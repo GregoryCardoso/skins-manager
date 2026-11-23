@@ -112,6 +112,7 @@ export default function ProfitPage() {
             {t('deposits.total', {
               value: moneyLine({ cents: data.totals.amountUsdCents, estimated: data.totals.estimated, approxCents: data.totals.approxBrlCents }),
             })}
+            {(data.totals.feeCents ?? 0) > 0 && ` ${t('deposits.totalFees', { value: formatMoney(data.totals.feeCents ?? 0, 'USD', language) })}`}
           </p>
         )}
 

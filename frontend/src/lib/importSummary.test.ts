@@ -58,10 +58,10 @@ describe('reasonKey e entryLink', () => {
     expect(reasonKey(entry(1, 'FAILED', { reasonCode: 'CATALOG_NOT_FOUND' }))).toBe('imports.reasons.CATALOG_NOT_FOUND');
     expect(reasonKey(entry(1, 'CREATED'))).toBeNull();
   });
-  test('link só para compra de item com id', () => {
+  test('link da compra no inventário; aporte/saque (9.6) no lucro real; sem lançamento, nenhum', () => {
     expect(entryLink(entry(1, 'CREATED', { entityType: 'ITEM_PURCHASE', entityId: 55 }))).toBe('/?item=55');
     expect(entryLink(entry(1, 'FAILED'))).toBeNull();
-    expect(entryLink(entry(1, 'CREATED', { entityType: 'DEPOSIT', entityId: 3 }))).toBeNull();
+    expect(entryLink(entry(1, 'CREATED', { entityType: 'DEPOSIT', entityId: 3 }))).toBe('/profit');
   });
 });
 

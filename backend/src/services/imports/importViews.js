@@ -33,6 +33,8 @@ function toDisplay(displayJson, catalogById) {
     priceCents: display.priceCents ?? null,
     currency: display.currency ?? 'USD',
     date: display.date ?? null,
+    // Aporte ou saque do extrato (9.6): DEPOSIT | WITHDRAWAL; nulo nos trades.
+    txKind: display.txKind ?? null,
     state: display.state ?? null,
     // Venda importada com taxa diferente da calculada pela loja (FEE_MISMATCH, D299): a cobrada pelo CSFloat e a das regras.
     feeCents: display.feeCents ?? null,
@@ -86,6 +88,11 @@ function toBatchSummary(batch, { undoable = false, openEntriesCount = 0 } = {}) 
       withoutPurchase: batch.withoutPurchaseCount,
       // Aceitos e revertidos antes de importar (9.4): guardado no diagnóstico (a v13 não tem coluna própria).
       revertedBeforeImport: Number(parseJson(batch.diagnosticsJson, {}).revertedBeforeImport) || 0,
+      // Aportes e saques (9.6).
+      depositsCreated: batch.depositsCreated ?? 0,
+      withdrawalsCreated: batch.withdrawalsCreated ?? 0,
+      transfersAwaitingCutoff: Number(parseJson(batch.diagnosticsJson, {}).transfersAwaitingCutoff) || 0,
+      finesNotImported: Number(parseJson(batch.diagnosticsJson, {}).finesNotImported) || 0,
     },
     unknownTypes: parseJson(batch.unknownTypesJson, {}),
     diagnostics: parseJson(batch.diagnosticsJson, {}),
@@ -93,6 +100,9 @@ function toBatchSummary(batch, { undoable = false, openEntriesCount = 0 } = {}) 
     undoneAt: batch.undoneAt ?? null,
     // O lote mudou a data de corte (9.5.1c, D326).
     cutoffChange: batch.previousTradesCutoffAt ? { from: batch.previousTradesCutoffAt, to: batch.cutoffAt ?? null } : null,
+    // O lote definiu ou mudou o corte dos aportes e saques (9.6): `from` nulo = ainda não existia.
+    transactionsCutoffChange: batch.previousTransactionsCutoffAt === null || batch.previousTransactionsCutoffAt === undefined
+      ? null : { from: batch.previousTransactionsCutoffAt || null },
     undoable: Boolean(undoable),
     openEntriesCount,
   };

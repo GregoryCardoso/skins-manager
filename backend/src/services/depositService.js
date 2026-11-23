@@ -3,6 +3,8 @@
 // Regras dos aportes (D201, D202, D227, D232). `buildDepositRecord` é puro; o resto orquestra os models.
 // O aporte é registrado na moeda da loja (só lojas em USD, E8-Q16): `amountStoreCents` é o valor creditado e entra no
 // lucro real; `amountBrlCents` (pago em R$) é opcional e só informativo. Aporte legado (v7) = `amountStoreCents` nulo.
+// Taxa do aporte (D311, 9.6): `feeCents` opcional (nula = não informada, conta 0). O saldo da loja recebe só o creditado; o
+// "total colocado" e o lucro real usam o creditado + a taxa (a taxa foi um custo real).
 const Deposit = require('../models/Deposit');
 const Store = require('../models/Store');
 const Setting = require('../models/Setting');
@@ -11,6 +13,8 @@ const { MAX_AMOUNT_CENTS, MAX_NOTE_LENGTH } = require('../config/constants');
 const { parseDate } = require('./dateUtils');
 const { assertNotFutureDay } = require('./inventoryAgingService');
 const { toUsdBase, approxBrlOf } = require('./currencyService');
+const externalLinkService = require('./externalLinkService');
+const { runInTransaction } = require('../models/modelHelpers');
 
 const isNil = (value) => value === null || value === undefined;
 const addNullable = (a, b) => (a === null || b === null ? null : a + b);
@@ -35,11 +39,12 @@ function buildDepositRecord(input, { existing = null, store = null, now = new Da
     ? {
       storeId: existing.storeId,
       amountStoreCents: existing.amountStoreCents,
+      feeCents: existing.feeCents ?? null,
       amountBrlCents: existing.amountBrlCents,
       depositedAt: existing.depositedAt,
       note: existing.note,
     }
-    : { storeId: null, amountStoreCents: null, amountBrlCents: null, depositedAt: undefined, note: null };
+    : { storeId: null, amountStoreCents: null, feeCents: null, amountBrlCents: null, depositedAt: undefined, note: null };
   const record = { ...base };
   for (const field of Object.keys(record)) if (input && input[field] !== undefined) record[field] = input[field];
 
@@ -59,6 +64,14 @@ function buildDepositRecord(input, { existing = null, store = null, now = new Da
   // 3. valor creditado na loja
   if (isNil(record.amountStoreCents)) throw required('amountStoreCents');
   assertAmount(record.amountStoreCents, 'amountStoreCents', 'O valor creditado');
+
+  // 3b. taxa do aporte (D311): nula = não informada; 0 = paga zero
+  if (isNil(record.feeCents)) record.feeCents = null;
+  else if (!Number.isSafeInteger(record.feeCents) || record.feeCents < 0 || record.feeCents > MAX_AMOUNT_CENTS) {
+    throw new ValidationError('A taxa do aporte deve ser um inteiro de centavos maior ou igual a 0.', 'INVALID_FEE', {
+      field: 'feeCents', params: { maxCents: MAX_AMOUNT_CENTS },
+    });
+  }
 
   // 4. valor pago em R$ (opcional, só informativo)
   if (isNil(record.amountBrlCents)) record.amountBrlCents = null;
@@ -91,12 +104,13 @@ function buildDepositRecord(input, { existing = null, store = null, now = new Da
   return record;
 }
 
-// Valor do aporte na moeda base (D225, D227): o creditado na loja (USD, exato) ou, no legado, o valor em R$ convertido (≈).
+// Valor do aporte na moeda base (D225, D227, D311): o creditado na loja + a taxa (USD, exato; "total colocado") ou, no legado,
+// o valor em R$ convertido (≈, sem taxa).
 function depositBaseAmount(deposit, store, usdBrlRate) {
   if (isNil(deposit.amountStoreCents)) return toUsdBase(deposit.amountBrlCents, 'BRL', usdBrlRate);
   // Loja referenciada que não está no mapa: a moeda é desconhecida, então não se assume USD (o lucro fica nulo).
   if (!isNil(deposit.storeId) && !store) return { usdCents: null, approxBrlCents: null, estimated: false };
-  return toUsdBase(deposit.amountStoreCents, store ? store.currency : 'USD', usdBrlRate);
+  return toUsdBase(deposit.amountStoreCents + (deposit.feeCents ?? 0), store ? store.currency : 'USD', usdBrlRate);
 }
 
 function toDepositView(row, storesById, usdBrlRate = null) {
@@ -108,6 +122,7 @@ function toDepositView(row, storesById, usdBrlRate = null) {
     storeName: store ? store.name : null,
     currency: store ? store.currency : null,
     amountStoreCents: row.amountStoreCents,
+    feeCents: row.feeCents ?? null,
     amountBrlCents: row.amountBrlCents,
     depositedAt: row.depositedAt,
     note: row.note,
@@ -143,6 +158,9 @@ function listDeposits() {
     totals: {
       count: views.length,
       legacyCount: views.filter((view) => view.legacy).length,
+      // Soma das taxas de aporte informadas (na moeda da loja, USD) e quantos aportes não informaram a taxa (D311).
+      feeCents: views.reduce((acc, view) => acc + (view.legacy ? 0 : view.feeCents ?? 0), 0),
+      feeMissingCount: views.filter((view) => !view.legacy && view.feeCents === null).length,
       amountUsdCents,
       approxBrlCents: approxBrlOf(amountUsdCents, rate),
       estimated: views.some((view) => view.estimated),
@@ -164,10 +182,14 @@ function updateDeposit(id, partial, { now = new Date() } = {}) {
   return toDepositView(updated, storesMap(), currentRate());
 }
 
-function deleteDeposit(id) {
+// Excluir um aporte importado desliga o vínculo e marca o registro externo como REMOVED_IN_APP (não volta a ser importado).
+function deleteDeposit(id, { now = new Date() } = {}) {
   findOrFail(id);
-  Deposit.remove(id);
-  return { id };
+  return runInTransaction(() => {
+    externalLinkService.detachOnRemove('DEPOSIT', id, { now });
+    Deposit.remove(id);
+    return { id };
+  });
 }
 
 module.exports = { buildDepositRecord, depositBaseAmount, toDepositView, listDeposits, createDeposit, updateDeposit, deleteDeposit };

@@ -7,6 +7,8 @@ import type {
   CatalogRefreshResult,
   CsfloatSwitchAccountResult,
   CutoffPreview,
+  CutoffTarget,
+  TransferCutoffPreview,
   CsfloatTestResult,
   CatalogSearchResult,
   CatalogStatus,
@@ -413,8 +415,11 @@ export const runCsfloatImport = (body: ImportRunBody = {}) =>
 // Data de corte (9.5.1c, D325): pré-visualização local (sem rede) e a mudança, que roda uma importação com varredura completa.
 export const previewCutoffChange = (cutoffAt: string, signal?: AbortSignal) =>
   request<CutoffPreview>('GET', '/imports/csfloat/cutoff-preview', { signal, query: { cutoffAt } });
-export const changeCutoff = (cutoffAt: string) =>
-  request<ImportRunResult>('POST', '/imports/csfloat/change-cutoff', { body: { cutoffAt, confirm: true }, timeoutMs: 150000 });
+// Data de corte dos aportes e saques (9.6): a mesma rota, com target=TRANSACTIONS.
+export const previewTransferCutoff = (cutoffAt: string, signal?: AbortSignal) =>
+  request<TransferCutoffPreview>('GET', '/imports/csfloat/cutoff-preview', { signal, query: { cutoffAt, target: 'TRANSACTIONS' } });
+export const changeCutoff = (cutoffAt: string, target: CutoffTarget = 'TRADES') =>
+  request<ImportRunResult>('POST', '/imports/csfloat/change-cutoff', { body: { cutoffAt, confirm: true, target }, timeoutMs: 150000 });
 
 // Opção "Importar ao abrir o app" e "Reativar" (9.5).
 export const updateCsfloatIntegration = (body: IntegrationPatchBody) =>

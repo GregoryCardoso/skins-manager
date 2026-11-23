@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import { formatDate, formatFloat, formatMoney } from '@/lib/format';
-import { entryActions, entryLink, entryLinkLabelKey, groupEntries, reasonKey, removeConfirmKey } from '@/lib/importSummary';
+import { candidateLink, entryActions, entryLink, entryLinkLabelKey, groupEntries, reasonKey, removeConfirmKey } from '@/lib/importSummary';
 import { bulkActionsOf, commonBulkActions, type BulkEntryAction } from '@/lib/pendingActions';
 import { useInvalidate } from '@/lib/useInvalidate';
 import { ApiRequestError, bulkResolveImportEntries, reopenImportEntry, resolveImportEntry } from '@/services/api';
@@ -183,7 +183,11 @@ function EntryRow({
   const reasonText = reason && reason !== key ? reason : errorText && errorText !== errorKey ? errorText : entry.reasonCode;
   const link = entryLink(entry);
   const category = (display.category ?? 'OUTRO') as Category;
-  const title = display.name ?? display.marketHashName ?? t('imports.unknownItem');
+  // Aporte ou saque do extrato (9.6): o título é o tipo, e o valor e a taxa vão nos detalhes.
+  const title = display.txKind ? tLoose(`imports.txKind.${display.txKind}`) : display.name ?? display.marketHashName ?? t('imports.unknownItem');
+  if (display.txKind && display.feeCents !== null && display.feeCents !== undefined) {
+    details.push(t('imports.txFee', { value: formatMoney(display.feeCents, display.currency, language) }));
+  }
 
   return (
     <li className={failed ? `${styles.entry} ${styles.failedEntry}` : styles.entry}>
@@ -213,7 +217,7 @@ function EntryRow({
           <span className={styles.links}>
             {link !== null && <Link href={link} onClick={onNavigate}>{t(entryLinkLabelKey(entry))}</Link>}
             {entry.candidateIds.map((id) => (
-              <Link key={id} href={`/?item=${id}`} onClick={onNavigate}>{t('imports.seeCandidate', { id })}</Link>
+              <Link key={id} href={candidateLink(entry, id)} onClick={onNavigate}>{t('imports.seeCandidate', { id })}</Link>
             ))}
           </span>
         )}

@@ -221,7 +221,8 @@
     "IMPORT_BULK_CONFLICT": "Some pending items could not be resolved; nothing was saved.",
     "PURCHASE_IN_INTEGRATION_STORE_BEFORE_CUTOFF": "Purchase in the CSFloat store before the cutoff date.",
     "IMPORT_CUTOFF_UNCHANGED": "The new cutoff date is the same as the current one.",
-    "IMPORT_CUTOFF_NOT_SET": "Do the first import before changing the cutoff date."
+    "IMPORT_CUTOFF_NOT_SET": "Do the first import before changing the cutoff date.",
+    "INVALID_FEE": "The deposit fee must be greater than or equal to zero."
   },
   "warnings": {
     "FEES_NOT_CONFIGURED": "The store fees are not configured.",
@@ -1036,14 +1037,18 @@
       "invalidMoney": "Invalid amount. Use the format 1.25, greater than zero.",
       "invalidDate": "Invalid date.",
       "chooseStore": "Choose the store",
-      "storeRequired": "Choose the deposit's store."
+      "storeRequired": "Choose the deposit's store.",
+      "invalidFee": "Enter an amount greater than or equal to zero."
     },
     "amountStore": "Amount credited to the store (US$)",
     "noUsdStores": "No active US dollar store. Add one under Stores.",
     "legacyStoreNotUsd": "This old record's store is not in US dollars. Choose a US$ store.",
     "amountBrlOptional": "Amount paid in BRL (optional, for reference only)",
     "legacyBadge": "Old record in BRL",
-    "legacyEditHint": "This deposit was recorded in BRL only. Enter the store and the credited amount."
+    "legacyEditHint": "This deposit was recorded in BRL only. Enter the store and the credited amount.",
+    "feeOptional": "Deposit fee in US$ (optional)",
+    "creditedAndFee": "credited {credited} + fee {fee}",
+    "totalFees": "(includes {value} of deposit fees)"
   },
   "withdrawals": {
     "title": "Withdrawals",
@@ -1275,6 +1280,22 @@
       "beforeCutoff": {
         "one": "{count} before the cutoff date",
         "other": "{count} before the cutoff date"
+      },
+      "depositsCreated": {
+        "one": "{count} deposit imported",
+        "other": "{count} deposits imported"
+      },
+      "withdrawalsCreated": {
+        "one": "{count} withdrawal imported",
+        "other": "{count} withdrawals imported"
+      },
+      "transfersAwaitingCutoff": {
+        "one": "{count} deposit or withdrawal in the statement waits for the deposits and withdrawals cutoff date (set it in Imports)",
+        "other": "{count} deposits and withdrawals in the statement wait for their cutoff date (set it in Imports)"
+      },
+      "finesNotImported": {
+        "one": "{count} fine in the statement was not imported (check the store balance)",
+        "other": "{count} fines in the statement were not imported (check the store balance)"
       }
     },
     "warnings": {
@@ -1308,6 +1329,10 @@
       "bodySales": {
         "one": "{count} imported sale will be undone (the item goes back to stock).",
         "other": "{count} imported sales will be undone (the items go back to stock)."
+      },
+      "bodyTransfers": {
+        "one": "{count} imported deposit or withdrawal will be deleted.",
+        "other": "{count} imported deposits and withdrawals will be deleted."
       }
     },
     "page": {
@@ -1357,7 +1382,9 @@
       "ITEM_TRADE_LOCKED": "In the app, this item was still trade locked on the sale date. Check the item release date; the next import will try again.",
       "REVERTED_STATE_FAILED": "CSFloat marked this trade as failed or cancelled ({state}) after the import. Check it and choose \"Remove entry\" or \"Keep\".",
       "REVERTED_OFFER_CHANGED": "The Steam offer of this trade is no longer shown as accepted. It may have been reversed: check it and choose \"Remove entry\" or \"Keep\".",
-      "REVERTED_REFUND": "The CSFloat statement shows a refund for this trade. Check it and choose \"Remove entry\" or \"Keep\"."
+      "REVERTED_REFUND": "The CSFloat statement shows a refund for this trade. Check it and choose \"Remove entry\" or \"Keep\".",
+      "WITHDRAWAL_FEE_ABOVE_AMOUNT": "The fee of this withdrawal is larger than the amount withdrawn. Check on CSFloat.",
+      "WITHDRAWAL_FEE_MISMATCH": "The fee charged on this withdrawal differs from the one suggested by the store withdrawal fees (just a warning)."
     },
     "actions": {
       "REMOVE": "Remove entry",
@@ -1497,6 +1524,31 @@
       "badge": "Cutoff date changed",
       "olderHint": "Trades before the cutoff date are not imported.",
       "link": "Change cutoff date"
+    },
+    "seeInProfit": "See in real profit",
+    "txFee": "fee {value}",
+    "txKind": {
+      "DEPOSIT": "CSFloat deposit",
+      "WITHDRAWAL": "CSFloat withdrawal"
+    },
+    "transferCutoff": {
+      "title": "Deposits and withdrawals cutoff date",
+      "notSet": "The deposits and withdrawals cutoff date has not been set yet.",
+      "question": "Up to which date have I already entered deposits and withdrawals by hand? CSFloat ones from it on become deposits and withdrawals in the app (with the fee); earlier ones stay out.",
+      "baseDepositHint": "If you recorded a deposit with the current store balance (to avoid entering the history), pick a date from it on. If you will import the whole history, delete that deposit afterwards, otherwise money is counted twice.",
+      "upToDeposits": "Up to {count} deposit(s) already seen in the statement ({value}).",
+      "upToWithdrawals": "Up to {count} withdrawal(s) already seen in the statement ({value}).",
+      "mayHaveUnseen": "Setting it reads the whole statement again: deposits and withdrawals the app has not read yet also come in.",
+      "manualWarning": "You have {deposits} deposit(s) and {withdrawals} withdrawal(s) entered by hand in the CSFloat store in this period. Those with the same amount and day are linked, without duplicating; the others (like a deposit with the current balance) stay and may count the money twice.",
+      "openToClose": "{count} deposit(s) or withdrawal(s) not imported yet before the new date stop being imported. Those already imported stay.",
+      "confirm": "Save and import",
+      "blockTitle": "Deposits and withdrawals cutoff date: {date}",
+      "blockTitleNotSet": "Deposits and withdrawals cutoff date: not set",
+      "blockBody": "CSFloat deposits and withdrawals from this date on are imported; earlier ones are not.",
+      "blockBodyNotSet": "While it is not set, deposits and withdrawals in the CSFloat statement are not imported.",
+      "define": "Set deposits and withdrawals cutoff date",
+      "change": "Change deposits and withdrawals cutoff date",
+      "history": "This import set or changed the deposits and withdrawals cutoff date."
     }
   }
 }

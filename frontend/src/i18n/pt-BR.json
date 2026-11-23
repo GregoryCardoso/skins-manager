@@ -221,7 +221,8 @@
     "IMPORT_BULK_CONFLICT": "Algumas pendências não puderam ser resolvidas; nada foi gravado.",
     "PURCHASE_IN_INTEGRATION_STORE_BEFORE_CUTOFF": "Compra na loja CSFloat anterior à data de corte.",
     "IMPORT_CUTOFF_UNCHANGED": "A data de corte nova é igual à atual.",
-    "IMPORT_CUTOFF_NOT_SET": "Faça a primeira importação antes de mudar a data de corte."
+    "IMPORT_CUTOFF_NOT_SET": "Faça a primeira importação antes de mudar a data de corte.",
+    "INVALID_FEE": "A taxa do aporte deve ser um valor maior ou igual a zero."
   },
   "warnings": {
     "FEES_NOT_CONFIGURED": "As taxas da loja não estão configuradas.",
@@ -1036,14 +1037,18 @@
       "invalidMoney": "Valor inválido. Use o formato 1,25, maior que zero.",
       "invalidDate": "Data inválida.",
       "chooseStore": "Escolha a loja",
-      "storeRequired": "Escolha a loja do aporte."
+      "storeRequired": "Escolha a loja do aporte.",
+      "invalidFee": "Informe um valor maior ou igual a zero."
     },
     "amountStore": "Valor creditado na loja (US$)",
     "noUsdStores": "Nenhuma loja em dólar ativa. Cadastre uma em Lojas.",
     "legacyStoreNotUsd": "A loja deste registro antigo não é em dólar. Escolha uma loja em US$.",
     "amountBrlOptional": "Valor pago em R$ (opcional, só informativo)",
     "legacyBadge": "Registro antigo em R$",
-    "legacyEditHint": "Este aporte foi registrado só em R$. Informe a loja e o valor creditado."
+    "legacyEditHint": "Este aporte foi registrado só em R$. Informe a loja e o valor creditado.",
+    "feeOptional": "Taxa do aporte em US$ (opcional)",
+    "creditedAndFee": "creditado {credited} + taxa {fee}",
+    "totalFees": "(inclui {value} de taxas de aporte)"
   },
   "withdrawals": {
     "title": "Saques",
@@ -1275,6 +1280,22 @@
       "beforeCutoff": {
         "one": "{count} antes da data de corte",
         "other": "{count} antes da data de corte"
+      },
+      "depositsCreated": {
+        "one": "{count} aporte importado",
+        "other": "{count} aportes importados"
+      },
+      "withdrawalsCreated": {
+        "one": "{count} saque importado",
+        "other": "{count} saques importados"
+      },
+      "transfersAwaitingCutoff": {
+        "one": "{count} aporte ou saque no extrato espera a data de corte dos aportes e saques (defina em Importações)",
+        "other": "{count} aportes e saques no extrato esperam a data de corte deles (defina em Importações)"
+      },
+      "finesNotImported": {
+        "one": "{count} multa no extrato não foi importada (confira o saldo da loja)",
+        "other": "{count} multas no extrato não foram importadas (confira o saldo da loja)"
       }
     },
     "warnings": {
@@ -1308,6 +1329,10 @@
       "bodySales": {
         "one": "{count} venda importada será desfeita (o item volta ao estoque).",
         "other": "{count} vendas importadas serão desfeitas (os itens voltam ao estoque)."
+      },
+      "bodyTransfers": {
+        "one": "{count} aporte ou saque importado será excluído.",
+        "other": "{count} aportes e saques importados serão excluídos."
       }
     },
     "page": {
@@ -1357,7 +1382,9 @@
       "ITEM_TRADE_LOCKED": "No app, este item ainda estava em trade lock na data da venda. Confira a data de liberação do item; a próxima importação tenta de novo.",
       "REVERTED_STATE_FAILED": "O CSFloat marcou este trade como falho ou cancelado ({state}) depois da importação. Confira e escolha \"Remover lançamento\" ou \"Manter\".",
       "REVERTED_OFFER_CHANGED": "A oferta da Steam deste trade deixou de constar como aceita. Pode ter sido revertida: confira e escolha \"Remover lançamento\" ou \"Manter\".",
-      "REVERTED_REFUND": "O extrato do CSFloat mostra um estorno deste trade. Confira e escolha \"Remover lançamento\" ou \"Manter\"."
+      "REVERTED_REFUND": "O extrato do CSFloat mostra um estorno deste trade. Confira e escolha \"Remover lançamento\" ou \"Manter\".",
+      "WITHDRAWAL_FEE_ABOVE_AMOUNT": "A taxa deste saque é maior que o valor sacado. Confira no CSFloat.",
+      "WITHDRAWAL_FEE_MISMATCH": "A taxa cobrada neste saque é diferente da sugerida pelas taxas de saque da loja (só um aviso)."
     },
     "actions": {
       "REMOVE": "Remover lançamento",
@@ -1497,6 +1524,31 @@
       "badge": "Data de corte alterada",
       "olderHint": "Trades antes da data de corte não são importados.",
       "link": "Alterar data de corte"
+    },
+    "seeInProfit": "Ver no lucro real",
+    "txFee": "taxa {value}",
+    "txKind": {
+      "DEPOSIT": "Aporte do CSFloat",
+      "WITHDRAWAL": "Saque do CSFloat"
+    },
+    "transferCutoff": {
+      "title": "Data de corte de aportes e saques",
+      "notSet": "A data de corte dos aportes e saques ainda não foi definida.",
+      "question": "Já lancei à mão os aportes e saques até qual data? Os do CSFloat a partir dela viram aportes e saques no app (com a taxa); os anteriores ficam de fora.",
+      "baseDepositHint": "Se você registrou um aporte com o saldo atual da loja (para não lançar o histórico), use uma data a partir dele. Se for importar todo o histórico, exclua esse aporte depois, senão o dinheiro conta duas vezes.",
+      "upToDeposits": "Até {count} aporte(s) já vistos no extrato ({value}).",
+      "upToWithdrawals": "Até {count} saque(s) já vistos no extrato ({value}).",
+      "mayHaveUnseen": "A definição relê o extrato inteiro: aportes e saques que o app ainda não leu também entram.",
+      "manualWarning": "Você tem {deposits} aporte(s) e {withdrawals} saque(s) lançados à mão na loja CSFloat nesse período. Os de mesmo valor e dia são ligados, sem duplicar; os outros (como um aporte com o saldo atual) continuam e podem contar o dinheiro duas vezes.",
+      "openToClose": "{count} aporte(s) ou saque(s) ainda não importados antes da nova data deixam de ser importados. Os já importados continuam.",
+      "confirm": "Salvar e importar",
+      "blockTitle": "Data de corte de aportes e saques: {date}",
+      "blockTitleNotSet": "Data de corte de aportes e saques: não definida",
+      "blockBody": "Aportes e saques do CSFloat a partir desta data são importados; os anteriores, não.",
+      "blockBodyNotSet": "Enquanto ela não for definida, os aportes e saques do extrato do CSFloat não são importados.",
+      "define": "Definir data de corte de aportes e saques",
+      "change": "Alterar data de corte de aportes e saques",
+      "history": "Esta importação definiu ou alterou a data de corte dos aportes e saques."
     }
   }
 }

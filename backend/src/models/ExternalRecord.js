@@ -163,6 +163,48 @@ function restoreCutoffTrackings(source, cutoffAt, { now = new Date() } = {}) {
   return before;
 }
 
+// --- Aportes e saques do extrato (9.6) -----------------------------------------------------------------------------------
+const TRANSFER_TX = "r.kind = 'TRANSACTION' AND r.tx_type IN ('deposit','withdrawal')";
+
+// Registros de aporte/saque sem vínculo, nos trackings informados, do mais antigo para o mais novo.
+function listUnlinkedTransfers(source, trackings) {
+  return getDb()
+    .prepare(`SELECT r.* FROM external_records r WHERE r.source = ? AND ${TRANSFER_TX} AND r.tracking IN (${marks(trackings)}) AND ${UNLINKED}
+      ORDER BY r.external_created_at ASC, r.id ASC`)
+    .all(source, ...trackings)
+    .map(toRecord);
+}
+
+function countUnlinkedTransfers(source, trackings) {
+  return getDb()
+    .prepare(`SELECT COUNT(*) AS n FROM external_records r WHERE r.source = ? AND ${TRANSFER_TX} AND r.tracking IN (${marks(trackings)}) AND ${UNLINKED}`)
+    .get(source, ...trackings).n;
+}
+
+// Antes do corte dos aportes e saques: os sem vínculo e ainda abertos viram BEFORE_CUTOFF. Devolve os ids.
+function closeTransfersBefore(source, cutoffAt, { now = new Date() } = {}) {
+  const open = ['SEEN', 'RETRY', 'NEEDS_REVIEW'];
+  const ids = getDb()
+    .prepare(`SELECT r.id FROM external_records r WHERE r.source = ? AND ${TRANSFER_TX} AND r.tracking IN (${marks(open)}) AND ${UNLINKED}
+      AND r.external_created_at < ?`)
+    .all(source, ...open, cutoffAt)
+    .map((row) => row.id);
+  for (const id of ids) update(id, { tracking: 'BEFORE_CUTOFF' }, { now });
+  return ids;
+}
+
+// Corte dos aportes e saques mais antigo (ou definido pela primeira vez): os BEFORE_CUTOFF sem vínculo a partir dele voltam a
+// ser processados (SEEN). Com `cutoffAt` nulo (o desfazer da primeira definição), todos voltam a "vistos".
+function reopenTransfersFrom(source, cutoffAt, { now = new Date() } = {}) {
+  const ids = getDb()
+    .prepare(`SELECT r.id FROM external_records r WHERE r.source = ? AND ${TRANSFER_TX} AND r.tracking = 'BEFORE_CUTOFF' AND ${UNLINKED}
+      AND (? IS NULL OR r.external_created_at >= ?)`)
+    .all(source, cutoffAt, cutoffAt)
+    .map((row) => row.id);
+  for (const id of ids) update(id, { tracking: 'SEEN' }, { now });
+  return ids;
+}
+
 // Troca de conta (D293): os trades abertos da conta anterior viram IGNORED. Devolve os ids afetados.
 function ignoreOpenForAccountSwitch(source, { now = new Date() } = {}) {
   const ids = getDb()
@@ -208,6 +250,10 @@ module.exports = {
   findTradesByContractIds,
   countTradesByTracking,
   listTrades,
+  listUnlinkedTransfers,
+  countUnlinkedTransfers,
+  closeTransfersBefore,
+  reopenTransfersFrom,
   closeOpenUnlinkedBefore,
   findBeforeCutoffUnlinkedFrom,
   restoreCutoffTrackings,

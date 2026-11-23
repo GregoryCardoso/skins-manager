@@ -266,7 +266,7 @@ describe('undo, corte e views (puros)', () => {
     const res = assessUndo(links, items);
     expect(res.blockers).toEqual([{ code: 'ITEM_SOLD_IN_APP', itemId: 1, name: 'A' }]);
     expect(res.warnings.map((w) => w.code)).toEqual(['ITEM_EDITED', 'ITEM_IN_HOLDING']);
-    expect(res.counts).toEqual({ itemsToDelete: 2, linksToRemove: 1, salesToUndo: 0 });
+    expect(res.counts).toEqual({ itemsToDelete: 2, linksToRemove: 1, salesToUndo: 0, transfersToDelete: 0 });
   });
   test('pickLatest', () => {
     expect(pickLatest([null, '2026-11-05T00:00:00.000Z', '2026-11-08T00:00:00.000Z'])).toBe('2026-11-08T00:00:00.000Z');
