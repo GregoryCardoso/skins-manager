@@ -275,7 +275,10 @@ export default function CsfloatIntegrationCard() {
               );
             })()}
             {integration.tradesCutoffAt && (
-              <p className={styles.muted}>{t('settings.integrations.csfloat.cutoffInfo', { date: formatDateTime(integration.tradesCutoffAt, language) })}</p>
+              <p className={styles.muted}>
+                {t('settings.integrations.csfloat.cutoffInfo', { date: formatDateTime(integration.tradesCutoffAt, language) })}{' '}
+                <Link href="/imports/#cutoff">{t('imports.cutoffChange.link')}</Link>
+              </p>
             )}
             {integration.openEntriesCount > 0 && (
               <p className={styles.muted}>

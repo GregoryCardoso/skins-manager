@@ -140,6 +140,20 @@ function validateBulkResolveBody(req, res, next) {
   return next();
 }
 
+// POST csfloat/change-cutoff: { cutoffAt, confirm } (a data é validada no service).
+function validateChangeCutoffBody(req, res, next) {
+  const body = req.body;
+  requireObjectBody(body);
+  rejectUnknownFields(body, ['cutoffAt', 'confirm']);
+  if (body.cutoffAt !== undefined && body.cutoffAt !== null && typeof body.cutoffAt !== 'string') {
+    throw new ValidationError('A data de corte é inválida.', 'INVALID_DATE', { field: 'cutoffAt' });
+  }
+  if (body.confirm !== undefined && typeof body.confirm !== 'boolean') {
+    throw new ValidationError('confirm deve ser verdadeiro ou falso.', 'INVALID_FIELD', { field: 'confirm' });
+  }
+  return next();
+}
+
 const invalidQuery = (field) => new ValidationError(`Parâmetro inválido: ${field}.`, 'INVALID_QUERY', { field });
 
 // GET batches?limit=20&before=<id>: guarda `req.importQuery` (o `req.query` do Express 5 é só leitura).
@@ -161,6 +175,16 @@ function validateBatchesQuery(req, res, next) {
   return next();
 }
 
+// GET csfloat/cutoff-preview?cutoffAt=<ISO>
+function validateCutoffPreviewQuery(req, res, next) {
+  const { cutoffAt, ...rest } = req.query;
+  const unknown = Object.keys(rest)[0];
+  if (unknown) throw invalidQuery(unknown);
+  if (typeof cutoffAt !== 'string' || cutoffAt === '') throw new ValidationError('Informe a data de corte.', 'IMPORT_CUTOFF_REQUIRED', { field: 'cutoffAt' });
+  req.importQuery = { cutoffAt };
+  return next();
+}
+
 // GET entries?open=true (pendências) ou entries?ignored=true (ignoradas, 9.5.1b): exatamente um dos dois, com valor `true`.
 function validateEntriesQuery(req, res, next) {
   const { open, ignored, ...rest } = req.query;
@@ -178,4 +202,5 @@ function validateEntriesQuery(req, res, next) {
 }
 
 module.exports = {
-  validateRunBody, validateUndoBody, validateResolveBody, validateBulkResolveBody, validateEmptyBody, validateBatchesQuery, validateEntriesQuery };
+  validateRunBody, validateUndoBody, validateResolveBody, validateBulkResolveBody, validateEmptyBody, validateChangeCutoffBody,
+  validateCutoffPreviewQuery, validateBatchesQuery, validateEntriesQuery };

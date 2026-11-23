@@ -167,6 +167,13 @@ function undo(batchId, { confirmWarnings = false, now = new Date(), source = SOU
         ImportBatchEntry.resolveOpenForRecordsOfBatch(batchId, 'UNDONE', { now });
         ExternalRecord.deleteByFirstBatch(batchId);
         Integration.update(source, { lastTransactionId: batch.previousTransactionCursor, autoImportPaused: true }, { now });
+        // O lote mudou a data de corte (9.5.1c, D326): volta o corte anterior, e os trades sem vínculo voltam ao lado certo dele.
+        if (batch.previousTradesCutoffAt) {
+          Integration.update(source, { tradesCutoffAt: batch.previousTradesCutoffAt }, { now });
+          for (const id of ExternalRecord.restoreCutoffTrackings(source, batch.previousTradesCutoffAt, { now })) {
+            ImportBatchEntry.resolveOpenForRecord(id, 'UNDONE', { now });
+          }
+        }
       }
       return ImportBatch.update(batchId, { status: 'UNDONE', undoneAt: now.toISOString() });
     });

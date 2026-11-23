@@ -202,7 +202,7 @@ function bump(counter, key) {
 
 // Aplica tudo o que foi lido. Devolve { batchId }.
 function applyImport(env, read) {
-  const { row, store, now, finishedAt, cutoffToStore, effectiveCutoff, steamId, account, trigger } = env;
+  const { row, store, now, finishedAt, cutoffToStore, effectiveCutoff, steamId, account, trigger, previousCutoff = null } = env;
   const counts = {
     purchasesCreated: 0, salesCreated: 0, matched: 0, known: 0, beforeCutoff: 0, notTransferred: 0, review: 0, reverted: 0, failed: 0,
     unknownState: 0, deferred: 0, withoutPurchase: 0, revertedBeforeImport: 0,
@@ -216,6 +216,8 @@ function applyImport(env, read) {
     {
       source: SOURCE, trigger, status: 'DONE', startedAt: stamp, finishedAt: finishedAt.toISOString(), fullScan: effectiveFullScan,
       cutoffAt: effectiveCutoff, previousTransactionCursor: row.lastTransactionId ?? null,
+      // Mudança de corte (9.5.1c, D326): o corte anterior, para o desfazer restaurá-lo.
+      previousTradesCutoffAt: previousCutoff,
     },
     { now }
   );
@@ -254,6 +256,19 @@ function applyImport(env, read) {
   };
   const diagnostics = { trades: { BUY: {}, SELL: {} }, duplicateContractIds: 0, tradesRead: trades.length, transactionsRead: read.transactions.length,
     invalidTrades: read.invalidTrades.length, invalidTransactions: read.invalidTransactions };
+  // Mudança de corte (D325), antes de classificar: adiar fecha os trades sem vínculo e ainda abertos antes do corte novo (o que já
+  // foi importado fica); antecipar reabre os BEFORE_CUTOFF sem vínculo a partir do corte novo, para o fluxo normal.
+  let reopenBeforeCutoff = new Set();
+  if (previousCutoff) {
+    if (Date.parse(effectiveCutoff) > Date.parse(previousCutoff)) {
+      for (const id of ExternalRecord.closeOpenUnlinkedBefore(SOURCE, effectiveCutoff, { now })) {
+        ImportBatchEntry.resolveOpenForRecord(id, 'IGNORED', { now });
+      }
+    } else {
+      reopenBeforeCutoff = ExternalRecord.findBeforeCutoffUnlinkedFrom(SOURCE, effectiveCutoff);
+    }
+  }
+
   // Reversões em que o usuário escolheu "Manter" (9.4, D301): não voltam a ser acusadas.
   const keptRecords = ImportBatchEntry.recordIdsWithResolution('KEPT', [...existingTrades.values()].map((r) => r.id));
   const contractSeen = new Set();
@@ -323,6 +338,7 @@ function applyImport(env, read) {
     const cls = tradeClassifier.classify(trade, direction, existing, {
       now, cutoffMs, refundSignal: refundContracts[direction].has(trade.contractId), hasLink: Boolean(link),
       keptReversal: Boolean(existing && keptRecords.has(existing.id)),
+      reopenBeforeCutoff: Boolean(existing && reopenBeforeCutoff.has(existing.id)),
     });
     if (cls.entry && cls.entry.reasonCode === 'UNKNOWN_STATE') {
       bump(unknownTypes, tradeClassifier.stateKind(trade.rawState) === 'UNKNOWN' ? `state:${trade.rawState}` : `offer:${trade.offerState}`);
@@ -678,7 +694,7 @@ function autoSkipReason(row) {
 
 // `now`: Date do relógio do app. `nowFn`/`sleepFn`/`fetchFn` são injetáveis (testes).
 async function runImport({
-  trigger = 'MANUAL', cutoffAt, fullScan = false, source = SOURCE, fetchFn, now = new Date(), nowFn = Date.now, sleepFn,
+  trigger = 'MANUAL', cutoffAt, newCutoffAt, fullScan = false, source = SOURCE, fetchFn, now = new Date(), nowFn = Date.now, sleepFn,
 } = {}) {
   // 1. Pré-condições (síncronas, antes de qualquer rede).
   const adapter = integrationService.getAdapter(source);
@@ -698,23 +714,33 @@ async function runImport({
     throw new ConflictError('Há uma operação em andamento (catálogo, cotação ou backup). Aguarde terminar e tente de novo.', 'BACKUP_BUSY');
   }
   const firstImport = row.tradesCutoffAt === null;
+  if (newCutoffAt !== undefined && firstImport) {
+    throw new ConflictError('Faça a primeira importação antes de mudar a data de corte.', 'IMPORT_CUTOFF_NOT_SET');
+  }
   let cutoffToStore = null;
   if (firstImport) cutoffToStore = cutoffService.validateCutoff(cutoffAt, { now });
   else if (cutoffAt !== undefined && cutoffAt !== null) {
     throw new ValidationError('A data de corte já foi definida.', 'IMPORT_CUTOFF_ALREADY_SET', { field: 'cutoffAt' });
   }
-  const effectiveCutoff = row.tradesCutoffAt ?? cutoffToStore;
+  // Mudança da data de corte (9.5.1c, D325): só manual, depois da primeira importação, sempre com varredura completa.
+  let previousCutoff = null;
+  if (newCutoffAt !== undefined) {
+    if (trigger !== 'MANUAL') throw new ValidationError('A importação automática não muda a data de corte.', 'INVALID_FIELD', { field: 'cutoffAt' });
+    cutoffToStore = cutoffService.validateCutoffChange(newCutoffAt, row.tradesCutoffAt, { now }).iso;
+    previousCutoff = row.tradesCutoffAt;
+  }
+  const effectiveCutoff = previousCutoff ? cutoffToStore : row.tradesCutoffAt ?? cutoffToStore;
   // Vendas vistas na 9.2 e adiadas (DEFERRED): a primeira importação da 9.3 relê todo o histórico para processá-las (D318 seção 15).
-  const scanAll = fullScan || ExternalRecord.countTradesByTracking(source, 'DEFERRED') > 0;
+  const scanAll = fullScan || newCutoffAt !== undefined || ExternalRecord.countTradesByTracking(source, 'DEFERRED') > 0;
 
   // 2. Trava e prazo total.
   const release = importLock.acquire();
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), CSFLOAT_IMPORT_TOTAL_TIMEOUT_MS);
-  const failure = (errorCode) => recordFailure({ trigger, fullScan, now, nowFn, cutoffAt: row.tradesCutoffAt, errorCode });
+  const failure = (errorCode) => recordFailure({ trigger, fullScan: scanAll, now, nowFn, cutoffAt: row.tradesCutoffAt, errorCode });
   try {
     const env = {
-      adapter, apiKey, row, store, now, nowFn, sleepFn, fetchFn, trigger, fullScan: scanAll, firstImport, cutoffToStore, effectiveCutoff,
+      adapter, apiKey, row, store, now, nowFn, sleepFn, fetchFn, trigger, fullScan: scanAll, firstImport, cutoffToStore, effectiveCutoff, previousCutoff,
       cutoffMs: Date.parse(effectiveCutoff), signal: controller.signal, deadlineAt: nowFn() + CSFLOAT_IMPORT_TOTAL_TIMEOUT_MS,
     };
 
@@ -838,6 +864,24 @@ function bulkResolveEntries(body, { now = new Date() } = {}) {
   return { entries, count: entries.length };
 }
 
+// Pré-visualização local da mudança de corte (D325): sem rede.
+function previewCutoffChange({ cutoffAt, now = new Date() } = {}) {
+  const row = integrationService.loadRow(SOURCE, { now });
+  if (row.tradesCutoffAt === null) throw new ConflictError('Faça a primeira importação antes de mudar a data de corte.', 'IMPORT_CUTOFF_NOT_SET');
+  const store = requireImportStore(row);
+  const { iso } = cutoffService.validateCutoffChange(cutoffAt, row.tradesCutoffAt, { now });
+  return cutoffService.previewCutoffChange({ storeId: store.id, currentCutoffAt: row.tradesCutoffAt, newCutoffAt: iso });
+}
+
+// Muda a data de corte (D325): uma importação manual com varredura completa; o corte só é gravado se a leitura der certo.
+function changeCutoff({ cutoffAt, confirm, ...options } = {}) {
+  if (confirm !== true) throw new ValidationError('Confirme a mudança da data de corte.', 'CONFIRMATION_REQUIRED', { field: 'confirm' });
+  if (cutoffAt === undefined || cutoffAt === null || cutoffAt === '') {
+    throw new ValidationError('Informe a data de corte.', 'IMPORT_CUTOFF_REQUIRED', { field: 'cutoffAt' });
+  }
+  return runImport({ ...options, trigger: 'MANUAL', newCutoffAt: cutoffAt, fullScan: true });
+}
+
 function getUndoPreview(batchId) {
   return undoService.preview(batchId);
 }
@@ -856,6 +900,8 @@ module.exports = {
   listBatches,
   listOpenEntries,
   resolveEntry,
+  previewCutoffChange,
+  changeCutoff,
   listIgnoredEntries,
   reopenEntry,
   bulkResolveEntries,

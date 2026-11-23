@@ -114,6 +114,55 @@ function countTradesByTracking(source, tracking) {
   return getDb().prepare("SELECT COUNT(*) AS n FROM external_records WHERE source = ? AND kind = 'TRADE' AND tracking = ?").get(source, tracking).n;
 }
 
+// Todos os trades da fonte (a pré-visualização da mudança de corte filtra em memória; poucas centenas de linhas).
+function listTrades(source) {
+  return getDb().prepare("SELECT * FROM external_records WHERE source = ? AND kind = 'TRADE' ORDER BY id ASC").all(source).map(toRecord);
+}
+
+// Data da operação do registro (contract.sold_at, ou a criação do trade), a mesma usada contra o corte.
+const OPERATION_AT = 'COALESCE(r.sold_at, r.external_created_at)';
+const UNLINKED = "NOT EXISTS (SELECT 1 FROM external_links l WHERE l.record_id = r.id)";
+
+// Adiar o corte (D325): trades SEM vínculo e ainda abertos antes do corte novo viram BEFORE_CUTOFF. Devolve os ids.
+function closeOpenUnlinkedBefore(source, cutoffAt, { now = new Date() } = {}) {
+  const open = ['RETRY', 'WAITING_TRANSFER', 'UNKNOWN_STATE', 'NEEDS_REVIEW', 'DEFERRED'];
+  const ids = getDb()
+    .prepare(`SELECT r.id FROM external_records r WHERE r.source = ? AND r.kind = 'TRADE' AND r.tracking IN (${marks(open)})
+      AND ${UNLINKED} AND ${OPERATION_AT} < ?`)
+    .all(source, ...open, cutoffAt)
+    .map((row) => row.id);
+  for (const id of ids) update(id, { tracking: 'BEFORE_CUTOFF' }, { now });
+  return ids;
+}
+
+// Ids dos trades BEFORE_CUTOFF sem vínculo com a data a partir de `fromAt` (antecipar o corte: voltam a ser avaliados).
+function findBeforeCutoffUnlinkedFrom(source, fromAt) {
+  return new Set(getDb()
+    .prepare(`SELECT r.id FROM external_records r WHERE r.source = ? AND r.kind = 'TRADE' AND r.tracking = 'BEFORE_CUTOFF'
+      AND ${UNLINKED} AND ${OPERATION_AT} >= ?`)
+    .all(source, fromAt)
+    .map((row) => row.id));
+}
+
+// Desfazer a mudança de corte (D326): com o corte restaurado, os trades SEM vínculo antes dele voltam a BEFORE_CUTOFF (fora os
+// decididos), e os BEFORE_CUTOFF a partir dele voltam a ser reavaliados (RETRY). Devolve os ids que viraram BEFORE_CUTOFF.
+function restoreCutoffTrackings(source, cutoffAt, { now = new Date() } = {}) {
+  const keep = ['IGNORED', 'REMOVED_IN_APP', 'REVERTED', 'BEFORE_CUTOFF', 'CLOSED_NOT_TRANSFERRED'];
+  const before = getDb()
+    .prepare(`SELECT r.id FROM external_records r WHERE r.source = ? AND r.kind = 'TRADE' AND r.tracking NOT IN (${marks(keep)})
+      AND ${UNLINKED} AND ${OPERATION_AT} < ?`)
+    .all(source, ...keep, cutoffAt)
+    .map((row) => row.id);
+  for (const id of before) update(id, { tracking: 'BEFORE_CUTOFF' }, { now });
+  const after = getDb()
+    .prepare(`SELECT r.id FROM external_records r WHERE r.source = ? AND r.kind = 'TRADE' AND r.tracking = 'BEFORE_CUTOFF'
+      AND ${UNLINKED} AND ${OPERATION_AT} >= ?`)
+    .all(source, cutoffAt)
+    .map((row) => row.id);
+  for (const id of after) update(id, { tracking: 'RETRY' }, { now });
+  return before;
+}
+
 // Troca de conta (D293): os trades abertos da conta anterior viram IGNORED. Devolve os ids afetados.
 function ignoreOpenForAccountSwitch(source, { now = new Date() } = {}) {
   const ids = getDb()
@@ -158,6 +207,10 @@ module.exports = {
   findContractIdsWithTransactionTypes,
   findTradesByContractIds,
   countTradesByTracking,
+  listTrades,
+  closeOpenUnlinkedBefore,
+  findBeforeCutoffUnlinkedFrom,
+  restoreCutoffTrackings,
   ignoreOpenForAccountSwitch,
   deleteByFirstBatch,
   deleteAllForSource,

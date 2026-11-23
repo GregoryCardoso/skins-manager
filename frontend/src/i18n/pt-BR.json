@@ -219,7 +219,9 @@
     "IMPORT_ENTRY_WARNINGS_NOT_CONFIRMED": "Confirme o aviso para continuar.",
     "IMPORT_ENTRY_NOT_REOPENABLE": "Esta pendência não pode voltar para a lista.",
     "IMPORT_BULK_CONFLICT": "Algumas pendências não puderam ser resolvidas; nada foi gravado.",
-    "PURCHASE_IN_INTEGRATION_STORE_BEFORE_CUTOFF": "Compra na loja CSFloat anterior à data de corte."
+    "PURCHASE_IN_INTEGRATION_STORE_BEFORE_CUTOFF": "Compra na loja CSFloat anterior à data de corte.",
+    "IMPORT_CUTOFF_UNCHANGED": "A data de corte nova é igual à atual.",
+    "IMPORT_CUTOFF_NOT_SET": "Faça a primeira importação antes de mudar a data de corte."
   },
   "warnings": {
     "FEES_NOT_CONFIGURED": "As taxas da loja não estão configuradas.",
@@ -1463,6 +1465,38 @@
         "one": "{count} pendência não pôde ser resolvida (marcada abaixo). Nada foi gravado: desmarque-a e repita.",
         "other": "{count} pendências não puderam ser resolvidas (marcadas abaixo). Nada foi gravado: desmarque-as e repita."
       }
+    },
+    "fullScanConfirm": {
+      "title": "Varredura completa",
+      "body": "O app vai ler de novo todo o histórico de trades e do extrato do CSFloat, sem parar onde a última importação parou. Isso usa mais requisições e pode levar até 2 minutos. Nada é duplicado: trades já importados são reconhecidos pelo ID, e os seus lançamentos feitos à mão continuam sendo ligados pelo float (ou por item, preço e dia). Os trades anteriores à data de corte ({date}) continuam de fora, para o dinheiro que já está nos seus lançamentos e aportes não ser contado duas vezes. Para importar trades mais antigos, altere a data de corte na página Importações.",
+      "confirm": "Fazer varredura completa"
+    },
+    "cutoffChange": {
+      "title": "Alterar data de corte",
+      "blockTitle": "Data de corte: {date}",
+      "blockBody": "Até esta data, você já lançou tudo à mão ou o saldo dessa época está num aporte. Trades anteriores a ela não são importados.",
+      "backwardHelp": "Data mais antiga: importa os trades entre a nova data e a atual. Compras novas descontam do saldo da loja CSFloat, e vendas novas creditam. Se um aporte seu já incluía esse período, o dinheiro será contado duas vezes.",
+      "forwardHelp": "Data mais recente: nada do que já foi importado é apagado. Os trades ainda não importados antes da nova data deixam de ser importados, e as pendências deles são fechadas.",
+      "undoHelp": "A mudança roda uma varredura completa e pode ser desfeita em \"Desfazer importação\", enquanto for a última importação que mudou algo.",
+      "open": "Alterar data de corte",
+      "current": "Data de corte atual: {date}",
+      "newDate": "Nova data de corte",
+      "previewTitle": "Efeito previsto",
+      "upToPurchases": "Até {count} compra(s) já vistas podem entrar ({value}). Parte delas pode ser ligada aos seus lançamentos.",
+      "upToSales": "Até {count} venda(s) já vistas podem entrar ({value}).",
+      "mayHaveUnseen": "Há trades nesse período que o app ainda nunca leu: a varredura completa também vai trazê-los.",
+      "manualLaunches": "Lançamentos seus na loja CSFloat nesse período: {purchases} compra(s) e {sales} venda(s). Eles serão ligados quando baterem, sem duplicar.",
+      "depositsWarning": {
+        "one": "Atenção: há um aporte seu na loja CSFloat nesse período. Se ele já incluía o saldo dessa época, as compras e vendas importadas vão contar o dinheiro duas vezes.",
+        "other": "Atenção: há {count} aportes seus na loja CSFloat nesse período. Se eles já incluíam o saldo dessa época, as compras e vendas importadas vão contar o dinheiro duas vezes."
+      },
+      "importedKept": "{count} lançamento(s) já importado(s) nesse período continuam no app.",
+      "openToClose": "{count} trade(s) ainda não importado(s) ou pendência(s) antes da nova data serão fechados.",
+      "confirm": "Alterar e importar",
+      "history": "Data de corte alterada de {from} para {to}.",
+      "badge": "Data de corte alterada",
+      "olderHint": "Trades antes da data de corte não são importados.",
+      "link": "Alterar data de corte"
     }
   }
 }

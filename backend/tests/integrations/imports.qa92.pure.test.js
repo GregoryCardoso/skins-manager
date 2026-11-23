@@ -68,7 +68,9 @@ describe('tradeClassifier: matriz estado x oferta (compra, nunca importada)', ()
 
   test('registros decididos nunca são reavaliados sem vínculo', () => {
     for (const tracking of ['REMOVED_IN_APP', 'IGNORED', 'NEEDS_REVIEW', 'REVERTED', 'BEFORE_CUTOFF', 'CLOSED_NOT_TRANSFERRED']) {
-      expect(classify(trade({ state: 'verified' }), 'BUY', { tracking }, ctx())).toMatchObject({ kind: 'KEEP', tracking, count: 'known' });
+      // 9.5.1c (D324): o BEFORE_CUTOFF relido conta como "antes do corte"; os demais, como "já importados"
+      const count = tracking === 'BEFORE_CUTOFF' ? 'beforeCutoff' : 'known';
+      expect(classify(trade({ state: 'verified' }), 'BUY', { tracking }, ctx())).toMatchObject({ kind: 'KEEP', tracking, count });
     }
     // WAITING_TRANSFER, RETRY, UNKNOWN_STATE e DEFERRED são reavaliados
     for (const tracking of ['WAITING_TRANSFER', 'RETRY', 'UNKNOWN_STATE']) {

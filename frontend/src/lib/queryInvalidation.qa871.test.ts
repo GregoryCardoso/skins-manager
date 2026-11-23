@@ -43,7 +43,7 @@ describe('cada função de escrita do api.ts invalida a ação certa onde é usa
     saveCsfloatApiKey: ['integration.apiKey'], removeCsfloatApiKey: ['integration.apiKey'],
     testCsfloatConnection: ['integration.test'],
     switchCsfloatAccount: ['integration.switchAccount'],
-    runCsfloatImport: ['import.run'], undoImportBatch: ['import.undo'], resolveImportEntry: ['import.resolve'], reopenImportEntry: ['import.resolve'], bulkResolveImportEntries: ['import.resolve'], updateCsfloatIntegration: ['integration.update'],
+    runCsfloatImport: ['import.run'], undoImportBatch: ['import.undo'], resolveImportEntry: ['import.resolve'], changeCutoff: ['import.changeCutoff'], reopenImportEntry: ['import.resolve'], bulkResolveImportEntries: ['import.resolve'], updateCsfloatIntegration: ['integration.update'],
     bulkMarkOffSale: ['item.offSaleBulk'], bulkMarkForSale: ['item.backOnSaleBulk'],
   };
   // Só quem importa a função do api.ts (o PreferencesProvider expõe refreshFxRate/saveFxRate já com a invalidação).

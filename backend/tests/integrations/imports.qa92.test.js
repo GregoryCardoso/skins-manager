@@ -256,7 +256,7 @@ describe('data de corte', () => {
     const first = (await firstRun()).body.data.batch;
     expect(first.counts).toMatchObject({ beforeCutoff: 2, deferredSales: 0, purchasesCreated: 0 });
     const second = (await run({})).body.data.batch;
-    expect(second.counts.known).toBe(2);
+    expect(second.counts).toMatchObject({ beforeCutoff: 2, known: 0 }); // 9.5.1c (D324): relidos, continuam "antes do corte"
     expect(second.entries).toEqual([]);
     expect(count('items')).toBe(0);
   });

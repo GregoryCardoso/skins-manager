@@ -4,6 +4,7 @@ import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Badge } from '@/components/badges';
 import ImportEntriesList from '@/components/ImportEntriesList';
+import { useCsfloatImport } from '@/components/useCsfloatImport';
 import UndoImportDialog from '@/components/UndoImportDialog';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
@@ -41,6 +42,7 @@ function BatchItem({ batch, onUndo }: { batch: ImportBatchSummary; onUndo: (id: 
         <Badge>{t(batch.trigger === 'MANUAL' ? 'imports.page.manual' : 'imports.page.auto')}</Badge>
         {batch.fullScan && <Badge>{t('imports.page.fullScan')}</Badge>}
         {batch.status === 'UNDONE' && <Badge tone="warning">{t('imports.page.undone')}</Badge>}
+        {batch.cutoffChange && <Badge tone="info">{t('imports.cutoffChange.badge')}</Badge>}
         {batch.status === 'FAILED' && (
           <Badge tone="danger">{batch.errorCode ? tLoose(`errors.${batch.errorCode}`) : t('imports.page.failed')}</Badge>
         )}
@@ -61,6 +63,14 @@ function BatchItem({ batch, onUndo }: { batch: ImportBatchSummary; onUndo: (id: 
           <button type="button" className={styles.button} onClick={() => onUndo(batch.id)}>{t('imports.undo.button')}</button>
         )}
       </div>
+      {batch.cutoffChange && (
+        <p className={styles.muted}>
+          {t('imports.cutoffChange.history', {
+            from: formatDateTime(batch.cutoffChange.from, language),
+            to: batch.cutoffChange.to ? formatDateTime(batch.cutoffChange.to, language) : '',
+          })}
+        </p>
+      )}
       {open && <BatchDetails batchId={batch.id} />}
     </li>
   );
@@ -72,6 +82,9 @@ export default function ImportsPage() {
   const tLoose = useTLoose();
   const language = useLanguage();
   const [undoId, setUndoId] = useState<number | null>(null);
+  // Data de corte e varredura completa (9.5.1c): o mesmo fluxo do card (trava "importando…", resumo e erro).
+  const importer = useCsfloatImport();
+  const cutoffAt = importer.integration?.tradesCutoffAt ?? null;
 
   const entriesQuery = useQuery({ queryKey: queryKeys.imports.entries, queryFn: ({ signal }) => listOpenImportEntries(signal) });
   // Ignoradas (9.5.1b, D329): a contagem aparece sempre; a lista, ao abrir a seção.
@@ -93,6 +106,28 @@ export default function ImportsPage() {
       <div className={styles.titleRow}>
         <h1>{t('imports.page.title')}</h1>
       </div>
+
+      {cutoffAt && (
+        <section className={styles.section} aria-labelledby="imports-cutoff-title" id="cutoff">
+          <h2 id="imports-cutoff-title" className={styles.sectionTitle}>
+            {t('imports.cutoffChange.blockTitle', { date: formatDateTime(cutoffAt, language) })}
+          </h2>
+          <p className={styles.muted}>{t('imports.cutoffChange.blockBody')}</p>
+          <ul className={styles.muted}>
+            <li>{t('imports.cutoffChange.backwardHelp')}</li>
+            <li>{t('imports.cutoffChange.forwardHelp')}</li>
+            <li>{t('imports.cutoffChange.undoHelp')}</li>
+          </ul>
+          <div className={styles.batchActions}>
+            <button type="button" className={styles.button} onClick={importer.openCutoffChange} disabled={importer.disabledReason !== null}>
+              {importer.disabledReason === 'RUNNING' ? t('imports.running') : t('imports.cutoffChange.open')}
+            </button>
+            <button type="button" className={styles.button} onClick={() => importer.start({ fullScan: true })} disabled={importer.disabledReason !== null}>
+              {t('settings.integrations.csfloat.fullScan')}
+            </button>
+          </div>
+        </section>
+      )}
 
       <section className={styles.section} aria-labelledby="imports-open-title">
         <h2 id="imports-open-title" className={styles.sectionTitle}>{t('imports.page.open')}</h2>
@@ -137,6 +172,7 @@ export default function ImportsPage() {
         )}
       </section>
 
+      {importer.dialogs}
       {undoId !== null && <UndoImportDialog batchId={undoId} onClose={() => setUndoId(null)} onFinished={() => setUndoId(null)} />}
     </>
   );

@@ -858,6 +858,23 @@ export interface ImportBatchSummary {
   undoneAt: string | null;
   undoable: boolean;
   openEntriesCount: number;
+  // O lote mudou a data de corte (9.5.1c, D326).
+  cutoffChange?: { from: string; to: string | null } | null;
+}
+
+// Pré-visualização local da mudança de corte (9.5.1c, D325).
+export interface CutoffPreview {
+  currentCutoffAt: string;
+  newCutoffAt: string;
+  direction: 'BACKWARD' | 'FORWARD';
+  backward: {
+    purchases: { count: number; amountCents: number };
+    sales: { count: number; amountCents: number };
+    mayHaveUnseen: boolean;
+    deposits: { id: number; depositedAt: string; amountStoreCents: number | null }[];
+    manualLaunches: { purchases: number; sales: number };
+  } | null;
+  forward: { importedKept: number; openToClose: number } | null;
 }
 
 export interface ImportBatchView extends ImportBatchSummary {

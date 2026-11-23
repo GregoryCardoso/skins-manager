@@ -18,6 +18,21 @@ async function run(req, res) {
   ok(res, data);
 }
 
+function cutoffPreview(req, res) {
+  ok(res, importService.previewCutoffChange({ cutoffAt: req.importQuery.cutoffAt, now: req.app.locals.now() }));
+}
+
+async function changeCutoff(req, res) {
+  const data = await importService.changeCutoff({
+    cutoffAt: req.body.cutoffAt,
+    confirm: req.body.confirm,
+    fetchFn: req.app.locals.fetchFn,
+    sleepFn: req.app.locals.sleepFn,
+    now: req.app.locals.now(),
+  });
+  ok(res, data);
+}
+
 function listBatches(req, res) {
   ok(res, importService.listBatches(req.importQuery));
 }
@@ -59,4 +74,4 @@ function bulkResolve(req, res) {
   ok(res, importService.bulkResolveEntries({ action, entryIds, acquiredAt: acquiredAt ?? null }, { now: req.app.locals.now() }));
 }
 
-module.exports = { run, listBatches, getBatch, undoPreview, undo, listEntries, resolveEntry, reopenEntry, bulkResolve };
+module.exports = { run, cutoffPreview, changeCutoff, listBatches, getBatch, undoPreview, undo, listEntries, resolveEntry, reopenEntry, bulkResolve };

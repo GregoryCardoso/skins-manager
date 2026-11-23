@@ -91,6 +91,8 @@ function toBatchSummary(batch, { undoable = false, openEntriesCount = 0 } = {}) 
     diagnostics: parseJson(batch.diagnosticsJson, {}),
     errorCode: batch.errorCode ?? null,
     undoneAt: batch.undoneAt ?? null,
+    // O lote mudou a data de corte (9.5.1c, D326).
+    cutoffChange: batch.previousTradesCutoffAt ? { from: batch.previousTradesCutoffAt, to: batch.cutoffAt ?? null } : null,
     undoable: Boolean(undoable),
     openEntriesCount,
   };

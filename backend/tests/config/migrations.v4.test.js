@@ -33,7 +33,7 @@ describe('migração v4', () => {
 
     const db = openDatabase(dbPath, { now: new Date('2026-11-20T12:00:00.000Z') });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(14);
+      expect(db.pragma('user_version', { simple: true })).toBe(15);
       expect(db.pragma('application_id', { simple: true })).toBe(1397444935);
       expect(stripV6Rows(db.prepare('SELECT * FROM stores ORDER BY id').all())).toEqual(storesBefore);
       expect(db.prepare('SELECT * FROM settings').get()).toMatchObject({

@@ -60,7 +60,7 @@ describe('migração v10 com dados variados da v9', () => {
     const snap = seedV9(dbPath);
     const db = openDatabase(dbPath, { now: NOW });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(14);
+      expect(db.pragma('user_version', { simple: true })).toBe(15);
       expect(db.pragma('foreign_key_check')).toEqual([]);
       expect(db.pragma('integrity_check', { simple: true })).toBe('ok');
       const rows = db.prepare('SELECT * FROM items ORDER BY id').all();
@@ -115,7 +115,7 @@ describe('migração v10 com dados variados da v9', () => {
     old.close();
     const db = openDatabase(dbPath, { now: NOW });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(14);
+      expect(db.pragma('user_version', { simple: true })).toBe(15);
       expect(db.prepare('SELECT off_sale_at, for_sale_since FROM items').all()).toEqual([{ off_sale_at: null, for_sale_since: null }]);
     } finally {
       db.close();
@@ -184,7 +184,7 @@ describe('migração v10: rollback em pontos extras', () => {
     expect(backups(dbPath)).toHaveLength(1);
     const again = openDatabase(dbPath, { now: new Date('2026-11-22T12:00:01.000Z') });
     try {
-      expect(again.pragma('user_version', { simple: true })).toBe(14);
+      expect(again.pragma('user_version', { simple: true })).toBe(15);
       expect(again.prepare('SELECT COUNT(*) AS n FROM items WHERE off_sale_at IS NULL AND for_sale_since IS NULL').get().n).toBe(snap.items.length);
     } finally {
       again.close();

@@ -56,7 +56,10 @@ const reverted = (reasonCode) => ({ kind: 'LINKED', tracking: 'REVERTED', count:
 //   kind 'IMPORT' = compra ou venda aceita e segura: criar o lançamento ou ligar a um manual
 //   kind 'LINKED' = trade já ligado: atualiza o `tracking` e, se for o caso, abre a entrada
 // `entry`: { outcome, reasonCode } quando o resumo deve mostrar algo.
-function classify(trade, direction, existing, { now, cutoffMs, refundSignal = false, hasLink = false, keptReversal = false }) {
+// `reopenBeforeCutoff` (9.5.1c, D325): o corte foi antecipado e este registro BEFORE_CUTOFF volta a ser avaliado contra o novo.
+function classify(trade, direction, existing, {
+  now, cutoffMs, refundSignal = false, hasLink = false, keptReversal = false, reopenBeforeCutoff = false,
+}) {
   const kind = stateKind(trade.rawState);
   const offerKnown = isOfferKnown(trade.offerState);
   const stateKnown = kind !== 'UNKNOWN';
@@ -83,8 +86,12 @@ function classify(trade, direction, existing, { now, cutoffMs, refundSignal = fa
     return { kind: 'LINKED', tracking: settleTracking(trade, now), count: 'known' };
   }
 
-  // 2. Registro já decidido (e sem lançamento): não muda.
-  if (existing && FROZEN_TRACKINGS.includes(existing.tracking)) return { kind: 'KEEP', tracking: existing.tracking, count: 'known' };
+  // 2. Registro já decidido (e sem lançamento): não muda. Um BEFORE_CUTOFF conta como "antes do corte" (a varredura completa
+  //    mostra o número real do histórico, D324), salvo quando o corte foi antecipado até ele (reavaliado abaixo).
+  const reopened = reopenBeforeCutoff && existing && existing.tracking === 'BEFORE_CUTOFF';
+  if (existing && !reopened && FROZEN_TRACKINGS.includes(existing.tracking)) {
+    return { kind: 'KEEP', tracking: existing.tracking, count: existing.tracking === 'BEFORE_CUTOFF' ? 'beforeCutoff' : 'known' };
+  }
 
   // 3. Antes da data de corte.
   if (Date.parse(operationAt(trade)) < cutoffMs) return { kind: 'MARK', tracking: 'BEFORE_CUTOFF', count: 'beforeCutoff' };

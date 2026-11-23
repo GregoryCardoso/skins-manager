@@ -6,9 +6,12 @@ import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
 import { queryKeys } from '@/lib/queryKeys';
 import { useInvalidate } from '@/lib/useInvalidate';
-import { getCsfloatIntegration, runCsfloatImport } from '@/services/api';
+import { formatDateTime } from '@/lib/format';
+import { changeCutoff, getCsfloatIntegration, runCsfloatImport } from '@/services/api';
 import type { ImportBatchView, IntegrationView } from '@/types/api';
 import forms from './forms.module.css';
+import ConfirmDialog from './ConfirmDialog';
+import CutoffChangeModal from './CutoffChangeModal';
 import ImportCutoffModal from './ImportCutoffModal';
 import ImportSummaryModal from './ImportSummaryModal';
 import Modal from './Modal';
@@ -30,7 +33,9 @@ export interface CsfloatImportControls {
   disabledReason: ImportDisabledReason | null;
   // Começa a importação: na primeira vez abre o modal do corte; senão importa direto.
   start: (options?: { fullScan?: boolean }) => void;
-  // Modais do fluxo (corte, resumo e erro): o chamador os renderiza uma vez.
+  // Abre a mudança da data de corte (9.5.1c), com a pré-visualização e a mesma trava "importando…".
+  openCutoffChange: () => void;
+  // Modais do fluxo (corte, confirmação da varredura, mudança de corte, resumo e erro): o chamador os renderiza uma vez.
   dialogs: ReactNode;
 }
 
@@ -51,20 +56,26 @@ export function useCsfloatImport(): CsfloatImportControls {
 
   const [running, setRunning] = useState(false);
   const [cutoffFor, setCutoffFor] = useState<{ fullScan: boolean } | null>(null);
+  const [confirmFullScan, setConfirmFullScan] = useState(false);
+  const [changingCutoff, setChangingCutoff] = useState(false);
   const [result, setResult] = useState<ImportBatchView | null>(null);
   const [error, setError] = useState<unknown>(null);
 
   const disabledReason = importDisabledReason(integration, running);
 
   const execute = useCallback(
-    (body: { cutoffAt?: string; fullScan?: boolean }) => {
+    (body: { cutoffAt?: string; fullScan?: boolean; newCutoffAt?: string }) => {
       setRunning(true);
       setError(null);
-      runCsfloatImport(body)
+      const { newCutoffAt, ...runBody } = body;
+      const call = newCutoffAt ? changeCutoff(newCutoffAt) : runCsfloatImport(runBody);
+      call
         .then(({ batch }) => {
           setCutoffFor(null);
-          setResult(batch); // a manual sempre devolve o lote
-          return invalidate('import.run');
+          setConfirmFullScan(false);
+          setChangingCutoff(false);
+          setResult(batch); // a manual (e a mudança de corte) sempre devolve o lote
+          return newCutoffAt ? invalidate('import.changeCutoff') : invalidate('import.run');
         })
         .catch((err: unknown) => {
           setError(err);
@@ -85,12 +96,25 @@ export function useCsfloatImport(): CsfloatImportControls {
         setCutoffFor({ fullScan });
         return;
       }
+      // Varredura completa (D324): confirmação antes, explicando que o corte continua valendo.
+      if (fullScan) {
+        setError(null);
+        setConfirmFullScan(true);
+        return;
+      }
       execute({ fullScan });
     },
     [disabledReason, integration, execute],
   );
 
+  const openCutoffChange = useCallback(() => {
+    if (disabledReason !== null || integration === null || integration.tradesCutoffAt === null) return;
+    setError(null);
+    setChangingCutoff(true);
+  }, [disabledReason, integration]);
+
   const errorText = error === null ? null : errorMessageFor(error, tLoose, language);
+  const inlineError = cutoffFor !== null || confirmFullScan || changingCutoff;
 
   const dialogs = (
     <>
@@ -106,8 +130,34 @@ export function useCsfloatImport(): CsfloatImportControls {
           }}
         />
       )}
+      {confirmFullScan && integration?.tradesCutoffAt && (
+        <ConfirmDialog
+          title={t('imports.fullScanConfirm.title')}
+          message={t('imports.fullScanConfirm.body', { date: formatDateTime(integration.tradesCutoffAt, language) })}
+          confirmLabel={t('imports.fullScanConfirm.confirm')}
+          busy={running}
+          error={errorText}
+          onConfirm={() => execute({ fullScan: true })}
+          onCancel={() => {
+            setConfirmFullScan(false);
+            setError(null);
+          }}
+        />
+      )}
+      {changingCutoff && integration?.tradesCutoffAt && (
+        <CutoffChangeModal
+          currentCutoffAt={integration.tradesCutoffAt}
+          busy={running}
+          error={errorText}
+          onConfirm={(newCutoffAt) => execute({ newCutoffAt })}
+          onCancel={() => {
+            setChangingCutoff(false);
+            setError(null);
+          }}
+        />
+      )}
       {result !== null && <ImportSummaryModal batch={result} onClose={() => setResult(null)} />}
-      {error !== null && cutoffFor === null && (
+      {error !== null && !inlineError && (
         <Modal title={t('imports.errorTitle')} onClose={() => setError(null)}>
           <div className={forms.form}>
             <div className={forms.topError} role="alert">{errorText}</div>
@@ -122,5 +172,5 @@ export function useCsfloatImport(): CsfloatImportControls {
     </>
   );
 
-  return { integration, running, disabledReason, start, dialogs };
+  return { integration, running, disabledReason, start, openCutoffChange, dialogs };
 }

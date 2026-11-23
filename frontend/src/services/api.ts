@@ -6,6 +6,7 @@ import type {
   Category,
   CatalogRefreshResult,
   CsfloatSwitchAccountResult,
+  CutoffPreview,
   CsfloatTestResult,
   CatalogSearchResult,
   CatalogStatus,
@@ -408,6 +409,12 @@ export const switchCsfloatAccount = () =>
 // O servidor espera até 120 s pelo CSFloat (muitas páginas); o cliente espera um pouco mais.
 export const runCsfloatImport = (body: ImportRunBody = {}) =>
   request<ImportRunResult>('POST', '/imports/csfloat/run', { body, timeoutMs: 150000 });
+
+// Data de corte (9.5.1c, D325): pré-visualização local (sem rede) e a mudança, que roda uma importação com varredura completa.
+export const previewCutoffChange = (cutoffAt: string, signal?: AbortSignal) =>
+  request<CutoffPreview>('GET', '/imports/csfloat/cutoff-preview', { signal, query: { cutoffAt } });
+export const changeCutoff = (cutoffAt: string) =>
+  request<ImportRunResult>('POST', '/imports/csfloat/change-cutoff', { body: { cutoffAt, confirm: true }, timeoutMs: 150000 });
 
 // Opção "Importar ao abrir o app" e "Reativar" (9.5).
 export const updateCsfloatIntegration = (body: IntegrationPatchBody) =>

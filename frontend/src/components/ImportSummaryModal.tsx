@@ -31,11 +31,24 @@ export default function ImportSummaryModal({ batch, onClose }: Props) {
       <Modal title={t('imports.summary.title')} onClose={onClose} wide>
         <div className={forms.form}>
           <p className={forms.muted}>{formatDateTime(batch.finishedAt, language)}</p>
+          {batch.cutoffChange && (
+            <p role="status">
+              {t('imports.cutoffChange.history', {
+                from: formatDateTime(batch.cutoffChange.from, language),
+                to: batch.cutoffChange.to ? formatDateTime(batch.cutoffChange.to, language) : '',
+              })}
+            </p>
+          )}
           {nothingNew && <p role="status">{t('imports.summary.nothingNew')}</p>}
           {lines.length > 0 && (
             <ul>
               {lines.map((line) => <li key={line.key}>{tPlural(`imports.counts.${line.key}`, line.count)}</li>)}
             </ul>
+          )}
+          {batch.counts.beforeCutoff > 0 && (
+            <p className={forms.hint}>
+              {t('imports.cutoffChange.olderHint')} <Link href="/imports/" onClick={onClose}>{t('imports.cutoffChange.link')}</Link>
+            </p>
           )}
           {batch.warnings.map((warning) => {
             const key = `imports.warnings.${warning}`;

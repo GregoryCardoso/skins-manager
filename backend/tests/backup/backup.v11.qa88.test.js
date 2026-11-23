@@ -46,7 +46,7 @@ describe('backups antigos viram v11 com GROUPED', () => {
     await request(app).patch('/api/settings').send({ inventoryView: 'INDIVIDUAL' });
     const res = await octet(makeBackup(version));
     expect(res.status).toBe(200);
-    expect(res.body.data).toMatchObject({ fileVersion: version, schemaVersion: 14 });
+    expect(res.body.data).toMatchObject({ fileVersion: version, schemaVersion: 15 });
     const s = await settings();
     expect(s.inventoryView).toBe('GROUPED');
     if (version >= 3) expect(s).toMatchObject({ theme: 'DARK', language: 'en' });
@@ -70,7 +70,7 @@ describe('backup v11', () => {
     expect((await settings()).inventoryView).toBe('GROUPED');
     const res = await octet(exported);
     expect(res.status).toBe(200);
-    expect(res.body.data).toMatchObject({ fileVersion: 14, schemaVersion: 14 });
+    expect(res.body.data).toMatchObject({ fileVersion: 15, schemaVersion: 15 });
     expect((await settings()).inventoryView).toBe('INDIVIDUAL');
   });
 
@@ -86,7 +86,7 @@ describe('backup v11', () => {
     await request(app).patch('/api/settings').send({ inventoryView: 'INDIVIDUAL' });
     const file = path.join(dir, 'v12.sqlite');
     const newer = database.openDatabase(file);
-    newer.pragma('user_version = 15');
+    newer.pragma('user_version = 16');
     newer.close();
     const res = await octet(fs.readFileSync(file));
     expect(res.status).toBe(400);

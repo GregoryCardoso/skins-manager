@@ -219,7 +219,9 @@
     "IMPORT_ENTRY_WARNINGS_NOT_CONFIRMED": "Confirm the warning to continue.",
     "IMPORT_ENTRY_NOT_REOPENABLE": "This pending item cannot come back to the list.",
     "IMPORT_BULK_CONFLICT": "Some pending items could not be resolved; nothing was saved.",
-    "PURCHASE_IN_INTEGRATION_STORE_BEFORE_CUTOFF": "Purchase in the CSFloat store before the cutoff date."
+    "PURCHASE_IN_INTEGRATION_STORE_BEFORE_CUTOFF": "Purchase in the CSFloat store before the cutoff date.",
+    "IMPORT_CUTOFF_UNCHANGED": "The new cutoff date is the same as the current one.",
+    "IMPORT_CUTOFF_NOT_SET": "Do the first import before changing the cutoff date."
   },
   "warnings": {
     "FEES_NOT_CONFIGURED": "The store fees are not configured.",
@@ -1463,6 +1465,38 @@
         "one": "{count} pending item could not be resolved (marked below). Nothing was saved: unselect it and try again.",
         "other": "{count} pending items could not be resolved (marked below). Nothing was saved: unselect them and try again."
       }
+    },
+    "fullScanConfirm": {
+      "title": "Full scan",
+      "body": "The app will read the whole CSFloat trade and statement history again, without stopping where the last import stopped. This uses more requests and can take up to 2 minutes. Nothing is duplicated: trades already imported are recognized by their ID, and your hand-made entries keep being linked by float (or by item, price and day). Trades before the cutoff date ({date}) stay out, so money already in your entries and deposits is not counted twice. To import older trades, change the cutoff date on the Imports page.",
+      "confirm": "Run full scan"
+    },
+    "cutoffChange": {
+      "title": "Change cutoff date",
+      "blockTitle": "Cutoff date: {date}",
+      "blockBody": "Up to this date, you have already entered everything by hand or that period's balance is in a deposit. Trades before it are not imported.",
+      "backwardHelp": "Earlier date: imports the trades between the new date and the current one. New purchases deduct from the CSFloat store balance, and new sales credit it. If one of your deposits already included that period, money will be counted twice.",
+      "forwardHelp": "Later date: nothing already imported is deleted. Trades not imported yet before the new date stop being imported, and their pending items are closed.",
+      "undoHelp": "The change runs a full scan and can be undone with \"Undo import\" while it is the latest import that changed something.",
+      "open": "Change cutoff date",
+      "current": "Current cutoff date: {date}",
+      "newDate": "New cutoff date",
+      "previewTitle": "Expected effect",
+      "upToPurchases": "Up to {count} purchase(s) already seen may come in ({value}). Some may be linked to your entries.",
+      "upToSales": "Up to {count} sale(s) already seen may come in ({value}).",
+      "mayHaveUnseen": "There are trades in this period the app has never read: the full scan will bring them too.",
+      "manualLaunches": "Your entries in the CSFloat store in this period: {purchases} purchase(s) and {sales} sale(s). They will be linked when they match, without duplicating.",
+      "depositsWarning": {
+        "one": "Warning: you have a deposit in the CSFloat store in this period. If it already included that period's balance, the imported purchases and sales will count the money twice.",
+        "other": "Warning: you have {count} deposits in the CSFloat store in this period. If they already included that period's balance, the imported purchases and sales will count the money twice."
+      },
+      "importedKept": "{count} entry(ies) already imported in this period stay in the app.",
+      "openToClose": "{count} trade(s) not imported yet or pending item(s) before the new date will be closed.",
+      "confirm": "Change and import",
+      "history": "Cutoff date changed from {from} to {to}.",
+      "badge": "Cutoff date changed",
+      "olderHint": "Trades before the cutoff date are not imported.",
+      "link": "Change cutoff date"
     }
   }
 }

@@ -30,6 +30,8 @@ export const INVALIDATION_MAP = {
   'item.unsell': ITEM_IMPORTS,
   'import.run': IMPORT_CHANGE,
   'import.undo': IMPORT_CHANGE,
+  // Mudar a data de corte (9.5.1c) é uma importação: os mesmos alvos.
+  'import.changeCutoff': IMPORT_CHANGE,
   // Resolver uma pendência (9.4) pode excluir um item, desfazer uma venda ou criar/ligar um lançamento.
   'import.resolve': IMPORT_CHANGE,
   // O lucro real mostra o estoque à venda e em holding (8.9, D283).

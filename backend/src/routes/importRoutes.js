@@ -6,12 +6,15 @@ const validateIdParam = require('../middlewares/validateIdParam');
 const { requireJsonForWrites } = require('../middlewares/validationHelpers');
 const {
   validateRunBody, validateUndoBody, validateResolveBody, validateBulkResolveBody, validateEmptyBody, validateBatchesQuery, validateEntriesQuery,
+  validateChangeCutoffBody, validateCutoffPreviewQuery,
 } = require('../middlewares/importValidators');
 
 const router = Router();
 router.use(requireJsonForWrites);
 
 router.post('/csfloat/run', validateRunBody, controller.run);
+router.get('/csfloat/cutoff-preview', validateCutoffPreviewQuery, controller.cutoffPreview);
+router.post('/csfloat/change-cutoff', validateChangeCutoffBody, controller.changeCutoff);
 router.get('/batches', validateBatchesQuery, controller.listBatches);
 router.get('/batches/:id', validateIdParam, controller.getBatch);
 router.get('/batches/:id/undo-preview', validateIdParam, controller.undoPreview);
