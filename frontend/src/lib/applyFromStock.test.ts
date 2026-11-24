@@ -174,7 +174,7 @@ describe('API e invalidação', () => {
   test('as três ações invalidam itens, vendas, lojas, saldos, lucro real e importações', () => {
     for (const action of ['item.applyComponent', 'item.scrapeOff', 'operation.undo'] as const) {
       const groups = (INVALIDATION_MAP[action] as readonly (readonly unknown[])[]).map((k) => k[0]).sort();
-      expect(groups).toEqual(['imports', 'items', 'profitSummary', 'sales', 'storeBalances', 'stores']);
+      expect(groups).toEqual(['imports', 'items', 'marketValues', 'profitSummary', 'sales', 'storeBalances', 'stores']);
     }
   });
 });

@@ -97,7 +97,7 @@ describe('invalidação e traduções dos componentes novos', () => {
   test('item.open recarrega itens, vendas, lojas, saldos, lucro real e importações; settings.steamStore, as configurações, lojas e itens', () => {
     const groups = (action: keyof typeof INVALIDATION_MAP) => (INVALIDATION_MAP[action] as readonly (readonly unknown[])[]).map((k) => String(k[0])).sort();
     expect(groups('item.open')).toEqual(groups('item.applyComponent'));
-    expect(groups('settings.steamStore')).toEqual(['items', 'settings', 'stores']);
+    expect(groups('settings.steamStore')).toEqual(['items', 'marketValues', 'settings', 'stores']);
   });
 
   const flatten = (node: unknown, prefix = ''): Record<string, string> => {

@@ -47,7 +47,9 @@ function weaponTarget(item, entry) {
   const phase = !isNil(item.phase) ? item.phase : entry && !isNil(entry.phase) ? entry.phase : null;
   let paintIndex = null;
   const hasPhase = !isNil(phase) && String(phase).trim() !== '';
-  const isDopplerFinish = category === 'FACA' && /\|\s*(Gamma )?Doppler\s*$/i.test(name);
+  // Doppler/Gamma Doppler de faca e de arma: sem fase o preço do nome misturaria todas as fases (E-P2-Q54, E-P2-Q56).
+  const isDopplerFinish = (category === 'FACA' || category === 'SKIN') && /\|\s*(Gamma )?Doppler\s*$/i.test(name);
+  if (isDopplerFinish && !hasPhase) return { notPriceable: 'PHASE_REQUIRED' };
   if (hasPhase || isDopplerFinish) {
     paintIndex = paintIndexOf({ category, name, phase });
     if (paintIndex === null) return { notPriceable: 'PHASE_UNMAPPED' };
@@ -56,7 +58,7 @@ function weaponTarget(item, entry) {
 }
 
 // `subject`: uma unidade (`category`, `name`, `variant`, `exterior`, `phase`, `catalogId`) ou um componente (`kind`, `name`).
-// Devolve { marketHashName, paintIndex, priceKey } ou { notPriceable: 'NO_EXTERIOR' | 'PHASE_UNMAPPED' | 'NOT_PRICEABLE' }.
+// Devolve { marketHashName, paintIndex, priceKey } ou { notPriceable: 'NO_EXTERIOR' | 'PHASE_REQUIRED' | 'PHASE_UNMAPPED' | 'NOT_PRICEABLE' }.
 function buildPriceTarget(subject, { catalogById = new Map() } = {}) {
   if (!subject) return { notPriceable: 'NOT_PRICEABLE' };
   const entry = !isNil(subject.catalogId) ? catalogById.get(subject.catalogId) ?? null : null;

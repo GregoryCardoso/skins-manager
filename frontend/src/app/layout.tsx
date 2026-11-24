@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import AppHeader from '@/components/AppHeader';
 import CsfloatAutoImportHost from '@/components/CsfloatAutoImportHost';
+import PriceAutoRefreshHost from '@/components/PriceAutoRefreshHost';
 import FxAutoRefreshHost from '@/components/FxAutoRefreshHost';
 import StartupOfflineModal from '@/components/StartupOfflineModal';
 import DesktopUpdateHost from '@/components/DesktopUpdateHost';
@@ -30,6 +31,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               <main>{children}</main>
               <DesktopUpdateHost />
               <CsfloatAutoImportHost />
+              <PriceAutoRefreshHost />
               <FxAutoRefreshHost />
               <StartupOfflineModal />
             </I18nProvider>

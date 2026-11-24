@@ -59,7 +59,8 @@ function valueUnit({ item, components = [], priceOf, catalogById = new Map(), co
 
   const base = priceOfSubject(item, env);
   if (base.notPriceable) return emptyValuation('NOT_PRICEABLE', { ...costInfo, reason: base.notPriceable });
-  if (!base.row) return emptyValuation('NO_PRICE', costInfo);
+  // NOT_FOUND: a última tentativa não achou anúncio e não há preço anterior; NOT_FETCHED: ainda sem linha no cache (D365, B2).
+  if (!base.row) return emptyValuation('NO_PRICE', { ...costInfo, reason: base.raw && base.raw.status === 'NOT_FOUND' ? 'NOT_FOUND' : 'NOT_FETCHED' });
 
   let hangingCents = null;
   let stale = isStaleRow(base.row, now);
@@ -115,6 +116,7 @@ function summarize(unitValuations) {
     unrealizedNetUsdCents: sum(withNet, (v) => v.unrealizedNetUsdCents),
     costEstimated: valued.some((v) => v.costEstimated),
     pricedUnits: valued.length,
+    netUnits: withNet.length,
     unpricedUnits: units.filter((v) => v.status === 'NO_PRICE').length,
     notPriceableUnits: units.filter((v) => v.status === 'NOT_PRICEABLE').length,
     staleUnits: valued.filter((v) => v.isStale).length,

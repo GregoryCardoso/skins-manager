@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
+import { reportAutoImport } from '@/lib/autoImportProgress';
 import { autoImportNotice, NOTHING_NEW_DISMISS_MS, shouldRunAutoImport, type AutoImportNotice } from '@/lib/autoImport';
 import { browserOnline, isOfflineFailure, reportStartup } from '@/lib/startupStatus';
 import { queryKeys } from '@/lib/queryKeys';
@@ -51,8 +52,10 @@ export default function CsfloatAutoImportHost() {
       attemptedThisPage = true;
       // O botão manual fica "Importando…" na hora (o backend recusaria com IMPORT_IN_PROGRESS de qualquer forma).
       queryClient.setQueryData<IntegrationView>(queryKeys.integrations.csfloat, (current) => (current ? { ...current, importInProgress: true } : current));
+      reportAutoImport('RUNNING');
       runCsfloatImport({ trigger: 'AUTO' })
         .then((result) => {
+          reportAutoImport('DONE');
           // Pulada (já rodou, pausada, ocupada): sem aviso. Rodou sem nada novo: o aviso curto "nada novo".
           if (!result.skipped) {
             reportStartup('csfloat', 'OK');
@@ -62,6 +65,7 @@ export default function CsfloatAutoImportHost() {
           return result.batch ? invalidate('import.run') : invalidate('integration.update');
         })
         .catch((err: unknown) => {
+          reportAutoImport('DONE');
           // Sem internet: o modal único "Sem conexão" avisa (junto com a cotação); outros erros, o aviso discreto.
           if (isOfflineFailure(err instanceof ApiRequestError ? err.code : null, browserOnline())) reportStartup('csfloat', 'OFFLINE');
           else setError(errorMessageFor(err, tLoose, language));

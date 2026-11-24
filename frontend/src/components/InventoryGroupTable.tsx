@@ -8,6 +8,7 @@ import type { ItemGroup, SaleState, Store } from '@/types/api';
 import BulkSaleStateDialog, { type BulkDirection } from './BulkSaleStateDialog';
 import { Badge } from './badges';
 import ItemImage from './ItemImage';
+import { GroupMarketCell, GroupUnrealizedCell } from './MarketValueCell';
 import InventoryUnitRow, { UnitTableHead, type UnitRowHandlers } from './InventoryUnitRow';
 import styles from './InventoryTable.module.css';
 import groupStyles from './InventoryGroupTable.module.css';
@@ -25,7 +26,7 @@ interface Props extends UnitRowHandlers {
   saleState?: SaleState;
 }
 
-const COLUMNS = 6;
+const COLUMNS = 8;
 
 function GroupMoney({ group, cents, approxBrlCents }: { group: ItemGroup; cents: number; approxBrlCents: number | null }) {
   const t = useT();
@@ -160,6 +161,8 @@ function GroupRow({
         <td className={styles.nowrap}>
           <GroupMoney group={group} cents={group.totalCostUsdCents} approxBrlCents={group.approxBrl?.totalCostCents ?? null} />
         </td>
+        <td><GroupMarketCell totals={group.marketValue} /></td>
+        <td><GroupUnrealizedCell totals={group.marketValue} /></td>
         <td>
           <SituationCell group={group} />
           {bulkAction && (
@@ -248,6 +251,8 @@ export default function InventoryGroupTable({
             <th scope="col">{t('inventory.columns.quantity')}</th>
             <th scope="col">{t('inventory.columns.avgCost')}</th>
             <th scope="col">{t('inventory.columns.totalCost')}</th>
+            <th scope="col">{t('inventory.columns.marketValue')}</th>
+            <th scope="col">{t('inventory.columns.unrealized')}</th>
             <th scope="col">{t('inventory.columns.situation')}</th>
           </tr>
         </thead>

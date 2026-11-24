@@ -42,6 +42,8 @@ import type {
   IntegrationPatchBody,
   IntegrationView,
   ItemView,
+  MarketValueRefreshResponse,
+  MarketValueSummary,
   OpenContainerBody,
   OpenContainerResult,
   OpenOptions,
@@ -487,3 +489,12 @@ export const listIgnoredImportEntries = (signal?: AbortSignal) =>
 
 export const listOpenImportEntries = (signal?: AbortSignal) =>
   request<{ entries: ImportEntryView[] }>('GET', '/imports/entries', { signal, query: { open: 'true' } });
+
+// --- Valor de mercado (10.6, D365) ------------------------------------------------------------------
+
+// A rodada pode levar até 240 s no backend; o cliente espera um pouco mais (como a importação). Sempre 200 com { skipped, result, failed }.
+export const refreshMarketValues = () =>
+  request<MarketValueRefreshResponse>('POST', '/market-values/refresh', { body: {}, timeoutMs: 270000 });
+
+export const getMarketValueSummary = (signal?: AbortSignal) =>
+  request<MarketValueSummary>('GET', '/market-values/summary', { signal });

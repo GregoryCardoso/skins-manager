@@ -1,0 +1,9 @@
+.cell { display: inline-flex; flex-direction: column; gap: 0.1rem; font-variant-numeric: tabular-nums; align-items: flex-start; }
+.main { font-weight: 600; white-space: nowrap; }
+.side { color: var(--text-muted); font-size: 0.78rem; white-space: nowrap; }
+.mark { color: var(--warning); font-size: 0.75rem; }
+.muted { color: var(--text-muted); font-size: 0.85rem; }
+.positive { color: var(--success); }
+.negative { color: var(--danger); }
+.srOnly { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.summary { color: var(--text-muted); font-size: 0.88rem; margin: 0 0 0.75rem; }

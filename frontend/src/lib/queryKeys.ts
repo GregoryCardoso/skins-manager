@@ -39,5 +39,7 @@ export const queryKeys = {
     cutoffPreview: (cutoffAt: string | null) => ['imports', 'cutoffPreview', cutoffAt] as const,
     undoPreview: (id: number) => ['imports', 'undoPreview', id] as const,
   },
+  // Valor de mercado (10.6, D365): resumo e estado da atualização de preços.
+  marketValues: { all: ['marketValues'] as const, summary: ['marketValues', 'summary'] as const },
   backupInfo: { all: ['backupInfo'] as const },
 };

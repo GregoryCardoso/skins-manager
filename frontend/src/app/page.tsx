@@ -7,6 +7,9 @@ import ImportButton from '@/components/ImportButton';
 import InventoryFilters from '@/components/InventoryFilters';
 import InventoryGroupTable from '@/components/InventoryGroupTable';
 import InventoryTable from '@/components/InventoryTable';
+import { MarketTabSummary } from '@/components/MarketValueCell';
+import PriceStatusIndicator from '@/components/PriceStatusIndicator';
+import { useMarketSummary } from '@/components/useMarketSummary';
 import InventoryViewToggle from '@/components/InventoryViewToggle';
 import { usePreferences } from '@/components/PreferencesProvider';
 import { useItemDialogs } from '@/components/ItemDialogs';
@@ -33,6 +36,7 @@ function InventoryPageContent() {
   const searchParams = useSearchParams();
   const { reloadFxRate, inventoryView, setInventoryView } = usePreferences();
 
+  const { summary: marketSummary } = useMarketSummary();
   const searchKey = searchParams.toString();
   const filters = useMemo(() => parseFilters(new URLSearchParams(searchKey)), [searchKey]);
   const apiQuery = useMemo(() => toApiQuery(filters), [filters]);
@@ -147,6 +151,7 @@ function InventoryPageContent() {
           </span>
         )}
         <div className={styles.titleActions}>
+          <PriceStatusIndicator />
           <ImportButton />
           <button type="button" className={styles.newItem} onClick={openCreate}>
             {t('inventory.actions.newItem')}
@@ -192,6 +197,13 @@ function InventoryPageContent() {
             );
           })}
         </div>
+      )}
+
+      {filters.status === 'EM_ESTOQUE' && marketSummary && (
+        <MarketTabSummary
+          totals={filters.saleState === 'OFF_SALE' ? marketSummary.byState.holding : marketSummary.byState.forSale}
+          holding={filters.saleState === 'OFF_SALE'}
+        />
       )}
 
       {filters.status === 'EM_ESTOQUE' && filters.saleState === 'OFF_SALE' && (
@@ -260,6 +272,7 @@ function InventoryPageContent() {
               onForSale={putForSale}
               forSalePendingId={forSalePendingId}
               highlightedItemId={focusItemId}
+              showMarket={filters.status !== 'VENDIDO'}
             />
           )}
         </div>

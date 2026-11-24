@@ -303,6 +303,8 @@ export interface ItemView {
 }
 
 export type MarketValueStatus = 'OK' | 'NO_PRICE' | 'NOT_PRICEABLE';
+export type MarketValueReason = 'NO_EXTERIOR' | 'PHASE_REQUIRED' | 'PHASE_UNMAPPED' | 'NOT_PRICEABLE' | 'NOT_FETCHED' | 'NOT_FOUND';
+export type NetUnavailableReason = 'NO_INTEGRATION_STORE' | 'FEES_NOT_CONFIGURED' | 'NET_NOT_COMPUTABLE';
 
 export interface MarketValue {
   marketValueUsdCents: number | null;
@@ -311,11 +313,11 @@ export interface MarketValue {
   costEstimated: boolean;
   unrealizedUsdCents: number | null;
   unrealizedNetUsdCents: number | null;
-  netUnavailableReason: 'NO_INTEGRATION_STORE' | 'FEES_NOT_CONFIGURED' | 'NET_NOT_COMPUTABLE' | null;
+  netUnavailableReason: NetUnavailableReason | null;
   pricedAt: string | null;
   isStale: boolean;
   status: MarketValueStatus;
-  reason: 'NO_EXTERIOR' | 'PHASE_UNMAPPED' | 'NOT_PRICEABLE' | null;
+  reason: MarketValueReason | null;
   isComplete: boolean;
   missing: string[];
   basis: 'NAME';
@@ -331,6 +333,8 @@ export interface MarketValueTotals {
   unrealizedNetUsdCents: number;
   costEstimated: boolean;
   pricedUnits: number;
+  // Unidades com valor e líquido calculado (D365, B3).
+  netUnits: number;
   unpricedUnits: number;
   notPriceableUnits: number;
   staleUnits: number;

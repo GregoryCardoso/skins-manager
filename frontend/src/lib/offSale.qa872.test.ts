@@ -77,7 +77,7 @@ describe('inventoryQuery: aba "Fora de venda"', () => {
 
 describe('invalidação das ações de fora de venda', () => {
   test.each(['item.offSale', 'item.backOnSale'] as const)('%s: inventário, vendas e resumo do lucro real (divisão do estoque, 8.9) são rebuscados; saldos, lojas e configurações não', async (action) => {
-    expect(INVALIDATION_MAP[action]).toEqual([queryKeys.items.all, queryKeys.sales.all, queryKeys.profitSummary.all]);
+    expect(INVALIDATION_MAP[action]).toEqual([queryKeys.items.all, queryKeys.sales.all, queryKeys.profitSummary.all, queryKeys.marketValues.all]);
     const client = new QueryClient();
     const keys = {
       items: queryKeys.items.list({ status: 'EM_ESTOQUE', saleState: 'OFF_SALE' }),

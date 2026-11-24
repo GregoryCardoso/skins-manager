@@ -6,6 +6,7 @@ import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import { describeFxRate } from '@/lib/fxDisplay';
 import { formatDate, formatPercent } from '@/lib/format';
+import MarketValueCards from './MarketValueCards';
 import MoneyApprox, { useMoneyLine } from './MoneyApprox';
 import { queryKeys } from '@/lib/queryKeys';
 import { getProfitSummary } from '@/services/api';
@@ -113,6 +114,8 @@ function SummaryBody({ data }: { data: ProfitSummary }) {
           <span className={styles.label}>{t('profit.summary.stock')}</span>
           <span className={styles.value}>{amount(data.stockUsdCents, data.approxBrl.stock, data.estimatedParts.stock)}</span>
         </div>
+        {/* Valor de mercado e PnL não realizado (10.6): informativos, lêem a própria consulta e não entram no lucro real. */}
+        <MarketValueCards />
         {/* Estoque à venda e em holding (8.9, D283): só exibição; a soma dos dois é o card acima. */}
         <div className={styles.card}>
           <span className={styles.label}>{t('profit.summary.stockForSale')}</span>

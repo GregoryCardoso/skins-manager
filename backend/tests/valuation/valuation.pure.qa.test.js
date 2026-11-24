@@ -52,10 +52,10 @@ describe('marketHashName: complementos', () => {
     expect(buildPriceTarget({ kind: 'STICKER', catalogId: 'zz' }, { catalogById })).toEqual({ notPriceable: 'NOT_PRICEABLE' });
   });
 
-  test('Doppler em arma (não faca) com fase: PHASE_UNMAPPED (desvio declarado); sem fase é avaliada só pelo nome', () => {
+  test('Doppler em arma (não faca) com fase: PHASE_UNMAPPED (desvio declarado); sem fase pede a fase (B1, D365)', () => {
     expect(buildPriceTarget({ category: 'SKIN', name: 'Glock-18 | Gamma Doppler', variant: 'NORMAL', exterior: 'FN', phase: 'Phase 2' })).toEqual({ notPriceable: 'PHASE_UNMAPPED' });
     const noPhase = buildPriceTarget({ category: 'SKIN', name: 'Glock-18 | Gamma Doppler', variant: 'NORMAL', exterior: 'FN', phase: null });
-    expect(noPhase).toMatchObject({ marketHashName: 'Glock-18 | Gamma Doppler (Factory New)', paintIndex: null });
+    expect(noPhase).toEqual({ notPriceable: 'PHASE_REQUIRED' });
   });
 });
 

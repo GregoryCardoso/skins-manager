@@ -58,3 +58,31 @@ export function formatRate(rate: number, locale: string): string {
 export function formatPercent(ratio: number, locale: string): string {
   return new Intl.NumberFormat(locale, { style: 'percent', minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(ratio);
 }
+
+export type AgoUnit = 'LESS_THAN_MINUTE' | 'MINUTES' | 'HOURS' | 'DAYS';
+
+// Há quanto tempo (puro): menos de 1 min, minutos, horas, dias. Data no futuro (relógio adiantado) ou inválida -> "menos de 1 min".
+export function agoParts(iso: string, now: Date): { unit: AgoUnit; count: number } {
+  const time = Date.parse(iso);
+  const diff = Number.isNaN(time) ? 0 : now.getTime() - time;
+  if (diff < 60000) return { unit: 'LESS_THAN_MINUTE', count: 0 };
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 60) return { unit: 'MINUTES', count: minutes };
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return { unit: 'HOURS', count: hours };
+  return { unit: 'DAYS', count: Math.floor(hours / 24) };
+}
+
+const AGO_KEYS: Record<AgoUnit, string> = {
+  LESS_THAN_MINUTE: 'common.ago.lessThanMinute',
+  MINUTES: 'common.ago.minutes',
+  HOURS: 'common.ago.hours',
+  DAYS: 'common.ago.days',
+};
+
+// "5 min", "3 h", "2 d" ou "menos de 1 min", pelo `t` do idioma (as chaves `common.ago.*`). Sem relógio próprio: quem chama recalcula
+// a cada renderização.
+export function formatAgo(iso: string, now: Date, t: (key: string, params?: Record<string, string | number>) => string): string {
+  const { unit, count } = agoParts(iso, now);
+  return t(AGO_KEYS[unit], { count });
+}

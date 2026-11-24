@@ -24,33 +24,34 @@ const SAMPLE_KEYS: Array<readonly unknown[]> = [
   queryKeys.backupInfo.all,
   queryKeys.integrations.csfloat,
   queryKeys.imports.batches,
+  queryKeys.marketValues.summary,
 ];
-const GROUPS = ['items', 'sales', 'stores', 'settings', 'deposits', 'withdrawals', 'storeBalances', 'profitSummary', 'catalog', 'health', 'backupInfo', 'integrations', 'imports'];
-const MONEY = ['items', 'sales', 'stores', 'deposits', 'withdrawals', 'storeBalances', 'profitSummary'];
+const GROUPS = ['items', 'sales', 'stores', 'settings', 'deposits', 'withdrawals', 'storeBalances', 'profitSummary', 'catalog', 'health', 'backupInfo', 'integrations', 'imports', 'marketValues'];
+const MONEY = ['items', 'sales', 'stores', 'deposits', 'withdrawals', 'storeBalances', 'profitSummary', 'marketValues'];
 
 // Grupos que cada ação deve invalidar (tabela de D259).
 const EXPECTED: Record<string, string[]> = {
-  'item.create': ['items', 'sales', 'stores', 'storeBalances', 'profitSummary'],
-  'item.update': ['items', 'sales', 'stores', 'storeBalances', 'profitSummary', 'imports'],
-  'item.delete': ['items', 'sales', 'stores', 'storeBalances', 'profitSummary', 'imports'],
-  'item.sell': ['items', 'sales', 'stores', 'storeBalances', 'profitSummary'],
-  'item.unsell': ['items', 'sales', 'stores', 'storeBalances', 'profitSummary', 'imports'],
+  'item.create': ['items', 'marketValues', 'sales', 'stores', 'storeBalances', 'profitSummary'],
+  'item.update': ['items', 'marketValues', 'sales', 'stores', 'storeBalances', 'profitSummary', 'imports'],
+  'item.delete': ['items', 'marketValues', 'sales', 'stores', 'storeBalances', 'profitSummary', 'imports'],
+  'item.sell': ['items', 'marketValues', 'sales', 'stores', 'storeBalances', 'profitSummary'],
+  'item.unsell': ['items', 'marketValues', 'sales', 'stores', 'storeBalances', 'profitSummary', 'imports'],
   // Aplicar do estoque (10.3, D362): os mesmos alvos de editar/desfazer venda.
-  'item.applyComponent': ['items', 'sales', 'stores', 'storeBalances', 'profitSummary', 'imports'],
-  'item.scrapeOff': ['items', 'sales', 'stores', 'storeBalances', 'profitSummary', 'imports'],
-  'operation.undo': ['items', 'sales', 'stores', 'storeBalances', 'profitSummary', 'imports'],
-  'item.open': ['items', 'sales', 'stores', 'storeBalances', 'profitSummary', 'imports'],
-  'settings.steamStore': ['settings', 'stores', 'items'],
+  'item.applyComponent': ['items', 'marketValues', 'sales', 'stores', 'storeBalances', 'profitSummary', 'imports'],
+  'item.scrapeOff': ['items', 'marketValues', 'sales', 'stores', 'storeBalances', 'profitSummary', 'imports'],
+  'operation.undo': ['items', 'marketValues', 'sales', 'stores', 'storeBalances', 'profitSummary', 'imports'],
+  'item.open': ['items', 'marketValues', 'sales', 'stores', 'storeBalances', 'profitSummary', 'imports'],
+  'settings.steamStore': ['settings', 'stores', 'items', 'marketValues'],
   // Importação (9.2, D318): o card, os lotes e as pendências, mais tudo o que muda com itens.
   'import.run': ['integrations', 'imports', ...MONEY],
   'import.undo': ['integrations', 'imports', ...MONEY],
-  'integration.update': ['integrations'],
+  'integration.update': ['integrations', 'items', 'marketValues'],
   'import.changeCutoff': ['integrations', 'imports', ...MONEY],
-  'item.offSaleBulk': ['items', 'sales', 'profitSummary'],
-  'item.backOnSaleBulk': ['items', 'sales', 'profitSummary'],
+  'item.offSaleBulk': ['items', 'marketValues', 'sales', 'profitSummary'],
+  'item.backOnSaleBulk': ['items', 'marketValues', 'sales', 'profitSummary'],
   'import.resolve': ['integrations', 'imports', ...MONEY],
-  'item.offSale': ['items', 'sales', 'profitSummary'],
-  'item.backOnSale': ['items', 'sales', 'profitSummary'],
+  'item.offSale': ['items', 'marketValues', 'sales', 'profitSummary'],
+  'item.backOnSale': ['items', 'marketValues', 'sales', 'profitSummary'],
   'deposit.create': ['deposits', 'stores', 'storeBalances', 'profitSummary', 'imports', 'integrations'],
   'deposit.update': ['deposits', 'stores', 'storeBalances', 'profitSummary', 'imports', 'integrations'],
   'deposit.delete': ['deposits', 'stores', 'storeBalances', 'profitSummary', 'imports', 'integrations'],
@@ -63,12 +64,14 @@ const EXPECTED: Record<string, string[]> = {
   'store.update': [...MONEY, 'integrations'],
   'store.delete': [...MONEY, 'integrations'],
   'settings.fx': ['settings', ...MONEY],
-  'settings.aging': ['settings', 'items', 'sales'],
+  'settings.aging': ['settings', 'items', 'marketValues', 'sales'],
   'settings.preferences': ['settings'],
-  'catalog.refresh': ['catalog', 'items', 'sales', 'health'],
-  'integration.apiKey': ['integrations'],
+  'catalog.refresh': ['catalog', 'items', 'marketValues', 'sales', 'health'],
+  'integration.apiKey': ['integrations', 'marketValues'],
   'integration.test': ['integrations'],
-  'integration.switchAccount': ['integrations', 'imports', 'storeBalances'],
+  'integration.switchAccount': ['integrations', 'imports', 'storeBalances', 'items', 'marketValues'],
+  'marketValues.refresh': ['items', 'marketValues'],
+  'marketValues.status': ['marketValues'],
 };
 
 function populated(): QueryClient {
@@ -122,6 +125,14 @@ describe('INVALIDATION_MAP (D259)', () => {
     expect(state(queryKeys.deposits.all)).toBe(true);
     expect(state(queryKeys.stores.all)).toBe(true);
     expect(state(queryKeys.settings.all)).toBe(false);
+  });
+
+  test('10.6: toda ação que invalida items invalida também marketValues', () => {
+    for (const [action, entry] of Object.entries(INVALIDATION_MAP)) {
+      if (entry === 'clear') continue;
+      const groups = (entry as readonly (readonly unknown[])[]).map((k) => k[0]);
+      if (groups.includes('items')) expect(groups, action).toContain('marketValues');
+    }
   });
 
   test('backup.import limpa o cache inteiro', async () => {

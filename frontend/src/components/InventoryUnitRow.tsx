@@ -12,6 +12,7 @@ import CostCell from './CostCell';
 import ItemImage from './ItemImage';
 import styles from './InventoryTable.module.css';
 import MinPriceCell from './MinPriceCell';
+import { UnitMarketCell, UnitUnrealizedCell } from './MarketValueCell';
 
 export interface UnitRowHandlers {
   onEdit: (item: ItemView) => void;
@@ -199,7 +200,8 @@ function InspectAction({ link }: { link: string | null }) {
 
 // Cabeçalho da tabela de unidades (usado pela tabela individual e pelas unidades expandidas de um grupo).
 // `selection`: caixa "Selecionar todas" (9.5.1a, D333), só nas unidades de um grupo.
-export function UnitTableHead({ selection }: { selection?: { checked: boolean; onChange: (checked: boolean) => void } } = {}) {
+// `showMarket`: colunas de valor de mercado e PnL não realizado (10.6); somem só com o filtro "Vendido".
+export function UnitTableHead({ selection, showMarket = true }: { selection?: { checked: boolean; onChange: (checked: boolean) => void }; showMarket?: boolean } = {}) {
   const t = useT();
   return (
     <thead>
@@ -218,6 +220,8 @@ export function UnitTableHead({ selection }: { selection?: { checked: boolean; o
         <th scope="col">{t('inventory.columns.item')}</th>
         <th scope="col">{t('inventory.columns.store')}</th>
         <th scope="col">{t('inventory.columns.cost')}</th>
+        {showMarket && <th scope="col">{t('inventory.columns.marketValue')}</th>}
+        {showMarket && <th scope="col">{t('inventory.columns.unrealized')}</th>}
         <th scope="col">{t('inventory.columns.days')}</th>
         <th scope="col">{t('inventory.columns.tradeLock')}</th>
         <th scope="col">{t('inventory.columns.minPrice')}</th>
@@ -229,8 +233,8 @@ export function UnitTableHead({ selection }: { selection?: { checked: boolean; o
 
 // Linha de uma unidade (extraída do InventoryTable na 8.8, sem mudar o visual).
 export default function InventoryUnitRow({
-  item, stores, onEdit, onSell, onUnsell, onDelete, onHistory, onOffSale, onForSale, onApply, onOpen, onRegisterKey, forSalePendingId = null, highlighted = false, selection,
-}: Props & { selection?: { checked: boolean; onChange: (checked: boolean) => void } }) {
+  item, stores, onEdit, onSell, onUnsell, onDelete, onHistory, onOffSale, onForSale, onApply, onOpen, onRegisterKey, forSalePendingId = null, highlighted = false, selection, showMarket = true,
+}: Props & { selection?: { checked: boolean; onChange: (checked: boolean) => void }; showMarket?: boolean }) {
   const t = useT();
   const locale = useLanguage();
   const classes = [styles.row];
@@ -253,6 +257,8 @@ export default function InventoryUnitRow({
       <td><ItemCell item={item} /></td>
       <td><StoreCell item={item} stores={stores} /></td>
       <td className={styles.nowrap}><CostCell item={item} /></td>
+      {showMarket && <td><UnitMarketCell marketValue={item.marketValue} /></td>}
+      {showMarket && <td><UnitUnrealizedCell marketValue={item.marketValue} /></td>}
       <td><DaysCell item={item} /></td>
       <td><TradeLockCell item={item} /></td>
       <td>

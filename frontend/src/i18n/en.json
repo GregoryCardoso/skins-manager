@@ -19,7 +19,13 @@
     "saving": "Saving...",
     "optional": "(optional)",
     "moreDetails": "More details",
-    "select": "Select"
+    "select": "Select",
+    "ago": {
+      "lessThanMinute": "less than 1 min",
+      "minutes": "{count} min",
+      "hours": "{count} h",
+      "days": "{count} d"
+    }
   },
   "nav": {
     "inventory": "Inventory",
@@ -329,7 +335,9 @@
       "days": "Days",
       "tradeLock": "Trade lock",
       "minPrice": "Minimum price (net)",
-      "actions": "Actions"
+      "actions": "Actions",
+      "marketValue": "Market value ≈",
+      "unrealized": "Unrealized PnL ≈"
     },
     "primaryStore": "Primary store",
     "otherStores": "Other stores",
@@ -399,6 +407,52 @@
         "other": "{count} selected"
       },
       "clearSelection": "Clear selection"
+    },
+    "marketValue": {
+      "noPrice": "no price",
+      "notPriceable": "not valued",
+      "stale": "outdated",
+      "staleHint": "price from {date}; it is refreshed the next time the app opens",
+      "incomplete": "without the charm",
+      "incompleteHint": "the charm/slab has no price; the value is for the item only",
+      "pricedAt": "price from {date}",
+      "reason": {
+        "NOT_FETCHED": "not fetched yet; prices are fetched when the app opens",
+        "NOT_FETCHED_NO_KEY": "set up the CSFloat key to see prices",
+        "NOT_FOUND": "no listing found on CSFloat",
+        "NO_EXTERIOR": "enter the wear to value it",
+        "PHASE_REQUIRED": "enter the phase to value it",
+        "PHASE_UNMAPPED": "phase without a known reference price",
+        "NOT_PRICEABLE": "item without a market name"
+      },
+      "netUnavailable": {
+        "NO_INTEGRATION_STORE": "choose the CSFloat integration store to deduct the fee",
+        "FEES_NOT_CONFIGURED": "the integration store has no sale fee",
+        "NET_NOT_COMPUTABLE": "the net value could not be calculated",
+        "GROUP": "the net value depends on the CSFloat integration store having a sale fee"
+      },
+      "parts": {
+        "item": "Item: {value}",
+        "hanging": "Charm/slab: {value}",
+        "stickers": "Stickers (informative, not in the sum): {value}",
+        "patches": "Patches (informative, not in the sum): {value}"
+      },
+      "unrealizedHint": "market value − sale fee of the integration store − effective cost; not a profit or loss until you sell",
+      "gross": "gross: {value}",
+      "groupOnlyPriced": "counts only the units with a price",
+      "coverage": "{priced} of {total} priced",
+      "staleCount": {
+        "one": "{count} outdated",
+        "other": "{count} outdated"
+      },
+      "partial": "(partial)",
+      "counts": "{unpriced} without price, {notPriceable} not valued",
+      "tabSummary": {
+        "forSale": "Market value of all stock for sale {value}",
+        "holding": "Market value of all holding {value}",
+        "unrealized": "Unrealized PnL {value}",
+        "coverage": "({priced} of {total} priced)"
+      }
     }
   },
   "filters": {
@@ -1220,6 +1274,23 @@
         "one": "{count} terminal not bought",
         "other": "{count} terminals not bought"
       }
+    },
+    "market": {
+      "badge": "estimated — not part of the real profit",
+      "valueLabel": "Current market value of inventory",
+      "valueHint": "By the CSFloat reference price of the identical item (for sale + holding). Stickers and patches are not added. Not part of the real profit, the minimum price or the statistics.",
+      "split": "For sale: {forSale} · Holding: {holding}",
+      "pnlLabel": "Unrealized PnL",
+      "pnlHint": "How much you would gain or lose if you sold everything now at the reference price, after the sale fee; it is not a profit or loss until you sell.",
+      "noPrice": "no price",
+      "unavailable": "unavailable",
+      "unavailableHint": "The net value depends on the CSFloat integration store having a sale fee. Gross (without the fee): {value}.",
+      "coverage": "{priced} of {total} units priced",
+      "staleCount": {
+        "one": "{count} outdated",
+        "other": "{count} outdated"
+      },
+      "partial": "(partial)"
     }
   },
   "deposits": {
@@ -1908,5 +1979,18 @@
     "chooseItem": "Pick the item obtained from the catalog.",
     "success": "{name} opened: {generated} was added to the stock.",
     "successLost": "{name} was not bought: the cost became a loss."
+  },
+  "prices": {
+    "status": {
+      "refreshing": "Updating prices…",
+      "updatedAgo": "Prices updated {time} ago",
+      "updatedTitle": "Prices from {date}. Prices are fetched when the app opens, at most every 15 min.",
+      "failed": "Could not update the prices",
+      "failedTitle": "{reason}",
+      "failedTitleWithDate": "{reason} Prices from {date}.",
+      "notConfigured": "Set up the CSFloat key to see prices",
+      "configureLink": "Set up",
+      "never": "Prices have not been fetched yet"
+    }
   }
 }

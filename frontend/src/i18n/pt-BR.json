@@ -19,7 +19,13 @@
     "saving": "Salvando...",
     "optional": "(opcional)",
     "moreDetails": "Mais detalhes",
-    "select": "Selecione"
+    "select": "Selecione",
+    "ago": {
+      "lessThanMinute": "menos de 1 min",
+      "minutes": "{count} min",
+      "hours": "{count} h",
+      "days": "{count} d"
+    }
   },
   "nav": {
     "inventory": "Inventário",
@@ -329,7 +335,9 @@
       "days": "Dias",
       "tradeLock": "Trade lock",
       "minPrice": "Preço mínimo (no saldo)",
-      "actions": "Ações"
+      "actions": "Ações",
+      "marketValue": "Valor de mercado ≈",
+      "unrealized": "PnL não realizado ≈"
     },
     "primaryStore": "Loja principal",
     "otherStores": "Outras lojas",
@@ -399,6 +407,52 @@
         "other": "{count} selecionadas"
       },
       "clearSelection": "Limpar seleção"
+    },
+    "marketValue": {
+      "noPrice": "sem preço",
+      "notPriceable": "sem avaliação",
+      "stale": "desatualizado",
+      "staleHint": "preço de {date}; é atualizado na próxima abertura do app",
+      "incomplete": "sem o chaveiro",
+      "incompleteHint": "o chaveiro/slab não tem preço; o valor é só do item",
+      "pricedAt": "preço de {date}",
+      "reason": {
+        "NOT_FETCHED": "ainda não buscado; os preços são buscados ao abrir o app",
+        "NOT_FETCHED_NO_KEY": "configure a chave do CSFloat para ver os preços",
+        "NOT_FOUND": "nenhum anúncio encontrado no CSFloat",
+        "NO_EXTERIOR": "informe o desgaste para avaliar",
+        "PHASE_REQUIRED": "informe a fase para avaliar",
+        "PHASE_UNMAPPED": "fase sem preço de referência conhecido",
+        "NOT_PRICEABLE": "item sem nome de mercado"
+      },
+      "netUnavailable": {
+        "NO_INTEGRATION_STORE": "escolha a loja da integração do CSFloat para descontar a taxa",
+        "FEES_NOT_CONFIGURED": "a loja da integração não tem taxa de venda",
+        "NET_NOT_COMPUTABLE": "não foi possível calcular o líquido",
+        "GROUP": "o líquido depende da loja da integração do CSFloat com taxa de venda"
+      },
+      "parts": {
+        "item": "Item: {value}",
+        "hanging": "Chaveiro/slab: {value}",
+        "stickers": "Stickers (informativo, fora da soma): {value}",
+        "patches": "Patches (informativo, fora da soma): {value}"
+      },
+      "unrealizedHint": "valor de mercado − taxa de venda da loja da integração − custo efetivo; não é lucro nem prejuízo até vender",
+      "gross": "bruto: {value}",
+      "groupOnlyPriced": "considera só as unidades com preço",
+      "coverage": "{priced} de {total} com preço",
+      "staleCount": {
+        "one": "{count} desatualizado",
+        "other": "{count} desatualizados"
+      },
+      "partial": "(parcial)",
+      "counts": "{unpriced} sem preço, {notPriceable} sem avaliação",
+      "tabSummary": {
+        "forSale": "Valor de mercado de todo o estoque à venda {value}",
+        "holding": "Valor de mercado de todo o holding {value}",
+        "unrealized": "PnL não realizado {value}",
+        "coverage": "({priced} de {total} com preço)"
+      }
     }
   },
   "filters": {
@@ -1220,6 +1274,23 @@
         "one": "{count} terminal não comprado",
         "other": "{count} terminais não comprados"
       }
+    },
+    "market": {
+      "badge": "estimado — não entra no lucro real",
+      "valueLabel": "Valor atual de mercado do estoque",
+      "valueHint": "Pelo preço de referência do CSFloat do item igual (à venda + holding). Stickers e patches não somam. Não entra no lucro real, no preço mínimo nem nas estatísticas.",
+      "split": "À venda: {forSale} · Holding: {holding}",
+      "pnlLabel": "PnL não realizado",
+      "pnlHint": "Quanto você ganharia ou perderia se vendesse tudo agora pelo preço de referência, já descontada a taxa de venda; não é lucro nem prejuízo até vender.",
+      "noPrice": "sem preço",
+      "unavailable": "indisponível",
+      "unavailableHint": "O líquido depende da loja da integração do CSFloat com taxa de venda. Bruto (sem a taxa): {value}.",
+      "coverage": "{priced} de {total} unidades com preço",
+      "staleCount": {
+        "one": "{count} desatualizada",
+        "other": "{count} desatualizadas"
+      },
+      "partial": "(parcial)"
     }
   },
   "deposits": {
@@ -1908,5 +1979,18 @@
     "chooseItem": "Escolha no catálogo o item obtido.",
     "success": "{name} aberto: {generated} entrou no estoque.",
     "successLost": "{name} não foi comprado: o custo virou perda."
+  },
+  "prices": {
+    "status": {
+      "refreshing": "Atualizando preços…",
+      "updatedAgo": "Preços atualizados há {time}",
+      "updatedTitle": "Preços de {date}. Os preços são buscados ao abrir o app, no máximo a cada 15 min.",
+      "failed": "Não foi possível atualizar os preços",
+      "failedTitle": "{reason}",
+      "failedTitleWithDate": "{reason} Preços de {date}.",
+      "notConfigured": "Configure a chave do CSFloat para ver os preços",
+      "configureLink": "Configurar",
+      "never": "Os preços ainda não foram buscados"
+    }
   }
 }

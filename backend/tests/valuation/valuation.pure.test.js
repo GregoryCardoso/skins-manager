@@ -49,7 +49,11 @@ describe('buildPriceTarget (nome de mercado e chave)', () => {
   test('fase sem índice conhecido, ou Doppler sem fase -> PHASE_UNMAPPED', () => {
     expect(buildPriceTarget(skin({ name: 'Glock-18 | Gamma Doppler', exterior: 'FN', phase: 'Phase 1' }))).toEqual({ notPriceable: 'PHASE_UNMAPPED' });
     expect(buildPriceTarget({ category: 'FACA', name: '★ Karambit | Doppler', variant: 'NORMAL', exterior: 'FN', phase: 'Fase Nova' })).toEqual({ notPriceable: 'PHASE_UNMAPPED' });
-    expect(buildPriceTarget({ category: 'FACA', name: '★ Karambit | Doppler', variant: 'NORMAL', exterior: 'FN', phase: null })).toEqual({ notPriceable: 'PHASE_UNMAPPED' });
+    expect(buildPriceTarget({ category: 'FACA', name: '★ Karambit | Doppler', variant: 'NORMAL', exterior: 'FN', phase: null })).toEqual({ notPriceable: 'PHASE_REQUIRED' });
+    // B1 (D365): arma Doppler/Gamma Doppler sem fase também pede a fase; vanilla e skin comum seguem avaliáveis.
+    expect(buildPriceTarget(skin({ name: 'Glock-18 | Gamma Doppler', exterior: 'FN', phase: null }))).toEqual({ notPriceable: 'PHASE_REQUIRED' });
+    expect(buildPriceTarget(skin({ name: 'Glock-18 | Gamma Doppler', exterior: null, phase: null }))).toEqual({ notPriceable: 'NO_EXTERIOR' });
+    expect(buildPriceTarget(skin({ name: 'AK-47 | Redline', exterior: 'FT', phase: null })).notPriceable).toBeUndefined();
   });
 
   test('arma sem exterior -> NO_EXTERIOR; nome vazio -> NOT_PRICEABLE', () => {
@@ -193,6 +197,22 @@ describe('valueUnit e totais', () => {
   test('sem preço do item igual: sem valor, mesmo com o chaveiro avaliado', () => {
     const v = valueUnit({ item: ak(), components: [{ kind: 'CHARM', name: 'Charm | C' }], priceOf: prices({ 'Charm | C|': row(250) }), costIndex: costIndex(100), now: NOW });
     expect(v).toMatchObject({ status: 'NO_PRICE', marketValueUsdCents: null, unrealizedUsdCents: null, costUsdCents: 100 });
+  });
+
+  test('B2: NO_PRICE traz o motivo (NOT_FETCHED sem linha; NOT_FOUND sem preço anterior); com preço anterior segue OK desatualizado', () => {
+    const base = { item: ak(), costIndex: costIndex(100), now: NOW };
+    expect(valueUnit({ ...base, priceOf: prices({}) })).toMatchObject({ status: 'NO_PRICE', reason: 'NOT_FETCHED' });
+    const notFound = { status: 'NOT_FOUND', basePriceCents: null, pricedAt: null, fetchedAt: '2026-11-24T10:00:00.000Z' };
+    expect(valueUnit({ ...base, priceOf: prices({ [AK_KEY]: notFound }) })).toMatchObject({ status: 'NO_PRICE', reason: 'NOT_FOUND' });
+    expect(valueUnit({ ...base, priceOf: prices({ [AK_KEY]: row(1000, '2026-11-24T10:00:00.000Z', 'NOT_FOUND') }) })).toMatchObject({ status: 'OK', isStale: true, reason: null });
+  });
+
+  test('B3: netUnits conta as unidades com valor e líquido; sem loja da integração = 0 e líquido 0', () => {
+    const priceOf = prices({ [AK_KEY]: row(1000) });
+    const withStore = valueUnit({ item: ak(), priceOf, costIndex: costIndex(100), saleStore: csfloatStore, now: NOW });
+    const noStore = valueUnit({ item: ak({ id: 2 }), priceOf, costIndex: costIndex(100), saleStore: null, now: NOW });
+    expect(summarize([withStore, noStore])).toMatchObject({ pricedUnits: 2, netUnits: 1 });
+    expect(summarize([noStore])).toMatchObject({ pricedUnits: 1, netUnits: 0, unrealizedNetUsdCents: 0 });
   });
 
   test('item não avaliável traz o motivo; vendida e consumida = null', () => {

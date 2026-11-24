@@ -10,13 +10,15 @@ interface Props extends UnitRowHandlers {
   forSalePendingId?: number | null;
   // Linha apontada por `?item=<id>` (destaque).
   highlightedItemId?: number | null;
+  // Colunas de valor de mercado (somem com o filtro "Vendido").
+  showMarket?: boolean;
 }
 
-export default function InventoryTable({ items, stores, forSalePendingId = null, highlightedItemId = null, ...handlers }: Props) {
+export default function InventoryTable({ items, stores, forSalePendingId = null, highlightedItemId = null, showMarket = true, ...handlers }: Props) {
   return (
     <div className={styles.scroll}>
       <table className={styles.table}>
-        <UnitTableHead />
+        <UnitTableHead showMarket={showMarket} />
         <tbody>
           {items.map((item) => (
             <InventoryUnitRow
@@ -25,6 +27,7 @@ export default function InventoryTable({ items, stores, forSalePendingId = null,
               stores={stores}
               forSalePendingId={forSalePendingId}
               highlighted={highlightedItemId === item.id}
+              showMarket={showMarket}
               {...handlers}
             />
           ))}
