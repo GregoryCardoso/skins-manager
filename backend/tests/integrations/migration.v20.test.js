@@ -45,8 +45,8 @@ describe('migração v20', () => {
     });
     const db = openDatabase(dbPath, { now: NOW });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(20);
-      const { steam_store_id: steamId, ...rest } = db.prepare('SELECT * FROM settings').get();
+      expect(db.pragma('user_version', { simple: true })).toBe(21);
+      const { steam_store_id: steamId, price_refresh_started_at: _p1, price_refresh_last_at: _p2, price_refresh_last_status: _p3, price_refresh_last_error_code: _p4, ...rest } = db.prepare('SELECT * FROM settings').get();
       expect(rest).toEqual(before.settings);
       expect(steamId).toBe(db.prepare("SELECT id FROM stores WHERE name = 'Steam'").get().id);
       expect(db.prepare('SELECT * FROM stores').all()).toEqual(before.stores);

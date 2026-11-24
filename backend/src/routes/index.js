@@ -11,6 +11,7 @@ const profitRoutes = require('./profitRoutes');
 const integrationRoutes = require('./integrationRoutes');
 const importRoutes = require('./importRoutes');
 const operationRoutes = require('./operationRoutes');
+const marketValueRoutes = require('./marketValueRoutes');
 
 const { APP_NAME, APP_VERSION } = require('../config/appInfo');
 
@@ -32,5 +33,6 @@ router.use('/profit', profitRoutes);
 router.use('/integrations', integrationRoutes);
 router.use('/imports', importRoutes);
 router.use('/operations', operationRoutes);
+router.use('/market-values', marketValueRoutes);
 
 module.exports = router;

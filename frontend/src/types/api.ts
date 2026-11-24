@@ -298,6 +298,80 @@ export interface ItemView {
   canReceiveComponents: boolean;
   consumedAt?: string | null;
   stats: ItemStats;
+  // Valor de mercado (10.5, D364): só informativo; null para vendidas e consumidas. A tela chega na 10.6.
+  marketValue?: MarketValue | null;
+}
+
+export type MarketValueStatus = 'OK' | 'NO_PRICE' | 'NOT_PRICEABLE';
+
+export interface MarketValue {
+  marketValueUsdCents: number | null;
+  parts: { baseCents: number | null; hangingCents: number | null; stickersInfoCents: number; patchesInfoCents: number };
+  costUsdCents: number | null;
+  costEstimated: boolean;
+  unrealizedUsdCents: number | null;
+  unrealizedNetUsdCents: number | null;
+  netUnavailableReason: 'NO_INTEGRATION_STORE' | 'FEES_NOT_CONFIGURED' | 'NET_NOT_COMPUTABLE' | null;
+  pricedAt: string | null;
+  isStale: boolean;
+  status: MarketValueStatus;
+  reason: 'NO_EXTERIOR' | 'PHASE_UNMAPPED' | 'NOT_PRICEABLE' | null;
+  isComplete: boolean;
+  missing: string[];
+  basis: 'NAME';
+  isEstimated: true;
+  approxBrl: { marketValue: number | null; unrealized: number | null; unrealizedNet: number | null };
+}
+
+// Soma do estoque de um grupo (ou totais do resumo).
+export interface MarketValueTotals {
+  marketValueUsdCents: number;
+  costUsdCents: number;
+  unrealizedUsdCents: number;
+  unrealizedNetUsdCents: number;
+  costEstimated: boolean;
+  pricedUnits: number;
+  unpricedUnits: number;
+  notPriceableUnits: number;
+  staleUnits: number;
+  unitCount: number;
+  isComplete?: boolean;
+  approxBrl: { marketValue: number | null; unrealized: number | null; unrealizedNet: number | null };
+}
+
+export interface MarketValueSummary {
+  configured: boolean;
+  inProgress: boolean;
+  source: string;
+  staleHours: number;
+  lastRefreshAt: string | null;
+  lastRun: { at: string; status: 'OK' | 'PARTIAL' | 'FAILED'; errorCode: string | null } | null;
+  nextAllowedAt: string | null;
+  oldestPricedAt: string | null;
+  staleKeys: number;
+  isEstimated: true;
+  totals: MarketValueTotals;
+  byState: { forSale: MarketValueTotals; holding: MarketValueTotals };
+}
+
+export interface MarketValueRefreshResult {
+  requested: number;
+  fetched: number;
+  updated: number;
+  notFound: number;
+  notPriceableUnits: number;
+  remaining: number;
+  budgetUsed: number;
+  stoppedBy: string | null;
+  retryAt: string | null;
+  lastRefreshAt: string | null;
+}
+
+// POST /api/market-values/refresh (sempre 200; falhas silenciosas).
+export interface MarketValueRefreshResponse {
+  skipped: 'ALREADY_RAN' | 'NOT_CONFIGURED' | 'BUSY' | 'COOLDOWN' | null;
+  result: MarketValueRefreshResult | null;
+  failed: { code: string } | null;
 }
 
 export interface ItemCost {
@@ -464,6 +538,8 @@ export interface ItemGroup {
   approxBrl: { totalCostCents: number; avgCostCents: number } | null;
   // Unidades em estoque do grupo com algum componente (10.1); fora da chave do agrupamento.
   componentUnits: number;
+  // Valor de mercado do estoque inteiro do grupo (10.5).
+  marketValue?: MarketValueTotals;
   stagnantCount: number;
   stock: ItemGroupStock;
   units: ItemView[];

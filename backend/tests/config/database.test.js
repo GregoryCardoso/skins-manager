@@ -43,17 +43,17 @@ describe('config/database', () => {
 
   test('user_version = 4 e foreign_keys = 1', () => {
     const db = getDb();
-    expect(db.pragma('user_version', { simple: true })).toBe(20);
+    expect(db.pragma('user_version', { simple: true })).toBe(21);
     expect(db.pragma('foreign_keys', { simple: true })).toBe(1);
   });
 
-  test('cria as 15 tabelas, todas STRICT', () => {
+  test('cria as 16 tabelas, todas STRICT', () => {
     const rows = getDb()
       .prepare(
         "SELECT name, strict FROM pragma_table_list WHERE schema = 'main' AND type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
       )
       .all();
-    expect(rows.map((r) => r.name)).toEqual(['catalog_items', 'deposits', 'external_links', 'external_records', 'import_batch_entries', 'import_batches', 'integrations', 'item_components', 'item_operation_links', 'item_operations', 'items', 'settings', 'store_balances', 'stores', 'withdrawals']);
+    expect(rows.map((r) => r.name)).toEqual(['catalog_items', 'deposits', 'external_links', 'external_records', 'import_batch_entries', 'import_batches', 'integrations', 'item_components', 'item_operation_links', 'item_operations', 'items', 'market_prices', 'settings', 'store_balances', 'stores', 'withdrawals']);
     expect(rows.every((r) => r.strict === 1)).toBe(true);
   });
 
@@ -76,7 +76,7 @@ describe('config/database', () => {
 
     const db2 = openDatabase(dbPath);
     try {
-      expect(db2.pragma('user_version', { simple: true })).toBe(20);
+      expect(db2.pragma('user_version', { simple: true })).toBe(21);
       expect(db2.pragma('foreign_keys', { simple: true })).toBe(1);
       const names = db2.prepare('SELECT name FROM stores ORDER BY id').all().map((r) => r.name);
       expect(names).toEqual(['CSFloat', 'Steam', 'CSMoney', 'Persistida']);

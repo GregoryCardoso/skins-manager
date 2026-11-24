@@ -30,7 +30,7 @@ const dump = (db) => ({
   deposits: db.prepare('SELECT * FROM deposits ORDER BY id').all().map(({ fee_cents: feeCents, ...rest }) => rest),
   withdrawals: db.prepare('SELECT * FROM withdrawals ORDER BY id').all(),
   balances: db.prepare('SELECT * FROM store_balances ORDER BY id').all(),
-  settings: db.prepare('SELECT * FROM settings').all().map(({ steam_store_id: _steam, ...r }) => r),
+  settings: db.prepare('SELECT * FROM settings').all().map(({ steam_store_id: _steam, price_refresh_started_at: _p1, price_refresh_last_at: _p2, price_refresh_last_status: _p3, price_refresh_last_error_code: _p4, ...r }) => r),
 });
 const hasTable = (db, name) => db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?").get(name) !== undefined;
 
@@ -52,7 +52,7 @@ describe('v12 sobre um banco v11 com dados', () => {
     const now = new Date('2026-11-22T12:00:00.000Z');
     const db = openDatabase(dbPath, { now });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(20);
+      expect(db.pragma('user_version', { simple: true })).toBe(21);
       expect(dump(db)).toEqual(before);
       const rows = db.prepare('SELECT * FROM integrations').all();
       expect(rows).toHaveLength(1);
@@ -188,20 +188,20 @@ describe('restrições da tabela integrations', () => {
 });
 
 describe('backup automático antes de migrar não leva a chave (D290)', () => {
-  test('migração v20 -> v21 (simulada): o backup sai com api_key nula e o banco vivo mantém a chave', () => {
+  test('migração v21 -> v22 (simulada): o backup sai com api_key nula e o banco vivo mantém a chave', () => {
     const dbPath = dbIn('autobackup');
     const db = openDatabase(dbPath);
     db.prepare('UPDATE integrations SET api_key = ?, api_key_saved_at = ?').run(KEY, '2026-11-22T10:00:00.000Z');
     db.close();
 
-    const fake21 = { version: 21, name: 'qa_fake', up(d) { d.exec('CREATE TABLE qa_fake (id INTEGER)'); } };
+    const fake21 = { version: 22, name: 'qa_fake', up(d) { d.exec('CREATE TABLE qa_fake (id INTEGER)'); } };
     const live = openDatabase(dbPath, { migrations: [...MIGRATIONS, fake21], now: new Date('2026-11-22T13:00:00.000Z') });
     try {
       expect(live.prepare('SELECT api_key FROM integrations').get().api_key).toBe(KEY);
     } finally {
       live.close();
     }
-    const backups = backupsOf(dbPath).filter((f) => /inventory-v20-/.test(path.basename(f)));
+    const backups = backupsOf(dbPath).filter((f) => /inventory-v21-/.test(path.basename(f)));
     expect(backups).toHaveLength(1);
     const copy = new Database(backups[0], { readonly: true });
     try {

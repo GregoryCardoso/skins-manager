@@ -196,6 +196,7 @@
     "CSFLOAT_ACCOUNT_NOT_CHANGED": "The key belongs to the account already linked; nothing to switch.",
     "INTEGRATION_NOT_FOUND": "Integration not found.",
     "IMPORT_IN_PROGRESS": "An import is already running. Wait for it to finish.",
+    "VALUATION_IN_PROGRESS": "Prices are being updated. Wait a moment and try again.",
     "IMPORT_STORE_REQUIRED": "Create, in Stores, a USD store named \"CSFloat\".",
     "IMPORT_CUTOFF_REQUIRED": "Enter the cutoff date.",
     "IMPORT_CUTOFF_ALREADY_SET": "The cutoff date is already set.",

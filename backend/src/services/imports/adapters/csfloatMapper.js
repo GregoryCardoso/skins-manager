@@ -256,7 +256,35 @@ function mapTransactionsPage(json) {
   return { transactions: json.transactions.map(mapTransaction), count: json.count };
 }
 
+// --- Preço de referência (10.5, D364) ---------------------------------------------------------------------------------------
+
+// GET /listings?...&limit=1 -> { status: 'OK'|'NOT_FOUND', basePriceCents, referenceQuantity, sourceUpdatedAt }. Allowlist: do primeiro
+// anúncio só `reference.base_price`, `reference.quantity`, `reference.last_updated`, `item.market_hash_name` e `item.paint_index`.
+// Nunca `price` (o mais barato pode ser um leilão abaixo da referência), `type`, `state`, `phase`, `sticker_overpay`, `cursor`, `id`,
+// `seller`, `asset_id`, `inspect_link`, `float_value`, `predicted_price` nem `float_factor` (D309).
+// Salvaguarda: o nome (e o `paint_index`, só quando foi pedido um) do anúncio precisam bater com o pedido; senão a fonte ignorou o filtro.
+function mapListingReference(json, { marketHashName, paintIndex = null } = {}) {
+  const list = Array.isArray(json) ? json : isPlainObject(json) && Array.isArray(json.data) ? json.data : null;
+  if (list === null) throw formatChanged();
+  if (list.length === 0) return { status: 'NOT_FOUND', basePriceCents: null, referenceQuantity: null, sourceUpdatedAt: null };
+  const listing = list[0];
+  if (!isPlainObject(listing)) throw formatChanged();
+  const item = isPlainObject(listing.item) ? listing.item : null;
+  if (!item || item.market_hash_name !== marketHashName) throw formatChanged();
+  if (paintIndex !== null && paintIndex !== undefined && item.paint_index !== paintIndex) throw formatChanged();
+  const reference = isPlainObject(listing.reference) ? listing.reference : null;
+  const basePriceCents = reference ? parseCentsString(reference.base_price) : null;
+  if (basePriceCents === null) return { status: 'NOT_FOUND', basePriceCents: null, referenceQuantity: null, sourceUpdatedAt: null };
+  return {
+    status: 'OK',
+    basePriceCents,
+    referenceQuantity: parseNonNegativeInt(reference.quantity),
+    sourceUpdatedAt: parseIsoDate(reference.last_updated),
+  };
+}
+
 module.exports = {
+  mapListingReference,
   mapAccount,
   mapTrade,
   mapTradesPage,

@@ -27,6 +27,7 @@ const { KNOWN_TX_TYPES, PURCHASE_REVERSAL_TX_TYPES, SALE_REVERSAL_TX_TYPES } = r
 const { saleMoment, saleReleaseOf, syncSaleRelease, syncReleasesFromTransactions, expectedFeeCents, saleCreditOf } = require('./saleImportHelpers');
 const { validateAdapter } = require('./importSource');
 const importLock = require('./importLock');
+const valuationLock = require('../valuation/valuationLock');
 const scanPolicy = require('./scanPolicy');
 const tradeClassifier = require('./tradeClassifier');
 const externalItemMapper = require('./externalItemMapper');
@@ -758,7 +759,7 @@ function autoSkipReason(row) {
   if (autoAttempted) return 'AUTO_ALREADY_RAN';
   if (!row.autoImportOnOpen || !row.hasApiKey || row.storeId === null || row.tradesCutoffAt === null) return 'AUTO_NOT_CONFIGURED';
   if (row.autoImportPaused) return 'AUTO_PAUSED';
-  if (importLock.isImportInProgress() || backupService.isExportInProgress()) return 'BUSY';
+  if (importLock.isImportInProgress() || valuationLock.isValuationInProgress() || backupService.isExportInProgress()) return 'BUSY';
   return null;
 }
 
@@ -780,6 +781,7 @@ async function runImport({
   const store = requireImportStore(row);
   const apiKey = integrationService.requireApiKey(source);
   importLock.assertIdle();
+  valuationLock.assertIdle(); // a atualização de preços usa a mesma chave e o mesmo limite de requisições (D364)
   if (backupService.isExportInProgress()) {
     throw new ConflictError('Há uma exportação de backup em andamento. Aguarde terminar e tente de novo.', 'BACKUP_BUSY');
   }

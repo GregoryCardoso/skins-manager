@@ -91,10 +91,24 @@ const IMPORT_RECHECK_WINDOW_MS = 2 * 86400000;
 const IMPORT_OPEN_GRACE_MS = 2 * 86400000;
 const IMPORT_DEFAULT_TRADE_LOCK_DAYS = 7;
 const IMPORT_BATCHES_PAGE_SIZE = 20;
+// Valor de mercado (D364, 10.5): cache de preços do CSFloat, atualizado só pelo botão ou ao abrir o app.
+const MARKET_PRICE_STALE_HOURS = 24;
+const VALUATION_CALL_DELAY_MS = 1000;
+const VALUATION_FALLBACK_MAX_KEYS = 50; // teto de segurança quando a fonte não manda os headers de limite
+const VALUATION_TOTAL_TIMEOUT_MS = 240000;
+const VALUATION_RATE_LIMIT_RESERVE = 3;
+// Intervalo mínimo entre rodadas de atualização de preços (o instante fica no banco: vale entre reinícios).
+const VALUATION_COOLDOWN_MS = 15 * 60000;
 // Colunas com segredo (D290): zeradas em todo arquivo de backup que sai do banco (exportação e backups automáticos).
 const SECRET_COLUMNS = Object.freeze([Object.freeze({ table: 'integrations', column: 'api_key' })]);
 
 module.exports = Object.freeze({
+  MARKET_PRICE_STALE_HOURS,
+  VALUATION_CALL_DELAY_MS,
+  VALUATION_FALLBACK_MAX_KEYS,
+  VALUATION_TOTAL_TIMEOUT_MS,
+  VALUATION_RATE_LIMIT_RESERVE,
+  VALUATION_COOLDOWN_MS,
   CSFLOAT_IMPORT_TOTAL_TIMEOUT_MS,
   CSFLOAT_PAGE_LIMIT,
   CSFLOAT_MAX_PAGES,

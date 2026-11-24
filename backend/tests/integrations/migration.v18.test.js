@@ -23,7 +23,7 @@ const snapshot = (d) => ({
   components: d.prepare('SELECT * FROM item_components ORDER BY id').all(),
   deposits: d.prepare('SELECT * FROM deposits ORDER BY id').all(),
   stores: d.prepare('SELECT * FROM stores ORDER BY id').all(),
-  settings: d.prepare('SELECT * FROM settings').all().map(({ steam_store_id: _steam, ...r }) => r),
+  settings: d.prepare('SELECT * FROM settings').all().map(({ steam_store_id: _steam, price_refresh_started_at: _p1, price_refresh_last_at: _p2, price_refresh_last_status: _p3, price_refresh_last_error_code: _p4, ...r }) => r),
   batches: d.prepare('SELECT * FROM import_batches ORDER BY id').all(),
 });
 const withoutBatchColumns = (rows) => rows.map(({ components_filled_count: filled, components_skipped_count: skipped, ...rest }) => {
@@ -68,7 +68,7 @@ test('v18 sobre v17 com dados: tudo idêntico; o índice de slot sai; as colunas
   const { before } = seedV17(dbPath);
   const db = openDatabase(dbPath, { now: new Date('2026-11-24T12:00:00.000Z') });
   try {
-    expect(db.pragma('user_version', { simple: true })).toBe(20);
+    expect(db.pragma('user_version', { simple: true })).toBe(21);
     const after = snapshot(db);
     expect(after.items).toEqual(before.items);
     expect(after.components).toEqual(before.components);
@@ -145,7 +145,7 @@ test('v18 falha no meio: rollback total (índice de volta, sem colunas), versão
   }
   const ok = openDatabase(dbPath);
   try {
-    expect(ok.pragma('user_version', { simple: true })).toBe(20);
+    expect(ok.pragma('user_version', { simple: true })).toBe(21);
   } finally {
     ok.close();
   }

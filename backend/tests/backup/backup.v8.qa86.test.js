@@ -57,7 +57,7 @@ describe('importar backups v1 a v8 (D248, D253)', () => {
   test.each([1, 2, 3, 4, 5, 6, 7])('backup v%i migra para a v9: todos os registros viram registro antigo e nenhum saldo inicial sobra', async (version) => {
     const res = await octet(makeBackup(version));
     expect(res.status).toBe(200);
-    expect(res.body.data).toMatchObject({ fileVersion: version, schemaVersion: 20 });
+    expect(res.body.data).toMatchObject({ fileVersion: version, schemaVersion: 21 });
     expect(res.body.data.migrationsApplied).toEqual(MIGRATIONS.filter((m) => m.version > version).map((m) => m.version));
 
     const data = await current();
@@ -88,7 +88,7 @@ describe('importar backups v1 a v8 (D248, D253)', () => {
     old.close();
     const res = await octet(fs.readFileSync(file));
     expect(res.status).toBe(200);
-    expect(res.body.data).toMatchObject({ fileVersion: 8, schemaVersion: 20, migrationsApplied: [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20] });
+    expect(res.body.data).toMatchObject({ fileVersion: 8, schemaVersion: 21, migrationsApplied: [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21] });
     const hist = await history(csfId);
     expect(hist.map((h) => [h.kind, h.balanceCents, h.legacy, h.adjustmentCents, h.note])).toEqual([
       ['CHECK', 90, false, -10, 'taxa'], ['CHECK', 0, true, null, 'início'],

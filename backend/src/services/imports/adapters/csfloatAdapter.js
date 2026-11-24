@@ -4,7 +4,7 @@
 // acessa o banco. `getAccount` (GET /me, 9.1), `pageTrades` (GET /me/trades) e `pageTransactions` (GET /me/transactions, 9.2).
 const { CSFLOAT_PAGE_LIMIT } = require('../../../config/constants');
 const { requestJson } = require('./csfloatHttp');
-const { mapAccount, mapTradesPage, mapTransactionsPage } = require('./csfloatMapper');
+const { mapAccount, mapTradesPage, mapTransactionsPage, mapListingReference } = require('./csfloatMapper');
 
 const ID = 'CSFLOAT';
 
@@ -34,10 +34,24 @@ async function pageTransactions({
   return { ...mapTransactionsPage(json), rateLimit };
 }
 
+// Preço de referência de um item de mercado (10.5, D364): o anúncio mais barato só serve para ler `reference.base_price`. A requisição
+// leva só `market_hash_name`, `paint_index` (quando há), `sort_by=lowest_price` e `limit=1`.
+async function getReferencePrice({
+  apiKey, marketHashName, paintIndex = null, fetchFn, totalSignal, totalDeadlineAt, callTimeoutMs, nowFn, sleepFn,
+} = {}) {
+  const { json, rateLimit } = await requestJson('/listings', {
+    apiKey,
+    query: { market_hash_name: marketHashName, paint_index: paintIndex, sort_by: 'lowest_price', limit: 1 },
+    fetchFn, totalSignal, totalDeadlineAt, callTimeoutMs, nowFn, sleepFn,
+  });
+  return { ...mapListingReference(json, { marketHashName, paintIndex }), rateLimit };
+}
+
 module.exports = {
   id: ID,
-  capabilities: Object.freeze({ account: true, trades: true, transactions: true }),
+  capabilities: Object.freeze({ account: true, trades: true, transactions: true, valuation: true }),
   getAccount,
   pageTrades,
   pageTransactions,
+  getReferencePrice,
 };

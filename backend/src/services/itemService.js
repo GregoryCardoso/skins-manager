@@ -30,6 +30,7 @@ const { getStoreOrFail } = require('./storeService');
 const { getAgingThresholds } = require('./settingsService');
 const externalLinkService = require('./externalLinkService');
 const itemComponentService = require('./itemComponentService');
+const { buildValuationIndex, groupValuation } = require('./valuation/valuationIndex');
 const operationContextService = require('./operations/operationContext');
 const openingRules = require('./operations/openingRules');
 
@@ -422,7 +423,7 @@ function toItemView(
   item,
   {
     stores, settings, statsIndex, catalogById = new Map(), externalSources = new Map(), componentsByItemId = new Map(), now = new Date(), thresholds,
-    operationContext: opCtx = operationContextService.EMPTY_OPERATION_CONTEXT, stockKeys = [],
+    operationContext: opCtx = operationContextService.EMPTY_OPERATION_CONTEXT, stockKeys = [], valuationIndex = null,
   }
 ) {
   const inStock = item.status === 'EM_ESTOQUE';
@@ -460,6 +461,8 @@ function toItemView(
     saleInfo: buildSaleInfo(item, settings ? settings.usdBrlRate : null, { inheritedUsdCents }),
     saleRelease: computeSaleRelease(item, now),
     stats: statsIndex.get(buildStatsKey(item)) ?? computeStats([item], { costIndex }),
+    // Valor de mercado (10.5, D364): só informativo; vendida e consumida = null. Nunca entra no lucro real nem nos números do app.
+    marketValue: valuationIndex ? valuationIndex.get(item.id) ?? null : null,
   };
 }
 
@@ -472,13 +475,16 @@ function loadCatalogMap(items, componentsByItemId) {
   return new Map(catalogService.getCatalogItemsByIds([...ids]).map((c) => [c.id, c]));
 }
 
-function loadContext() {
+function loadContext(ctxNow = new Date(), { withValuation = true } = {}) {
   const items = Item.findAll();
   const componentsByItemId = ItemComponent.listAll();
   const operationContext = operationContextService.loadOperationContext(items);
+  const settings = Setting.get();
+  const catalogById = loadCatalogMap(items, componentsByItemId);
   return {
-    items, stores: Store.findAll(), settings: Setting.get(), statsIndex: buildStatsIndex(items, { costIndex: operationContext.costIndex }),
-    catalogById: loadCatalogMap(items, componentsByItemId), componentsByItemId,
+    items, stores: Store.findAll(), settings, statsIndex: buildStatsIndex(items, { costIndex: operationContext.costIndex }),
+    catalogById, componentsByItemId,
+    valuationIndex: !withValuation ? null : buildValuationIndex({ items, componentsByItemId, catalogById, costIndex: operationContext.costIndex, usdBrlRate: settings.usdBrlRate, now: ctxNow }),
     externalSources: externalLinkService.sourcesByItemIds(), operationContext,
     stockKeys: items.filter((item) => item.status === 'EM_ESTOQUE' && openingRules.isKey(item)),
   };
@@ -501,8 +507,12 @@ function viewOf(item, { now, thresholds }) {
   const componentsByItemId = ItemComponent.listByItemIds([item.id]);
   const catalogById = loadCatalogMap([item], componentsByItemId);
   const externalSources = externalLinkService.sourcesByItemIds([item.id]);
+  const settings = Setting.get();
+  const valuationIndex = buildValuationIndex({
+    items: [item], componentsByItemId, catalogById, costIndex: operationContext.costIndex, usdBrlRate: settings.usdBrlRate, now,
+  });
   return toItemView(item, {
-    stores: Store.findAll(), settings: Setting.get(), statsIndex, catalogById, externalSources, componentsByItemId, now, thresholds, operationContext,
+    stores: Store.findAll(), settings, valuationIndex, statsIndex, catalogById, externalSources, componentsByItemId, now, thresholds, operationContext,
     stockKeys: openingRules.needsKey(item) ? Item.findInStockByCategories(['OUTRO']).filter(openingRules.isKey) : [],
   });
 }
@@ -598,11 +608,11 @@ function selectItems(all, query, { now, thresholds }) {
 }
 
 function listItems(query = {}, { now = new Date(), thresholds = getAgingThresholds() } = {}) {
-  const { items: all, stores, settings, statsIndex, catalogById, externalSources, componentsByItemId, operationContext, stockKeys } = loadContext();
+  const { items: all, stores, settings, statsIndex, catalogById, externalSources, componentsByItemId, operationContext, stockKeys, valuationIndex } = loadContext(now);
   const { items, saleStateCounts } = selectItems(all, query, { now, thresholds });
 
   return {
-    items: items.map((item) => toItemView(item, { stores, settings, statsIndex, catalogById, externalSources, componentsByItemId, now, thresholds, operationContext, stockKeys })),
+    items: items.map((item) => toItemView(item, { stores, settings, statsIndex, catalogById, externalSources, componentsByItemId, now, thresholds, operationContext, stockKeys, valuationIndex })),
     meta: {
       count: items.length,
       saleStateCounts,
@@ -617,7 +627,7 @@ function listItems(query = {}, { now = new Date(), thresholds = getAgingThreshol
 // Visão agrupada (D271-D275): só itens em estoque, mesma seleção e ordenação da lista individual. Os grupos seguem a
 // ordem da primeira aparição na lista ordenada; `stock` conta todo o estoque da chave, independente da aba e dos filtros.
 function listItemGroups(query = {}, { now = new Date(), thresholds = getAgingThresholds() } = {}) {
-  const { items: all, stores, settings, statsIndex, catalogById, externalSources, componentsByItemId, operationContext, stockKeys } = loadContext();
+  const { items: all, stores, settings, statsIndex, catalogById, externalSources, componentsByItemId, operationContext, stockKeys, valuationIndex } = loadContext(now);
   const { items, saleStateCounts } = selectItems(all, { ...query, status: 'EM_ESTOQUE' }, { now, thresholds });
 
   const stockByKey = new Map();
@@ -643,10 +653,12 @@ function listItemGroups(query = {}, { now = new Date(), thresholds = getAgingThr
       // ao expandir aparecem só as unidades da aba e dos filtros.
       ...summarizeGroupCost(stockByKey.get(key) ?? units, settings.usdBrlRate, { costIndex: operationContext.costIndex }),
       // Unidades do grupo em estoque com algum componente (10.1, D344); fora da chave do agrupamento (2.7).
+      // Valor de mercado do estoque inteiro do grupo (10.5, D364), só informativo.
+      marketValue: groupValuation(stockByKey.get(key) ?? units, valuationIndex, settings.usdBrlRate),
       componentUnits: (stockByKey.get(key) ?? units).filter((u) => (componentsByItemId.get(u.id) ?? []).length > 0).length,
       stagnantCount: countStagnant(units, thresholds, now),
       stock: summarizeStockStates(stockByKey.get(key) ?? [], now),
-      units: units.map((item) => toItemView(item, { stores, settings, statsIndex, catalogById, externalSources, componentsByItemId, now, thresholds, operationContext, stockKeys })),
+      units: units.map((item) => toItemView(item, { stores, settings, statsIndex, catalogById, externalSources, componentsByItemId, now, thresholds, operationContext, stockKeys, valuationIndex })),
     };
   });
 
@@ -666,7 +678,7 @@ function listItemGroups(query = {}, { now = new Date(), thresholds = getAgingThr
 
 // Vendas (D124/D127): lista filtrada/ordenada + resumo sobre o mesmo conjunto. Estatísticas usam todos os itens.
 function listSales(query = {}, { now = new Date(), thresholds = getAgingThresholds() } = {}) {
-  const { items: all, stores, settings, statsIndex, catalogById, externalSources, componentsByItemId, operationContext, stockKeys } = loadContext();
+  const { items: all, stores, settings, statsIndex, catalogById, externalSources, componentsByItemId, operationContext, stockKeys } = loadContext(now, { withValuation: false });
   let items = all.filter((i) => i.status === 'VENDIDO');
   if (!isNil(query.saleStoreId)) items = items.filter((i) => i.saleStoreId === query.saleStoreId);
   items = filterSoldInPeriod(items, { soldFrom: query.soldFrom, soldTo: query.soldTo });

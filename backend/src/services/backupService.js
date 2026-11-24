@@ -19,6 +19,7 @@ const catalogService = require('./catalogService');
 const integrationService = require('./integrationService');
 const settingsService = require('./settingsService');
 const importLock = require('./imports/importLock');
+const valuationLock = require('./valuation/valuationLock');
 const Item = require('../models/Item');
 const Store = require('../models/Store');
 
@@ -77,6 +78,7 @@ const BUSY_CHECKS = Object.freeze([
   () => catalogService.isCatalogRefreshInProgress(),
   () => settingsService.isFxRefreshInProgress(),
   () => importLock.isImportInProgress(), // importação do CSFloat (D303, D318)
+  () => valuationLock.isValuationInProgress(), // atualização de preços (D364)
 ]);
 
 function isBackupBusy() {

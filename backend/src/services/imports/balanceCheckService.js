@@ -14,6 +14,7 @@ const storeBalanceService = require('../storeBalanceService');
 const { waitForRateLimit } = require('./adapters/csfloatHttp');
 const scanPolicy = require('./scanPolicy');
 const importLock = require('./importLock');
+const valuationLock = require('../valuation/valuationLock');
 const { requireImportStore: requireStore } = require('./importStore');
 
 const SOURCE = 'CSFLOAT';
@@ -132,6 +133,7 @@ const defaultSleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 // "Explicar diferença": lê o extrato inteiro (todas as páginas) e lista o que não tem lançamento no app.
 async function explainDifference({ fetchFn, nowFn = Date.now, sleepFn, now = new Date() } = {}) {
   if (importLock.isImportInProgress()) throw new ConflictError('Já há uma importação em andamento. Aguarde terminar.', 'IMPORT_IN_PROGRESS');
+  valuationLock.assertIdle();
   const row = integrationService.loadRow(SOURCE, { now });
   requireStore(row);
   const apiKey = integrationService.requireApiKey(SOURCE);

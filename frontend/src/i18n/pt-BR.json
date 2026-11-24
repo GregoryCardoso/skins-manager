@@ -196,6 +196,7 @@
     "CSFLOAT_ACCOUNT_NOT_CHANGED": "A chave é da mesma conta já ligada; não há o que trocar.",
     "INTEGRATION_NOT_FOUND": "Integração não encontrada.",
     "IMPORT_IN_PROGRESS": "Já há uma importação em andamento. Aguarde terminar.",
+    "VALUATION_IN_PROGRESS": "Os preços estão sendo atualizados. Aguarde um instante e tente de novo.",
     "IMPORT_STORE_REQUIRED": "Crie, em Lojas, uma loja em US$ chamada \"CSFloat\".",
     "IMPORT_CUTOFF_REQUIRED": "Informe a data de corte.",
     "IMPORT_CUTOFF_ALREADY_SET": "A data de corte já foi definida.",
