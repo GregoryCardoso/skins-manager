@@ -876,7 +876,7 @@
     },
     "integrations": {
       "title": "Integrações",
-      "description": "Importe compras e vendas direto das lojas. A chave fica só neste computador.",
+      "description": "Importe compras, vendas, aportes e saques direto das lojas. A chave fica só neste computador.",
       "csfloat": {
         "title": "CSFloat",
         "apiKeyLabel": "Chave da API",
@@ -924,7 +924,7 @@
         },
         "cutoffInfo": "Data de corte: {date}",
         "autoImport": "Importar ao abrir o app",
-        "autoImportHint": "Ao abrir, o app busca só o que é novo no CSFloat, em segundo plano, sem travar a tela. Se não houver nada novo, nada aparece.",
+        "autoImportHint": "Ao abrir, o app busca só o que é novo no CSFloat, em segundo plano, sem travar a tela. Se não houver nada novo, aparece um aviso curto dizendo isso.",
         "autoImportNeedsFirst": "Faça a primeira importação pelo botão (ela define a data de corte); depois a importação ao abrir passa a valer.",
         "autoPausedUndo": "A importação ao abrir está pausada porque você desfez uma importação em {date}, para o que foi desfeito não voltar sozinho. Reative quando quiser.",
         "autoPausedSwitch": "A importação ao abrir está pausada porque a conta do CSFloat foi trocada. Faça a primeira importação da conta nova e reative.",
@@ -1224,7 +1224,7 @@
     "cutoff": {
       "title": "Primeira importação do CSFloat",
       "question": "Já lancei à mão tudo até qual data?",
-      "help": "Compras e vendas do CSFloat antes desta data serão ignoradas. A sugestão é o seu último lançamento manual ou aporte no CSFloat; você pode mudar.",
+      "help": "Compras, vendas, aportes e saques do CSFloat antes desta data serão ignorados. A sugestão é o seu último lançamento manual ou aporte no CSFloat; você pode mudar.",
       "baseDepositHint": "Se você começou com um aporte do saldo atual, use uma data a partir dele, para não contar o dinheiro duas vezes.",
       "noSuggestion": "Sem lançamentos na loja do CSFloat: informe a data.",
       "confirm": "Importar"

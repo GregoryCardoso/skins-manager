@@ -876,7 +876,7 @@
     },
     "integrations": {
       "title": "Integrations",
-      "description": "Import purchases and sales straight from the stores. The key stays on this computer only.",
+      "description": "Import purchases, sales, deposits and withdrawals straight from the stores. The key stays on this computer only.",
       "csfloat": {
         "title": "CSFloat",
         "apiKeyLabel": "API key",
@@ -924,7 +924,7 @@
         },
         "cutoffInfo": "Cutoff date: {date}",
         "autoImport": "Import when the app opens",
-        "autoImportHint": "On opening, the app fetches only what is new on CSFloat, in the background, without blocking the screen. If there is nothing new, nothing shows up.",
+        "autoImportHint": "On opening, the app fetches only what is new on CSFloat, in the background, without blocking the screen. If there is nothing new, a short notice says so.",
         "autoImportNeedsFirst": "Do the first import with the button (it sets the cutoff date); after that, importing on open takes effect.",
         "autoPausedUndo": "Importing on open is paused because you undid an import on {date}, so what was undone does not come back by itself. Resume it when you want.",
         "autoPausedSwitch": "Importing on open is paused because the CSFloat account was switched. Do the first import of the new account and resume it.",
@@ -1224,7 +1224,7 @@
     "cutoff": {
       "title": "First CSFloat import",
       "question": "Up to which date have I already entered everything by hand?",
-      "help": "CSFloat purchases and sales before this date will be ignored. The suggestion is your last manual entry or deposit on CSFloat; you can change it.",
+      "help": "CSFloat purchases, sales, deposits and withdrawals before this date will be ignored. The suggestion is your last manual entry or deposit on CSFloat; you can change it.",
       "baseDepositHint": "If you started with a deposit of your current balance, pick a date from it onward, so money isn't counted twice.",
       "noSuggestion": "No entries in the CSFloat store yet: enter the date.",
       "confirm": "Import"
