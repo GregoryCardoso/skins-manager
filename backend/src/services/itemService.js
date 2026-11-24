@@ -5,6 +5,7 @@
 const Item = require('../models/Item');
 const Store = require('../models/Store');
 const Setting = require('../models/Setting');
+const ItemComponent = require('../models/ItemComponent');
 const { runInTransaction } = require('../models/modelHelpers');
 const { MAX_AMOUNT_CENTS, MAX_NAME_LENGTH } = require('../config/constants');
 const { ValidationError, NotFoundError, ConflictError } = require('../errors/AppError');
@@ -27,6 +28,7 @@ const { groupByStatsKey, summarizeGroupCost, summarizeStockStates, countStagnant
 const { getStoreOrFail } = require('./storeService');
 const { getAgingThresholds } = require('./settingsService');
 const externalLinkService = require('./externalLinkService');
+const itemComponentService = require('./itemComponentService');
 
 const ACQUISITION_TYPES = ['GANHEI', 'COMPRA'];
 
@@ -352,11 +354,15 @@ function toCatalogSummary(entry) {
 
 function toItemView(
   item,
-  { stores, settings, statsIndex, catalogById = new Map(), externalSources = new Map(), now = new Date(), thresholds }
+  { stores, settings, statsIndex, catalogById = new Map(), externalSources = new Map(), componentsByItemId = new Map(), now = new Date(), thresholds }
 ) {
   const inStock = item.status === 'EM_ESTOQUE';
+  const componentRows = componentsByItemId.get(item.id) ?? [];
   return {
     ...item,
+    // Componentes aplicados (10.1, D344): só exibição; não entram em custo, giro, lucro nem itemStats.
+    components: itemComponentService.toView(componentRows, { catalogById }),
+    componentSummary: itemComponentService.toSummary(componentRows),
     // Origem da importação (D318): 'CSFLOAT' se o item tem vínculo de compra ou venda com a loja externa; senão null.
     externalSource: externalSources.get(item.id) ?? null,
     // Legado: sem vínculo com o catálogo numa categoria que o exige (D82).
@@ -377,12 +383,19 @@ function toItemView(
 
 // --- Orquestração -------------------------------------------------------------------------------
 
+// Catálogo dos itens e dos componentes deles (uma consulta só).
+function loadCatalogMap(items, componentsByItemId) {
+  const ids = new Set(items.map((i) => i.catalogId).filter((id) => !isNil(id)));
+  for (const rows of componentsByItemId.values()) for (const row of rows) if (!isNil(row.catalogId)) ids.add(row.catalogId);
+  return new Map(catalogService.getCatalogItemsByIds([...ids]).map((c) => [c.id, c]));
+}
+
 function loadContext() {
   const items = Item.findAll();
-  const catalogIds = items.map((i) => i.catalogId).filter((id) => !isNil(id));
-  const catalogById = new Map(catalogService.getCatalogItemsByIds(catalogIds).map((c) => [c.id, c]));
+  const componentsByItemId = ItemComponent.listAll();
   return {
-    items, stores: Store.findAll(), settings: Setting.get(), statsIndex: buildStatsIndex(items), catalogById,
+    items, stores: Store.findAll(), settings: Setting.get(), statsIndex: buildStatsIndex(items),
+    catalogById: loadCatalogMap(items, componentsByItemId), componentsByItemId,
     externalSources: externalLinkService.sourcesByItemIds(),
   };
 }
@@ -400,11 +413,17 @@ function loadStatsGroup({ category, name }, key) {
 function viewOf(item, { now, thresholds }) {
   const key = buildStatsKey(item);
   const statsIndex = new Map([[key, computeStats(loadStatsGroup(item, key))]]);
-  const catalogById = new Map(
-    isNil(item.catalogId) ? [] : catalogService.getCatalogItemsByIds([item.catalogId]).map((c) => [c.id, c])
-  );
+  const componentsByItemId = ItemComponent.listByItemIds([item.id]);
+  const catalogById = loadCatalogMap([item], componentsByItemId);
   const externalSources = externalLinkService.sourcesByItemIds([item.id]);
-  return toItemView(item, { stores: Store.findAll(), settings: Setting.get(), statsIndex, catalogById, externalSources, now, thresholds });
+  return toItemView(item, {
+    stores: Store.findAll(), settings: Setting.get(), statsIndex, catalogById, externalSources, componentsByItemId, now, thresholds,
+  });
+}
+
+// Valida a lista de componentes contra a categoria final do item e o catálogo (itemComponentService).
+function normalizeComponentsFor(components, category) {
+  return itemComponentService.normalizeComponents(components, { category, findCatalogById: (id) => catalogService.getCatalogItem(id) });
 }
 
 function findOrFail(id) {
@@ -431,11 +450,11 @@ function selectItems(all, query, { now, thresholds }) {
 }
 
 function listItems(query = {}, { now = new Date(), thresholds = getAgingThresholds() } = {}) {
-  const { items: all, stores, settings, statsIndex, catalogById, externalSources } = loadContext();
+  const { items: all, stores, settings, statsIndex, catalogById, externalSources, componentsByItemId } = loadContext();
   const { items, saleStateCounts } = selectItems(all, query, { now, thresholds });
 
   return {
-    items: items.map((item) => toItemView(item, { stores, settings, statsIndex, catalogById, externalSources, now, thresholds })),
+    items: items.map((item) => toItemView(item, { stores, settings, statsIndex, catalogById, externalSources, componentsByItemId, now, thresholds })),
     meta: {
       count: items.length,
       saleStateCounts,
@@ -450,7 +469,7 @@ function listItems(query = {}, { now = new Date(), thresholds = getAgingThreshol
 // Visão agrupada (D271-D275): só itens em estoque, mesma seleção e ordenação da lista individual. Os grupos seguem a
 // ordem da primeira aparição na lista ordenada; `stock` conta todo o estoque da chave, independente da aba e dos filtros.
 function listItemGroups(query = {}, { now = new Date(), thresholds = getAgingThresholds() } = {}) {
-  const { items: all, stores, settings, statsIndex, catalogById, externalSources } = loadContext();
+  const { items: all, stores, settings, statsIndex, catalogById, externalSources, componentsByItemId } = loadContext();
   const { items, saleStateCounts } = selectItems(all, { ...query, status: 'EM_ESTOQUE' }, { now, thresholds });
 
   const stockByKey = new Map();
@@ -475,9 +494,11 @@ function listItemGroups(query = {}, { now = new Date(), thresholds = getAgingThr
       // QTD e custos do grupo inteiro em estoque (9.5.1a, D334 revista pelo usuário): batem com "X à venda · Y no holding";
       // ao expandir aparecem só as unidades da aba e dos filtros.
       ...summarizeGroupCost(stockByKey.get(key) ?? units, settings.usdBrlRate),
+      // Unidades do grupo em estoque com algum componente (10.1, D344); fora da chave do agrupamento (2.7).
+      componentUnits: (stockByKey.get(key) ?? units).filter((u) => (componentsByItemId.get(u.id) ?? []).length > 0).length,
       stagnantCount: countStagnant(units, thresholds, now),
       stock: summarizeStockStates(stockByKey.get(key) ?? [], now),
-      units: units.map((item) => toItemView(item, { stores, settings, statsIndex, catalogById, externalSources, now, thresholds })),
+      units: units.map((item) => toItemView(item, { stores, settings, statsIndex, catalogById, externalSources, componentsByItemId, now, thresholds })),
     };
   });
 
@@ -497,7 +518,7 @@ function listItemGroups(query = {}, { now = new Date(), thresholds = getAgingThr
 
 // Vendas (D124/D127): lista filtrada/ordenada + resumo sobre o mesmo conjunto. Estatísticas usam todos os itens.
 function listSales(query = {}, { now = new Date(), thresholds = getAgingThresholds() } = {}) {
-  const { items: all, stores, settings, statsIndex, catalogById, externalSources } = loadContext();
+  const { items: all, stores, settings, statsIndex, catalogById, externalSources, componentsByItemId } = loadContext();
   let items = all.filter((i) => i.status === 'VENDIDO');
   if (!isNil(query.saleStoreId)) items = items.filter((i) => i.saleStoreId === query.saleStoreId);
   items = filterSoldInPeriod(items, { soldFrom: query.soldFrom, soldTo: query.soldTo });
@@ -505,7 +526,7 @@ function listSales(query = {}, { now = new Date(), thresholds = getAgingThreshol
   if (sortKey === 'turnaround') items = sortByTurnaround(items, query.order ?? 'asc');
   else items = sortBySoldAt(items, query.order ?? 'desc');
   return {
-    items: items.map((item) => toItemView(item, { stores, settings, statsIndex, catalogById, externalSources, now, thresholds })),
+    items: items.map((item) => toItemView(item, { stores, settings, statsIndex, catalogById, externalSources, componentsByItemId, now, thresholds })),
     summary: computeSalesSummary(items, { usdBrlRate: settings.usdBrlRate }),
     meta: {
       count: items.length,
@@ -574,6 +595,7 @@ const bulkMarkForSale = (body, ctx) => bulkChangeSaleState('FOR_SALE', body, ctx
 //     COMPRA: PURCHASE_STORE_REQUIRED -> PURCHASE_PRICE_REQUIRED -> INVALID_AMOUNT -> teto -> cotação) -> atributos de
 //     arma (normalizeAttributes) -> data de aquisição (inválida, futura) -> liberação da troca.
 //  5. Faixa de float do catálogo (assertFloatInCatalogRange).
+//  6. Componentes (itemComponentService): COMPONENTS_NOT_ALLOWED -> COMPONENT_LIMIT_EXCEEDED -> campos -> catálogo -> slot.
 function createItem(input, ctx = {}) {
   const { now = new Date(), thresholds = getAgingThresholds() } = ctx;
   const catalogEntry = loadCatalogEntry(input, null);
@@ -581,10 +603,16 @@ function createItem(input, ctx = {}) {
     body: input, catalogEntry, freeNameCatalogMatch: lookupFreeNameMatch(input, null),
   });
   const merged = { ...input, name: identity.name, category: identity.category, phase: identity.phase };
+  delete merged.components;
   const store = isNil(input.purchaseStoreId) ? null : getStoreOrFail(input.purchaseStoreId, { field: 'purchaseStoreId' });
   const record = buildItemRecord(merged, { store, settings: Setting.get(), now, body: input });
   if (catalogEntry) assertFloatInCatalogRange(record.floatValue, catalogEntry);
-  return inTransaction(() => viewOf(Item.create({ ...record, catalogId: identity.catalogId }, { now }), { now, thresholds }));
+  const components = hasKey(input, 'components') ? normalizeComponentsFor(input.components, identity.category) : null;
+  return inTransaction(() => {
+    const created = Item.create({ ...record, catalogId: identity.catalogId }, { now });
+    if (components && components.length > 0) ItemComponent.insertMany(created.id, components, { now });
+    return viewOf(created, { now, thresholds });
+  });
 }
 
 function updateItem(id, partial, ctx = {}) {
@@ -595,6 +623,7 @@ function updateItem(id, partial, ctx = {}) {
     body: partial, existing, catalogEntry, freeNameCatalogMatch: lookupFreeNameMatch(partial, existing),
   });
   const merged = { ...existing, ...partial, name: identity.name, category: identity.category, phase: identity.phase };
+  delete merged.components;
   // Novo float sem exterior no corpo: o exterior gravado é descartado e derivado de novo do float.
   if (hasKey(partial, 'floatValue') && !hasKey(partial, 'exterior')) merged.exterior = null;
   // T35 (a): categoria sem atributos de arma limpa os atributos que não vieram no corpo (D73).
@@ -618,7 +647,15 @@ function updateItem(id, partial, ctx = {}) {
   if (catalogEntry && (catalogChanged || hasKey(partial, 'floatValue'))) {
     assertFloatInCatalogRange(record.floatValue, catalogEntry);
   }
-  return inTransaction(() => viewOf(Item.update(id, { ...record, catalogId: identity.catalogId }, { now }), { now, thresholds }));
+  // Componentes (10.1): presente = substitui a lista; ausente = não mexe, mas a categoria final precisa aceitar os já gravados.
+  let components = null;
+  if (hasKey(partial, 'components')) components = normalizeComponentsFor(partial.components, identity.category);
+  else itemComponentService.assertExistingAllowed(ItemComponent.listByItemIds([id]).get(id) ?? [], identity.category);
+  return inTransaction(() => {
+    const updated = Item.update(id, { ...record, catalogId: identity.catalogId }, { now });
+    if (components) ItemComponent.replaceForItem(id, components, { now });
+    return viewOf(updated, { now, thresholds });
+  });
 }
 
 // Excluir um item importado desliga o vínculo e marca o registro externo como REMOVED_IN_APP (não volta a ser importado, D318).

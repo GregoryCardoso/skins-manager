@@ -10,6 +10,8 @@ const V8_COLUMNS = ['kind', 'computed_cents', 'adjustment_cents', 'note'];
 const V10_COLUMNS = ['off_sale_at', 'for_sale_since'];
 // A v14 acrescenta `sale_release_at` só em `items` (D312).
 const V14_COLUMNS = ['sale_release_at'];
+// A v17 acrescenta `components_imported_at` só em `items` (D343).
+const V17_COLUMNS = ['components_imported_at'];
 
 const stripV6 = (row) => Object.fromEntries(
   Object.entries(row).filter(([key]) => !V6_COLUMNS.includes(key)
@@ -18,7 +20,8 @@ const stripV6 = (row) => Object.fromEntries(
     && !(key === 'fee_cents' && 'deposited_at' in row)
     && !(V8_COLUMNS.includes(key) && 'balance_cents' in row)
     && !V10_COLUMNS.includes(key)
-    && !V14_COLUMNS.includes(key))
+    && !V14_COLUMNS.includes(key)
+    && !V17_COLUMNS.includes(key))
 );
 const stripV6Rows = (rows) => rows.map(stripV6);
 

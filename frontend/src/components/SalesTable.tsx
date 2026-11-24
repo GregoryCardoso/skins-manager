@@ -4,6 +4,7 @@ import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import { formatDate, formatFloat, formatMoney, formatRate } from '@/lib/format';
 import type { ItemView, Store } from '@/types/api';
 import { Badge, type BadgeTone } from './badges';
+import ComponentThumbs from './ComponentThumbs';
 import ItemActions from './ItemActions';
 import ItemImage from './ItemImage';
 import MoneyWithApprox from './MoneyWithApprox';
@@ -43,6 +44,7 @@ function ItemCell({ item }: { item: ItemView }) {
     <div className={styles.itemCell}>
       <strong className={styles.name}>{item.name}</strong>
       {details.length > 0 && <span className={styles.details}>{details.join(' · ')}</span>}
+      <ComponentThumbs components={item.components} />
       <span className={styles.badges}>
         <Badge>{tLoose(`enums.category.${item.category}`)}</Badge>
         {item.isLegacy && <Badge tone="warning">{t('inventory.legacy')}</Badge>}

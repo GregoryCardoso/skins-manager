@@ -6,6 +6,10 @@ import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
 import { resolveErrorTarget } from '@/lib/formErrors';
 import { formatFloat } from '@/lib/format';
 import {
+  buildComponentsBody, componentsAllowedFor, componentsBodyFromItem, componentsStateFromItem, emptyComponentsState, sameComponents,
+  type ComponentsState,
+} from '@/lib/itemComponents';
+import {
   ALL_EXTERIORS, FREE_NAME_CATEGORIES, addSevenDays, applyCatalogChoice, applyPurchaseStore, buildCreateBody,
   setAcquiredAt, setAcquisitionType, setTradeUnlockAt,
   buildPatchBody, effectiveCategory, fieldVisibility, findStore, initialCreateState, stateFromItem, variantOptions,
@@ -15,10 +19,11 @@ import {
 import { formatDecimalInput } from '@/lib/numberInput';
 import { useInvalidate } from '@/lib/useInvalidate';
 import { ApiRequestError, createItem, updateItem } from '@/services/api';
-import type { AcquisitionType, CatalogItem, Category, Currency, Exterior, ItemView, Store, Variant } from '@/types/api';
+import type { AcquisitionType, CatalogItem, Category, Currency, Exterior, ItemPatchBody, ItemView, Store, Variant } from '@/types/api';
 import CatalogAutocomplete, { catalogDisplayName } from './CatalogAutocomplete';
 import FormField from './FormField';
 import styles from './forms.module.css';
+import ItemComponentsSection from './ItemComponentsSection';
 import ItemImage from './ItemImage';
 import Modal from './Modal';
 import { Badge } from './badges';
@@ -27,7 +32,7 @@ import { usePreferences } from './PreferencesProvider';
 export const ITEM_FORM_FIELDS = [
   'catalogId', 'name', 'category', 'variant', 'floatValue', 'exterior', 'paintSeed', 'phase', 'acquisitionType',
   'purchaseStoreId', 'purchasePriceCents', 'fxRateAtPurchase', 'acquiredAt', 'tradeUnlockAt', 'inspectLink',
-  'assetId', 'originDetail',
+  'assetId', 'originDetail', 'components',
 ] as const;
 
 interface Props {
@@ -52,6 +57,8 @@ export default function ItemFormModal({ item, stores, onClose, onSaved, onGone }
   const ctx: FormContext = { stores, usdBrlRate, language };
 
   const [state, setState] = useState<ItemFormState>(() => (item ? stateFromItem(item, language) : initialCreateState(ctx)));
+  // Componentes aplicados (10.1): só SKIN; ficam fora do ItemFormState e entram no corpo no envio.
+  const [components, setComponents] = useState<ComponentsState>(() => (item ? componentsStateFromItem(item, language) : emptyComponentsState()));
   const [errors, setErrors] = useState<FormErrors>({});
   const [topError, setTopError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -66,6 +73,9 @@ export default function ItemFormModal({ item, stores, onClose, onSaved, onGone }
   const store = findStore(stores, state.purchaseStoreId);
   const isLegacy = editing && item.isLegacy && !state.catalog;
   const showSearch = !state.catalog && !state.freeMode ? true : changingItem;
+  const allowComponents = componentsAllowedFor(category);
+  // Trocar para uma categoria sem componentes remove os gravados (aviso no formulário; o backend recusa o resto).
+  const willRemoveComponents = !allowComponents && editing && item.components.length > 0;
 
   const onPickCatalog = (picked: CatalogItem) => {
     setState((s) => applyCatalogChoice(s, picked as CatalogChoice));
@@ -89,6 +99,7 @@ export default function ItemFormModal({ item, stores, onClose, onSaved, onGone }
     }
     const message = errorMessageFor(err, tLoose, language);
     let visible = visibleItemFields(ITEM_FORM_FIELDS, vis, { showSearch, freeMode: state.freeMode, hasCatalog: !!state.catalog });
+    if (!allowComponents) visible = visible.filter((field) => field !== 'components');
     if (err instanceof ApiRequestError && (err.code === 'CATALOG_ITEM_REQUIRED' || err.code === 'CATALOG_ITEM_NOT_FOUND')) {
       // Abre a busca do catálogo para o erro ter onde aparecer.
       patch({ freeMode: false });
@@ -122,14 +133,26 @@ export default function ItemFormModal({ item, stores, onClose, onSaved, onGone }
       setErrors(translated);
       return;
     }
+    const body: ItemPatchBody = { ...built.body };
+    if (allowComponents) {
+      const comp = buildComponentsBody(components, language);
+      if (!comp.ok) {
+        setErrors({ components: tLoose(comp.errorKey, comp.params) });
+        return;
+      }
+      // Presente = substitui a lista; no cadastro só vai se houver algo; na edição só se mudou.
+      if (editing ? !sameComponents(comp.body, componentsBodyFromItem(item)) : comp.body.length > 0) body.components = comp.body;
+    } else if (willRemoveComponents) {
+      body.components = [];
+    }
     setErrors({});
-    if (editing && Object.keys(built.body).length === 0) {
+    if (editing && Object.keys(body).length === 0) {
       onClose();
       return;
     }
 
     setSaving(true);
-    const request = editing ? updateItem(item.id, built.body) : createItem(built.body as Parameters<typeof createItem>[0]);
+    const request = editing ? updateItem(item.id, body) : createItem(body as Parameters<typeof createItem>[0]);
     request
       .then(() => {
         invalidate(editing ? 'item.update' : 'item.create');
@@ -305,6 +328,20 @@ export default function ItemFormModal({ item, stores, onClose, onSaved, onGone }
             </FormField>
           </div>
         )}
+
+        {/* Componentes aplicados (stickers e chaveiro): só SKIN, não mudam o custo */}
+        {allowComponents && (
+          <ItemComponentsSection
+            state={components}
+            onChange={(next) => {
+              setComponents(next);
+              clearError('components');
+            }}
+            error={errors.components}
+            disabled={saving}
+          />
+        )}
+        {willRemoveComponents && <div className={styles.note} role="status">{t('itemForm.components.willRemove')}</div>}
 
         {/* Aquisição */}
         <fieldset className={styles.details} disabled={saving}>

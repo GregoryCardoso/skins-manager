@@ -36,6 +36,7 @@ const ACQUISITION_FIELDS = {
   fxRateAtPurchase: { type: NUMBER },
   acquiredAt: { type: STRING, notNullable: true },
   tradeUnlockAt: { type: STRING },
+  components: { components: true }, // 10.1 (D344): lista que substitui os componentes; ausente = não muda
 };
 
 const SALE_FIELDS = {
@@ -52,6 +53,10 @@ const LOCKED_FIELDS = [
   'saleFeeRateApplied', 'saleFeeRoundingApplied', 'saleMinFeeCentsApplied', 'saleFixedFeeCentsApplied',
   'netReceivedCents', 'netReceivedManual', 'soldAt', 'saleHoldDaysApplied',
 ];
+
+// Forma de `components` (10.1, D353): lista de até 6 objetos com as chaves conhecidas; as regras (limites, catálogo, slot) são do service.
+const COMPONENT_KEYS = { kind: STRING, catalogId: STRING, slot: INTEGER, wear: NUMBER, pattern: INTEGER };
+const MAX_COMPONENTS_SHAPE = 6;
 
 // `extra`: { field, params } (D113). Todo erro de forma informa o campo.
 function fail(message, code, extra) {
@@ -76,6 +81,10 @@ function checkBody(body, spec, mode) {
     const value = body[key];
     if (value === undefined) {
       if (mode !== 'update' && rule.required) throw fail(`O campo ${key} é obrigatório.`, 'REQUIRED_FIELD', { field: key });
+      continue;
+    }
+    if (rule.components) {
+      checkComponents(value);
       continue;
     }
     if (value === null) {
@@ -110,6 +119,28 @@ function checkBody(body, spec, mode) {
       throw fail('O link de inspeção deve começar com steam:// ou https://.', 'INVALID_FIELD', { field: key });
     }
   }
+}
+
+function checkComponents(value) {
+  if (!Array.isArray(value)) throw fail('O campo components deve ser uma lista.', 'INVALID_FIELD', { field: 'components' });
+  if (value.length > MAX_COMPONENTS_SHAPE) {
+    throw fail('Limite de componentes excedido.', 'COMPONENT_LIMIT_EXCEEDED', { field: 'components', params: { max: MAX_COMPONENTS_SHAPE } });
+  }
+  value.forEach((component, index) => {
+    if (!isObject(component)) throw fail('Cada componente deve ser um objeto.', 'INVALID_FIELD', { field: 'components', params: { index } });
+    for (const [key, entry] of Object.entries(component)) {
+      if (!Object.prototype.hasOwnProperty.call(COMPONENT_KEYS, key)) {
+        throw fail(`Campo desconhecido: ${key}`, 'UNKNOWN_FIELD', { field: 'components', params: { index, field: key } });
+      }
+      if (entry === null) continue; // nulo = ausente; o service responde com o código específico
+      if (!matchesType(entry, COMPONENT_KEYS[key])) {
+        throw fail(`Valor inválido em components[${index}].${key}.`, 'INVALID_COMPONENT_FIELD', { field: 'components', params: { index, field: key } });
+      }
+      if (key === 'catalogId' && (entry.length > CATALOG_ID_MAX_LENGTH || !CATALOG_ID_PATTERN.test(entry))) {
+        throw fail(`Valor inválido em components[${index}].catalogId.`, 'INVALID_COMPONENT_FIELD', { field: 'components', params: { index, field: key } });
+      }
+    }
+  });
 }
 
 function wrap(fn) {

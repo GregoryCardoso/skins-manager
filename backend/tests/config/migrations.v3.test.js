@@ -51,11 +51,11 @@ describe('migração v3', () => {
     const before = seedV2(dbPath);
     const db = openDatabase(dbPath, { now: new Date('2026-11-20T12:00:00.000Z') });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(16);
+      expect(db.pragma('user_version', { simple: true })).toBe(17);
       const after = db.prepare('SELECT * FROM items ORDER BY id').all();
       expect(after).toHaveLength(2);
       after.forEach((row, i) => {
-        const { net_received_manual: manual, sale_hold_days_applied: hold, off_sale_at: offSale, for_sale_since: forSale, sale_release_at: saleReleaseAt, ...rest } = row;
+        const { net_received_manual: manual, sale_hold_days_applied: hold, off_sale_at: offSale, for_sale_since: forSale, sale_release_at: saleReleaseAt, components_imported_at: componentsImportedAt, ...rest } = row;
         expect([offSale, forSale]).toEqual([null, null]); // v10: todos à venda
         expect(manual).toBe(0);
         expect(rest).toEqual(before[i]);

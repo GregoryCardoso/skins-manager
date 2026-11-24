@@ -20,6 +20,8 @@ interface Props {
   fixedCategory?: Category;
   error?: string | null;
   autoFocus?: boolean;
+  // Esconde "Não achou? Atualizar o catálogo" (usado nos seletores de componentes, que são secundários).
+  hideRefresh?: boolean;
   onSelect: (item: CatalogItem) => void;
 }
 
@@ -32,7 +34,7 @@ export function catalogDisplayName(item: Pick<CatalogItem, 'name' | 'namePtBr'>,
 }
 
 // Busca no catálogo local com debounce, imagem, teclado e atualização do catálogo (D116).
-export default function CatalogAutocomplete({ label, fixedCategory, error, autoFocus = false, onSelect }: Props) {
+export default function CatalogAutocomplete({ label, fixedCategory, error, autoFocus = false, hideRefresh = false, onSelect }: Props) {
   const t = useT();
   const tLoose = useTLoose();
   const language = useLanguage();
@@ -224,12 +226,14 @@ export default function CatalogAutocomplete({ label, fixedCategory, error, autoF
         </div>
       )}
 
-      <div className={styles.refreshRow}>
-        <button type="button" className={styles.linkButton} onClick={onRefresh} disabled={refreshing}>
-          {refreshing ? t('itemForm.catalogRefreshing') : t('itemForm.catalogNotFound')}
-        </button>
-        {refreshNote && <span className={styles.meta} role="status">{refreshNote}</span>}
-      </div>
+      {!hideRefresh && (
+        <div className={styles.refreshRow}>
+          <button type="button" className={styles.linkButton} onClick={onRefresh} disabled={refreshing}>
+            {refreshing ? t('itemForm.catalogRefreshing') : t('itemForm.catalogNotFound')}
+          </button>
+          {refreshNote && <span className={styles.meta} role="status">{refreshNote}</span>}
+        </div>
+      )}
       {searchError && <div className={styles.error} role="alert">{searchError}</div>}
     </div>
   );

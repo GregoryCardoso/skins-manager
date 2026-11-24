@@ -179,6 +179,38 @@ export interface SaleRelease {
 
 export type ExternalSource = 'CSFLOAT';
 
+// Componentes aplicados (10.1, D344): stickers colados, chaveiro ou Sticker Slab pendurado (e patches, a partir da 10.3).
+export type ComponentKind = 'STICKER' | 'CHARM' | 'STICKER_SLAB' | 'PATCH';
+export type ComponentSource = 'MANUAL' | 'CSFLOAT';
+export interface ItemComponent {
+  id: number;
+  kind: ComponentKind;
+  catalogId: string | null;
+  // Nome canônico em inglês (no slab, "Sticker Slab | <sticker>").
+  name: string;
+  namePtBr: string | null;
+  imageUrl: string | null;
+  slot: number | null;
+  // Desgaste do sticker, de 0 (intacto) a menos de 1.
+  wear: number | null;
+  pattern: number | null;
+  source: ComponentSource;
+  origin: 'CAME_WITH' | 'APPLIED_FROM_STOCK';
+}
+// `charms` conta o pendurado (chaveiro ou Sticker Slab).
+export interface ComponentSummary {
+  stickers: number;
+  charms: number;
+}
+// Corpo enviado em `components` (substitui a lista inteira; `[]` limpa; ausente não muda).
+export interface ItemComponentInput {
+  kind: ComponentKind;
+  catalogId: string;
+  slot?: number | null;
+  wear?: number | null;
+  pattern?: number | null;
+}
+
 export interface ItemView {
   id: number;
   name: string;
@@ -227,6 +259,9 @@ export interface ItemView {
   soldWhileOffSale: boolean;
   // Origem da importação (9.2, D318): 'CSFLOAT' se há vínculo de compra ou venda com a loja; senão nulo.
   externalSource: ExternalSource | null;
+  // Componentes aplicados (10.1): só informativos; não mudam custo, giro, lucro nem itemStats.
+  components: ItemComponent[];
+  componentSummary: ComponentSummary;
   stats: ItemStats;
 }
 
@@ -261,6 +296,8 @@ export interface ItemGroup {
   avgCostUsdCents: number;
   costUsesRecordedFx: boolean;
   approxBrl: { totalCostCents: number; avgCostCents: number } | null;
+  // Unidades em estoque do grupo com algum componente (10.1); fora da chave do agrupamento.
+  componentUnits: number;
   stagnantCount: number;
   stock: ItemGroupStock;
   units: ItemView[];
@@ -523,6 +560,7 @@ export interface ItemCreateBody {
   fxRateAtPurchase?: number | null;
   acquiredAt?: string;
   tradeUnlockAt?: string | null;
+  components?: ItemComponentInput[];
 }
 export type ItemPatchBody = Partial<ItemCreateBody>;
 

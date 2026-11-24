@@ -36,7 +36,7 @@ describe('migração v11', () => {
     old.close();
     const db = openDatabase(dbPath, { now: new Date('2026-11-22T12:00:00.000Z') });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(16);
+      expect(db.pragma('user_version', { simple: true })).toBe(17);
       const { inventory_view: view, ...rest } = db.prepare('SELECT * FROM settings').get();
       expect(view).toBe('GROUPED');
       expect(rest).toEqual(before);

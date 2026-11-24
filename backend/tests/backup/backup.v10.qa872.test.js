@@ -66,7 +66,7 @@ describe('importar backups v1 a v9 chega à v10 com tudo à venda', () => {
   test.each([1, 2, 3, 4, 5, 6, 7, 8, 9])('backup v%i: itens à venda, sem datas de fora de venda, giro normal e app funcionando', async (version) => {
     const res = await octet(makeBackup(version));
     expect(res.status).toBe(200);
-    expect(res.body.data).toMatchObject({ fileVersion: version, schemaVersion: 16 });
+    expect(res.body.data).toMatchObject({ fileVersion: version, schemaVersion: 17 });
     expect(res.body.data.migrationsApplied).toEqual(MIGRATIONS.filter((m) => m.version > version).map((m) => m.version));
 
     const db = database.getDb();
@@ -124,7 +124,7 @@ describe('ida e volta de um backup v10', () => {
     const before = (await items()).meta.saleStateCounts;
     const file = path.join(dir, 'newer.sqlite');
     const old = database.openDatabase(file);
-    old.pragma('user_version = 17');
+    old.pragma('user_version = 18');
     old.close();
     const res = await octet(fs.readFileSync(file));
     expect(res.status).toBe(400);

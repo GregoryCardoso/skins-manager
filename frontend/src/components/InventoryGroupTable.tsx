@@ -138,6 +138,11 @@ function GroupRow({
               {group.stagnantCount > 0 && (
                 <Badge tone="danger">{tPlural('inventory.group.stagnant', group.stagnantCount)}</Badge>
               )}
+              {group.componentUnits > 0 && (
+                <Badge tone="info" title={t('inventory.group.withComponentsHint')}>
+                  {tPlural('inventory.group.withComponents', group.componentUnits)}
+                </Badge>
+              )}
             </span>
           </div>
         </td>

@@ -223,7 +223,13 @@
     "IMPORT_CUTOFF_UNCHANGED": "The new cutoff date is the same as the current one.",
     "IMPORT_CUTOFF_NOT_SET": "Do the first import before changing the cutoff date.",
     "INVALID_FEE": "The deposit fee must be greater than or equal to zero.",
-    "FX_SOURCE_UNAVAILABLE": "The exchange rate source is down or returned an error. Try again later or use another source."
+    "FX_SOURCE_UNAVAILABLE": "The exchange rate source is down or returned an error. Try again later or use another source.",
+    "COMPONENTS_NOT_ALLOWED": "This item does not accept this kind of component (stickers and charms only on weapons).",
+    "COMPONENT_LIMIT_EXCEEDED": "Component limit exceeded: up to 5 stickers and 1 hanging (charm or Sticker Slab).",
+    "COMPONENT_CATALOG_REQUIRED": "Choose the component item from the catalog.",
+    "COMPONENT_CATALOG_MISMATCH": "The chosen catalog item is not the right type for this component.",
+    "COMPONENT_SLOT_TAKEN": "That slot is already used by another component.",
+    "INVALID_COMPONENT_FIELD": "A component field is invalid (slot, wear or pattern)."
   },
   "warnings": {
     "FEES_NOT_CONFIGURED": "The store fees are not configured.",
@@ -258,7 +264,12 @@
         "other": "{count} stagnant"
       },
       "convertedCost": "Includes BRL purchases converted at the purchase rate",
-      "quantitySplit": "{forSale} for sale · {holding} in holding"
+      "quantitySplit": "{forSale} for sale · {holding} in holding",
+      "withComponents": {
+        "one": "{count} with sticker/charm",
+        "other": "{count} with sticker/charm"
+      },
+      "withComponentsHint": "Units in the group with recorded stickers or charm"
     },
     "refresh": "Refresh",
     "empty": "No items in the inventory.",
@@ -493,7 +504,40 @@
     "invalidNumber": "Invalid number.",
     "invalidMoney": "Invalid amount. Use the format 1.25.",
     "invalidDate": "Invalid date.",
-    "chooseItem": "Pick the item from the catalog or check \"Item outside the catalog\"."
+    "chooseItem": "Pick the item from the catalog or check \"Item outside the catalog\".",
+    "components": {
+      "title": "Stickers and charm",
+      "costNote": "Only a record of what the weapon has: it does not change cost, balance or turnover.",
+      "stickers": "Applied stickers ({count}/{max})",
+      "noStickers": "No stickers recorded.",
+      "addSticker": "Add sticker",
+      "removeSticker": "Remove sticker {n}",
+      "remove": "Remove",
+      "change": "Change",
+      "limitReached": "Maximum of {max} stickers.",
+      "searchSticker": "Sticker {n} (catalog)",
+      "slot": "Slot",
+      "wear": "Wear (%)",
+      "wearPlaceholder": "0 = pristine",
+      "hanging": "Hanging (only one)",
+      "hangingKind": "Type",
+      "hangingNone": "None",
+      "kindCharm": "Charm",
+      "kindSlab": "Sticker Slab",
+      "searchCharm": "Charm (catalog)",
+      "searchSlab": "Sticker inside the slab (catalog)",
+      "pattern": "Pattern",
+      "chooseSticker": "Choose sticker {n} from the catalog or remove the row.",
+      "chooseCharm": "Choose the charm from the catalog or set the type to None.",
+      "chooseSlab": "Choose the slab sticker from the catalog or set the type to None.",
+      "invalidWear": "Invalid wear for sticker {n}: use 0 up to less than 100.",
+      "invalidPattern": "Invalid pattern: use an integer from 0 to 999999.",
+      "willRemove": "This item does not accept stickers or charms: the recorded components will be removed when you save.",
+      "thumbsLabel": "Applied stickers and charm",
+      "slotShort": "slot",
+      "wearShort": "wear",
+      "patternShort": "pattern"
+    }
   },
   "sellForm": {
     "title": "Sell item",
@@ -561,7 +605,8 @@
     "feeCents": "Fee paid",
     "withdrawnAt": "Withdrawal date",
     "balanceCents": "Balance",
-    "recordedAt": "Balance date"
+    "recordedAt": "Balance date",
+    "components": "Stickers and charm"
   },
   "errorDetails": {
     "INVALID_RATE": "The rate must be at least 0% and below 100%, with at most {maxDecimals} decimal places in the percentage.",
@@ -583,7 +628,12 @@
     "IMPORT_SOURCE_UNAVAILABLE": "{source} is unavailable. Try again later.",
     "IMPORT_RATE_LIMITED": "{source} request limit reached. Try again after {retryAt}.",
     "IMPORT_SOURCE_FORMAT_CHANGED": "{source} changed its data format. Nothing was changed; the app needs an update.",
-    "FX_SOURCE_UNAVAILABLE": "The exchange rate source ({source}) is down or returned an error. Try again later or use another source."
+    "FX_SOURCE_UNAVAILABLE": "The exchange rate source ({source}) is down or returned an error. Try again later or use another source.",
+    "COMPONENTS_NOT_ALLOWED": "Component {n}: this item does not accept this type (stickers and charms only on weapons).",
+    "COMPONENT_CATALOG_REQUIRED": "Component {n}: choose the item from the catalog.",
+    "COMPONENT_CATALOG_MISMATCH": "Component {n}: the chosen catalog item is not the right type.",
+    "COMPONENT_SLOT_TAKEN": "Component {n}: slot {slot} is already used.",
+    "INVALID_COMPONENT_FIELD": "Component {n}: invalid slot, wear or pattern."
   },
   "sales": {
     "title": "Sales",

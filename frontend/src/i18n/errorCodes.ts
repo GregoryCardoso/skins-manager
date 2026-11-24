@@ -34,6 +34,9 @@ export const API_ERROR_CODES = [
   'IMPORT_CUTOFF_UNCHANGED', 'IMPORT_CUTOFF_NOT_SET', 'INVALID_FEE',
   // Bloqueio e avisos da pré-visualização de "desfazer importação" (também traduzidos em imports.undo.*).
   'ITEM_SOLD_IN_APP', 'ITEM_EDITED', 'ITEM_IN_HOLDING', 'ENTRY_RESOLVED',
+  // Componentes aplicados (10.1, D353).
+  'COMPONENTS_NOT_ALLOWED', 'COMPONENT_LIMIT_EXCEEDED', 'COMPONENT_CATALOG_REQUIRED', 'COMPONENT_CATALOG_MISMATCH',
+  'COMPONENT_SLOT_TAKEN', 'INVALID_COMPONENT_FIELD',
 ] as const;
 
 export const LOCAL_ERROR_CODES = ['NETWORK_ERROR', 'TIMEOUT', 'INVALID_RESPONSE', 'ABORTED', 'UNKNOWN'] as const;

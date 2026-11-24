@@ -5,6 +5,7 @@ import { formatDate, formatFloat, formatMoney, formatRemaining, remainingToText 
 import { isHttpsLink, isSafeInspectLink } from '@/lib/safeUrl';
 import type { ItemView, Store } from '@/types/api';
 import { Badge, type BadgeTone } from './badges';
+import ComponentThumbs from './ComponentThumbs';
 import ItemActions from './ItemActions';
 import ItemImage from './ItemImage';
 import styles from './InventoryTable.module.css';
@@ -69,6 +70,7 @@ function ItemCell({ item }: { item: ItemView }) {
           {details.join(' · ')}
         </span>
       )}
+      <ComponentThumbs components={item.components} />
       <span className={styles.badges}>
         <Badge>{tLoose(`enums.category.${item.category}`)}</Badge>
         {item.isLegacy && <Badge tone="warning">{t('inventory.legacy')}</Badge>}

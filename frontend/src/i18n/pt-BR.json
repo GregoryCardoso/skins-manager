@@ -223,7 +223,13 @@
     "IMPORT_CUTOFF_UNCHANGED": "A data de corte nova é igual à atual.",
     "IMPORT_CUTOFF_NOT_SET": "Faça a primeira importação antes de mudar a data de corte.",
     "INVALID_FEE": "A taxa do aporte deve ser um valor maior ou igual a zero.",
-    "FX_SOURCE_UNAVAILABLE": "A fonte da cotação está fora do ar ou com erro. Tente mais tarde ou use outra fonte."
+    "FX_SOURCE_UNAVAILABLE": "A fonte da cotação está fora do ar ou com erro. Tente mais tarde ou use outra fonte.",
+    "COMPONENTS_NOT_ALLOWED": "Este item não aceita este tipo de componente (stickers e chaveiro só em armas).",
+    "COMPONENT_LIMIT_EXCEEDED": "Limite de componentes excedido: até 5 stickers e 1 pendurado (chaveiro ou Sticker Slab).",
+    "COMPONENT_CATALOG_REQUIRED": "Escolha o item do componente no catálogo.",
+    "COMPONENT_CATALOG_MISMATCH": "O item escolhido no catálogo não é do tipo certo para este componente.",
+    "COMPONENT_SLOT_TAKEN": "Esse slot já está ocupado por outro componente.",
+    "INVALID_COMPONENT_FIELD": "Algum campo do componente é inválido (slot, desgaste ou pattern)."
   },
   "warnings": {
     "FEES_NOT_CONFIGURED": "As taxas da loja não estão configuradas.",
@@ -258,7 +264,12 @@
         "other": "{count} agarradas"
       },
       "convertedCost": "Inclui compras em R$ convertidas pela cotação da compra",
-      "quantitySplit": "{forSale} à venda · {holding} no holding"
+      "quantitySplit": "{forSale} à venda · {holding} no holding",
+      "withComponents": {
+        "one": "{count} com sticker/chaveiro",
+        "other": "{count} com sticker/chaveiro"
+      },
+      "withComponentsHint": "Unidades do grupo com stickers ou chaveiro registrados"
     },
     "refresh": "Atualizar",
     "empty": "Nenhum item no inventário.",
@@ -493,7 +504,40 @@
     "invalidNumber": "Número inválido.",
     "invalidMoney": "Valor inválido. Use o formato 1,25.",
     "invalidDate": "Data inválida.",
-    "chooseItem": "Escolha o item no catálogo ou marque \"Item fora do catálogo\"."
+    "chooseItem": "Escolha o item no catálogo ou marque \"Item fora do catálogo\".",
+    "components": {
+      "title": "Stickers e chaveiro",
+      "costNote": "Só registro do que a arma tem: não muda o custo, o saldo nem o giro.",
+      "stickers": "Stickers colados ({count}/{max})",
+      "noStickers": "Nenhum sticker registrado.",
+      "addSticker": "Adicionar sticker",
+      "removeSticker": "Remover o sticker {n}",
+      "remove": "Remover",
+      "change": "Trocar",
+      "limitReached": "Máximo de {max} stickers.",
+      "searchSticker": "Sticker {n} (catálogo)",
+      "slot": "Slot",
+      "wear": "Desgaste (%)",
+      "wearPlaceholder": "0 = intacto",
+      "hanging": "Pendurado (um só)",
+      "hangingKind": "Tipo",
+      "hangingNone": "Nenhum",
+      "kindCharm": "Chaveiro",
+      "kindSlab": "Sticker Slab",
+      "searchCharm": "Chaveiro (catálogo)",
+      "searchSlab": "Sticker de dentro do slab (catálogo)",
+      "pattern": "Pattern",
+      "chooseSticker": "Escolha o sticker {n} no catálogo ou remova a linha.",
+      "chooseCharm": "Escolha o chaveiro no catálogo ou mude o tipo para Nenhum.",
+      "chooseSlab": "Escolha o sticker do slab no catálogo ou mude o tipo para Nenhum.",
+      "invalidWear": "Desgaste do sticker {n} inválido: use de 0 a menos de 100.",
+      "invalidPattern": "Pattern inválido: use um inteiro de 0 a 999999.",
+      "willRemove": "Este item não aceita stickers nem chaveiro: os componentes registrados serão removidos ao salvar.",
+      "thumbsLabel": "Stickers e chaveiro aplicados",
+      "slotShort": "slot",
+      "wearShort": "desgaste",
+      "patternShort": "pattern"
+    }
   },
   "sellForm": {
     "title": "Vender item",
@@ -561,7 +605,8 @@
     "feeCents": "Taxa paga",
     "withdrawnAt": "Data do saque",
     "balanceCents": "Saldo",
-    "recordedAt": "Data do saldo"
+    "recordedAt": "Data do saldo",
+    "components": "Stickers e chaveiro"
   },
   "errorDetails": {
     "INVALID_RATE": "A taxa deve ser maior ou igual a 0% e menor que 100%, com no máximo {maxDecimals} casas decimais no percentual.",
@@ -583,7 +628,12 @@
     "IMPORT_SOURCE_UNAVAILABLE": "O {source} está fora do ar. Tente mais tarde.",
     "IMPORT_RATE_LIMITED": "Limite de consultas do {source} atingido. Tente de novo depois de {retryAt}.",
     "IMPORT_SOURCE_FORMAT_CHANGED": "O {source} mudou o formato dos dados. Nada foi alterado; o app precisa de uma atualização.",
-    "FX_SOURCE_UNAVAILABLE": "A fonte da cotação ({source}) está fora do ar ou com erro. Tente mais tarde ou use outra fonte."
+    "FX_SOURCE_UNAVAILABLE": "A fonte da cotação ({source}) está fora do ar ou com erro. Tente mais tarde ou use outra fonte.",
+    "COMPONENTS_NOT_ALLOWED": "Componente {n}: este item não aceita este tipo (stickers e chaveiro só em armas).",
+    "COMPONENT_CATALOG_REQUIRED": "Componente {n}: escolha o item no catálogo.",
+    "COMPONENT_CATALOG_MISMATCH": "Componente {n}: o item escolhido no catálogo não é do tipo certo.",
+    "COMPONENT_SLOT_TAKEN": "Componente {n}: o slot {slot} já está ocupado.",
+    "INVALID_COMPONENT_FIELD": "Componente {n}: slot, desgaste ou pattern inválido."
   },
   "sales": {
     "title": "Vendas",
