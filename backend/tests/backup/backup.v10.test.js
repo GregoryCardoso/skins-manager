@@ -46,7 +46,7 @@ describe('importar backups antigos (D267)', () => {
   test.each([5, 8, 9])('backup v%i migra até a v10 e todos os itens ficam à venda', async (version) => {
     const res = await octet(makeBackup(version));
     expect(res.status).toBe(200);
-    expect(res.body.data).toMatchObject({ fileVersion: version, schemaVersion: 17 });
+    expect(res.body.data).toMatchObject({ fileVersion: version, schemaVersion: 18 });
     expect(res.body.data.migrationsApplied).toEqual(MIGRATIONS.filter((m) => m.version > version).map((m) => m.version));
     const list = (await request(app).get('/api/items')).body.data;
     expect(list.items).toHaveLength(1);
@@ -72,7 +72,7 @@ describe('importar backups antigos (D267)', () => {
   test('backup de versão mais nova que o app (v12) -> BACKUP_NEWER_VERSION', async () => {
     const file = path.join(dir, 'newer.sqlite');
     const old = database.openDatabase(file);
-    old.pragma('user_version = 18');
+    old.pragma('user_version = 19');
     old.close();
     const res = await octet(fs.readFileSync(file));
     expect(res.status).toBe(400);

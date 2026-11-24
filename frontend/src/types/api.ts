@@ -855,6 +855,26 @@ export interface ImportEntryDisplay {
   // Venda com taxa diferente da calculada pela loja (FEE_MISMATCH, 9.3): a cobrada pelo CSFloat e a das regras da loja.
   feeCents?: number | null;
   expectedFeeCents?: number | null;
+  // Componentes do trade (10.2, D361): nome, slot, desgaste e pattern, como vieram do CSFloat.
+  components?: ImportEntryComponent[];
+  // O que não foi registrado, com o motivo; vem só nas compras criadas.
+  componentWarnings?: ImportComponentWarning[];
+}
+
+export interface ImportEntryComponent {
+  from: 'STICKER' | 'KEYCHAIN';
+  name: string | null;
+  slot: number | null;
+  wear: number | null;
+  pattern: number | null;
+}
+
+export type ImportComponentWarningCode =
+  | 'COMPONENT_CATALOG_NOT_FOUND' | 'COMPONENT_FULLY_SCRAPED' | 'COMPONENT_LIMIT_EXCEEDED' | 'COMPONENTS_NOT_ALLOWED';
+
+export interface ImportComponentWarning {
+  code: ImportComponentWarningCode;
+  name: string | null;
 }
 
 export interface ImportEntryView {
@@ -894,6 +914,9 @@ export interface ImportBatchCounts {
   withdrawalsCreated?: number;
   transfersAwaitingCutoff?: number;
   finesNotImported?: number;
+  // Componentes (10.2, D361): compras que ganharam stickers/chaveiro pela varredura e componentes não registrados.
+  componentsFilled?: number;
+  componentsSkipped?: number;
 }
 
 export interface ImportBatchSummary {

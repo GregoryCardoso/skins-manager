@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import { formatDate, formatFloat, formatMoney } from '@/lib/format';
-import { candidateLink, entryActions, entryLink, entryLinkLabelKey, groupEntries, reasonKey, removeConfirmKey } from '@/lib/importSummary';
+import { candidateLink, componentWarningsOf, entryActions, entryLink, entryLinkLabelKey, groupEntries, reasonKey, removeConfirmKey } from '@/lib/importSummary';
 import { bulkActionsOf, commonBulkActions, type BulkEntryAction } from '@/lib/pendingActions';
 import { useInvalidate } from '@/lib/useInvalidate';
 import { ApiRequestError, bulkResolveImportEntries, reopenImportEntry, resolveImportEntry } from '@/services/api';
@@ -207,6 +207,13 @@ function EntryRow({
         {reasonText && (
           <span className={entry.outcome === 'CREATED' || entry.outcome === 'MATCHED' ? `${styles.reason} ${styles.warn}` : styles.reason}>
             {reasonText}
+          </span>
+        )}
+        {componentWarningsOf(entry).length > 0 && (
+          <span className={styles.reason}>
+            {t('imports.componentWarningsTitle')}: {componentWarningsOf(entry)
+              .map((w) => tLoose(`imports.componentWarnings.${w.code}`, { name: w.name ?? t('imports.componentUnnamed') }))
+              .join('; ')}. {t('imports.componentWarningsHint')}
           </span>
         )}
         {entry.outcome === 'REVERTED' && entry.linkKind === 'MATCHED' && (

@@ -23,7 +23,7 @@ describe('csfloatMapper: allowlist de trades e extrato', () => {
     const text = JSON.stringify(page);
     // `buyerId`/`sellerId` saem só para o service calcular a direção (e nunca são gravados): o Steam ID da outra parte é o único valor permitido
     for (const value of TRADE_PII.filter((v) => v !== OTHER.steamId)) expect(text).not.toContain(value);
-    for (const key of ['buyer"', 'seller"', 'trade_url', 'trade_token', 'inspect_link', 'asset_id', 'stickers', 'keychains']) expect(text).not.toContain(key);
+    for (const key of ['buyer"', 'seller"', 'trade_url', 'trade_token', 'inspect_link', 'asset_id', 'serialized_inspect', 'gs_sig', 'cs2_screenshot', '"stickers":', '"keychains":']) expect(text).not.toContain(key);
     const tx = mapTransactionsPage({ transactions: [fakeTransaction({ id: 'a', details: { contract_id: '9', fee_amount: '20' } })], count: 1 });
     const txText = JSON.stringify(tx);
     for (const value of ['SESSION-FICTICIO-QA', 'CONNECT-FICTICIO-QA', 'TRANSFER-FICTICIO-QA', 'payment_method']) expect(txText).not.toContain(value);

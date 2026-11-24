@@ -52,14 +52,16 @@ describe('POST/PATCH /api/items com components', () => {
     expect(res.body.data.componentSummary).toEqual({ stickers: 0, charms: 1 });
   });
 
-  test('erros: faca, luva e caixa recusam; limite; slot; catálogo; campos', async () => {
+  test('erros: faca, luva e caixa recusam; limite; catálogo; campos (slot repetido vale, D361)', async () => {
     expectError(await post({ catalogId: CAT.KARAMBIT_FADE, acquisitionType: 'GANHEI', components: two }), 400, 'COMPONENTS_NOT_ALLOWED');
     expectError(await post({ catalogId: CAT.SPORT_GLOVES_PANDORA, acquisitionType: 'GANHEI', components: two }), 400, 'COMPONENTS_NOT_ALLOWED');
     expectError(await post({ catalogId: CAT.CASE_REVOLVER, acquisitionType: 'GANHEI', components: [charm] }), 400, 'COMPONENTS_NOT_ALLOWED');
     const six = Array.from({ length: 6 }, (_, i) => ({ kind: 'STICKER', catalogId: CAT.STICKER_TITAN, slot: i }));
     expectError(await post(purchaseBody({ components: six })), 400, 'COMPONENT_LIMIT_EXCEEDED');
     expectError(await post(purchaseBody({ components: [charm, { kind: 'STICKER_SLAB', catalogId: CAT.STICKER_TITAN }] })), 400, 'COMPONENT_LIMIT_EXCEEDED');
-    expectError(await post(purchaseBody({ components: [two[0], { ...two[1], slot: 0 }] })), 400, 'COMPONENT_SLOT_TAKEN', { field: 'components', params: { index: 1, slot: 0 } });
+    const sameSlot = await post(purchaseBody({ components: [two[0], { ...two[1], slot: 0 }] }));
+    expect(sameSlot.status).toBe(201);
+    expect(sameSlot.body.data.components.map((c) => c.slot)).toEqual([0, 0]);
     expectError(await post(purchaseBody({ components: [{ kind: 'STICKER' }] })), 400, 'COMPONENT_CATALOG_REQUIRED');
     expectError(await post(purchaseBody({ components: [{ kind: 'STICKER', catalogId: CAT.AK_REDLINE }] })), 400, 'COMPONENT_CATALOG_MISMATCH');
     expectError(await post(purchaseBody({ components: [{ kind: 'STICKER_SLAB', catalogId: CAT.CHARM_LIL_AVA }] })), 400, 'COMPONENT_CATALOG_MISMATCH');

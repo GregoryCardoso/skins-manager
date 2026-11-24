@@ -4,6 +4,8 @@
 const fs = require('fs');
 const path = require('path');
 const catalogService = require('../../src/services/catalogService');
+const CatalogItem = require('../../src/models/CatalogItem');
+const { normalizeSearchText } = require('../../src/services/catalog/csgoApiAdapter');
 
 const FIXTURE_PATH = path.join(__dirname, '..', 'fixtures', 'catalog-snapshot.json');
 
@@ -40,4 +42,45 @@ function importCatalogFixture({ now = new Date('2026-11-01T00:00:00.000Z') } = {
   return catalogService.importSnapshot(readFixture(), { now });
 }
 
-module.exports = { CAT, FIXTURE_PATH, readFixture, importCatalogFixture };
+// Itens extras do catálogo para a importação de componentes (10.2): as armas e os stickers/chaveiro dos exemplos reais.
+const SKINS = [
+  ['skin-deagle-trigger', 'Desert Eagle | Trigger Discipline'],
+  ['skin-glock-moonrise', 'Glock-18 | Moonrise'],
+  ['skin-m4a4-toothfairy', 'M4A4 | Tooth Fairy'],
+  ['skin-glock-offworld', 'Glock-18 | Off World'],
+  ['skin-m4a1s-mudspec', 'M4A1-S | Mud-Spec'],
+];
+const STICKERS = [
+  ['sticker-big-rmr', 'Sticker | BIG (Holo) | 2020 RMR'],
+  ['sticker-heroic-rmr', 'Sticker | Heroic (Foil) | 2020 RMR'],
+  ['sticker-nip-rmr', 'Sticker | Ninjas in Pyjamas (Holo) | 2020 RMR'],
+  ['sticker-flit-rio', 'Sticker | FL1T (Champion) | Rio 2022'],
+  ['sticker-clavis', 'Sticker | Clavis'],
+  ['sticker-boom-rmr', 'Sticker | Boom | 2020 RMR'],
+  ['sticker-fly-high', 'Sticker | Fly High'],
+  ['sticker-scavenger', 'Sticker | Scavenger'],
+  ['sticker-flickshot', 'Sticker | Flickshot'],
+  ['sticker-battlefield-portal', 'Sticker | Battlefield Portal'],
+  ['sticker-separate-pixels', 'Sticker | Separate Pixels'],
+  ['sticker-operation-riptide', 'Sticker | Operation Riptide'],
+  ['sticker-stone-scales', 'Sticker | Stone Scales'],
+  ['sticker-choose-wisely', 'Sticker | Choose Wisely'],
+];
+const CAT_EXTRA = Object.freeze({
+  FLY_HIGH: 'sticker-fly-high', BIG: 'sticker-big-rmr', BOOM: 'sticker-boom-rmr', FLICKSHOT: 'sticker-flickshot', LIL_TEACUP: 'keychain-lil-teacup',
+  DEAGLE_TRIGGER: 'skin-deagle-trigger', GLOCK_MOONRISE: 'skin-glock-moonrise', M4A1S_MUDSPEC: 'skin-m4a1s-mudspec', GLOCK_OFFWORLD: 'skin-glock-offworld',
+});
+
+function seedComponentCatalog({ now = new Date('2026-11-01T00:00:00.000Z') } = {}) {
+  const row = (id, source, category, name, extra = {}) => ({
+    id, source, category, name, nameKey: normalizeSearchText(name), searchText: normalizeSearchText(name), minFloat: null, maxFloat: null,
+    hasStattrak: false, hasSouvenir: false, ...extra,
+  });
+  CatalogItem.upsertMany([
+    ...SKINS.map(([id, name]) => row(id, 'SKINS', 'SKIN', name, { minFloat: 0, maxFloat: 1, hasStattrak: true })),
+    ...STICKERS.map(([id, name]) => row(id, 'STICKERS', 'STICKER', name)),
+    row('keychain-lil-teacup', 'KEYCHAINS', 'PINGENTE', "Charm | Lil' Teacup"),
+  ], { now });
+}
+
+module.exports = { CAT, CAT_EXTRA, FIXTURE_PATH, readFixture, importCatalogFixture, seedComponentCatalog };

@@ -4,6 +4,7 @@
 // (`findByNameKeyAnyCategory`), então os testes não precisam de banco.
 const { normalizeSearchText } = require('../catalog/csgoApiAdapter');
 const { isWeaponCategory } = require('../itemAttributesService');
+const { allowedKindsFor, CATALOG_CATEGORY, SLOT_MAX, MAX_STICKERS, MAX_HANGING, MAX_PATCHES } = require('../itemComponentService');
 const { DOPPLER_PHASES } = require('./adapters/csfloatStates');
 const { IMPORT_DEFAULT_TRADE_LOCK_DAYS } = require('../../config/constants');
 
@@ -94,7 +95,7 @@ function computeTradeUnlockAt(trade) {
 }
 
 // Corpo do `itemService.createItem` para uma compra importada. `inspectLink`, `assetId` e `originDetail` nunca são enviados.
-function buildPurchaseInput(trade, mapped, { storeId }) {
+function buildPurchaseInput(trade, mapped, { storeId, components = [] }) {
   const input = {
     acquisitionType: 'COMPRA',
     purchaseStoreId: storeId,
@@ -113,9 +114,92 @@ function buildPurchaseInput(trade, mapped, { storeId }) {
     if (mapped.paintSeed !== null) input.paintSeed = mapped.paintSeed;
     if (mapped.phase) input.phase = mapped.phase;
   }
+  if (components.length) input.components = components;
   return input;
 }
 
+// --- Componentes (D361) ------------------------------------------------------------------------------------------------
+
+const MAX_COMPONENT_WARNINGS = 10;
+// Códigos dos avisos de componentes (não são erros da API: ficam no `display_json` e no resumo da importação).
+const COMPONENT_WARNINGS = Object.freeze({
+  CATALOG_NOT_FOUND: 'COMPONENT_CATALOG_NOT_FOUND',
+  FULLY_SCRAPED: 'COMPONENT_FULLY_SCRAPED',
+  LIMIT_EXCEEDED: 'COMPONENT_LIMIT_EXCEEDED',
+  NOT_ALLOWED: 'COMPONENTS_NOT_ALLOWED',
+});
+const PATCH_PREFIX = 'Patch |';
+const SLAB_PREFIX = 'Sticker Slab | ';
+
+// Tipo do componente pelo nome e pela origem no trade (`stickers[]` ou `keychains[]`) e o nome a procurar no catálogo.
+// O Sticker Slab é procurado como o sticker de dentro ("Sticker | X"); hipótese, ainda sem exemplo real.
+function componentKindOf(raw) {
+  const name = raw.name;
+  if (raw.from === 'KEYCHAIN') {
+    if (name.startsWith(SLAB_PREFIX)) return { kind: 'STICKER_SLAB', lookup: `Sticker | ${name.slice(SLAB_PREFIX.length)}` };
+    return { kind: 'CHARM', lookup: name };
+  }
+  return { kind: name.startsWith(PATCH_PREFIX) ? 'PATCH' : 'STICKER', lookup: name };
+}
+
+// Componentes do trade -> componentes do app, casados com o catálogo, mais os avisos do que não foi registrado (D361). Pura: o
+// catálogo é injetado. Nunca lança nem bloqueia a compra. O resultado sempre passa no `itemComponentService.normalizeComponents`.
+//   rawComponents: `trade.item.components` (csfloatMapper); category: categoria do item no app.
+// Devolve { components: [{ kind, catalogId, slot, wear?, pattern? }], warnings: [{ code, name }] } (sem repetição, no máximo 10).
+function mapComponents(rawComponents, { category, findByNameKeyAnyCategory }) {
+  const list = Array.isArray(rawComponents) ? rawComponents : [];
+  const components = [];
+  const warnings = [];
+  const seen = new Set();
+  const warn = (code, name = null) => {
+    const key = `${code}|${name}`;
+    if (seen.has(key) || warnings.length >= MAX_COMPONENT_WARNINGS) return;
+    seen.add(key);
+    warnings.push({ code, name });
+  };
+  if (list.length === 0) return { components, warnings };
+  const allowed = allowedKindsFor(category);
+  const limits = { STICKER: MAX_STICKERS, HANGING: MAX_HANGING, PATCH: MAX_PATCHES };
+  const used = { STICKER: 0, HANGING: 0, PATCH: 0 };
+  for (const raw of list) {
+    if (!raw || typeof raw.name !== 'string' || raw.name === '') {
+      warn(COMPONENT_WARNINGS.CATALOG_NOT_FOUND, null);
+      continue;
+    }
+    const { kind, lookup } = componentKindOf(raw);
+    if (!allowed.includes(kind)) {
+      warn(COMPONENT_WARNINGS.NOT_ALLOWED, null);
+      continue;
+    }
+    // Raspado até o fim sai do registro (2.2.2).
+    if (kind === 'STICKER' && typeof raw.wear === 'number' && raw.wear >= 1) {
+      warn(COMPONENT_WARNINGS.FULLY_SCRAPED, raw.name);
+      continue;
+    }
+    const candidates = findByNameKeyAnyCategory(normalizeSearchText(lookup)).filter((c) => c.category === CATALOG_CATEGORY[kind]);
+    const picked = pickCandidate(candidates, null);
+    if (picked.kind !== 'FOUND') {
+      warn(COMPONENT_WARNINGS.CATALOG_NOT_FOUND, raw.name);
+      continue;
+    }
+    const bucket = kind === 'STICKER' || kind === 'PATCH' ? kind : 'HANGING';
+    if (used[bucket] >= limits[bucket]) {
+      warn(COMPONENT_WARNINGS.LIMIT_EXCEEDED, raw.name);
+      continue;
+    }
+    used[bucket] += 1;
+    const component = {
+      kind,
+      catalogId: picked.entry.id,
+      slot: Number.isSafeInteger(raw.slot) && raw.slot >= 0 && raw.slot <= SLOT_MAX[kind] ? raw.slot : null,
+    };
+    if (kind === 'STICKER' && typeof raw.wear === 'number' && Number.isFinite(raw.wear)) component.wear = raw.wear;
+    if ((kind === 'CHARM' || kind === 'STICKER_SLAB') && Number.isSafeInteger(raw.pattern)) component.pattern = raw.pattern;
+    components.push(component);
+  }
+  return { components, warnings };
+}
+
 module.exports = {
-  baseNameKey, variantOf, tradePhaseKey, isFreeNameItem, pickCandidate, mapTradeItem, computeTradeUnlockAt, buildPurchaseInput,
+  mapComponents, COMPONENT_WARNINGS, baseNameKey, variantOf, tradePhaseKey, isFreeNameItem, pickCandidate, mapTradeItem, computeTradeUnlockAt, buildPurchaseInput,
 };

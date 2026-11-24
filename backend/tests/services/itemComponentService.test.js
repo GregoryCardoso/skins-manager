@@ -64,7 +64,7 @@ describe('normalizeComponents', () => {
     expect(code(() => run([{ kind: 'STICKER', catalogId: 'st1', wear: -0.1 }]))).toBe('INVALID_COMPONENT_FIELD');
     expect(code(() => run([{ kind: 'STICKER', catalogId: 'st1', slot: 5 }]))).toBe('INVALID_COMPONENT_FIELD');
     expect(code(() => run([{ kind: 'CHARM', catalogId: 'ch1', pattern: 1000000 }]))).toBe('INVALID_COMPONENT_FIELD');
-    expect(code(() => run([{ kind: 'STICKER', catalogId: 'st1', slot: 1 }, { kind: 'STICKER', catalogId: 'st2', slot: 1 }]))).toBe('COMPONENT_SLOT_TAKEN');
+    expect(run([{ kind: 'STICKER', catalogId: 'st1', slot: 1 }, { kind: 'STICKER', catalogId: 'st2', slot: 1 }])).toHaveLength(2);
     expect(run([{ kind: 'STICKER', catalogId: 'st1', wear: 0 }, { kind: 'STICKER', catalogId: 'st1', wear: 0.99 }])).toHaveLength(2);
   });
 

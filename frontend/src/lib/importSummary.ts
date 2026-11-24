@@ -1,10 +1,10 @@
 // Resumo da importação (9.2 e 9.3, D318): linhas de contagem, grupos de entradas, chave do motivo e link para o lançamento.
 // Funções puras (sem React nem rede); o texto é montado na tela com as chaves i18n.
-import type { ImportBatchCounts, ImportEntryAction, ImportEntryView } from '@/types/api';
+import type { ImportBatchCounts, ImportComponentWarning, ImportEntryAction, ImportEntryView } from '@/types/api';
 
 // Ordem e chave (`imports.counts.<key>`) de cada linha do resumo.
 export const COUNT_LINES = [
-  'purchasesCreated', 'salesCreated', 'depositsCreated', 'withdrawalsCreated', 'matched', 'review', 'reverted', 'withoutPurchase', 'failed', 'unknownState', 'revertedBeforeImport',
+  'purchasesCreated', 'salesCreated', 'depositsCreated', 'withdrawalsCreated', 'componentsFilled', 'componentsSkipped', 'matched', 'review', 'reverted', 'withoutPurchase', 'failed', 'unknownState', 'revertedBeforeImport',
   'deferredSales', 'known', 'notTransferred', 'beforeCutoff', 'transfersAwaitingCutoff', 'finesNotImported',
 ] as const;
 export type CountKey = (typeof COUNT_LINES)[number];
@@ -19,12 +19,19 @@ export function summaryLines(counts: ImportBatchCounts): CountLine[] {
   return COUNT_LINES.map((key) => ({ key, count: counts[key] ?? 0 })).filter((line) => line.count > 0);
 }
 
-// "Nada novo": nada foi criado, ligado nem exige atenção (as contagens de já importadas e de antes do corte não contam).
+// "Nada novo": nada foi criado, ligado nem exige atenção (as contagens de já importadas e de antes do corte não contam). Compras que
+// ganharam componentes pela varredura (10.2) contam como novidade; componentes não registrados só informam.
 export function isNothingNew(counts: ImportBatchCounts): boolean {
   return (
-    counts.purchasesCreated + counts.salesCreated + (counts.depositsCreated ?? 0) + (counts.withdrawalsCreated ?? 0) + counts.matched + counts.review + counts.reverted + counts.failed + counts.unknownState
-    + counts.withoutPurchase === 0
+    counts.purchasesCreated + counts.salesCreated + (counts.depositsCreated ?? 0) + (counts.withdrawalsCreated ?? 0) + (counts.componentsFilled ?? 0)
+    + counts.matched + counts.review + counts.reverted + counts.failed + counts.unknownState + counts.withoutPurchase === 0
   );
+}
+
+// Componentes não registrados de uma compra criada (10.2, D361): uma linha por aviso, só nas entradas CREATED.
+export function componentWarningsOf(entry: ImportEntryView): ImportComponentWarning[] {
+  if (entry.outcome !== 'CREATED') return [];
+  return entry.display.componentWarnings ?? [];
 }
 
 export type EntryGroupKey = 'CREATED' | 'MATCHED' | 'POSSIBLE_DUPLICATE' | 'REVERTED' | 'WITHOUT_PURCHASE' | 'FAILED';

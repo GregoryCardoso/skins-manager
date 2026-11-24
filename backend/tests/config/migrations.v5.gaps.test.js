@@ -65,7 +65,7 @@ describe('migração v5: lacunas', () => {
 
     const db = openDatabase(dbPath, { now: NOW5 });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(17);
+      expect(db.pragma('user_version', { simple: true })).toBe(18);
       expect(Object.fromEntries(Object.entries(snapshot(db)).filter(([t]) => !['integrations', 'external_links', 'external_records', 'import_batch_entries', 'import_batches', 'item_components', 'item_operation_links', 'item_operations'].includes(t)).map(([t, list]) => [t, stripV6Rows(list)]))).toEqual(rows);
       // A v6, a v7 e a v8 só alteram o DDL de stores, items, withdrawals, deposits e store_balances (e o índice único da v8);
       // o das demais tabelas e os índices ficam iguais.

@@ -7,7 +7,7 @@ const FIELDS = [
   'fxRateAtPurchase', 'acquiredAt', 'tradeUnlockAt', 'status', 'saleStoreId', 'salePriceCents',
   'saleCurrency', 'fxRateAtSale', 'saleFeeTypeApplied', 'saleFeeRateApplied', 'saleFeeRoundingApplied',
   'saleMinFeeCentsApplied', 'saleFixedFeeCentsApplied', 'netReceivedCents', 'netReceivedManual', 'soldAt', 'saleHoldDaysApplied',
-  'offSaleAt', 'forSaleSince', 'saleReleaseAt',
+  'offSaleAt', 'forSaleSince', 'saleReleaseAt', 'componentsImportedAt',
 ];
 const BOOLEAN_FIELDS = ['netReceivedManual'];
 const toItem = (row) => mapRow(row, BOOLEAN_FIELDS);
@@ -20,6 +20,23 @@ function create(data, { now = new Date() } = {}) {
   const stamp = now.toISOString();
   const id = insertRow(getDb(), 'items', data, FIELDS, { created_at: stamp, updated_at: stamp });
   return findById(Number(id));
+}
+
+// Vários itens por id (uma consulta por lote): Map id -> item.
+function findByIds(ids) {
+  const unique = [...new Set(ids)];
+  const out = new Map();
+  for (let i = 0; i < unique.length; i += 500) {
+    const chunk = unique.slice(i, i + 500);
+    const rows = getDb().prepare(`SELECT * FROM items WHERE id IN (${chunk.map(() => '?').join(',')})`).all(...chunk);
+    for (const row of rows) out.set(row.id, toItem(row));
+  }
+  return out;
+}
+
+// Marca que a importação já preencheu os componentes (D361). Só se ainda não estava marcado; não mexe em `updated_at`.
+function markComponentsImported(id, stamp) {
+  return getDb().prepare('UPDATE items SET components_imported_at = ? WHERE id = ? AND components_imported_at IS NULL').run(stamp, id).changes > 0;
 }
 
 function findAll({ status, category } = {}) {
@@ -136,4 +153,4 @@ function latestUnlinkedDates(storeId) {
   return { purchaseAt: purchase ? purchase.latest : null, saleAt: sale ? sale.latest : null };
 }
 
-module.exports = { findUnlinkedPurchases, findUnlinkedSales, findInStockByCatalogOrCategory, latestUnlinkedDates, countAll, create, findById, findAll, findStatsCandidates, findLegacy, update, remove };
+module.exports = { findByIds, markComponentsImported, findUnlinkedPurchases, findUnlinkedSales, findInStockByCatalogOrCategory, latestUnlinkedDates, countAll, create, findById, findAll, findStatsCandidates, findLegacy, update, remove };

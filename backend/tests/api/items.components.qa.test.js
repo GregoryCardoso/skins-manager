@@ -43,13 +43,13 @@ describe('limites e slots', () => {
     expect((await get('/api/items')).body.data.items).toHaveLength(0);
   });
 
-  test('slot repetido entre tipos diferentes vale (sticker 0 e pendurado 0); entre stickers é COMPONENT_SLOT_TAKEN', async () => {
+  test('slot repetido vale (D361): entre tipos diferentes e entre stickers, e os dois são gravados', async () => {
     const ok = await post(purchaseBody({ components: [sticker(0), { ...charm, slot: 0 }] }));
     expect(ok.status).toBe(201);
     expect(ok.body.data.components.map((c) => [c.kind, c.slot])).toEqual([['STICKER', 0], ['CHARM', 0]]);
-    expectError(await post(purchaseBody({ components: [sticker(3), sticker(3, CAT.STICKER_CROWN)] })), 400, 'COMPONENT_SLOT_TAKEN', {
-      field: 'components', params: { index: 1, slot: 3 },
-    });
+    const twice = await post(purchaseBody({ components: [sticker(3), sticker(3, CAT.STICKER_CROWN)] }));
+    expect(twice.status).toBe(201);
+    expect(twice.body.data.components.map((c) => [c.catalogId, c.slot])).toEqual([[CAT.STICKER_TITAN, 3], [CAT.STICKER_CROWN, 3]]);
   });
 
   test('slot fora da faixa: sticker 5 e pendurado 1 são INVALID_COMPONENT_FIELD; slot nulo repete livre', async () => {

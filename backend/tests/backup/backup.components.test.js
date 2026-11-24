@@ -83,7 +83,7 @@ test('backup v16 importado migra para a v17 com as tabelas novas vazias e os ite
   old.close();
   const res = await octet(fs.readFileSync(v16));
   expect(res.status).toBe(200);
-  expect(res.body.data).toMatchObject({ fileVersion: 16, schemaVersion: 17, migrationsApplied: [17] });
+  expect(res.body.data).toMatchObject({ fileVersion: 16, schemaVersion: 18, migrationsApplied: [17, 18] });
   const db = database.getDb();
   for (const table of ['item_components', 'item_operations', 'item_operation_links']) {
     expect(db.prepare(`SELECT COUNT(*) n FROM ${table}`).get().n).toBe(0);
@@ -93,6 +93,27 @@ test('backup v16 importado migra para a v17 com as tabelas novas vazias e os ite
     return rest;
   });
   expect(after).toEqual(before);
+});
+
+test('backup v17 importado migra para a v18: componentes e itens intactos, índice de slot removido, contagens do lote em 0 (10.2, D361)', async () => {
+  const v17 = path.join(dir, 'v17.sqlite');
+  const old = database.openDatabase(v17, { migrations: MIGRATIONS.filter((m) => m.version <= 17) });
+  const item = old.prepare(
+    `INSERT INTO items (name, category, variant, acquisition_type, purchase_price_cents, purchase_currency, acquired_at, status, created_at, updated_at)
+     VALUES ('M4A1-S | Mud-Spec', 'SKIN', 'NORMAL', 'GANHEI', 0, 'USD', '2026-11-01T00:00:00.000Z', 'EM_ESTOQUE', 'c', 'u')`
+  ).run().lastInsertRowid;
+  old.prepare("INSERT INTO item_components (item_id, kind, name, slot, wear, source, created_at, updated_at) VALUES (?, 'STICKER', 'Sticker | Flickshot', 4, 0, 'CSFLOAT', 'c', 'u')").run(item);
+  const before = old.prepare('SELECT * FROM item_components').all();
+  old.close();
+  const res = await octet(fs.readFileSync(v17));
+  expect(res.status).toBe(200);
+  expect(res.body.data).toMatchObject({ fileVersion: 17, schemaVersion: 18, migrationsApplied: [18] });
+  const db = database.getDb();
+  expect(db.prepare('SELECT * FROM item_components').all()).toEqual(before);
+  expect(db.prepare("SELECT COUNT(*) n FROM sqlite_master WHERE name = 'idx_item_components_slot'").get().n).toBe(0);
+  expect(db.prepare("SELECT COUNT(*) n FROM pragma_table_info('import_batches') WHERE name IN ('components_filled_count','components_skipped_count')").get().n).toBe(2);
+  // o mesmo slot passa a valer
+  expect(() => db.prepare("INSERT INTO item_components (item_id, kind, name, slot, wear, source, created_at, updated_at) VALUES (?, 'STICKER', 'x', 4, 0, 'MANUAL', 'c', 'u')").run(item)).not.toThrow();
 });
 
 test('v17: tabelas STRICT, restrições do banco e CASCADE', () => {
@@ -108,7 +129,7 @@ test('v17: tabelas STRICT, restrições do banco e CASCADE', () => {
   expect(() => insert({ cols: ', slot', marks: ', ?', values: [6] })).toThrow();
   expect(() => insert({ cols: ", origin", marks: ", 'APPLIED_FROM_STOCK'" })).toThrow(); // sem unidade de origem nem operação
   insert({ cols: ', slot', marks: ', ?', values: [1] });
-  expect(() => insert({ cols: ', slot', marks: ', ?', values: [1] })).toThrow(); // slot repetido
+  expect(() => insert({ cols: ', slot', marks: ', ?', values: [1] })).not.toThrow(); // slot repetido vale desde a v18 (D361)
   db.prepare('DELETE FROM items WHERE id = ?').run(itemId);
   expect(db.prepare('SELECT COUNT(*) n FROM item_components WHERE item_id = ?').get(itemId).n).toBe(0);
 });

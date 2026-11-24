@@ -228,7 +228,6 @@
     "COMPONENT_LIMIT_EXCEEDED": "Component limit exceeded: up to 5 stickers and 1 hanging (charm or Sticker Slab).",
     "COMPONENT_CATALOG_REQUIRED": "Choose the component item from the catalog.",
     "COMPONENT_CATALOG_MISMATCH": "The chosen catalog item is not the right type for this component.",
-    "COMPONENT_SLOT_TAKEN": "That slot is already used by another component.",
     "INVALID_COMPONENT_FIELD": "A component field is invalid (slot, wear or pattern)."
   },
   "warnings": {
@@ -632,7 +631,6 @@
     "COMPONENTS_NOT_ALLOWED": "Component {n}: this item does not accept this type (stickers and charms only on weapons).",
     "COMPONENT_CATALOG_REQUIRED": "Component {n}: choose the item from the catalog.",
     "COMPONENT_CATALOG_MISMATCH": "Component {n}: the chosen catalog item is not the right type.",
-    "COMPONENT_SLOT_TAKEN": "Component {n}: slot {slot} is already used.",
     "INVALID_COMPONENT_FIELD": "Component {n}: invalid slot, wear or pattern."
   },
   "sales": {
@@ -1345,6 +1343,14 @@
         "one": "{count} withdrawal imported",
         "other": "{count} withdrawals imported"
       },
+      "componentsFilled": {
+        "one": "{count} purchase got stickers/keychain",
+        "other": "{count} purchases got stickers/keychain"
+      },
+      "componentsSkipped": {
+        "one": "{count} component not registered",
+        "other": "{count} components not registered"
+      },
       "transfersAwaitingCutoff": {
         "one": "{count} deposit or withdrawal in the statement waits for the deposits and withdrawals cutoff date (set it in Imports)",
         "other": "{count} deposits and withdrawals in the statement wait for their cutoff date (set it in Imports)"
@@ -1353,6 +1359,15 @@
         "one": "{count} fine in the statement was not imported (check the store balance)",
         "other": "{count} fines in the statement were not imported (check the store balance)"
       }
+    },
+    "componentWarningsTitle": "Not registered",
+    "componentWarningsHint": "You can add them by hand by editing the item.",
+    "componentUnnamed": "unnamed component",
+    "componentWarnings": {
+      "COMPONENT_CATALOG_NOT_FOUND": "{name} (not found in the catalog)",
+      "COMPONENT_FULLY_SCRAPED": "{name} (fully scraped off)",
+      "COMPONENT_LIMIT_EXCEEDED": "{name} (over the limit of 5 stickers and 1 hanging item)",
+      "COMPONENTS_NOT_ALLOWED": "stickers and keychain (this item does not accept components)"
     },
     "warnings": {
       "SCAN_LIMIT_REACHED": "Reading stopped at the page limit. The rest is left for the next import.",
@@ -1559,6 +1574,7 @@
     "fullScanConfirm": {
       "title": "Full scan",
       "body": "The app will read the whole CSFloat trade and statement history again, without stopping where the last import stopped. This uses more requests and can take up to 2 minutes. Nothing is duplicated: trades already imported are recognized by their ID, and your hand-made entries keep being linked by float (or by item, price and day). Trades before the cutoff date ({date}) stay out, so money already in your entries and deposits is not counted twice. To import older trades, change the cutoff date on the Imports page.",
+      "componentsNote": "The scan also fills in, once, the stickers and keychain of purchases already imported, without touching the ones you registered by hand.",
       "confirm": "Run full scan"
     },
     "cutoffChange": {

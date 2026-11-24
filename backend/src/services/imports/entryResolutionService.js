@@ -21,6 +21,7 @@ const importViews = require('./importViews');
 const tradeClassifier = require('./tradeClassifier');
 const externalItemMapper = require('./externalItemMapper');
 const manualMatchService = require('./manualMatchService');
+const componentImport = require('./componentImport');
 const { saleMoment, saleReleaseOf, saleCreditOf } = require('./saleImportHelpers');
 const transferImport = require('./transferImport');
 const { requireImportStore } = require('./importStore');
@@ -54,6 +55,14 @@ const tradeOfRecord = (record) => ({
   rawState: record.rawState, protectionEndsAt: record.protectionEndsAt, verifySaleAt: record.verifySaleAt, acceptedAt: record.acceptedAt,
   soldAt: record.soldAt, createdAt: record.externalCreatedAt, priceCents: record.amountCents, contractId: record.contractId,
 });
+
+// Componentes da pendência (10.2, D361): a lista do trade guardada em `display.components`, casada de novo com o catálogo atual e a
+// categoria final do item. Pendência antiga (sem `components`) ou componente que deixou de casar: só fica sem eles, sem bloquear.
+// Opções internas do `createItem`: os componentes entram com origem CSFLOAT e a unidade já fica marcada como preenchida.
+function componentsOf(display, category, { now }) {
+  const { components } = componentImport.forPurchase(display.components, category);
+  return { components, ctx: { now, componentSource: 'CSFLOAT', componentsImportedAt: now } };
+}
 
 // Item do catálogo (ou nome livre) guardado no `display_json` da entrada, no formato do `externalItemMapper`.
 function mappedOfDisplay(display) {
@@ -154,7 +163,8 @@ function createLaunch(entry, display, { now }) {
   const store = loadStore();
   const mapped = mappedOfDisplay(display);
   if (record.direction === 'BUY') {
-    const created = itemService.createItem(externalItemMapper.buildPurchaseInput(tradeOfRecord(record), mapped, { storeId: store.id }), { now });
+    const { components, ctx } = componentsOf(display, mapped.category, { now });
+    const created = itemService.createItem(externalItemMapper.buildPurchaseInput(tradeOfRecord(record), mapped, { storeId: store.id, components }), ctx);
     linkRecord(record, 'ITEM_PURCHASE', Item.findById(created.id), 'CREATED', entry.batchId, { now });
     return 'CREATED';
   }
@@ -276,7 +286,9 @@ function launchAndSell(entry, display, buildInput, { now, check = null, purchase
   const input = buildInput(mapped, saleAt);
   assertDatesBeforeSale(input, saleAt);
   if (check) check({ store, input });
-  const created = itemService.createItem(input, { now });
+  const { components, ctx } = componentsOf(display, mapped.category, { now });
+  if (components.length) input.components = components;
+  const created = itemService.createItem(input, ctx);
   if (purchaseOnly) return null;
   const sold = sellImported(record, Item.findById(created.id), store, { now });
   linkRecord(record, 'ITEM_SALE', sold, 'CREATED', entry.batchId, { now });

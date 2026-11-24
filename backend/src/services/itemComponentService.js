@@ -79,7 +79,8 @@ function checkCatalog(kind, input, index, findCatalogById) {
 }
 
 // Valida a lista inteira para um item da `category` e devolve as linhas a gravar (origem `CAME_WITH`, fonte `MANUAL`).
-// Lista vazia sempre vale (limpa). Ordem: tipo/categoria -> limites -> cada componente (campos, catálogo, slot).
+// Lista vazia sempre vale (limpa). Ordem: tipo/categoria -> limites -> cada componente (campos, catálogo). Slot repetido vale: o CS2
+// permite dois stickers no mesmo slot (D361).
 function normalizeComponents(input, { category, findCatalogById, source = 'MANUAL' } = {}) {
   if (!Array.isArray(input)) throw new ValidationError('components deve ser uma lista.', 'INVALID_FIELD', { field: 'components' });
   if (input.length === 0) return [];
@@ -99,17 +100,11 @@ function normalizeComponents(input, { category, findCatalogById, source = 'MANUA
   for (const [n, max] of limits) {
     if (n > max) throw new ValidationError(`Limite de componentes excedido (máximo ${max}).`, 'COMPONENT_LIMIT_EXCEEDED', { field: 'components', params: { max } });
   }
-  const usedSlots = new Set();
   return input.map((component, index) => {
     const { kind } = component;
     checkNumbers(kind, component, index);
     const entry = checkCatalog(kind, component, index, findCatalogById);
     const slot = isNil(component.slot) ? null : component.slot;
-    if (slot !== null) {
-      const key = `${kind}:${slot}`;
-      if (usedSlots.has(key)) throw componentError('COMPONENT_SLOT_TAKEN', 'Esse slot já está ocupado.', index, { slot });
-      usedSlots.add(key);
-    }
     return {
       kind,
       catalogId: entry.id,
@@ -173,6 +168,6 @@ function toSummary(rows = []) {
 }
 
 module.exports = {
-  KINDS, MAX_STICKERS, MAX_HANGING, MAX_PATCHES, isDetachable, allowedKindsFor, normalizeComponents, assertExistingAllowed,
+  KINDS, CATALOG_CATEGORY, SLOT_MAX, MAX_STICKERS, MAX_HANGING, MAX_PATCHES, isDetachable, allowedKindsFor, normalizeComponents, assertExistingAllowed,
   summarize, toView, toSummary,
 };

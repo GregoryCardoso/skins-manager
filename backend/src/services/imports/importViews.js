@@ -39,6 +39,9 @@ function toDisplay(displayJson, catalogById) {
     // Venda importada com taxa diferente da calculada pela loja (FEE_MISMATCH, D299): a cobrada pelo CSFloat e a das regras.
     feeCents: display.feeCents ?? null,
     expectedFeeCents: display.expectedFeeCents ?? null,
+    // Componentes do trade (10.2, D361): só nome, slot, desgaste e pattern; e os que não foram registrados, com o motivo.
+    components: Array.isArray(display.components) ? display.components : [],
+    componentWarnings: Array.isArray(display.componentWarnings) ? display.componentWarnings : [],
   };
 }
 
@@ -93,6 +96,9 @@ function toBatchSummary(batch, { undoable = false, openEntriesCount = 0 } = {}) 
       withdrawalsCreated: batch.withdrawalsCreated ?? 0,
       transfersAwaitingCutoff: Number(parseJson(batch.diagnosticsJson, {}).transfersAwaitingCutoff) || 0,
       finesNotImported: Number(parseJson(batch.diagnosticsJson, {}).finesNotImported) || 0,
+      // Componentes (10.2, D361): compras que ganharam stickers/chaveiro pela varredura e componentes não registrados.
+      componentsFilled: batch.componentsFilledCount ?? 0,
+      componentsSkipped: batch.componentsSkippedCount ?? 0,
     },
     unknownTypes: parseJson(batch.unknownTypesJson, {}),
     diagnostics: parseJson(batch.diagnosticsJson, {}),

@@ -422,8 +422,8 @@ function viewOf(item, { now, thresholds }) {
 }
 
 // Valida a lista de componentes contra a categoria final do item e o catálogo (itemComponentService).
-function normalizeComponentsFor(components, category) {
-  return itemComponentService.normalizeComponents(components, { category, findCatalogById: (id) => catalogService.getCatalogItem(id) });
+function normalizeComponentsFor(components, category, source = 'MANUAL') {
+  return itemComponentService.normalizeComponents(components, { category, source, findCatalogById: (id) => catalogService.getCatalogItem(id) });
 }
 
 function findOrFail(id) {
@@ -596,8 +596,10 @@ const bulkMarkForSale = (body, ctx) => bulkChangeSaleState('FOR_SALE', body, ctx
 //     arma (normalizeAttributes) -> data de aquisição (inválida, futura) -> liberação da troca.
 //  5. Faixa de float do catálogo (assertFloatInCatalogRange).
 //  6. Componentes (itemComponentService): COMPONENTS_NOT_ALLOWED -> COMPONENT_LIMIT_EXCEEDED -> campos -> catálogo -> slot.
+//  Opções INTERNAS do contexto, só da importação (o controller nunca as passa; D361): `componentSource` ('CSFLOAT') grava os
+//  componentes com essa origem, e `componentsImportedAt` marca que a importação já cuidou dos componentes da unidade.
 function createItem(input, ctx = {}) {
-  const { now = new Date(), thresholds = getAgingThresholds() } = ctx;
+  const { now = new Date(), thresholds = getAgingThresholds(), componentSource = 'MANUAL', componentsImportedAt = null } = ctx;
   const catalogEntry = loadCatalogEntry(input, null);
   const identity = resolveItemIdentity({
     body: input, catalogEntry, freeNameCatalogMatch: lookupFreeNameMatch(input, null),
@@ -607,9 +609,10 @@ function createItem(input, ctx = {}) {
   const store = isNil(input.purchaseStoreId) ? null : getStoreOrFail(input.purchaseStoreId, { field: 'purchaseStoreId' });
   const record = buildItemRecord(merged, { store, settings: Setting.get(), now, body: input });
   if (catalogEntry) assertFloatInCatalogRange(record.floatValue, catalogEntry);
-  const components = hasKey(input, 'components') ? normalizeComponentsFor(input.components, identity.category) : null;
+  const components = hasKey(input, 'components') ? normalizeComponentsFor(input.components, identity.category, componentSource) : null;
+  const importedStamp = componentsImportedAt ? new Date(componentsImportedAt).toISOString() : undefined;
   return inTransaction(() => {
-    const created = Item.create({ ...record, catalogId: identity.catalogId }, { now });
+    const created = Item.create({ ...record, catalogId: identity.catalogId, componentsImportedAt: importedStamp }, { now });
     if (components && components.length > 0) ItemComponent.insertMany(created.id, components, { now });
     return viewOf(created, { now, thresholds });
   });

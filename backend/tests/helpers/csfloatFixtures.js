@@ -92,7 +92,7 @@ const TRADE_PII = [OTHER.steamId, OTHER.username, OTHER.avatar, OTHER.tradeUrl, 
 function fakeTrade({
   id = '1001', contractId = null, direction = 'BUY', state = 'pending', offerState = 3, createdAt = '2026-11-20T14:00:00.000Z',
   soldAt, acceptedAt, protectionEndsAt = '2026-11-27T14:00:00.000Z', verifySaleAt = null, price = 1250, steamId = PII.steamId,
-  sentToDifferentUser = null, listingType = 'buy_now', item = {},
+  sentToDifferentUser = null, listingType = 'buy_now', item = {}, reference,
 } = {}) {
   const accepted = acceptedAt === undefined ? (offerState === 3 ? createdAt : null) : acceptedAt;
   return {
@@ -117,6 +117,7 @@ function fakeTrade({
       type: listingType,
       sold_at: soldAt === undefined ? createdAt : soldAt,
       token: OTHER.contractToken,
+      ...(reference === undefined ? {} : { reference }),
       item: {
         market_hash_name: 'AK-47 | Redline (Field-Tested)',
         item_name: 'Redline',
@@ -132,12 +133,94 @@ function fakeTrade({
         is_souvenir: false,
         inspect_link: `steam://rungame/730/${OTHER.steamId}/+csgo_econ_action_preview%20S${OTHER.steamId}A1D1`,
         asset_id: '123456789',
-        stickers: [{ name: 'Sticker FICTICIO', slot: 0 }],
+        serialized_inspect: 'SERIALIZED-FICTICIO-QA',
+        gs_sig: 'GS-SIG-FICTICIO-QA',
+        cs2_screenshot_id: 'SCREENSHOT-FICTICIO-QA',
+        cs2_screenshot_at: '2026-11-20T14:00:00.000Z',
         ...item,
       },
     },
   };
 }
+
+// --- Componentes (10.2, D361): estrutura do exemplo REAL do usuário (anonimizado), com dados INVENTADOS onde há risco ------------
+// `icon_url` de domínio fictício e os campos que o app nunca lê (`stickerId`, `reference`, `offset_*`, `rotation`, `contract.reference`)
+// ficam de propósito, para provar que são descartados. Os nomes de stickers e chaveiro são públicos (itens do jogo).
+const FAKE_ICON_HOST = 'https://icones-ficticios.example.invalid/economy/image/';
+const COMPONENT_REFERENCE = { price: 18, quantity: 177, updated_at: '2026-11-23T00:33:53.830644Z' };
+const fakeSticker = (stickerId, slot, name, extra = {}) => ({
+  stickerId, slot, icon_url: `${FAKE_ICON_HOST}STICKER-${stickerId}`, name, reference: { ...COMPONENT_REFERENCE }, ...extra,
+});
+const fakeKeychain = (stickerId, slot, name, pattern, extra = {}) => ({
+  stickerId, slot, offset_x: 4.1337357, offset_y: 0.4869821, offset_z: 1.8659537, pattern, icon_url: `${FAKE_ICON_HOST}CHARM-${stickerId}`, name,
+  reference: { price: 67, quantity: 897, updated_at: '2026-11-23T00:33:46.286292Z' }, ...extra,
+});
+const contractReference = (extra = {}) => ({
+  base_price: 57, float_factor: 1, predicted_price: 57, keychain_price: 75, quantity: 1943, last_updated: '2026-11-24T11:25:09.703625Z',
+  sticker_overpay: { total_price: 45 }, ...extra,
+});
+const exteriorOf = (name) => name.slice(name.lastIndexOf('(') + 1, -1);
+// Cada preset é { item, reference } para `fakeTrade({ item: preset.item, reference: preset.reference })`.
+const preset = (marketHashName, extra) => ({
+  item: {
+    market_hash_name: marketHashName, item_name: marketHashName.split(' | ')[1].replace(/ \(.*$/, ''), wear_name: exteriorOf(marketHashName),
+    type: 'skin', float_value: 0.2534, paint_seed: 661, ...extra,
+  },
+  reference: contractReference(),
+});
+const DEAGLE_4_STICKERS = preset('Desert Eagle | Trigger Discipline (Field-Tested)', {
+  stickers: [
+    fakeSticker(4718, 0, 'Sticker | BIG (Holo) | 2020 RMR'),
+    fakeSticker(4707, 1, 'Sticker | Heroic (Foil) | 2020 RMR'),
+    fakeSticker(4710, 2, 'Sticker | Ninjas in Pyjamas (Holo) | 2020 RMR'),
+    fakeSticker(6566, 3, 'Sticker | FL1T (Champion) | Rio 2022'),
+  ],
+});
+const GLOCK_WEAR_OFFSET = preset('Glock-18 | Moonrise (Field-Tested)', {
+  stickers: [
+    fakeSticker(9480, 3, 'Sticker | Clavis', { offset_x: -0.029786095, offset_y: -0.10788977 }),
+    fakeSticker(4785, 2, 'Sticker | Boom | 2020 RMR', { wear: 0.72, offset_x: -0.14575681, offset_y: -0.0005184412 }),
+  ],
+});
+const M4A4_SAME_STICKER_TWICE = preset('M4A4 | Tooth Fairy (Field-Tested)', {
+  stickers: [fakeSticker(5000, 4, 'Sticker | Fly High', { rotation: 12.5 }), fakeSticker(5000, 3, 'Sticker | Fly High', { rotation: -3.2 })],
+});
+const M4A1S_DUP_SLOT_WEAR1 = preset('M4A1-S | Mud-Spec (Field-Tested)', {
+  stickers: [
+    fakeSticker(5100, 4, 'Sticker | Scavenger', { wear: 1 }),
+    fakeSticker(5101, 4, 'Sticker | Flickshot'),
+    fakeSticker(5102, 0, 'Sticker | Battlefield Portal'),
+  ],
+});
+const GLOCK_ST_CHARM = preset('StatTrak™ Glock-18 | Off World (Battle-Scarred)', {
+  is_stattrak: true,
+  stickers: [
+    fakeSticker(6000, 0, 'Sticker | Separate Pixels'),
+    fakeSticker(6001, 1, 'Sticker | Operation Riptide'),
+    fakeSticker(6002, 2, 'Sticker | Stone Scales'),
+    fakeSticker(6003, 3, 'Sticker | Choose Wisely'),
+  ],
+  keychains: [fakeKeychain(14, 0, "Charm | Lil' Teacup", 84492)],
+  sticker_index: 3, keychain_index: 14, keychain_pattern: 84492,
+});
+// HIPÓTESE (sem exemplo real): o Sticker Slab provavelmente vem em `keychains[]` com o nome "Sticker Slab | ...".
+const SLAB_HYPOTHETICAL = preset('AK-47 | Redline (Field-Tested)', {
+  keychains: [fakeKeychain(900, 0, 'Sticker Slab | Fly High', 321)],
+});
+const KNIFE_WITH_STICKER = preset('★ Karambit | Fade (Factory New)', {
+  float_value: 0.01,
+  stickers: [fakeSticker(7000, 0, 'Sticker | Fly High')],
+});
+// Variações inválidas (cada uma num item AK-47 | Redline).
+const AK = 'AK-47 | Redline (Field-Tested)';
+const INVALID_VARIANTS = Object.freeze({
+  wearText: preset(AK, { stickers: [fakeSticker(1, 0, 'Sticker | Fly High', { wear: 'muito' })] }),
+  slotNine: preset(AK, { stickers: [fakeSticker(1, 9, 'Sticker | Fly High')] }),
+  emptyName: preset(AK, { stickers: [fakeSticker(1, 0, '')] }),
+  sevenStickers: preset(AK, { stickers: Array.from({ length: 7 }, (_, i) => fakeSticker(100 + i, i % 5, 'Sticker | Fly High')) }),
+  twoKeychains: preset(AK, { keychains: [fakeKeychain(1, 0, "Charm | Lil' Teacup", 1), fakeKeychain(2, 0, "Charm | Lil' Teacup", 2)] }),
+  arraysAsObjects: preset(AK, { stickers: { 0: fakeSticker(1, 0, 'Sticker | Fly High') }, keychains: 'nada' }),
+});
 
 // Transação no formato do GET /me/transactions.
 function fakeTransaction({
@@ -188,6 +271,8 @@ function routedFetch(state) {
 }
 
 module.exports = {
+  FAKE_ICON_HOST, fakeSticker, fakeKeychain, contractReference, DEAGLE_4_STICKERS, GLOCK_WEAR_OFFSET, M4A4_SAME_STICKER_TWICE, M4A1S_DUP_SLOT_WEAR1,
+  GLOCK_ST_CHARM, SLAB_HYPOTHETICAL, KNIFE_WITH_STICKER, INVALID_VARIANTS,
   KEY, OTHER_KEY, PII, OTHER, TRADE_PII, meBody, fakeResponse, fakeFetch, okMe, fakeTrade, fakeTransaction, purchaseTx, routedFetch,
 };
 

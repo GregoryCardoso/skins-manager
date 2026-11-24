@@ -67,12 +67,9 @@ export function errorDetailParams(
     case 'COMPONENTS_NOT_ALLOWED':
     case 'COMPONENT_CATALOG_REQUIRED':
     case 'COMPONENT_CATALOG_MISMATCH':
-    case 'COMPONENT_SLOT_TAKEN':
     case 'INVALID_COMPONENT_FIELD':
       // `params.index` (base 0) aponta o componente; sem ele vale o texto geral.
-      return typeof p.index === 'number'
-        ? { n: p.index + 1, slot: typeof p.slot === 'number' ? p.slot : '' }
-        : null;
+      return typeof p.index === 'number' ? { n: p.index + 1 } : null;
     case 'UNKNOWN_FIELD': {
       if (!error.field) return null;
       const label = t(`fields.${error.field}`);

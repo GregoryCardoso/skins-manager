@@ -134,7 +134,7 @@ export function useCsfloatImport(): CsfloatImportControls {
       {confirmFullScan && integration?.tradesCutoffAt && (
         <ConfirmDialog
           title={t('imports.fullScanConfirm.title')}
-          message={t('imports.fullScanConfirm.body', { date: formatDateTime(integration.tradesCutoffAt, language) })}
+          message={`${t('imports.fullScanConfirm.body', { date: formatDateTime(integration.tradesCutoffAt, language) })} ${t('imports.fullScanConfirm.componentsNote')}`}
           confirmLabel={t('imports.fullScanConfirm.confirm')}
           busy={running}
           error={errorText}

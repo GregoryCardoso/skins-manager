@@ -36,6 +36,7 @@ const undoService = require('./undoService');
 const entryResolutionService = require('./entryResolutionService');
 const transferImport = require('./transferImport');
 const importViews = require('./importViews');
+const componentImport = require('./componentImport');
 
 const SOURCE = 'CSFLOAT';
 const MAX_UNKNOWN_KEYS = 50;
@@ -178,8 +179,11 @@ function startOfPreviousLocalDay(iso) {
 
 function buildDisplay(trade, direction, mapped, extra = {}) {
   const catalogEntry = mapped && mapped.catalogEntry;
+  // Componentes do trade (10.2, D361): a lista normalizada do trade (não a casada), para "Lançar compra", "Foi drop" e "Criar mesmo assim".
+  const components = mapped && trade.item.components && trade.item.components.length ? trade.item.components : null;
   return {
     ...extra,
+    ...(components ? { components } : {}),
     direction,
     marketHashName: trade.item.marketHashName,
     catalogId: catalogEntry ? catalogEntry.id : null,
@@ -206,6 +210,7 @@ function applyImport(env, read) {
   const counts = {
     purchasesCreated: 0, salesCreated: 0, matched: 0, known: 0, beforeCutoff: 0, notTransferred: 0, review: 0, reverted: 0, failed: 0,
     unknownState: 0, deferred: 0, withoutPurchase: 0, revertedBeforeImport: 0, depositsCreated: 0, withdrawalsCreated: 0,
+    componentsFilled: 0, componentsSkipped: 0,
   };
   const unknownTypes = {};
   const warnings = [...new Set(read.warnings)];
@@ -282,6 +287,13 @@ function applyImport(env, read) {
   const contractSeen = new Set();
   const cutoffMs = Date.parse(effectiveCutoff);
   const toImport = [];
+  // Varredura completa (D361): compras já importadas relidas, para preencher os componentes uma única vez.
+  const fillEntries = [];
+  const collectFill = (trade, direction, link) => {
+    if (effectiveFullScan && direction === 'BUY' && link && link.entityType === 'ITEM_PURCHASE' && link.linkKind === 'CREATED') {
+      fillEntries.push({ trade, itemId: link.entityId });
+    }
+  };
 
   const saveTrade = (trade, direction, tracking, existing) => {
     const fields = {
@@ -371,6 +383,7 @@ function applyImport(env, read) {
     if (cls.kind === 'KEEP') {
       counts[cls.count] += 1;
       ExternalRecord.update(existing.id, { lastBatchId: batch.id, lastSeenAt: stamp }, { now });
+      collectFill(trade, direction, link);
       continue;
     }
     if (cls.kind === 'IMPORT') {
@@ -383,6 +396,7 @@ function applyImport(env, read) {
     const previousTracking = existing ? existing.tracking : null;
     const record = saveTrade(trade, direction, cls.tracking, existing);
     counts[cls.count] += 1;
+    if (cls.kind === 'LINKED') collectFill(trade, direction, link);
     // Venda importada ainda aberta: a liberação real acompanha o CSFloat (D312).
     if (cls.kind === 'LINKED' && link && cls.tracking !== 'REVERTED') syncSaleRelease(link, record, { now });
     if (previousTracking && FAILURE_TRACKINGS.includes(previousTracking) && !FAILURE_TRACKINGS.includes(cls.tracking)) {
@@ -399,6 +413,11 @@ function applyImport(env, read) {
       });
     }
   }
+
+  // (e2) varredura completa: preenche os componentes das compras já importadas (uma vez; sem mexer em `updated_at`).
+  const filled = componentImport.fillFromTrades(fillEntries, { now });
+  counts.componentsFilled += filled.filled;
+  counts.componentsSkipped += filled.skipped;
 
   // (f) compras a importar: catálogo, casamento com manuais e criação. Primeiro as compras, depois as vendas (D299), cada grupo
   // na ordem de `sold_at`: assim uma compra e a venda do mesmo item depois do corte entram no mesmo lote.
@@ -455,15 +474,27 @@ function applyImport(env, read) {
         addEntry(record, { outcome: 'MATCHED', reasonCode: mismatch ? 'PRICE_MISMATCH' : null, entityType: 'ITEM_PURCHASE', entityId: item.id, display });
         continue;
       }
+      const componentResult = componentImport.forPurchase(trade.item.components, mapped.category);
+      const ctx = { now, componentSource: 'CSFLOAT', componentsImportedAt: now };
       let created;
       try {
-        created = itemService.createItem(externalItemMapper.buildPurchaseInput(trade, mapped, { storeId: store.id }), { now });
+        try {
+          created = itemService.createItem(externalItemMapper.buildPurchaseInput(trade, mapped, { storeId: store.id, components: componentResult.components }), ctx);
+        } catch (err) {
+          // Componente nunca derruba a compra: se algo nos componentes for recusado, a compra entra sem eles e com um aviso.
+          if (!(err instanceof AppError) || !/^COMPONENT/.test(String(err.code)) || !componentResult.components.length) throw err;
+          componentResult.components = [];
+          componentResult.warnings.push({ code: externalItemMapper.COMPONENT_WARNINGS.CATALOG_NOT_FOUND, name: null });
+          created = itemService.createItem(externalItemMapper.buildPurchaseInput(trade, mapped, { storeId: store.id }), ctx);
+        }
       } catch (err) {
         if (!(err instanceof AppError)) throw err;
         counts.failed += 1;
         addEntry(record, { outcome: 'FAILED', reasonCode: String(err.code || 'ITEM_INVALID').slice(0, 60), display });
         continue;
       }
+      counts.componentsSkipped += componentResult.warnings.length;
+      const createdDisplay = componentResult.warnings.length ? { ...display, componentWarnings: componentResult.warnings } : display;
       ExternalLink.create(
         { recordId: record.id, entityType: 'ITEM_PURCHASE', entityId: created.id, linkKind: 'CREATED', batchId: batch.id, entityUpdatedAt: created.updatedAt },
         { now }
@@ -471,7 +502,7 @@ function applyImport(env, read) {
       ExternalRecord.update(record.id, { tracking: entry.tracking }, { now });
       ImportBatchEntry.resolveOpenForRecord(record.id, 'CREATED', { now });
       counts.purchasesCreated += 1;
-      addEntry(record, { outcome: 'CREATED', reasonCode: mismatch ? 'PRICE_MISMATCH' : null, entityType: 'ITEM_PURCHASE', entityId: created.id, display });
+      addEntry(record, { outcome: 'CREATED', reasonCode: mismatch ? 'PRICE_MISMATCH' : null, entityType: 'ITEM_PURCHASE', entityId: created.id, display: createdDisplay });
     }
   }
 
@@ -507,7 +538,8 @@ function applyImport(env, read) {
     matchedCount: counts.matched, knownCount: counts.known, beforeCutoffCount: counts.beforeCutoff, notTransferredCount: counts.notTransferred,
     reviewCount: counts.review, revertedCount: counts.reverted, failedCount: counts.failed, unknownStateCount: counts.unknownState,
     deferredCount: counts.deferred, salesCreated: counts.salesCreated, withoutPurchaseCount: counts.withoutPurchase,
-    depositsCreated: counts.depositsCreated, withdrawalsCreated: counts.withdrawalsCreated, unknownTypesJson: JSON.stringify(unknownTypes), diagnosticsJson: JSON.stringify(diagnostics),
+    depositsCreated: counts.depositsCreated, withdrawalsCreated: counts.withdrawalsCreated,
+    componentsFilledCount: counts.componentsFilled, componentsSkippedCount: counts.componentsSkipped, unknownTypesJson: JSON.stringify(unknownTypes), diagnosticsJson: JSON.stringify(diagnostics),
     warningsJson: JSON.stringify(warnings),
   });
   // A automática só guarda o lote se houver algo para mostrar (D300): criado, ligado, para conferir, revertido ou pendência nova.

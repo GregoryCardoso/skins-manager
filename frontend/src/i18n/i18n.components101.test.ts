@@ -21,7 +21,7 @@ const placeholders = (text: string) => [...text.matchAll(/\{(\w+)\}/g)].map((m) 
 const NEW_PREFIXES = ['itemForm.components.', 'inventory.group.withComponents', 'inventory.group.quantitySplit'];
 const COMPONENT_ERRORS = [
   'COMPONENTS_NOT_ALLOWED', 'COMPONENT_LIMIT_EXCEEDED', 'COMPONENT_CATALOG_REQUIRED', 'COMPONENT_CATALOG_MISMATCH',
-  'COMPONENT_SLOT_TAKEN', 'INVALID_COMPONENT_FIELD',
+  'INVALID_COMPONENT_FIELD',
 ];
 
 describe('chaves novas da 10.1', () => {

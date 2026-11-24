@@ -64,15 +64,9 @@ describe('normalizeComponents: bordas', () => {
     expect(codeOf(() => run([{ kind: 'STICKER', catalogId: 'nao-existe', slot: 0 }]))).toBe('COMPONENT_CATALOG_REQUIRED');
   });
 
-  test('o erro de slot repetido aponta o índice do segundo e o slot', () => {
-    try {
-      run([{ kind: 'STICKER', catalogId: 'st1', slot: 2 }, { kind: 'CHARM', catalogId: 'ch1' }, { kind: 'STICKER', catalogId: 'st1', slot: 2 }]);
-      throw new Error('devia ter lançado');
-    } catch (e) {
-      expect(e.code).toBe('COMPONENT_SLOT_TAKEN');
-      expect(e.field).toBe('components');
-      expect(e.params).toEqual({ index: 2, slot: 2 });
-    }
+  test('slot repetido vale (D361): os dois stickers no mesmo slot são mantidos, na ordem', () => {
+    const rows = run([{ kind: 'STICKER', catalogId: 'st1', slot: 2 }, { kind: 'CHARM', catalogId: 'ch1' }, { kind: 'STICKER', catalogId: 'st1', slot: 2 }]);
+    expect(rows.map((r) => [r.kind, r.slot])).toEqual([['STICKER', 2], ['CHARM', null], ['STICKER', 2]]);
   });
 
   test('pendurado: chaveiro e slab com slot 0 e sticker com slot 0 não colidem; dois pendurados com slot 0 já caem no limite', () => {

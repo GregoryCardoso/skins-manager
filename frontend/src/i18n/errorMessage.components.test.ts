@@ -12,10 +12,16 @@ const err = (code: string, extra: { field?: string; params?: unknown } = {}) => 
 
 const CODES = [
   'COMPONENTS_NOT_ALLOWED', 'COMPONENT_LIMIT_EXCEEDED', 'COMPONENT_CATALOG_REQUIRED', 'COMPONENT_CATALOG_MISMATCH',
-  'COMPONENT_SLOT_TAKEN', 'INVALID_COMPONENT_FIELD',
+  'INVALID_COMPONENT_FIELD',
 ];
 
 describe('erros dos componentes (10.1)', () => {
+  test('COMPONENT_SLOT_TAKEN saiu na 10.2 (D361): dois stickers no mesmo slot valem', () => {
+    expect(API_ERROR_CODES).not.toContain('COMPONENT_SLOT_TAKEN');
+    expect(tPt('errors.COMPONENT_SLOT_TAKEN')).toBe('errors.COMPONENT_SLOT_TAKEN');
+    expect(tEn('errors.COMPONENT_SLOT_TAKEN')).toBe('errors.COMPONENT_SLOT_TAKEN');
+  });
+
   test('todos os códigos estão na lista e traduzidos nos dois idiomas', () => {
     for (const code of CODES) {
       expect(API_ERROR_CODES).toContain(code);
@@ -25,9 +31,9 @@ describe('erros dos componentes (10.1)', () => {
   });
 
   test('com params.index a mensagem aponta o componente (base 1); sem index vale o texto geral', () => {
-    const slot = err('COMPONENT_SLOT_TAKEN', { field: 'components', params: { index: 1, slot: 0 } });
-    expect(errorMessageFor(slot, tPt, 'pt-BR')).toBe('Componente 2: o slot 0 já está ocupado.');
-    expect(errorMessageFor(slot, tEn, 'en')).toBe('Component 2: slot 0 is already used.');
+    const field = err('INVALID_COMPONENT_FIELD', { field: 'components', params: { index: 1, field: 'slot', max: 4 } });
+    expect(errorMessageFor(field, tPt, 'pt-BR')).toBe('Componente 2: slot, desgaste ou pattern inválido.');
+    expect(errorMessageFor(field, tEn, 'en')).toMatch(/^Component 2:/);
     const limit = err('COMPONENT_LIMIT_EXCEEDED', { field: 'components', params: { max: 5 } });
     expect(errorMessageFor(limit, tPt, 'pt-BR')).toMatch(/^Limite de componentes excedido/);
   });

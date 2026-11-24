@@ -228,7 +228,6 @@
     "COMPONENT_LIMIT_EXCEEDED": "Limite de componentes excedido: até 5 stickers e 1 pendurado (chaveiro ou Sticker Slab).",
     "COMPONENT_CATALOG_REQUIRED": "Escolha o item do componente no catálogo.",
     "COMPONENT_CATALOG_MISMATCH": "O item escolhido no catálogo não é do tipo certo para este componente.",
-    "COMPONENT_SLOT_TAKEN": "Esse slot já está ocupado por outro componente.",
     "INVALID_COMPONENT_FIELD": "Algum campo do componente é inválido (slot, desgaste ou pattern)."
   },
   "warnings": {
@@ -632,7 +631,6 @@
     "COMPONENTS_NOT_ALLOWED": "Componente {n}: este item não aceita este tipo (stickers e chaveiro só em armas).",
     "COMPONENT_CATALOG_REQUIRED": "Componente {n}: escolha o item no catálogo.",
     "COMPONENT_CATALOG_MISMATCH": "Componente {n}: o item escolhido no catálogo não é do tipo certo.",
-    "COMPONENT_SLOT_TAKEN": "Componente {n}: o slot {slot} já está ocupado.",
     "INVALID_COMPONENT_FIELD": "Componente {n}: slot, desgaste ou pattern inválido."
   },
   "sales": {
@@ -1345,6 +1343,14 @@
         "one": "{count} saque importado",
         "other": "{count} saques importados"
       },
+      "componentsFilled": {
+        "one": "{count} compra ganhou stickers/chaveiro",
+        "other": "{count} compras ganharam stickers/chaveiro"
+      },
+      "componentsSkipped": {
+        "one": "{count} componente não registrado",
+        "other": "{count} componentes não registrados"
+      },
       "transfersAwaitingCutoff": {
         "one": "{count} aporte ou saque no extrato espera a data de corte dos aportes e saques (defina em Importações)",
         "other": "{count} aportes e saques no extrato esperam a data de corte deles (defina em Importações)"
@@ -1353,6 +1359,15 @@
         "one": "{count} multa no extrato não foi importada (confira o saldo da loja)",
         "other": "{count} multas no extrato não foram importadas (confira o saldo da loja)"
       }
+    },
+    "componentWarningsTitle": "Não registrados",
+    "componentWarningsHint": "Você pode cadastrá-los à mão, editando o item.",
+    "componentUnnamed": "componente sem nome",
+    "componentWarnings": {
+      "COMPONENT_CATALOG_NOT_FOUND": "{name} (não encontrado no catálogo)",
+      "COMPONENT_FULLY_SCRAPED": "{name} (raspado até o fim)",
+      "COMPONENT_LIMIT_EXCEEDED": "{name} (acima do limite de 5 stickers e 1 pendurado)",
+      "COMPONENTS_NOT_ALLOWED": "stickers e chaveiro (este item não aceita componentes)"
     },
     "warnings": {
       "SCAN_LIMIT_REACHED": "A leitura parou no limite de páginas. O restante fica para a próxima importação.",
@@ -1559,6 +1574,7 @@
     "fullScanConfirm": {
       "title": "Varredura completa",
       "body": "O app vai ler de novo todo o histórico de trades e do extrato do CSFloat, sem parar onde a última importação parou. Isso usa mais requisições e pode levar até 2 minutos. Nada é duplicado: trades já importados são reconhecidos pelo ID, e os seus lançamentos feitos à mão continuam sendo ligados pelo float (ou por item, preço e dia). Os trades anteriores à data de corte ({date}) continuam de fora, para o dinheiro que já está nos seus lançamentos e aportes não ser contado duas vezes. Para importar trades mais antigos, altere a data de corte na página Importações.",
+      "componentsNote": "A varredura também preenche, uma única vez, os stickers e o chaveiro das compras já importadas, sem mexer nos que você registrou à mão.",
       "confirm": "Fazer varredura completa"
     },
     "cutoffChange": {

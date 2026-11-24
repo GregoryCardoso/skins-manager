@@ -107,6 +107,44 @@ function parseSignedCents(value) {
 
 const invalidRecord = (externalId) => ({ ok: false, externalId: externalId ?? null, reason: SOURCE_RECORD_INVALID });
 
+// Componentes do item (D361): só de `stickers[]` e `keychains[]`, por allowlist (nome, slot, desgaste e pattern). Nunca lê `stickerId`,
+// `icon_url`, `offset_*`, `rotation`, `reference`, `sticker_index`, `keychain_index` nem `keychain_pattern`. Arrays ausentes ou
+// inválidos viram []; um componente ruim nunca invalida o trade.
+const MAX_RAW_COMPONENTS = 10;
+const MAX_COMPONENT_SLOT = 5;
+const MAX_COMPONENT_PATTERN = 999999;
+
+// Sticker novo não traz `wear` (= 0). Número em [0, 1] vale; qualquer outra coisa -> null.
+function parseComponentWear(value) {
+  if (value === undefined || value === null) return 0;
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1 ? value : null;
+}
+
+function mapRawComponent(raw, from) {
+  if (!isPlainObject(raw)) return null;
+  const slot = Number.isSafeInteger(raw.slot) && raw.slot >= 0 && raw.slot <= MAX_COMPONENT_SLOT ? raw.slot : null;
+  const pattern = Number.isSafeInteger(raw.pattern) && raw.pattern >= 0 && raw.pattern <= MAX_COMPONENT_PATTERN ? raw.pattern : null;
+  return {
+    from,
+    name: parseText(raw.name, 200),
+    slot,
+    wear: from === 'STICKER' ? parseComponentWear(raw.wear) : null,
+    pattern: from === 'KEYCHAIN' ? pattern : null,
+  };
+}
+
+function mapRawComponents(item) {
+  const out = [];
+  for (const [key, from] of [['stickers', 'STICKER'], ['keychains', 'KEYCHAIN']]) {
+    const list = Array.isArray(item[key]) ? item[key].slice(0, MAX_RAW_COMPONENTS) : [];
+    for (const raw of list) {
+      const mapped = mapRawComponent(raw, from);
+      if (mapped) out.push(mapped);
+    }
+  }
+  return out;
+}
+
 // Um trade de GET /me/trades -> { ok: true, trade } ou { ok: false, externalId, reason }. Só os campos da allowlist.
 // `buyerId`/`sellerId` saem só para o service calcular a direção e nunca são gravados.
 function mapTrade(raw) {
@@ -156,6 +194,7 @@ function mapTrade(raw) {
         phase: parseText(item.phase, 40),
         isStattrak: item.is_stattrak === true,
         isSouvenir: item.is_souvenir === true,
+        components: mapRawComponents(item),
       },
     },
   };
