@@ -46,4 +46,16 @@ function validateFxRefreshBody(req, res, next) {
   return next();
 }
 
-module.exports = { validateFxRateBody, validatePreferencesBody, validateFxRefreshBody };
+// PUT /api/settings/steam-store (D363): `{ storeId: number | null }`. A existência da loja é conferida no service.
+function validateSteamStoreBody(req, res, next) {
+  const body = req.body;
+  if (!isPlainObject(body)) throw invalidBody('O corpo da requisição deve ser um objeto JSON.');
+  rejectUnknownFields(body, ['storeId']);
+  if (body.storeId === undefined) throw new ValidationError('O campo storeId é obrigatório (use null para limpar).', 'REQUIRED_FIELD', { field: 'storeId' });
+  if (body.storeId !== null && !Number.isSafeInteger(body.storeId)) {
+    throw new ValidationError('storeId deve ser um número inteiro ou null.', 'INVALID_FIELD', { field: 'storeId' });
+  }
+  return next();
+}
+
+module.exports = { validateFxRateBody, validatePreferencesBody, validateFxRefreshBody, validateSteamStoreBody };

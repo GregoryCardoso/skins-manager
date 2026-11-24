@@ -9,6 +9,8 @@ export const queryKeys = {
     // Candidatas e operações de uma unidade (10.3): sob o prefixo `items`, então toda invalidação de item as recarrega.
     candidates: (id: number) => ['items', 'candidates', id] as const,
     operations: (id: number) => ['items', 'operations', id] as const,
+    // Prévia da abertura de uma caixa, cápsula, pacote ou terminal (10.4).
+    openOptions: (id: number) => ['items', 'openOptions', id] as const,
     // Unidade sugerida e arma vendida da aplicação retroativa (10.3, E-P2-Q47).
     retroSource: (id: number) => ['items', 'retroSource', id] as const,
     retroTarget: (id: number) => ['items', 'retroTarget', id] as const,

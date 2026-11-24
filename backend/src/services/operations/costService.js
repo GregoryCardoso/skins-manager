@@ -128,6 +128,25 @@ function buildCostIndex({ itemsById = new Map(), operations = [], links = [] } =
     }
   }
 
+  // Perdas por consumo (D363 item 5, E-P2-Q34): operações ativas sem saída (`LOST`, o terminal recusado). O custo da unidade consumida
+  // vira perda realizada. Fora da fórmula do lucro real: ele já cai porque a unidade sai do estoque.
+  const lostOperations = [...active.values()].filter((op) => op.outcome === 'LOST');
+  const lostItemIds = new Set();
+  for (const op of lostOperations) {
+    for (const link of linksByOperation.get(op.id) ?? []) if (link.role === 'CONSUMED') lostItemIds.add(link.itemId);
+  }
+
+  function lossSummary() {
+    let usdCents = 0;
+    let estimated = false;
+    for (const op of lostOperations) {
+      const pool = poolOf(op.id);
+      usdCents += pool.usdCents;
+      if (pool.estimated) estimated = true;
+    }
+    return { usdCents, estimated, count: lostOperations.length };
+  }
+
   return {
     hasOperations: active.size > 0,
     activeOperations: active,
@@ -137,6 +156,11 @@ function buildCostIndex({ itemsById = new Map(), operations = [], links = [] } =
     effectiveUsdCents: (item) => compute(item).effectiveUsdCents,
     inheritedUsdCents: (item) => compute(item).inheritedUsdCents,
     costParts: (item) => compute(item).parts,
+    // Pool de uma operação ativa: { usdCents, estimated, parts } (D363 item 5).
+    poolOf,
+    // A unidade foi consumida numa operação sem saída (terminal recusado)? `isLost(item)` e o resumo das perdas.
+    isLost: (item) => lostItemIds.has(item.id),
+    lossSummary,
   };
 }
 

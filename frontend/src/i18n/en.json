@@ -239,7 +239,15 @@
     "OPERATION_ALREADY_UNDONE": "This operation was already undone.",
     "OPERATION_UNDO_BLOCKED": "This operation cannot be undone right now.",
     "COMPONENT_NOT_FOUND": "Component not found. Refresh the list.",
-    "COMPONENT_NOT_SCRAPEABLE": "Only stickers and patches applied from stock can be removed for good."
+    "COMPONENT_NOT_SCRAPEABLE": "Only stickers and patches applied from stock can be removed for good.",
+    "ITEM_NOT_OPENABLE": "This item cannot be opened.",
+    "CASE_KEY_REQUIRED": "This case needs a key from the stock.",
+    "CASE_KEY_INCOMPATIBLE": "This key does not open this case.",
+    "INVALID_OPERATION_INPUT": "Invalid opening data.",
+    "GENERATED_ITEM_REQUIRED": "Pick the item obtained from the catalog.",
+    "GENERATED_COST_NOT_ALLOWED": "This item came from an opening: its cost comes from the operation, with no store, price or rate of its own.",
+    "GENERATED_FIELD_LOCKED": "This item came from an opening: undo the opening to change this field.",
+    "STEAM_STORE_REQUIRED": "Choose your Steam store in Stores to buy the terminal item."
   },
   "errorReasons": {
     "OPERATION_DATE_INVALID_FUTURE": "The date cannot be in the future.",
@@ -250,7 +258,18 @@
     "OPERATION_DATE_INVALID_ACQUIRED_AFTER_OPERATION": "The acquisition cannot be after an operation of this item ({date}). Undo the operation first.",
     "OPERATION_UNDO_BLOCKED_NOT_LATEST": "Undo the most recent operation of these units first (applications are undone from the last to the first).",
     "OPERATION_UNDO_BLOCKED_TARGET_SOLD": "The weapon is sold. Undo the sale before undoing the application.",
-    "OPERATION_UNDO_BLOCKED_TARGET_NOT_IN_STOCK": "The item that received the application is not in stock."
+    "OPERATION_UNDO_BLOCKED_TARGET_NOT_IN_STOCK": "The item that received the application is not in stock.",
+    "OPERATION_DATE_INVALID_BEFORE_CONTAINER_ACQUIRED": "The date cannot be before the acquisition of the opened item ({date}).",
+    "OPERATION_DATE_INVALID_BEFORE_KEY_ACQUIRED": "The date cannot be before the acquisition of the key ({date}).",
+    "OPERATION_DATE_INVALID_TRADE_UNLOCK_BEFORE_OPENED": "The trade lock end cannot be before the opening.",
+    "INVALID_OPERATION_INPUT_NOT_A_KEY": "The chosen unit is not a key.",
+    "INVALID_OPERATION_INPUT_KEY_NOT_ALLOWED": "This item does not use a key.",
+    "INVALID_OPERATION_INPUT_DECISION_REQUIRED": "Choose whether to buy the terminal item or not.",
+    "INVALID_OPERATION_INPUT_DECISION_INVALID": "Invalid decision.",
+    "INVALID_OPERATION_INPUT_DECISION_NOT_ALLOWED": "Only the terminal has this choice.",
+    "INVALID_OPERATION_INPUT_PRICE_NOT_ALLOWED": "Price and rate only apply when buying the terminal item.",
+    "INVALID_OPERATION_INPUT_GENERATED_NOT_ALLOWED": "Not buying the terminal item generates no item.",
+    "INVALID_OPERATION_INPUT_GENERATED_FIELD_NOT_ALLOWED": "The item obtained inherits the acquisition of the opening: do not send a store, price, rate or purchase date."
   },
   "warnings": {
     "FEES_NOT_CONFIGURED": "The store fees are not configured.",
@@ -333,7 +352,14 @@
       "forSale": "Put back up for sale",
       "apply": "Apply from stock",
       "applyNoCandidates": "There is no sticker, keychain or patch in stock to apply.",
-      "applyFull": "This item already has the maximum number of components."
+      "applyFull": "This item already has the maximum number of components.",
+      "openCase": "Open case",
+      "openCapsule": "Open capsule",
+      "openPackage": "Open package",
+      "openTerminal": "Open terminal",
+      "openNeedsKey": "Register this case's key ({keyName}) first.",
+      "openNeedsKeyOther": "Register this case's key ({keyName}) first. The keys in stock do not fit it.",
+      "registerKey": "Register key"
     },
     "itemGone": "This item no longer exists (it may have been deleted in another tab). The list was refreshed.",
     "daysForSale": "for sale for {days}",
@@ -640,7 +666,22 @@
     "scrapeMessage": "The component leaves the item for good (it does not return to stock). Its cost stays in this item.",
     "scrapeConfirm": "Remove for good",
     "scrapeDone": "Component removed. The cost stays in the item.",
-    "costIncludes": "Includes {value} of components applied from stock."
+    "costIncludes": "Includes {value} of components applied from stock.",
+    "consumedInOpen": "Consumed on {date}: used to open {target}",
+    "consumedInLost": "Consumed on {date}: terminal not bought (loss)",
+    "undoOpen": "Undo opening",
+    "undoOpenTitle": "Undo the opening?",
+    "undoOpenMessage": "The item obtained is deleted (and, for a bought terminal item, the purchase too), and the container and key go back to stock as they were. Use it only to fix a wrong entry.",
+    "undoOpenDone": "Opening undone.",
+    "lost": "loss of {value}",
+    "undoneGenerated": "item obtained undone: {name}",
+    "generatedFrom": {
+      "CASE": "opened from {container}",
+      "CASE_KEY": "opened from {container} with {key}",
+      "CAPSULE": "opened from {container}",
+      "PACKAGE": "opened from {container}",
+      "TERMINAL": "bought at the terminal {container}"
+    }
   },
   "sellForm": {
     "title": "Sell item",
@@ -709,7 +750,12 @@
     "withdrawnAt": "Withdrawal date",
     "balanceCents": "Balance",
     "recordedAt": "Balance date",
-    "components": "Stickers and charm"
+    "components": "Stickers and charm",
+    "keyItemId": "Key",
+    "decision": "Decision",
+    "paidPriceCents": "Price paid",
+    "openedAt": "Opening date",
+    "generated": "Item obtained"
   },
   "errorDetails": {
     "INVALID_RATE": "The rate must be at least 0% and below 100%, with at most {maxDecimals} decimal places in the percentage.",
@@ -735,7 +781,10 @@
     "COMPONENTS_NOT_ALLOWED": "Component {n}: this item does not accept this type (stickers and charms only on weapons; patches only on agents).",
     "COMPONENT_CATALOG_REQUIRED": "Component {n}: choose the item from the catalog.",
     "COMPONENT_CATALOG_MISMATCH": "Component {n}: the chosen catalog item is not the right type.",
-    "INVALID_COMPONENT_FIELD": "Component {n}: invalid slot, wear or pattern."
+    "INVALID_COMPONENT_FIELD": "Component {n}: invalid slot, wear or pattern.",
+    "CASE_KEY_REQUIRED": "This case needs a key from the stock ({keyName}).",
+    "CASE_KEY_INCOMPATIBLE": "The key \"{keyName}\" does not open the case \"{caseName}\".",
+    "GENERATED_FIELD_LOCKED": "This item came from an opening: undo the opening to change \"{field}\"."
   },
   "sales": {
     "title": "Sales",
@@ -828,6 +877,10 @@
     "consumedCount": {
       "one": "{count} unit consumed by applications (left out of the average cost)",
       "other": "{count} units consumed by applications (left out of the average cost)"
+    },
+    "lossCount": {
+      "one": "{count} terminal not bought (loss of {value})",
+      "other": "{count} terminals not bought (loss of {value})"
     }
   },
   "stores": {
@@ -849,7 +902,13 @@
     "deleteMessage": "Delete the store \"{name}\"? This cannot be undone.",
     "confirmDelete": "Delete",
     "saleHoldDays": "Balance hold after a sale (days)",
-    "saleHoldDaysHint": "0 = available right away. Applies to future sales; sales already recorded do not change."
+    "saleHoldDaysHint": "0 = available right away. Applies to future sales; sales already recorded do not change.",
+    "steamBadge": "App Steam",
+    "steamSet": "This is my Steam store",
+    "steamClear": "Not my Steam store",
+    "steamHint": "The app's Steam store is where the price paid at the terminal is recorded.",
+    "steamSaved": "\"{name}\" is now your Steam store.",
+    "steamCleared": "No Steam store chosen."
   },
   "storesTable": {
     "columns": {
@@ -1153,7 +1212,13 @@
         "other": "{count} withdrawals without a fee count as fee 0."
       },
       "warningDeposits": "Deposits: {message}",
-      "warningWithdrawals": "Withdrawals: {message}"
+      "warningWithdrawals": "Withdrawals: {message}",
+      "consumptionLosses": "Consumption losses",
+      "consumptionLossesHint": "Terminals not bought: their cost already left the stock. Informative only, outside the real profit calculation.",
+      "consumptionLossesCount": {
+        "one": "{count} terminal not bought",
+        "other": "{count} terminals not bought"
+      }
     }
   },
   "deposits": {
@@ -1807,5 +1872,40 @@
     "step5": "Click \"Import now\" (below) or \"Import from CSFloat\" in the Inventory and choose the cutoff date: up to when you already entered everything by hand.",
     "open": "Open CSFloat",
     "safety": "The key gives access to your CSFloat account: do not share it with anyone. If it leaks, delete it on CSFloat and create another one."
+  },
+  "openForm": {
+    "title": "Open {name}",
+    "introCase": "The case and the chosen key leave the stock and the cost of both moves to the item you get. Real profit, balances and the stock total do not change.",
+    "introNoKey": "The item leaves the stock and its cost moves to the item you get. Real profit, balances and the stock total do not change.",
+    "introTerminal": "The terminal offers an item for a price. You can buy it (the price is paid from your Steam store) or decline (the terminal disappears and its cost becomes a loss).",
+    "key": "Key",
+    "keyCost": "Cost {value}",
+    "keyOldest": "oldest",
+    "noKey": "There is no compatible key in stock. Register {keyName} first.",
+    "decision": "What to do with the terminal",
+    "buy": "Buy the item",
+    "decline": "Do not buy (loss of {value})",
+    "price": "Price paid ({currency})",
+    "fx": "USD→BRL rate",
+    "fxDefault": "Default: saved rate ({rate})",
+    "steamStore": "Paid in the Steam store: {store} ({currency})",
+    "noSteamStore": "Choose your Steam store in Stores to buy the terminal item.",
+    "goToStores": "Go to Stores",
+    "openedAt": "Opening date",
+    "generatedTitle": "Item obtained",
+    "generatedTradeLock": "Trade lock end (optional)",
+    "generatedHint": "Pick the item you got from the catalog. It is created as \"Generated\" and inherits the cost.",
+    "summaryCase": "The case and the key leave the stock; the item obtained inherits the cost of {value}. Real profit does not change.",
+    "summaryNoKey": "The item leaves the stock; the item obtained inherits the cost of {value}. Real profit does not change.",
+    "summaryBuy": "The terminal leaves the stock and the price paid is taken from the Steam store balance; the item obtained costs the terminal ({value}) plus the price paid.",
+    "summaryDecline": "The terminal disappears and real profit drops by {value}.",
+    "confirmDeclineTitle": "Do not buy the terminal item?",
+    "confirmDeclineMessage": "The terminal will be consumed and its cost ({value}) becomes a loss: real profit drops by that amount. You can undo it later.",
+    "confirmDeclineConfirm": "Do not buy",
+    "submit": "Open",
+    "submitDecline": "Record the loss",
+    "chooseItem": "Pick the item obtained from the catalog.",
+    "success": "{name} opened: {generated} was added to the stock.",
+    "successLost": "{name} was not bought: the cost became a loss."
   }
 }

@@ -48,9 +48,9 @@ describe('migração v5', () => {
 
     const db = openDatabase(dbPath, { now: new Date('2026-11-20T12:00:00.000Z') });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(19);
+      expect(db.pragma('user_version', { simple: true })).toBe(20);
       expect(db.pragma('application_id', { simple: true })).toBe(1397444935);
-      const after = db.prepare('SELECT * FROM settings').get();
+      const { steam_store_id: _steam, ...after } = db.prepare('SELECT * FROM settings').get();
       const { ptax_quoted_at: oldQuotedAt, ...beforeRest } = before;
       expect(after).toEqual({ ...beforeRest, rate_quoted_at: oldQuotedAt, fx_refresh_source: 'AWESOMEAPI', inventory_view: 'GROUPED' });
       expect(after.rate_quoted_at).toBe('2026-11-19T16:04:28.123Z');

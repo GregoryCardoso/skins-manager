@@ -6,5 +6,6 @@
 .button:hover:not(:disabled) { border-color: var(--accent); }
 .button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .button:disabled { opacity: 0.5; cursor: not-allowed; }
+.reason { max-width: 12rem; font-size: 0.75rem; color: var(--text-muted, inherit); white-space: normal; }
 .danger { color: var(--danger); }
 .danger:hover:not(:disabled) { border-color: var(--danger); }

@@ -2,6 +2,7 @@
 
 // Regras de lojas (D145/D156). `buildStoreRecord` é puro; o resto orquestra os models.
 const Store = require('../models/Store');
+const Setting = require('../models/Setting');
 const { runInTransaction } = require('../models/modelHelpers');
 const { ValidationError, NotFoundError, ConflictError } = require('../errors/AppError');
 const {
@@ -34,13 +35,15 @@ const STORE_FIELDS = Object.keys(STORE_DEFAULTS);
 
 const isNil = (value) => value === null || value === undefined;
 
-function withFlags(store, inUse) {
-  return { ...store, saleFeesConfigured: saleFeeParamsFromStore(store) !== null, inUse };
+// `isSteamStore` (D363): é a loja Steam escolhida nas configurações (`settings.steam_store_id`).
+function withFlags(store, inUse, steamStoreId = Setting.get().steamStoreId ?? null) {
+  return { ...store, saleFeesConfigured: saleFeeParamsFromStore(store) !== null, inUse, isSteamStore: steamStoreId !== null && store.id === steamStoreId };
 }
 
 function listStores({ activeOnly = false } = {}) {
   const used = new Set(Store.findUsedIds());
-  return Store.findAll({ activeOnly }).map((store) => withFlags(store, used.has(store.id)));
+  const steamStoreId = Setting.get().steamStoreId ?? null;
+  return Store.findAll({ activeOnly }).map((store) => withFlags(store, used.has(store.id), steamStoreId));
 }
 
 function getStore(id) {

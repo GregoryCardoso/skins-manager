@@ -23,4 +23,9 @@ async function refreshFxRate(req, res) {
   res.json({ success: true, data });
 }
 
-module.exports = { get, updateFxRate, updatePreferences, refreshFxRate };
+function updateSteamStore(req, res) {
+  const data = settingsService.setSteamStore(req.body.storeId, { now: req.app.locals.now() });
+  res.json({ success: true, data });
+}
+
+module.exports = { updateSteamStore, get, updateFxRate, updatePreferences, refreshFxRate };

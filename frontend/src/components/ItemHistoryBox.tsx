@@ -61,6 +61,9 @@ export default function ItemHistoryBox({ stats, compact = false }: Props) {
       {stats.consumedCount > 0 && (
         <p className={styles.note}>{tPlural('history.consumedCount', stats.consumedCount)}</p>
       )}
+      {stats.lossCount > 0 && (
+        <p className={styles.note}>{tPlural('history.lossCount', stats.lossCount, { value: usd(stats.lossUsdCents) })}</p>
+      )}
       {stats.soldOffSaleCount > 0 && (
         <p className={styles.note}>{tPlural('history.soldOffSale', stats.soldOffSaleCount)}</p>
       )}

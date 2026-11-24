@@ -35,7 +35,7 @@ const snapshot = (d) => ({
   links: d.prepare('SELECT * FROM item_operation_links ORDER BY id').all(),
   stores: d.prepare('SELECT * FROM stores ORDER BY id').all(),
   deposits: d.prepare('SELECT * FROM deposits ORDER BY id').all(),
-  settings: d.prepare('SELECT * FROM settings').all(),
+  settings: d.prepare('SELECT * FROM settings').all().map(({ steam_store_id: _steam, ...r }) => r),
   sequence: d.prepare("SELECT seq FROM sqlite_sequence WHERE name = 'items'").get(),
 });
 
@@ -93,7 +93,7 @@ test('v19 sobre v18 cheio de dados: linhas idênticas, contador preservado, índ
   expect(before.items).toHaveLength(5);
   const db = openDatabase(dbPath, { now: NOW });
   try {
-    expect(db.pragma('user_version', { simple: true })).toBe(19);
+    expect(db.pragma('user_version', { simple: true })).toBe(20);
     expect(db.pragma('foreign_key_check')).toEqual([]);
     const after = snapshot(db);
     for (const key of Object.keys(before)) expect(after[key]).toEqual(before[key]);
@@ -156,7 +156,7 @@ test('v19 falha no meio: rollback total, versão 18 e dados intactos; depois mig
   }
   const ok = openDatabase(dbPath, { now: NOW });
   try {
-    expect(ok.pragma('user_version', { simple: true })).toBe(19);
+    expect(ok.pragma('user_version', { simple: true })).toBe(20);
     expect(ok.prepare('SELECT COUNT(*) AS n FROM items').get().n).toBe(5);
   } finally {
     ok.close();
@@ -165,5 +165,5 @@ test('v19 falha no meio: rollback total, versão 18 e dados intactos; depois mig
 
 test('a migração tem número e nome estáveis e é a última', () => {
   expect(v019).toMatchObject({ version: 19, name: 'consumed_generated_patch', disableForeignKeys: true });
-  expect(MIGRATIONS[MIGRATIONS.length - 1].version).toBe(19);
+  expect(MIGRATIONS[MIGRATIONS.length - 1].version).toBe(20);
 });

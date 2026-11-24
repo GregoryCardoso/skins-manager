@@ -12,7 +12,8 @@ const { AppError, ValidationError, NotFoundError, ConflictError } = require('../
 const catalogService = require('../catalogService');
 const itemComponentService = require('../itemComponentService');
 const { parseDate } = require('../dateUtils');
-const { assertNotFutureDay, isInTradeLock, isOffSale } = require('../inventoryAgingService');
+const { isInTradeLock, isOffSale } = require('../inventoryAgingService');
+const { assertDate } = require('./operationDates');
 const operationContext = require('./operationContext');
 
 const SOURCE_CATEGORIES = Object.freeze(['STICKER', 'PINGENTE', 'PATCH', 'OUTRO']);
@@ -21,8 +22,6 @@ const SLAB_PREFIX = 'Sticker Slab | ';
 const isNil = (v) => v === null || v === undefined;
 
 const unprocessable = (code, message, extra) => new AppError(422, code, message, extra);
-const invalidDate = (message, reason, extra = {}) => unprocessable('OPERATION_DATE_INVALID', message, { field: 'appliedAt', params: { reason, ...extra } });
-
 // Tipo de componente que a unidade vira ao ser aplicada, e a entrada do catálogo do componente; ou null se não serve (sem catálogo,
 // outra categoria, patch ou slab sem casamento). O slab é uma unidade `OUTRO` "Sticker Slab | X" com o sticker "Sticker | X" no catálogo.
 function resolveSourceKind(item, { getCatalogItem = (id) => catalogService.getCatalogItem(id), findExactMatch = (q) => catalogService.findExactMatch(q) } = {}) {
@@ -54,21 +53,6 @@ function assertTargetStatus(target, { allowSoldTarget }) {
   if (target.status === 'CONSUMIDO') throw new ConflictError('Esta unidade foi consumida: desfaça a aplicação antes.', 'ITEM_CONSUMED', { params: { itemId: target.id } });
   if (target.status === 'EM_ESTOQUE') return;
   if (!(allowSoldTarget && target.status === 'VENDIDO')) throw notInStock(target, 'TARGET');
-}
-
-function assertDate(date, { now, lowerBounds = [], soldAt = null, field = 'appliedAt' }) {
-  try {
-    assertNotFutureDay(date, now, { code: 'OPERATION_DATE_INVALID', message: 'A data não pode ser futura.', field });
-  } catch (err) {
-    if (err instanceof ValidationError) throw invalidDate('A data não pode ser futura.', 'FUTURE');
-    throw err;
-  }
-  for (const { reason, at } of lowerBounds) {
-    if (date.getTime() < Date.parse(at)) throw invalidDate('A data não pode ser anterior à aquisição das unidades.', reason, { acquiredAt: at });
-  }
-  if (soldAt !== null && date.getTime() > Date.parse(soldAt)) {
-    throw invalidDate('A data não pode ser posterior à venda da arma.', 'AFTER_SALE', { soldAt });
-  }
 }
 
 // `input`: { targetId, sourceItemId, slot?, wear?, pattern?, appliedAt? }. `ctx.allowSoldTarget`: opção INTERNA da ação "Aplicar e

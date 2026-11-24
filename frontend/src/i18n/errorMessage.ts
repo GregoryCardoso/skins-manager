@@ -70,6 +70,15 @@ export function errorDetailParams(
     case 'INVALID_COMPONENT_FIELD':
       // `params.index` (base 0) aponta o componente; sem ele vale o texto geral.
       return typeof p.index === 'number' ? { n: p.index + 1 } : null;
+    case 'CASE_KEY_REQUIRED':
+      return typeof p.keyName === 'string' ? { keyName: p.keyName } : null;
+    case 'CASE_KEY_INCOMPATIBLE':
+      return typeof p.keyName === 'string' && typeof p.caseName === 'string' ? { keyName: p.keyName, caseName: p.caseName } : null;
+    case 'GENERATED_FIELD_LOCKED': {
+      if (!error.field) return null;
+      const label = t(`fields.${error.field}`);
+      return { field: label !== `fields.${error.field}` ? label : error.field };
+    }
     case 'UNKNOWN_FIELD': {
       if (!error.field) return null;
       const label = t(`fields.${error.field}`);
@@ -83,7 +92,7 @@ export function errorDetailParams(
 // Código conhecido -> texto traduzido (com detalhes quando vierem `params`/`field`); senão a mensagem do backend;
 // senão "erro desconhecido".
 // Erros com vários motivos (10.3, D362): o texto sai de `errors.<CÓDIGO>_<MOTIVO>`, com a data do limite quando vier.
-const REASON_CODES = ['OPERATION_DATE_INVALID', 'OPERATION_UNDO_BLOCKED'];
+const REASON_CODES = ['OPERATION_DATE_INVALID', 'OPERATION_UNDO_BLOCKED', 'INVALID_OPERATION_INPUT'];
 
 function reasonMessage(error: ApiRequestError, t: LooseT, locale: string): string | null {
   const p = error.params ?? {};

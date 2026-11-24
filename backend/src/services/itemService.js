@@ -31,8 +31,9 @@ const { getAgingThresholds } = require('./settingsService');
 const externalLinkService = require('./externalLinkService');
 const itemComponentService = require('./itemComponentService');
 const operationContextService = require('./operations/operationContext');
+const openingRules = require('./operations/openingRules');
 
-// `GERADO` só nasce de uma transformação (2.1, 10.4+); o cadastro e a edição não o aceitam.
+// `GERADO` só nasce de uma transformação (2.1, D363): o cadastro e a edição não o aceitam (a edição só mantém uma unidade que já é `GERADO`).
 const ACQUISITION_TYPES = ['GANHEI', 'COMPRA'];
 
 const SALE_FIELDS_NULL = {
@@ -196,7 +197,8 @@ function loadCatalogEntry(body, existing) {
 }
 
 // Monta o registro de aquisição/atributos a partir do estado já mesclado. `existing` só na edição.
-function buildItemRecord(merged, { store = null, settings = null, now = new Date(), existing = null, priceInformed = true, body } = {}) {
+// `allowGenerated`: só a abertura (`prepareItemRecord`) e a edição de uma unidade que já é `GERADO` aceitam esse tipo (D363 item 7).
+function buildItemRecord(merged, { store = null, settings = null, now = new Date(), existing = null, priceInformed = true, body, allowGenerated = false } = {}) {
   // T31: o corpo da requisição é obrigatório (GANHEI e cotação dependem de saber o que foi enviado).
   if (body === null || typeof body !== 'object') {
     throw new Error('buildItemRecord exige o corpo da requisição em `body`.');
@@ -204,19 +206,27 @@ function buildItemRecord(merged, { store = null, settings = null, now = new Date
   const name = isNil(merged.name) ? '' : String(merged.name).trim();
   if (name === '') throw new ValidationError('O nome do item é obrigatório.', 'REQUIRED_FIELD', { field: 'name' });
 
-  if (!ACQUISITION_TYPES.includes(merged.acquisitionType)) {
+  const isGenerated = merged.acquisitionType === 'GERADO' && allowGenerated;
+  if (!isGenerated && !ACQUISITION_TYPES.includes(merged.acquisitionType)) {
     throw new ValidationError('Tipo de aquisição inválido.', 'INVALID_ACQUISITION_TYPE', { field: 'acquisitionType' });
   }
   const isGanhei = merged.acquisitionType === 'GANHEI';
-  if (!isNil(merged.purchaseStoreId) && !store) {
+  if (!isGenerated && !isNil(merged.purchaseStoreId) && !store) {
     throw new ValidationError('Loja não encontrada.', 'STORE_NOT_FOUND', { field: 'purchaseStoreId' });
   }
-  const purchaseStoreId = isNil(merged.purchaseStoreId) ? null : merged.purchaseStoreId;
+  const purchaseStoreId = isGenerated || isNil(merged.purchaseStoreId) ? null : merged.purchaseStoreId;
 
   let purchasePriceCents = 0;
   let currency = 'USD';
   let fxRate = null;
-  if (isGanhei) {
+  if (isGenerated) {
+    // GERADO: sem loja, preço nem cotação (o custo vem da operação, 2.2.3).
+    for (const field of ['purchasePriceCents', 'purchaseStoreId', 'fxRateAtPurchase']) {
+      if (hasKey(body, field) && (field === 'purchasePriceCents' || !isNil(body[field]))) {
+        throw new AppError(422, 'GENERATED_COST_NOT_ALLOWED', 'Item gerado por uma abertura não tem loja, preço nem cotação próprios.', { field });
+      }
+    }
+  } else if (isGanhei) {
     // GANHEI: custo fixo US$ 0,00, sem cotação; a loja é só informativa (D65).
     if (hasKey(body, 'purchasePriceCents')) {
       throw new ValidationError('Item ganho tem custo fixo US$ 0,00; não informe preço de compra.', 'GANHEI_COST_NOT_ALLOWED', { field: 'purchasePriceCents' });
@@ -361,21 +371,58 @@ function consumedInOf(item, opCtx) {
   const link = opCtx.consumedByItem.get(item.id);
   if (!link) return null;
   const operation = opCtx.opsById.get(link.operationId);
-  const targetLink = (opCtx.linksByOperation.get(link.operationId) ?? []).find((l) => l.role === 'TARGET');
+  // Na abertura o destino é a unidade gerada (`CREATED`), ou nenhum no terminal recusado (`lost`); na aplicação, o alvo (`TARGET`).
+  const opening = Boolean(operation) && operation.kind.startsWith('OPEN_');
+  const targetLink = (opCtx.linksByOperation.get(link.operationId) ?? []).find((l) => l.role === (opening ? 'CREATED' : 'TARGET'));
   const target = targetLink ? opCtx.itemsById.get(targetLink.itemId) : null;
   return {
     operationId: link.operationId,
     occurredAt: operation ? operation.occurredAt : item.consumedAt,
+    kind: operation ? operation.kind : null,
+    lost: Boolean(operation) && operation.outcome === 'LOST',
     targetItemId: targetLink ? targetLink.itemId : null,
     targetName: target ? target.name : null,
   };
+}
+
+// De onde a unidade veio (abertura ativa): { operationId, occurredAt, kind, container, decision, containerName, keyName }, ou null (D363 item 8).
+function generatedFromOf(item, opCtx) {
+  const link = opCtx.createdByItem.get(item.id);
+  if (!link) return null;
+  const operation = opCtx.opsById.get(link.operationId);
+  if (!operation) return null;
+  const consumed = (opCtx.linksByOperation.get(operation.id) ?? []).filter((l) => l.role === 'CONSUMED').map((l) => opCtx.itemsById.get(l.itemId));
+  let detail = {};
+  try {
+    detail = operation.detailJson ? JSON.parse(operation.detailJson) : {};
+  } catch (err) {
+    detail = {};
+  }
+  return {
+    operationId: operation.id,
+    occurredAt: operation.occurredAt,
+    kind: operation.kind,
+    container: detail.container ?? null,
+    decision: detail.decision ?? null,
+    containerName: consumed[0] ? consumed[0].name : null,
+    keyName: consumed[1] ? consumed[1].name : null,
+  };
+}
+
+// Abertura possível da unidade em estoque: { kind, compatibleKeys, requiredKeyName } ou null (D363 item 9). `stockKeys`: chaves em estoque.
+function openableOf(item, entry, stockKeys) {
+  const kind = openingRules.openingKindOf(item, entry);
+  if (!kind) return null;
+  if (kind !== 'CASE') return { kind, compatibleKeys: 0, requiredKeyName: null };
+  const compatibleKeys = stockKeys.filter((key) => key.id !== item.id && openingRules.keyMatchesCase(key.name, item.name)).length;
+  return { kind, compatibleKeys, requiredKeyName: openingRules.caseKeyName(item.name) };
 }
 
 function toItemView(
   item,
   {
     stores, settings, statsIndex, catalogById = new Map(), externalSources = new Map(), componentsByItemId = new Map(), now = new Date(), thresholds,
-    operationContext: opCtx = operationContextService.EMPTY_OPERATION_CONTEXT,
+    operationContext: opCtx = operationContextService.EMPTY_OPERATION_CONTEXT, stockKeys = [],
   }
 ) {
   const inStock = item.status === 'EM_ESTOQUE';
@@ -395,6 +442,8 @@ function toItemView(
     // Custo efetivo (D362): o próprio mais o dos componentes aplicados do estoque; o `purchasePrice` nunca muda.
     cost: { ownUsdCents: cost.ownUsdCents, inheritedUsdCents, effectiveUsdCents: cost.effectiveUsdCents, estimated: cost.estimated },
     consumedIn: consumedInOf(item, opCtx),
+    generatedFrom: generatedFromOf(item, opCtx),
+    openable: inStock ? openableOf(item, isNil(item.catalogId) ? null : catalogById.get(item.catalogId) ?? null, stockKeys) : null,
     canReceiveComponents: inStock && itemComponentService.allowedKindsFor(item.category).length > 0,
     // Origem da importação (D318): 'CSFLOAT' se o item tem vínculo de compra ou venda com a loja externa; senão null.
     externalSource: externalSources.get(item.id) ?? null,
@@ -431,6 +480,7 @@ function loadContext() {
     items, stores: Store.findAll(), settings: Setting.get(), statsIndex: buildStatsIndex(items, { costIndex: operationContext.costIndex }),
     catalogById: loadCatalogMap(items, componentsByItemId), componentsByItemId,
     externalSources: externalLinkService.sourcesByItemIds(), operationContext,
+    stockKeys: items.filter((item) => item.status === 'EM_ESTOQUE' && openingRules.isKey(item)),
   };
 }
 
@@ -453,6 +503,7 @@ function viewOf(item, { now, thresholds }) {
   const externalSources = externalLinkService.sourcesByItemIds([item.id]);
   return toItemView(item, {
     stores: Store.findAll(), settings: Setting.get(), statsIndex, catalogById, externalSources, componentsByItemId, now, thresholds, operationContext,
+    stockKeys: openingRules.needsKey(item) ? Item.findInStockByCategories(['OUTRO']).filter(openingRules.isKey) : [],
   });
 }
 
@@ -499,6 +550,22 @@ function assertAcquiredBeforeOperations(itemId, acquiredAtIso) {
   }
 }
 
+// Unidade criada por uma abertura (vínculo CREATED ativo): aquisição, loja de compra e data não mudam na edição (D363 item 7); para
+// trocar, desfaz-se a abertura. Nome, atributos, componentes, trade lock, origem e (no terminal) preço e cotação são correção e podem mudar.
+function assertGeneratedFieldsUnlocked(existing, partial) {
+  if (!ItemOperation.findActiveCreatingOperation(existing.id)) return;
+  const changed = (field) => {
+    if (!hasKey(partial, field)) return false;
+    if (field === 'acquiredAt') return toIso(partial.acquiredAt, 'Data de aquisição', { field }) !== toIso(existing.acquiredAt);
+    return partial[field] !== existing[field];
+  };
+  for (const field of ['acquisitionType', 'purchaseStoreId', 'acquiredAt']) {
+    if (changed(field)) {
+      throw new ConflictError('Esta unidade veio de uma abertura: desfaça a abertura para mudar este campo.', 'GENERATED_FIELD_LOCKED', { field, params: { field } });
+    }
+  }
+}
+
 function findOrFail(id) {
   const item = Item.findById(id);
   if (!item) throw new NotFoundError('Item não encontrado.', 'ITEM_NOT_FOUND');
@@ -531,11 +598,11 @@ function selectItems(all, query, { now, thresholds }) {
 }
 
 function listItems(query = {}, { now = new Date(), thresholds = getAgingThresholds() } = {}) {
-  const { items: all, stores, settings, statsIndex, catalogById, externalSources, componentsByItemId, operationContext } = loadContext();
+  const { items: all, stores, settings, statsIndex, catalogById, externalSources, componentsByItemId, operationContext, stockKeys } = loadContext();
   const { items, saleStateCounts } = selectItems(all, query, { now, thresholds });
 
   return {
-    items: items.map((item) => toItemView(item, { stores, settings, statsIndex, catalogById, externalSources, componentsByItemId, now, thresholds, operationContext })),
+    items: items.map((item) => toItemView(item, { stores, settings, statsIndex, catalogById, externalSources, componentsByItemId, now, thresholds, operationContext, stockKeys })),
     meta: {
       count: items.length,
       saleStateCounts,
@@ -550,7 +617,7 @@ function listItems(query = {}, { now = new Date(), thresholds = getAgingThreshol
 // Visão agrupada (D271-D275): só itens em estoque, mesma seleção e ordenação da lista individual. Os grupos seguem a
 // ordem da primeira aparição na lista ordenada; `stock` conta todo o estoque da chave, independente da aba e dos filtros.
 function listItemGroups(query = {}, { now = new Date(), thresholds = getAgingThresholds() } = {}) {
-  const { items: all, stores, settings, statsIndex, catalogById, externalSources, componentsByItemId, operationContext } = loadContext();
+  const { items: all, stores, settings, statsIndex, catalogById, externalSources, componentsByItemId, operationContext, stockKeys } = loadContext();
   const { items, saleStateCounts } = selectItems(all, { ...query, status: 'EM_ESTOQUE' }, { now, thresholds });
 
   const stockByKey = new Map();
@@ -579,7 +646,7 @@ function listItemGroups(query = {}, { now = new Date(), thresholds = getAgingThr
       componentUnits: (stockByKey.get(key) ?? units).filter((u) => (componentsByItemId.get(u.id) ?? []).length > 0).length,
       stagnantCount: countStagnant(units, thresholds, now),
       stock: summarizeStockStates(stockByKey.get(key) ?? [], now),
-      units: units.map((item) => toItemView(item, { stores, settings, statsIndex, catalogById, externalSources, componentsByItemId, now, thresholds, operationContext })),
+      units: units.map((item) => toItemView(item, { stores, settings, statsIndex, catalogById, externalSources, componentsByItemId, now, thresholds, operationContext, stockKeys })),
     };
   });
 
@@ -599,7 +666,7 @@ function listItemGroups(query = {}, { now = new Date(), thresholds = getAgingThr
 
 // Vendas (D124/D127): lista filtrada/ordenada + resumo sobre o mesmo conjunto. Estatísticas usam todos os itens.
 function listSales(query = {}, { now = new Date(), thresholds = getAgingThresholds() } = {}) {
-  const { items: all, stores, settings, statsIndex, catalogById, externalSources, componentsByItemId, operationContext } = loadContext();
+  const { items: all, stores, settings, statsIndex, catalogById, externalSources, componentsByItemId, operationContext, stockKeys } = loadContext();
   let items = all.filter((i) => i.status === 'VENDIDO');
   if (!isNil(query.saleStoreId)) items = items.filter((i) => i.saleStoreId === query.saleStoreId);
   items = filterSoldInPeriod(items, { soldFrom: query.soldFrom, soldTo: query.soldTo });
@@ -607,7 +674,7 @@ function listSales(query = {}, { now = new Date(), thresholds = getAgingThreshol
   if (sortKey === 'turnaround') items = sortByTurnaround(items, query.order ?? 'asc');
   else items = sortBySoldAt(items, query.order ?? 'desc');
   return {
-    items: items.map((item) => toItemView(item, { stores, settings, statsIndex, catalogById, externalSources, componentsByItemId, now, thresholds, operationContext })),
+    items: items.map((item) => toItemView(item, { stores, settings, statsIndex, catalogById, externalSources, componentsByItemId, now, thresholds, operationContext, stockKeys })),
     summary: computeSalesSummary(items, { usdBrlRate: settings.usdBrlRate, costIndex: operationContext.costIndex }),
     meta: {
       count: items.length,
@@ -680,21 +747,45 @@ const bulkMarkForSale = (body, ctx) => bulkChangeSaleState('FOR_SALE', body, ctx
 //  6. Componentes (itemComponentService): COMPONENTS_NOT_ALLOWED -> COMPONENT_LIMIT_EXCEEDED -> campos -> catálogo -> slot.
 //  Opções INTERNAS do contexto, só da importação (o controller nunca as passa; D361): `componentSource` ('CSFLOAT') grava os
 //  componentes com essa origem, e `componentsImportedAt` marca que a importação já cuidou dos componentes da unidade.
-function createItem(input, ctx = {}) {
-  const { now = new Date(), thresholds = getAgingThresholds(), componentSource = 'MANUAL', componentsImportedAt = null } = ctx;
+// Montagem do registro e dos componentes de uma unidade nova, sem gravar (D363 item 4): a mesma regra do `createItem`. Sem `acquisition`,
+// a aquisição vem do próprio corpo (cadastro). Com ele (abertura), é `{ type: 'GERADO' }` ou `{ type: 'COMPRA', store, priceCents }` (a
+// cotação, se for BRL, vem em `input.fxRateAtPurchase` ou das configurações) e a data é `acquiredAt`.
+function prepareItemRecord(input, { acquisition = null, acquiredAt, now = new Date(), componentSource = 'MANUAL' } = {}) {
   const catalogEntry = loadCatalogEntry(input, null);
   const identity = resolveItemIdentity({
     body: input, catalogEntry, freeNameCatalogMatch: lookupFreeNameMatch(input, null),
   });
   const merged = { ...input, name: identity.name, category: identity.category, phase: identity.phase };
   delete merged.components;
-  const store = isNil(input.purchaseStoreId) ? null : getStoreOrFail(input.purchaseStoreId, { field: 'purchaseStoreId' });
-  const record = buildItemRecord(merged, { store, settings: Setting.get(), now, body: input });
+  let store;
+  let body = input;
+  if (acquisition === null) {
+    store = isNil(input.purchaseStoreId) ? null : getStoreOrFail(input.purchaseStoreId, { field: 'purchaseStoreId' });
+  } else {
+    merged.acquisitionType = acquisition.type;
+    merged.acquiredAt = acquiredAt;
+    body = {};
+    if (acquisition.type === 'COMPRA') {
+      store = acquisition.store;
+      merged.purchaseStoreId = store.id;
+      merged.purchasePriceCents = acquisition.priceCents;
+      merged.fxRateAtPurchase = acquisition.fxRate ?? null;
+    } else {
+      store = null;
+    }
+  }
+  const record = buildItemRecord(merged, { store, settings: Setting.get(), now, body, allowGenerated: acquisition !== null && acquisition.type === 'GERADO' });
   if (catalogEntry) assertFloatInCatalogRange(record.floatValue, catalogEntry);
   const components = hasKey(input, 'components') ? normalizeComponentsFor(input.components, identity.category, componentSource) : null;
+  return { record: { ...record, catalogId: identity.catalogId }, components };
+}
+
+function createItem(input, ctx = {}) {
+  const { now = new Date(), thresholds = getAgingThresholds(), componentSource = 'MANUAL', componentsImportedAt = null } = ctx;
+  const { record, components } = prepareItemRecord(input, { now, componentSource });
   const importedStamp = componentsImportedAt ? new Date(componentsImportedAt).toISOString() : undefined;
   return inTransaction(() => {
-    const created = Item.create({ ...record, catalogId: identity.catalogId, componentsImportedAt: importedStamp }, { now });
+    const created = Item.create({ ...record, componentsImportedAt: importedStamp }, { now });
     if (components && components.length > 0) ItemComponent.insertMany(created.id, components, { now });
     return viewOf(created, { now, thresholds });
   });
@@ -704,6 +795,7 @@ function updateItem(id, partial, ctx = {}) {
   const { now = new Date(), thresholds = getAgingThresholds() } = ctx;
   const existing = findOrFail(id);
   assertNotConsumed(existing);
+  assertGeneratedFieldsUnlocked(existing, partial);
   const catalogEntry = loadCatalogEntry(partial, existing);
   const identity = resolveItemIdentity({
     body: partial, existing, catalogEntry, freeNameCatalogMatch: lookupFreeNameMatch(partial, existing),
@@ -727,7 +819,9 @@ function updateItem(id, partial, ctx = {}) {
     if (!priceInformed) throw new ValidationError('Informe o preço da compra.', 'PURCHASE_PRICE_REQUIRED', { field: 'purchasePriceCents' });
     if (isNil(merged.purchaseStoreId)) throw new ValidationError('Informe a loja da compra.', 'PURCHASE_STORE_REQUIRED', { field: 'purchaseStoreId' });
   }
-  const record = buildItemRecord(merged, { store, settings: Setting.get(), now, existing, priceInformed, body: partial });
+  const record = buildItemRecord(merged, {
+    store, settings: Setting.get(), now, existing, priceInformed, body: partial, allowGenerated: existing.acquisitionType === 'GERADO',
+  });
   // Faixa de float do catálogo: ao trocar o item do catálogo ou o float (limites inclusivos).
   const catalogChanged = hasKey(partial, 'catalogId') && partial.catalogId !== existing.catalogId;
   if (catalogEntry && (catalogChanged || hasKey(partial, 'floatValue'))) {
@@ -836,6 +930,7 @@ function getItemStats({ name, category, variant, exterior, phase }) {
 }
 
 module.exports = {
+  prepareItemRecord,
   resolveItemIdentity,
   buildItemRecord,
   buildSaleRecord,

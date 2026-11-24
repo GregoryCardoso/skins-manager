@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
-import { formatDate } from '@/lib/format';
+import { formatDate, formatMoney } from '@/lib/format';
 import { queryKeys } from '@/lib/queryKeys';
 import { useInvalidate } from '@/lib/useInvalidate';
 import { listItemOperations, undoOperation } from '@/services/api';
@@ -16,6 +16,9 @@ import styles from './ItemHistoryBox.module.css';
 interface Props {
   item: ItemView;
 }
+
+// Abertura de caixa, cápsula, pacote ou terminal (10.4, D363): o desfazer e os textos mudam.
+const isOpening = (operation: { kind: string }) => operation.kind === 'OPEN_CASE' || operation.kind === 'OPEN_TERMINAL';
 
 // Operações da unidade (10.3, D362): aplicações do estoque e remoções, da mais nova para a mais antiga, com as desfeitas. Só a
 // operação que o backend diz que pode ser desfeita mostra o botão; as demais mostram o motivo.
@@ -44,7 +47,7 @@ export default function ItemOperationsList({ item }: Props) {
     undoOperation(undoing.id)
       .then(() => {
         setUndoing(null);
-        setNotice(t('operations.undoDone'));
+        setNotice(t(isOpening(undoing) ? 'operations.undoOpenDone' : 'operations.undoDone'));
         return invalidate('operation.undo');
       })
       .catch((err: unknown) => setError(errorMessageFor(err, tLoose, language)))
@@ -65,7 +68,11 @@ export default function ItemOperationsList({ item }: Props) {
       {notice && <p className={styles.note} role="status">{notice}</p>}
       {consumed && (
         <p className={styles.note}>
-          {t('operations.consumedIn', { date: formatDate(consumed.occurredAt, language), target: consumed.targetName ?? t('common.none') })}
+          {consumed.lost
+            ? t('operations.consumedInLost', { date: formatDate(consumed.occurredAt, language) })
+            : consumed.kind === 'OPEN_CASE' || consumed.kind === 'OPEN_TERMINAL'
+              ? t('operations.consumedInOpen', { date: formatDate(consumed.occurredAt, language), target: consumed.targetName ?? t('common.none') })
+              : t('operations.consumedIn', { date: formatDate(consumed.occurredAt, language), target: consumed.targetName ?? t('common.none') })}
         </p>
       )}
       {query.isPending && <p className={styles.note}>{t('common.loading')}</p>}
@@ -79,10 +86,16 @@ export default function ItemOperationsList({ item }: Props) {
                 {' · '}{t('operations.counterpart', { role: tLoose(`operations.role.${c.role}`), name: c.name ?? t('common.none') })}
               </span>
             ))}
+            {operation.lossUsdCents !== null && operation.lossUsdCents !== undefined && (
+              <span className={styles.sub}>{' · '}{t('operations.lost', { value: formatMoney(operation.lossUsdCents, 'USD', language) })}</span>
+            )}
             {operation.undoneAt && <span className={styles.sub}>{' · '}{t('operations.undone', { date: formatDate(operation.undoneAt, language) })}</span>}
+            {operation.undoneAt && operation.detail?.undoneGenerated && (
+              <span className={styles.sub}>{' · '}{t('operations.undoneGenerated', { name: operation.detail.undoneGenerated.name })}</span>
+            )}
             {operation.undoable && (
               <button type="button" className={`${forms.button} ${forms.small}`} onClick={() => { setError(null); setUndoing(operation); }}>
-                {t('operations.undo')}
+                {t(isOpening(operation) ? 'operations.undoOpen' : 'operations.undo')}
               </button>
             )}
             {blocked(operation) && <span className={styles.sub}>{' · '}{blocked(operation)}</span>}
@@ -92,8 +105,8 @@ export default function ItemOperationsList({ item }: Props) {
       {!query.isPending && operations.length === 0 && !consumed && <p className={styles.note}>{t('operations.empty')}</p>}
       {undoing && (
         <ConfirmDialog
-          title={t('operations.undoTitle')}
-          message={t('operations.undoMessage')}
+          title={t(isOpening(undoing) ? 'operations.undoOpenTitle' : 'operations.undoTitle')}
+          message={t(isOpening(undoing) ? 'operations.undoOpenMessage' : 'operations.undoMessage')}
           confirmLabel={t('operations.undoConfirm')}
           busy={busy}
           error={error}

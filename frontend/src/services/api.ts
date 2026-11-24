@@ -42,6 +42,9 @@ import type {
   IntegrationPatchBody,
   IntegrationView,
   ItemView,
+  OpenContainerBody,
+  OpenContainerResult,
+  OpenOptions,
   PreferencesPatch,
   FxRefreshResult,
   SaleQuote,
@@ -323,6 +326,14 @@ export const scrapeOffComponent = (itemId: number, componentId: number, body: { 
 export const listItemOperations = (id: number, signal?: AbortSignal) => request<ItemOperation[]>('GET', `/items/${id}/operations`, { signal });
 
 export const undoOperation = (operationId: number) => request<UndoOperationResult>('POST', `/operations/${operationId}/undo`, { body: {} });
+
+// Abrir caixa, cápsula, pacote e terminal (10.4, D363): prévia (chaves compatíveis, loja Steam) e a abertura.
+export const getOpenOptions = (id: number, signal?: AbortSignal) => request<OpenOptions>('GET', `/items/${id}/open-options`, { signal });
+
+export const openContainer = (id: number, body: OpenContainerBody) => request<OpenContainerResult>('POST', `/items/${id}/open`, { body });
+
+// Escolhe (ou limpa, com null) a loja Steam do app (10.4, D363).
+export const setSteamStore = (storeId: number | null) => request<Settings>('PUT', '/settings/steam-store', { body: { storeId } });
 
 export const markItemForSale = (id: number) => request<{ item: ItemView }>('POST', `/items/${id}/for-sale`, { body: {} });
 

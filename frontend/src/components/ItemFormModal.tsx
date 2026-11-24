@@ -5,15 +5,14 @@ import { useQuery } from '@tanstack/react-query';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
 import { resolveErrorTarget } from '@/lib/formErrors';
-import { formatFloat } from '@/lib/format';
 import {
   buildComponentsBody, componentsAllowedFor, componentsBodyFromItem, componentsStateFromItem, emptyComponentsState, sameComponents,
   type ComponentsState,
 } from '@/lib/itemComponents';
 import {
-  ALL_EXTERIORS, FREE_NAME_CATEGORIES, addSevenDays, applyCatalogChoice, applyPurchaseStore, buildCreateBody,
+  addSevenDays, applyCatalogChoice, applyPurchaseStore, buildCreateBody,
   setAcquiredAt, setAcquisitionType, setTradeUnlockAt,
-  buildPatchBody, effectiveCategory, fieldVisibility, findStore, initialCreateState, stateFromItem, variantOptions,
+  buildPatchBody, effectiveCategory, fieldVisibility, findStore, initialCreateState, stateFromItem,
   visibleItemFields,
   type CatalogChoice, type FormContext, type FormErrors, type ItemFormState,
 } from '@/lib/itemForm';
@@ -21,14 +20,12 @@ import { formatDecimalInput } from '@/lib/numberInput';
 import { queryKeys } from '@/lib/queryKeys';
 import { useInvalidate } from '@/lib/useInvalidate';
 import { ApiRequestError, createItem, getCatalogStatus, updateItem } from '@/services/api';
-import type { AcquisitionType, CatalogItem, Category, Currency, Exterior, ItemPatchBody, ItemView, Store, Variant } from '@/types/api';
-import CatalogAutocomplete, { catalogDisplayName } from './CatalogAutocomplete';
+import type { AcquisitionType, CatalogItem, Currency, ItemPatchBody, ItemView, Store } from '@/types/api';
 import FormField from './FormField';
 import styles from './forms.module.css';
 import ItemComponentsSection from './ItemComponentsSection';
-import ItemImage from './ItemImage';
+import ItemIdentityFields from './ItemIdentityFields';
 import Modal from './Modal';
-import { Badge } from './badges';
 import { usePreferences } from './PreferencesProvider';
 
 export const ITEM_FORM_FIELDS = [
@@ -40,6 +37,8 @@ export const ITEM_FORM_FIELDS = [
 interface Props {
   // Sem `item` = cadastro; com `item` = edição.
   item?: ItemView;
+  // Cadastro de uma chave pelo atalho da caixa sem chave (10.4): nome livre em OUTRO já preenchido.
+  preset?: { name: string };
   stores: Store[];
   onClose: () => void;
   onSaved: (message: string) => void;
@@ -49,7 +48,7 @@ interface Props {
 
 const storeLabel = (store: Store, inactive: string) => (store.isActive ? store.name : `${store.name} (${inactive})`);
 
-export default function ItemFormModal({ item, stores, onClose, onSaved, onGone }: Props) {
+export default function ItemFormModal({ item, preset, stores, onClose, onSaved, onGone }: Props) {
   const t = useT();
   const tLoose = useTLoose();
   const language = useLanguage();
@@ -58,7 +57,11 @@ export default function ItemFormModal({ item, stores, onClose, onSaved, onGone }
   const editing = item !== undefined;
   const ctx: FormContext = { stores, usdBrlRate, language };
 
-  const [state, setState] = useState<ItemFormState>(() => (item ? stateFromItem(item, language) : initialCreateState(ctx)));
+  const [state, setState] = useState<ItemFormState>(() => {
+    if (item) return stateFromItem(item, language);
+    const base = initialCreateState(ctx);
+    return preset ? { ...base, freeMode: true, category: 'OUTRO', name: preset.name } : base;
+  });
   // Componentes aplicados (10.1): só SKIN; ficam fora do ItemFormState e entram no corpo no envio.
   const [components, setComponents] = useState<ComponentsState>(() => (item ? componentsStateFromItem(item, language) : emptyComponentsState()));
   const [errors, setErrors] = useState<FormErrors>({});
@@ -169,10 +172,6 @@ export default function ItemFormModal({ item, stores, onClose, onSaved, onGone }
       });
   };
 
-  const categoryText = (c: Category | '') => (c === '' ? '' : tLoose(`enums.category.${c}`));
-  const floatHint = state.catalog && state.catalog.minFloat !== null && state.catalog.maxFloat !== null
-    ? t('itemForm.floatRange', { min: formatFloat(state.catalog.minFloat, language), max: formatFloat(state.catalog.maxFloat, language) })
-    : null;
   const priceCurrency = store?.currency ?? 'USD';
 
   return (
@@ -181,158 +180,19 @@ export default function ItemFormModal({ item, stores, onClose, onSaved, onGone }
         {topError && <div className={styles.topError} role="alert">{topError}</div>}
         {editing && item.status === 'VENDIDO' && <div className={styles.note}>{t('itemForm.soldNote')}</div>}
 
-        {/* Identidade */}
-        {state.catalog && !changingItem && (
-          <div className={styles.chosen}>
-            <ItemImage category={state.catalog.category} url={state.catalog.imageUrl} size={48} />
-            <div className={styles.chosenText}>
-              <strong>{catalogDisplayName(state.catalog, language)}</strong>
-              <span className={styles.muted}>
-                {categoryText(state.catalog.category)}{state.catalog.phase ? ` · ${state.catalog.phase}` : ''}
-              </span>
-            </div>
-            <button type="button" className={`${styles.button} ${styles.small}`} onClick={() => setChangingItem(true)}>
-              {t('itemForm.changeItem')}
-            </button>
-          </div>
-        )}
-
-        {isLegacy && !changingItem && (
-          <div className={styles.note}>
-            <Badge tone="warning">{t('inventory.legacy')}</Badge> <strong>{item.name}</strong> · {categoryText(item.category)}
-            <div>{t('itemForm.legacyNote')}</div>
-          </div>
-        )}
-
-        {showSearch && (
-          <div>
-            <CatalogAutocomplete
-              label={isLegacy ? t('itemForm.legacyLink') : t('itemForm.catalogSearch')}
-              fixedCategory={isLegacy ? item.category : undefined}
-              error={errors.catalogId}
-              autoFocus
-              onSelect={onPickCatalog}
-            />
-            <div className={styles.row}>
-              {changingItem && (
-                <button type="button" className={`${styles.button} ${styles.small}`} onClick={() => setChangingItem(false)}>
-                  {t('common.cancel')}
-                </button>
-              )}
-              {!isLegacy && !state.catalog && (
-                <button
-                  type="button"
-                  className={`${styles.button} ${styles.small}`}
-                  onClick={() => patch({ freeMode: true, category: state.category === '' ? 'OUTRO' : state.category })}
-                >
-                  {t('itemForm.freeName')}
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-
-        {state.freeMode && !state.catalog && (
-          <div className={styles.grid}>
-            <FormField label={t('itemForm.category')} error={errors.category}>
-              {(c) => (
-                <select
-                  {...c}
-                  className={styles.select}
-                  value={state.category}
-                  onChange={(e) => patch({ category: e.target.value as Category })}
-                >
-                  {FREE_NAME_CATEGORIES.map((cat) => <option key={cat} value={cat}>{categoryText(cat)}</option>)}
-                </select>
-              )}
-            </FormField>
-            <FormField label={t('itemForm.name')} error={errors.name}>
-              {(c) => (
-                <input {...c} className={styles.input} value={state.name} onChange={(e) => patch({ name: e.target.value })} />
-              )}
-            </FormField>
-            <div className={styles.full}>
-              <button type="button" className={`${styles.button} ${styles.small}`} onClick={() => patch({ freeMode: false })}>
-                {t('itemForm.backToCatalog')}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Atributos de arma */}
-        {vis.weapon && (
-          <div className={styles.grid}>
-            <FormField label={t('itemForm.variant')} error={errors.variant}>
-              {(c) => (
-                <select
-                  {...c}
-                  className={styles.select}
-                  value={state.variant}
-                  onChange={(e) => patch({ variant: e.target.value as Variant })}
-                >
-                  {variantOptions(category, state.catalog, state.variant).map((v) => (
-                    <option key={v} value={v}>{tLoose(`enums.variant.${v}`)}</option>
-                  ))}
-                </select>
-              )}
-            </FormField>
-            <FormField label={t('itemForm.floatValue')} error={errors.floatValue} hint={floatHint}>
-              {(c) => (
-                <input
-                  {...c}
-                  className={styles.input}
-                  inputMode="decimal"
-                  value={state.floatText}
-                  onChange={(e) => {
-                    patch({ floatText: e.target.value });
-                    clearError('floatValue');
-                  }}
-                />
-              )}
-            </FormField>
-            {vis.exteriorInput ? (
-              <FormField label={t('itemForm.exterior')} error={errors.exterior}>
-                {(c) => (
-                  <select
-                    {...c}
-                    className={styles.select}
-                    value={state.exterior}
-                    onChange={(e) => patch({ exterior: e.target.value as Exterior | '' })}
-                  >
-                    <option value="">{t('common.none')}</option>
-                    {ALL_EXTERIORS.map((x) => <option key={x} value={x}>{tLoose(`enums.exterior.${x}`)}</option>)}
-                  </select>
-                )}
-              </FormField>
-            ) : (
-              <FormField label={t('itemForm.exterior')} error={errors.exterior} hint={t('itemForm.exteriorDerived')}>
-                {(c) => <input {...c} className={styles.input} value="" disabled readOnly />}
-              </FormField>
-            )}
-            <FormField label={t('itemForm.paintSeed')} error={errors.paintSeed}>
-              {(c) => (
-                <input
-                  {...c}
-                  className={styles.input}
-                  inputMode="numeric"
-                  value={state.paintSeedText}
-                  onChange={(e) => patch({ paintSeedText: e.target.value })}
-                />
-              )}
-            </FormField>
-            <FormField label={t('itemForm.phase')} error={errors.phase} hint={vis.phaseLocked ? t('itemForm.phaseFromCatalog') : null}>
-              {(c) => (
-                <input
-                  {...c}
-                  className={styles.input}
-                  value={vis.phaseLocked ? state.catalog?.phase ?? '' : state.phase}
-                  disabled={vis.phaseLocked}
-                  onChange={(e) => patch({ phase: e.target.value })}
-                />
-              )}
-            </FormField>
-          </div>
-        )}
+        <ItemIdentityFields
+          state={state}
+          patch={patch}
+          errors={errors}
+          clearError={clearError}
+          vis={vis}
+          showSearch={showSearch}
+          changingItem={changingItem}
+          setChangingItem={setChangingItem}
+          isLegacy={isLegacy}
+          item={item}
+          onPickCatalog={onPickCatalog}
+        />
 
         {/* Componentes aplicados (stickers e chaveiro): só SKIN, não mudam o custo */}
         {allowComponents && (

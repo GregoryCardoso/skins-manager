@@ -239,7 +239,15 @@
     "OPERATION_ALREADY_UNDONE": "Esta operação já foi desfeita.",
     "OPERATION_UNDO_BLOCKED": "Esta operação não pode ser desfeita agora.",
     "COMPONENT_NOT_FOUND": "Componente não encontrado. Atualize a lista.",
-    "COMPONENT_NOT_SCRAPEABLE": "Só sticker e patch aplicados do estoque podem ser removidos para sempre."
+    "COMPONENT_NOT_SCRAPEABLE": "Só sticker e patch aplicados do estoque podem ser removidos para sempre.",
+    "ITEM_NOT_OPENABLE": "Este item não pode ser aberto.",
+    "CASE_KEY_REQUIRED": "Esta caixa precisa de uma chave do estoque.",
+    "CASE_KEY_INCOMPATIBLE": "Esta chave não abre esta caixa.",
+    "INVALID_OPERATION_INPUT": "Dados da abertura inválidos.",
+    "GENERATED_ITEM_REQUIRED": "Escolha no catálogo o item obtido.",
+    "GENERATED_COST_NOT_ALLOWED": "Este item veio de uma abertura: o custo vem da operação, sem loja, preço nem cotação próprios.",
+    "GENERATED_FIELD_LOCKED": "Este item veio de uma abertura: desfaça a abertura para mudar este campo.",
+    "STEAM_STORE_REQUIRED": "Escolha a sua loja Steam em Lojas para comprar o item do terminal."
   },
   "errorReasons": {
     "OPERATION_DATE_INVALID_FUTURE": "A data não pode ser futura.",
@@ -250,7 +258,18 @@
     "OPERATION_DATE_INVALID_ACQUIRED_AFTER_OPERATION": "A aquisição não pode ser depois de uma operação deste item ({date}). Desfaça a operação antes.",
     "OPERATION_UNDO_BLOCKED_NOT_LATEST": "Desfaça antes a operação mais recente destas unidades (as aplicações se desfazem da última para a primeira).",
     "OPERATION_UNDO_BLOCKED_TARGET_SOLD": "A arma está vendida. Desfaça a venda antes de desfazer a aplicação.",
-    "OPERATION_UNDO_BLOCKED_TARGET_NOT_IN_STOCK": "O item que recebeu a aplicação não está em estoque."
+    "OPERATION_UNDO_BLOCKED_TARGET_NOT_IN_STOCK": "O item que recebeu a aplicação não está em estoque.",
+    "OPERATION_DATE_INVALID_BEFORE_CONTAINER_ACQUIRED": "A data não pode ser anterior à aquisição do item aberto ({date}).",
+    "OPERATION_DATE_INVALID_BEFORE_KEY_ACQUIRED": "A data não pode ser anterior à aquisição da chave ({date}).",
+    "OPERATION_DATE_INVALID_TRADE_UNLOCK_BEFORE_OPENED": "O fim do trade lock não pode ser anterior à abertura.",
+    "INVALID_OPERATION_INPUT_NOT_A_KEY": "A unidade escolhida não é uma chave.",
+    "INVALID_OPERATION_INPUT_KEY_NOT_ALLOWED": "Este item não usa chave.",
+    "INVALID_OPERATION_INPUT_DECISION_REQUIRED": "Escolha comprar ou não comprar o item do terminal.",
+    "INVALID_OPERATION_INPUT_DECISION_INVALID": "Decisão inválida.",
+    "INVALID_OPERATION_INPUT_DECISION_NOT_ALLOWED": "Só o terminal tem essa escolha.",
+    "INVALID_OPERATION_INPUT_PRICE_NOT_ALLOWED": "Preço e cotação só valem ao comprar o item do terminal.",
+    "INVALID_OPERATION_INPUT_GENERATED_NOT_ALLOWED": "Não comprar o item do terminal não gera nenhum item.",
+    "INVALID_OPERATION_INPUT_GENERATED_FIELD_NOT_ALLOWED": "O item obtido herda a aquisição da abertura: não informe loja, preço, cotação nem data de compra."
   },
   "warnings": {
     "FEES_NOT_CONFIGURED": "As taxas da loja não estão configuradas.",
@@ -333,7 +352,14 @@
       "forSale": "Voltar para a venda",
       "apply": "Aplicar do estoque",
       "applyNoCandidates": "Não há sticker, chaveiro ou patch em estoque para aplicar.",
-      "applyFull": "Este item já tem o máximo de componentes que cabem nele."
+      "applyFull": "Este item já tem o máximo de componentes que cabem nele.",
+      "openCase": "Abrir caixa",
+      "openCapsule": "Abrir cápsula",
+      "openPackage": "Abrir pacote",
+      "openTerminal": "Abrir terminal",
+      "openNeedsKey": "Cadastre a chave desta caixa ({keyName}) primeiro.",
+      "openNeedsKeyOther": "Cadastre a chave desta caixa ({keyName}) primeiro. As chaves em estoque não servem para ela.",
+      "registerKey": "Cadastrar chave"
     },
     "itemGone": "Este item não existe mais (talvez tenha sido excluído em outra aba). A lista foi atualizada.",
     "daysForSale": "à venda há {days}",
@@ -640,7 +666,22 @@
     "scrapeMessage": "O componente sai do item de vez (não volta ao estoque). O custo dele continua neste item.",
     "scrapeConfirm": "Remover para sempre",
     "scrapeDone": "Componente removido. O custo continua no item.",
-    "costIncludes": "Inclui {value} de componentes aplicados do estoque."
+    "costIncludes": "Inclui {value} de componentes aplicados do estoque.",
+    "consumedInOpen": "Consumida em {date}: usada para abrir {target}",
+    "consumedInLost": "Consumida em {date}: terminal não comprado (perda)",
+    "undoOpen": "Desfazer abertura",
+    "undoOpenTitle": "Desfazer a abertura?",
+    "undoOpenMessage": "O item obtido é excluído (e, no terminal comprado, a compra também), e o recipiente e a chave voltam ao estoque como estavam. Use só para corrigir um lançamento errado.",
+    "undoOpenDone": "Abertura desfeita.",
+    "lost": "perda de {value}",
+    "undoneGenerated": "item obtido desfeito: {name}",
+    "generatedFrom": {
+      "CASE": "aberto de {container}",
+      "CASE_KEY": "aberto de {container} com {key}",
+      "CAPSULE": "aberto de {container}",
+      "PACKAGE": "aberto de {container}",
+      "TERMINAL": "comprado no terminal {container}"
+    }
   },
   "sellForm": {
     "title": "Vender item",
@@ -709,7 +750,12 @@
     "withdrawnAt": "Data do saque",
     "balanceCents": "Saldo",
     "recordedAt": "Data do saldo",
-    "components": "Stickers e chaveiro"
+    "components": "Stickers e chaveiro",
+    "keyItemId": "Chave",
+    "decision": "Decisão",
+    "paidPriceCents": "Preço pago",
+    "openedAt": "Data da abertura",
+    "generated": "Item obtido"
   },
   "errorDetails": {
     "INVALID_RATE": "A taxa deve ser maior ou igual a 0% e menor que 100%, com no máximo {maxDecimals} casas decimais no percentual.",
@@ -735,7 +781,10 @@
     "COMPONENTS_NOT_ALLOWED": "Componente {n}: este item não aceita este tipo (stickers e chaveiro só em armas; patches só em agentes).",
     "COMPONENT_CATALOG_REQUIRED": "Componente {n}: escolha o item no catálogo.",
     "COMPONENT_CATALOG_MISMATCH": "Componente {n}: o item escolhido no catálogo não é do tipo certo.",
-    "INVALID_COMPONENT_FIELD": "Componente {n}: slot, desgaste ou pattern inválido."
+    "INVALID_COMPONENT_FIELD": "Componente {n}: slot, desgaste ou pattern inválido.",
+    "CASE_KEY_REQUIRED": "Esta caixa precisa de uma chave do estoque ({keyName}).",
+    "CASE_KEY_INCOMPATIBLE": "A chave \"{keyName}\" não abre a caixa \"{caseName}\".",
+    "GENERATED_FIELD_LOCKED": "Este item veio de uma abertura: desfaça a abertura para mudar \"{field}\"."
   },
   "sales": {
     "title": "Vendas",
@@ -828,6 +877,10 @@
     "consumedCount": {
       "one": "{count} unidade consumida em aplicações (fora do custo médio)",
       "other": "{count} unidades consumidas em aplicações (fora do custo médio)"
+    },
+    "lossCount": {
+      "one": "{count} terminal não comprado (perda de {value})",
+      "other": "{count} terminais não comprados (perda de {value})"
     }
   },
   "stores": {
@@ -849,7 +902,13 @@
     "deleteMessage": "Excluir a loja \"{name}\"? Esta ação não pode ser desfeita.",
     "confirmDelete": "Excluir",
     "saleHoldDays": "Retenção do saldo após a venda (dias)",
-    "saleHoldDaysHint": "0 = disponível na hora. Vale para as próximas vendas; vendas já registradas não mudam."
+    "saleHoldDaysHint": "0 = disponível na hora. Vale para as próximas vendas; vendas já registradas não mudam.",
+    "steamBadge": "Steam do app",
+    "steamSet": "Esta é a minha loja Steam",
+    "steamClear": "Não é a minha loja Steam",
+    "steamHint": "A loja Steam do app é onde o preço pago no terminal é registrado.",
+    "steamSaved": "\"{name}\" agora é a sua loja Steam.",
+    "steamCleared": "Nenhuma loja Steam escolhida."
   },
   "storesTable": {
     "columns": {
@@ -1153,7 +1212,13 @@
         "other": "{count} saques sem taxa informada contam com taxa 0."
       },
       "warningDeposits": "Aportes: {message}",
-      "warningWithdrawals": "Saques: {message}"
+      "warningWithdrawals": "Saques: {message}",
+      "consumptionLosses": "Perdas por consumo",
+      "consumptionLossesHint": "Terminais não comprados: o custo deles já saiu do estoque. Só informativo, fora do cálculo do lucro real.",
+      "consumptionLossesCount": {
+        "one": "{count} terminal não comprado",
+        "other": "{count} terminais não comprados"
+      }
     }
   },
   "deposits": {
@@ -1807,5 +1872,40 @@
     "step5": "Clique em \"Importar agora\" (aqui embaixo) ou em \"Importar do CSFloat\" no Inventário e escolha a data de corte: até quando você já lançou tudo à mão.",
     "open": "Abrir o CSFloat",
     "safety": "A chave dá acesso à sua conta do CSFloat: não compartilhe com ninguém. Se ela vazar, apague-a no CSFloat e gere outra."
+  },
+  "openForm": {
+    "title": "Abrir {name}",
+    "introCase": "A caixa e a chave escolhida saem do estoque e o custo das duas passa para o item obtido. O lucro real, o saldo e o total do estoque não mudam.",
+    "introNoKey": "O item sai do estoque e o custo dele passa para o item obtido. O lucro real, o saldo e o total do estoque não mudam.",
+    "introTerminal": "O terminal oferece um item por um preço. Você pode comprá-lo (o preço é pago na sua loja Steam) ou não comprar (o terminal some e o custo dele vira perda).",
+    "key": "Chave",
+    "keyCost": "Custo {value}",
+    "keyOldest": "mais antiga",
+    "noKey": "Não há chave compatível em estoque. Cadastre {keyName} primeiro.",
+    "decision": "O que fazer com o terminal",
+    "buy": "Comprar o item",
+    "decline": "Não comprar (perda de {value})",
+    "price": "Preço pago ({currency})",
+    "fx": "Cotação USD→BRL",
+    "fxDefault": "Padrão: cotação salva ({rate})",
+    "steamStore": "Pago na loja Steam: {store} ({currency})",
+    "noSteamStore": "Escolha a sua loja Steam em Lojas para comprar o item do terminal.",
+    "goToStores": "Ir para Lojas",
+    "openedAt": "Data da abertura",
+    "generatedTitle": "Item obtido",
+    "generatedTradeLock": "Fim do trade lock (opcional)",
+    "generatedHint": "Escolha no catálogo o item que saiu. Ele nasce como \"Gerado\" e herda o custo.",
+    "summaryCase": "A caixa e a chave saem do estoque; o item obtido herda o custo de {value}. O lucro real não muda.",
+    "summaryNoKey": "O item sai do estoque; o item obtido herda o custo de {value}. O lucro real não muda.",
+    "summaryBuy": "O terminal sai do estoque e o preço pago desconta do saldo da loja Steam; o item obtido custa o terminal ({value}) mais o preço pago.",
+    "summaryDecline": "O terminal some e o lucro real cai {value}.",
+    "confirmDeclineTitle": "Não comprar o item do terminal?",
+    "confirmDeclineMessage": "O terminal será consumido e o custo dele ({value}) vira perda: o lucro real cai esse valor. Dá para desfazer depois.",
+    "confirmDeclineConfirm": "Não comprar",
+    "submit": "Abrir",
+    "submitDecline": "Registrar a perda",
+    "chooseItem": "Escolha no catálogo o item obtido.",
+    "success": "{name} aberto: {generated} entrou no estoque.",
+    "successLost": "{name} não foi comprado: o custo virou perda."
   }
 }

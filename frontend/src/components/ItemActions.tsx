@@ -18,6 +18,9 @@ interface Props {
   onForSale?: (item: ItemView) => void;
   // "Aplicar do estoque" (10.3): só em unidade em estoque de uma categoria que aceita componentes.
   onApply?: (item: ItemView) => void;
+  // "Abrir caixa/cápsula/pacote/terminal" (10.4, D363) e o atalho "Cadastrar chave" da caixa sem chave compatível.
+  onOpen?: (item: ItemView) => void;
+  onRegisterKey?: (keyName: string) => void;
   // "Colocar à venda" em andamento: o botão fica desabilitado (evita clique duplo).
   forSaleBusy?: boolean;
   // Ação extra no fim (ex.: "Inspecionar").
@@ -26,7 +29,7 @@ interface Props {
 
 // Botões por situação do item (D118): EM_ESTOQUE -> Editar, Vender, Excluir; VENDIDO -> Editar, Desfazer venda, Excluir.
 // "Vender" fica desabilitado em trade lock (D74); o backend continua sendo a fonte da regra.
-export default function ItemActions({ item, onEdit, onSell, onUnsell, onDelete, onHistory, onOffSale, onForSale, onApply, forSaleBusy = false, children }: Props) {
+export default function ItemActions({ item, onEdit, onSell, onUnsell, onDelete, onHistory, onOffSale, onForSale, onApply, onOpen, onRegisterKey, forSaleBusy = false, children }: Props) {
   const t = useT();
   const locale = useLanguage();
   const sold = item.status === 'VENDIDO';
@@ -56,6 +59,25 @@ export default function ItemActions({ item, onEdit, onSell, onUnsell, onDelete, 
       {item.canReceiveComponents && onApply && (
         <button type="button" className={styles.button} onClick={() => onApply(item)}>{t('inventory.actions.apply')}</button>
       )}
+      {item.openable && onOpen && (() => {
+        const { kind, compatibleKeys, requiredKeyName } = item.openable;
+        const label = kind === 'CASE'
+          ? t('inventory.actions.openCase')
+          : kind === 'TERMINAL'
+            ? t('inventory.actions.openTerminal')
+            : item.category === 'CAPSULA' ? t('inventory.actions.openCapsule') : t('inventory.actions.openPackage');
+        const needsKey = kind === 'CASE' && compatibleKeys === 0;
+        const reason = needsKey ? t('inventory.actions.openNeedsKey', { keyName: requiredKeyName ?? '' }) : undefined;
+        return (
+          <>
+            <button type="button" className={styles.button} onClick={() => onOpen(item)} disabled={needsKey} title={reason}>{label}</button>
+            {needsKey && <span className={styles.reason}>{reason}</span>}
+            {needsKey && onRegisterKey && requiredKeyName && (
+              <button type="button" className={styles.button} onClick={() => onRegisterKey(requiredKeyName)}>{t('inventory.actions.registerKey')}</button>
+            )}
+          </>
+        );
+      })()}
       <button type="button" className={`${styles.button} ${styles.danger}`} onClick={() => onDelete(item)}>
         {t('inventory.actions.delete')}
       </button>

@@ -27,6 +27,8 @@ router.post('/:id/for-sale', validateIdParam, v.validateSaleStateBody, controlle
 // Aplicar do estoque e operações da unidade (10.3, D362).
 router.get('/:id/apply-candidates', validateIdParam, operationController.candidates);
 router.get('/:id/operations', validateIdParam, operationController.listForItem);
+router.get('/:id/open-options', validateIdParam, operationController.openOptions);
+router.post('/:id/open', validateIdParam, operationValidators.validateOpenBody, operationController.open);
 router.post('/:id/apply-component', validateIdParam, operationValidators.validateApplyBody, operationController.apply);
 router.post(
   '/:id/components/:componentId/scrape-off', validateIdParam, operationValidators.validateComponentIdParam,

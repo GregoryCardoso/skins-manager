@@ -2,6 +2,7 @@
 
 const env = require('../config/env');
 const Setting = require('../models/Setting');
+const Store = require('../models/Store');
 const { ValidationError, ConflictError } = require('../errors/AppError');
 const { isValidFxRate } = require('./currencyService');
 const { resolveAgingThresholds } = require('./inventoryAgingService');
@@ -216,7 +217,26 @@ function updatePreferences(partial, { now = new Date() } = {}) {
   return getSettings();
 }
 
+// Loja Steam do app (D363, E-P2-Q45): a loja onde o item comprado no terminal é registrado. Devolve a loja ou `null` (sem escolha, ou a
+// loja foi excluída e a referência foi limpa).
+function getSteamStore() {
+  const { steamStoreId } = Setting.get();
+  if (steamStoreId === null || steamStoreId === undefined) return null;
+  return Store.findById(steamStoreId);
+}
+
+// Escolhe (ou limpa, com `null`) a loja Steam do app. Aceita qualquer loja existente, ativa ou inativa, em qualquer moeda.
+function setSteamStore(storeId, { now = new Date() } = {}) {
+  if (storeId !== null && (!Number.isSafeInteger(storeId) || !Store.findById(storeId))) {
+    throw new ValidationError('Loja não encontrada.', 'STORE_NOT_FOUND', { field: 'storeId' });
+  }
+  Setting.update({ steamStoreId: storeId }, { now });
+  return getSettings();
+}
+
 module.exports = {
+  getSteamStore,
+  setSteamStore,
   resetAutoFxForTests,
   getSettings,
   getAgingThresholds,

@@ -10,7 +10,7 @@ describe('models/Setting', () => {
     const s = Setting.get();
     expect(s).toMatchObject({ usdBrlRate: null, usdBrlRateUpdatedAt: null });
     expect(typeof s.updatedAt).toBe('string');
-    expect(Object.keys(s).sort()).toEqual(['catalogUpdatedAt', 'fastTurnoverDays', 'fxRefreshSource', 'inventoryView', 'language', 'rateQuotedAt', 'slowItemDays', 'theme', 'updatedAt', 'usdBrlRate', 'usdBrlRateSource', 'usdBrlRateUpdatedAt']);
+    expect(Object.keys(s).sort()).toEqual(['catalogUpdatedAt', 'fastTurnoverDays', 'fxRefreshSource', 'inventoryView', 'language', 'rateQuotedAt', 'slowItemDays', 'steamStoreId', 'theme', 'updatedAt', 'usdBrlRate', 'usdBrlRateSource', 'usdBrlRateUpdatedAt']);
   });
 
   test('update grava cotação, preserva campos não enviados e muda updatedAt', () => {
@@ -21,7 +21,7 @@ describe('models/Setting', () => {
       const s = Setting.update({ usdBrlRate: 5.3 });
       expect(s).toEqual({
         usdBrlRate: 5.3, usdBrlRateUpdatedAt: '2026-06-01T00:00:00.000Z', catalogUpdatedAt: null, theme: 'SYSTEM', language: 'pt-BR', inventoryView: 'GROUPED',
-        usdBrlRateSource: null, rateQuotedAt: null, fxRefreshSource: 'AWESOMEAPI', fastTurnoverDays: null, slowItemDays: null,
+        usdBrlRateSource: null, rateQuotedAt: null, fxRefreshSource: 'AWESOMEAPI', fastTurnoverDays: null, slowItemDays: null, steamStoreId: null,
         updatedAt: '2026-06-02T00:00:00.000Z',
       });
     } finally {

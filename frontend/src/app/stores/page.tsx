@@ -9,7 +9,7 @@ import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import { queryKeys } from '@/lib/queryKeys';
 import { useInvalidate } from '@/lib/useInvalidate';
-import { ApiRequestError, deleteStore, listStores, updateStore } from '@/services/api';
+import { ApiRequestError, deleteStore, listStores, setSteamStore, updateStore } from '@/services/api';
 import type { Store } from '@/types/api';
 import styles from './page.module.css';
 
@@ -85,6 +85,28 @@ export default function StoresPage() {
     );
   const onMakePrimary = (store: Store) => runInline(store, { isPrimary: true }, t('stores.madePrimary', { name: store.name }));
 
+  // Loja Steam do app (10.4, D363): escolher esta loja, ou limpar a escolha se ela já é a Steam. Reversível: sem confirmação.
+  const onToggleSteam = (store: Store) => {
+    setBusyId(store.id);
+    setActionError(null);
+    const clearing = store.isSteamStore === true;
+    setSteamStore(clearing ? null : store.id)
+      .then(() => {
+        setBusyId(null);
+        setNotice(clearing ? t('stores.steamCleared') : t('stores.steamSaved', { name: store.name }));
+        invalidate('settings.steamStore');
+      })
+      .catch((err: unknown) => {
+        setBusyId(null);
+        if (err instanceof ApiRequestError && err.code === 'STORE_NOT_FOUND') {
+          storeGone();
+          return;
+        }
+        setActionError(errorMessageFor(err, tLoose, language));
+        invalidate('settings.steamStore');
+      });
+  };
+
   const confirmDelete = (store: Store) => {
     setConfirmBusy(true);
     setConfirmError(null);
@@ -151,6 +173,7 @@ export default function StoresPage() {
               onEdit={(store) => setDialog({ kind: 'edit', store })}
               onToggleActive={onToggleActive}
               onMakePrimary={onMakePrimary}
+              onToggleSteam={onToggleSteam}
               onDelete={(store) => setDialog({ kind: 'delete', store })}
             />
           )}

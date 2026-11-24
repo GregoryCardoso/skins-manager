@@ -46,7 +46,7 @@ describe('importar backups antigos (D267)', () => {
   test.each([5, 8, 9])('backup v%i migra até a v10 e todos os itens ficam à venda', async (version) => {
     const res = await octet(makeBackup(version));
     expect(res.status).toBe(200);
-    expect(res.body.data).toMatchObject({ fileVersion: version, schemaVersion: 19 });
+    expect(res.body.data).toMatchObject({ fileVersion: version, schemaVersion: 20 });
     expect(res.body.data.migrationsApplied).toEqual(MIGRATIONS.filter((m) => m.version > version).map((m) => m.version));
     const list = (await request(app).get('/api/items')).body.data;
     expect(list.items).toHaveLength(1);

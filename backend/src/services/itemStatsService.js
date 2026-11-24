@@ -26,6 +26,10 @@ const mean = (values) => values.reduce((acc, v) => acc + v, 0) / values.length;
 function computeStats(allItems, { costIndex = EMPTY_COST_INDEX } = {}) {
   const items = allItems.filter((item) => item.status !== 'CONSUMIDO');
   const consumedCount = allItems.length - items.length;
+  // Perdas (D363): unidades consumidas numa operação sem saída (terminal recusado) e o custo efetivo delas.
+  const lostItems = allItems.filter((item) => item.status === 'CONSUMIDO' && costIndex.isLost(item));
+  const lossCount = lostItems.length;
+  const lossUsdCents = lostItems.reduce((acc, item) => acc + costIndex.effectiveUsdCents(item), 0);
   const sold = items.filter((item) => item.status === 'VENDIDO');
   const unitCount = items.length;
   const soldWithFxCount = sold.filter(usesRecordedFx).length;
@@ -33,6 +37,8 @@ function computeStats(allItems, { costIndex = EMPTY_COST_INDEX } = {}) {
   const empty = {
     unitCount,
     consumedCount,
+    lossCount,
+    lossUsdCents,
     soldWithFxCount,
     soldCount: 0,
     soldOffSaleCount: 0,
@@ -51,6 +57,8 @@ function computeStats(allItems, { costIndex = EMPTY_COST_INDEX } = {}) {
   return {
     unitCount,
     consumedCount,
+    lossCount,
+    lossUsdCents,
     soldWithFxCount,
     soldCount: sold.length,
     soldOffSaleCount: sold.length - withTurnover.length,

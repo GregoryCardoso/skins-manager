@@ -92,7 +92,30 @@ function deleteUndoneForItem(itemId) {
     .run(itemId).changes;
 }
 
+// Operação ativa que criou a unidade (vínculo CREATED), ou null.
+function findActiveCreatingOperation(itemId) {
+  return mapRow(
+    getDb()
+      .prepare(
+        `SELECT o.* FROM item_operations o JOIN item_operation_links l ON l.operation_id = o.id
+          WHERE l.item_id = ? AND l.role = 'CREATED' AND o.undone_at IS NULL ORDER BY o.id DESC LIMIT 1`
+      )
+      .get(itemId)
+  );
+}
+
+// Apaga o vínculo CREATED (o desfazer da abertura precisa disso antes de excluir a unidade gerada: o vínculo é RESTRICT).
+function deleteCreatedLink(operationId, itemId) {
+  return getDb().prepare("DELETE FROM item_operation_links WHERE operation_id = ? AND item_id = ? AND role = 'CREATED'").run(operationId, itemId).changes;
+}
+
+// Troca o detalhe da operação (JSON em texto).
+function updateDetail(id, detailJson) {
+  return getDb().prepare('UPDATE item_operations SET detail_json = ? WHERE id = ?').run(detailJson, id).changes > 0;
+}
+
 module.exports = {
+  findActiveCreatingOperation, deleteCreatedLink, updateDetail,
   findById, createOperation, createLink, markUndone, listActive, listLinksByOperationIds, listByItem, hasActiveLink, itemIdsWithActiveLink,
   deleteUndoneForItem,
 };

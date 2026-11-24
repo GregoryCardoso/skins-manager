@@ -34,6 +34,10 @@ export const INVALIDATION_MAP = {
   'item.applyComponent': ITEM_IMPORTS,
   'item.scrapeOff': ITEM_IMPORTS,
   'operation.undo': ITEM_IMPORTS,
+  // Abrir caixa, cápsula, pacote ou terminal (10.4, D363): consome unidades, gera uma e, no terminal comprado, mexe no saldo da loja Steam.
+  'item.open': ITEM_IMPORTS,
+  // Loja Steam do app (10.4): muda a configuração, o selo nas lojas e o que o modal de abertura mostra.
+  'settings.steamStore': [K.settings.all, K.stores.all, K.items.all],
   'import.run': IMPORT_CHANGE,
   'import.undo': IMPORT_CHANGE,
   // Mudar a data de corte (9.5.1c) é uma importação: os mesmos alvos.

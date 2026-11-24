@@ -204,11 +204,14 @@ function getProfitSummary({ now = new Date() } = {}) {
   });
   const stockItems = items.filter((item) => item.status === 'EM_ESTOQUE');
   const costIndex = operationContext.loadCostIndex(items);
+  const consumptionLosses = costIndex.lossSummary();
   const profit = computeRealProfit({ deposits, withdrawals, stores, balances, stockItems, settings, costIndex });
   const sumCount = (pick) => balances.stores.reduce((acc, row) => acc + pick(row), 0);
   const noStore = (record) => record.storeId === null || record.storeId === undefined;
   return {
     ...profit,
+    // Perdas por consumo (D363, E-P2-Q34): informativo, fora da fórmula (o lucro real já caiu porque a unidade saiu do estoque).
+    consumptionLosses: { ...consumptionLosses, approxBrl: approxBrlOf(consumptionLosses.usdCents, settings.usdBrlRate) },
     balancesByStore: balances.stores,
     counts: {
       deposits: deposits.length,

@@ -332,6 +332,8 @@ const validateSalesQuery = wrap((req) => {
 });
 
 module.exports = {
+  checkBody,
+  ACQUISITION_FIELDS,
   validateItemQuery,
   validateGroupQuery,
   validateStatsQuery,

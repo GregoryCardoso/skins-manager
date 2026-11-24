@@ -20,7 +20,8 @@ const v016 = require('./v016_deposit_fee');
 const v017 = require('./v017_item_components');
 const v018 = require('./v018_component_slots_and_batch_counts');
 const v019 = require('./v019_consumed_generated_patch');
+const v020 = require('./v020_steam_store');
 
-const MIGRATIONS = Object.freeze([v001, v002, v003, v004, v005, v006, v007, v008, v009, v010, v011, v012, v013, v014, v015, v016, v017, v018, v019]);
+const MIGRATIONS = Object.freeze([v001, v002, v003, v004, v005, v006, v007, v008, v009, v010, v011, v012, v013, v014, v015, v016, v017, v018, v019, v020]);
 
 module.exports = { MIGRATIONS };

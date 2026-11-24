@@ -144,6 +144,20 @@ function SummaryBody({ data }: { data: ProfitSummary }) {
         </div>
       </div>
 
+      {/* Perdas por consumo (10.4, D363): terminais não comprados. Só informativo, fora da fórmula do lucro real. */}
+      {data.consumptionLosses && data.consumptionLosses.count > 0 && (
+        <div className={styles.grid}>
+          <div className={styles.card}>
+            <span className={styles.label}>{t('profit.summary.consumptionLosses')}</span>
+            <span className={styles.value}>
+              {amount(data.consumptionLosses.usdCents, data.consumptionLosses.approxBrl, data.consumptionLosses.estimated)}
+            </span>
+            <p className={styles.hint}>{tPlural('profit.summary.consumptionLossesCount', data.consumptionLosses.count)}</p>
+            <p className={styles.hint}>{t('profit.summary.consumptionLossesHint')}</p>
+          </div>
+        </div>
+      )}
+
       {data.warnings.length > 0 && (
         <ul className={styles.warnings} role="status">
           {data.warnings.map((warning, index) => {

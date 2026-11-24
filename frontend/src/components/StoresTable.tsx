@@ -15,6 +15,8 @@ interface Props {
   onEdit: (store: Store) => void;
   onToggleActive: (store: Store) => void;
   onMakePrimary: (store: Store) => void;
+  // Escolhe esta loja como a loja Steam do app, ou limpa a escolha se ela já é (10.4, D363).
+  onToggleSteam?: (store: Store) => void;
   onDelete: (store: Store) => void;
 }
 
@@ -86,7 +88,7 @@ function SaleHoldCell({ store }: { store: Store }) {
   return <>{store.saleHoldDays > 0 ? tPlural('storesTable.saleHoldDays', store.saleHoldDays) : t('storesTable.saleHoldNone')}</>;
 }
 
-export default function StoresTable({ stores, busyId, onEdit, onToggleActive, onMakePrimary, onDelete }: Props) {
+export default function StoresTable({ stores, busyId, onEdit, onToggleActive, onMakePrimary, onToggleSteam, onDelete }: Props) {
   const t = useT();
   const tLoose = useTLoose();
 
@@ -122,6 +124,7 @@ export default function StoresTable({ stores, busyId, onEdit, onToggleActive, on
                   <span className={styles.nameCell}>
                     {store.name}
                     {store.isPrimary && <Badge tone="info">{t('storesTable.primary')}</Badge>}
+                    {store.isSteamStore && <Badge tone="info" title={t('stores.steamHint')}>{t('stores.steamBadge')}</Badge>}
                   </span>
                 </th>
                 <td>{store.currency}</td>
@@ -150,6 +153,13 @@ export default function StoresTable({ stores, busyId, onEdit, onToggleActive, on
                       disabled={busy}
                       onClick={() => onMakePrimary(store)}
                     />
+                    {onToggleSteam && (
+                      <Action
+                        label={store.isSteamStore ? t('stores.steamClear') : t('stores.steamSet')}
+                        disabled={busy}
+                        onClick={() => onToggleSteam(store)}
+                      />
+                    )}
                     <Action
                       label={t('storesTable.actions.delete')}
                       disabledReason={deleteReason}

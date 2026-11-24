@@ -15,6 +15,14 @@ function scrapeOff(req, res) {
   ok(res, itemOperationService.scrapeComponent(req.params.id, req.params.componentId, req.body, ctx(req)));
 }
 
+function openOptions(req, res) {
+  ok(res, itemOperationService.openOptions(req.params.id, ctx(req)));
+}
+
+function open(req, res) {
+  ok(res, itemOperationService.openContainer(req.params.id, req.body, ctx(req)), 201);
+}
+
 function listForItem(req, res) {
   ok(res, itemOperationService.listForItem(req.params.id));
 }
@@ -23,4 +31,4 @@ function undo(req, res) {
   ok(res, itemOperationService.undo(req.params.id, ctx(req)));
 }
 
-module.exports = { candidates, apply, scrapeOff, listForItem, undo };
+module.exports = { openOptions, open, candidates, apply, scrapeOff, listForItem, undo };

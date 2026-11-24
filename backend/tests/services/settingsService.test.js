@@ -18,7 +18,7 @@ describe('settingsService', () => {
       usdBrlRateUpdatedAt: '2026-11-19T15:00:00.000Z',
       catalogUpdatedAt: null, theme: 'SYSTEM', language: 'pt-BR', inventoryView: 'GROUPED', usdBrlRateSource: 'MANUAL',
       agingThresholdsAdjusted: false, fastTurnoverDays: 7, fastTurnoverDaysCustom: null, fastTurnoverDaysDefault: 7,
-      slowItemDays: 21, slowItemDaysCustom: null, slowItemDaysDefault: 21, rateQuotedAt: null, fxRefreshSource: 'AWESOMEAPI',
+      slowItemDays: 21, slowItemDaysCustom: null, slowItemDaysDefault: 21, steamStoreId: null, rateQuotedAt: null, fxRefreshSource: 'AWESOMEAPI',
       updatedAt: '2026-11-19T15:00:00.000Z',
     });
   });

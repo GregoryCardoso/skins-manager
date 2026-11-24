@@ -53,7 +53,7 @@ describe('itemStatsService — chave', () => {
 describe('itemStatsService.computeStats', () => {
   test('P3: só itens em estoque (100 e 200) → soldCount 0, avgPurchaseCost 150, demais null', () => {
     expect(computeStats([inStock(100), inStock(200)])).toEqual({
-      unitCount: 2, consumedCount: 0,
+      unitCount: 2, consumedCount: 0, lossCount: 0, lossUsdCents: 0,
       soldWithFxCount: 0,
       soldCount: 0,
       soldOffSaleCount: 0,
@@ -66,14 +66,14 @@ describe('itemStatsService.computeStats', () => {
 
   test('lista vazia → avgPurchaseCost null', () => {
     expect(computeStats([])).toEqual({
-      unitCount: 0, consumedCount: 0, soldWithFxCount: 0, soldCount: 0, soldOffSaleCount: 0, avgDaysToSell: null, avgPurchaseCostUsdCents: null, avgSalePriceUsdCents: null, avgProfitUsdCents: null,
+      unitCount: 0, consumedCount: 0, lossCount: 0, lossUsdCents: 0, soldWithFxCount: 0, soldCount: 0, soldOffSaleCount: 0, avgDaysToSell: null, avgPurchaseCostUsdCents: null, avgSalePriceUsdCents: null, avgProfitUsdCents: null,
     });
   });
 
   test('P3: 2 vendidos (100/300, 3 e 4 dias) + 1 em estoque (200)', () => {
     const items = [soldUsd(100, 200, 190, 3), soldUsd(300, 500, 480, 4), inStock(200)];
     expect(computeStats(items)).toEqual({
-      unitCount: 3, consumedCount: 0,
+      unitCount: 3, consumedCount: 0, lossCount: 0, lossUsdCents: 0,
       soldWithFxCount: 0,
       soldCount: 2,
       soldOffSaleCount: 0,

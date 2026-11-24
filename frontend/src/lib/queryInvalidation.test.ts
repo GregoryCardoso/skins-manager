@@ -39,6 +39,8 @@ const EXPECTED: Record<string, string[]> = {
   'item.applyComponent': ['items', 'sales', 'stores', 'storeBalances', 'profitSummary', 'imports'],
   'item.scrapeOff': ['items', 'sales', 'stores', 'storeBalances', 'profitSummary', 'imports'],
   'operation.undo': ['items', 'sales', 'stores', 'storeBalances', 'profitSummary', 'imports'],
+  'item.open': ['items', 'sales', 'stores', 'storeBalances', 'profitSummary', 'imports'],
+  'settings.steamStore': ['settings', 'stores', 'items'],
   // Importação (9.2, D318): o card, os lotes e as pendências, mais tudo o que muda com itens.
   'import.run': ['integrations', 'imports', ...MONEY],
   'import.undo': ['integrations', 'imports', ...MONEY],

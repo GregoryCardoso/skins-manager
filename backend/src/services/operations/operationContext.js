@@ -13,14 +13,16 @@ function loadActiveOperations() {
   const linksByOperation = new Map();
   const latestOpIdByItem = new Map();
   const consumedByItem = new Map(); // unidade consumida -> vínculo CONSUMED da operação ativa
+  const createdByItem = new Map(); // unidade gerada -> vínculo CREATED da operação ativa (D363)
   for (const link of links) {
     if (link.role === 'CONSUMED') consumedByItem.set(link.itemId, link);
+    if (link.role === 'CREATED') createdByItem.set(link.itemId, link);
     if (!linksByOperation.has(link.operationId)) linksByOperation.set(link.operationId, []);
     linksByOperation.get(link.operationId).push(link);
     const current = latestOpIdByItem.get(link.itemId);
     if (current === undefined || link.operationId > current) latestOpIdByItem.set(link.itemId, link.operationId);
   }
-  return { operations, links, linksByOperation, latestOpIdByItem, consumedByItem, opsById: new Map(operations.map((op) => [op.id, op])) };
+  return { operations, links, linksByOperation, latestOpIdByItem, consumedByItem, createdByItem, opsById: new Map(operations.map((op) => [op.id, op])) };
 }
 
 // Itens (os informados mais as unidades ligadas a operações ativas) por id.
@@ -67,7 +69,7 @@ function assessUndo(operation, ctx) {
 
 // Contexto sem nenhuma operação (as funções de visão que não recebem o contexto usam este).
 const EMPTY_OPERATION_CONTEXT = Object.freeze({
-  operations: [], links: [], linksByOperation: new Map(), latestOpIdByItem: new Map(), consumedByItem: new Map(), opsById: new Map(),
+  operations: [], links: [], linksByOperation: new Map(), latestOpIdByItem: new Map(), consumedByItem: new Map(), createdByItem: new Map(), opsById: new Map(),
   itemsById: new Map(), costIndex: EMPTY_COST_INDEX,
 });
 

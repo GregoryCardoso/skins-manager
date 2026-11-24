@@ -78,7 +78,7 @@ test('backup v18 (com vendidos USD/BRL, holding, componentes) importado migra pa
 
   const res = await octet(fs.readFileSync(v18));
   expect(res.status).toBe(200);
-  expect(res.body.data).toMatchObject({ fileVersion: 18, schemaVersion: 19, migrationsApplied: [19] });
+  expect(res.body.data).toMatchObject({ fileVersion: 18, schemaVersion: 20, migrationsApplied: [19, 20] });
   const db = database.getDb();
   expect(db.pragma('foreign_key_check')).toEqual([]);
   // `catalog_id`/`updated_at` mudam só pelo vínculo de legados ao catálogo, depois da migração (não pela v19)
@@ -132,7 +132,7 @@ test('exportar e importar leva operações ativas e desfeitas, componentes aplic
 
   const res = await octet(file);
   expect(res.status).toBe(200);
-  expect(res.body.data).toMatchObject({ schemaVersion: 19 });
+  expect(res.body.data).toMatchObject({ schemaVersion: 20 });
   const restored = await json(`/api/items/${ak.id}`);
   expect(restored.components).toEqual(itemBefore.components);
   expect(restored.cost).toEqual(itemBefore.cost);
@@ -150,7 +150,7 @@ test('exportar e importar leva operações ativas e desfeitas, componentes aplic
   const copy = path.join(dir, 'export-ops.sqlite');
   fs.writeFileSync(copy, file);
   const exported = new Database(copy, { readonly: true });
-  expect(exported.pragma('user_version', { simple: true })).toBe(19);
+  expect(exported.pragma('user_version', { simple: true })).toBe(20);
   expect(exported.prepare("SELECT COUNT(*) n FROM items WHERE status = 'CONSUMIDO' AND consumed_at IS NOT NULL").get().n).toBe(1);
   expect(exported.prepare('SELECT COUNT(*) n FROM item_operations').get().n).toBe(2);
   expect(exported.prepare('SELECT COUNT(*) n FROM item_operations WHERE undone_at IS NOT NULL').get().n).toBe(1);

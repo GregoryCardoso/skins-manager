@@ -5,6 +5,7 @@ import { formatDate, formatFloat, formatMoney, formatRate } from '@/lib/format';
 import type { ItemView, Store } from '@/types/api';
 import { Badge, type BadgeTone } from './badges';
 import ComponentThumbs from './ComponentThumbs';
+import GeneratedFromNote from './GeneratedFromNote';
 import CostCell from './CostCell';
 import ItemActions from './ItemActions';
 import ItemImage from './ItemImage';
@@ -45,6 +46,7 @@ function ItemCell({ item }: { item: ItemView }) {
     <div className={styles.itemCell}>
       <strong className={styles.name}>{item.name}</strong>
       {details.length > 0 && <span className={styles.details}>{details.join(' · ')}</span>}
+      <GeneratedFromNote item={item} />
       <ComponentThumbs components={item.components} />
       <span className={styles.badges}>
         <Badge>{tLoose(`enums.category.${item.category}`)}</Badge>

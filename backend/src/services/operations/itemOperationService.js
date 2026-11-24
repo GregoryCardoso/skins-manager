@@ -9,6 +9,7 @@ const itemService = require('../itemService');
 const applicationService = require('./componentApplicationService');
 const undoService = require('./operationUndoService');
 const operationContext = require('./operationContext');
+const openingService = require('./openingService');
 
 function operationView(operation) {
   return {
@@ -32,8 +33,22 @@ function scrapeComponent(targetId, componentId, body, ctx = {}) {
 }
 
 function undo(operationId, ctx = {}) {
-  const { operation, itemIds } = undoService.undoOperation(operationId, ctx);
-  return { operation: operationView(operation), items: itemIds.map((id) => itemService.getItem(id, ctx)) };
+  const { operation, itemIds, removedItemIds = [] } = undoService.undoOperation(operationId, ctx);
+  return { operation: operationView(operation), items: itemIds.map((id) => itemService.getItem(id, ctx)), removedItemIds };
+}
+
+// Abrir caixa, cápsula, pacote ou terminal (D363 item 9).
+function openContainer(containerId, body, ctx = {}) {
+  const { operation, generatedItem, consumedIds } = openingService.openContainer({ ...body, containerId }, ctx);
+  return {
+    operation: operationView(operation),
+    generatedItem: generatedItem ? itemService.getItem(generatedItem.id, ctx) : null,
+    consumedItemIds: consumedIds,
+  };
+}
+
+function openOptions(containerId, ctx = {}) {
+  return openingService.getOpenOptions(containerId, ctx);
 }
 
 function candidates(targetId, ctx = {}) {
@@ -56,8 +71,20 @@ function listForItem(itemId) {
   return operations.map((operation) => {
     const own = (linksByOperation.get(operation.id) ?? []).find((link) => link.itemId === itemId);
     const verdict = operationContext.assessUndo(operation, context);
+    let detail = {};
+    try {
+      detail = operation.detailJson ? JSON.parse(operation.detailJson) : {};
+    } catch (err) {
+      detail = {};
+    }
+    // Perda (terminal recusado, D363): o custo efetivo da unidade consumida, enquanto a operação estiver ativa.
+    const lossUsdCents = operation.outcome === 'LOST' && !operation.undoneAt ? context.costIndex.poolOf(operation.id).usdCents : null;
     return {
       ...operationView(operation),
+      lossUsdCents,
+      detail: operation.kind === 'APPLY_COMPONENT' || operation.kind === 'SCRAPE_OFF' ? null : {
+        container: detail.container ?? null, decision: detail.decision ?? null, undoneGenerated: detail.undoneGenerated ?? null,
+      },
       role: own ? own.role : null,
       counterparts: (linksByOperation.get(operation.id) ?? [])
         .filter((link) => link.itemId !== itemId)
@@ -71,4 +98,4 @@ function listForItem(itemId) {
   });
 }
 
-module.exports = { operationView, applyComponent, scrapeComponent, undo, candidates, listForItem };
+module.exports = { operationView, applyComponent, scrapeComponent, undo, openContainer, openOptions, candidates, listForItem };

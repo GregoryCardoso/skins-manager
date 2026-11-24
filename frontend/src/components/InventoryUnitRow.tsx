@@ -6,6 +6,7 @@ import { isHttpsLink, isSafeInspectLink } from '@/lib/safeUrl';
 import type { ItemView, Store } from '@/types/api';
 import { Badge, type BadgeTone } from './badges';
 import ComponentThumbs from './ComponentThumbs';
+import GeneratedFromNote from './GeneratedFromNote';
 import ItemActions from './ItemActions';
 import CostCell from './CostCell';
 import ItemImage from './ItemImage';
@@ -21,6 +22,8 @@ export interface UnitRowHandlers {
   onOffSale: (item: ItemView) => void;
   onForSale: (item: ItemView) => void;
   onApply?: (item: ItemView) => void;
+  onOpen?: (item: ItemView) => void;
+  onRegisterKey?: (keyName: string) => void;
 }
 
 interface Props extends UnitRowHandlers {
@@ -72,6 +75,7 @@ function ItemCell({ item }: { item: ItemView }) {
           {details.join(' · ')}
         </span>
       )}
+      <GeneratedFromNote item={item} />
       <ComponentThumbs components={item.components} />
       <span className={styles.badges}>
         <Badge>{tLoose(`enums.category.${item.category}`)}</Badge>
@@ -225,7 +229,7 @@ export function UnitTableHead({ selection }: { selection?: { checked: boolean; o
 
 // Linha de uma unidade (extraída do InventoryTable na 8.8, sem mudar o visual).
 export default function InventoryUnitRow({
-  item, stores, onEdit, onSell, onUnsell, onDelete, onHistory, onOffSale, onForSale, onApply, forSalePendingId = null, highlighted = false, selection,
+  item, stores, onEdit, onSell, onUnsell, onDelete, onHistory, onOffSale, onForSale, onApply, onOpen, onRegisterKey, forSalePendingId = null, highlighted = false, selection,
 }: Props & { selection?: { checked: boolean; onChange: (checked: boolean) => void } }) {
   const t = useT();
   const locale = useLanguage();
@@ -267,6 +271,8 @@ export default function InventoryUnitRow({
           onOffSale={onOffSale}
           onForSale={onForSale}
           onApply={onApply}
+          onOpen={onOpen}
+          onRegisterKey={onRegisterKey}
           forSaleBusy={forSalePendingId === item.id}
         >
           <InspectAction link={item.inspectLink} />

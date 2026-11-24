@@ -56,6 +56,8 @@ export interface Settings {
   rateQuotedAt: string | null;
   fxRefreshSource: FxRefreshSource;
   catalogUpdatedAt: string | null;
+  // Loja Steam do app (10.4, D363): onde o item comprado no terminal é registrado; nulo = não escolhida.
+  steamStoreId: number | null;
   theme: Theme;
   language: Language;
   inventoryView: InventoryView;
@@ -149,6 +151,9 @@ export interface ItemStats {
   unitCount: number;
   // Unidades consumidas em transformações (10.3): fora da contagem de unidades e das vendas.
   consumedCount: number;
+  // Terminais recusados desta chave (10.4): quantos e o custo efetivo perdido.
+  lossCount: number;
+  lossUsdCents: number;
   soldWithFxCount: number;
   soldCount: number;
   // Vendas feitas fora de venda: não entram no tempo médio (D263).
@@ -285,6 +290,10 @@ export interface ItemView {
   cost: ItemCost;
   // Onde a unidade foi consumida (status CONSUMIDO); senão nulo.
   consumedIn: ItemConsumedIn | null;
+  // De onde a unidade veio (abertura ativa): "aberto de <caixa>" / "comprado no terminal" (10.4, D363); senão nulo.
+  generatedFrom: ItemGeneratedFrom | null;
+  // Em estoque e abrível (caixa, cápsula, pacote, terminal): { kind, quantas chaves compatíveis, nome da chave exigida }; senão nulo.
+  openable: ItemOpenable | null;
   // Em estoque e de uma categoria que aceita componentes: mostra "Aplicar do estoque".
   canReceiveComponents: boolean;
   consumedAt?: string | null;
@@ -300,8 +309,64 @@ export interface ItemCost {
 export interface ItemConsumedIn {
   operationId: number;
   occurredAt: string;
+  // Aplicação (APPLY_COMPONENT) ou abertura (OPEN_CASE / OPEN_TERMINAL). `lost`: terminal recusado (sem item gerado).
+  kind: OperationKind | null;
+  lost: boolean;
   targetItemId: number | null;
   targetName: string | null;
+}
+export type OpenContainerKind = 'CASE' | 'CAPSULE' | 'PACKAGE' | 'TERMINAL';
+export type OpeningKind = 'CASE' | 'NO_KEY' | 'TERMINAL';
+export interface ItemGeneratedFrom {
+  operationId: number;
+  occurredAt: string;
+  kind: OperationKind;
+  container: OpenContainerKind | null;
+  decision: OpenDecision | null;
+  containerName: string | null;
+  keyName: string | null;
+}
+export interface ItemOpenable {
+  kind: OpeningKind;
+  compatibleKeys: number;
+  requiredKeyName: string | null;
+}
+export type OpenDecision = 'BUY' | 'DECLINE';
+
+// Abrir caixa, cápsula, pacote e terminal (10.4, D363).
+export interface OpenOptionKey {
+  itemId: number;
+  name: string;
+  acquiredAt: string;
+  effectiveCostUsdCents: number;
+  costEstimated: boolean;
+  tradeLocked: boolean;
+  offSale: boolean;
+}
+export interface OpenOptions {
+  kind: OpeningKind;
+  containerName: string;
+  requiredKeyName: string | null;
+  keys: OpenOptionKey[];
+  otherKeysInStock: number;
+  steamStore: { id: number; name: string; currency: Currency } | null;
+  defaultFxRate: number | null;
+}
+// Item obtido: os campos do cadastro, menos os de aquisição (a abertura define). `components`: os que vieram junto.
+export type OpenGeneratedBody = Omit<ItemCreateBody, 'acquisitionType' | 'purchaseStoreId' | 'purchasePriceCents' | 'fxRateAtPurchase' | 'acquiredAt'>;
+export interface OpenContainerBody {
+  keyItemId?: number | null;
+  openedAt?: string | null;
+  decision?: OpenDecision | null;
+  generated?: OpenGeneratedBody | null;
+  paidPriceCents?: number | null;
+  fxRateAtPurchase?: number | null;
+  note?: string | null;
+}
+export interface OpenContainerResult {
+  operation: OperationSummary;
+  generatedItem: ItemView | null;
+  consumedItemIds: number[];
 }
 
 // Aplicar do estoque (10.3, D362).
@@ -342,6 +407,14 @@ export interface OperationSummary {
   note: string | null;
 }
 export interface ItemOperation extends OperationSummary {
+  // Perda realizada (terminal recusado ativo), em USD; senão nulo (10.4).
+  lossUsdCents?: number | null;
+  // Abertura: tipo do recipiente, decisão no terminal e o retrato da unidade gerada que foi desfeita.
+  detail?: {
+    container: OpenContainerKind | null;
+    decision: OpenDecision | null;
+    undoneGenerated: { name: string; catalogId: string | null; category: Category; acquisitionType: AcquisitionType; purchasePriceCents: number; purchaseCurrency: Currency } | null;
+  } | null;
   role: OperationRole | null;
   counterparts: { itemId: number; name: string | null; role: OperationRole; status: ItemStatus | null }[];
   undoable: boolean;
@@ -354,6 +427,8 @@ export interface ApplyComponentResult {
 export interface UndoOperationResult {
   operation: OperationSummary;
   items: ItemView[];
+  // Unidades excluídas pelo desfazer (a gerada de uma abertura).
+  removedItemIds?: number[];
 }
 
 export interface ItemListMeta {
@@ -484,6 +559,8 @@ export interface Store {
   createdAt: string;
   updatedAt: string;
   saleFeesConfigured: boolean;
+  // É a loja Steam do app (10.4, D363).
+  isSteamStore?: boolean;
   // Loja já usada em itens, aportes, saques ou saldos: a moeda fica travada e ela não pode ser excluída.
   inUse: boolean;
 }
@@ -849,6 +926,8 @@ export interface ProfitSummary {
     stock: number | null;
     realProfit: number | null;
   };
+  // Perdas por consumo (10.4): terminais recusados; informativo, fora da fórmula do lucro real.
+  consumptionLosses?: { usdCents: number; estimated: boolean; count: number; approxBrl: number | null };
   withdrawnVsDeposited: { withdrawnUsdCents: number | null; depositedUsdCents: number | null; ratio: number | null };
   balancesByStore: StoreBalanceSummary[];
   counts: {
