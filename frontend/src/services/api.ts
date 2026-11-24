@@ -9,8 +9,6 @@ import type {
   CutoffPreview,
   CsfloatBalanceCheckResult,
   CsfloatBalanceExplanation,
-  CutoffTarget,
-  TransferCutoffPreview,
   CsfloatTestResult,
   CatalogSearchResult,
   CatalogStatus,
@@ -418,11 +416,9 @@ export const runCsfloatImport = (body: ImportRunBody = {}) =>
 // Data de corte (9.5.1c, D325): pré-visualização local (sem rede) e a mudança, que roda uma importação com varredura completa.
 export const previewCutoffChange = (cutoffAt: string, signal?: AbortSignal) =>
   request<CutoffPreview>('GET', '/imports/csfloat/cutoff-preview', { signal, query: { cutoffAt } });
-// Data de corte dos aportes e saques (9.6): a mesma rota, com target=TRANSACTIONS.
-export const previewTransferCutoff = (cutoffAt: string, signal?: AbortSignal) =>
-  request<TransferCutoffPreview>('GET', '/imports/csfloat/cutoff-preview', { signal, query: { cutoffAt, target: 'TRANSACTIONS' } });
-export const changeCutoff = (cutoffAt: string, target: CutoffTarget = 'TRADES') =>
-  request<ImportRunResult>('POST', '/imports/csfloat/change-cutoff', { body: { cutoffAt, confirm: true, target }, timeoutMs: 270000 });
+// Uma só data de corte (Revisão 28): vale para compras, vendas, aportes e saques.
+export const changeCutoff = (cutoffAt: string) =>
+  request<ImportRunResult>('POST', '/imports/csfloat/change-cutoff', { body: { cutoffAt, confirm: true }, timeoutMs: 270000 });
 
 // Conferência do saldo com o CSFloat (9.7): só leitura; a explicação relê o extrato inteiro (pode levar alguns minutos).
 export const checkCsfloatBalance = (signal?: AbortSignal) =>

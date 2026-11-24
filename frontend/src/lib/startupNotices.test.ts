@@ -53,3 +53,20 @@ test('"Importar automaticamente" nos lugares de lançar e o passo a passo nas co
   }
   expect(ptBR.csfloatSetup.step2).toMatch(/Developers/);
 });
+
+test('fonte da cotação fora do ar não é "sem conexão"; uma só data de corte e o botão do card (D341)', () => {
+  expect(isOfflineFailure('FX_SOURCE_UNAVAILABLE')).toBe(false);
+  expect(isOfflineFailure('IMPORT_SOURCE_UNAVAILABLE')).toBe(false);
+  const card = read('components/CsfloatIntegrationCard.tsx');
+  expect(card).toMatch(/settings\.integrations\.csfloat\.reviewImports/);
+  expect(card).not.toMatch(/imports\.cutoffChange\.link/);
+  expect(read('app/imports/page.tsx')).not.toMatch(/TRANSACTIONS|transferCutoff\.(define|change)/);
+  expect(read('components/CutoffChangeModal.tsx')).not.toMatch(/CutoffTarget|target?:|TRANSACTIONS/);
+  for (const lang of [ptBR, en]) {
+    expect(lang.settings.integrations.csfloat.reviewImports).toBeTruthy();
+    expect(lang.imports.cutoffChange.singleHint).toBeTruthy();
+    expect(lang.errors.FX_SOURCE_UNAVAILABLE).toBeTruthy();
+  }
+  expect(ptBR.settings.integrations.csfloat.reviewImports).toBe('Verificar meus importes e pendências');
+  expect(ptBR.csfloatSetup.step5).toMatch(/Importar agora/);
+});

@@ -23,6 +23,7 @@ const externalItemMapper = require('./externalItemMapper');
 const manualMatchService = require('./manualMatchService');
 const { saleMoment, saleReleaseOf, saleCreditOf } = require('./saleImportHelpers');
 const transferImport = require('./transferImport');
+const { requireImportStore } = require('./importStore');
 const Deposit = require('../../models/Deposit');
 const Withdrawal = require('../../models/Withdrawal');
 const { openActionsFor, RESERVED_ACTIONS } = require('./entryActions');
@@ -43,8 +44,6 @@ function checkAction(entry, action) {
   if (RESERVED_ACTIONS.includes(action) || !openActionsFor(entry).includes(action)) return 'IMPORT_ENTRY_ACTION_NOT_ALLOWED';
   return null;
 }
-
-const { requireImportStore } = require('./importStore');
 
 function loadStore() {
   return requireImportStore(Integration.get(SOURCE));
@@ -397,6 +396,10 @@ function reopenOne(entryId, { now }) {
   if (!record) throw notReopenable('RECORD_NOT_FOUND');
   if (record.tracking !== 'IGNORED') throw notReopenable('NOT_IGNORED');
   if ((record.accountFingerprint ?? null) !== (Integration.get(SOURCE).accountFingerprint ?? null)) throw notReopenable('OTHER_ACCOUNT');
+  // Depois de um recomeço completo não há data de corte: a pendência só volta depois da primeira importação (revisão D340).
+  if (!Integration.get(SOURCE).tradesCutoffAt) {
+    throw new ConflictError('Faça a primeira importação antes de voltar uma ignorada para as pendências.', 'IMPORT_CUTOFF_NOT_SET');
+  }
   ImportBatchEntry.reopen(entry.id);
   ExternalRecord.update(record.id, { tracking: REOPEN_TRACKING[entry.outcome] }, { now });
   return ImportBatchEntry.findById(entry.id);

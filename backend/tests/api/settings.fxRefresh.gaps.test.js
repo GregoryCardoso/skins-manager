@@ -24,7 +24,7 @@ describe('PTAX pela API: falhas preservam a cotação anterior', () => {
 
   test.each([
     ['rede', async () => { throw new TypeError('x'); }, 'FX_FETCH_FAILED'],
-    ['HTTP 500', async () => ({ ok: false, status: 500, text: async () => '' }), 'FX_FETCH_FAILED'],
+    ['HTTP 500', async () => ({ ok: false, status: 500, text: async () => '' }), 'FX_SOURCE_UNAVAILABLE'],
     ['JSON inválido', async () => ({ ok: true, status: 200, text: async () => '<' }), 'FX_INVALID_RESPONSE'],
     ['valor fora da faixa', async () => ok({ value: [row({ cotacaoVenda: 99 })] }), 'FX_INVALID_RESPONSE'],
     ['venda ausente', async () => ok({ value: [{ cotacaoCompra: 5, dataHoraCotacao: '2026-11-19 13:00:00.000' }] }), 'FX_INVALID_RESPONSE'],

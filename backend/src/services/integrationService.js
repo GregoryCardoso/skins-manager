@@ -120,7 +120,6 @@ function toView(row, source) {
     autoImportOnOpen: row.autoImportOnOpen,
     autoImportPaused: row.autoImportPaused,
     tradesCutoffAt: row.tradesCutoffAt,
-    transactionsCutoffAt: row.transactionsCutoffAt,
     lastImportAt: row.lastImportAt,
     lastImportStatus: row.lastImportStatus,
     lastImportErrorCode: row.lastImportErrorCode,

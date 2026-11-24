@@ -48,7 +48,7 @@ const ZERO: ImportBatchCounts = {
 const baseView: IntegrationView = {
   source: 'CSFLOAT', storeId: 1, storeName: 'CSFloat', storeCurrency: 'USD', storeSaleFeeRate: 0.02, storeWithdrawalFeeRate: 0.025,
   hasApiKey: true, apiKeyMasked: '****a1b2', apiKeySavedAt: '2026-11-20T10:00:00.000Z', accountLinked: true, autoImportOnOpen: false, autoImportPaused: false,
-  tradesCutoffAt: null, transactionsCutoffAt: null, lastImportAt: null, lastImportStatus: null, lastImportErrorCode: null,
+  tradesCutoffAt: null, lastImportAt: null, lastImportStatus: null, lastImportErrorCode: null,
   importInProgress: false, openEntriesCount: 0, suggestedCutoffAt: null, helpUrl: 'https://csfloat.com/profile',
 };
 

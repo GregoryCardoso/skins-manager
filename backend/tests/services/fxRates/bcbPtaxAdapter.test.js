@@ -136,9 +136,9 @@ describe('fetchLatestPtax', () => {
     expect(fetchFn.calls).toEqual(['11-19-2026']);
   });
 
-  test('HTTP 500 → FX_FETCH_FAILED', async () => {
+  test('HTTP 500 → FX_SOURCE_UNAVAILABLE', async () => {
     const fetchFn = async () => ({ ok: false, status: 500, text: async () => 'erro' });
-    await expect(fetchLatestPtax({ fetchFn, now: THURSDAY })).rejects.toEqual(code('FX_FETCH_FAILED'));
+    await expect(fetchLatestPtax({ fetchFn, now: THURSDAY })).rejects.toEqual(code('FX_SOURCE_UNAVAILABLE'));
   });
 
   test('rede que lança → FX_FETCH_FAILED', async () => {

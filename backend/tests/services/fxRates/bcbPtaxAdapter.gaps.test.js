@@ -62,9 +62,9 @@ describe('PTAX: falhas em dias intermediários', () => {
     const fetchFn = async () => (++n === 1 ? ok({ value: [] }) : ok({ value: [row({ cotacaoVenda: 0 })] }));
     await expect(fetchLatestPtax({ fetchFn, now: THURSDAY })).rejects.toMatchObject({ code: 'FX_INVALID_RESPONSE' });
   });
-  test('HTTP 404 e resposta nula → FX_FETCH_FAILED', async () => {
+  test('HTTP 404 → FX_SOURCE_UNAVAILABLE; resposta nula → FX_FETCH_FAILED', async () => {
     await expect(fetchLatestPtax({ fetchFn: async () => ({ ok: false, status: 404 }), now: THURSDAY })).rejects.toMatchObject({
-      code: 'FX_FETCH_FAILED',
+      code: 'FX_SOURCE_UNAVAILABLE',
     });
     await expect(fetchLatestPtax({ fetchFn: async () => null, now: THURSDAY })).rejects.toMatchObject({
       code: 'FX_FETCH_FAILED',

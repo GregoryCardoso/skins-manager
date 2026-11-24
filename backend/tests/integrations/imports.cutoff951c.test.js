@@ -83,6 +83,9 @@ describe('data de corte para trás (D325)', () => {
     await history();
     const res = await preview('2026-10-01T00:00:00.000Z');
     expect(res.status).toBe(200);
+    // Revisão 28: a pré-visualização da data única também traz os aportes e saques (testados em imports.transfers.test.js)
+    expect(res.body.data.transfers).toEqual(expect.objectContaining({ deposits: { count: 0, amountCents: 0 } }));
+    delete res.body.data.transfers;
     expect(res.body.data).toEqual({
       currentCutoffAt: CUTOFF, newCutoffAt: '2026-10-01T00:00:00.000Z', direction: 'BACKWARD', forward: null,
       backward: {

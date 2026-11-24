@@ -19,14 +19,13 @@ async function run(req, res) {
 }
 
 function cutoffPreview(req, res) {
-  ok(res, importService.previewCutoffChange({ cutoffAt: req.importQuery.cutoffAt, target: req.importQuery.target, now: req.app.locals.now() }));
+  ok(res, importService.previewCutoffChange({ cutoffAt: req.importQuery.cutoffAt, now: req.app.locals.now() }));
 }
 
 async function changeCutoff(req, res) {
   const data = await importService.changeCutoff({
     cutoffAt: req.body.cutoffAt,
     confirm: req.body.confirm,
-    target: req.body.target ?? 'TRADES',
     fetchFn: req.app.locals.fetchFn,
     sleepFn: req.app.locals.sleepFn,
     now: req.app.locals.now(),

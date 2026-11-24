@@ -14,20 +14,21 @@ const storeBalanceService = require('../storeBalanceService');
 const { waitForRateLimit } = require('./adapters/csfloatHttp');
 const scanPolicy = require('./scanPolicy');
 const importLock = require('./importLock');
+const { requireImportStore: requireStore } = require('./importStore');
 
 const SOURCE = 'CSFLOAT';
 const BID_TYPES = Object.freeze(['bid_posted', 'bid_accepted']);
 const MAX_LISTED = 200;
 const WAITING = Object.freeze(['WAITING_TRANSFER']);
 
-const { requireImportStore: requireStore } = require('./importStore');
-
-// Só as transações da conta atual e a partir do corte dos trades contam no "em trânsito" (revisão da Etapa 9): as da conta
-// anterior não pertencem à loja de hoje, e as de antes do corte têm o trade fora da leitura (dariam um "em trânsito" eterno).
+// Só as transações da conta atual contam no "em trânsito" (revisão da Etapa 9): as da conta anterior não pertencem à loja de
+// hoje. Compras e vendas contam a partir da data de corte (a única, Revisão 28): as de antes têm o trade fora da leitura e dariam
+// um "em trânsito" eterno. Os lances não passam pelo corte: um lance antigo ainda aberto continua reservando saldo.
 function currentTransactions(transactions, row) {
   const cutoffMs = row.tradesCutoffAt ? Date.parse(row.tradesCutoffAt) : null;
-  return transactions.filter((tx) => (!row.accountFingerprint || !tx.accountFingerprint || tx.accountFingerprint === row.accountFingerprint)
-    && (cutoffMs === null || !tx.externalCreatedAt || Date.parse(tx.externalCreatedAt) >= cutoffMs));
+  const sameAccount = (tx) => !row.accountFingerprint || !tx.accountFingerprint || tx.accountFingerprint === row.accountFingerprint;
+  const afterCutoff = (tx) => BID_TYPES.includes(tx.txType) || cutoffMs === null || !tx.externalCreatedAt || Date.parse(tx.externalCreatedAt) >= cutoffMs;
+  return transactions.filter((tx) => sameAccount(tx) && afterCutoff(tx));
 }
 
 // "Em trânsito" (D313), função pura sobre os registros já gravados:
@@ -211,4 +212,5 @@ async function explainDifference({ fetchFn, nowFn = Date.now, sleepFn, now = new
   };
 }
 
-module.exports = { computeInTransit, compareBalances, unmatchedReason, checkBalance, explainDifference };
+module.exports = {
+  currentTransactions, computeInTransit, compareBalances, unmatchedReason, checkBalance, explainDifference };

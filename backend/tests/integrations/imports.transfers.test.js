@@ -1,7 +1,8 @@
 'use strict';
 
-// 9.6 (D306, D310, D311, E9-Q20, E9-Q26): aportes e saques importados do extrato do CSFloat, com a data de corte própria, e a taxa do
-// aporte. Banco em memória, fetchFn falso roteado e dados INVENTADOS. Nenhuma chamada real ao CSFloat.
+// 9.6 (D306, D310, D311, E9-Q26) com a Revisão 28 (D341): aportes e saques importados do extrato do CSFloat obedecem à MESMA data
+// de corte das compras e vendas e entram na mesma importação; taxa do aporte. Banco em memória, fetchFn falso roteado e dados
+// INVENTADOS. Nenhuma chamada real ao CSFloat.
 const request = require('supertest');
 const { getDb, closeDb } = require('../../src/config/database');
 const { createApp } = require('../../src/app');
@@ -25,8 +26,8 @@ function useApp() {
 }
 const post = (url, body = {}) => request(app).post(url).set('Content-Type', JSON_TYPE).send(body);
 const run = (body = {}) => post('/api/imports/csfloat/run', body);
-const setTxCutoff = (cutoffAt) => post('/api/imports/csfloat/change-cutoff', { cutoffAt, confirm: true, target: 'TRANSACTIONS' });
-const preview = (cutoffAt) => request(app).get(`/api/imports/csfloat/cutoff-preview?target=TRANSACTIONS&cutoffAt=${encodeURIComponent(cutoffAt)}`);
+const changeCutoff = (cutoffAt) => post('/api/imports/csfloat/change-cutoff', { cutoffAt, confirm: true });
+const preview = (cutoffAt) => request(app).get(`/api/imports/csfloat/cutoff-preview?cutoffAt=${encodeURIComponent(cutoffAt)}`);
 const integration = async () => (await request(app).get('/api/integrations/csfloat')).body.data;
 const deposits = async () => (await request(app).get('/api/deposits')).body.data;
 const withdrawals = async () => (await request(app).get('/api/withdrawals')).body.data;
@@ -58,43 +59,17 @@ function history() {
   ];
 }
 
-describe('sem a data de corte dos aportes e saques', () => {
-  test('nada é importado; o resumo conta quantos esperam por ela', async () => {
+describe('uma só data de corte (Revisão 28)', () => {
+  test('a primeira importação já traz os aportes e saques a partir do corte (com as taxas); os de antes ficam de fora', async () => {
     history();
     const batch = (await run({ cutoffAt: CUTOFF })).body.data.batch;
-    expect(batch.counts).toMatchObject({ depositsCreated: 0, withdrawalsCreated: 0, transfersAwaitingCutoff: 3 });
-    expect((await deposits()).deposits).toEqual([]);
-    expect((await integration()).transactionsCutoffAt).toBeNull();
-  });
-});
-
-describe('definir a data de corte dos aportes e saques', () => {
-  test('pré-visualização (primeira vez): o que já foi visto no extrato e os lançamentos manuais', async () => {
-    history();
-    await run({ cutoffAt: CUTOFF });
-    await post('/api/deposits', { storeId: storeId('CSFloat'), amountStoreCents: 7000, depositedAt: '2026-10-20T12:00:00.000Z' });
-    const res = await preview('2026-08-01T00:00:00.000Z');
-    expect(res.status).toBe(200);
-    expect(res.body.data).toMatchObject({
-      target: 'TRANSACTIONS', currentCutoffAt: null, direction: 'FIRST',
-      transfers: {
-        deposits: { count: 2, amountCents: 6976 }, withdrawals: { count: 1, amountCents: 1270 }, mayHaveUnseen: true,
-        manualDeposits: [{ amountStoreCents: 7000, depositedAt: '2026-10-20T12:00:00.000Z' }], manualWithdrawals: 0,
-      },
-    });
-  });
-
-  test('roda a varredura completa: aportes e saques depois da data entram (com as taxas); antes, ficam de fora', async () => {
-    history();
-    await run({ cutoffAt: CUTOFF });
-    const res = await setTxCutoff('2026-10-01T00:00:00.000Z');
-    expect(res.status).toBe(200);
-    const batch = res.body.data.batch;
-    expect(batch).toMatchObject({ fullScan: true, transactionsCutoffChange: { from: null }, counts: { depositsCreated: 1, withdrawalsCreated: 1 } });
+    expect(batch.counts).toMatchObject({ depositsCreated: 1, withdrawalsCreated: 1 });
     expect(batch.entries.map((e) => [e.outcome, e.entityType, e.display.txKind])).toEqual(expect.arrayContaining([
       ['CREATED', 'DEPOSIT', 'DEPOSIT'], ['CREATED', 'WITHDRAWAL', 'WITHDRAWAL'],
     ]));
-    expect(await integration()).toMatchObject({ transactionsCutoffAt: '2026-10-01T00:00:00.000Z' });
+    const view = await integration();
+    expect(view.tradesCutoffAt).toBe(CUTOFF);
+    expect(view).not.toHaveProperty('transactionsCutoffAt');
     const d = await deposits();
     expect(d.deposits).toEqual([expect.objectContaining({ amountStoreCents: 5000, feeCents: 50, depositedAt: '2026-11-05T10:00:00.000Z', amountBrlCents: null })]);
     expect(d.totals).toMatchObject({ amountUsdCents: 5050, feeCents: 50 }); // total colocado = creditado + taxa (D311)
@@ -106,15 +81,14 @@ describe('definir a data de corte dos aportes e saques', () => {
 
     // a próxima importação não duplica nada
     const again = (await run({})).body.data.batch;
-    expect(again.counts).toMatchObject({ depositsCreated: 0, withdrawalsCreated: 0 });
+    expect(again === null || (again.counts.depositsCreated === 0 && again.counts.withdrawalsCreated === 0)).toBe(true);
     expect(tracking('tx-d2')).toBe('SETTLED');
   });
 
   test('aporte manual igual (mesmo valor, dia vizinho) é ligado, não duplicado; dois iguais ficam para conferir', async () => {
     history();
-    await run({ cutoffAt: CUTOFF });
     const manual = (await post('/api/deposits', { storeId: storeId('CSFloat'), amountStoreCents: 5000, depositedAt: '2026-11-05T20:00:00.000Z' })).body.data;
-    const batch = (await setTxCutoff('2026-10-01T00:00:00.000Z')).body.data.batch;
+    const batch = (await run({ cutoffAt: CUTOFF })).body.data.batch;
     expect(batch.counts).toMatchObject({ matched: 1, depositsCreated: 0 });
     expect((await deposits()).deposits.map((x) => x.id)).toEqual([manual.id]);
 
@@ -131,74 +105,112 @@ describe('definir a data de corte dos aportes e saques', () => {
 
   test('saque com taxa maior que o valor: não importa (WITHDRAWAL_FEE_ABOVE_AMOUNT)', async () => {
     state.transactions = [withdrawal('tx-w9', '2026-11-12T10:00:00.000Z', 100, '150')];
-    await run({ cutoffAt: CUTOFF });
-    const batch = (await setTxCutoff('2026-10-01T00:00:00.000Z')).body.data.batch;
+    const batch = (await run({ cutoffAt: CUTOFF })).body.data.batch;
     expect(batch.entries.find((e) => e.outcome === 'FAILED').reasonCode).toBe('WITHDRAWAL_FEE_ABOVE_AMOUNT');
     expect((await withdrawals()).withdrawals).toEqual([]);
   });
+
+  test('dados antigos: aporte que ficou "antes do corte" pelo corte próprio antigo entra na próxima importação', async () => {
+    history();
+    await run({ cutoffAt: CUTOFF });
+    // simula o estado da v1.2.0 com o corte dos aportes mais recente que o principal: o aporte de 11-05 ficou de fora
+    const d2 = (await deposits()).deposits[0];
+    getDb().prepare("DELETE FROM external_links WHERE entity_type = 'DEPOSIT'").run();
+    getDb().prepare('DELETE FROM deposits WHERE id = ?').run(d2.id);
+    getDb().prepare("UPDATE external_records SET tracking = 'BEFORE_CUTOFF' WHERE external_id = 'tx-d2'").run();
+    getDb().prepare("UPDATE integrations SET transactions_cutoff_at = '2026-11-20T00:00:00.000Z'").run();
+    const batch = (await run({})).body.data.batch;
+    expect(batch.counts.depositsCreated).toBe(1);
+    expect(tracking('tx-d2')).toBe('SETTLED');
+  });
 });
 
-describe('desfazer, excluir e adiar', () => {
-  test('desfazer o lote que definiu a data: aportes e saques criados saem e a data volta a "não definida"', async () => {
+describe('mudar a data de corte vale para tudo', () => {
+  test('pré-visualização para trás: compras e vendas e, junto, os aportes e saques do intervalo', async () => {
+    history();
+    await run({ cutoffAt: CUTOFF });
+    await post('/api/deposits', { storeId: storeId('CSFloat'), amountStoreCents: 7000, depositedAt: '2026-10-20T12:00:00.000Z' });
+    const res = await preview('2026-08-01T00:00:00.000Z');
+    expect(res.status).toBe(200);
+    expect(res.body.data).toMatchObject({
+      currentCutoffAt: CUTOFF, direction: 'BACKWARD',
+      transfers: {
+        deposits: { count: 1, amountCents: 1976 }, withdrawals: { count: 0, amountCents: 0 }, mayHaveUnseen: true,
+        manualDeposits: [{ amountStoreCents: 7000, depositedAt: '2026-10-20T12:00:00.000Z' }], manualWithdrawals: 0,
+      },
+    });
+    expect(res.body.data.backward).toBeTruthy();
+  });
+
+  test('para trás: o aporte antigo entra; desfazer devolve o corte anterior e o tira de novo', async () => {
     history();
     await run({ cutoffAt: CUTOFF });
     await post('/api/items', { name: 'Caixa', category: 'CAIXA', acquisitionType: 'GANHEI', acquiredAt: '2026-11-02T00:00:00.000Z' });
-    const batch = (await setTxCutoff('2026-10-01T00:00:00.000Z')).body.data.batch;
-    const preview2 = (await request(app).get(`/api/imports/batches/${batch.id}/undo-preview`)).body.data;
-    expect(preview2.counts).toMatchObject({ transfersToDelete: 2 });
+    const batch = (await changeCutoff('2026-08-01T00:00:00.000Z')).body.data.batch;
+    expect(batch).toMatchObject({ fullScan: true, counts: { depositsCreated: 1 } });
+    expect((await integration()).tradesCutoffAt).toBe('2026-08-01T00:00:00.000Z');
+    expect((await deposits()).deposits).toHaveLength(2);
+    const undoPreview = (await request(app).get(`/api/imports/batches/${batch.id}/undo-preview`)).body.data;
+    expect(undoPreview.counts).toMatchObject({ transfersToDelete: 1 });
     expect((await post(`/api/imports/batches/${batch.id}/undo`, { confirmWarnings: true })).status).toBe(200);
-    expect((await deposits()).deposits).toEqual([]);
-    expect((await withdrawals()).withdrawals).toEqual([]);
-    expect((await integration()).transactionsCutoffAt).toBeNull();
+    expect((await integration()).tradesCutoffAt).toBe(CUTOFF);
+    expect((await deposits()).deposits).toHaveLength(1);
+    expect(tracking('tx-d1')).toBe('BEFORE_CUTOFF');
   });
 
-  test('excluir um aporte importado: o registro vira REMOVED_IN_APP e não volta', async () => {
-    history();
-    await run({ cutoffAt: CUTOFF });
-    await setTxCutoff('2026-10-01T00:00:00.000Z');
-    const [d] = (await deposits()).deposits;
-    expect((await request(app).delete(`/api/deposits/${d.id}`)).status).toBe(200);
-    expect(tracking('tx-d2')).toBe('REMOVED_IN_APP');
-    expect((await run({ fullScan: true })).body.data.batch.counts.depositsCreated).toBe(0);
-  });
-
-  test('adiar a data: os ainda não importados antes dela ficam de fora; o importado continua', async () => {
+  test('para a frente: os ainda não importados antes dela ficam de fora; o importado continua', async () => {
     state.transactions = [withdrawal('tx-w9', '2026-11-12T10:00:00.000Z', 100, '150'), deposit('tx-d2', '2026-11-05T10:00:00.000Z', 5000, '50')];
     await run({ cutoffAt: CUTOFF });
-    await setTxCutoff('2026-10-01T00:00:00.000Z');
     expect((await preview('2026-11-20T00:00:00.000Z')).body.data).toMatchObject({ direction: 'FORWARD', transfers: { openToClose: 1 } });
-    await setTxCutoff('2026-11-20T00:00:00.000Z');
+    await changeCutoff('2026-11-20T00:00:00.000Z');
     expect(tracking('tx-w9')).toBe('BEFORE_CUTOFF');
     expect((await deposits()).deposits).toHaveLength(1);
     expect((await request(app).get('/api/imports/entries?open=true')).body.data.entries).toEqual([]);
   });
+
+  test('desfazer a primeira importação: aportes e saques criados saem e o corte volta a ser perguntado', async () => {
+    history();
+    const batch = (await run({ cutoffAt: CUTOFF })).body.data.batch;
+    expect((await post(`/api/imports/batches/${batch.id}/undo`, { confirmWarnings: true })).status).toBe(200);
+    expect((await deposits()).deposits).toEqual([]);
+    expect((await withdrawals()).withdrawals).toEqual([]);
+    expect((await integration()).tradesCutoffAt).toBeNull();
+  });
+
+  test('o corte antigo "target" não existe mais; a mudança exige a primeira importação', async () => {
+    expectError(await changeCutoff('2026-10-01T00:00:00.000Z'), 409, 'IMPORT_CUTOFF_NOT_SET');
+    await run({ cutoffAt: CUTOFF });
+    expectError(await changeCutoff('2026-12-01T00:00:00.000Z'), 400, 'DATE_IN_FUTURE');
+    expectError(await changeCutoff(CUTOFF), 400, 'IMPORT_CUTOFF_UNCHANGED');
+    expectError(await post('/api/imports/csfloat/change-cutoff', { cutoffAt: '2026-10-01T00:00:00.000Z', confirm: true, target: 'TRANSACTIONS' }), 400, 'UNKNOWN_FIELD', { field: 'target' });
+    expect((await request(app).get('/api/imports/csfloat/cutoff-preview?cutoffAt=2026-10-01T00:00:00.000Z&target=TRANSACTIONS')).status).toBe(400);
+  });
 });
 
 describe('outros', () => {
+  test('excluir um aporte importado: o registro vira REMOVED_IN_APP e não volta', async () => {
+    history();
+    await run({ cutoffAt: CUTOFF });
+    const [d] = (await deposits()).deposits;
+    expect((await request(app).delete(`/api/deposits/${d.id}`)).status).toBe(200);
+    expect(tracking('tx-d2')).toBe('REMOVED_IN_APP');
+    const again = (await run({ fullScan: true })).body.data.batch;
+    expect(again === null || again.counts.depositsCreated === 0).toBe(true);
+  });
+
   test('multa (fine) não vira lançamento: só é contada', async () => {
     state.transactions = [fakeTransaction({ id: 'tx-f1', type: 'fine', balanceOffset: -50, createdAt: '2026-11-10T00:00:00.000Z' })];
     const batch = (await run({ cutoffAt: CUTOFF })).body.data.batch;
     expect(batch.counts.finesNotImported).toBe(1);
   });
 
-  test('a importação automática também traz os aportes, depois que a data deles existe', async () => {
+  test('a importação automática também traz os aportes', async () => {
     history();
     await run({ cutoffAt: CUTOFF });
-    await setTxCutoff('2026-10-01T00:00:00.000Z');
-    await post('/api/integrations/csfloat', {}); // sem efeito
     await request(app).patch('/api/integrations/csfloat').set('Content-Type', JSON_TYPE).send({ autoImportOnOpen: true });
     state.transactions = [deposit('tx-d4', '2026-11-21T10:00:00.000Z', 2500, '25'), ...state.transactions];
     const auto = (await run({ trigger: 'AUTO' })).body.data.batch;
     expect(auto).toMatchObject({ trigger: 'AUTO', counts: { depositsCreated: 1 } });
-  });
-
-  test('a data de corte dos aportes exige a primeira importação; o lote AUTO não a muda; erros de validação', async () => {
-    expectError(await setTxCutoff('2026-10-01T00:00:00.000Z'), 409, 'IMPORT_CUTOFF_NOT_SET');
-    await run({ cutoffAt: CUTOFF });
-    expectError(await setTxCutoff('2026-12-01T00:00:00.000Z'), 400, 'DATE_IN_FUTURE');
-    await setTxCutoff('2026-10-01T00:00:00.000Z');
-    expectError(await setTxCutoff('2026-10-01T00:00:00.000Z'), 400, 'IMPORT_CUTOFF_UNCHANGED');
-    expectError(await post('/api/imports/csfloat/change-cutoff', { cutoffAt: CUTOFF, confirm: true, target: 'X' }), 400, 'INVALID_FIELD', { field: 'target' });
   });
 });
 
@@ -209,7 +221,6 @@ describe('taxa do aporte manual (D311)', () => {
     expect(created.body.data).toMatchObject({ amountStoreCents: 1976, feeCents: 20, amountUsdCents: 1996 });
     expect((await balance()).availableCents).toBe(1976);
     const profit = (await request(app).get('/api/profit/summary')).body.data;
-    expect(profit.depositsUsdCents ?? profit.deposits?.usdCents ?? JSON.stringify(profit)).toBeDefined();
     expect(JSON.stringify(profit)).toContain('1996');
     expectError(await post('/api/deposits', { storeId: storeId('CSFloat'), amountStoreCents: 100, feeCents: -1, depositedAt: '2026-11-10T12:00:00.000Z' }), 400, 'INVALID_FEE', { field: 'feeCents' });
     const patched = await request(app).patch(`/api/deposits/${created.body.data.id}`).set('Content-Type', JSON_TYPE).send({ feeCents: null });

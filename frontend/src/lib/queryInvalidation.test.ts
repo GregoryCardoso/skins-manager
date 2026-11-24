@@ -62,7 +62,7 @@ const EXPECTED: Record<string, string[]> = {
   'catalog.refresh': ['catalog', 'items', 'sales', 'health'],
   'integration.apiKey': ['integrations'],
   'integration.test': ['integrations'],
-  'integration.switchAccount': ['integrations'],
+  'integration.switchAccount': ['integrations', 'imports', 'storeBalances'],
 };
 
 function populated(): QueryClient {

@@ -86,7 +86,6 @@ export default function ImportsPage() {
   // Data de corte e varredura completa (9.5.1c): o mesmo fluxo do card (trava "importando…", resumo e erro).
   const importer = useCsfloatImport();
   const cutoffAt = importer.integration?.tradesCutoffAt ?? null;
-  const transferCutoffAt = importer.integration?.transactionsCutoffAt ?? null;
 
   const entriesQuery = useQuery({ queryKey: queryKeys.imports.entries, queryFn: ({ signal }) => listOpenImportEntries(signal) });
   // Ignoradas (9.5.1b, D329): a contagem aparece sempre; a lista, ao abrir a seção.
@@ -122,31 +121,18 @@ export default function ImportsPage() {
             {t('imports.cutoffChange.blockTitle', { date: formatDateTime(cutoffAt, language) })}
           </h2>
           <p className={styles.muted}>{t('imports.cutoffChange.blockBody')}</p>
+          <p className={styles.muted}>{t('imports.cutoffChange.singleHint')}</p>
           <ul className={styles.muted}>
             <li>{t('imports.cutoffChange.backwardHelp')}</li>
             <li>{t('imports.cutoffChange.forwardHelp')}</li>
             <li>{t('imports.cutoffChange.undoHelp')}</li>
           </ul>
           <div className={styles.batchActions}>
-            <button type="button" className={styles.button} onClick={() => importer.openCutoffChange('TRADES')} disabled={importer.disabledReason !== null}>
+            <button type="button" className={styles.button} onClick={() => importer.openCutoffChange()} disabled={importer.disabledReason !== null}>
               {importer.disabledReason === 'RUNNING' ? t('imports.running') : t('imports.cutoffChange.open')}
             </button>
             <button type="button" className={styles.button} onClick={() => importer.start({ fullScan: true })} disabled={importer.disabledReason !== null}>
               {t('settings.integrations.csfloat.fullScan')}
-            </button>
-          </div>
-          {/* Aportes e saques (9.6, E9-Q20): data de corte própria. Sem ela, o extrato não vira aporte nem saque. */}
-          <h3 className={styles.sectionTitle}>
-            {transferCutoffAt
-              ? t('imports.transferCutoff.blockTitle', { date: formatDateTime(transferCutoffAt, language) })
-              : t('imports.transferCutoff.blockTitleNotSet')}
-          </h3>
-          <p className={styles.muted}>{t(transferCutoffAt ? 'imports.transferCutoff.blockBody' : 'imports.transferCutoff.blockBodyNotSet')}</p>
-          <div className={styles.batchActions}>
-            <button type="button" className={styles.button} onClick={() => importer.openCutoffChange('TRANSACTIONS')} disabled={importer.disabledReason !== null}>
-              {importer.disabledReason === 'RUNNING'
-                ? t('imports.running')
-                : t(transferCutoffAt ? 'imports.transferCutoff.change' : 'imports.transferCutoff.define')}
             </button>
           </div>
         </section>

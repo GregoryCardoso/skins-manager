@@ -29,7 +29,6 @@ export const queryKeys = {
     entries: ['imports', 'entries'] as const,
     ignored: ['imports', 'ignored'] as const,
     cutoffPreview: (cutoffAt: string | null) => ['imports', 'cutoffPreview', cutoffAt] as const,
-    transferCutoffPreview: (cutoffAt: string | null) => ['imports', 'transferCutoffPreview', cutoffAt] as const,
     undoPreview: (id: number) => ['imports', 'undoPreview', id] as const,
   },
   backupInfo: { all: ['backupInfo'] as const },

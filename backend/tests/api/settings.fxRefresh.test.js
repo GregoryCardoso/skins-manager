@@ -69,9 +69,9 @@ describe('POST /api/settings/fx-rate/refresh', () => {
     expect(await getSettings(app)).toMatchObject({ usdBrlRate: null, usdBrlRateSource: null });
   });
 
-  test('HTTP 500 → 502 FX_FETCH_FAILED', async () => {
+  test('HTTP 500 → 502 FX_SOURCE_UNAVAILABLE (a fonte respondeu com erro: não é falta de internet)', async () => {
     const app = appWith(async () => ({ ok: false, status: 500, text: async () => '' }));
-    expectError(await post(app), 502, 'FX_FETCH_FAILED');
+    expectError(await post(app), 502, 'FX_SOURCE_UNAVAILABLE');
   });
 
   test('rede fora → 502 FX_FETCH_FAILED e a cotação anterior é mantida', async () => {
@@ -119,7 +119,7 @@ describe('POST /api/settings/fx-rate/refresh', () => {
 
   test('a trava é liberada depois de uma falha', async () => {
     const app = appWith(async () => ({ ok: false, status: 503, text: async () => '' }));
-    expectError(await post(app), 502, 'FX_FETCH_FAILED');
+    expectError(await post(app), 502, 'FX_SOURCE_UNAVAILABLE');
     expect(settingsService.isFxRefreshInProgress()).toBe(false);
   });
 

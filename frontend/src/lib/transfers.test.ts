@@ -45,11 +45,12 @@ test('textos da 9.6 nos dois idiomas', () => {
     for (const key of ['depositsCreated', 'withdrawalsCreated', 'transfersAwaitingCutoff', 'finesNotImported'] as const) {
       expect((lang.imports.counts as Record<string, unknown>)[key]).toBeTruthy();
     }
-    for (const key of ['title', 'question', 'baseDepositHint', 'blockTitle', 'blockTitleNotSet', 'define', 'change', 'manualWarning'] as const) {
+    // uma só data de corte (Revisão 28): ficam só os textos dos aportes e saques usados na pré-visualização da data única
+    for (const key of ['upToDeposits', 'upToWithdrawals', 'openToClose', 'history'] as const) {
       expect(lang.imports.transferCutoff[key]).toBeTruthy();
     }
     expect(lang.imports.txKind.DEPOSIT).toBeTruthy();
     expect(lang.deposits.feeOptional).toBeTruthy();
   }
-  expect(ptBR.imports.transferCutoff.question).toMatch(/Já lancei à mão os aportes e saques até qual data/);
+  expect(ptBR.imports.cutoffChange.singleHint).toMatch(/uma só data de corte/);
 });

@@ -80,8 +80,8 @@ describe('awesomeApiAdapter', () => {
     expect(text).not.toHaveBeenCalled();
   });
 
-  test('HTTP 500, rede que lança e fetch ausente -> FX_FETCH_FAILED', async () => {
-    await rejects(fetchLatestRate({ fetchFn: fetchOf({ ok: false, status: 500 }), now: NOW }), 'FX_FETCH_FAILED');
+  test('HTTP 500 -> FX_SOURCE_UNAVAILABLE; rede que lança e fetch ausente -> FX_FETCH_FAILED', async () => {
+    await rejects(fetchLatestRate({ fetchFn: fetchOf({ ok: false, status: 500 }), now: NOW }), 'FX_SOURCE_UNAVAILABLE');
     await rejects(fetchLatestRate({ fetchFn: async () => { throw new Error('offline'); }, now: NOW }), 'FX_FETCH_FAILED');
     await rejects(fetchLatestRate({ fetchFn: null, now: NOW }), 'FX_FETCH_FAILED');
   });

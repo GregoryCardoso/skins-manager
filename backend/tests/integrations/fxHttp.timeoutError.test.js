@@ -53,7 +53,7 @@ describe('fetchJson', () => {
   test('erros que não são de prazo continuam FX_* (HTTP 500 e 429)', async () => {
     const res = (status) => ({ status, ok: false, headers: { get: () => null }, text: async () => '' });
     const e500 = await fetchJson('https://x.invalid/a', { fetchFn: async () => res(500), source: 'PTAX', callTimeoutMs: 1000 }).catch((e) => e);
-    expect(e500.code).toBe('FX_FETCH_FAILED');
+    expect(e500.code).toBe('FX_SOURCE_UNAVAILABLE');
     const e429 = await fetchJson('https://x.invalid/a', { fetchFn: async () => res(429), source: 'PTAX', callTimeoutMs: 1000 }).catch((e) => e);
     expect(e429.code).toBe('FX_RATE_LIMITED');
   });

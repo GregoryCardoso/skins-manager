@@ -752,7 +752,6 @@ export interface IntegrationView {
   autoImportOnOpen: boolean;
   autoImportPaused: boolean;
   tradesCutoffAt: string | null;
-  transactionsCutoffAt: string | null;
   lastImportAt: string | null;
   lastImportStatus: 'OK' | 'FAILED' | null;
   lastImportErrorCode: string | null;
@@ -895,25 +894,18 @@ export interface CutoffPreview {
     manualLaunches: { purchases: number; sales: number };
   } | null;
   forward: { importedKept: number; openToClose: number } | null;
+  transfers?: TransferCutoffEffect;
 }
 
-// Pré-visualização da data de corte dos aportes e saques (9.6).
-export interface TransferCutoffPreview {
-  target: 'TRANSACTIONS';
-  currentCutoffAt: string | null;
-  newCutoffAt: string;
-  direction: 'FIRST' | 'BACKWARD' | 'FORWARD';
-  transfers: {
-    deposits: { count: number; amountCents: number };
-    withdrawals: { count: number; amountCents: number };
-    openToClose: number;
-    mayHaveUnseen: boolean;
-    manualDeposits: { id: number; depositedAt: string; amountStoreCents: number }[];
-    manualWithdrawals: number;
-  };
+// Aportes e saques na pré-visualização da data de corte (a única, Revisão 28).
+export interface TransferCutoffEffect {
+  deposits: { count: number; amountCents: number };
+  withdrawals: { count: number; amountCents: number };
+  openToClose: number;
+  mayHaveUnseen: boolean;
+  manualDeposits: { id: number; depositedAt: string; amountStoreCents: number }[];
+  manualWithdrawals: number;
 }
-
-export type CutoffTarget = 'TRADES' | 'TRANSACTIONS';
 
 // Conferência do saldo com o CSFloat (9.7, D313): só leitura.
 export interface CsfloatBalanceCheckResult {

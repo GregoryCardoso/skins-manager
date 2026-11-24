@@ -100,10 +100,10 @@ describe('awesomeApiAdapter: lacunas', () => {
     await rejects(fetchLatestRate({ fetchFn: async () => ({ ok: true, status: 200, text: async () => `${exact} ` }), now: NOW }), 'FX_INVALID_RESPONSE');
   });
 
-  test('429 vira FX_RATE_LIMITED; 404 e 503 viram FX_FETCH_FAILED', async () => {
+  test('429 vira FX_RATE_LIMITED; 404 e 503 viram FX_SOURCE_UNAVAILABLE', async () => {
     await rejects(fetchLatestRate({ fetchFn: async () => ({ ok: false, status: 429, text: async () => '{}' }), now: NOW }), 'FX_RATE_LIMITED');
     for (const status of [404, 503]) {
-      await rejects(fetchLatestRate({ fetchFn: async () => ({ ok: false, status }), now: NOW }), 'FX_FETCH_FAILED');
+      await rejects(fetchLatestRate({ fetchFn: async () => ({ ok: false, status }), now: NOW }), 'FX_SOURCE_UNAVAILABLE');
     }
   });
 

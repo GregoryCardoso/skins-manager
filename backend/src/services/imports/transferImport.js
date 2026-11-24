@@ -1,7 +1,7 @@
 'use strict';
 
 // Aportes e saques importados do extrato do CSFloat (9.6; D306, D310, D311, E9-Q20). Os registros `deposit`/`withdrawal` já são
-// gravados como "vistos" desde a 9.2; aqui eles viram aportes e saques do app, com uma data de corte PRÓPRIA (transactions_cutoff_at):
+// gravados como "vistos" desde a 9.2; aqui eles viram aportes e saques do app, com a MESMA data de corte das compras e vendas (Revisão 28; a coluna antiga transactions_cutoff_at não é mais lida):
 //   - sem a data de corte deles: nada é importado (o resumo conta quantos esperam por ela);
 //   - antes dela: BEFORE_CUTOFF (o usuário já lançou à mão, ou o saldo dessa época está num aporte);
 //   - depois: casa com o lançamento manual (mesma loja, mesmo valor, dia vizinho, a mesma regra de quantidade da D298) ou cria.
@@ -94,6 +94,9 @@ const isAfterOrAt = (iso, cutoffIso) => Date.parse(iso) >= Date.parse(cutoffIso)
 // cutoffAt (o corte deles, ou null), diagnostics }.
 function processTransfers(ctx) {
   const { batch, store, now, counts, addEntry, cutoffAt, diagnostics } = ctx;
+  // Uma só data de corte (Revisão 28): os aportes e saques sem vínculo que estavam "antes do corte" (pelo corte próprio antigo
+  // ou por um corte mais recente) e ficam a partir do corte atual voltam a ser processados. Idempotente.
+  if (cutoffAt) ExternalRecord.reopenTransfersFrom(SOURCE, cutoffAt, { now });
   const pending = ExternalRecord.listUnlinkedTransfers(SOURCE, ['SEEN', 'RETRY']);
   if (!cutoffAt) {
     diagnostics.transfersAwaitingCutoff = pending.length;

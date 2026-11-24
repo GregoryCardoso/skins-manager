@@ -222,7 +222,8 @@
     "PURCHASE_IN_INTEGRATION_STORE_BEFORE_CUTOFF": "Compra na loja CSFloat anterior à data de corte.",
     "IMPORT_CUTOFF_UNCHANGED": "A data de corte nova é igual à atual.",
     "IMPORT_CUTOFF_NOT_SET": "Faça a primeira importação antes de mudar a data de corte.",
-    "INVALID_FEE": "A taxa do aporte deve ser um valor maior ou igual a zero."
+    "INVALID_FEE": "A taxa do aporte deve ser um valor maior ou igual a zero.",
+    "FX_SOURCE_UNAVAILABLE": "A fonte da cotação está fora do ar ou com erro. Tente mais tarde ou use outra fonte."
   },
   "warnings": {
     "FEES_NOT_CONFIGURED": "As taxas da loja não estão configuradas.",
@@ -581,7 +582,8 @@
     "IMPORT_SOURCE_UNREACHABLE": "Não foi possível falar com o {source}. Verifique a internet.",
     "IMPORT_SOURCE_UNAVAILABLE": "O {source} está fora do ar. Tente mais tarde.",
     "IMPORT_RATE_LIMITED": "Limite de consultas do {source} atingido. Tente de novo depois de {retryAt}.",
-    "IMPORT_SOURCE_FORMAT_CHANGED": "O {source} mudou o formato dos dados. Nada foi alterado; o app precisa de uma atualização."
+    "IMPORT_SOURCE_FORMAT_CHANGED": "O {source} mudou o formato dos dados. Nada foi alterado; o app precisa de uma atualização.",
+    "FX_SOURCE_UNAVAILABLE": "A fonte da cotação ({source}) está fora do ar ou com erro. Tente mais tarde ou use outra fonte."
   },
   "sales": {
     "title": "Vendas",
@@ -926,7 +928,8 @@
         "autoImportNeedsFirst": "Faça a primeira importação pelo botão (ela define a data de corte); depois a importação ao abrir passa a valer.",
         "autoPausedUndo": "A importação ao abrir está pausada porque você desfez uma importação em {date}, para o que foi desfeito não voltar sozinho. Reative quando quiser.",
         "autoPausedSwitch": "A importação ao abrir está pausada porque a conta do CSFloat foi trocada. Faça a primeira importação da conta nova e reative.",
-        "autoResume": "Reativar importação ao abrir"
+        "autoResume": "Reativar importação ao abrir",
+        "reviewImports": "Verificar meus importes e pendências"
       }
     },
     "loadError": "Não foi possível carregar as configurações: {reason}"
@@ -1533,7 +1536,8 @@
       "history": "Data de corte alterada de {from} para {to}.",
       "badge": "Data de corte alterada",
       "olderHint": "Trades antes da data de corte não são importados.",
-      "link": "Alterar data de corte"
+      "singleHint": "É uma só data de corte para tudo do CSFloat: compras, vendas, aportes e saques. Cada importação traz tudo junto, a partir dela.",
+      "link": "Ver a data de corte"
     },
     "seeInProfit": "Ver no lucro real",
     "txFee": "taxa {value}",
@@ -1542,22 +1546,10 @@
       "WITHDRAWAL": "Saque do CSFloat"
     },
     "transferCutoff": {
-      "title": "Data de corte de aportes e saques",
-      "notSet": "A data de corte dos aportes e saques ainda não foi definida.",
-      "question": "Já lancei à mão os aportes e saques até qual data? Os do CSFloat a partir dela viram aportes e saques no app (com a taxa); os anteriores ficam de fora.",
-      "baseDepositHint": "Se você registrou um aporte com o saldo atual da loja (para não lançar o histórico), use uma data a partir dele. Se for importar todo o histórico, exclua esse aporte depois, senão o dinheiro conta duas vezes.",
       "upToDeposits": "Até {count} aporte(s) já vistos no extrato ({value}).",
       "upToWithdrawals": "Até {count} saque(s) já vistos no extrato ({value}).",
       "mayHaveUnseen": "A definição relê o extrato inteiro: aportes e saques que o app ainda não leu também entram.",
-      "manualWarning": "Você tem {deposits} aporte(s) e {withdrawals} saque(s) lançados à mão na loja CSFloat nesse período. Os de mesmo valor e dia são ligados, sem duplicar; os outros (como um aporte com o saldo atual) continuam e podem contar o dinheiro duas vezes.",
       "openToClose": "{count} aporte(s) ou saque(s) ainda não importados antes da nova data deixam de ser importados. Os já importados continuam.",
-      "confirm": "Salvar e importar",
-      "blockTitle": "Data de corte de aportes e saques: {date}",
-      "blockTitleNotSet": "Data de corte de aportes e saques: não definida",
-      "blockBody": "Aportes e saques do CSFloat a partir desta data são importados; os anteriores, não.",
-      "blockBodyNotSet": "Enquanto ela não for definida, os aportes e saques do extrato do CSFloat não são importados.",
-      "define": "Definir data de corte de aportes e saques",
-      "change": "Alterar data de corte de aportes e saques",
       "history": "Esta importação definiu ou alterou a data de corte dos aportes e saques."
     }
   },
@@ -1617,7 +1609,7 @@
       "intro": "Ao abrir o app não foi possível falar com a internet, então isto não foi atualizado:",
       "fx": "A cotação do dólar (US$ → R$). O app segue com a última cotação salva.",
       "csfloat": "A importação do CSFloat (compras, vendas, aportes e saques novos).",
-      "hint": "Nada foi alterado. Quando a conexão voltar, use \"Atualizar cotação\" em Configurações e \"Importar agora\" em Importações.",
+      "hint": "Nada foi alterado. Quando a conexão voltar, use \"Atualizar cotação\" e \"Importar agora\" no card do CSFloat, em Configurações.",
       "ok": "Entendi"
     }
   },
@@ -1633,8 +1625,8 @@
     "step2": "Abra o seu perfil e vá na aba \"Developers\".",
     "step3": "Clique em \"New Key\" e copie a chave.",
     "step4": "Cole a chave aqui embaixo, clique em \"Salvar chave\" e depois em \"Testar conexão\".",
-    "step5": "Em Importações, escolha a data de corte e importe.",
+    "step5": "Clique em \"Importar agora\" (aqui embaixo) ou em \"Importar do CSFloat\" no Inventário e escolha a data de corte: até quando você já lançou tudo à mão.",
     "open": "Abrir o CSFloat",
-    "safety": "A chave dá acesso de leitura à sua conta: não compartilhe com ninguém. Se ela vazar, apague-a no CSFloat e gere outra."
+    "safety": "A chave dá acesso à sua conta do CSFloat: não compartilhe com ninguém. Se ela vazar, apague-a no CSFloat e gere outra."
   }
 }

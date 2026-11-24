@@ -123,7 +123,7 @@ describe('falhas não gravam nada', () => {
     ['AWESOMEAPI', async () => ok({ USDBRL: null }), 'FX_INVALID_RESPONSE'],
     ['AWESOMEAPI', async () => ({ ok: false, status: 429 }), 'FX_RATE_LIMITED'],
     ['PTAX', async () => ok({ value: [{ cotacaoCompra: 1, cotacaoVenda: 0, dataHoraCotacao: '2026-11-19 13:04:28.123' }] }), 'FX_INVALID_RESPONSE'],
-    ['PTAX', async () => ({ ok: false, status: 500 }), 'FX_FETCH_FAILED'],
+    ['PTAX', async () => ({ ok: false, status: 500 }), 'FX_SOURCE_UNAVAILABLE'],
   ])('fonte %s com falha %s: banco idêntico e params.source', async (source, failing, code) => {
     const app = makeCatalogApp(NOW, { fetchFn: (...args) => failing(...args) });
     await patch(app, { fxRefreshSource: source });

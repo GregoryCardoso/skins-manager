@@ -16,6 +16,15 @@ function fetchFailed(source) {
   );
 }
 
+// A fonte respondeu, mas com erro (HTTP diferente de 200): não é falta de internet (revisão D340).
+function sourceUnavailable(source) {
+  return new UpstreamError(
+  `A fonte da cotação (${labelOf(source)}) está fora do ar ou com erro. Tente mais tarde ou use outra fonte.`,
+  'FX_SOURCE_UNAVAILABLE',
+  { params: { source } }
+  );
+}
+
 function rateLimited(source) {
   return new UpstreamError(
     `O limite de consultas da fonte (${labelOf(source)}) foi atingido. Tente mais tarde ou use outra fonte.`,
@@ -99,7 +108,7 @@ function runWithDeadline(task, { source, callTimeoutMs, totalSignal, timeoutErro
   return Promise.race([running, expired]).finally(cleanup);
 }
 
-// GET `url` e devolve o JSON. Falha de rede, timeout ou HTTP diferente de 200 -> FX_FETCH_FAILED; 429 -> FX_RATE_LIMITED;
+// GET `url` e devolve o JSON. Falha de rede ou timeout -> FX_FETCH_FAILED; HTTP diferente de 200 -> FX_SOURCE_UNAVAILABLE; 429 -> FX_RATE_LIMITED;
 // corpo grande demais ou JSON inválido -> FX_INVALID_RESPONSE.
 async function fetchJson(url, { fetchFn, source, callTimeoutMs, totalSignal, timeoutError }) {
   if (typeof fetchFn !== 'function') throw fetchFailed(source);
@@ -112,8 +121,9 @@ async function fetchJson(url, { fetchFn, source, callTimeoutMs, totalSignal, tim
         throw fetchFailed(source);
       }
       if (response && response.status === 429) throw rateLimited(source);
-      if (!response || response.ok === false || (response.status !== undefined && response.status !== 200)) {
-        throw fetchFailed(source);
+      if (!response) throw fetchFailed(source);
+      if (response.ok === false || (response.status !== undefined && response.status !== 200)) {
+        throw sourceUnavailable(source);
       }
       try {
         return await readBodyText(response, source);
@@ -131,4 +141,4 @@ async function fetchJson(url, { fetchFn, source, callTimeoutMs, totalSignal, tim
   }
 }
 
-module.exports = { fetchJson, fetchFailed, rateLimited, invalidResponse, readBodyText, readLimitedText, runWithDeadline };
+module.exports = { fetchJson, fetchFailed, sourceUnavailable, rateLimited, invalidResponse, readBodyText, readLimitedText, runWithDeadline };

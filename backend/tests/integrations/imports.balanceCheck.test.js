@@ -107,16 +107,16 @@ describe('Explicar diferença', () => {
       purchaseTx('91003', 700, { createdAt: '2026-10-10T10:00:01.000Z' }),
       fakeTransaction({ id: 'tx-bid', type: 'bid_posted', balanceOffset: -300, createdAt: '2026-11-20T00:00:00.000Z' }),
     ];
-    await run({ cutoffAt: CUTOFF }); // aportes ainda sem data de corte
+    await run({ cutoffAt: CUTOFF }); // uma só data de corte (Revisão 28): o aporte de 11-05 já é importado
     const res = await explain();
     expect(res.status).toBe(200);
     const data = res.body.data;
     expect(data.totals).toEqual({ balanceCents: -50 - 1250 + 10000 - 700 - 300, pendingCents: 0 });
     expect(data.openBidsCents).toBe(300);
     const reasons = Object.fromEntries(data.groups.map((g) => [`${g.reason}|${g.type}`, g.balanceCents]));
-    expect(reasons).toEqual({ 'NOT_IMPORTED|deposit': 10000, 'BEFORE_CUTOFF|contract_purchased': -700, 'FINE|fine': -50 });
-    expect(data.sumBalanceCents).toBe(10000 - 700 - 50);
-    expect(data.unmatched).toHaveLength(3);
+    expect(reasons).toEqual({ 'BEFORE_CUTOFF|contract_purchased': -700, 'FINE|fine': -50 });
+    expect(data.sumBalanceCents).toBe(-700 - 50);
+    expect(data.unmatched).toHaveLength(2);
     expect(JSON.stringify(data)).not.toMatch(/tx-dep|SESSION-FICTICIO/);
   });
 

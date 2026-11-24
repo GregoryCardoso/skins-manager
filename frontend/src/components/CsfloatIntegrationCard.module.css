@@ -8,3 +8,7 @@
 .importBox { display: flex; flex-direction: column; gap: 0.5rem; border-top: 1px solid var(--border); padding-top: 0.75rem; }
 .actions { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center; }
 .toggle { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; }
+/* Data de corte e o botão "Verificar meus importes e pendências" (Revisão 28). */
+.cutoffRow { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.cutoffRow p { margin: 0; }
+.cutoffRow a { text-decoration: none; display: inline-block; }

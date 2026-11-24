@@ -189,14 +189,12 @@ function undo(batchId, { confirmWarnings = false, now = new Date(), source = SOU
             ImportBatchEntry.resolveOpenForRecord(id, 'UNDONE', { now });
           }
         }
-        // O lote definiu ou mudou o corte dos aportes e saques (9.6): volta o anterior ('' = não existia; tudo volta a "visto").
-        if (batch.previousTransactionsCutoffAt !== null && batch.previousTransactionsCutoffAt !== undefined) {
-          const previous = batch.previousTransactionsCutoffAt || null;
-          Integration.update(source, { transactionsCutoffAt: previous }, { now });
-          if (previous) {
-            for (const id of ExternalRecord.closeTransfersBefore(source, previous, { now })) ImportBatchEntry.resolveOpenForRecord(id, 'UNDONE', { now });
-          }
-          ExternalRecord.reopenTransfersFrom(source, previous, { now });
+        // Uma só data de corte (Revisão 28): os aportes e saques sem vínculo voltam ao lado certo do corte atual (o restaurado).
+        // Lotes antigos que mudaram o corte próprio dos aportes também caem aqui: esse corte não vale mais.
+        const currentCutoff = Integration.get(source).tradesCutoffAt;
+        if (currentCutoff) {
+          for (const id of ExternalRecord.closeTransfersBefore(source, currentCutoff, { now })) ImportBatchEntry.resolveOpenForRecord(id, 'UNDONE', { now });
+          ExternalRecord.reopenTransfersFrom(source, currentCutoff, { now });
         }
       }
       return ImportBatch.update(batchId, { status: 'UNDONE', undoneAt: now.toISOString() });

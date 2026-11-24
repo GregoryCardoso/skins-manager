@@ -100,14 +100,16 @@ describe('desfazer preserva o que foi excluído ou ignorado (item 4)', () => {
 
 describe('trocar de conta ignora os aportes e saques abertos da conta anterior (item 5)', () => {
   test('aportes ainda sem lançamento viram IGNORED e não entram na loja da conta nova', async () => {
-    state.transactions = [fakeTransaction({ id: 'tx-dep-a', type: 'deposit', balanceOffset: 5000, createdAt: '2026-11-10T10:00:00.000Z', details: { fee: '0' } })];
-    await run({ cutoffAt: CUTOFF }); // sem corte dos aportes: o aporte fica "visto"
+    // aporte da conta A antes do corte: fica "antes do corte", sem lançamento
+    state.transactions = [fakeTransaction({ id: 'tx-dep-a', type: 'deposit', balanceOffset: 5000, createdAt: '2026-10-10T10:00:00.000Z', details: { fee: '0' } })];
+    await run({ cutoffAt: CUTOFF });
+    expect(rows("SELECT tracking FROM external_records WHERE external_id = 'tx-dep-a'")[0].tracking).toBe('BEFORE_CUTOFF');
     state.me = meBody({ user: { steam_id: PII.steamId2 } });
     expect((await post('/api/integrations/csfloat/switch-account', { confirm: true })).status).toBe(200);
     expect(rows("SELECT tracking FROM external_records WHERE external_id = 'tx-dep-a'")[0].tracking).toBe('IGNORED');
+    // a conta B escolhe um corte mais antigo: o aporte da conta A não entra
     state.transactions = [];
-    await run({ cutoffAt: CUTOFF });
-    await post('/api/imports/csfloat/change-cutoff', { cutoffAt: CUTOFF, confirm: true, target: 'TRANSACTIONS' });
+    await run({ cutoffAt: '2026-10-01T00:00:00.000Z' });
     expect(getDb().prepare('SELECT COUNT(*) AS n FROM deposits').get().n).toBe(0);
   });
 });
@@ -120,5 +122,46 @@ describe('pendências exigem a loja da integração em US$ (item 6)', () => {
     getDb().prepare("UPDATE stores SET currency = 'BRL' WHERE name = 'CSFloat'").run();
     expectError(await post(`/api/imports/entries/${entry.id}/resolve`, { action: 'MARK_WON' }), 400, 'IMPORT_STORE_CURRENCY_NOT_ALLOWED');
     expect(itemsCount()).toBe(0);
+  });
+});
+
+describe('ajustes da segunda revisão (D341)', () => {
+  test('trade "antes do corte" que volta inválido no lote que antecipa o corte segue reavaliado (RETRY), não fica preso', async () => {
+    state.trades = [fakeTrade({ id: '7501', createdAt: '2026-10-15T10:00:00.000Z' })];
+    await run({ cutoffAt: CUTOFF });
+    expect(trackingOf('7501')).toBe('BEFORE_CUTOFF');
+    const broken = fakeTrade({ id: '7501', createdAt: '2026-10-15T10:00:00.000Z' });
+    delete broken.contract.price;
+    state.trades = [broken];
+    const res = await post('/api/imports/csfloat/change-cutoff', { cutoffAt: '2026-10-01T00:00:00.000Z', confirm: true });
+    expect(res.status).toBe(200);
+    expect(trackingOf('7501')).toBe('RETRY');
+  });
+
+  test('"Voltar para pendências" exige a data de corte (depois de um recomeço completo)', async () => {
+    // a compra é depois da venda (não serve para ela): a venda fica sem compra, e o lote cria algo para poder ser desfeito
+    state.trades = [fakeTrade({ id: '7602', createdAt: '2026-11-21T10:00:00.000Z', item: { float_value: 0.31 } }), fakeTrade({ id: '7601', direction: 'SELL', state: 'verified' })];
+    const batchId = (await run({ cutoffAt: CUTOFF })).body.data.batch.id;
+    const entry = (await openEntries()).find((e) => e.reasonCode === 'PURCHASE_NOT_FOUND');
+    await post(`/api/imports/entries/${entry.id}/resolve`, { action: 'IGNORE' });
+    expect((await post(`/api/imports/batches/${batchId}/undo`, { confirmWarnings: true })).status).toBe(200);
+    expect(trackingOf('7601')).toBe('IGNORED');
+    expectError(await post(`/api/imports/entries/${entry.id}/reopen`, {}), 409, 'IMPORT_CUTOFF_NOT_SET');
+  });
+});
+
+describe('filtro da conferência de saldo (D341)', () => {
+  const { currentTransactions } = require('../../src/services/imports/balanceCheckService');
+  test('só a conta atual; compras e vendas a partir do corte; lances antigos continuam', () => {
+    const row = { accountFingerprint: 'fp-b', tradesCutoffAt: CUTOFF };
+    const tx = (id, txType, createdAt, fp = 'fp-b') => ({ id, txType, externalCreatedAt: createdAt, accountFingerprint: fp });
+    const kept = currentTransactions([
+      tx(1, 'contract_purchased', '2026-11-10T00:00:00.000Z'),
+      tx(2, 'contract_purchased', '2026-11-10T00:00:00.000Z', 'fp-a'), // conta anterior
+      tx(3, 'contract_sold', '2026-10-10T00:00:00.000Z'), // antes do corte
+      tx(4, 'bid_posted', '2026-10-10T00:00:00.000Z'), // lance antigo: continua
+      tx(5, 'bid_posted', '2026-10-10T00:00:00.000Z', 'fp-a'),
+    ], row).map((t) => t.id);
+    expect(kept).toEqual([1, 4]);
   });
 });

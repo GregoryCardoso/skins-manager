@@ -222,7 +222,8 @@
     "PURCHASE_IN_INTEGRATION_STORE_BEFORE_CUTOFF": "Purchase in the CSFloat store before the cutoff date.",
     "IMPORT_CUTOFF_UNCHANGED": "The new cutoff date is the same as the current one.",
     "IMPORT_CUTOFF_NOT_SET": "Do the first import before changing the cutoff date.",
-    "INVALID_FEE": "The deposit fee must be greater than or equal to zero."
+    "INVALID_FEE": "The deposit fee must be greater than or equal to zero.",
+    "FX_SOURCE_UNAVAILABLE": "The exchange rate source is down or returned an error. Try again later or use another source."
   },
   "warnings": {
     "FEES_NOT_CONFIGURED": "The store fees are not configured.",
@@ -581,7 +582,8 @@
     "IMPORT_SOURCE_UNREACHABLE": "Could not reach {source}. Check your internet connection.",
     "IMPORT_SOURCE_UNAVAILABLE": "{source} is unavailable. Try again later.",
     "IMPORT_RATE_LIMITED": "{source} request limit reached. Try again after {retryAt}.",
-    "IMPORT_SOURCE_FORMAT_CHANGED": "{source} changed its data format. Nothing was changed; the app needs an update."
+    "IMPORT_SOURCE_FORMAT_CHANGED": "{source} changed its data format. Nothing was changed; the app needs an update.",
+    "FX_SOURCE_UNAVAILABLE": "The exchange rate source ({source}) is down or returned an error. Try again later or use another source."
   },
   "sales": {
     "title": "Sales",
@@ -926,7 +928,8 @@
         "autoImportNeedsFirst": "Do the first import with the button (it sets the cutoff date); after that, importing on open takes effect.",
         "autoPausedUndo": "Importing on open is paused because you undid an import on {date}, so what was undone does not come back by itself. Resume it when you want.",
         "autoPausedSwitch": "Importing on open is paused because the CSFloat account was switched. Do the first import of the new account and resume it.",
-        "autoResume": "Resume importing on open"
+        "autoResume": "Resume importing on open",
+        "reviewImports": "Review my imports and pending items"
       }
     },
     "loadError": "Could not load the settings: {reason}"
@@ -1533,7 +1536,8 @@
       "history": "Cutoff date changed from {from} to {to}.",
       "badge": "Cutoff date changed",
       "olderHint": "Trades before the cutoff date are not imported.",
-      "link": "Change cutoff date"
+      "singleHint": "There is a single cutoff date for everything from CSFloat: purchases, sales, deposits and withdrawals. Each import brings all of it together, from that date.",
+      "link": "See the cutoff date"
     },
     "seeInProfit": "See in real profit",
     "txFee": "fee {value}",
@@ -1542,22 +1546,10 @@
       "WITHDRAWAL": "CSFloat withdrawal"
     },
     "transferCutoff": {
-      "title": "Deposits and withdrawals cutoff date",
-      "notSet": "The deposits and withdrawals cutoff date has not been set yet.",
-      "question": "Up to which date have I already entered deposits and withdrawals by hand? CSFloat ones from it on become deposits and withdrawals in the app (with the fee); earlier ones stay out.",
-      "baseDepositHint": "If you recorded a deposit with the current store balance (to avoid entering the history), pick a date from it on. If you will import the whole history, delete that deposit afterwards, otherwise money is counted twice.",
       "upToDeposits": "Up to {count} deposit(s) already seen in the statement ({value}).",
       "upToWithdrawals": "Up to {count} withdrawal(s) already seen in the statement ({value}).",
       "mayHaveUnseen": "Setting it reads the whole statement again: deposits and withdrawals the app has not read yet also come in.",
-      "manualWarning": "You have {deposits} deposit(s) and {withdrawals} withdrawal(s) entered by hand in the CSFloat store in this period. Those with the same amount and day are linked, without duplicating; the others (like a deposit with the current balance) stay and may count the money twice.",
       "openToClose": "{count} deposit(s) or withdrawal(s) not imported yet before the new date stop being imported. Those already imported stay.",
-      "confirm": "Save and import",
-      "blockTitle": "Deposits and withdrawals cutoff date: {date}",
-      "blockTitleNotSet": "Deposits and withdrawals cutoff date: not set",
-      "blockBody": "CSFloat deposits and withdrawals from this date on are imported; earlier ones are not.",
-      "blockBodyNotSet": "While it is not set, deposits and withdrawals in the CSFloat statement are not imported.",
-      "define": "Set deposits and withdrawals cutoff date",
-      "change": "Change deposits and withdrawals cutoff date",
       "history": "This import set or changed the deposits and withdrawals cutoff date."
     }
   },
@@ -1617,7 +1609,7 @@
       "intro": "The app could not reach the internet when it opened, so this was not updated:",
       "fx": "The dollar rate (US$ → R$). The app keeps using the last saved rate.",
       "csfloat": "The CSFloat import (new purchases, sales, deposits and withdrawals).",
-      "hint": "Nothing was changed. When the connection is back, use \"Update rate\" in Settings and \"Import now\" in Imports.",
+      "hint": "Nothing was changed. When the connection is back, use \"Update rate\" and \"Import now\" on the CSFloat card, in Settings.",
       "ok": "Got it"
     }
   },
@@ -1633,8 +1625,8 @@
     "step2": "Open your profile and go to the \"Developers\" tab.",
     "step3": "Click \"New Key\" and copy the key.",
     "step4": "Paste the key below, click \"Save key\" and then \"Test connection\".",
-    "step5": "In Imports, choose the cutoff date and import.",
+    "step5": "Click \"Import now\" (below) or \"Import from CSFloat\" in the Inventory and choose the cutoff date: up to when you already entered everything by hand.",
     "open": "Open CSFloat",
-    "safety": "The key gives read access to your account: do not share it with anyone. If it leaks, delete it on CSFloat and create another one."
+    "safety": "The key gives access to your CSFloat account: do not share it with anyone. If it leaks, delete it on CSFloat and create another one."
   }
 }

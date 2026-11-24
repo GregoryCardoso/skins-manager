@@ -61,7 +61,8 @@ export const INVALIDATION_MAP = {
   // "Importar ao abrir o app" e "Reativar" (9.5); também depois de uma importação automática sem nada novo.
   'integration.update': [K.integrations.all],
   'integration.test': [K.integrations.all],
-  'integration.switchAccount': [K.integrations.all],
+  // A troca de conta fecha as pendências da conta anterior (também as de aportes e saques).
+  'integration.switchAccount': [K.integrations.all, K.imports.all, K.storeBalances.all],
   'catalog.refresh': [K.catalog.all, K.items.all, K.sales.all, K.health.all],
   // O banco inteiro mudou: limpa o cache (o chamador recarrega a janela em seguida).
   'backup.import': 'clear',

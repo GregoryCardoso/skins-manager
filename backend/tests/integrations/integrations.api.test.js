@@ -98,7 +98,6 @@ describe('GET inicial', () => {
       autoImportOnOpen: false,
       autoImportPaused: false,
       tradesCutoffAt: null,
-      transactionsCutoffAt: null,
       lastImportAt: null,
       lastImportStatus: null,
       lastImportErrorCode: null,
@@ -430,7 +429,7 @@ describe('POST switch-account (D293)', () => {
     expect(res.body.data.username).toBe(PII.username2);
     expect(res.body.data.integration).toMatchObject({
       hasApiKey: true, apiKeyMasked: '••••••••a1b2', storeId: storeId('CSFloat'), accountLinked: true,
-      autoImportOnOpen: true, autoImportPaused: true, tradesCutoffAt: null, transactionsCutoffAt: null,
+      autoImportOnOpen: true, autoImportPaused: true, tradesCutoffAt: null,
       lastImportAt: null, lastImportStatus: null, lastImportErrorCode: null,
     });
     const after = integrationRow();

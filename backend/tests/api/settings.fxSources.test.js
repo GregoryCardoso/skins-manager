@@ -58,7 +58,7 @@ describe('POST /api/settings/fx-rate/refresh', () => {
 
   test.each([
     ['rede', async () => { throw new TypeError('x'); }, 502, 'FX_FETCH_FAILED'],
-    ['HTTP 500', async () => ({ ok: false, status: 500 }), 502, 'FX_FETCH_FAILED'],
+    ['HTTP 500', async () => ({ ok: false, status: 500 }), 502, 'FX_SOURCE_UNAVAILABLE'],
     ['HTTP 429', async () => ({ ok: false, status: 429 }), 502, 'FX_RATE_LIMITED'],
     ['ask inválido', async () => ok(awesome({ ask: '0' })), 502, 'FX_INVALID_RESPONSE'],
   ])('falha (%s) mantém a cotação e a data salvas e informa a fonte', async (_n, failing, status, code) => {

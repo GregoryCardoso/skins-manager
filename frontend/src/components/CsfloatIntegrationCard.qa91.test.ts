@@ -26,7 +26,7 @@ import CsfloatIntegrationCard from './CsfloatIntegrationCard';
 const baseView: IntegrationView = {
   source: 'CSFLOAT', storeId: 1, storeName: 'CSFloat', storeCurrency: 'USD', storeSaleFeeRate: 0.02, storeWithdrawalFeeRate: 0.025,
   hasApiKey: false, apiKeyMasked: null, apiKeySavedAt: null, accountLinked: false, autoImportOnOpen: false, autoImportPaused: false,
-  tradesCutoffAt: null, transactionsCutoffAt: null, lastImportAt: null, lastImportStatus: null, lastImportErrorCode: null,
+  tradesCutoffAt: null, lastImportAt: null, lastImportStatus: null, lastImportErrorCode: null,
   importInProgress: false, openEntriesCount: 0, suggestedCutoffAt: null, helpUrl: 'https://csfloat.com/profile',
 };
 const stores = [
