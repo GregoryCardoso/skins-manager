@@ -190,7 +190,9 @@ async function downloadCatalog({ fetchFn = globalThis.fetch, timeoutMs = CATALOG
     const jobs = [];
     for (const lang of CATALOG_LANGUAGES) {
       for (const source of SOURCES) {
-        const optional = lang !== 'en';
+        // O pt-BR é opcional em todas as fontes; os patches (10.3, D362) também no inglês: sem a fonte, o catálogo fica sem PATCH
+        // e as funções de patch ficam escondidas, sem bloquear o resto.
+        const optional = lang !== 'en' || source === 'PATCHES';
         jobs.push(
           fetchJson(fetchFn, urlFor(lang, CATALOG_FILES[source]), { signal: controller.signal, optional }).then((json) => {
             if (json !== null && !Array.isArray(json)) {
@@ -402,6 +404,13 @@ function linkLegacyItems({ now = new Date() } = {}) {
         const patch = { catalogId: match.id, name: match.name };
         if (!isNil(match.phase)) patch.phase = match.phase;
         Item.update(item.id, patch, { now });
+        linked += 1;
+      }
+      // Patches antigos em OUTRO (nome livre "Patch | X", 2.2): com UM único patch do catálogo de mesmo nome, viram PATCH vinculados.
+      for (const item of Item.findFreeNameByPrefix('OUTRO', 'Patch | ')) {
+        const candidates = CatalogItem.findByNameKey(normalizeSearchText(item.name), 'PATCH');
+        if (candidates.length !== 1) continue;
+        Item.update(item.id, { category: 'PATCH', catalogId: candidates[0].id, name: candidates[0].name }, { now });
         linked += 1;
       }
       return linked;

@@ -32,6 +32,7 @@ const CATALOG_FILES = Object.freeze({
   CRATES: 'crates.json',
   KEYCHAINS: 'keychains.json',
   AGENTS: 'agents.json',
+  PATCHES: 'patches.json',
 });
 const CATALOG_FETCH_TIMEOUT_MS = 120000;
 // Teto por arquivo baixado (T36): os maiores têm poucos MB; 50 MB protege contra resposta descontrolada.

@@ -253,7 +253,7 @@ describe('importar backup preserva a chave atual', () => {
     database.openDatabase(file, { migrations: MIGRATIONS.filter((m) => m.version <= 11) }).close();
     const res = await importFile(fs.readFileSync(file));
     expect(res.status).toBe(200);
-    expect(res.body.data).toMatchObject({ fileVersion: 11, schemaVersion: 18 });
+    expect(res.body.data).toMatchObject({ fileVersion: 11, schemaVersion: 19 });
     expect(res.body.data.migrationsApplied).toContain(12);
     expect(currentKey()).toBe(KEY);
     const v = await view();
@@ -267,7 +267,7 @@ describe('importar backup preserva a chave atual', () => {
       database.openDatabase(file, { migrations: MIGRATIONS.filter((m) => m.version <= version) }).close();
       const res = await importFile(fs.readFileSync(file));
       expect(res.status).toBe(200);
-      expect(res.body.data.schemaVersion).toBe(18);
+      expect(res.body.data.schemaVersion).toBe(19);
       expect(currentKey()).toBe(KEY);
     }
   });

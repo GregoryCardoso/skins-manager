@@ -2,10 +2,11 @@
 
 // Visão agrupada do inventário (8.8, D271-D275). Funções puras, sem banco: recebem os itens já filtrados e ordenados.
 const { buildStatsKey } = require('./itemStatsService');
-const { toUsdCents, approxBrlOf, isValidFxRate } = require('./currencyService');
+const { approxBrlOf, isValidFxRate } = require('./currencyService');
 const { roundCents } = require('./fees/rounding');
 const { isOffSale, isInTradeLock, filterStagnant } = require('./inventoryAgingService');
 const { parseDate } = require('./dateUtils');
+const { EMPTY_COST_INDEX } = require('./operations/costService');
 
 // Agrupa pela chave do itemStats (2.7), na ordem da primeira aparição de cada chave. Devolve [{ key, items }].
 function groupByStatsKey(sortedItems) {
@@ -19,19 +20,17 @@ function groupByStatsKey(sortedItems) {
 }
 
 // Quantidade e custos em USD (cotação gravada em cada compra; GANHEI conta 0). `approxBrl` nulo sem cotação válida.
-function summarizeGroupCost(items, usdBrlRate = null) {
+function summarizeGroupCost(items, usdBrlRate = null, { costIndex = EMPTY_COST_INDEX } = {}) {
   const quantity = items.length;
-  const totalCostUsdCents = items.reduce(
-    (sum, item) => sum + toUsdCents(item.purchasePriceCents, item.purchaseCurrency, item.fxRateAtPurchase, 'ROUND'),
-    0
-  );
+  // Custo efetivo (D362): inclui o dos componentes aplicados do estoque.
+  const totalCostUsdCents = items.reduce((sum, item) => sum + costIndex.effectiveUsdCents(item), 0);
   const avgCostUsdCents = quantity ? roundCents(totalCostUsdCents / quantity, 'ROUND') : 0;
   const hasRate = isValidFxRate(usdBrlRate);
   return {
     quantity,
     totalCostUsdCents,
     avgCostUsdCents,
-    costUsesRecordedFx: items.some((item) => item.purchaseCurrency === 'BRL'),
+    costUsesRecordedFx: items.some((item) => costIndex.effectiveOf(item).estimated),
     approxBrl: hasRate
       ? { totalCostCents: approxBrlOf(totalCostUsdCents, usdBrlRate), avgCostCents: approxBrlOf(avgCostUsdCents, usdBrlRate) }
       : null,

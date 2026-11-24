@@ -12,7 +12,7 @@ const { makeApp, NOW, expectError } = require('../helpers/apiFixtures');
 const { CAT, importCatalogFixture } = require('../helpers/catalog');
 
 const API_FIX = path.join(__dirname, '..', 'fixtures', 'csgo-api');
-const FILES = ['skins', 'stickers', 'crates', 'keychains', 'agents'];
+const FILES = ['skins', 'stickers', 'crates', 'keychains', 'agents', 'patches'];
 
 beforeEach(() => freshDb());
 afterAll(() => closeDb());
@@ -184,7 +184,7 @@ describe('GET /api/catalog/:id e /status: bordas', () => {
   test('/status com tudo zerado devolve as 5 fontes', async () => {
     const res = await request(makeApp()).get('/api/catalog/status');
     expect(res.body.data).toEqual({
-      catalogUpdatedAt: null, countsBySource: { SKINS: 0, STICKERS: 0, CRATES: 0, KEYCHAINS: 0, AGENTS: 0 }, total: 0,
+      catalogUpdatedAt: null, countsBySource: { SKINS: 0, STICKERS: 0, CRATES: 0, KEYCHAINS: 0, AGENTS: 0, PATCHES: 0 }, total: 0,
     });
   });
 });

@@ -9,7 +9,7 @@ import type { ItemComponent } from '@/types/api';
 const catalog = (id: string) => ({ id, name: `Sticker | ${id}`, namePtBr: null, imageUrl: null });
 const component = (over: Partial<ItemComponent>): ItemComponent => ({
   id: 1, kind: 'STICKER', catalogId: 'st1', name: 'Sticker | st1', namePtBr: null, imageUrl: null, slot: null, wear: null, pattern: null,
-  source: 'MANUAL', origin: 'CAME_WITH', ...over,
+  source: 'MANUAL', origin: 'CAME_WITH', sourceItemId: null, operationId: null, undoable: false, scrapeable: false, ...over,
 });
 
 describe('desgaste em %', () => {
@@ -32,7 +32,7 @@ describe('buildComponentsBody', () => {
   test('stickers com slot e desgaste mais o pendurado com pattern', () => {
     const a = { ...newStickerDraft(), catalog: catalog('st1'), slot: '2', wearText: '10' };
     const b = { ...newStickerDraft(), catalog: catalog('st2') };
-    const result = buildComponentsBody({ stickers: [a, b], hanging: { kind: 'STICKER_SLAB', catalog: catalog('st3'), patternText: '77' } }, 'en');
+    const result = buildComponentsBody({ stickers: [a, b], hanging: { kind: 'STICKER_SLAB', catalog: catalog('st3'), patternText: '77' }, patches: [], applied: [] }, 'en');
     expect(result).toEqual({
       ok: true,
       body: [
@@ -43,11 +43,11 @@ describe('buildComponentsBody', () => {
     });
   });
   test('erros locais: sem item do catálogo, desgaste e pattern inválidos', () => {
-    expect(buildComponentsBody({ stickers: [newStickerDraft()], hanging: null }, 'en')).toMatchObject({ ok: false, errorKey: 'itemForm.components.chooseSticker', params: { n: 1 } });
+    expect(buildComponentsBody({ stickers: [newStickerDraft()], hanging: null, patches: [], applied: [] }, 'en')).toMatchObject({ ok: false, errorKey: 'itemForm.components.chooseSticker', params: { n: 1 } });
     const bad = { ...newStickerDraft(), catalog: catalog('st1'), wearText: 'x' };
-    expect(buildComponentsBody({ stickers: [bad], hanging: null }, 'en')).toMatchObject({ ok: false, errorKey: 'itemForm.components.invalidWear' });
-    expect(buildComponentsBody({ stickers: [], hanging: { kind: 'CHARM', catalog: null, patternText: '' } }, 'en')).toMatchObject({ ok: false, errorKey: 'itemForm.components.chooseCharm' });
-    expect(buildComponentsBody({ stickers: [], hanging: { kind: 'CHARM', catalog: catalog('c'), patternText: '1000000' } }, 'en')).toMatchObject({ ok: false, errorKey: 'itemForm.components.invalidPattern' });
+    expect(buildComponentsBody({ stickers: [bad], hanging: null, patches: [], applied: [] }, 'en')).toMatchObject({ ok: false, errorKey: 'itemForm.components.invalidWear' });
+    expect(buildComponentsBody({ stickers: [], hanging: { kind: 'CHARM', catalog: null, patternText: '' }, patches: [], applied: [] }, 'en')).toMatchObject({ ok: false, errorKey: 'itemForm.components.chooseCharm' });
+    expect(buildComponentsBody({ stickers: [], hanging: { kind: 'CHARM', catalog: catalog('c'), patternText: '1000000' }, patches: [], applied: [] }, 'en')).toMatchObject({ ok: false, errorKey: 'itemForm.components.invalidPattern' });
   });
 });
 

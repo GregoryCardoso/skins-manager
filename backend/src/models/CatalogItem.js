@@ -120,7 +120,7 @@ function search({ tokens, category, limit, dedupe = false }) {
 }
 
 function countBySource() {
-  const counts = { SKINS: 0, STICKERS: 0, CRATES: 0, KEYCHAINS: 0, AGENTS: 0 };
+  const counts = { SKINS: 0, STICKERS: 0, CRATES: 0, KEYCHAINS: 0, AGENTS: 0, PATCHES: 0 };
   for (const row of getDb().prepare('SELECT source, COUNT(*) AS n FROM catalog_items GROUP BY source').all()) {
     counts[row.source] = row.n;
   }

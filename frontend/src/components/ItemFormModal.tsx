@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
 import { resolveErrorTarget } from '@/lib/formErrors';
@@ -17,8 +18,9 @@ import {
   type CatalogChoice, type FormContext, type FormErrors, type ItemFormState,
 } from '@/lib/itemForm';
 import { formatDecimalInput } from '@/lib/numberInput';
+import { queryKeys } from '@/lib/queryKeys';
 import { useInvalidate } from '@/lib/useInvalidate';
-import { ApiRequestError, createItem, updateItem } from '@/services/api';
+import { ApiRequestError, createItem, getCatalogStatus, updateItem } from '@/services/api';
 import type { AcquisitionType, CatalogItem, Category, Currency, Exterior, ItemPatchBody, ItemView, Store, Variant } from '@/types/api';
 import CatalogAutocomplete, { catalogDisplayName } from './CatalogAutocomplete';
 import FormField from './FormField';
@@ -73,9 +75,12 @@ export default function ItemFormModal({ item, stores, onClose, onSaved, onGone }
   const store = findStore(stores, state.purchaseStoreId);
   const isLegacy = editing && item.isLegacy && !state.catalog;
   const showSearch = !state.catalog && !state.freeMode ? true : changingItem;
-  const allowComponents = componentsAllowedFor(category);
-  // Trocar para uma categoria sem componentes remove os gravados (aviso no formulário; o backend recusa o resto).
-  const willRemoveComponents = !allowComponents && editing && item.components.length > 0;
+  // Agente: a seção de patches só aparece quando o catálogo tem patches (ou o agente já tem algum; 10.3, D362).
+  const catalogStatus = useQuery({ queryKey: queryKeys.catalog.status, queryFn: ({ signal }) => getCatalogStatus(signal) });
+  const patchesAvailable = (catalogStatus.data?.countsBySource.PATCHES ?? 0) > 0 || (editing && item.components.some((c) => c.kind === 'PATCH'));
+  const allowComponents = componentsAllowedFor(category, patchesAvailable);
+  // Trocar para uma categoria sem componentes remove os gravados que vieram junto (aviso no formulário; o backend recusa o resto).
+  const willRemoveComponents = !allowComponents && editing && item.components.some((c) => c.origin !== 'APPLIED_FROM_STOCK');
 
   const onPickCatalog = (picked: CatalogItem) => {
     setState((s) => applyCatalogChoice(s, picked as CatalogChoice));
@@ -332,6 +337,9 @@ export default function ItemFormModal({ item, stores, onClose, onSaved, onGone }
         {/* Componentes aplicados (stickers e chaveiro): só SKIN, não mudam o custo */}
         {allowComponents && (
           <ItemComponentsSection
+            itemId={editing ? item.id : undefined}
+            category={category}
+            onItemChanged={onSaved}
             state={components}
             onChange={(next) => {
               setComponents(next);

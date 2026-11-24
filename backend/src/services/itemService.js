@@ -6,9 +6,10 @@ const Item = require('../models/Item');
 const Store = require('../models/Store');
 const Setting = require('../models/Setting');
 const ItemComponent = require('../models/ItemComponent');
+const ItemOperation = require('../models/ItemOperation');
 const { runInTransaction } = require('../models/modelHelpers');
 const { MAX_AMOUNT_CENTS, MAX_NAME_LENGTH } = require('../config/constants');
-const { ValidationError, NotFoundError, ConflictError } = require('../errors/AppError');
+const { AppError, ValidationError, NotFoundError, ConflictError } = require('../errors/AppError');
 const { isValidFxRate } = require('./currencyService');
 const { parseDate, toIso, formatDateTimeBr } = require('./dateUtils');
 const {
@@ -29,7 +30,9 @@ const { getStoreOrFail } = require('./storeService');
 const { getAgingThresholds } = require('./settingsService');
 const externalLinkService = require('./externalLinkService');
 const itemComponentService = require('./itemComponentService');
+const operationContextService = require('./operations/operationContext');
 
+// `GERADO` só nasce de uma transformação (2.1, 10.4+); o cadastro e a edição não o aceitam.
 const ACQUISITION_TYPES = ['GANHEI', 'COMPRA'];
 
 const SALE_FIELDS_NULL = {
@@ -352,17 +355,47 @@ function toCatalogSummary(entry) {
   };
 }
 
+// Lugar onde a unidade foi consumida (operação ativa): { operationId, occurredAt, targetItemId, targetName }, ou null.
+function consumedInOf(item, opCtx) {
+  if (item.status !== 'CONSUMIDO') return null;
+  const link = opCtx.consumedByItem.get(item.id);
+  if (!link) return null;
+  const operation = opCtx.opsById.get(link.operationId);
+  const targetLink = (opCtx.linksByOperation.get(link.operationId) ?? []).find((l) => l.role === 'TARGET');
+  const target = targetLink ? opCtx.itemsById.get(targetLink.itemId) : null;
+  return {
+    operationId: link.operationId,
+    occurredAt: operation ? operation.occurredAt : item.consumedAt,
+    targetItemId: targetLink ? targetLink.itemId : null,
+    targetName: target ? target.name : null,
+  };
+}
+
 function toItemView(
   item,
-  { stores, settings, statsIndex, catalogById = new Map(), externalSources = new Map(), componentsByItemId = new Map(), now = new Date(), thresholds }
+  {
+    stores, settings, statsIndex, catalogById = new Map(), externalSources = new Map(), componentsByItemId = new Map(), now = new Date(), thresholds,
+    operationContext: opCtx = operationContextService.EMPTY_OPERATION_CONTEXT,
+  }
 ) {
   const inStock = item.status === 'EM_ESTOQUE';
   const componentRows = componentsByItemId.get(item.id) ?? [];
+  const costIndex = opCtx.costIndex;
+  const cost = costIndex.effectiveOf(item);
+  const inheritedUsdCents = cost.inheritedUsdCents;
+  const undoableOf = (row) => {
+    const operation = opCtx.opsById.get(row.operationId);
+    return operation ? operationContextService.assessUndo(operation, opCtx).undoable : false;
+  };
   return {
     ...item,
-    // Componentes aplicados (10.1, D344): só exibição; não entram em custo, giro, lucro nem itemStats.
-    components: itemComponentService.toView(componentRows, { catalogById }),
+    // Componentes (10.1, D344; 10.3, D362): os que vieram junto e os aplicados do estoque.
+    components: itemComponentService.toView(componentRows, { catalogById, undoableOf }),
     componentSummary: itemComponentService.toSummary(componentRows),
+    // Custo efetivo (D362): o próprio mais o dos componentes aplicados do estoque; o `purchasePrice` nunca muda.
+    cost: { ownUsdCents: cost.ownUsdCents, inheritedUsdCents, effectiveUsdCents: cost.effectiveUsdCents, estimated: cost.estimated },
+    consumedIn: consumedInOf(item, opCtx),
+    canReceiveComponents: inStock && itemComponentService.allowedKindsFor(item.category).length > 0,
     // Origem da importação (D318): 'CSFLOAT' se o item tem vínculo de compra ou venda com a loja externa; senão null.
     externalSource: externalSources.get(item.id) ?? null,
     // Legado: sem vínculo com o catálogo numa categoria que o exige (D82).
@@ -373,11 +406,11 @@ function toItemView(
     catalog: isNil(item.catalogId) ? null : toCatalogSummary(catalogById.get(item.catalogId)),
     tradeLock: getTradeLockStatus(item.tradeUnlockAt, now),
     aging: getAging(item, { thresholds, now }),
-    minPrices: inStock ? minPricesForItem({ item, stores, settings }) : null,
-    saleProfitUsdCents: computeSaleProfitUsdCents(item),
-    saleInfo: buildSaleInfo(item, settings ? settings.usdBrlRate : null),
+    minPrices: inStock ? minPricesForItem({ item, stores, settings, costParts: costIndex.hasOperations ? cost.parts : undefined }) : null,
+    saleProfitUsdCents: computeSaleProfitUsdCents(item, { inheritedUsdCents }),
+    saleInfo: buildSaleInfo(item, settings ? settings.usdBrlRate : null, { inheritedUsdCents }),
     saleRelease: computeSaleRelease(item, now),
-    stats: statsIndex.get(buildStatsKey(item)) ?? computeStats([item]),
+    stats: statsIndex.get(buildStatsKey(item)) ?? computeStats([item], { costIndex }),
   };
 }
 
@@ -393,10 +426,11 @@ function loadCatalogMap(items, componentsByItemId) {
 function loadContext() {
   const items = Item.findAll();
   const componentsByItemId = ItemComponent.listAll();
+  const operationContext = operationContextService.loadOperationContext(items);
   return {
-    items, stores: Store.findAll(), settings: Setting.get(), statsIndex: buildStatsIndex(items),
+    items, stores: Store.findAll(), settings: Setting.get(), statsIndex: buildStatsIndex(items, { costIndex: operationContext.costIndex }),
     catalogById: loadCatalogMap(items, componentsByItemId), componentsByItemId,
-    externalSources: externalLinkService.sourcesByItemIds(),
+    externalSources: externalLinkService.sourcesByItemIds(), operationContext,
   };
 }
 
@@ -412,18 +446,57 @@ function loadStatsGroup({ category, name }, key) {
 
 function viewOf(item, { now, thresholds }) {
   const key = buildStatsKey(item);
-  const statsIndex = new Map([[key, computeStats(loadStatsGroup(item, key))]]);
+  const operationContext = operationContextService.loadOperationContext([item]);
+  const statsIndex = new Map([[key, computeStats(loadStatsGroup(item, key), { costIndex: operationContext.costIndex })]]);
   const componentsByItemId = ItemComponent.listByItemIds([item.id]);
   const catalogById = loadCatalogMap([item], componentsByItemId);
   const externalSources = externalLinkService.sourcesByItemIds([item.id]);
   return toItemView(item, {
-    stores: Store.findAll(), settings: Setting.get(), statsIndex, catalogById, externalSources, componentsByItemId, now, thresholds,
+    stores: Store.findAll(), settings: Setting.get(), statsIndex, catalogById, externalSources, componentsByItemId, now, thresholds, operationContext,
   });
 }
 
 // Valida a lista de componentes contra a categoria final do item e o catálogo (itemComponentService).
-function normalizeComponentsFor(components, category, source = 'MANUAL') {
-  return itemComponentService.normalizeComponents(components, { category, source, findCatalogById: (id) => catalogService.getCatalogItem(id) });
+function normalizeComponentsFor(components, category, source = 'MANUAL', existingRows = []) {
+  return itemComponentService.normalizeComponents(components, {
+    category, source, existingRows, findCatalogById: (id) => catalogService.getCatalogItem(id),
+  });
+}
+
+// `components` do PATCH (10.3, D362 item 7): a lista dos que VIERAM JUNTO; os aplicados do estoque ficam sempre, contam nos limites e só
+// aceitam slot/wear/pattern por entrada com o `id` de um componente aplicado do próprio item. Devolve { came, appliedUpdates }.
+function splitComponentInput(list, appliedRows) {
+  const came = [];
+  const appliedUpdates = [];
+  list.forEach((entry, index) => {
+    if (entry && entry.id !== undefined && entry.id !== null) {
+      const row = appliedRows.find((r) => r.id === entry.id);
+      if (!row) {
+        throw new ValidationError('Componente inválido para este item.', 'INVALID_COMPONENT_FIELD', { field: 'components', params: { index, field: 'id' } });
+      }
+      const pick = (key) => (hasKey(entry, key) ? entry[key] : row[key]);
+      const next = { slot: pick('slot'), wear: pick('wear'), pattern: pick('pattern') };
+      itemComponentService.checkNumbers(row.kind, next, index);
+      appliedUpdates.push({ id: row.id, ...next });
+    } else {
+      came.push(entry);
+    }
+  });
+  return { came, appliedUpdates };
+}
+
+// Mudar a aquisição para depois de uma operação ativa da unidade quebraria o histórico (D362 item 7).
+function assertAcquiredBeforeOperations(itemId, acquiredAtIso) {
+  const active = operationContextService.loadActiveOperations();
+  for (const link of active.links) {
+    if (link.itemId !== itemId) continue;
+    const operation = active.opsById.get(link.operationId);
+    if (operation && Date.parse(acquiredAtIso) > Date.parse(operation.occurredAt)) {
+      throw new AppError(422, 'OPERATION_DATE_INVALID', 'A data de aquisição não pode ser depois de uma operação da unidade.', {
+        field: 'acquiredAt', params: { reason: 'ACQUIRED_AFTER_OPERATION', operationId: operation.id, occurredAt: operation.occurredAt },
+      });
+    }
+  }
 }
 
 function findOrFail(id) {
@@ -432,11 +505,19 @@ function findOrFail(id) {
   return item;
 }
 
+// Unidade consumida por uma transformação (10.3, D362): não se vende, não vai para o holding e não se edita; desfaz-se a operação.
+function assertNotConsumed(item) {
+  if (item.status === 'CONSUMIDO') {
+    throw new ConflictError('Esta unidade foi consumida. Desfaça a aplicação antes.', 'ITEM_CONSUMED', { params: { itemId: item.id } });
+  }
+}
+
 // Filtros e ordenação comuns à lista individual e à agrupada (D272), nesta ordem: category, status, saleState, stagnantOnly e ordenação.
 // `saleStateCounts` (D265, adendo 1 da revisão 8.6/8.7): sobre os itens em estoque, com a categoria, independente de status,
 // saleState e stagnantOnly.
 function selectItems(all, query, { now, thresholds }) {
-  let items = all;
+  // Sem `status`, só EM_ESTOQUE e VENDIDO (D362 item 8): as consumidas só vêm com `status=CONSUMIDO`.
+  let items = query.status ? all : all.filter((i) => i.status !== 'CONSUMIDO');
   if (query.category) items = items.filter((i) => i.category === query.category);
   const stock = items.filter((i) => i.status === 'EM_ESTOQUE');
   if (query.status) items = items.filter((i) => i.status === query.status);
@@ -450,11 +531,11 @@ function selectItems(all, query, { now, thresholds }) {
 }
 
 function listItems(query = {}, { now = new Date(), thresholds = getAgingThresholds() } = {}) {
-  const { items: all, stores, settings, statsIndex, catalogById, externalSources, componentsByItemId } = loadContext();
+  const { items: all, stores, settings, statsIndex, catalogById, externalSources, componentsByItemId, operationContext } = loadContext();
   const { items, saleStateCounts } = selectItems(all, query, { now, thresholds });
 
   return {
-    items: items.map((item) => toItemView(item, { stores, settings, statsIndex, catalogById, externalSources, componentsByItemId, now, thresholds })),
+    items: items.map((item) => toItemView(item, { stores, settings, statsIndex, catalogById, externalSources, componentsByItemId, now, thresholds, operationContext })),
     meta: {
       count: items.length,
       saleStateCounts,
@@ -469,7 +550,7 @@ function listItems(query = {}, { now = new Date(), thresholds = getAgingThreshol
 // Visão agrupada (D271-D275): só itens em estoque, mesma seleção e ordenação da lista individual. Os grupos seguem a
 // ordem da primeira aparição na lista ordenada; `stock` conta todo o estoque da chave, independente da aba e dos filtros.
 function listItemGroups(query = {}, { now = new Date(), thresholds = getAgingThresholds() } = {}) {
-  const { items: all, stores, settings, statsIndex, catalogById, externalSources, componentsByItemId } = loadContext();
+  const { items: all, stores, settings, statsIndex, catalogById, externalSources, componentsByItemId, operationContext } = loadContext();
   const { items, saleStateCounts } = selectItems(all, { ...query, status: 'EM_ESTOQUE' }, { now, thresholds });
 
   const stockByKey = new Map();
@@ -493,12 +574,12 @@ function listItemGroups(query = {}, { now = new Date(), thresholds = getAgingThr
       catalog: withCatalog ? toCatalogSummary(catalogById.get(withCatalog.catalogId)) : null,
       // QTD e custos do grupo inteiro em estoque (9.5.1a, D334 revista pelo usuário): batem com "X à venda · Y no holding";
       // ao expandir aparecem só as unidades da aba e dos filtros.
-      ...summarizeGroupCost(stockByKey.get(key) ?? units, settings.usdBrlRate),
+      ...summarizeGroupCost(stockByKey.get(key) ?? units, settings.usdBrlRate, { costIndex: operationContext.costIndex }),
       // Unidades do grupo em estoque com algum componente (10.1, D344); fora da chave do agrupamento (2.7).
       componentUnits: (stockByKey.get(key) ?? units).filter((u) => (componentsByItemId.get(u.id) ?? []).length > 0).length,
       stagnantCount: countStagnant(units, thresholds, now),
       stock: summarizeStockStates(stockByKey.get(key) ?? [], now),
-      units: units.map((item) => toItemView(item, { stores, settings, statsIndex, catalogById, externalSources, componentsByItemId, now, thresholds })),
+      units: units.map((item) => toItemView(item, { stores, settings, statsIndex, catalogById, externalSources, componentsByItemId, now, thresholds, operationContext })),
     };
   });
 
@@ -518,7 +599,7 @@ function listItemGroups(query = {}, { now = new Date(), thresholds = getAgingThr
 
 // Vendas (D124/D127): lista filtrada/ordenada + resumo sobre o mesmo conjunto. Estatísticas usam todos os itens.
 function listSales(query = {}, { now = new Date(), thresholds = getAgingThresholds() } = {}) {
-  const { items: all, stores, settings, statsIndex, catalogById, externalSources, componentsByItemId } = loadContext();
+  const { items: all, stores, settings, statsIndex, catalogById, externalSources, componentsByItemId, operationContext } = loadContext();
   let items = all.filter((i) => i.status === 'VENDIDO');
   if (!isNil(query.saleStoreId)) items = items.filter((i) => i.saleStoreId === query.saleStoreId);
   items = filterSoldInPeriod(items, { soldFrom: query.soldFrom, soldTo: query.soldTo });
@@ -526,8 +607,8 @@ function listSales(query = {}, { now = new Date(), thresholds = getAgingThreshol
   if (sortKey === 'turnaround') items = sortByTurnaround(items, query.order ?? 'asc');
   else items = sortBySoldAt(items, query.order ?? 'desc');
   return {
-    items: items.map((item) => toItemView(item, { stores, settings, statsIndex, catalogById, externalSources, componentsByItemId, now, thresholds })),
-    summary: computeSalesSummary(items, { usdBrlRate: settings.usdBrlRate }),
+    items: items.map((item) => toItemView(item, { stores, settings, statsIndex, catalogById, externalSources, componentsByItemId, now, thresholds, operationContext })),
+    summary: computeSalesSummary(items, { usdBrlRate: settings.usdBrlRate, costIndex: operationContext.costIndex }),
     meta: {
       count: items.length,
       fastTurnoverDays: thresholds.fastTurnoverDays,
@@ -569,6 +650,7 @@ function bulkChangeSaleState(direction, body, ctx = {}) {
     for (const id of body.itemIds) {
       const item = Item.findById(id);
       if (!item) throw new NotFoundError('Item não encontrado.', 'ITEM_NOT_FOUND', { params: { itemId: id } });
+      assertNotConsumed(item);
       if (item.status !== 'EM_ESTOQUE') throw new ConflictError('Item já vendido.', 'ITEM_ALREADY_SOLD', { params: { itemId: id } });
       const alreadyThere = direction === 'OFF_SALE' ? isOffSale(item) : !isOffSale(item);
       if (alreadyThere) unchangedCount += 1;
@@ -621,6 +703,7 @@ function createItem(input, ctx = {}) {
 function updateItem(id, partial, ctx = {}) {
   const { now = new Date(), thresholds = getAgingThresholds() } = ctx;
   const existing = findOrFail(id);
+  assertNotConsumed(existing);
   const catalogEntry = loadCatalogEntry(partial, existing);
   const identity = resolveItemIdentity({
     body: partial, existing, catalogEntry, freeNameCatalogMatch: lookupFreeNameMatch(partial, existing),
@@ -650,13 +733,25 @@ function updateItem(id, partial, ctx = {}) {
   if (catalogEntry && (catalogChanged || hasKey(partial, 'floatValue'))) {
     assertFloatInCatalogRange(record.floatValue, catalogEntry);
   }
-  // Componentes (10.1): presente = substitui a lista; ausente = não mexe, mas a categoria final precisa aceitar os já gravados.
+  if (!existing.acquiredAt || toIso(existing.acquiredAt) !== record.acquiredAt) assertAcquiredBeforeOperations(id, record.acquiredAt);
+  // Componentes (10.1, 10.3): presente = substitui a lista dos que vieram junto (os aplicados do estoque ficam); ausente = não mexe,
+  // mas a categoria final precisa aceitar os já gravados.
+  const currentRows = ItemComponent.listByItemIds([id]).get(id) ?? [];
+  const appliedRows = currentRows.filter((row) => row.origin === 'APPLIED_FROM_STOCK');
+  itemComponentService.assertExistingAllowed(appliedRows, identity.category);
   let components = null;
-  if (hasKey(partial, 'components')) components = normalizeComponentsFor(partial.components, identity.category);
-  else itemComponentService.assertExistingAllowed(ItemComponent.listByItemIds([id]).get(id) ?? [], identity.category);
+  let appliedUpdates = [];
+  if (hasKey(partial, 'components')) {
+    const split = splitComponentInput(partial.components, appliedRows);
+    appliedUpdates = split.appliedUpdates;
+    components = normalizeComponentsFor(split.came, identity.category, 'MANUAL', appliedRows);
+  } else {
+    itemComponentService.assertExistingAllowed(currentRows, identity.category);
+  }
   return inTransaction(() => {
     const updated = Item.update(id, { ...record, catalogId: identity.catalogId }, { now });
-    if (components) ItemComponent.replaceForItem(id, components, { now });
+    if (components) ItemComponent.replaceCameWithForItem(id, components, { now });
+    for (const change of appliedUpdates) ItemComponent.updateNumbers(change.id, change, { now });
     return viewOf(updated, { now, thresholds });
   });
 }
@@ -665,6 +760,11 @@ function updateItem(id, partial, ctx = {}) {
 function deleteItem(id, ctx = {}) {
   const { now = new Date() } = ctx;
   return inTransaction(() => {
+    // Unidade em operação ativa não se exclui (D362 item 7): desfaz-se a operação antes. As desfeitas são apagadas (o RESTRICT impediria).
+    if (ItemOperation.hasActiveLink(id)) {
+      throw new ConflictError('Esta unidade participa de uma operação. Desfaça a operação antes de excluir.', 'ITEM_IN_OPERATION', { params: { itemId: id } });
+    }
+    ItemOperation.deleteUndoneForItem(id);
     externalLinkService.detachOnRemove('ITEM_PURCHASE', id, { now });
     externalLinkService.detachOnRemove('ITEM_SALE', id, { now });
     if (!Item.remove(id)) throw new NotFoundError('Item não encontrado.', 'ITEM_NOT_FOUND');
@@ -677,6 +777,7 @@ function deleteItem(id, ctx = {}) {
 function sellItem(id, input, ctx = {}) {
   const { now = new Date(), thresholds = getAgingThresholds(), saleReleaseAt = null } = ctx;
   const item = findOrFail(id);
+  assertNotConsumed(item);
   if (item.status !== 'EM_ESTOQUE') throw new ConflictError('Item já vendido.', 'ITEM_ALREADY_SOLD');
   const store = getStoreOrFail(input.saleStoreId, { field: 'saleStoreId' });
   const { record, sale } = buildSaleRecord(item, input, { store, settings: Setting.get(), now });
@@ -688,6 +789,7 @@ function sellItem(id, input, ctx = {}) {
 function unsellItem(id, ctx = {}) {
   const { now = new Date(), thresholds = getAgingThresholds() } = ctx;
   const item = findOrFail(id);
+  assertNotConsumed(item);
   if (item.status !== 'VENDIDO') throw new ConflictError('Item não está vendido.', 'ITEM_NOT_SOLD');
   return inTransaction(() => {
     externalLinkService.detachOnRemove('ITEM_SALE', id, { now });
@@ -710,6 +812,7 @@ function updateImportedSaleRelease(id, saleReleaseAt, ctx = {}) {
 function markOffSale(id, ctx = {}) {
   const { now = new Date(), thresholds = getAgingThresholds() } = ctx;
   const item = findOrFail(id);
+  assertNotConsumed(item);
   if (item.status !== 'EM_ESTOQUE') throw new ConflictError('Item já vendido.', 'ITEM_ALREADY_SOLD');
   if (isOffSale(item)) return { item: viewOf(item, { now, thresholds }) };
   return { item: inTransaction(() => viewOf(Item.update(id, { offSaleAt: now.toISOString() }, { now }), { now, thresholds })) };
@@ -719,6 +822,7 @@ function markOffSale(id, ctx = {}) {
 function markForSale(id, ctx = {}) {
   const { now = new Date(), thresholds = getAgingThresholds() } = ctx;
   const item = findOrFail(id);
+  assertNotConsumed(item);
   if (item.status !== 'EM_ESTOQUE') throw new ConflictError('Item já vendido.', 'ITEM_ALREADY_SOLD');
   if (!isOffSale(item)) return { item: viewOf(item, { now, thresholds }) };
   const patch = { forSaleSince: now.toISOString(), offSaleAt: null };
@@ -727,7 +831,8 @@ function markForSale(id, ctx = {}) {
 
 function getItemStats({ name, category, variant, exterior, phase }) {
   const key = buildStatsKey({ name, category, variant, exterior, phase });
-  return { key, ...computeStats(loadStatsGroup({ category, name }, key)) };
+  const group = loadStatsGroup({ category, name }, key);
+  return { key, ...computeStats(group, { costIndex: operationContextService.loadOperationContext(group).costIndex }) };
 }
 
 module.exports = {

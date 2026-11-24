@@ -47,10 +47,43 @@ function replaceForItem(itemId, rows, { now = new Date() } = {}) {
   insertMany(itemId, rows, { now });
 }
 
+function findById(id) {
+  return mapRow(getDb().prepare('SELECT * FROM item_components WHERE id = ?').get(id));
+}
+
+// Insere um componente e devolve a linha gravada.
+function insertOne(itemId, row, { now = new Date() } = {}) {
+  const stamp = now.toISOString();
+  const id = insertRow(getDb(), 'item_components', { ...row, itemId }, FIELDS, { created_at: stamp, updated_at: stamp });
+  return findById(Number(id));
+}
+
+// Troca slot, desgaste e pattern de um componente (aplicado do estoque: o desgaste raspado aos poucos).
+function updateNumbers(id, { slot, wear, pattern }, { now = new Date() } = {}) {
+  return getDb()
+    .prepare('UPDATE item_components SET slot = ?, wear = ?, pattern = ?, updated_at = ? WHERE id = ?')
+    .run(slot, wear, pattern, now.toISOString(), id).changes > 0;
+}
+
+function remove(id) {
+  return getDb().prepare('DELETE FROM item_components WHERE id = ?').run(id).changes > 0;
+}
+
+// Componentes criados por uma operação (o desfazer da aplicação os apaga).
+function removeByOperation(operationId) {
+  return getDb().prepare('DELETE FROM item_components WHERE operation_id = ?').run(operationId).changes;
+}
+
+// Substitui só os componentes que vieram junto (os aplicados do estoque ficam; D362). O chamador abre a transação.
+function replaceCameWithForItem(itemId, rows, { now = new Date() } = {}) {
+  getDb().prepare("DELETE FROM item_components WHERE item_id = ? AND origin = 'CAME_WITH'").run(itemId);
+  insertMany(itemId, rows, { now });
+}
+
 function countByItemIds(ids) {
   const out = new Map();
   for (const [itemId, rows] of listByItemIds(ids)) out.set(itemId, rows.length);
   return out;
 }
 
-module.exports = { listAll, listByItemIds, insertMany, replaceForItem, countByItemIds };
+module.exports = { replaceCameWithForItem, findById, insertOne, updateNumbers, remove, removeByOperation, listAll, listByItemIds, insertMany, replaceForItem, countByItemIds };

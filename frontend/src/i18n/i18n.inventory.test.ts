@@ -9,13 +9,13 @@ function get(node: unknown, key: string): unknown {
 
 // Valores dos tipos de src/types/api.ts (espelham o backend).
 const ENUMS: Record<string, string[]> = {
-  category: ['SKIN', 'FACA', 'LUVA', 'CAIXA', 'CAPSULA', 'STICKER', 'PINGENTE', 'PERSONAGEM', 'PASSE_BATALHA', 'OUTRO'],
+  category: ['SKIN', 'FACA', 'LUVA', 'CAIXA', 'CAPSULA', 'STICKER', 'PINGENTE', 'PERSONAGEM', 'PASSE_BATALHA', 'OUTRO', 'PATCH'],
   variant: ['NORMAL', 'STATTRAK', 'SOUVENIR'],
   exterior: ['FN', 'MW', 'FT', 'WW', 'BS'],
   exteriorShort: ['FN', 'MW', 'FT', 'WW', 'BS'],
-  acquisitionType: ['GANHEI', 'COMPRA'],
-  status: ['EM_ESTOQUE', 'VENDIDO'],
-  agingBucket: ['RECENTE', 'EM_GIRO', 'AGARRADO', 'EM_TRADE_LOCK', 'FORA_DE_VENDA'],
+  acquisitionType: ['GANHEI', 'COMPRA', 'GERADO'],
+  status: ['EM_ESTOQUE', 'VENDIDO', 'CONSUMIDO'],
+  agingBucket: ['RECENTE', 'EM_GIRO', 'AGARRADO', 'EM_TRADE_LOCK', 'FORA_DE_VENDA', 'CONSUMIDO'],
   turnaroundBucket: ['GIRO_RAPIDO', 'GIRO_NORMAL', 'DEMOROU_VENDER', 'SEM_GIRO'],
 };
 

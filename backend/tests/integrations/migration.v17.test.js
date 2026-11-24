@@ -59,7 +59,7 @@ function seedV16(dbPath) {
   return before;
 }
 
-const withoutNewColumn = (rows) => rows.map(({ components_imported_at: imported, ...rest }) => {
+const withoutNewColumn = (rows) => rows.map(({ components_imported_at: imported, consumed_at: consumed, ...rest }) => {
   expect(imported).toBeNull();
   return rest;
 });
@@ -69,7 +69,7 @@ test('v17 sobre v16 com dados variados: itens, aportes, lojas e configurações 
   const before = seedV16(dbPath);
   const db = openDatabase(dbPath, { now: new Date('2026-11-23T12:00:00.000Z') });
   try {
-    expect(db.pragma('user_version', { simple: true })).toBe(18);
+    expect(db.pragma('user_version', { simple: true })).toBe(19);
     const after = snapshot(db);
     expect(withoutNewColumn(after.items)).toEqual(before.items);
     expect(after.deposits).toEqual(before.deposits);
@@ -95,7 +95,7 @@ test('reabrir um banco já na v17 não reaplica a migração nem cria outro back
   const first = count();
   const reopened = openDatabase(dbPath);
   try {
-    expect(reopened.pragma('user_version', { simple: true })).toBe(18);
+    expect(reopened.pragma('user_version', { simple: true })).toBe(19);
   } finally {
     reopened.close();
   }
@@ -126,17 +126,17 @@ test('v17 falha no meio: rollback total (sem tabelas nem coluna), versão 16 e d
   }
   const ok = openDatabase(dbPath);
   try {
-    expect(ok.pragma('user_version', { simple: true })).toBe(18);
+    expect(ok.pragma('user_version', { simple: true })).toBe(19);
     expect(ok.prepare('SELECT COUNT(*) n FROM items').get().n).toBe(before.items.length);
   } finally {
     ok.close();
   }
 });
 
-test('banco com user_version 19 é recusado e o arquivo fica inalterado', () => {
+test('banco com user_version 99 é recusado e o arquivo fica inalterado', () => {
   const dbPath = newPath();
   const raw = openDatabase(dbPath);
-  raw.pragma('user_version = 19');
+  raw.pragma('user_version = 99');
   raw.close();
   const before = hash(dbPath);
   expect(() => openDatabase(dbPath)).toThrow(/versão mais nova do Skins Manager/);

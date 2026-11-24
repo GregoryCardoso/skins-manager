@@ -53,6 +53,7 @@ function validateUndoBody(req, res, next) {
 }
 
 const { RESOLVE_ACTIONS, BULK_ACTIONS } = require('../services/imports/entryActions');
+const { checkApplyFields } = require('./operationValidators');
 
 const PURCHASE_FIELDS = ['purchaseStoreId', 'purchasePriceCents', 'fxRateAtPurchase', 'acquiredAt', 'tradeUnlockAt'];
 const isNilValue = (v) => v === undefined || v === null;
@@ -82,7 +83,7 @@ function validatePurchase(purchase) {
 function validateResolveBody(req, res, next) {
   const body = req.body === undefined ? {} : req.body;
   requireObjectBody(body);
-  rejectUnknownFields(body, ['action', 'targetId', 'purchase', 'confirmWarnings', 'purchaseOnly', 'acquiredAt']);
+  rejectUnknownFields(body, ['action', 'targetId', 'purchase', 'confirmWarnings', 'purchaseOnly', 'acquiredAt', 'sourceItemId', 'appliedAt', 'slot', 'wear', 'pattern']);
   if (body.action === undefined) throw new ValidationError('Informe a ação.', 'REQUIRED_FIELD', { field: 'action' });
   if (!RESOLVE_ACTIONS.includes(body.action)) {
     throw new ValidationError('Ação inválida.', 'INVALID_FIELD', { field: 'action' });
@@ -108,6 +109,14 @@ function validateResolveBody(req, res, next) {
     throw new ValidationError('acquiredAt só vale para MARK_WON.', 'INVALID_FIELD', { field: 'acquiredAt' });
   }
   optionalDateText(body.acquiredAt, 'acquiredAt');
+  const applyKeys = ['sourceItemId', 'appliedAt', 'slot', 'wear', 'pattern'];
+  if (body.action === 'APPLY_FROM_STOCK') {
+    checkApplyFields(body);
+    if (typeof body.appliedAt !== 'string') throw new ValidationError('Informe a data da aplicação.', 'REQUIRED_FIELD', { field: 'appliedAt' });
+  } else {
+    const stray = applyKeys.find((key) => body[key] !== undefined);
+    if (stray) throw new ValidationError(`${stray} só vale para APPLY_FROM_STOCK.`, 'INVALID_FIELD', { field: stray });
+  }
   req.body = body;
   return next();
 }

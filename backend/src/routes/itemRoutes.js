@@ -1,7 +1,9 @@
 const { Router } = require('express');
 const controller = require('../controllers/itemController');
+const operationController = require('../controllers/itemOperationController');
 const validateIdParam = require('../middlewares/validateIdParam');
 const v = require('../middlewares/itemValidators');
+const operationValidators = require('../middlewares/operationValidators');
 
 const { requireJsonForWrites } = require('../middlewares/validationHelpers');
 
@@ -22,5 +24,13 @@ router.post('/:id/sell', validateIdParam, v.validateSellBody, controller.sell);
 router.post('/:id/unsell', validateIdParam, v.validateUnsellBody, controller.unsell);
 router.post('/:id/off-sale', validateIdParam, v.validateSaleStateBody, controller.offSale);
 router.post('/:id/for-sale', validateIdParam, v.validateSaleStateBody, controller.forSale);
+// Aplicar do estoque e operações da unidade (10.3, D362).
+router.get('/:id/apply-candidates', validateIdParam, operationController.candidates);
+router.get('/:id/operations', validateIdParam, operationController.listForItem);
+router.post('/:id/apply-component', validateIdParam, operationValidators.validateApplyBody, operationController.apply);
+router.post(
+  '/:id/components/:componentId/scrape-off', validateIdParam, operationValidators.validateComponentIdParam,
+  operationValidators.validateScrapeBody, operationController.scrapeOff
+);
 
 module.exports = router;

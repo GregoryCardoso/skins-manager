@@ -65,13 +65,13 @@ describe('migração v5: lacunas', () => {
 
     const db = openDatabase(dbPath, { now: NOW5 });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(18);
+      expect(db.pragma('user_version', { simple: true })).toBe(19);
       expect(Object.fromEntries(Object.entries(snapshot(db)).filter(([t]) => !['integrations', 'external_links', 'external_records', 'import_batch_entries', 'import_batches', 'item_components', 'item_operation_links', 'item_operations'].includes(t)).map(([t, list]) => [t, stripV6Rows(list)]))).toEqual(rows);
       // A v6, a v7 e a v8 só alteram o DDL de stores, items, withdrawals, deposits e store_balances (e o índice único da v8);
       // o das demais tabelas e os índices ficam iguais.
       const unchangedByV6 = (list) => list.filter(
         (r) => !(r.type === 'table' && ['stores', 'items', 'withdrawals', 'deposits', 'store_balances'].includes(r.name))
-          && r.name !== 'ux_store_balances_initial' && r.name !== 'idx_items_off_sale_at'
+          && r.name !== 'ux_store_balances_initial' && r.name !== 'idx_items_off_sale_at' && !(r.type === 'table' && r.name === 'catalog_items')
           && r.name !== 'integrations' && r.name !== 'sqlite_autoindex_integrations_1'
           && !/^(external_|import_|idx_external_|idx_import_|item_component|item_operation|idx_item_component|idx_item_operation|sqlite_autoindex_(external|import|item_operation)_)/.test(r.name)
       );

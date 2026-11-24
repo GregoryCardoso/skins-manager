@@ -117,11 +117,11 @@ describe('categorias do item', () => {
     expect((await patch(item.id, { components: [sticker(2, CAT.STICKER_CROWN)] })).body.data.components.map((c) => c.slot)).toEqual([2]);
   });
 
-  test('PERSONAGEM: sticker e chaveiro recusados; patch recusado por falta de catálogo (CATALOG_REQUIRED); [] vale', async () => {
+  test('PERSONAGEM: sticker e chaveiro recusados; patch com item de outra categoria do catálogo recusado (MISMATCH); [] vale', async () => {
     const agent = await createItemViaApi(app, { catalogId: CAT.AGENT_DARRYL, acquisitionType: 'GANHEI' });
     expectError(await patch(agent.id, { components: [sticker(0)] }), 400, 'COMPONENTS_NOT_ALLOWED');
     expectError(await patch(agent.id, { components: [charm] }), 400, 'COMPONENTS_NOT_ALLOWED');
-    expectError(await patch(agent.id, { components: [{ kind: 'PATCH', catalogId: CAT.AGENT_DARRYL }] }), 400, 'COMPONENT_CATALOG_REQUIRED');
+    expectError(await patch(agent.id, { components: [{ kind: 'PATCH', catalogId: CAT.AGENT_DARRYL }] }), 400, 'COMPONENT_CATALOG_MISMATCH');
     expectError(await patch(agent.id, { components: [{ kind: 'PATCH' }] }), 400, 'COMPONENT_CATALOG_REQUIRED');
     const ok = await patch(agent.id, { components: [] });
     expect(ok.status).toBe(200);
@@ -189,7 +189,7 @@ describe('PATCH sem components preserva; erro em um componente não grava nada',
 
   test('falha ao gravar a lista no PATCH (erro de banco): rollback, o item não é alterado e a lista antiga fica', async () => {
     const item = await createItemViaApi(app, purchaseBody({ components: [sticker(0), charm] }));
-    jest.spyOn(ItemComponent, 'replaceForItem').mockImplementation((id) => {
+    jest.spyOn(ItemComponent, 'replaceCameWithForItem').mockImplementation((id) => {
       getDb().prepare('DELETE FROM item_components WHERE item_id = ?').run(id); // metade do trabalho feita antes de falhar
       throw new Error('falha simulada');
     });
@@ -392,7 +392,7 @@ describe('segurança das rotas alteradas', () => {
   test('a resposta de componentes não vaza campos internos (item_id, timestamps, referência de compra)', async () => {
     const item = await createItemViaApi(app, purchaseBody({ components: [sticker(0)] }));
     expect(Object.keys(item.components[0]).sort()).toEqual(
-      ['catalogId', 'id', 'imageUrl', 'kind', 'name', 'namePtBr', 'origin', 'pattern', 'slot', 'source', 'wear'].sort()
+      ['catalogId', 'id', 'imageUrl', 'kind', 'name', 'namePtBr', 'operationId', 'origin', 'pattern', 'scrapeable', 'slot', 'source', 'sourceItemId', 'undoable', 'wear'].sort()
     );
   });
 });

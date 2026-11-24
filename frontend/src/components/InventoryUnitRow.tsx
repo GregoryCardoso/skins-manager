@@ -7,6 +7,7 @@ import type { ItemView, Store } from '@/types/api';
 import { Badge, type BadgeTone } from './badges';
 import ComponentThumbs from './ComponentThumbs';
 import ItemActions from './ItemActions';
+import CostCell from './CostCell';
 import ItemImage from './ItemImage';
 import styles from './InventoryTable.module.css';
 import MinPriceCell from './MinPriceCell';
@@ -19,6 +20,7 @@ export interface UnitRowHandlers {
   onHistory: (item: ItemView) => void;
   onOffSale: (item: ItemView) => void;
   onForSale: (item: ItemView) => void;
+  onApply?: (item: ItemView) => void;
 }
 
 interface Props extends UnitRowHandlers {
@@ -75,6 +77,7 @@ function ItemCell({ item }: { item: ItemView }) {
         <Badge>{tLoose(`enums.category.${item.category}`)}</Badge>
         {item.isLegacy && <Badge tone="warning">{t('inventory.legacy')}</Badge>}
         {item.status === 'VENDIDO' && <Badge tone="info">{t('inventory.sold')}</Badge>}
+        {item.status === 'CONSUMIDO' && <Badge tone="neutral">{t('operations.consumedBadge')}</Badge>}
         {item.externalSource === 'CSFLOAT' && <Badge tone="info" title={t('imports.badgeHint')}>{t('imports.badge')}</Badge>}
       </span>
     </div>
@@ -222,7 +225,7 @@ export function UnitTableHead({ selection }: { selection?: { checked: boolean; o
 
 // Linha de uma unidade (extraída do InventoryTable na 8.8, sem mudar o visual).
 export default function InventoryUnitRow({
-  item, stores, onEdit, onSell, onUnsell, onDelete, onHistory, onOffSale, onForSale, forSalePendingId = null, highlighted = false, selection,
+  item, stores, onEdit, onSell, onUnsell, onDelete, onHistory, onOffSale, onForSale, onApply, forSalePendingId = null, highlighted = false, selection,
 }: Props & { selection?: { checked: boolean; onChange: (checked: boolean) => void } }) {
   const t = useT();
   const locale = useLanguage();
@@ -245,7 +248,7 @@ export default function InventoryUnitRow({
       <td><ItemImage category={item.category} url={item.catalog?.imageUrl} /></td>
       <td><ItemCell item={item} /></td>
       <td><StoreCell item={item} stores={stores} /></td>
-      <td className={styles.nowrap}>{formatMoney(item.purchasePriceCents, item.purchaseCurrency, locale)}</td>
+      <td className={styles.nowrap}><CostCell item={item} /></td>
       <td><DaysCell item={item} /></td>
       <td><TradeLockCell item={item} /></td>
       <td>
@@ -263,6 +266,7 @@ export default function InventoryUnitRow({
           onHistory={onHistory}
           onOffSale={onOffSale}
           onForSale={onForSale}
+          onApply={onApply}
           forSaleBusy={forSalePendingId === item.id}
         >
           <InspectAction link={item.inspectLink} />

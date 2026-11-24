@@ -30,20 +30,28 @@ function findMinSalePriceCents(costCents, params) {
 // `warning` (texto) + `warningCode` (D83); sem aviso, ambos null.
 const noPrice = (base, w) => ({ ...base, minPriceCents: null, approx: null, warning: w.text, warningCode: w.code });
 
-function minPriceForStore({ costCents, costCurrency, costFxRate, store, settings }) {
+// Custo em partes nativas (D362): `costParts` = [{ cents, currency, fxRate }] (o custo próprio mais o das unidades consumidas). Cada
+// parte é convertida para a moeda da loja com CEIL e as partes são somadas; uma parte só é o cálculo de sempre. Sem `costParts`,
+// vale o custo único (`costCents`, `costCurrency`, `costFxRate`).
+function minPriceForStore({ costCents, costCurrency, costFxRate, costParts, store, settings }) {
   const base = { storeId: store.id, storeName: store.name, currency: store.currency };
   const params = saleFeeParamsFromStore(store);
   if (!params) return noPrice(base, WARNINGS.FEES_NOT_CONFIGURED);
+  const parts = costParts && costParts.length ? costParts : [{ cents: costCents ?? 0, currency: costCurrency ?? 'USD', fxRate: costFxRate ?? null }];
 
   // Leitura nunca falha por causa de um item: valor fora do suportado vira minPriceCents null + aviso.
   try {
-    let costInStoreCurrency = costCents;
-    if (costCurrency !== store.currency) {
-      const usdBrlRate = settings ? settings.usdBrlRate : null;
-      const needed = costCurrency === 'BRL' ? costFxRate : usdBrlRate;
+    let costInStoreCurrency = 0;
+    const usdBrlRate = settings ? settings.usdBrlRate : null;
+    for (const part of parts) {
+      if (part.currency === store.currency) {
+        costInStoreCurrency += part.cents;
+        continue;
+      }
+      const needed = part.currency === 'BRL' ? part.fxRate : usdBrlRate;
       if (!isValidFxRate(needed)) return noPrice(base, WARNINGS.FX_NOT_CONFIGURED);
-      costInStoreCurrency = convertCents(
-        costCents, costCurrency, store.currency, { fromFxRate: costFxRate, toFxRate: usdBrlRate }, 'CEIL'
+      costInStoreCurrency += convertCents(
+        part.cents, part.currency, store.currency, { fromFxRate: part.fxRate, toFxRate: usdBrlRate }, 'CEIL'
       );
     }
     const minPriceCents = findMinSalePriceCents(costInStoreCurrency, params);
@@ -57,7 +65,7 @@ function minPriceForStore({ costCents, costCurrency, costFxRate, store, settings
   }
 }
 
-function minPricesForItem({ item, stores, settings }) {
+function minPricesForItem({ item, stores, settings, costParts }) {
   return stores
     .filter((store) => store.isActive)
     .map((store) =>
@@ -65,6 +73,7 @@ function minPricesForItem({ item, stores, settings }) {
         costCents: item.purchasePriceCents,
         costCurrency: item.purchaseCurrency,
         costFxRate: item.fxRateAtPurchase,
+        costParts,
         store,
         settings,
       })

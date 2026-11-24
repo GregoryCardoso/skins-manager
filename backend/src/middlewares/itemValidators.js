@@ -55,7 +55,7 @@ const LOCKED_FIELDS = [
 ];
 
 // Forma de `components` (10.1, D353): lista de até 6 objetos com as chaves conhecidas; as regras (limites, catálogo, slot) são do service.
-const COMPONENT_KEYS = { kind: STRING, catalogId: STRING, slot: INTEGER, wear: NUMBER, pattern: INTEGER };
+const COMPONENT_KEYS = { id: INTEGER, kind: STRING, catalogId: STRING, slot: INTEGER, wear: NUMBER, pattern: INTEGER };
 const MAX_COMPONENTS_SHAPE = 6;
 
 // `extra`: { field, params } (D113). Todo erro de forma informa o campo.
@@ -84,7 +84,7 @@ function checkBody(body, spec, mode) {
       continue;
     }
     if (rule.components) {
-      checkComponents(value);
+      checkComponents(value, { allowId: mode === 'update' });
       continue;
     }
     if (value === null) {
@@ -121,7 +121,8 @@ function checkBody(body, spec, mode) {
   }
 }
 
-function checkComponents(value) {
+// `allowId`: só o PATCH aceita `id` (o componente aplicado do estoque que muda de slot, desgaste ou pattern; D362).
+function checkComponents(value, { allowId = false } = {}) {
   if (!Array.isArray(value)) throw fail('O campo components deve ser uma lista.', 'INVALID_FIELD', { field: 'components' });
   if (value.length > MAX_COMPONENTS_SHAPE) {
     throw fail('Limite de componentes excedido.', 'COMPONENT_LIMIT_EXCEEDED', { field: 'components', params: { max: MAX_COMPONENTS_SHAPE } });
@@ -129,7 +130,7 @@ function checkComponents(value) {
   value.forEach((component, index) => {
     if (!isObject(component)) throw fail('Cada componente deve ser um objeto.', 'INVALID_FIELD', { field: 'components', params: { index } });
     for (const [key, entry] of Object.entries(component)) {
-      if (!Object.prototype.hasOwnProperty.call(COMPONENT_KEYS, key)) {
+      if (!Object.prototype.hasOwnProperty.call(COMPONENT_KEYS, key) || (key === 'id' && !allowId)) {
         throw fail(`Campo desconhecido: ${key}`, 'UNKNOWN_FIELD', { field: 'components', params: { index, field: key } });
       }
       if (entry === null) continue; // nulo = ausente; o service responde com o código específico
@@ -218,13 +219,13 @@ function queryValue(query, key, allowed) {
 
 const validateItemQuery = wrap((req) => {
   const q = req.query;
-  const status = queryValue(q, 'status', ['EM_ESTOQUE', 'VENDIDO']);
+  const status = queryValue(q, 'status', ['EM_ESTOQUE', 'VENDIDO', 'CONSUMIDO']);
   const category = queryValue(q, 'category', CATEGORIES);
   const sortBy = queryValue(q, 'sortBy', ['age', 'turnaround']);
   const order = queryValue(q, 'order', ['asc', 'desc']);
   const stagnantOnly = queryValue(q, 'stagnantOnly', ['true', 'false']);
   const saleState = queryValue(q, 'saleState', ['FOR_SALE', 'OFF_SALE']);
-  if (saleState !== undefined && status === 'VENDIDO') {
+  if (saleState !== undefined && status !== undefined && status !== 'EM_ESTOQUE') {
     throw fail('saleState só vale para itens em estoque.', 'INVALID_QUERY', { field: 'saleState' });
   }
   if (order !== undefined && sortBy === undefined) {

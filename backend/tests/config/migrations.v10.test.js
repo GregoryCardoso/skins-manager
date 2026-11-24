@@ -69,12 +69,12 @@ describe('migração v10', () => {
     const snapshot = seedV9(dbPath);
     const db = openDatabase(dbPath, { now: NOW });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(18);
+      expect(db.pragma('user_version', { simple: true })).toBe(19);
       expect(db.pragma('foreign_key_check')).toEqual([]);
       const rows = db.prepare('SELECT * FROM items ORDER BY id').all();
       expect(rows).toHaveLength(snapshot.items.length);
       rows.forEach((row, i) => {
-        const { off_sale_at: offSale, for_sale_since: forSale, sale_release_at: saleReleaseAt, components_imported_at: componentsImportedAt, ...rest } = row;
+        const { off_sale_at: offSale, for_sale_since: forSale, sale_release_at: saleReleaseAt, components_imported_at: componentsImportedAt, consumed_at: consumedAt, ...rest } = row;
         expect([offSale, forSale]).toEqual([null, null]);
         expect(rest).toEqual(snapshot.items[i]);
       });
@@ -95,7 +95,7 @@ describe('migração v10', () => {
     const csfSeed = seedV9(dbPath, version);
     const db = openDatabase(dbPath, { now: NOW });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(18);
+      expect(db.pragma('user_version', { simple: true })).toBe(19);
       expect(db.prepare('SELECT COUNT(*) AS n FROM items').get().n).toBe(csfSeed.items.length);
       expect(db.prepare('SELECT COUNT(*) AS n FROM items WHERE off_sale_at IS NOT NULL OR for_sale_since IS NOT NULL').get().n).toBe(0);
     } finally {

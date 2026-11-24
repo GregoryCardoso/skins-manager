@@ -10,3 +10,6 @@
 .note { margin: 0; font-size: 0.8rem; color: var(--text-muted); }
 .compact { padding: 0.5rem 0.7rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-alt); }
 .title { margin: 0; font-size: 0.85rem; color: var(--text-muted); }
+.operations { list-style: none; margin: 0.4rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.88rem; }
+.undone { color: var(--text-muted); text-decoration: line-through; }
+.undone .sub { text-decoration: none; }

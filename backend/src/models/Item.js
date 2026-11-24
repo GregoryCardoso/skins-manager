@@ -7,7 +7,7 @@ const FIELDS = [
   'fxRateAtPurchase', 'acquiredAt', 'tradeUnlockAt', 'status', 'saleStoreId', 'salePriceCents',
   'saleCurrency', 'fxRateAtSale', 'saleFeeTypeApplied', 'saleFeeRateApplied', 'saleFeeRoundingApplied',
   'saleMinFeeCentsApplied', 'saleFixedFeeCentsApplied', 'netReceivedCents', 'netReceivedManual', 'soldAt', 'saleHoldDaysApplied',
-  'offSaleAt', 'forSaleSince', 'saleReleaseAt', 'componentsImportedAt',
+  'offSaleAt', 'forSaleSince', 'saleReleaseAt', 'componentsImportedAt', 'consumedAt',
 ];
 const BOOLEAN_FIELDS = ['netReceivedManual'];
 const toItem = (row) => mapRow(row, BOOLEAN_FIELDS);
@@ -135,6 +135,24 @@ function findInStockByCatalogOrCategory({ catalogId, category }) {
     .map(toItem);
 }
 
+// Itens de nome livre (sem catálogo) de uma categoria cujo nome começa com `prefix` (ex.: patches antigos em OUTRO, D362).
+function findFreeNameByPrefix(category, prefix) {
+  const escaped = prefix.replace(/[\\%_]/g, (c) => `\\${c}`);
+  return getDb()
+    .prepare("SELECT * FROM items WHERE category = ? AND catalog_id IS NULL AND name LIKE ? ESCAPE '\\' ORDER BY id ASC")
+    .all(category, `${escaped}%`)
+    .map(toItem);
+}
+
+// Unidades em estoque das categorias informadas (candidatas a "Aplicar do estoque", 10.3).
+function findInStockByCategories(categories) {
+  if (!categories.length) return [];
+  return getDb()
+    .prepare(`SELECT * FROM items WHERE status = 'EM_ESTOQUE' AND category IN (${categories.map(() => '?').join(',')}) ORDER BY acquired_at ASC, id ASC`)
+    .all(...categories)
+    .map(toItem);
+}
+
 // Data mais recente de compra (sem vínculo) e de venda (sem vínculo) na loja: sugestão da data de corte.
 function latestUnlinkedDates(storeId) {
   const db = getDb();
@@ -153,4 +171,4 @@ function latestUnlinkedDates(storeId) {
   return { purchaseAt: purchase ? purchase.latest : null, saleAt: sale ? sale.latest : null };
 }
 
-module.exports = { findByIds, markComponentsImported, findUnlinkedPurchases, findUnlinkedSales, findInStockByCatalogOrCategory, latestUnlinkedDates, countAll, create, findById, findAll, findStatsCandidates, findLegacy, update, remove };
+module.exports = { findFreeNameByPrefix, findInStockByCategories, findByIds, markComponentsImported, findUnlinkedPurchases, findUnlinkedSales, findInStockByCatalogOrCategory, latestUnlinkedDates, countAll, create, findById, findAll, findStatsCandidates, findLegacy, update, remove };

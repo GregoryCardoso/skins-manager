@@ -10,6 +10,7 @@ const storeBalanceRoutes = require('./storeBalanceRoutes');
 const profitRoutes = require('./profitRoutes');
 const integrationRoutes = require('./integrationRoutes');
 const importRoutes = require('./importRoutes');
+const operationRoutes = require('./operationRoutes');
 
 const { APP_NAME, APP_VERSION } = require('../config/appInfo');
 
@@ -30,5 +31,6 @@ router.use('/store-balances', storeBalanceRoutes);
 router.use('/profit', profitRoutes);
 router.use('/integrations', integrationRoutes);
 router.use('/imports', importRoutes);
+router.use('/operations', operationRoutes);
 
 module.exports = router;

@@ -30,6 +30,10 @@ export const INVALIDATION_MAP = {
   'item.delete': ITEM_IMPORTS,
   'item.sell': ITEM_MONEY,
   'item.unsell': ITEM_IMPORTS,
+  // Aplicar do estoque (10.3, D362): uma unidade sai do estoque e o custo dela passa para a outra; itens, vendas, lojas, saldos, lucro real e importações.
+  'item.applyComponent': ITEM_IMPORTS,
+  'item.scrapeOff': ITEM_IMPORTS,
+  'operation.undo': ITEM_IMPORTS,
   'import.run': IMPORT_CHANGE,
   'import.undo': IMPORT_CHANGE,
   // Mudar a data de corte (9.5.1c) é uma importação: os mesmos alvos.

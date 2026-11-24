@@ -10,7 +10,7 @@ import { getCatalogStatus, getHealth } from '@/services/api';
 import type { CatalogSource, CatalogStatus, HealthStatus } from '@/types/api';
 import styles from './SystemStatus.module.css';
 
-const SOURCES: CatalogSource[] = ['SKINS', 'STICKERS', 'CRATES', 'KEYCHAINS', 'AGENTS'];
+const SOURCES: CatalogSource[] = ['SKINS', 'STICKERS', 'CRATES', 'KEYCHAINS', 'AGENTS', 'PATCHES'];
 
 interface Loadable<T> {
   loading: boolean;

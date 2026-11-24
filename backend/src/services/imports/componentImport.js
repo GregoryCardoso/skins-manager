@@ -10,7 +10,9 @@ const Item = require('../../models/Item');
 const ItemComponent = require('../../models/ItemComponent');
 const catalogService = require('../catalogService');
 const itemComponentService = require('../itemComponentService');
+const { resolveSourceKind, SOURCE_CATEGORIES } = require('../operations/componentApplicationService');
 const externalItemMapper = require('./externalItemMapper');
+const { MAYBE_APPLIED_WARNING } = require('./entryActions');
 
 const findByNameKeyAnyCategory = (key) => CatalogItem.findByNameKeyAnyCategory(key);
 
@@ -54,4 +56,50 @@ function fillFromTrades(entries, { now }) {
   return result;
 }
 
-module.exports = { forPurchase, fillFromTrades };
+const MAX_STOCK_WARNINGS = 10;
+
+// Avisos "componente possivelmente aplicado do estoque" (D362 item 9, E-P2-Q30): o trade vendido trouxe um componente que a unidade
+// vendida não tem no app, e há no estoque uma unidade aplicável do mesmo item do catálogo (adquirida até a data da venda). Nunca é
+// automático: só o aviso, que oferece "Aplicar e registrar". Devolve [{ code, name, candidateItemId }] (no máximo 10).
+function maybeAppliedFromStock(rawComponents, item) {
+  if (!Array.isArray(rawComponents) || rawComponents.length === 0 || !item || itemComponentService.allowedKindsFor(item.category).length === 0) return [];
+  const { components } = forPurchase(rawComponents, item.category);
+  if (components.length === 0) return [];
+  const have = ItemComponent.listByItemIds([item.id]).get(item.id) ?? [];
+  const taken = new Map();
+  for (const row of have) taken.set(`${row.kind}|${row.catalogId}`, (taken.get(`${row.kind}|${row.catalogId}`) ?? 0) + 1);
+  const missing = [];
+  for (const component of components) {
+    const key = `${component.kind}|${component.catalogId}`;
+    if ((taken.get(key) ?? 0) > 0) taken.set(key, taken.get(key) - 1);
+    else missing.push(component);
+  }
+  if (missing.length === 0) return [];
+  const soldMs = item.soldAt ? Date.parse(item.soldAt) : Infinity;
+  const pool = Item.findInStockByCategories(SOURCE_CATEGORIES).filter((unit) => unit.id !== item.id && Date.parse(unit.acquiredAt) <= soldMs);
+  const byKey = new Map();
+  for (const unit of pool) {
+    const resolved = resolveSourceKind(unit);
+    if (!resolved) continue;
+    const key = `${resolved.kind}|${resolved.entry.id}`;
+    if (!byKey.has(key)) byKey.set(key, []);
+    byKey.get(key).push(unit);
+  }
+  const remaining = itemComponentService.remainingFor(have);
+  const bucketOf = (kind) => (kind === 'STICKER' ? 'stickers' : kind === 'PATCH' ? 'patches' : 'hanging');
+  const warnings = [];
+  const used = new Set();
+  for (const component of missing) {
+    if (warnings.length >= MAX_STOCK_WARNINGS) break;
+    const bucket = bucketOf(component.kind);
+    if (remaining[bucket] <= 0) continue;
+    const unit = (byKey.get(`${component.kind}|${component.catalogId}`) ?? []).find((u) => !used.has(u.id));
+    if (!unit) continue;
+    used.add(unit.id);
+    remaining[bucket] -= 1;
+    warnings.push({ code: MAYBE_APPLIED_WARNING, name: unit.name, candidateItemId: unit.id });
+  }
+  return warnings;
+}
+
+module.exports = { forPurchase, fillFromTrades, maybeAppliedFromStock };

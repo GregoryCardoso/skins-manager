@@ -1,4 +1,9 @@
 import type {
+  ApplyCandidates,
+  ApplyComponentBody,
+  ApplyComponentResult,
+  ItemOperation,
+  UndoOperationResult,
   BulkSaleStateBody,
   BulkSaleStateResult,
   BackupImportResult,
@@ -305,6 +310,19 @@ export const refreshFxRate = (body: { trigger?: 'MANUAL' | 'AUTO' } = {}) =>
 
 // "Não está à venda" e "Colocar à venda" (D265): a data é a do servidor; o corpo é `{}` (JSON obrigatório).
 export const markItemOffSale = (id: number) => request<{ item: ItemView }>('POST', `/items/${id}/off-sale`, { body: {} });
+
+// Aplicar do estoque (10.3, D362): candidatas, aplicar, remover para sempre, histórico de operações e desfazer.
+export const getApplyCandidates = (id: number, signal?: AbortSignal) => request<ApplyCandidates>('GET', `/items/${id}/apply-candidates`, { signal });
+
+export const applyComponent = (id: number, body: ApplyComponentBody) =>
+  request<ApplyComponentResult>('POST', `/items/${id}/apply-component`, { body });
+
+export const scrapeOffComponent = (itemId: number, componentId: number, body: { occurredAt?: string } = {}) =>
+  request<ApplyComponentResult>('POST', `/items/${itemId}/components/${componentId}/scrape-off`, { body });
+
+export const listItemOperations = (id: number, signal?: AbortSignal) => request<ItemOperation[]>('GET', `/items/${id}/operations`, { signal });
+
+export const undoOperation = (operationId: number) => request<UndoOperationResult>('POST', `/operations/${operationId}/undo`, { body: {} });
 
 export const markItemForSale = (id: number) => request<{ item: ItemView }>('POST', `/items/${id}/for-sale`, { body: {} });
 

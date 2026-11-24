@@ -14,7 +14,7 @@ const { CAT, readFixture, importCatalogFixture } = require('../helpers/catalog')
 
 const API_FIX = path.join(__dirname, '..', 'fixtures', 'csgo-api');
 const NOW = new Date('2026-11-20T12:00:00.000Z');
-const FILES = ['skins', 'stickers', 'crates', 'keychains', 'agents'];
+const FILES = ['skins', 'stickers', 'crates', 'keychains', 'agents', 'patches'];
 
 let tmpRoot;
 beforeAll(() => {
@@ -66,13 +66,13 @@ describe('refreshCatalog', () => {
   test('caminho feliz: 10 URLs, contagens, catalogUpdatedAt = now e skipped', async () => {
     const fetchFn = makeFetch();
     const result = await svc.refreshCatalog({ fetchFn, now: NOW });
-    expect(fetchFn.calls).toHaveLength(10);
+    expect(fetchFn.calls).toHaveLength(12);
     for (const lang of ['en', 'pt-BR']) {
       for (const f of FILES) expect(fetchFn.calls).toContain(`${CATALOG_BASE_URL}${lang}/${f}.json`);
     }
     expect(result).toEqual({
       catalogUpdatedAt: NOW.toISOString(),
-      countsBySource: { SKINS: 8, STICKERS: 2, CRATES: 9, KEYCHAINS: 1, AGENTS: 1 },
+      countsBySource: { SKINS: 8, STICKERS: 2, CRATES: 9, KEYCHAINS: 1, AGENTS: 1, PATCHES: 0 },
       total: 21,
       skipped: 3,
       linkedLegacyItems: 0,
@@ -413,7 +413,7 @@ describe('consultas', () => {
   test('getCatalogStatus', () => {
     expect(svc.getCatalogStatus()).toEqual({
       catalogUpdatedAt: '2026-11-01T00:00:00.000Z',
-      countsBySource: { SKINS: 12, STICKERS: 2, CRATES: 5, KEYCHAINS: 1, AGENTS: 1 },
+      countsBySource: { SKINS: 12, STICKERS: 2, CRATES: 5, KEYCHAINS: 1, AGENTS: 1, PATCHES: 0 },
       total: 21,
     });
   });

@@ -25,7 +25,7 @@ describe('buildSaleInfo', () => {
     const item = sold(100, 125, 122, '2026-10-05T12:00:00.000Z');
     const info = buildSaleInfo(item, 5);
     expect(info).toEqual({
-      salePriceUsdCents: 125, netReceivedUsdCents: 122, purchaseCostUsdCents: 100,
+      salePriceUsdCents: 125, netReceivedUsdCents: 122, purchaseCostUsdCents: 100, ownCostUsdCents: 100, inheritedCostUsdCents: 0,
       fxUsed: { sale: null, purchase: null }, usesRecordedFx: false,
       approxBrl: { salePrice: 625, netReceived: 610, purchaseCost: 500, profit: 110 },
     });

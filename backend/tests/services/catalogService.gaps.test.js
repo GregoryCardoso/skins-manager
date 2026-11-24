@@ -15,7 +15,7 @@ const { CAT, importCatalogFixture, readFixture } = require('../helpers/catalog')
 
 const API_FIX = path.join(__dirname, '..', 'fixtures', 'csgo-api');
 const NOW = new Date('2026-11-20T12:00:00.000Z');
-const FILES = ['skins', 'stickers', 'crates', 'keychains', 'agents'];
+const FILES = ['skins', 'stickers', 'crates', 'keychains', 'agents', 'patches'];
 
 let tmpRoot;
 beforeAll(() => {

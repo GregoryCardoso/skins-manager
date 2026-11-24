@@ -16,6 +16,8 @@ interface Props {
   // Só no inventário (D266): "Não está à venda" (com confirmação) e "Colocar à venda" (direto).
   onOffSale?: (item: ItemView) => void;
   onForSale?: (item: ItemView) => void;
+  // "Aplicar do estoque" (10.3): só em unidade em estoque de uma categoria que aceita componentes.
+  onApply?: (item: ItemView) => void;
   // "Colocar à venda" em andamento: o botão fica desabilitado (evita clique duplo).
   forSaleBusy?: boolean;
   // Ação extra no fim (ex.: "Inspecionar").
@@ -24,7 +26,7 @@ interface Props {
 
 // Botões por situação do item (D118): EM_ESTOQUE -> Editar, Vender, Excluir; VENDIDO -> Editar, Desfazer venda, Excluir.
 // "Vender" fica desabilitado em trade lock (D74); o backend continua sendo a fonte da regra.
-export default function ItemActions({ item, onEdit, onSell, onUnsell, onDelete, onHistory, onOffSale, onForSale, forSaleBusy = false, children }: Props) {
+export default function ItemActions({ item, onEdit, onSell, onUnsell, onDelete, onHistory, onOffSale, onForSale, onApply, forSaleBusy = false, children }: Props) {
   const t = useT();
   const locale = useLanguage();
   const sold = item.status === 'VENDIDO';
@@ -50,6 +52,9 @@ export default function ItemActions({ item, onEdit, onSell, onUnsell, onDelete, 
         <button type="button" className={styles.button} onClick={() => onForSale(item)} disabled={forSaleBusy} aria-busy={forSaleBusy}>
           {t('inventory.actions.forSale')}
         </button>
+      )}
+      {item.canReceiveComponents && onApply && (
+        <button type="button" className={styles.button} onClick={() => onApply(item)}>{t('inventory.actions.apply')}</button>
       )}
       <button type="button" className={`${styles.button} ${styles.danger}`} onClick={() => onDelete(item)}>
         {t('inventory.actions.delete')}

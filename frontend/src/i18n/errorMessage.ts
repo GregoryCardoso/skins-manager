@@ -82,8 +82,22 @@ export function errorDetailParams(
 
 // Código conhecido -> texto traduzido (com detalhes quando vierem `params`/`field`); senão a mensagem do backend;
 // senão "erro desconhecido".
+// Erros com vários motivos (10.3, D362): o texto sai de `errors.<CÓDIGO>_<MOTIVO>`, com a data do limite quando vier.
+const REASON_CODES = ['OPERATION_DATE_INVALID', 'OPERATION_UNDO_BLOCKED'];
+
+function reasonMessage(error: ApiRequestError, t: LooseT, locale: string): string | null {
+  const p = error.params ?? {};
+  if (!REASON_CODES.includes(error.code) || typeof p.reason !== 'string') return null;
+  const limit = [p.soldAt, p.acquiredAt, p.occurredAt].find((value) => typeof value === 'string');
+  const key = `errorReasons.${error.code}_${p.reason}`;
+  const text = t(key, { date: typeof limit === 'string' ? formatDate(limit, locale) : '' });
+  return text !== key ? text : null;
+}
+
 export function errorMessageFor(error: unknown, t: LooseT, locale = 'pt-BR'): string {
   if (error instanceof ApiRequestError) {
+    const byReason = reasonMessage(error, t, locale);
+    if (byReason) return byReason;
     const detailParams = errorDetailParams(error, t, locale);
     if (detailParams) {
       const detailKey = `errorDetails.${error.code}`;

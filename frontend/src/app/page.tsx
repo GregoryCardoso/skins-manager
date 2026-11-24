@@ -104,7 +104,7 @@ function InventoryPageContent() {
   }, [focusItemId, itemsData, groupsData, expandedKeys]);
 
   const {
-    openCreate, openEdit, openSell, openUnsell, openDelete, openHistory, openOffSale, putForSale, forSalePendingId, notice, dismissNotice, dialogs,
+    openCreate, openEdit, openSell, openUnsell, openDelete, openHistory, openOffSale, openApply, putForSale, forSalePendingId, notice, dismissNotice, dialogs,
   } = useItemDialogs(stores);
 
   const setFilters = useCallback(

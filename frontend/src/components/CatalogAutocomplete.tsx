@@ -26,7 +26,7 @@ interface Props {
 }
 
 const CATEGORY_FILTERS: Category[] = [
-  'SKIN', 'FACA', 'LUVA', 'CAIXA', 'CAPSULA', 'STICKER', 'PINGENTE', 'PERSONAGEM', 'PASSE_BATALHA',
+  'SKIN', 'FACA', 'LUVA', 'CAIXA', 'CAPSULA', 'STICKER', 'PINGENTE', 'PERSONAGEM', 'PATCH', 'PASSE_BATALHA',
 ];
 
 export function catalogDisplayName(item: Pick<CatalogItem, 'name' | 'namePtBr'>, language: string): string {

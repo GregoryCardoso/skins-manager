@@ -11,7 +11,7 @@ import { getCatalogStatus, refreshCatalog } from '@/services/api';
 import type { CatalogSource, CatalogStatus } from '@/types/api';
 import styles from './settings.module.css';
 
-const SOURCES: CatalogSource[] = ['SKINS', 'STICKERS', 'CRATES', 'KEYCHAINS', 'AGENTS'];
+const SOURCES: CatalogSource[] = ['SKINS', 'STICKERS', 'CRATES', 'KEYCHAINS', 'AGENTS', 'PATCHES'];
 
 // Total do catálogo, contagens por fonte e data da última atualização.
 export function CatalogSummary({ status }: { status: CatalogStatus }) {

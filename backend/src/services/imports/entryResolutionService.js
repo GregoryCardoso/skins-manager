@@ -22,12 +22,13 @@ const tradeClassifier = require('./tradeClassifier');
 const externalItemMapper = require('./externalItemMapper');
 const manualMatchService = require('./manualMatchService');
 const componentImport = require('./componentImport');
+const componentApplicationService = require('../operations/componentApplicationService');
 const { saleMoment, saleReleaseOf, saleCreditOf } = require('./saleImportHelpers');
 const transferImport = require('./transferImport');
 const { requireImportStore } = require('./importStore');
 const Deposit = require('../../models/Deposit');
 const Withdrawal = require('../../models/Withdrawal');
-const { openActionsFor, RESERVED_ACTIONS } = require('./entryActions');
+const { openActionsFor, applyWarningsOf, RESERVED_ACTIONS } = require('./entryActions');
 const { isWeaponCategory } = require('../itemAttributesService');
 const { parseDate, formatDateTimeBr } = require('../dateUtils');
 
@@ -333,6 +334,25 @@ function markWonLaunch(entry, display, { acquiredAt = null }, { now }) {
   );
 }
 
+// --- Aplicar do estoque numa venda já importada (10.3, D362 item 9; E-P2-Q47) -------------------------------------------------
+
+// "Aplicar e registrar": aplica a unidade candidata na arma já vendida, com a data informada (<= data da venda). Não altera a venda,
+// não resolve a entrada (ela só perde o aviso tratado) e nunca é automático. O custo da unidade passa para a arma e o lucro daquela
+// venda e o lucro real caem esse valor (correção do registro). O desfazer segue bloqueado enquanto a arma estiver vendida.
+function applyFromStockLaunch(entry, display, body, { now }) {
+  const warnings = applyWarningsOf(entry);
+  if (!warnings.some((w) => w.candidateItemId === body.sourceItemId)) {
+    throw new ValidationError('Escolha a unidade sugerida no aviso.', 'IMPORT_ENTRY_ACTION_NOT_ALLOWED', { field: 'sourceItemId' });
+  }
+  if (!entry.entityId) throw conflict('O lançamento desta venda não existe mais.', 'RECORD_NOT_FOUND');
+  componentApplicationService.applyFromStock(
+    { targetId: entry.entityId, sourceItemId: body.sourceItemId, slot: body.slot, wear: body.wear, pattern: body.pattern, appliedAt: body.appliedAt },
+    { now, allowSoldTarget: true }
+  );
+  const left = (display.componentWarnings ?? []).filter((w) => !(w && w.candidateItemId === body.sourceItemId));
+  ImportBatchEntry.updateDisplay(entry.id, JSON.stringify({ ...display, componentWarnings: left }));
+}
+
 // --- Entrada ------------------------------------------------------------------------------------------------------------
 
 function guardBusy() {
@@ -363,6 +383,11 @@ function resolveOne(entryId, body, { now }) {
   if (problem === 'IMPORT_ENTRY_ALREADY_RESOLVED') throw new ConflictError('Esta pendência já foi resolvida.', problem);
   if (problem) throw new ValidationError('Esta ação não vale para esta pendência.', problem, { field: 'action' });
   const display = importViews.parseJson(entry.displayJson, {});
+
+  if (action === 'APPLY_FROM_STOCK') {
+    applyFromStockLaunch(entry, display, body, { now });
+    return ImportBatchEntry.findById(entry.id);
+  }
 
   let resolution;
   if (action === 'REMOVE') {

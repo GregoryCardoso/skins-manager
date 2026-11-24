@@ -103,9 +103,9 @@ describe('models/CatalogItem', () => {
   });
 
   test('countBySource devolve as 5 fontes, com zero nas vazias', () => {
-    expect(CatalogItem.countBySource()).toEqual({ SKINS: 0, STICKERS: 0, CRATES: 0, KEYCHAINS: 0, AGENTS: 0 });
+    expect(CatalogItem.countBySource()).toEqual({ SKINS: 0, STICKERS: 0, CRATES: 0, KEYCHAINS: 0, AGENTS: 0, PATCHES: 0 });
     CatalogItem.upsertMany([row('a', 'Um'), row('b', 'Dois', { source: 'AGENTS', category: 'PERSONAGEM' })], { now: NOW });
-    expect(CatalogItem.countBySource()).toEqual({ SKINS: 1, STICKERS: 0, CRATES: 0, KEYCHAINS: 0, AGENTS: 1 });
+    expect(CatalogItem.countBySource()).toEqual({ SKINS: 1, STICKERS: 0, CRATES: 0, KEYCHAINS: 0, AGENTS: 1, PATCHES: 0 });
   });
 
   test('Item.findLegacy: catalog_id nulo nas categorias pedidas', () => {

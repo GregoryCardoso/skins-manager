@@ -5,6 +5,7 @@ import { formatDate, formatFloat, formatMoney, formatRate } from '@/lib/format';
 import type { ItemView, Store } from '@/types/api';
 import { Badge, type BadgeTone } from './badges';
 import ComponentThumbs from './ComponentThumbs';
+import CostCell from './CostCell';
 import ItemActions from './ItemActions';
 import ItemImage from './ItemImage';
 import MoneyWithApprox from './MoneyWithApprox';
@@ -109,7 +110,9 @@ function SaleRow({ item, stores, onEdit, onUnsell, onDelete, onHistory, highligh
       <td><PurchaseStoreCell item={item} stores={stores} /></td>
       <td>{saleStore ?? t('common.none')}</td>
       <td>
-        {info ? (
+        {info && info.inheritedCostUsdCents > 0 ? (
+          <CostCell item={item} />
+        ) : info ? (
           <MoneyWithApprox
             cents={item.purchasePriceCents}
             currency={item.purchaseCurrency}

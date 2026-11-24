@@ -32,6 +32,7 @@ describe('cada função de escrita do api.ts invalida a ação certa onde é usa
   const WRITES: Record<string, InvalidationAction[]> = {
     createItem: ['item.create'], updateItem: ['item.update'], sellItem: ['item.sell'],
     deleteItem: ['item.delete'], unsellItem: ['item.unsell'],
+    applyComponent: ['item.applyComponent'], scrapeOffComponent: ['item.scrapeOff'], undoOperation: ['operation.undo'],
     markItemOffSale: ['item.offSale'], markItemForSale: ['item.backOnSale'],
     createDeposit: ['deposit.create'], updateDeposit: ['deposit.update'], deleteDeposit: ['deposit.delete'],
     createWithdrawal: ['withdrawal.create'], updateWithdrawal: ['withdrawal.update'], deleteWithdrawal: ['withdrawal.delete'],
@@ -51,7 +52,7 @@ describe('cada função de escrita do api.ts invalida a ação certa onde é usa
     && new RegExp(`import[^;]*\\b${fn}\\b[^;]*from '@/services/api'`, 's').test(read(f)));
   const actionsIn = (file: string) => {
     const code = read(file);
-    return new Set([...code.matchAll(/'((?:item|deposit|withdrawal|balanceCheck|store|settings|catalog|backup|integration|import)\.\w+)'/g)].map((m) => m[1]));
+    return new Set([...code.matchAll(/'((?:item|deposit|withdrawal|balanceCheck|store|settings|catalog|backup|integration|import|operation)\.\w+)'/g)].map((m) => m[1]));
   };
 
   test.each(Object.entries(WRITES))('%s: todo arquivo que a chama usa uma das ações esperadas', (fn, accepted) => {

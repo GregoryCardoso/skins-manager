@@ -76,7 +76,7 @@ describe('normalizeComponents: bordas', () => {
 
   test('patch: categoria PATCH do catálogo em PERSONAGEM é aceito; categoria errada é MISMATCH; limite de 3', () => {
     expect(run([{ kind: 'PATCH', catalogId: 'patch', slot: 0 }], 'PERSONAGEM')[0]).toMatchObject({ kind: 'PATCH', name: 'Patch | Crazy Banana' });
-    expect(codeOf(() => run([{ kind: 'PATCH', catalogId: 'agent' }], 'PERSONAGEM'))).toBe('COMPONENT_CATALOG_REQUIRED');
+    expect(codeOf(() => run([{ kind: 'PATCH', catalogId: 'agent' }], 'PERSONAGEM'))).toBe('COMPONENT_CATALOG_MISMATCH');
     expect(codeOf(() => run(Array.from({ length: 4 }, (_, i) => ({ kind: 'PATCH', catalogId: 'patch', slot: i % 3 })), 'PERSONAGEM'))).toBe('COMPONENT_LIMIT_EXCEEDED');
     expect(codeOf(() => run([{ kind: 'PATCH', catalogId: 'patch', slot: 3 }], 'PERSONAGEM'))).toBe('INVALID_COMPONENT_FIELD');
   });
@@ -96,7 +96,7 @@ describe('visões', () => {
     const [view] = svc.toView([{ id: 1, kind: 'STICKER', catalogId: 'sumiu', name: 'Sticker | Antigo', slot: 0, wear: 0.1, pattern: null, source: 'MANUAL', origin: 'CAME_WITH' }]);
     expect(view).toEqual({
       id: 1, kind: 'STICKER', catalogId: 'sumiu', name: 'Sticker | Antigo', namePtBr: null, imageUrl: null, slot: 0, wear: 0.1, pattern: null,
-      source: 'MANUAL', origin: 'CAME_WITH',
+      source: 'MANUAL', origin: 'CAME_WITH', sourceItemId: null, operationId: null, undoable: false, scrapeable: false,
     });
   });
 
@@ -105,12 +105,11 @@ describe('visões', () => {
     expect(view).toMatchObject({ catalogId: null, imageUrl: null, namePtBr: null, source: 'CSFLOAT' });
   });
 
-  test('toView não expõe campos internos (referência de compra, operação, unidade de origem)', () => {
+  test('toView não expõe campos internos (item, referência de compra); a origem do estoque aparece (D362)', () => {
     const [view] = svc.toView([{ id: 3, itemId: 9, kind: 'STICKER', catalogId: null, name: 'n', slot: 0, wear: null, pattern: null, source: 'MANUAL', origin: 'CAME_WITH', purchaseReferenceCents: 50, sourceItemId: null, operationId: null }]);
     expect(view).not.toHaveProperty('itemId');
     expect(view).not.toHaveProperty('purchaseReferenceCents');
-    expect(view).not.toHaveProperty('operationId');
-    expect(view).not.toHaveProperty('sourceItemId');
+    expect(view).toMatchObject({ operationId: null, sourceItemId: null, undoable: false, scrapeable: false });
   });
 
   test('toSummary e summarize aceitam lista vazia e ausente', () => {

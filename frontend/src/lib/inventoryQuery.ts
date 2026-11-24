@@ -17,7 +17,7 @@ export const DEFAULT_FILTERS: InventoryFilters = { status: 'EM_ESTOQUE', categor
 
 export const STATUS_FILTERS: readonly StatusFilter[] = ['EM_ESTOQUE', 'VENDIDO', 'ALL'];
 export const CATEGORIES: readonly Category[] = [
-  'SKIN', 'FACA', 'LUVA', 'CAIXA', 'CAPSULA', 'STICKER', 'PINGENTE', 'PERSONAGEM', 'PASSE_BATALHA', 'OUTRO',
+  'SKIN', 'FACA', 'LUVA', 'CAIXA', 'CAPSULA', 'STICKER', 'PINGENTE', 'PERSONAGEM', 'PATCH', 'PASSE_BATALHA', 'OUTRO',
 ];
 
 interface ParamsReader {

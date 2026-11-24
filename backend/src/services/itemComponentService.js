@@ -68,8 +68,7 @@ function checkCatalog(kind, input, index, findCatalogById) {
     throw componentError('COMPONENT_CATALOG_REQUIRED', 'Escolha o item do componente no catálogo.', index);
   }
   const entry = findCatalogById(input.catalogId);
-  // Patch ainda não existe no catálogo (a categoria PATCH entra na 10.3): fica recusado como "catálogo obrigatório".
-  if (!entry || (kind === 'PATCH' && entry.category !== 'PATCH')) {
+  if (!entry) {
     throw componentError('COMPONENT_CATALOG_REQUIRED', 'Escolha o item do componente no catálogo.', index);
   }
   if (entry.category !== CATALOG_CATEGORY[kind]) {
@@ -78,10 +77,26 @@ function checkCatalog(kind, input, index, findCatalogById) {
   return entry;
 }
 
+// Limites por tipo (5 stickers, 1 pendurado, 3 patches) sobre uma lista de componentes (linhas gravadas e/ou entradas).
+function assertLimits(rows) {
+  const count = (pred) => rows.filter((c) => pred(c.kind)).length;
+  const limits = [[count((k) => k === 'STICKER'), MAX_STICKERS], [count(isHanging), MAX_HANGING], [count((k) => k === 'PATCH'), MAX_PATCHES]];
+  for (const [n, max] of limits) {
+    if (n > max) throw new ValidationError(`Limite de componentes excedido (máximo ${max}).`, 'COMPONENT_LIMIT_EXCEEDED', { field: 'components', params: { max } });
+  }
+}
+
+// Quantos componentes de cada tipo ainda cabem na unidade.
+function remainingFor(rows = []) {
+  const { stickers, hanging, patches } = summarize(rows);
+  return { stickers: Math.max(0, MAX_STICKERS - stickers), hanging: Math.max(0, MAX_HANGING - hanging), patches: Math.max(0, MAX_PATCHES - patches) };
+}
+
 // Valida a lista inteira para um item da `category` e devolve as linhas a gravar (origem `CAME_WITH`, fonte `MANUAL`).
 // Lista vazia sempre vale (limpa). Ordem: tipo/categoria -> limites -> cada componente (campos, catálogo). Slot repetido vale: o CS2
 // permite dois stickers no mesmo slot (D361).
-function normalizeComponents(input, { category, findCatalogById, source = 'MANUAL' } = {}) {
+// `existingRows`: componentes já gravados na unidade que continuam (os aplicados do estoque); contam nos limites (D362).
+function normalizeComponents(input, { category, findCatalogById, source = 'MANUAL', existingRows = [] } = {}) {
   if (!Array.isArray(input)) throw new ValidationError('components deve ser uma lista.', 'INVALID_FIELD', { field: 'components' });
   if (input.length === 0) return [];
   const allowed = allowedKindsFor(category);
@@ -95,11 +110,7 @@ function normalizeComponents(input, { category, findCatalogById, source = 'MANUA
       });
     }
   });
-  const count = (pred) => input.filter((c) => pred(c.kind)).length;
-  const limits = [[count((k) => k === 'STICKER'), MAX_STICKERS], [count(isHanging), MAX_HANGING], [count((k) => k === 'PATCH'), MAX_PATCHES]];
-  for (const [n, max] of limits) {
-    if (n > max) throw new ValidationError(`Limite de componentes excedido (máximo ${max}).`, 'COMPONENT_LIMIT_EXCEEDED', { field: 'components', params: { max } });
-  }
+  assertLimits([...existingRows, ...input]);
   return input.map((component, index) => {
     const { kind } = component;
     checkNumbers(kind, component, index);
@@ -140,7 +151,8 @@ function summarize(rows = []) {
 }
 
 // Visão pública: imagem e nome em pt-BR vêm do catálogo (por id); o nome canônico é o gravado.
-function toView(rows = [], { catalogById = new Map() } = {}) {
+// `undoableOf(row)`: o desfazer da aplicação vale para o componente? (só os aplicados do estoque; D362).
+function toView(rows = [], { catalogById = new Map(), undoableOf = null } = {}) {
   return rows.map((row) => {
     const entry = isNil(row.catalogId) ? null : catalogById.get(row.catalogId);
     let namePtBr = entry ? entry.namePtBr ?? null : null;
@@ -157,6 +169,11 @@ function toView(rows = [], { catalogById = new Map() } = {}) {
       pattern: row.pattern,
       source: row.source,
       origin: row.origin,
+      sourceItemId: row.sourceItemId ?? null,
+      operationId: row.operationId ?? null,
+      // Aplicado do estoque: pode ser desfeito (correção) e, se for sticker ou patch, removido para sempre (D362 itens 5 e 6).
+      undoable: row.origin === 'APPLIED_FROM_STOCK' && undoableOf ? Boolean(undoableOf(row)) : false,
+      scrapeable: row.origin === 'APPLIED_FROM_STOCK' && !isDetachable(row.kind),
     };
   });
 }
@@ -169,5 +186,5 @@ function toSummary(rows = []) {
 
 module.exports = {
   KINDS, CATALOG_CATEGORY, SLOT_MAX, MAX_STICKERS, MAX_HANGING, MAX_PATCHES, isDetachable, allowedKindsFor, normalizeComponents, assertExistingAllowed,
-  summarize, toView, toSummary,
+  assertLimits, remainingFor, checkNumbers, buildName, stripPrefix, summarize, toView, toSummary,
 };

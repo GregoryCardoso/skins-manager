@@ -610,6 +610,12 @@ function matchTradeOf(trade, mapped) {
   };
 }
 
+// Acrescenta ao `display` da venda os avisos de componente possivelmente aplicado do estoque (10.3, D362 item 9); sem aviso, o mesmo objeto.
+function withStockWarnings(display, trade, item) {
+  const warnings = componentImport.maybeAppliedFromStock(trade.item.components, item);
+  return warnings.length ? { ...display, componentWarnings: [...(display.componentWarnings ?? []), ...warnings] } : display;
+}
+
 // Vendas a importar (D299): 1) casa com a venda manual já lançada; 2) senão, escolhe a unidade em estoque e registra a venda com
 // o líquido real do extrato; 3) sem unidade = "venda sem compra no app" (tentada de novo a cada importação).
 function importSales(entries, ctx) {
@@ -655,7 +661,7 @@ function importSales(entries, ctx) {
       ExternalRecord.update(record.id, { tracking: entry.tracking }, { now });
       ImportBatchEntry.resolveOpenForRecord(record.id, 'LINKED', { now });
       counts.matched += 1;
-      addEntry(record, { outcome: 'MATCHED', reasonCode: null, entityType: 'ITEM_SALE', entityId: item.id, display });
+      addEntry(record, { outcome: 'MATCHED', reasonCode: null, entityType: 'ITEM_SALE', entityId: item.id, display: withStockWarnings(display, trade, item) });
       continue;
     }
 
@@ -697,8 +703,10 @@ function importSales(entries, ctx) {
     }
     const expected = expectedFeeCents(trade.priceCents, store);
     const feeMismatch = expected !== null && expected !== credit.feeCents;
-    const saleDisplay = feeMismatch ? buildDisplay(trade, direction, mapped, { feeCents: credit.feeCents, expectedFeeCents: expected }) : display;
     const item = Item.findById(pick.itemId);
+    const saleDisplay = withStockWarnings(
+      feeMismatch ? buildDisplay(trade, direction, mapped, { feeCents: credit.feeCents, expectedFeeCents: expected }) : display, trade, item
+    );
     link(record, 'ITEM_SALE', item, 'CREATED');
     ExternalRecord.update(record.id, { tracking: entry.tracking }, { now });
     ImportBatchEntry.resolveOpenForRecord(record.id, 'CREATED', { now });

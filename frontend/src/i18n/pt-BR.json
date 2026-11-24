@@ -74,7 +74,8 @@
       "STICKERS": "Adesivos",
       "CRATES": "Caixas",
       "KEYCHAINS": "Chaveiros",
-      "AGENTS": "Agentes"
+      "AGENTS": "Agentes",
+      "PATCHES": "Patches"
     }
   },
   "errors": {
@@ -224,11 +225,32 @@
     "IMPORT_CUTOFF_NOT_SET": "Faça a primeira importação antes de mudar a data de corte.",
     "INVALID_FEE": "A taxa do aporte deve ser um valor maior ou igual a zero.",
     "FX_SOURCE_UNAVAILABLE": "A fonte da cotação está fora do ar ou com erro. Tente mais tarde ou use outra fonte.",
-    "COMPONENTS_NOT_ALLOWED": "Este item não aceita este tipo de componente (stickers e chaveiro só em armas).",
-    "COMPONENT_LIMIT_EXCEEDED": "Limite de componentes excedido: até 5 stickers e 1 pendurado (chaveiro ou Sticker Slab).",
+    "COMPONENTS_NOT_ALLOWED": "Este item não aceita este tipo de componente (stickers e chaveiro só em armas; patches só em agentes).",
+    "COMPONENT_LIMIT_EXCEEDED": "Limite de componentes excedido: até 5 stickers e 1 pendurado (chaveiro ou Sticker Slab) nas armas e 3 patches nos agentes.",
     "COMPONENT_CATALOG_REQUIRED": "Escolha o item do componente no catálogo.",
     "COMPONENT_CATALOG_MISMATCH": "O item escolhido no catálogo não é do tipo certo para este componente.",
-    "INVALID_COMPONENT_FIELD": "Algum campo do componente é inválido (slot, desgaste ou pattern)."
+    "INVALID_COMPONENT_FIELD": "Algum campo do componente é inválido (slot, desgaste ou pattern).",
+    "APPLY_SOURCE_NOT_APPLICABLE": "Esta unidade não pode ser aplicada como componente (só sticker, chaveiro, Sticker Slab ou patch do catálogo).",
+    "ITEM_NOT_IN_STOCK": "O item não está em estoque (talvez tenha sido vendido ou aplicado em outra aba). Atualize a lista.",
+    "ITEM_CONSUMED": "Esta unidade foi consumida numa aplicação. Desfaça a aplicação antes.",
+    "ITEM_IN_OPERATION": "Esta unidade participa de uma aplicação do estoque. Desfaça a aplicação antes de excluir.",
+    "OPERATION_DATE_INVALID": "A data informada não vale para esta operação.",
+    "OPERATION_NOT_FOUND": "Operação não encontrada.",
+    "OPERATION_ALREADY_UNDONE": "Esta operação já foi desfeita.",
+    "OPERATION_UNDO_BLOCKED": "Esta operação não pode ser desfeita agora.",
+    "COMPONENT_NOT_FOUND": "Componente não encontrado. Atualize a lista.",
+    "COMPONENT_NOT_SCRAPEABLE": "Só sticker e patch aplicados do estoque podem ser removidos para sempre."
+  },
+  "errorReasons": {
+    "OPERATION_DATE_INVALID_FUTURE": "A data não pode ser futura.",
+    "OPERATION_DATE_INVALID_BEFORE_TARGET_ACQUIRED": "A data não pode ser anterior à aquisição do item que recebe ({date}).",
+    "OPERATION_DATE_INVALID_BEFORE_SOURCE_ACQUIRED": "A data não pode ser anterior à aquisição da unidade aplicada ({date}).",
+    "OPERATION_DATE_INVALID_AFTER_SALE": "A data não pode ser depois da venda ({date}).",
+    "OPERATION_DATE_INVALID_BEFORE_APPLICATION": "A data não pode ser anterior à aplicação ({date}).",
+    "OPERATION_DATE_INVALID_ACQUIRED_AFTER_OPERATION": "A aquisição não pode ser depois de uma operação deste item ({date}). Desfaça a operação antes.",
+    "OPERATION_UNDO_BLOCKED_NOT_LATEST": "Desfaça antes a operação mais recente destas unidades (as aplicações se desfazem da última para a primeira).",
+    "OPERATION_UNDO_BLOCKED_TARGET_SOLD": "A arma está vendida. Desfaça a venda antes de desfazer a aplicação.",
+    "OPERATION_UNDO_BLOCKED_TARGET_NOT_IN_STOCK": "O item que recebeu a aplicação não está em estoque."
   },
   "warnings": {
     "FEES_NOT_CONFIGURED": "As taxas da loja não estão configuradas.",
@@ -308,7 +330,10 @@
       "lockedHint": "Em trade lock até {date}",
       "history": "Histórico",
       "offSale": "Mover para holding",
-      "forSale": "Voltar para a venda"
+      "forSale": "Voltar para a venda",
+      "apply": "Aplicar do estoque",
+      "applyNoCandidates": "Não há sticker, chaveiro ou patch em estoque para aplicar.",
+      "applyFull": "Este item já tem o máximo de componentes que cabem nele."
     },
     "itemGone": "Este item não existe mais (talvez tenha sido excluído em outra aba). A lista foi atualizada.",
     "daysForSale": "à venda há {days}",
@@ -382,7 +407,8 @@
       "PINGENTE": "Pingente",
       "PERSONAGEM": "Personagem",
       "PASSE_BATALHA": "Passe de batalha",
-      "OUTRO": "Outro"
+      "OUTRO": "Outro",
+      "PATCH": "Patch"
     },
     "variant": {
       "NORMAL": "Normal",
@@ -405,18 +431,21 @@
     },
     "acquisitionType": {
       "GANHEI": "Ganhei",
-      "COMPRA": "Compra"
+      "COMPRA": "Compra",
+      "GERADO": "Gerado"
     },
     "status": {
       "EM_ESTOQUE": "Em estoque",
-      "VENDIDO": "Vendidos"
+      "VENDIDO": "Vendidos",
+      "CONSUMIDO": "Consumidos"
     },
     "agingBucket": {
       "RECENTE": "Recente",
       "EM_GIRO": "Em giro",
       "AGARRADO": "Agarrado",
       "EM_TRADE_LOCK": "Em trade lock",
-      "FORA_DE_VENDA": "Holding"
+      "FORA_DE_VENDA": "Holding",
+      "CONSUMIDO": "Consumido"
     },
     "turnaroundBucket": {
       "GIRO_RAPIDO": "Giro rápido",
@@ -535,8 +564,83 @@
       "thumbsLabel": "Stickers e chaveiro aplicados",
       "slotShort": "slot",
       "wearShort": "desgaste",
-      "patternShort": "pattern"
+      "patternShort": "pattern",
+      "patchesTitle": "Patches",
+      "patches": "Patches aplicados ({count}/{max})",
+      "noPatches": "Nenhum patch registrado.",
+      "addPatch": "Adicionar patch",
+      "removePatch": "Remover o patch {n}",
+      "searchPatch": "Patch {n} (catálogo)",
+      "choosePatch": "Escolha o patch {n} no catálogo ou remova a linha.",
+      "patchSlot": "Posição",
+      "appliedTitle": "Aplicados do estoque",
+      "appliedNote": "O custo deles já está neste item. Só a posição, o desgaste e o pattern podem mudar aqui."
     }
+  },
+  "applyForm": {
+    "title": "Aplicar do estoque em {name}",
+    "intro": "A unidade escolhida sai do estoque e o custo dela passa para este item. O lucro real, o saldo e o total do estoque não mudam.",
+    "retroIntro": "Esta arma já foi vendida. A aplicação entra no registro com a data informada (até a data da venda). O custo da unidade passa para a arma e o lucro desta venda e o lucro real diminuem esse valor: é a correção do registro.",
+    "retroLimit": "Até {date} (data da venda)",
+    "kind": "Tipo",
+    "kinds": {
+      "STICKER": "Sticker colado",
+      "CHARM": "Chaveiro",
+      "STICKER_SLAB": "Sticker Slab",
+      "PATCH": "Patch"
+    },
+    "pick": "Unidade do estoque",
+    "noCandidates": "Não há unidades deste tipo em estoque.",
+    "limit": {
+      "STICKER": "Este item já tem 5 stickers.",
+      "HANGING": "Este item já tem um pendurado (chaveiro ou Sticker Slab).",
+      "PATCH": "Este agente já tem 3 patches."
+    },
+    "cost": "Custo {value}",
+    "tradeLock": "em trade lock",
+    "holding": "Holding",
+    "slot": "Posição (slot)",
+    "wear": "Desgaste (%)",
+    "pattern": "Pattern",
+    "appliedAt": "Data da aplicação",
+    "submit": "Aplicar",
+    "submitRetro": "Aplicar e registrar",
+    "success": "{name} aplicado em {target}. O custo foi para o item.",
+    "unitGone": "A unidade sugerida não está mais disponível no estoque."
+  },
+  "operations": {
+    "title": "Operações",
+    "empty": "Nenhuma operação registrada.",
+    "kind": {
+      "APPLY_COMPONENT": "Aplicação do estoque",
+      "DETACH_COMPONENT": "Separação de componente",
+      "SCRAPE_OFF": "Removido para sempre",
+      "OPEN_CASE": "Abertura de caixa",
+      "OPEN_TERMINAL": "Abertura de terminal",
+      "TRADE_UP": "Contrato de troca"
+    },
+    "role": {
+      "CONSUMED": "consumida",
+      "TARGET": "recebeu",
+      "CREATED": "gerada"
+    },
+    "line": "{kind} · {date}",
+    "counterpart": "{role}: {name}",
+    "undone": "desfeita em {date}",
+    "consumedIn": "Consumida em {date}: aplicada em {target}",
+    "appliedBadge": "do estoque",
+    "consumedBadge": "Consumido",
+    "undo": "Desfazer aplicação",
+    "undoTitle": "Desfazer a aplicação?",
+    "undoMessage": "A unidade volta ao estoque como estava e o custo dela sai deste item. Use só para corrigir um lançamento errado.",
+    "undoConfirm": "Desfazer",
+    "undoDone": "Aplicação desfeita.",
+    "scrape": "Remover para sempre",
+    "scrapeTitle": "Remover para sempre?",
+    "scrapeMessage": "O componente sai do item de vez (não volta ao estoque). O custo dele continua neste item.",
+    "scrapeConfirm": "Remover para sempre",
+    "scrapeDone": "Componente removido. O custo continua no item.",
+    "costIncludes": "Inclui {value} de componentes aplicados do estoque."
   },
   "sellForm": {
     "title": "Vender item",
@@ -628,7 +732,7 @@
     "IMPORT_RATE_LIMITED": "Limite de consultas do {source} atingido. Tente de novo depois de {retryAt}.",
     "IMPORT_SOURCE_FORMAT_CHANGED": "O {source} mudou o formato dos dados. Nada foi alterado; o app precisa de uma atualização.",
     "FX_SOURCE_UNAVAILABLE": "A fonte da cotação ({source}) está fora do ar ou com erro. Tente mais tarde ou use outra fonte.",
-    "COMPONENTS_NOT_ALLOWED": "Componente {n}: este item não aceita este tipo (stickers e chaveiro só em armas).",
+    "COMPONENTS_NOT_ALLOWED": "Componente {n}: este item não aceita este tipo (stickers e chaveiro só em armas; patches só em agentes).",
     "COMPONENT_CATALOG_REQUIRED": "Componente {n}: escolha o item no catálogo.",
     "COMPONENT_CATALOG_MISMATCH": "Componente {n}: o item escolhido no catálogo não é do tipo certo.",
     "INVALID_COMPONENT_FIELD": "Componente {n}: slot, desgaste ou pattern inválido."
@@ -720,6 +824,10 @@
     "soldOffSale": {
       "one": "{count} venda do holding não entra no tempo médio",
       "other": "{count} vendas do holding não entram no tempo médio"
+    },
+    "consumedCount": {
+      "one": "{count} unidade consumida em aplicações (fora do custo médio)",
+      "other": "{count} unidades consumidas em aplicações (fora do custo médio)"
     }
   },
   "stores": {
@@ -1362,12 +1470,14 @@
     },
     "componentWarningsTitle": "Não registrados",
     "componentWarningsHint": "Você pode cadastrá-los à mão, editando o item.",
+    "applyFromStockHint": "Há no estoque uma unidade igual. Se foi ela que estava na arma, aplique-a com a data certa.",
     "componentUnnamed": "componente sem nome",
     "componentWarnings": {
       "COMPONENT_CATALOG_NOT_FOUND": "{name} (não encontrado no catálogo)",
       "COMPONENT_FULLY_SCRAPED": "{name} (raspado até o fim)",
       "COMPONENT_LIMIT_EXCEEDED": "{name} (acima do limite de 5 stickers e 1 pendurado)",
-      "COMPONENTS_NOT_ALLOWED": "stickers e chaveiro (este item não aceita componentes)"
+      "COMPONENTS_NOT_ALLOWED": "stickers e chaveiro (este item não aceita componentes)",
+      "COMPONENT_MAYBE_APPLIED_FROM_STOCK": "{name} (possivelmente aplicado do estoque)"
     },
     "warnings": {
       "SCAN_LIMIT_REACHED": "A leitura parou no limite de páginas. O restante fica para a próxima importação.",
@@ -1383,6 +1493,7 @@
       "ITEM_EDITED": "editado depois da importação",
       "ITEM_IN_HOLDING": "no holding",
       "ITEM_SOLD_IN_APP": "vendido no app",
+      "ITEM_IN_OPERATION": "participa de uma aplicação do estoque (desfaça antes)",
       "ENTRY_RESOLVED": "pendência já resolvida (a decisão se perde)",
       "done": "Importação desfeita. A importação ao abrir o app fica pausada até a próxima importação manual.",
       "reasons": {
@@ -1481,7 +1592,8 @@
         "LINKED": "Ligado ao lançamento.",
         "IGNORED": "Ignorado.",
         "PURCHASE_ONLY": "Compra salva. A venda entra na próxima importação, quando o extrato trouxer o crédito.",
-        "REOPENED": "De volta às pendências."
+        "REOPENED": "De volta às pendências.",
+        "APPLIED": "Aplicado do estoque. O custo da unidade passou para a arma."
       },
       "conflict": {
         "ITEM_SOLD_IN_APP": "Este item já foi vendido no app depois da compra. Desfaça a venda dele (em Vendas) antes de remover a compra revertida.",
@@ -1499,6 +1611,7 @@
       },
       "CREATE_PURCHASE": "Lançar compra",
       "MARK_WON": "Foi drop (ganhei)",
+      "APPLY_FROM_STOCK": "Aplicar e registrar",
       "REOPEN": "Voltar para pendências"
     },
     "auto": {

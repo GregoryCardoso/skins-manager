@@ -8,7 +8,9 @@ import { ApiRequestError, deleteItem, markItemForSale, markItemOffSale, unsellIt
 import type { ItemView, Store } from '@/types/api';
 import ConfirmDialog from './ConfirmDialog';
 import ItemFormModal from './ItemFormModal';
+import ApplyComponentModal from './ApplyComponentModal';
 import ItemHistoryBox from './ItemHistoryBox';
+import ItemOperationsList from './ItemOperationsList';
 import SaleReleaseNote from './SaleReleaseNote';
 import Modal from './Modal';
 import SellItemModal from './SellItemModal';
@@ -20,6 +22,7 @@ type Dialog =
   | { kind: 'delete'; item: ItemView }
   | { kind: 'unsell'; item: ItemView }
   | { kind: 'offSale'; item: ItemView }
+  | { kind: 'apply'; item: ItemView }
   | { kind: 'history'; item: ItemView };
 
 export interface ItemDialogsApi {
@@ -30,6 +33,8 @@ export interface ItemDialogsApi {
   openDelete: (item: ItemView) => void;
   // "Não está à venda" pede confirmação (o giro recomeça ao voltar); "Colocar à venda" age direto (D266).
   openOffSale: (item: ItemView) => void;
+  // "Aplicar do estoque" (10.3, D362): sticker, chaveiro, Sticker Slab ou patch em estoque vira componente deste item.
+  openApply: (item: ItemView) => void;
   putForSale: (item: ItemView) => void;
   // Id do item cujo "Colocar à venda" está em andamento (o botão fica desabilitado).
   forSalePendingId: number | null;
@@ -139,7 +144,17 @@ export function useItemDialogs(stores: Store[]): ItemDialogsApi {
         <Modal title={t('history.title', { name: dialog.item.name })} onClose={closeDialog}>
           <SaleReleaseNote item={dialog.item} />
           <ItemHistoryBox stats={dialog.item.stats} />
+          <ItemOperationsList item={dialog.item} />
         </Modal>
+      )}
+      {dialog?.kind === 'apply' && (
+        <ApplyComponentModal
+          target={{ id: dialog.item.id, name: dialog.item.name }}
+          mode={{ type: 'stock' }}
+          onClose={closeDialog}
+          onDone={finish}
+          onGone={itemGone}
+        />
       )}
       {dialog?.kind === 'delete' && (
         <ConfirmDialog
@@ -185,6 +200,7 @@ export function useItemDialogs(stores: Store[]): ItemDialogsApi {
     openUnsell: (item) => setDialog({ kind: 'unsell', item }),
     openDelete: (item) => setDialog({ kind: 'delete', item }),
     openOffSale: (item) => setDialog({ kind: 'offSale', item }),
+    openApply: (item) => setDialog({ kind: 'apply', item }),
     putForSale,
     forSalePendingId,
     openHistory: (item) => setDialog({ kind: 'history', item }),

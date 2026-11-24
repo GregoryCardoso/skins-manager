@@ -54,12 +54,12 @@ function listEntries(req, res) {
 }
 
 function resolveEntry(req, res) {
-  const { action, targetId, purchase, confirmWarnings, purchaseOnly, acquiredAt } = req.body;
+  const { action, targetId, purchase, confirmWarnings, purchaseOnly, acquiredAt, sourceItemId, appliedAt, slot, wear, pattern } = req.body;
   ok(res, importService.resolveEntry(
     req.params.id,
     {
       action, targetId: targetId ?? null, purchase, confirmWarnings: confirmWarnings === true, purchaseOnly: purchaseOnly === true,
-      acquiredAt: acquiredAt ?? null,
+      acquiredAt: acquiredAt ?? null, sourceItemId, appliedAt, slot, wear, pattern, // APPLY_FROM_STOCK (10.3)
     },
     { now: req.app.locals.now() }
   ));

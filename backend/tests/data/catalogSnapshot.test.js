@@ -36,7 +36,7 @@ describe('data/seed/catalog.json', () => {
 
   test('contagens mínimas por fonte e coerentes com o cabeçalho', () => {
     const header = JSON.parse(text).counts;
-    const counts = { SKINS: 0, STICKERS: 0, CRATES: 0, KEYCHAINS: 0, AGENTS: 0 };
+    const counts = { SKINS: 0, STICKERS: 0, CRATES: 0, KEYCHAINS: 0, AGENTS: 0, PATCHES: 0 };
     for (const r of parsed.rows) counts[r.source] += 1;
     expect(counts).toEqual(header);
     expect(counts.SKINS).toBeGreaterThan(1000);
@@ -44,6 +44,7 @@ describe('data/seed/catalog.json', () => {
     expect(counts.CRATES).toBeGreaterThan(100);
     expect(counts.KEYCHAINS).toBeGreaterThan(10);
     expect(counts.AGENTS).toBeGreaterThan(20);
+    expect(counts.PATCHES).toBeGreaterThan(20); // patches.json da CSGO-API (D362)
   });
 
   test('tem facas com fase e luvas, e AK-47 | Redline com faixa de float', () => {

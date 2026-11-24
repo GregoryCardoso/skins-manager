@@ -35,6 +35,10 @@ const EXPECTED: Record<string, string[]> = {
   'item.delete': ['items', 'sales', 'stores', 'storeBalances', 'profitSummary', 'imports'],
   'item.sell': ['items', 'sales', 'stores', 'storeBalances', 'profitSummary'],
   'item.unsell': ['items', 'sales', 'stores', 'storeBalances', 'profitSummary', 'imports'],
+  // Aplicar do estoque (10.3, D362): os mesmos alvos de editar/desfazer venda.
+  'item.applyComponent': ['items', 'sales', 'stores', 'storeBalances', 'profitSummary', 'imports'],
+  'item.scrapeOff': ['items', 'sales', 'stores', 'storeBalances', 'profitSummary', 'imports'],
+  'operation.undo': ['items', 'sales', 'stores', 'storeBalances', 'profitSummary', 'imports'],
   // Importação (9.2, D318): o card, os lotes e as pendências, mais tudo o que muda com itens.
   'import.run': ['integrations', 'imports', ...MONEY],
   'import.undo': ['integrations', 'imports', ...MONEY],

@@ -19,7 +19,7 @@ afterAll(() => {
 let seq = 0;
 const newPath = () => path.join(tmpRoot, `d${++seq}`, 'inventory.sqlite');
 const snapshot = (d) => ({
-  items: d.prepare('SELECT * FROM items ORDER BY id').all(),
+  items: d.prepare('SELECT * FROM items ORDER BY id').all().map(({ consumed_at: consumed, ...rest }) => rest), // a v19 acrescenta consumed_at
   components: d.prepare('SELECT * FROM item_components ORDER BY id').all(),
   deposits: d.prepare('SELECT * FROM deposits ORDER BY id').all(),
   stores: d.prepare('SELECT * FROM stores ORDER BY id').all(),
@@ -68,7 +68,7 @@ test('v18 sobre v17 com dados: tudo idêntico; o índice de slot sai; as colunas
   const { before } = seedV17(dbPath);
   const db = openDatabase(dbPath, { now: new Date('2026-11-24T12:00:00.000Z') });
   try {
-    expect(db.pragma('user_version', { simple: true })).toBe(18);
+    expect(db.pragma('user_version', { simple: true })).toBe(19);
     const after = snapshot(db);
     expect(after.items).toEqual(before.items);
     expect(after.components).toEqual(before.components);
@@ -145,13 +145,13 @@ test('v18 falha no meio: rollback total (índice de volta, sem colunas), versão
   }
   const ok = openDatabase(dbPath);
   try {
-    expect(ok.pragma('user_version', { simple: true })).toBe(18);
+    expect(ok.pragma('user_version', { simple: true })).toBe(19);
   } finally {
     ok.close();
   }
 });
 
-test('o app não declara versão mais nova que a v18 e a migração tem número e nome estáveis', () => {
+test('a migração v18 continua com número e nome estáveis (a última é a v19, D362) tem número e nome estáveis', () => {
   expect(v018).toMatchObject({ version: 18, name: 'component_slots_and_batch_counts' });
-  expect(MIGRATIONS[MIGRATIONS.length - 1].version).toBe(18);
+  expect(MIGRATIONS.some((m) => m.version === 18)).toBe(true);
 });

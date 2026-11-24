@@ -2,10 +2,10 @@
 
 const { ValidationError } = require('../errors/AppError');
 
-const CATEGORIES = ['SKIN', 'FACA', 'LUVA', 'CAIXA', 'CAPSULA', 'STICKER', 'PINGENTE', 'PERSONAGEM', 'PASSE_BATALHA', 'OUTRO'];
+const CATEGORIES = ['SKIN', 'FACA', 'LUVA', 'CAIXA', 'CAPSULA', 'STICKER', 'PINGENTE', 'PERSONAGEM', 'PASSE_BATALHA', 'OUTRO', 'PATCH'];
 const WEAPON_CATEGORIES = ['SKIN', 'FACA', 'LUVA'];
 // D78: categorias que exigem item do catálogo e categorias de nome livre.
-const CATALOG_CATEGORIES = ['SKIN', 'FACA', 'LUVA', 'CAIXA', 'CAPSULA', 'STICKER', 'PINGENTE', 'PERSONAGEM'];
+const CATALOG_CATEGORIES = ['SKIN', 'FACA', 'LUVA', 'CAIXA', 'CAPSULA', 'STICKER', 'PINGENTE', 'PERSONAGEM', 'PATCH'];
 const FREE_NAME_CATEGORIES = ['OUTRO', 'PASSE_BATALHA'];
 const VARIANTS = ['NORMAL', 'STATTRAK', 'SOUVENIR'];
 const EXTERIORS = ['FN', 'MW', 'FT', 'WW', 'BS'];

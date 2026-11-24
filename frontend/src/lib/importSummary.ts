@@ -28,10 +28,20 @@ export function isNothingNew(counts: ImportBatchCounts): boolean {
   );
 }
 
-// Componentes não registrados de uma compra criada (10.2, D361): uma linha por aviso, só nas entradas CREATED.
+// Componentes não registrados de uma compra criada (10.2, D361): uma linha por aviso, só nas entradas CREATED. Nas vendas
+// (CREATED ou MATCHED) vem também o aviso "possivelmente aplicado do estoque" (10.3, D362).
 export function componentWarningsOf(entry: ImportEntryView): ImportComponentWarning[] {
-  if (entry.outcome !== 'CREATED') return [];
-  return entry.display.componentWarnings ?? [];
+  const warnings = entry.display.componentWarnings ?? [];
+  if (entry.outcome === 'CREATED') return warnings;
+  // Venda ligada a um lançamento manual: só o aviso do estoque (os demais são de uma compra criada).
+  if (entry.outcome === 'MATCHED') return warnings.filter((w) => w.code === 'COMPONENT_MAYBE_APPLIED_FROM_STOCK');
+  return [];
+}
+
+// Unidade do estoque sugerida pelo primeiro aviso "possivelmente aplicado do estoque" da entrada, ou null.
+export function stockCandidateOf(entry: ImportEntryView): number | null {
+  const warning = componentWarningsOf(entry).find((w) => w.code === 'COMPONENT_MAYBE_APPLIED_FROM_STOCK' && typeof w.candidateItemId === 'number');
+  return warning && typeof warning.candidateItemId === 'number' ? warning.candidateItemId : null;
 }
 
 export type EntryGroupKey = 'CREATED' | 'MATCHED' | 'POSSIBLE_DUPLICATE' | 'REVERTED' | 'WITHOUT_PURCHASE' | 'FAILED';

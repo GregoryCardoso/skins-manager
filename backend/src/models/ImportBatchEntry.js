@@ -136,6 +136,11 @@ function findById(id) {
   return toEntry(getDb().prepare('SELECT * FROM import_batch_entries WHERE id = ?').get(id));
 }
 
+// Troca o `display_json` de uma entrada (a ação "Aplicar e registrar" tira o aviso já tratado, 10.3).
+function updateDisplay(id, displayJson) {
+  return getDb().prepare('UPDATE import_batch_entries SET display_json = ? WHERE id = ?').run(displayJson, id).changes;
+}
+
 // Marca uma entrada como resolvida (ação do usuário na pendência).
 function resolve(id, resolution, { now = new Date() } = {}) {
   return getDb()
@@ -153,7 +158,7 @@ function listResolvedOpenTypeByBatch(batchId) {
 }
 
 module.exports = {
-  reopen, listIgnored, hasOpenForRecord, recordIdsWithResolution, findLatestDisplayJson, findById, resolve, listResolvedOpenTypeByBatch,
+  updateDisplay, reopen, listIgnored, hasOpenForRecord, recordIdsWithResolution, findLatestDisplayJson, findById, resolve, listResolvedOpenTypeByBatch,
   OPEN_OUTCOMES, create, listByBatch, listOpen, countOpen, countOpenByBatch, resolveOpenForRecord, resolveOpenForBatch,
   resolveOpenForRecordsOfBatch, resolveAllOpen,
 };

@@ -8,7 +8,7 @@ const { CATALOG_ID_MAX_LENGTH } = require('../../config/constants');
 
 const ID_PATTERN = /^[A-Za-z0-9_-]+$/;
 
-const SOURCES = Object.freeze(['SKINS', 'STICKERS', 'CRATES', 'KEYCHAINS', 'AGENTS']);
+const SOURCES = Object.freeze(['SKINS', 'STICKERS', 'CRATES', 'KEYCHAINS', 'AGENTS', 'PATCHES']);
 
 // Ids de categoria da CSGO-API (skins.json) que não são "arma comum".
 const KNIFE_CATEGORY_ID = 'sfui_invpanel_filter_melee';
@@ -160,9 +160,14 @@ function mapAgents(raw, ptNames) {
   return mapSource(raw, ptNames, { source: 'AGENTS', categoryOf: () => 'PERSONAGEM' });
 }
 
-const MAPPERS = { SKINS: mapSkins, STICKERS: mapStickers, CRATES: mapCrates, KEYCHAINS: mapKeychains, AGENTS: mapAgents };
+// Patches de agente (10.3, D362): "Patch | ..." do patches.json; categoria PATCH.
+function mapPatches(raw, ptNames) {
+  return mapSource(raw, ptNames, { source: 'PATCHES', categoryOf: () => 'PATCH' });
+}
 
-// `en` e `ptBr`: { SKINS, STICKERS, CRATES, KEYCHAINS, AGENTS } com o JSON bruto (ptBr pode faltar, no
+const MAPPERS = { SKINS: mapSkins, STICKERS: mapStickers, CRATES: mapCrates, KEYCHAINS: mapKeychains, AGENTS: mapAgents, PATCHES: mapPatches };
+
+// `en` e `ptBr`: { SKINS, STICKERS, CRATES, KEYCHAINS, AGENTS, PATCHES } com o JSON bruto (ptBr pode faltar, no
 // todo ou por fonte). As linhas vêm do `en`; do `ptBr` só se usa o nome, pelo mesmo id.
 function mapCatalog({ en, ptBr } = {}) {
   const rows = [];
@@ -186,5 +191,6 @@ module.exports = {
   mapCrates,
   mapKeychains,
   mapAgents,
+  mapPatches,
   mapCatalog,
 };

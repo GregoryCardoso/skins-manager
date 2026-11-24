@@ -5,11 +5,12 @@ import { useState } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import { formatDate, formatFloat, formatMoney } from '@/lib/format';
-import { candidateLink, componentWarningsOf, entryActions, entryLink, entryLinkLabelKey, groupEntries, reasonKey, removeConfirmKey } from '@/lib/importSummary';
+import { candidateLink, componentWarningsOf, entryActions, stockCandidateOf, entryLink, entryLinkLabelKey, groupEntries, reasonKey, removeConfirmKey } from '@/lib/importSummary';
 import { bulkActionsOf, commonBulkActions, type BulkEntryAction } from '@/lib/pendingActions';
 import { useInvalidate } from '@/lib/useInvalidate';
 import { ApiRequestError, bulkResolveImportEntries, reopenImportEntry, resolveImportEntry } from '@/services/api';
 import type { Category, ImportEntryAction, ImportEntryView } from '@/types/api';
+import ApplyComponentModal from './ApplyComponentModal';
 import ConfirmDialog from './ConfirmDialog';
 import ItemImage from './ItemImage';
 import LaunchPurchaseModal from './LaunchPurchaseModal';
@@ -48,7 +49,7 @@ function EntryActions({ entry, resolvedAs, onResolved }: { entry: ImportEntryVie
   const invalidate = useInvalidate();
   const errorText = useResolveErrorText();
   const [busy, setBusy] = useState(false);
-  const [dialog, setDialog] = useState<'REMOVE' | 'LAUNCH' | 'WON' | null>(null);
+  const [dialog, setDialog] = useState<'REMOVE' | 'LAUNCH' | 'WON' | 'APPLY' | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const actions = entryActions(entry);
@@ -77,6 +78,7 @@ function EntryActions({ entry, resolvedAs, onResolved }: { entry: ImportEntryVie
     if (action === 'REMOVE') setDialog('REMOVE');
     else if (action === 'CREATE_PURCHASE') setDialog('LAUNCH');
     else if (action === 'MARK_WON') setDialog('WON');
+    else if (action === 'APPLY_FROM_STOCK') setDialog('APPLY');
     else act(action);
   };
   return (
@@ -133,6 +135,15 @@ function EntryActions({ entry, resolvedAs, onResolved }: { entry: ImportEntryVie
               onResolved('PURCHASE_ONLY');
             }
           }}
+        />
+      )}
+      {dialog === 'APPLY' && entry.entityId !== null && stockCandidateOf(entry) !== null && (
+        <ApplyComponentModal
+          target={{ id: entry.entityId, name: entry.display.name ?? entry.display.marketHashName ?? '' }}
+          mode={{ type: 'retro', entryId: entry.id, sourceItemId: stockCandidateOf(entry) as number }}
+          onClose={() => setDialog(null)}
+          onDone={() => done('APPLIED')}
+          onGone={() => setDialog(null)}
         />
       )}
       {dialog === 'WON' && (

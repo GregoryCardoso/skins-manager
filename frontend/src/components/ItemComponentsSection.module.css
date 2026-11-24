@@ -11,3 +11,4 @@
 @media (max-width: 36rem) {
   .row { grid-template-columns: minmax(0, 1fr); }
 }
+.buttons { display: flex; gap: 0.4rem; align-items: end; flex-wrap: wrap; }

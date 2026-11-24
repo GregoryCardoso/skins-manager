@@ -96,7 +96,7 @@ function soldWhileOffSale(item) {
 
 // Item em estoque ainda bloqueado (`now < tradeUnlockAt`; igualdade = liberado, como 2.3).
 function isInTradeLock(item, now = new Date()) {
-  if (item.status === 'VENDIDO' || item.tradeUnlockAt === null || item.tradeUnlockAt === undefined) return false;
+  if (item.status !== 'EM_ESTOQUE' || item.tradeUnlockAt === null || item.tradeUnlockAt === undefined) return false;
   return parseDate(now, 'Data atual').getTime() < parseDate(item.tradeUnlockAt, 'Fim do trade lock').getTime();
 }
 
@@ -150,6 +150,10 @@ function getAging(item, { thresholds, now = new Date() } = {}) {
       turnaroundBucket: classifyTurnaround(turnaroundDays, thresholds),
       daysHeld: daysBetween(item.acquiredAt, item.soldAt),
     };
+  }
+  // Unidade consumida (10.3, D362): sem giro e fora das faixas; os dias vão da aquisição até o consumo.
+  if (item.status === 'CONSUMIDO') {
+    return { daysInInventory: daysBetween(item.acquiredAt, item.consumedAt), daysForSale: null, agingBucket: 'CONSUMIDO' };
   }
   const daysInInventory = daysBetween(item.acquiredAt, now);
   // Fora de venda prevalece sobre o trade lock (que continua informado à parte, no `tradeLock` da view).

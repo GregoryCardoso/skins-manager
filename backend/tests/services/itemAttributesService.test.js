@@ -13,7 +13,7 @@ const code = (c) => expect.objectContaining({ name: 'ValidationError', code: c }
 
 describe('itemAttributesService — constantes', () => {
   test('categorias e armas', () => {
-    expect(CATEGORIES).toHaveLength(10);
+    expect(CATEGORIES).toHaveLength(11); // com PATCH (D362)
     expect(WEAPON_CATEGORIES).toEqual(['SKIN', 'FACA', 'LUVA']);
     expect(isWeaponCategory('FACA')).toBe(true);
     expect(isWeaponCategory('CAIXA')).toBe(false);

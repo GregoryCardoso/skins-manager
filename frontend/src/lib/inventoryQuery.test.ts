@@ -39,8 +39,8 @@ describe('parseFilters', () => {
     expect(parse('status=ALL&stagnant=1').stagnant).toBe(true);
   });
 
-  test('categoria: as 10 são aceitas', () => {
-    expect(CATEGORIES).toHaveLength(10);
+  test('categoria: as 11 são aceitas', () => {
+    expect(CATEGORIES).toHaveLength(11);
     for (const c of CATEGORIES) expect(parse(`category=${c}`).category).toBe(c);
   });
 });

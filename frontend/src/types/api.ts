@@ -33,7 +33,7 @@ export interface BackupInfo {
   canOpenFolder: boolean;
 }
 
-export type CatalogSource = 'SKINS' | 'STICKERS' | 'CRATES' | 'KEYCHAINS' | 'AGENTS';
+export type CatalogSource = 'SKINS' | 'STICKERS' | 'CRATES' | 'KEYCHAINS' | 'AGENTS' | 'PATCHES';
 export interface CatalogStatus {
   catalogUpdatedAt: string | null;
   countsBySource: Record<CatalogSource, number>;
@@ -92,12 +92,13 @@ export interface FxRefreshResult {
 
 export type Currency = 'USD' | 'BRL';
 export type Category =
-  | 'SKIN' | 'FACA' | 'LUVA' | 'CAIXA' | 'CAPSULA' | 'STICKER' | 'PINGENTE' | 'PERSONAGEM' | 'PASSE_BATALHA' | 'OUTRO';
+  | 'SKIN' | 'FACA' | 'LUVA' | 'CAIXA' | 'CAPSULA' | 'STICKER' | 'PINGENTE' | 'PERSONAGEM' | 'PASSE_BATALHA' | 'OUTRO' | 'PATCH';
 export type Variant = 'NORMAL' | 'STATTRAK' | 'SOUVENIR';
 export type Exterior = 'FN' | 'MW' | 'FT' | 'WW' | 'BS';
-export type AcquisitionType = 'GANHEI' | 'COMPRA';
-export type ItemStatus = 'EM_ESTOQUE' | 'VENDIDO';
-export type AgingBucket = 'RECENTE' | 'EM_GIRO' | 'AGARRADO' | 'EM_TRADE_LOCK' | 'FORA_DE_VENDA';
+// `GERADO` (10.3, D362): unidade criada por uma transformação (não é escolhido no cadastro). `CONSUMIDO`: unidade queimada numa aplicação.
+export type AcquisitionType = 'GANHEI' | 'COMPRA' | 'GERADO';
+export type ItemStatus = 'EM_ESTOQUE' | 'VENDIDO' | 'CONSUMIDO';
+export type AgingBucket = 'RECENTE' | 'EM_GIRO' | 'AGARRADO' | 'EM_TRADE_LOCK' | 'FORA_DE_VENDA' | 'CONSUMIDO';
 export type TurnaroundBucket = 'GIRO_RAPIDO' | 'GIRO_NORMAL' | 'DEMOROU_VENDER' | 'SEM_GIRO';
 // Item em estoque à venda ou fora de venda (D263); nulo em item vendido.
 export type SaleState = 'FOR_SALE' | 'OFF_SALE';
@@ -146,6 +147,8 @@ export interface CatalogSummary {
 
 export interface ItemStats {
   unitCount: number;
+  // Unidades consumidas em transformações (10.3): fora da contagem de unidades e das vendas.
+  consumedCount: number;
   soldWithFxCount: number;
   soldCount: number;
   // Vendas feitas fora de venda: não entram no tempo médio (D263).
@@ -160,7 +163,10 @@ export interface ItemStats {
 export interface SaleInfo {
   salePriceUsdCents: number;
   netReceivedUsdCents: number;
+  // Custo efetivo (10.3): o próprio mais o dos componentes aplicados do estoque.
   purchaseCostUsdCents: number;
+  ownCostUsdCents: number;
+  inheritedCostUsdCents: number;
   fxUsed: { sale: number | null; purchase: number | null };
   usesRecordedFx: boolean;
   approxBrl: {
@@ -196,6 +202,11 @@ export interface ItemComponent {
   pattern: number | null;
   source: ComponentSource;
   origin: 'CAME_WITH' | 'APPLIED_FROM_STOCK';
+  // Aplicado do estoque (10.3, D362): a unidade consumida, a operação, e o que ainda se pode fazer com ele.
+  sourceItemId: number | null;
+  operationId: number | null;
+  undoable: boolean;
+  scrapeable: boolean;
 }
 // `charms` conta o pendurado (chaveiro ou Sticker Slab).
 export interface ComponentSummary {
@@ -206,6 +217,14 @@ export interface ComponentSummary {
 export interface ItemComponentInput {
   kind: ComponentKind;
   catalogId: string;
+  slot?: number | null;
+  wear?: number | null;
+  pattern?: number | null;
+}
+
+// Entrada do PATCH para um componente aplicado do estoque (10.3, D362): só slot, desgaste e pattern mudam (pelo `id`).
+export interface AppliedComponentInput {
+  id: number;
   slot?: number | null;
   wear?: number | null;
   pattern?: number | null;
@@ -262,7 +281,79 @@ export interface ItemView {
   // Componentes aplicados (10.1): só informativos; não mudam custo, giro, lucro nem itemStats.
   components: ItemComponent[];
   componentSummary: ComponentSummary;
+  // Custo efetivo em USD (10.3, D362): `purchasePriceCents` nunca muda; o herdado vem dos componentes aplicados do estoque.
+  cost: ItemCost;
+  // Onde a unidade foi consumida (status CONSUMIDO); senão nulo.
+  consumedIn: ItemConsumedIn | null;
+  // Em estoque e de uma categoria que aceita componentes: mostra "Aplicar do estoque".
+  canReceiveComponents: boolean;
+  consumedAt?: string | null;
   stats: ItemStats;
+}
+
+export interface ItemCost {
+  ownUsdCents: number;
+  inheritedUsdCents: number;
+  effectiveUsdCents: number;
+  estimated: boolean;
+}
+export interface ItemConsumedIn {
+  operationId: number;
+  occurredAt: string;
+  targetItemId: number | null;
+  targetName: string | null;
+}
+
+// Aplicar do estoque (10.3, D362).
+export interface ApplyCandidate {
+  itemId: number;
+  kind: ComponentKind;
+  catalogId: string;
+  name: string;
+  namePtBr: string | null;
+  imageUrl: string | null;
+  acquiredAt: string;
+  effectiveCostUsdCents: number;
+  costEstimated: boolean;
+  tradeLocked: boolean;
+  offSale: boolean;
+}
+export interface ApplyCandidates {
+  allowedKinds: ComponentKind[];
+  remaining: { stickers: number; hanging: number; patches: number };
+  candidates: ApplyCandidate[];
+}
+export interface ApplyComponentBody {
+  sourceItemId: number;
+  slot?: number | null;
+  wear?: number | null;
+  pattern?: number | null;
+  appliedAt?: string | null;
+}
+export type OperationKind = 'APPLY_COMPONENT' | 'DETACH_COMPONENT' | 'SCRAPE_OFF' | 'OPEN_CASE' | 'OPEN_TERMINAL' | 'TRADE_UP';
+export type OperationRole = 'CONSUMED' | 'TARGET' | 'CREATED';
+export type OperationBlockReason = 'ALREADY_UNDONE' | 'NOT_LATEST' | 'TARGET_SOLD' | 'TARGET_NOT_IN_STOCK';
+export interface OperationSummary {
+  id: number;
+  kind: OperationKind;
+  outcome: 'TRANSFERRED' | 'LOST';
+  occurredAt: string;
+  undoneAt: string | null;
+  note: string | null;
+}
+export interface ItemOperation extends OperationSummary {
+  role: OperationRole | null;
+  counterparts: { itemId: number; name: string | null; role: OperationRole; status: ItemStatus | null }[];
+  undoable: boolean;
+  undoBlockedReason: OperationBlockReason | null;
+}
+export interface ApplyComponentResult {
+  operation: OperationSummary;
+  item: ItemView;
+}
+export interface UndoOperationResult {
+  operation: OperationSummary;
+  items: ItemView[];
 }
 
 export interface ItemListMeta {
@@ -560,7 +651,7 @@ export interface ItemCreateBody {
   fxRateAtPurchase?: number | null;
   acquiredAt?: string;
   tradeUnlockAt?: string | null;
-  components?: ItemComponentInput[];
+  components?: (ItemComponentInput | AppliedComponentInput)[];
 }
 export type ItemPatchBody = Partial<ItemCreateBody>;
 
@@ -870,11 +961,14 @@ export interface ImportEntryComponent {
 }
 
 export type ImportComponentWarningCode =
-  | 'COMPONENT_CATALOG_NOT_FOUND' | 'COMPONENT_FULLY_SCRAPED' | 'COMPONENT_LIMIT_EXCEEDED' | 'COMPONENTS_NOT_ALLOWED';
+  | 'COMPONENT_CATALOG_NOT_FOUND' | 'COMPONENT_FULLY_SCRAPED' | 'COMPONENT_LIMIT_EXCEEDED' | 'COMPONENTS_NOT_ALLOWED'
+  | 'COMPONENT_MAYBE_APPLIED_FROM_STOCK';
 
 export interface ImportComponentWarning {
   code: ImportComponentWarningCode;
   name: string | null;
+  // Só em COMPONENT_MAYBE_APPLIED_FROM_STOCK (10.3, D362): a unidade do estoque que pode ter sido aplicada.
+  candidateItemId?: number;
 }
 
 export interface ImportEntryView {
@@ -1033,11 +1127,17 @@ export interface UndoPreviewIssue {
 // Ações de uma pendência (9.4, D301; 9.5.1b, D327 a D331). SPLIT_FROM_ITEM ("Separar de um item que comprei", D321) fica
 // reservado: o backend ainda não o oferece nem aceita.
 export type ImportEntryAction =
-  | 'REMOVE' | 'KEEP' | 'CREATE' | 'LINK' | 'IGNORE' | 'CREATE_PURCHASE' | 'MARK_WON' | 'REOPEN' | 'SPLIT_FROM_ITEM';
+  | 'REMOVE' | 'KEEP' | 'CREATE' | 'LINK' | 'IGNORE' | 'CREATE_PURCHASE' | 'MARK_WON' | 'APPLY_FROM_STOCK' | 'REOPEN' | 'SPLIT_FROM_ITEM';
 
 export interface ImportResolveBody {
   action: ImportEntryAction;
   targetId?: number;
+  // "Aplicar e registrar" (APPLY_FROM_STOCK, 10.3): a unidade do aviso e a data da aplicação (até a da venda).
+  sourceItemId?: number;
+  appliedAt?: string;
+  slot?: number | null;
+  wear?: number | null;
+  pattern?: number | null;
   // "Lançar compra" (CREATE_PURCHASE): só o que o usuário informa; a identidade vem da pendência.
   purchase?: {
     purchaseStoreId: number;

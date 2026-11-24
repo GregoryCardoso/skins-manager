@@ -6,6 +6,12 @@ export const queryKeys = {
     list: (query: unknown) => ['items', 'list', query] as const,
     // Visão agrupada (D277): sob o prefixo `items`, então a invalidação atual a cobre.
     groups: (query: unknown) => ['items', 'groups', query] as const,
+    // Candidatas e operações de uma unidade (10.3): sob o prefixo `items`, então toda invalidação de item as recarrega.
+    candidates: (id: number) => ['items', 'candidates', id] as const,
+    operations: (id: number) => ['items', 'operations', id] as const,
+    // Unidade sugerida e arma vendida da aplicação retroativa (10.3, E-P2-Q47).
+    retroSource: (id: number) => ['items', 'retroSource', id] as const,
+    retroTarget: (id: number) => ['items', 'retroTarget', id] as const,
   },
   sales: { all: ['sales'] as const, list: (query: unknown) => ['sales', query] as const },
   stores: { all: ['stores'] as const },

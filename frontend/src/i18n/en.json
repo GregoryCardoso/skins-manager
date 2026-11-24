@@ -74,7 +74,8 @@
       "STICKERS": "Stickers",
       "CRATES": "Crates",
       "KEYCHAINS": "Keychains",
-      "AGENTS": "Agents"
+      "AGENTS": "Agents",
+      "PATCHES": "Patches"
     }
   },
   "errors": {
@@ -224,11 +225,32 @@
     "IMPORT_CUTOFF_NOT_SET": "Do the first import before changing the cutoff date.",
     "INVALID_FEE": "The deposit fee must be greater than or equal to zero.",
     "FX_SOURCE_UNAVAILABLE": "The exchange rate source is down or returned an error. Try again later or use another source.",
-    "COMPONENTS_NOT_ALLOWED": "This item does not accept this kind of component (stickers and charms only on weapons).",
-    "COMPONENT_LIMIT_EXCEEDED": "Component limit exceeded: up to 5 stickers and 1 hanging (charm or Sticker Slab).",
+    "COMPONENTS_NOT_ALLOWED": "This item does not accept this kind of component (stickers and charms only on weapons; patches only on agents).",
+    "COMPONENT_LIMIT_EXCEEDED": "Component limit exceeded: up to 5 stickers and 1 hanging (charm or Sticker Slab) on weapons, and 3 patches on agents.",
     "COMPONENT_CATALOG_REQUIRED": "Choose the component item from the catalog.",
     "COMPONENT_CATALOG_MISMATCH": "The chosen catalog item is not the right type for this component.",
-    "INVALID_COMPONENT_FIELD": "A component field is invalid (slot, wear or pattern)."
+    "INVALID_COMPONENT_FIELD": "A component field is invalid (slot, wear or pattern).",
+    "APPLY_SOURCE_NOT_APPLICABLE": "This unit cannot be applied as a component (only a catalog sticker, keychain, Sticker Slab or patch).",
+    "ITEM_NOT_IN_STOCK": "The item is not in stock (it may have been sold or applied in another tab). Refresh the list.",
+    "ITEM_CONSUMED": "This unit was consumed by an application. Undo the application first.",
+    "ITEM_IN_OPERATION": "This unit takes part in an apply-from-stock operation. Undo the operation before deleting.",
+    "OPERATION_DATE_INVALID": "The date is not valid for this operation.",
+    "OPERATION_NOT_FOUND": "Operation not found.",
+    "OPERATION_ALREADY_UNDONE": "This operation was already undone.",
+    "OPERATION_UNDO_BLOCKED": "This operation cannot be undone right now.",
+    "COMPONENT_NOT_FOUND": "Component not found. Refresh the list.",
+    "COMPONENT_NOT_SCRAPEABLE": "Only stickers and patches applied from stock can be removed for good."
+  },
+  "errorReasons": {
+    "OPERATION_DATE_INVALID_FUTURE": "The date cannot be in the future.",
+    "OPERATION_DATE_INVALID_BEFORE_TARGET_ACQUIRED": "The date cannot be before the acquisition of the receiving item ({date}).",
+    "OPERATION_DATE_INVALID_BEFORE_SOURCE_ACQUIRED": "The date cannot be before the acquisition of the applied unit ({date}).",
+    "OPERATION_DATE_INVALID_AFTER_SALE": "The date cannot be after the sale ({date}).",
+    "OPERATION_DATE_INVALID_BEFORE_APPLICATION": "The date cannot be before the application ({date}).",
+    "OPERATION_DATE_INVALID_ACQUIRED_AFTER_OPERATION": "The acquisition cannot be after an operation of this item ({date}). Undo the operation first.",
+    "OPERATION_UNDO_BLOCKED_NOT_LATEST": "Undo the most recent operation of these units first (applications are undone from the last to the first).",
+    "OPERATION_UNDO_BLOCKED_TARGET_SOLD": "The weapon is sold. Undo the sale before undoing the application.",
+    "OPERATION_UNDO_BLOCKED_TARGET_NOT_IN_STOCK": "The item that received the application is not in stock."
   },
   "warnings": {
     "FEES_NOT_CONFIGURED": "The store fees are not configured.",
@@ -308,7 +330,10 @@
       "lockedHint": "Trade locked until {date}",
       "history": "History",
       "offSale": "Move to holding",
-      "forSale": "Put back up for sale"
+      "forSale": "Put back up for sale",
+      "apply": "Apply from stock",
+      "applyNoCandidates": "There is no sticker, keychain or patch in stock to apply.",
+      "applyFull": "This item already has the maximum number of components."
     },
     "itemGone": "This item no longer exists (it may have been deleted in another tab). The list was refreshed.",
     "daysForSale": "for sale for {days}",
@@ -382,7 +407,8 @@
       "PINGENTE": "Charm",
       "PERSONAGEM": "Agent",
       "PASSE_BATALHA": "Battle pass",
-      "OUTRO": "Other"
+      "OUTRO": "Other",
+      "PATCH": "Patch"
     },
     "variant": {
       "NORMAL": "Normal",
@@ -405,18 +431,21 @@
     },
     "acquisitionType": {
       "GANHEI": "Received",
-      "COMPRA": "Purchase"
+      "COMPRA": "Purchase",
+      "GERADO": "Generated"
     },
     "status": {
       "EM_ESTOQUE": "In stock",
-      "VENDIDO": "Sold"
+      "VENDIDO": "Sold",
+      "CONSUMIDO": "Consumed"
     },
     "agingBucket": {
       "RECENTE": "Recent",
       "EM_GIRO": "Moving",
       "AGARRADO": "Stagnant",
       "EM_TRADE_LOCK": "In trade lock",
-      "FORA_DE_VENDA": "Holding"
+      "FORA_DE_VENDA": "Holding",
+      "CONSUMIDO": "Consumed"
     },
     "turnaroundBucket": {
       "GIRO_RAPIDO": "Fast turnover",
@@ -535,8 +564,83 @@
       "thumbsLabel": "Applied stickers and charm",
       "slotShort": "slot",
       "wearShort": "wear",
-      "patternShort": "pattern"
+      "patternShort": "pattern",
+      "patchesTitle": "Patches",
+      "patches": "Applied patches ({count}/{max})",
+      "noPatches": "No patches registered.",
+      "addPatch": "Add patch",
+      "removePatch": "Remove patch {n}",
+      "searchPatch": "Patch {n} (catalog)",
+      "choosePatch": "Choose patch {n} from the catalog or remove the row.",
+      "patchSlot": "Position",
+      "appliedTitle": "Applied from stock",
+      "appliedNote": "Their cost is already in this item. Only position, wear and pattern can change here."
     }
+  },
+  "applyForm": {
+    "title": "Apply from stock onto {name}",
+    "intro": "The chosen unit leaves the stock and its cost moves to this item. Real profit, balances and the stock total do not change.",
+    "retroIntro": "This weapon was already sold. The application is recorded with the date you give (up to the sale date). The unit's cost moves to the weapon, and this sale's profit and the real profit go down by that amount: it is a correction of the record.",
+    "retroLimit": "Up to {date} (sale date)",
+    "kind": "Type",
+    "kinds": {
+      "STICKER": "Applied sticker",
+      "CHARM": "Keychain",
+      "STICKER_SLAB": "Sticker Slab",
+      "PATCH": "Patch"
+    },
+    "pick": "Unit from stock",
+    "noCandidates": "There are no units of this type in stock.",
+    "limit": {
+      "STICKER": "This item already has 5 stickers.",
+      "HANGING": "This item already has a hanging item (keychain or Sticker Slab).",
+      "PATCH": "This agent already has 3 patches."
+    },
+    "cost": "Cost {value}",
+    "tradeLock": "in trade lock",
+    "holding": "Holding",
+    "slot": "Position (slot)",
+    "wear": "Wear (%)",
+    "pattern": "Pattern",
+    "appliedAt": "Application date",
+    "submit": "Apply",
+    "submitRetro": "Apply and record",
+    "success": "{name} applied onto {target}. The cost moved to the item.",
+    "unitGone": "The suggested unit is no longer available in stock."
+  },
+  "operations": {
+    "title": "Operations",
+    "empty": "No operations recorded.",
+    "kind": {
+      "APPLY_COMPONENT": "Applied from stock",
+      "DETACH_COMPONENT": "Component detached",
+      "SCRAPE_OFF": "Removed for good",
+      "OPEN_CASE": "Case opened",
+      "OPEN_TERMINAL": "Terminal opened",
+      "TRADE_UP": "Trade-up contract"
+    },
+    "role": {
+      "CONSUMED": "consumed",
+      "TARGET": "received",
+      "CREATED": "generated"
+    },
+    "line": "{kind} · {date}",
+    "counterpart": "{role}: {name}",
+    "undone": "undone on {date}",
+    "consumedIn": "Consumed on {date}: applied onto {target}",
+    "appliedBadge": "from stock",
+    "consumedBadge": "Consumed",
+    "undo": "Undo application",
+    "undoTitle": "Undo the application?",
+    "undoMessage": "The unit goes back to stock as it was and its cost leaves this item. Use it only to fix a wrong entry.",
+    "undoConfirm": "Undo",
+    "undoDone": "Application undone.",
+    "scrape": "Remove for good",
+    "scrapeTitle": "Remove for good?",
+    "scrapeMessage": "The component leaves the item for good (it does not return to stock). Its cost stays in this item.",
+    "scrapeConfirm": "Remove for good",
+    "scrapeDone": "Component removed. The cost stays in the item.",
+    "costIncludes": "Includes {value} of components applied from stock."
   },
   "sellForm": {
     "title": "Sell item",
@@ -628,7 +732,7 @@
     "IMPORT_RATE_LIMITED": "{source} request limit reached. Try again after {retryAt}.",
     "IMPORT_SOURCE_FORMAT_CHANGED": "{source} changed its data format. Nothing was changed; the app needs an update.",
     "FX_SOURCE_UNAVAILABLE": "The exchange rate source ({source}) is down or returned an error. Try again later or use another source.",
-    "COMPONENTS_NOT_ALLOWED": "Component {n}: this item does not accept this type (stickers and charms only on weapons).",
+    "COMPONENTS_NOT_ALLOWED": "Component {n}: this item does not accept this type (stickers and charms only on weapons; patches only on agents).",
     "COMPONENT_CATALOG_REQUIRED": "Component {n}: choose the item from the catalog.",
     "COMPONENT_CATALOG_MISMATCH": "Component {n}: the chosen catalog item is not the right type.",
     "INVALID_COMPONENT_FIELD": "Component {n}: invalid slot, wear or pattern."
@@ -720,6 +824,10 @@
     "soldOffSale": {
       "one": "{count} sale from holding is not in the average time",
       "other": "{count} sales from holding are not in the average time"
+    },
+    "consumedCount": {
+      "one": "{count} unit consumed by applications (left out of the average cost)",
+      "other": "{count} units consumed by applications (left out of the average cost)"
     }
   },
   "stores": {
@@ -1362,12 +1470,14 @@
     },
     "componentWarningsTitle": "Not registered",
     "componentWarningsHint": "You can add them by hand by editing the item.",
+    "applyFromStockHint": "There is an identical unit in stock. If it was the one on the weapon, apply it with the right date.",
     "componentUnnamed": "unnamed component",
     "componentWarnings": {
       "COMPONENT_CATALOG_NOT_FOUND": "{name} (not found in the catalog)",
       "COMPONENT_FULLY_SCRAPED": "{name} (fully scraped off)",
       "COMPONENT_LIMIT_EXCEEDED": "{name} (over the limit of 5 stickers and 1 hanging item)",
-      "COMPONENTS_NOT_ALLOWED": "stickers and keychain (this item does not accept components)"
+      "COMPONENTS_NOT_ALLOWED": "stickers and keychain (this item does not accept components)",
+      "COMPONENT_MAYBE_APPLIED_FROM_STOCK": "{name} (possibly applied from stock)"
     },
     "warnings": {
       "SCAN_LIMIT_REACHED": "Reading stopped at the page limit. The rest is left for the next import.",
@@ -1383,6 +1493,7 @@
       "ITEM_EDITED": "edited after the import",
       "ITEM_IN_HOLDING": "in holding",
       "ITEM_SOLD_IN_APP": "sold in the app",
+      "ITEM_IN_OPERATION": "takes part in an apply-from-stock operation (undo it first)",
       "ENTRY_RESOLVED": "pending item already resolved (the decision is lost)",
       "done": "Import undone. Importing on app start is paused until the next manual import.",
       "reasons": {
@@ -1481,7 +1592,8 @@
         "LINKED": "Linked to the entry.",
         "IGNORED": "Ignored.",
         "PURCHASE_ONLY": "Purchase saved. The sale comes in on the next import, once the statement shows the credit.",
-        "REOPENED": "Back in pending items."
+        "REOPENED": "Back in pending items.",
+        "APPLIED": "Applied from stock. The unit's cost moved to the weapon."
       },
       "conflict": {
         "ITEM_SOLD_IN_APP": "This item was already sold in the app after the purchase. Undo its sale (in Sales) before removing the reversed purchase.",
@@ -1499,6 +1611,7 @@
       },
       "CREATE_PURCHASE": "Enter purchase",
       "MARK_WON": "It was a drop (won)",
+      "APPLY_FROM_STOCK": "Apply and record",
       "REOPEN": "Back to pending"
     },
     "auto": {

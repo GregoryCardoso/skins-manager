@@ -146,7 +146,7 @@ describe('GET /api/catalog/:id e /status', () => {
     expect(res.status).toBe(200);
     expect(res.body.data).toEqual({
       catalogUpdatedAt: '2026-11-01T00:00:00.000Z',
-      countsBySource: { SKINS: 12, STICKERS: 2, CRATES: 5, KEYCHAINS: 1, AGENTS: 1 },
+      countsBySource: { SKINS: 12, STICKERS: 2, CRATES: 5, KEYCHAINS: 1, AGENTS: 1, PATCHES: 0 },
       total: 21,
     });
   });
@@ -155,7 +155,7 @@ describe('GET /api/catalog/:id e /status', () => {
     freshDb();
     const res = await request(makeApp(NOW)).get('/api/catalog/status');
     expect(res.body.data).toEqual({
-      catalogUpdatedAt: null, countsBySource: { SKINS: 0, STICKERS: 0, CRATES: 0, KEYCHAINS: 0, AGENTS: 0 }, total: 0,
+      catalogUpdatedAt: null, countsBySource: { SKINS: 0, STICKERS: 0, CRATES: 0, KEYCHAINS: 0, AGENTS: 0, PATCHES: 0 }, total: 0,
     });
   });
 });
@@ -167,7 +167,7 @@ describe('POST /api/catalog/refresh', () => {
     expect(res.status).toBe(200);
     expect(res.body.data).toEqual({
       catalogUpdatedAt: NOW.toISOString(),
-      countsBySource: { SKINS: 8, STICKERS: 2, CRATES: 9, KEYCHAINS: 1, AGENTS: 1 },
+      countsBySource: { SKINS: 8, STICKERS: 2, CRATES: 9, KEYCHAINS: 1, AGENTS: 1, PATCHES: 0 },
       total: 21,
       skipped: 3,
       linkedLegacyItems: 0,

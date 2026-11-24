@@ -2,10 +2,11 @@
 
 import { useLanguage, useT } from '@/i18n/I18nProvider';
 import {
-  MAX_STICKERS, STICKER_SLOTS, newStickerDraft,
-  type ComponentCatalogChoice, type ComponentsState, type HangingKind, type StickerDraft,
+  MAX_PATCHES, MAX_STICKERS, PATCH_SLOTS, STICKER_SLOTS, newPatchDraft, newStickerDraft,
+  type ComponentCatalogChoice, type ComponentsState, type HangingKind, type PatchDraft, type StickerDraft,
 } from '@/lib/itemComponents';
-import type { CatalogItem } from '@/types/api';
+import type { CatalogItem, Category } from '@/types/api';
+import AppliedComponentsEditor from './AppliedComponentsEditor';
 import CatalogAutocomplete, { catalogDisplayName } from './CatalogAutocomplete';
 import FormField from './FormField';
 import styles from './forms.module.css';
@@ -13,6 +14,11 @@ import sectionStyles from './ItemComponentsSection.module.css';
 import ItemImage from './ItemImage';
 
 interface Props {
+  // Unidade em edição (para desfazer ou remover um componente aplicado); ausente no cadastro.
+  itemId?: number;
+  // Arma (stickers e pendurado) ou agente (patches).
+  category: Category | '';
+  onItemChanged?: (message: string) => void;
   state: ComponentsState;
   onChange: (next: ComponentsState) => void;
   // Erro do campo `components` (local ou do backend).
@@ -25,7 +31,7 @@ const toChoice = (item: CatalogItem): ComponentCatalogChoice => ({
 });
 
 // Escolhido no catálogo: imagem, nome e botão para trocar.
-function Chosen({ choice, kind, onClear, disabled }: { choice: ComponentCatalogChoice; kind: 'STICKER' | 'PINGENTE'; onClear: () => void; disabled: boolean }) {
+function Chosen({ choice, kind, onClear, disabled }: { choice: ComponentCatalogChoice; kind: 'STICKER' | 'PINGENTE' | 'PATCH'; onClear: () => void; disabled: boolean }) {
   const t = useT();
   const language = useLanguage();
   return (
@@ -40,9 +46,13 @@ function Chosen({ choice, kind, onClear, disabled }: { choice: ComponentCatalogC
 }
 
 // Seção "Stickers e chaveiro" do formulário de item (só SKIN, 10.1). Não muda o custo.
-export default function ItemComponentsSection({ state, onChange, error = null, disabled = false }: Props) {
+export default function ItemComponentsSection({ itemId, category, onItemChanged, state, onChange, error = null, disabled = false }: Props) {
   const t = useT();
-  const { stickers, hanging } = state;
+  const { stickers, hanging, patches } = state;
+  const isAgent = category === 'PERSONAGEM';
+
+  const updatePatch = (key: string, partial: Partial<PatchDraft>) =>
+    onChange({ ...state, patches: patches.map((p) => (p.key === key ? { ...p, ...partial } : p)) });
 
   const updateSticker = (key: string, partial: Partial<StickerDraft>) =>
     onChange({ ...state, stickers: stickers.map((s) => (s.key === key ? { ...s, ...partial } : s)) });
@@ -61,10 +71,55 @@ export default function ItemComponentsSection({ state, onChange, error = null, d
 
   return (
     <fieldset className={`${styles.details} ${sectionStyles.section}`} disabled={disabled}>
-      <legend className={styles.label}>{t('itemForm.components.title')}</legend>
+      <legend className={styles.label}>{t(isAgent ? 'itemForm.components.patchesTitle' : 'itemForm.components.title')}</legend>
       <p className={styles.muted}>{t('itemForm.components.costNote')}</p>
       {error && <div className={styles.error} role="alert">{error}</div>}
-
+      {isAgent && (
+        <>
+          <h4 className={sectionStyles.heading}>{t('itemForm.components.patches', { count: patches.length, max: MAX_PATCHES })}</h4>
+          {patches.length === 0 && <p className={styles.muted}>{t('itemForm.components.noPatches')}</p>}
+          {patches.map((draft, index) => (
+            <div key={draft.key} className={sectionStyles.row}>
+              <div className={sectionStyles.pick}>
+                {draft.catalog ? (
+                  <Chosen choice={draft.catalog} kind="PATCH" disabled={disabled} onClear={() => updatePatch(draft.key, { catalog: null })} />
+                ) : (
+                  <CatalogAutocomplete
+                    label={t('itemForm.components.searchPatch', { n: index + 1 })}
+                    fixedCategory="PATCH"
+                    hideRefresh
+                    onSelect={(item) => updatePatch(draft.key, { catalog: toChoice(item) })}
+                  />
+                )}
+              </div>
+              <FormField label={t('itemForm.components.patchSlot')}>
+                {(c) => (
+                  <select {...c} className={styles.select} value={draft.slot} onChange={(e) => updatePatch(draft.key, { slot: e.target.value })}>
+                    <option value="">{t('common.none')}</option>
+                    {PATCH_SLOTS.map((slot) => <option key={slot} value={slot}>{slot}</option>)}
+                  </select>
+                )}
+              </FormField>
+              <span />
+              <button
+                type="button"
+                className={`${styles.button} ${styles.small} ${sectionStyles.remove}`}
+                onClick={() => onChange({ ...state, patches: patches.filter((p) => p.key !== draft.key) })}
+                aria-label={t('itemForm.components.removePatch', { n: index + 1 })}
+              >
+                {t('itemForm.components.remove')}
+              </button>
+            </div>
+          ))}
+          <div className={styles.row}>
+            <button type="button" className={`${styles.button} ${styles.small}`} onClick={() => onChange({ ...state, patches: [...patches, newPatchDraft()] })} disabled={patches.length >= MAX_PATCHES}>
+              {t('itemForm.components.addPatch')}
+            </button>
+          </div>
+        </>
+      )}
+      {!isAgent && (
+      <>
       <h4 className={sectionStyles.heading}>{t('itemForm.components.stickers', { count: stickers.length, max: MAX_STICKERS })}</h4>
       {stickers.length === 0 && <p className={styles.muted}>{t('itemForm.components.noStickers')}</p>}
       {stickers.map((draft, index) => (
@@ -160,6 +215,11 @@ export default function ItemComponentsSection({ state, onChange, error = null, d
             )}
           </FormField>
         </div>
+      )}
+      </>
+      )}
+      {itemId !== undefined && onItemChanged && (
+        <AppliedComponentsEditor itemId={itemId} state={state} onChange={onChange} onItemChanged={onItemChanged} disabled={disabled} />
       )}
     </fieldset>
   );

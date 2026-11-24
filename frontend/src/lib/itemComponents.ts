@@ -1,9 +1,11 @@
 // Lógica pura dos componentes aplicados no formulário de item (10.1, D353): estado dos rascunhos, montagem do corpo e
 // comparação para o PATCH. Nenhuma regra de negócio: limites, categoria e catálogo são validados pelo backend.
 import { formatDecimalInput, normalizeNumberText, parseIntegerInput } from '@/lib/numberInput';
-import type { Category, ComponentKind, ItemComponentInput, ItemView } from '@/types/api';
+import type { AppliedComponentInput, Category, ComponentKind, ItemComponent, ItemComponentInput, ItemView } from '@/types/api';
 
 export const MAX_STICKERS = 5;
+export const MAX_PATCHES = 3;
+export const PATCH_SLOTS = [0, 1, 2] as const;
 export const MAX_PATTERN = 999999;
 export const STICKER_SLOTS = [0, 1, 2, 3, 4] as const;
 export type HangingKind = 'CHARM' | 'STICKER_SLAB';
@@ -31,26 +33,50 @@ export interface HangingDraft {
   patternText: string;
 }
 
+// Patch de agente (10.3, D362): item do catálogo e posição opcional (0 a 2).
+export interface PatchDraft {
+  key: string;
+  catalog: ComponentCatalogChoice | null;
+  slot: string;
+}
+
+// Componente aplicado do estoque (10.3): só leitura, menos posição, desgaste e pattern (mudam pelo `id`).
+export interface AppliedDraft {
+  component: ItemComponent;
+  slot: string;
+  wearText: string;
+  patternText: string;
+}
+
 export interface ComponentsState {
   stickers: StickerDraft[];
   hanging: HangingDraft | null;
+  patches: PatchDraft[];
+  applied: AppliedDraft[];
 }
 
 export type ComponentsBuild =
-  | { ok: true; body: ItemComponentInput[] }
+  | { ok: true; body: (ItemComponentInput | AppliedComponentInput)[] }
   | { ok: false; errorKey: string; params?: Record<string, string | number> };
 
-// Só `SKIN` aceita componentes na 10.1 (o backend decide; aqui só esconde a seção).
-export const componentsAllowedFor = (category: Category | ''): boolean => category === 'SKIN';
+// Arma (`SKIN`) aceita stickers e pendurado; agente (`PERSONAGEM`) aceita patches, e a seção só aparece quando o catálogo tem patches
+// (ou o agente já tem algum). O backend decide; aqui só se esconde a seção.
+export const componentsAllowedFor = (category: Category | '', patchesAvailable = false): boolean =>
+  category === 'SKIN' || (category === 'PERSONAGEM' && patchesAvailable);
 
 export function emptyComponentsState(): ComponentsState {
-  return { stickers: [], hanging: null };
+  return { stickers: [], hanging: null, patches: [], applied: [] };
 }
 
 let draftCounter = 0;
 export function newStickerDraft(): StickerDraft {
   draftCounter += 1;
   return { key: `sticker-${draftCounter}`, catalog: null, slot: '', wearText: '' };
+}
+
+export function newPatchDraft(): PatchDraft {
+  draftCounter += 1;
+  return { key: `patch-${draftCounter}`, catalog: null, slot: '' };
 }
 
 const toChoice = (component: { catalogId: string | null; name: string; namePtBr: string | null; imageUrl: string | null }): ComponentCatalogChoice => ({
@@ -75,7 +101,20 @@ export function parseWearText(text: string, language: string): number | null {
 }
 
 export function componentsStateFromItem(item: ItemView, language: string): ComponentsState {
-  const stickers = item.components
+  // Só o que veio junto é editável como lista; os aplicados do estoque ficam à parte (D362).
+  const cameWith = item.components.filter((c) => c.origin !== 'APPLIED_FROM_STOCK');
+  const applied = item.components
+    .filter((c) => c.origin === 'APPLIED_FROM_STOCK')
+    .map((c): AppliedDraft => ({
+      component: c,
+      slot: c.slot === null ? '' : String(c.slot),
+      wearText: c.wear === null ? '' : wearToText(c.wear, language),
+      patternText: c.pattern === null ? '' : String(c.pattern),
+    }));
+  const patches = cameWith
+    .filter((c) => c.kind === 'PATCH')
+    .map((c): PatchDraft => ({ ...newPatchDraft(), catalog: toChoice(c), slot: c.slot === null ? '' : String(c.slot) }));
+  const stickers = cameWith
     .filter((c) => c.kind === 'STICKER')
     .map((c): StickerDraft => ({
       ...newStickerDraft(),
@@ -83,7 +122,7 @@ export function componentsStateFromItem(item: ItemView, language: string): Compo
       slot: c.slot === null ? '' : String(c.slot),
       wearText: c.wear === null ? '' : wearToText(c.wear, language),
     }));
-  const hangingComponent = item.components.find((c) => c.kind === 'CHARM' || c.kind === 'STICKER_SLAB');
+  const hangingComponent = cameWith.find((c) => c.kind === 'CHARM' || c.kind === 'STICKER_SLAB');
   const hanging: HangingDraft | null = hangingComponent
     ? {
       kind: hangingComponent.kind as HangingKind,
@@ -91,12 +130,12 @@ export function componentsStateFromItem(item: ItemView, language: string): Compo
       patternText: hangingComponent.pattern === null ? '' : String(hangingComponent.pattern),
     }
     : null;
-  return { stickers, hanging };
+  return { stickers, hanging, patches, applied };
 }
 
 // Corpo `components` do formulário. O slab guarda o sticker de dentro como `catalogId`.
 export function buildComponentsBody(state: ComponentsState, language: string): ComponentsBuild {
-  const body: ItemComponentInput[] = [];
+  const body: (ItemComponentInput | AppliedComponentInput)[] = [];
   for (let index = 0; index < state.stickers.length; index += 1) {
     const draft = state.stickers[index];
     if (!draft.catalog) return { ok: false, errorKey: 'itemForm.components.chooseSticker', params: { n: index + 1 } };
@@ -120,7 +159,50 @@ export function buildComponentsBody(state: ComponentsState, language: string): C
     }
     body.push(entry);
   }
+  for (let index = 0; index < state.patches.length; index += 1) {
+    const draft = state.patches[index];
+    if (!draft.catalog) return { ok: false, errorKey: 'itemForm.components.choosePatch', params: { n: index + 1 } };
+    const entry: ItemComponentInput = { kind: 'PATCH', catalogId: draft.catalog.id };
+    if (draft.slot !== '') entry.slot = Number(draft.slot);
+    body.push(entry);
+  }
+  // Aplicados do estoque: só entram (por `id`) os que mudaram de posição, desgaste ou pattern.
+  for (const draft of state.applied) {
+    const changes = appliedChanges(draft, language);
+    if (changes === 'invalidWear') return { ok: false, errorKey: 'itemForm.components.invalidWear', params: { n: 1 } };
+    if (changes === 'invalidPattern') return { ok: false, errorKey: 'itemForm.components.invalidPattern' };
+    if (changes) body.push(changes);
+  }
   return { ok: true, body };
+}
+
+// Entrada do PATCH de um componente aplicado se algo mudou; null se nada mudou; texto se o valor digitado é inválido.
+export function appliedChanges(draft: AppliedDraft, language: string): AppliedComponentInput | 'invalidWear' | 'invalidPattern' | null {
+  const { component } = draft;
+  const slot = draft.slot === '' ? null : Number(draft.slot);
+  let wear: number | null = component.wear;
+  if (component.kind === 'STICKER') {
+    if (draft.wearText.trim() === '') wear = null;
+    else {
+      const parsed = parseWearText(draft.wearText, language);
+      if (parsed === null) return 'invalidWear';
+      wear = parsed;
+    }
+  }
+  let pattern: number | null = component.pattern;
+  if (component.kind === 'CHARM' || component.kind === 'STICKER_SLAB') {
+    if (draft.patternText.trim() === '') pattern = null;
+    else {
+      const parsed = parseIntegerInput(draft.patternText);
+      if (parsed === null || parsed > MAX_PATTERN) return 'invalidPattern';
+      pattern = parsed;
+    }
+  }
+  if (slot === component.slot && wear === component.wear && pattern === component.pattern) return null;
+  const entry: AppliedComponentInput = { id: component.id, slot };
+  if (component.kind === 'STICKER') entry.wear = wear;
+  else if (component.kind !== 'PATCH') entry.pattern = pattern;
+  return entry;
 }
 
 const KIND_RANK: Record<ComponentKind, number> = { STICKER: 0, CHARM: 1, STICKER_SLAB: 2, PATCH: 3 };
@@ -132,13 +214,17 @@ function canonical(list: ItemComponentInput[]): string {
   return rows.join('|');
 }
 
-export function sameComponents(a: ItemComponentInput[], b: ItemComponentInput[]): boolean {
-  return canonical(a) === canonical(b);
+const isNewEntry = (c: ItemComponentInput | AppliedComponentInput): c is ItemComponentInput => 'kind' in c;
+
+// O corpo do formulário é igual ao que está gravado? Entradas de componente aplicado (por `id`) só existem quando algo mudou.
+export function sameComponents(a: (ItemComponentInput | AppliedComponentInput)[], b: ItemComponentInput[]): boolean {
+  if (a.some((c) => !isNewEntry(c))) return false;
+  return canonical(a.filter(isNewEntry)) === canonical(b);
 }
 
-// A lista gravada do item como corpo (para comparar com o formulário).
+// A lista gravada do item como corpo (para comparar com o formulário): só o que veio junto; os aplicados do estoque ficam de fora.
 export function componentsBodyFromItem(item: ItemView): ItemComponentInput[] {
-  return item.components.map((c) => {
+  return item.components.filter((c) => c.origin !== 'APPLIED_FROM_STOCK').map((c) => {
     const entry: ItemComponentInput = { kind: c.kind, catalogId: c.catalogId ?? '' };
     if (c.slot !== null) entry.slot = c.slot;
     if (c.wear !== null) entry.wear = c.wear;

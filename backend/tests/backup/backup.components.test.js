@@ -83,12 +83,12 @@ test('backup v16 importado migra para a v17 com as tabelas novas vazias e os ite
   old.close();
   const res = await octet(fs.readFileSync(v16));
   expect(res.status).toBe(200);
-  expect(res.body.data).toMatchObject({ fileVersion: 16, schemaVersion: 18, migrationsApplied: [17, 18] });
+  expect(res.body.data).toMatchObject({ fileVersion: 16, schemaVersion: 19, migrationsApplied: [17, 18, 19] });
   const db = database.getDb();
   for (const table of ['item_components', 'item_operations', 'item_operation_links']) {
     expect(db.prepare(`SELECT COUNT(*) n FROM ${table}`).get().n).toBe(0);
   }
-  const after = db.prepare('SELECT * FROM items').all().map(({ components_imported_at: imported, ...rest }) => {
+  const after = db.prepare('SELECT * FROM items').all().map(({ components_imported_at: imported, consumed_at: consumed, ...rest }) => {
     expect(imported).toBeNull();
     return rest;
   });
@@ -107,7 +107,7 @@ test('backup v17 importado migra para a v18: componentes e itens intactos, índi
   old.close();
   const res = await octet(fs.readFileSync(v17));
   expect(res.status).toBe(200);
-  expect(res.body.data).toMatchObject({ fileVersion: 17, schemaVersion: 18, migrationsApplied: [18] });
+  expect(res.body.data).toMatchObject({ fileVersion: 17, schemaVersion: 19, migrationsApplied: [18, 19] });
   const db = database.getDb();
   expect(db.prepare('SELECT * FROM item_components').all()).toEqual(before);
   expect(db.prepare("SELECT COUNT(*) n FROM sqlite_master WHERE name = 'idx_item_components_slot'").get().n).toBe(0);

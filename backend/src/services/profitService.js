@@ -1,12 +1,14 @@
 'use strict';
 
 // Lucro da venda (2.5) e lucro real em USD (2.10, D226).
-const { toUsdCents, isValidFxRate, approxCounterpart, toUsdBase, approxBrlOf } = require('./currencyService');
+const { toUsdCents, isValidFxRate, approxCounterpart, approxBrlOf } = require('./currencyService');
 const { WARNINGS } = require('./warnings');
 const { depositBaseAmount } = require('./depositService');
 const { withdrawalBaseAmount } = require('./withdrawalService');
 const { buildCurrentBalances } = require('./storeBalanceService');
 const { isOffSale } = require('./inventoryAgingService');
+const { EMPTY_COST_INDEX } = require('./operations/costService');
+const operationContext = require('./operations/operationContext');
 const Setting = require('../models/Setting');
 const Item = require('../models/Item');
 const Store = require('../models/Store');
@@ -16,20 +18,22 @@ const StoreBalance = require('../models/StoreBalance');
 
 const addNullable = (a, b) => (a === null || b === null ? null : a + b);
 
-// netReceived − custo, ambos em USD com a cotação gravada no item; null se não vendido.
-function computeSaleProfitUsdCents(item) {
+// netReceived − custo, ambos em USD com a cotação gravada no item; null se não vendido. `inheritedUsdCents`: o que a unidade
+// recebeu de componentes aplicados do estoque (custo efetivo, D362); 0 sem operações.
+function computeSaleProfitUsdCents(item, { inheritedUsdCents = 0 } = {}) {
   if (item.status !== 'VENDIDO') return null;
   const net = toUsdCents(item.netReceivedCents, item.saleCurrency, item.fxRateAtSale);
   const cost = toUsdCents(item.purchasePriceCents, item.purchaseCurrency, item.fxRateAtPurchase);
-  return net - cost;
+  return net - cost - inheritedUsdCents;
 }
 
 // Valores da venda em USD (cotação gravada de cada lado, 2.9) e "≈ R$" pela cotação atual (D125); null se não vendido.
-function buildSaleInfo(item, usdBrlRate = null) {
+function buildSaleInfo(item, usdBrlRate = null, { inheritedUsdCents = 0 } = {}) {
   if (item.status !== 'VENDIDO') return null;
   const salePriceUsdCents = toUsdCents(item.salePriceCents, item.saleCurrency, item.fxRateAtSale);
   const netReceivedUsdCents = toUsdCents(item.netReceivedCents, item.saleCurrency, item.fxRateAtSale);
-  const purchaseCostUsdCents = toUsdCents(item.purchasePriceCents, item.purchaseCurrency, item.fxRateAtPurchase);
+  const ownCostUsdCents = toUsdCents(item.purchasePriceCents, item.purchaseCurrency, item.fxRateAtPurchase);
+  const purchaseCostUsdCents = ownCostUsdCents + inheritedUsdCents; // custo efetivo (D362)
   const fxUsed = {
     sale: item.saleCurrency === 'BRL' ? item.fxRateAtSale : null,
     purchase: item.purchaseCurrency === 'BRL' ? item.fxRateAtPurchase : null,
@@ -42,6 +46,8 @@ function buildSaleInfo(item, usdBrlRate = null) {
     salePriceUsdCents,
     netReceivedUsdCents,
     purchaseCostUsdCents,
+    ownCostUsdCents,
+    inheritedCostUsdCents: inheritedUsdCents,
     fxUsed,
     usesRecordedFx: fxUsed.sale !== null || fxUsed.purchase !== null,
     approxBrl: {
@@ -55,22 +61,23 @@ function buildSaleInfo(item, usdBrlRate = null) {
 
 // Estoque pelo custo em USD (D225, D226): USD nominal; BRL pela cotação gravada no item (2.9, estimado); GANHEI 0.
 // Total nulo só se um item em BRL não tiver cotação gravada (o CHECK da v3 impede, é só salvaguarda).
-function estimateStockUsd(stockItems) {
+// Pelo custo efetivo (D362): o custo próprio mais o das unidades consumidas que a unidade recebeu (`costIndex`; sem operações = o próprio).
+function estimateStockUsd(stockItems, { costIndex = EMPTY_COST_INDEX } = {}) {
   let totalUsdCents = 0;
   let estimated = false;
   for (const item of stockItems.filter((i) => i.status === 'EM_ESTOQUE')) {
-    const part = toUsdBase(item.purchasePriceCents, item.purchaseCurrency, item.fxRateAtPurchase);
-    if (part.estimated) estimated = true;
-    totalUsdCents = part.usdCents === null || totalUsdCents === null ? null : totalUsdCents + part.usdCents;
+    const cost = costIndex.effectiveOf(item);
+    if (cost.estimated) estimated = true;
+    totalUsdCents = cost.effectiveUsdCents === null || totalUsdCents === null ? null : totalUsdCents + cost.effectiveUsdCents;
   }
   return { totalUsdCents, estimated };
 }
 
 // Estoque pelo custo dividido em à venda e holding (8.9, D283), pela mesma regra de estimateStockUsd.
 // O total continua sendo o de estimateStockUsd (o lucro real não muda).
-function splitStockUsd(stockItems) {
+function splitStockUsd(stockItems, { costIndex = EMPTY_COST_INDEX } = {}) {
   const inStock = stockItems.filter((i) => i.status === 'EM_ESTOQUE');
-  const part = (items) => ({ ...estimateStockUsd(items), count: items.length });
+  const part = (items) => ({ ...estimateStockUsd(items, { costIndex }), count: items.length });
   return {
     forSale: part(inStock.filter((i) => !isOffSale(i))),
     offSale: part(inStock.filter((i) => isOffSale(i))),
@@ -91,6 +98,7 @@ function computeRealProfit(input = {}) {
   const balanceRows = (input.balances && input.balances.stores) || [];
   const stockItems = input.stockItems ?? [];
   const settings = input.settings ?? {};
+  const costIndex = input.costIndex ?? EMPTY_COST_INDEX;
   const usdBrlRate = settings.usdBrlRate;
   const storeById = new Map(stores.map((store) => [store.id, store]));
   const storeOf = (record) => (record.storeId === null || record.storeId === undefined ? null : storeById.get(record.storeId) ?? null);
@@ -124,9 +132,9 @@ function computeRealProfit(input = {}) {
   if (deposited.usdCents === null) warnings.push(fxWarning('DEPOSITS'));
   if (withdrawn.usdCents === null) warnings.push(fxWarning('WITHDRAWALS'));
 
-  const stock = estimateStockUsd(stockItems);
+  const stock = estimateStockUsd(stockItems, { costIndex });
   const stockUsdCents = stock.totalUsdCents;
-  const stockSplit = splitStockUsd(stockItems);
+  const stockSplit = splitStockUsd(stockItems, { costIndex });
 
   const parts = [withdrawn.usdCents, platformBalanceUsdCents, pendingBalanceUsdCents, stockUsdCents, deposited.usdCents];
   const realProfitUsdCents = parts.every((part) => part !== null)
@@ -195,7 +203,8 @@ function getProfitSummary({ now = new Date() } = {}) {
     stores, entries: StoreBalance.findAllEntries(), deposits, withdrawals, items, settings, now,
   });
   const stockItems = items.filter((item) => item.status === 'EM_ESTOQUE');
-  const profit = computeRealProfit({ deposits, withdrawals, stores, balances, stockItems, settings });
+  const costIndex = operationContext.loadCostIndex(items);
+  const profit = computeRealProfit({ deposits, withdrawals, stores, balances, stockItems, settings, costIndex });
   const sumCount = (pick) => balances.stores.reduce((acc, row) => acc + pick(row), 0);
   const noStore = (record) => record.storeId === null || record.storeId === undefined;
   return {

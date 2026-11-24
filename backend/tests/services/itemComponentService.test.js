@@ -77,8 +77,8 @@ describe('normalizeComponents', () => {
     }
   });
 
-  test('patch em agente fica recusado até existir no catálogo; patch em skin é recusado', () => {
-    expect(code(() => run([{ kind: 'PATCH', catalogId: 'st1' }], 'PERSONAGEM'))).toBe('COMPONENT_CATALOG_REQUIRED');
+  test('patch em agente exige um item PATCH do catálogo (D362); patch em skin é recusado', () => {
+    expect(code(() => run([{ kind: 'PATCH', catalogId: 'st1' }], 'PERSONAGEM'))).toBe('COMPONENT_CATALOG_MISMATCH');
     expect(code(() => run([{ kind: 'PATCH', catalogId: 'st1' }], 'SKIN'))).toBe('COMPONENTS_NOT_ALLOWED');
   });
 });

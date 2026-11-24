@@ -15,6 +15,7 @@ const { runInTransaction } = require('../../models/modelHelpers');
 const { NotFoundError, ConflictError } = require('../../errors/AppError');
 const importLock = require('./importLock');
 const { buildUnsellPatch } = require('../itemService');
+const ItemOperation = require('../../models/ItemOperation');
 
 const SOURCE = 'CSFLOAT';
 
@@ -26,7 +27,8 @@ const isTransfer = (link) => link.entityType === 'DEPOSIT' || link.entityType ==
 // - Venda criada num item que já existia: a venda será desfeita. Aviso: editado depois da importação.
 // - Vínculo com lançamento manual (MATCHED): só é desligado.
 // "Editado" compara com o vínculo mais recente do lote para o item (compra e venda do mesmo item no mesmo lote).
-function assessUndo(links, itemsById) {
+// `inOperationIds` (10.3, D362 item 7): ids de itens com vínculo em operação ativa; excluir o item criado pelo lote seria recusado (bloqueio).
+function assessUndo(links, itemsById, inOperationIds = new Set()) {
   const blockers = [];
   const warnings = [];
   let itemsToDelete = 0;
@@ -51,6 +53,7 @@ function assessUndo(links, itemsById) {
       itemsToDelete += 1;
       if (!item) continue;
       if (item.status === 'VENDIDO' && !soldByBatch.has(item.id)) blockers.push({ code: 'ITEM_SOLD_IN_APP', ...base });
+      if (inOperationIds.has(item.id)) blockers.push({ code: 'ITEM_IN_OPERATION', ...base });
       if (item.updatedAt !== stampOf.get(item.id)) warnings.push({ code: 'ITEM_EDITED', ...base });
       if (item.offSaleAt) warnings.push({ code: 'ITEM_IN_HOLDING', ...base });
       continue;
@@ -118,7 +121,8 @@ function parseJson(text) {
 
 function assessBatch(batchId) {
   const links = ExternalLink.listByBatch(batchId);
-  const assessed = assessUndo(links, loadItems(links));
+  const itemsById = loadItems(links);
+  const assessed = assessUndo(links, itemsById, ItemOperation.itemIdsWithActiveLink([...itemsById.keys()]));
   return { ...assessed, warnings: [...assessed.warnings, ...resolvedEntryWarnings(batchId)], links };
 }
 
@@ -156,7 +160,10 @@ function undo(batchId, { confirmWarnings = false, now = new Date(), source = SOU
       const createdItems = new Set(links.filter((l) => isCreated(l, 'ITEM_PURCHASE')).map((l) => l.entityId));
       for (const link of links) {
         if (isCreated(link, 'ITEM_SALE') && !createdItems.has(link.entityId)) Item.update(link.entityId, buildUnsellPatch(), { now });
-        if (isCreated(link, 'ITEM_PURCHASE')) Item.remove(link.entityId);
+        if (isCreated(link, 'ITEM_PURCHASE')) {
+          ItemOperation.deleteUndoneForItem(link.entityId); // operações já desfeitas não impedem a exclusão (o RESTRICT as protegeria)
+          Item.remove(link.entityId);
+        }
         // Aportes e saques criados pelo lote (9.6) são excluídos; o registro do extrato volta a "visto".
         if (isCreated(link, 'DEPOSIT')) Deposit.remove(link.entityId);
         if (isCreated(link, 'WITHDRAWAL')) Withdrawal.remove(link.entityId);

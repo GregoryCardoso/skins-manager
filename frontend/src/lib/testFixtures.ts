@@ -65,7 +65,10 @@ export function makeItem(overrides: Partial<ItemView> = {}): ItemView {
     externalSource: null,
     components: [],
     componentSummary: { stickers: 0, charms: 0 },
-    stats: { unitCount: 1, soldWithFxCount: 0, soldCount: 0, soldOffSaleCount: 0, avgDaysToSell: null, avgPurchaseCostUsdCents: null, avgSalePriceUsdCents: null, avgProfitUsdCents: null },
+    cost: { ownUsdCents: 100, inheritedUsdCents: 0, effectiveUsdCents: 100, estimated: false },
+    consumedIn: null,
+    canReceiveComponents: true,
+    stats: { unitCount: 1, consumedCount: 0, soldWithFxCount: 0, soldCount: 0, soldOffSaleCount: 0, avgDaysToSell: null, avgPurchaseCostUsdCents: null, avgSalePriceUsdCents: null, avgProfitUsdCents: null },
     ...overrides,
   };
 }
