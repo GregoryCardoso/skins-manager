@@ -57,3 +57,25 @@ describe('i18n dos diálogos (D369: inglês é a base)', () => {
     expect(languageFromLocale(undefined)).toBe('en');
   });
 });
+
+describe('textos da parada D (11.6)', () => {
+  test('nenhum texto dos diálogos fala em servidor interno nem em "Open logs" sem explicação', () => {
+    for (const code of LANGUAGES) {
+      for (const [key, text] of Object.entries(MESSAGES[code])) {
+        expect([`${code}.${key}`, /servidor interno|internal server|backend/i.test(text)]).toEqual([`${code}.${key}`, false]);
+      }
+    }
+  });
+
+  test('a porta só aparece em noPort.message, entre parênteses, nos dois idiomas', () => {
+    for (const code of LANGUAGES) {
+      expect(MESSAGES[code]['noPort.message']).toMatch(/\(3001 (a|to) 3010\)/);
+      expect(MESSAGES[code]['noPort.title']).not.toMatch(/porta|port/i);
+    }
+  });
+
+  test('crashLoop.detail mantém o marcador {dataDir} nos dois idiomas', () => {
+    expect(translate('pt-BR', 'crashLoop.detail', { dataDir: 'D:/dados' })).toBe('Seus dados continuam salvos em D:/dados.');
+    expect(translate('en', 'crashLoop.detail', { dataDir: 'D:/dados' })).toBe('Your data is still saved in D:/dados.');
+  });
+});

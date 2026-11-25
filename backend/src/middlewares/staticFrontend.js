@@ -3,10 +3,15 @@ const path = require('path');
 const express = require('express');
 
 const MISSING_UI_HTML = `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><title>Skins Manager</title></head>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Skins Manager</title></head>
 <body style="font-family:sans-serif;max-width:40rem;margin:4rem auto">
 <h1>Skins Manager</h1>
-<p>Interface not found. Run <code>npm start</code> (or <code>npm run build</code>) in the project root.</p>
+<section lang="pt-BR">
+<p>A tela do app ainda não foi montada. Feche o app e abra o start-app.bat de novo. Se você mexe no código, rode "npm run build" na pasta do projeto.</p>
+</section>
+<section lang="en">
+<p>The app screen has not been built yet. Close the app and open start-app.bat again. If you work on the code, run "npm run build" in the project folder.</p>
+</section>
 </body></html>`;
 
 function setCacheHeaders(res, filePath) {

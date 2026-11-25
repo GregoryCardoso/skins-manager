@@ -216,10 +216,10 @@ describe('saques e aportes: moeda da loja e moeda do valor informativo', () => {
 describe('textos novos (en e pt-BR)', () => {
   test('AMOUNT_PRECISION_INVALID traduzido com a moeda', () => {
     const e = new ApiRequestError('AMOUNT_PRECISION_INVALID', 'msg', 400, { field: 'purchasePriceCents', params: { currency: 'JPY', unitCents: 100 } });
-    expect(errorMessageFor(e, tEn, 'en')).toBe('JPY has no decimal places: enter a whole amount, for example 1500.');
-    expect(errorMessageFor(e, tPt, 'pt-BR')).toBe('JPY não tem casas decimais: informe um valor inteiro, por exemplo 1500.');
+    expect(errorMessageFor(e, tEn, 'en')).toBe('JPY has no decimal places. Enter a whole number, like 1500.');
+    expect(errorMessageFor(e, tPt, 'pt-BR')).toBe('JPY não tem centavos. Informe um número inteiro, como 1500.');
     const noParams = new ApiRequestError('AMOUNT_PRECISION_INVALID', 'msg', 400, {});
-    expect(errorMessageFor(noParams, tEn, 'en')).toBe('This currency has no decimal places: enter a whole amount.');
+    expect(errorMessageFor(noParams, tEn, 'en')).toBe('This currency has no decimal places. Enter a whole number.');
   });
 
   test('STORE_CURRENCY_LOCKED continua traduzido; FX_RATE_REQUIRED cita a moeda', () => {

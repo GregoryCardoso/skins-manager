@@ -84,12 +84,12 @@ describe('mensagens de erro da abertura', () => {
       expect(errorMessageFor(error, tPt, 'pt-BR')).toContain('10/11/2026');
       expect(errorMessageFor(error, tEn, 'en')).toContain('11/10/26');
     }
-    expect(errorMessageFor(err('OPERATION_DATE_INVALID', { params: { reason: 'TRADE_UNLOCK_BEFORE_OPENED' } }), tPt, 'pt-BR')).toBe('O fim do trade lock não pode ser anterior à abertura.');
+    expect(errorMessageFor(err('OPERATION_DATE_INVALID', { params: { reason: 'TRADE_UNLOCK_BEFORE_OPENED' } }), tPt, 'pt-BR')).toBe('O fim do trade lock não pode ser antes da abertura.');
   });
 
   test('campo travado do item gerado cita o rótulo do campo', () => {
     const error = err('GENERATED_FIELD_LOCKED', { field: 'acquisitionType', params: { field: 'acquisitionType' } });
-    expect(errorMessageFor(error, tPt, 'pt-BR')).toBe('Este item foi gerado por uma operação (abertura ou separação): desfaça a operação para mudar "Como obteve".');
+    expect(errorMessageFor(error, tPt, 'pt-BR')).toBe('Este item foi obtido por uma abertura ou separação. Desfaça a operação para mudar "Como obteve".');
   });
 });
 

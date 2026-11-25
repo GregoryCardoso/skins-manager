@@ -30,10 +30,10 @@ describe('errorMessageFor com params', () => {
   });
 
   test('FIELD_TOO_LONG, INVALID_AMOUNT e UNKNOWN_FIELD', () => {
-    expect(errorMessageFor(err('FIELD_TOO_LONG', { params: { maxLength: 200 } }), tPt)).toBe('Máximo de 200 caracteres.');
+    expect(errorMessageFor(err('FIELD_TOO_LONG', { params: { maxLength: 200 } }), tPt)).toBe('Use no máximo 200 caracteres.');
     expect(errorMessageFor(err('INVALID_AMOUNT', { params: { maxCents: 1e10 } }), tPt, 'pt-BR')).toContain('100.000.000,00');
-    expect(errorMessageFor(err('UNKNOWN_FIELD', { field: 'floatValue' }), tPt)).toBe('Campo desconhecido: Float.');
-    expect(errorMessageFor(err('UNKNOWN_FIELD', { field: 'foo' }), tPt)).toBe('Campo desconhecido: foo.');
+    expect(errorMessageFor(err('UNKNOWN_FIELD', { field: 'floatValue' }), tPt)).toBe('O app não reconhece o campo Float.');
+    expect(errorMessageFor(err('UNKNOWN_FIELD', { field: 'foo' }), tPt)).toBe('O app não reconhece o campo foo.');
   });
 
   test('sem params o texto genérico do código; código sem tradução usa a mensagem do backend', () => {

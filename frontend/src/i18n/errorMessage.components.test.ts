@@ -32,9 +32,9 @@ describe('erros dos componentes (10.1)', () => {
 
   test('com params.index a mensagem aponta o componente (base 1); sem index vale o texto geral', () => {
     const field = err('INVALID_COMPONENT_FIELD', { field: 'components', params: { index: 1, field: 'slot', max: 4 } });
-    expect(errorMessageFor(field, tPt, 'pt-BR')).toBe('Componente 2: slot, desgaste ou pattern inválido.');
+    expect(errorMessageFor(field, tPt, 'pt-BR')).toBe('Componente 2: posição, desgaste ou pattern inválido.');
     expect(errorMessageFor(field, tEn, 'en')).toMatch(/^Component 2:/);
     const limit = err('COMPONENT_LIMIT_EXCEEDED', { field: 'components', params: { max: 5 } });
-    expect(errorMessageFor(limit, tPt, 'pt-BR')).toMatch(/^Limite de componentes excedido/);
+    expect(errorMessageFor(limit, tPt, 'pt-BR')).toMatch(/^Passou do limite de componentes/);
   });
 });

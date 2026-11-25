@@ -181,7 +181,7 @@ describe('503 e pastas inexistentes', () => {
     const res = await request(a).get('/other.txt');
     expect(res.status).toBe(503);
     expect(res.headers['content-type']).toMatch(/text\/html/);
-    expect(res.text).toContain('Interface not found');
+    expect(res.text).toContain('A tela do app ainda não foi montada');
   });
 
   test('pasta inexistente: 503 e não lança', async () => {

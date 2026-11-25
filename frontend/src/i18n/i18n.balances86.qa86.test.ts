@@ -68,8 +68,8 @@ describe('errorMessageFor para os erros novos', () => {
 
   test('textos confirmados em D247', () => {
     expect(tPt('errors.ADJUSTMENT_NOTE_REQUIRED')).toBe('Informe uma observação para o ajuste.');
-    expect(tEn('errors.BALANCE_CHECK_BEFORE_LAST')).toBe('The check cannot be earlier than the last check. Delete the most recent one to correct it.');
-    expect(tPt('warnings.COMPUTED_BALANCE_NEGATIVE')).toBe('Saldo calculado negativo: registre o aporte que falta ou confira as compras e os saques.');
+    expect(tEn('errors.BALANCE_CHECK_BEFORE_LAST')).toBe('The check cannot be before the last check. To fix it, delete the most recent one.');
+    expect(tPt('warnings.COMPUTED_BALANCE_NEGATIVE')).toBe('O saldo calculado ficou negativo. Registre o aporte que falta ou confira as compras e os saques.');
   });
 
   test('FIELD_TOO_LONG da nota usa o limite do backend; código desconhecido cai na mensagem do backend', () => {

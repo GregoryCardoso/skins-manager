@@ -82,8 +82,8 @@ describe('UpdateModal: conteúdo por fase', () => {
   test('available: versões, frase de confirmação, notas só no idioma e botões', () => {
     const html = render(stateOf('available'));
     expect(text(html)).toContain('Atualização disponível');
-    expect(text(html)).toContain('Versão 1.1.0 disponível (você tem a 1.0.0).');
-    expect(text(html)).toContain('Nada é baixado ou instalado sem a sua confirmação');
+    expect(text(html)).toContain('A versão 1.1.0 está disponível. Você está na 1.0.0.');
+    expect(text(html)).toContain('Nada é baixado nem instalado sem a sua confirmação');
     expect(text(html)).toContain('Novidades');
     expect(html).toContain('<strong>Modal</strong>');
     expect(text(html)).not.toContain('What is new');
@@ -93,7 +93,7 @@ describe('UpdateModal: conteúdo por fase', () => {
 
   test('available em inglês: notas em inglês e textos em inglês', () => {
     const html = render(stateOf('available'), 'en');
-    expect(text(html)).toContain('Version 1.1.0 is available (you have 1.0.0).');
+    expect(text(html)).toContain('Version 1.1.0 is available. You are on 1.0.0.');
     expect(text(html)).toContain('What is new');
     expect(html).toContain('<strong>New</strong>');
     expect(text(html)).not.toContain('Novidades');
@@ -113,7 +113,7 @@ describe('UpdateModal: conteúdo por fase', () => {
     expect(text(html)).toContain('42%');
     expect(text(html)).toContain('Baixando a versão 1.1.0...');
     expect(text(html)).toContain('continuar usando o app');
-    expect(buttons(html)).toEqual(['Esconder']);
+    expect(buttons(html)).toEqual(['Continuar usando o app']);
   });
 
   test('downloading sem percentual: barra indeterminada', () => {
@@ -128,14 +128,14 @@ describe('UpdateModal: conteúdo por fase', () => {
     expect(text(html)).toContain('Atualização pronta');
     expect(text(html)).toContain('A versão 1.1.0 foi baixada e está pronta para instalar.');
     expect(text(html)).toContain('nada é instalado agora');
-    expect(text(html)).toContain('próxima abertura');
-    expect(buttons(html)).toEqual(['Instalar ao fechar o app', 'Reiniciar agora']);
+    expect(text(html)).toContain('próxima vez que você abrir o app');
+    expect(buttons(html)).toEqual(['Instalar ao fechar o app', 'Reiniciar e instalar']);
     expect(text(html)).not.toContain('Novidades'); // sem notas na fase pronta
   });
 
   test('ready em inglês', () => {
     const html = render(stateOf('ready'), 'en');
-    expect(buttons(html)).toEqual(['Install when closing the app', 'Restart now']);
+    expect(buttons(html)).toEqual(['Install when closing the app', 'Restart and install']);
     expect(text(html)).toContain('nothing is installed now');
   });
 
@@ -157,8 +157,8 @@ describe('UpdateModal: conteúdo por fase', () => {
 
   test('error de instalação: texto próprio, o app continua funcionando', () => {
     const html = render(stateOf('error', { error: { kind: 'install', detail: '' } }));
-    expect(text(html)).toContain('Não foi possível reiniciar para instalar; o app continua funcionando.');
-    expect(text(html)).toContain('Configurações → Sobre');
+    expect(text(html)).toContain('Não foi possível reiniciar para instalar. O app continua funcionando.');
+    expect(text(html)).toContain('Tente de novo em Configurações, em Sobre.');
     expect(html).not.toContain('<details'); // sem detalhe, sem bloco
   });
 

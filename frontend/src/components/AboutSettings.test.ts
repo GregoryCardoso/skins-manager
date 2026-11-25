@@ -55,18 +55,18 @@ describe('AboutSettings', () => {
     const html = render({ version: '1.0.0' });
     expect(text(html)).toContain('Skins Manager versão 1.0.0');
     expect(html).not.toContain('<button');
-    expect(text(html)).toContain('Atualize pelo Git');
+    expect(text(html)).toContain('Se você usa o Git, rode');
     expect(text(html)).not.toContain('instalador');
   });
 
   test('sem versão do servidor', () => {
-    expect(text(render({ version: null }))).toContain('Versão não disponível');
+    expect(text(render({ version: null }))).toContain('Não foi possível ver a versão');
   });
 
   test('dev: sem botão e mensagem de indisponível', () => {
     const html = render({ version: '1.0.0', info: { mode: 'dev' } });
     expect(html).not.toContain('<button');
-    expect(text(html)).toContain('não está disponível neste modo');
+    expect(text(html)).toContain('não verifica atualizações');
   });
 
   test('instalador: rótulo do modo, botão habilitado e nota', () => {
@@ -75,7 +75,7 @@ describe('AboutSettings', () => {
     expect(html).toContain('<button');
     expect(html).not.toContain('disabled');
     expect(text(html)).toContain('Verificar atualizações');
-    expect(text(html)).toContain('Nada é baixado ou instalado sem a sua confirmação');
+    expect(text(html)).toContain('Nada é baixado nem instalado sem a sua confirmação');
   });
 
   test('portátil: rótulo do modo e nota própria', () => {
@@ -93,11 +93,11 @@ describe('AboutSettings', () => {
 
   test.each([
     ['installer', 'up-to-date', undefined, 'Você já está na versão mais recente.'],
-    ['installer', 'available', '1.1.0', 'Versão 1.1.0 disponível. Veja a janela de atualização.'],
-    ['portable', 'available', '1.1.0', 'Versão 1.1.0 disponível. Veja a janela de atualização.'],
+    ['installer', 'available', '1.1.0', 'A versão 1.1.0 está disponível. Veja a janela de atualização.'],
+    ['portable', 'available', '1.1.0', 'A versão 1.1.0 está disponível. Veja a janela de atualização.'],
     ['installer', 'ready', '1.1.0', 'A versão 1.1.0 já foi baixada'],
-    ['installer', 'busy', undefined, 'Já existe uma verificação'],
-    ['installer', 'disabled', undefined, 'não está disponível neste modo'],
+    ['installer', 'busy', undefined, 'O app já está verificando ou atualizando'],
+    ['installer', 'disabled', undefined, 'não verifica atualizações'],
     ['installer', 'error', undefined, 'Não foi possível verificar as atualizações'],
     ['portable', 'error', undefined, 'Não foi possível verificar as atualizações'],
   ] as const)('resultado %s/%s mostra a mensagem certa', (mode, status, latestVersion, expected) => {

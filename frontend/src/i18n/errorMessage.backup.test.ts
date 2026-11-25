@@ -24,7 +24,7 @@ describe('erros de backup (6.3)', () => {
     const e = new ApiRequestError('BACKUP_NEWER_VERSION', 'm', 400, { params: { fileVersion: 9, appVersion: 5 } });
     expect(errorMessageFor(e, tPt, 'pt-BR')).toContain('9');
     expect(errorMessageFor(e, tPt, 'pt-BR')).toContain('5');
-    expect(errorMessageFor(e, tEn, 'en')).toMatch(/version 9.*up to 5/);
+    expect(errorMessageFor(e, tEn, 'en')).toMatch(/format 9.*up to 5/);
   });
 
   test('BACKUP_NEWER_VERSION sem params cai na mensagem genérica, sem {placeholder}', () => {

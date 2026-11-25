@@ -40,11 +40,11 @@ if not exist "node_modules" set "NEED_INSTALL=1"
 if not exist "backend\node_modules" set "NEED_INSTALL=1"
 if not exist "frontend\node_modules" set "NEED_INSTALL=1"
 if defined NEED_INSTALL (
-  echo Primeira execução: instalando dependências. Isso pode demorar alguns minutos...
+  echo Primeira vez: instalando os componentes do app. Pode demorar alguns minutos...
   call npm.cmd run install:all
   if errorlevel 1 (
     echo.
-    echo Falha ao instalar as dependências. Verifique a conexão com a internet e tente de novo.
+    echo Não foi possível instalar os componentes do app. Verifique a internet e abra este arquivo de novo.
     pause
     exit /b 1
   )
@@ -53,11 +53,11 @@ if defined NEED_INSTALL (
 REM Compila a interface só quando precisa (sem build ou codigo mais novo).
 node "scripts\startHelpers.js" needs-build
 if not errorlevel 1 (
-  echo Compilando a interface...
+  echo Montando a tela do app. Isso só acontece na primeira vez ou depois de uma atualização...
   call npm.cmd run build
   if errorlevel 1 (
     echo.
-    echo Falha ao compilar a interface.
+    echo Não foi possível montar a tela do app. Leia a mensagem acima e abra este arquivo de novo.
     pause
     exit /b 1
   )

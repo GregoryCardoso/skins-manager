@@ -37,6 +37,6 @@ describe('T83: PAYLOAD_TOO_LARGE mostra o limite em MB', () => {
   });
   test('413 genérico (sem params) usa a mensagem comum', () => {
     const e = new ApiRequestError('PAYLOAD_TOO_LARGE', 'm', 413);
-    expect(errorMessageFor(e, tPt, 'pt-BR')).toBe('Os dados enviados são grandes demais.');
+    expect(errorMessageFor(e, tPt, 'pt-BR')).toBe('Os dados enviados são grandes demais. Envie menos dados de uma vez.');
   });
 });

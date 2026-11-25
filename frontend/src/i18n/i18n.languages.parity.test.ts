@@ -63,7 +63,7 @@ const IDENTICAL_EVERYWHERE = new Set([
 // Exceções por idioma: cognatos e termos do jogo que o idioma mantém em inglês.
 const IDENTICAL_BY_LANGUAGE: Record<string, readonly string[]> = {
   'pt-BR': [
-    'Item', 'Item: {value}', '{count} item', 'Skin', 'Skins', 'Patch', 'Patches', 'Normal', 'Souvenir', 'Manual', 'Online', 'Offline', 'Individual',
+    'Item', 'Item: {value}', '{count} item', 'Skin', 'Skins', 'Patch', 'Patches', 'Normal', 'Souvenir', 'Manual', 'Individual',
     'Backup', 'Trade lock', 'Float', 'Paint seed', 'Asset ID', 'Sticker', 'Stickers', 'Pattern', 'pattern', 'pattern {n}', 'Sticker Slab',
     'Holding', 'Holding ({count})', '{count} min', '{count} h', '{count} d', 'd', 'h', 'min',
   ],

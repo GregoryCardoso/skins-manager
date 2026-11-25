@@ -77,7 +77,7 @@ describe('staticFrontend', () => {
     const a = createApp({ staticDir: emptyDir });
     const res = await request(a).get('/');
     expect(res.status).toBe(503);
-    expect(res.text).toContain('Interface not found');
+    expect(res.text).toContain('A tela do app ainda não foi montada');
     const health = await request(a).get('/api/health');
     expect(health.status).toBe(200);
   });
@@ -86,5 +86,19 @@ describe('staticFrontend', () => {
     const res = await request(app()).get('/api/health');
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
+  });
+});
+
+describe('página sem interface (11.6, parada D)', () => {
+  test('503 com pt-BR e en na mesma página, cada bloco com o seu lang, sem comandos antigos', async () => {
+    const res = await request(createApp({ staticDir: emptyDir })).get('/');
+    expect(res.status).toBe(503);
+    expect(res.text).toContain('lang="pt-BR"');
+    expect(res.text).toContain('<section lang="en">');
+    expect(res.text).toContain('A tela do app ainda não foi montada');
+    expect(res.text).toContain('The app screen has not been built yet');
+    expect(res.text).toContain('start-app.bat');
+    expect(res.text).not.toContain('npm start');
+    expect(res.text).not.toContain('Interface not found');
   });
 });

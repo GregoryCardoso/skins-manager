@@ -258,8 +258,8 @@ describe('chaves da visão agrupada (D278)', () => {
 
   test('INVALID_INVENTORY_VIEW está na lista de códigos da API e traduzido', () => {
     expect(API_ERROR_CODES).toContain('INVALID_INVENTORY_VIEW');
-    expect(pt['errors.INVALID_INVENTORY_VIEW']).toBe('Visão do inventário inválida.');
-    expect(enFlat['errors.INVALID_INVENTORY_VIEW']).toBe('Invalid inventory view.');
+    expect(pt['errors.INVALID_INVENTORY_VIEW']).toBe('Escolha Agrupado ou Individual.');
+    expect(enFlat['errors.INVALID_INVENTORY_VIEW']).toBe('Choose Grouped or Individual.');
   });
 
   test('placeholders esperados nas chaves de grupo', () => {
