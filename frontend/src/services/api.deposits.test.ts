@@ -23,7 +23,7 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe('funções de aportes', () => {
   test('listDeposits: GET /deposits e devolve a lista com totais', async () => {
-    const payload = { deposits: [], totals: { count: 0, legacyCount: 0, amountUsdCents: 0, approxBrlCents: null, estimated: false } };
+    const payload = { deposits: [], totals: { count: 0, legacyCount: 0, amountUsdCents: 0, approxCents: null, estimated: false } };
     const fn = stubFetch(payload);
     await expect(listDeposits()).resolves.toEqual(payload);
     expect(call(fn)).toMatchObject({ method: 'GET' });

@@ -69,7 +69,7 @@ describe('valor pago em R$ opcional', () => {
     const a = (await post(ok({ amountBrlCents: 1 }))).body.data;
     const b = (await post(ok({ amountBrlCents: 99999999 }))).body.data;
     expect([a.amountUsdCents, b.amountUsdCents]).toEqual([10000, 10000]);
-    expect(a.approxBrlCents).toBe(b.approxBrlCents);
+    expect(a.approxCents).toBe(b.approxCents);
   });
 });
 

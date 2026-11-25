@@ -78,8 +78,8 @@ describe('v23 com falha no meio', () => {
     // depois da falha, a migração real roda normalmente
     const ok = database.openDatabase(dbPath, { skipBackup: true });
     try {
-      expect(ok.pragma('user_version', { simple: true })).toBe(23);
-      expect(ok.prepare('SELECT * FROM settings').get()).toEqual(before);
+      expect(ok.pragma('user_version', { simple: true })).toBe(24);
+      expect(ok.prepare('SELECT * FROM settings').get()).toEqual({ ...before, display_currency: 'BRL' });
     } finally {
       ok.close();
     }
@@ -93,7 +93,7 @@ describe('v23 com falha no meio', () => {
     const first = count();
     const db = database.openDatabase(dbPath);
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(23);
+      expect(db.pragma('user_version', { simple: true })).toBe(24);
     } finally {
       db.close();
     }
@@ -114,7 +114,7 @@ describe('backup v22 e backup mais novo pela API', () => {
     await patch({ language: language === 'en' ? 'pt-BR' : 'en' });
     const res = await octet(makeBackup(`v22-${language}.sqlite`, language));
     expect(res.status).toBe(200);
-    expect(res.body.data).toMatchObject({ fileVersion: 22, schemaVersion: 23 });
+    expect(res.body.data).toMatchObject({ fileVersion: 22, schemaVersion: 24 });
     const s = (await request(app).get('/api/settings')).body.data;
     expect(s).toMatchObject({ language, theme: 'DARK' });
   });
@@ -123,7 +123,7 @@ describe('backup v22 e backup mais novo pela API', () => {
     await patch({ language: 'pt-BR' });
     const file = path.join(dir, 'newer.sqlite');
     const newer = database.openDatabase(file);
-    newer.pragma('user_version = 24');
+    newer.pragma('user_version = 25');
     newer.close();
     const res = await octet(fs.readFileSync(file));
     expect(res.status).toBe(400);

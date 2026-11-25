@@ -19,7 +19,7 @@ const withdrawal = (overrides: Partial<Withdrawal> = {}): Withdrawal => ({
   note: 'pix',
   legacyWithoutStore: false,
   amountUsdCents: 9750,
-  approxBrlCents: null,
+  approxCents: null,
   estimated: false,
   createdAt: '2026-11-10T15:30:00.000Z',
   updatedAt: '2026-11-10T15:30:00.000Z',

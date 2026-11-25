@@ -327,9 +327,9 @@ describe('formatAgo e agoParts', () => {
 const mv = (extra: Partial<MarketValue> = {}): MarketValue => ({
   marketValueUsdCents: 1000, parts: { baseCents: 1000, hangingCents: null, stickersInfoCents: 0, patchesInfoCents: 0 }, costUsdCents: 600, costEstimated: false,
   unrealizedUsdCents: 400, unrealizedNetUsdCents: 380, netUnavailableReason: null, pricedAt: '2026-11-24T10:00:00.000Z', isStale: false, status: 'OK',
-  reason: null, isComplete: true, missing: [], basis: 'NAME', isEstimated: true, approxBrl: { marketValue: 5000, unrealized: 2000, unrealizedNet: 1900 }, ...extra,
+  reason: null, isComplete: true, missing: [], basis: 'NAME', isEstimated: true, approx: { marketValue: 5000, unrealized: 2000, unrealizedNet: 1900 }, ...extra,
 });
-const noPrice = (reason: MarketValue['reason']) => mv({ status: 'NO_PRICE', marketValueUsdCents: null, reason, unrealizedUsdCents: null, unrealizedNetUsdCents: null, approxBrl: { marketValue: null, unrealized: null, unrealizedNet: null } });
+const noPrice = (reason: MarketValue['reason']) => mv({ status: 'NO_PRICE', marketValueUsdCents: null, reason, unrealizedUsdCents: null, unrealizedNetUsdCents: null, approx: { marketValue: null, unrealized: null, unrealizedNet: null } });
 const notPriceable = (reason: MarketValue['reason']) => ({ ...noPrice(reason), status: 'NOT_PRICEABLE' }) as MarketValue;
 
 describe('célula de valor da unidade (unitMarketCell)', () => {
@@ -339,7 +339,7 @@ describe('célula de valor da unidade (unitMarketCell)', () => {
   });
 
   test('OK com as partes, a data do preço e o "≈ R$"', () => {
-    const view = unitMarketCell(mv({ approxBrl: { marketValue: 6250, unrealized: null, unrealizedNet: null } }));
+    const view = unitMarketCell(mv({ approx: { marketValue: 6250, unrealized: null, unrealizedNet: null } }));
     expect(view).toEqual({
       kind: 'OK', usdCents: 1000, brlCents: 6250, pricedAt: '2026-11-24T10:00:00.000Z', stale: false, incomplete: false,
       parts: { itemCents: 1000, hangingCents: null, stickersInfoCents: 0, patchesInfoCents: 0 },
@@ -347,7 +347,7 @@ describe('célula de valor da unidade (unitMarketCell)', () => {
   });
 
   test('sem cotação: brlCents nulo (a célula não desenha a linha "≈ R$")', () => {
-    expect(unitMarketCell(mv({ approxBrl: { marketValue: null, unrealized: null, unrealizedNet: null } }))).toMatchObject({ kind: 'OK', brlCents: null });
+    expect(unitMarketCell(mv({ approx: { marketValue: null, unrealized: null, unrealizedNet: null } }))).toMatchObject({ kind: 'OK', brlCents: null });
   });
 
   test('desatualizado, incompleto (sem o chaveiro) e os dois juntos', () => {
@@ -412,7 +412,7 @@ describe('PnL não realizado da unidade (unitUnrealizedCell)', () => {
   });
 
   test('"≈ R$" some sem cotação', () => {
-    expect(unitUnrealizedCell(mv({ approxBrl: { marketValue: null, unrealized: null, unrealizedNet: null } }))).toMatchObject({ kind: 'NET', brlCents: null });
+    expect(unitUnrealizedCell(mv({ approx: { marketValue: null, unrealized: null, unrealizedNet: null } }))).toMatchObject({ kind: 'NET', brlCents: null });
   });
 
   test.each(['NO_INTEGRATION_STORE', 'FEES_NOT_CONFIGURED', 'NET_NOT_COMPUTABLE'] as const)('sem líquido (%s): "—" com o motivo e o bruto', (reason) => {
@@ -438,7 +438,7 @@ describe('PnL não realizado da unidade (unitUnrealizedCell)', () => {
 
 const totals = (extra: Partial<MarketValueTotals> = {}): MarketValueTotals => ({
   marketValueUsdCents: 3000, costUsdCents: 2000, unrealizedUsdCents: 1000, unrealizedNetUsdCents: 900, costEstimated: false, pricedUnits: 3, netUnits: 3,
-  unpricedUnits: 0, notPriceableUnits: 0, staleUnits: 0, unitCount: 3, approxBrl: { marketValue: 15000, unrealized: 5000, unrealizedNet: 4500 }, ...extra,
+  unpricedUnits: 0, notPriceableUnits: 0, staleUnits: 0, unitCount: 3, approx: { marketValue: 15000, unrealized: 5000, unrealizedNet: 4500 }, ...extra,
 });
 
 describe('célula de grupo, resumo da aba e cards', () => {
@@ -450,7 +450,7 @@ describe('célula de grupo, resumo da aba e cards', () => {
     expect(groupMarketCell(totals({ pricedUnits: 0, unpricedUnits: 3 }))).toEqual({ kind: 'NO_PRICE', unpricedUnits: 3, notPriceableUnits: 0 });
     expect(groupMarketCell(totals({ pricedUnits: 0, notPriceableUnits: 3 }))).toEqual({ kind: 'NOT_PRICEABLE', unpricedUnits: 0, notPriceableUnits: 3 });
     expect(groupMarketCell(totals({ pricedUnits: 0, unpricedUnits: 1, notPriceableUnits: 2 }))).toMatchObject({ kind: 'NO_PRICE' });
-    expect(groupMarketCell(totals({ approxBrl: { marketValue: null, unrealized: null, unrealizedNet: null } }))).toMatchObject({ kind: 'OK', brlCents: null });
+    expect(groupMarketCell(totals({ approx: { marketValue: null, unrealized: null, unrealizedNet: null } }))).toMatchObject({ kind: 'OK', brlCents: null });
   });
 
   test('grupo: não realizado completo, parcial, sem líquido (bruto na dica), sem preço', () => {
@@ -491,11 +491,11 @@ describe('célula de grupo, resumo da aba e cards', () => {
     expect(profitUnrealizedCard(totals({ netUnits: 1 }))).toMatchObject({ kind: 'NET', partial: true });
     expect(profitUnrealizedCard(totals())).toMatchObject({ kind: 'NET', partial: false, sign: 'POSITIVE', cents: 900 });
     expect(profitUnrealizedCard(totals({ unrealizedNetUsdCents: -1 }))).toMatchObject({ sign: 'NEGATIVE' });
-    expect(profitUnrealizedCard(totals({ approxBrl: { marketValue: null, unrealized: null, unrealizedNet: null } }))).toMatchObject({ kind: 'NET', brlCents: null });
+    expect(profitUnrealizedCard(totals({ approx: { marketValue: null, unrealized: null, unrealizedNet: null } }))).toMatchObject({ kind: 'NET', brlCents: null });
   });
 
   test('os cards usam só números do backend: nenhuma função some valores (conta direta nos tipos de retorno)', () => {
-    const t = totals({ marketValueUsdCents: 12345, unrealizedNetUsdCents: -678, approxBrl: { marketValue: 61725, unrealized: 1, unrealizedNet: -3390 } });
+    const t = totals({ marketValueUsdCents: 12345, unrealizedNetUsdCents: -678, approx: { marketValue: 61725, unrealized: 1, unrealizedNet: -3390 } });
     expect(profitValueCard(t)).toMatchObject({ usdCents: 12345, brlCents: 61725 });
     expect(profitUnrealizedCard(t)).toMatchObject({ cents: -678, brlCents: -3390 });
   });
@@ -572,7 +572,7 @@ describe('invariante forte: o valor de mercado nunca interfere no lucro real (te
 
   test('SummaryCards não usa nenhuma chave, consulta nem campo do valor de mercado fora do componente filho', () => {
     const body = code('components/SummaryCards.tsx').replace("import MarketValueCards from './MarketValueCards';", '').replace('<MarketValueCards />', '');
-    expect(body).not.toMatch(/marketValue|MarketValue|unrealized|queryKeys\.marketValues|getMarketValueSummary|netUnits|approxBrl\.marketValue/);
+    expect(body).not.toMatch(/marketValue|MarketValue|unrealized|queryKeys\.marketValues|getMarketValueSummary|netUnits|approx\.marketValue/);
   });
 
   test('a consulta do resumo do lucro real continua a mesma (profitSummary) e a do valor de mercado é separada (marketValues.summary)', () => {

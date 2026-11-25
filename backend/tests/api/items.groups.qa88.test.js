@@ -70,15 +70,15 @@ describe('chave do itemStats na API', () => {
 });
 
 describe('custos e moedas', () => {
-  test('mistura USD + BRL: total em USD pela cotação gravada, costUsesRecordedFx e approxBrl', async () => {
+  test('mistura USD + BRL: total em USD pela cotação gravada, costUsesRecordedFx e approx', async () => {
     await create({ purchasePriceCents: 1000 });
     await create({ purchaseStoreId: storeId('Steam'), purchasePriceCents: 1080, fxRateAtPurchase: 5.4 });
     const g = (await groups()).groups[0];
     expect(g).toMatchObject({ quantity: 2, totalCostUsdCents: 1200, avgCostUsdCents: 600, costUsesRecordedFx: true });
-    if (g.approxBrl !== null) {
-      expect(g.approxBrl.totalCostCents).toBeGreaterThan(0);
-      expect(Number.isInteger(g.approxBrl.totalCostCents)).toBe(true);
-      expect(Number.isInteger(g.approxBrl.avgCostCents)).toBe(true);
+    if (g.approx !== null) {
+      expect(g.approx.totalCostCents).toBeGreaterThan(0);
+      expect(Number.isInteger(g.approx.totalCostCents)).toBe(true);
+      expect(Number.isInteger(g.approx.avgCostCents)).toBe(true);
     }
   });
 
@@ -308,7 +308,7 @@ describe('formato, rota e segurança', () => {
     const g = res.body.data.groups[0];
     for (const field of [
       'key', 'name', 'category', 'variant', 'exterior', 'phase', 'catalog', 'quantity', 'totalCostUsdCents', 'avgCostUsdCents',
-      'costUsesRecordedFx', 'approxBrl', 'stagnantCount', 'stock', 'units',
+      'costUsesRecordedFx', 'approx', 'stagnantCount', 'stock', 'units',
     ]) expect(g).toHaveProperty(field);
     expect(Object.keys(g.stock).sort()).toEqual(['forSale', 'nextUnlockAt', 'offSale', 'total', 'tradeLocked']);
     expect(g.units[0]).toHaveProperty('saleState');

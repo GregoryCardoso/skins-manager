@@ -4,7 +4,7 @@
 // Usa SOMENTE a taxa de venda: taxa de saque e cotação efetiva não entram aqui (2.8).
 const { ValidationError } = require('../errors/AppError');
 const { getSaleFeeStrategy, saleFeeParamsFromStore, assertSaleFeeParams, MAX_PRICE_SEARCH_ITERATIONS } = require('./fees');
-const { convertCents, isValidFxRate, approxCounterpart } = require('./currencyService');
+const { convertCents, isValidFxRate, approxCounterpart, fxFromSettings } = require('./currencyService');
 const { WARNINGS } = require('./warnings');
 
 // Menor preço (centavos) cujo líquido >= custo; parte da estimativa e ajusta centavo a centavo. Mínimo 1.
@@ -55,7 +55,7 @@ function minPriceForStore({ costCents, costCurrency, costFxRate, costParts, stor
       );
     }
     const minPriceCents = findMinSalePriceCents(costInStoreCurrency, params);
-    const approx = approxCounterpart(minPriceCents, store.currency, settings ? settings.usdBrlRate : null);
+    const approx = approxCounterpart(minPriceCents, store.currency, fxFromSettings(settings));
     return { ...base, minPriceCents, approx, warning: null, warningCode: null };
   } catch (err) {
     if (err instanceof ValidationError && (err.code === 'INVALID_AMOUNT' || err.code === 'PRICE_SEARCH_LIMIT')) {

@@ -1,7 +1,7 @@
 'use strict';
 
 // Lucro da venda (2.5) e lucro real em USD (2.10, D226).
-const { toUsdCents, isValidFxRate, approxCounterpart, approxBrlOf } = require('./currencyService');
+const { toUsdCents, isValidFxRate, approxCounterpart, approxOf, fxFromSettings, displayCurrencyOf } = require('./currencyService');
 const { WARNINGS } = require('./warnings');
 const { depositBaseAmount } = require('./depositService');
 const { withdrawalBaseAmount } = require('./withdrawalService');
@@ -27,8 +27,9 @@ function computeSaleProfitUsdCents(item, { inheritedUsdCents = 0 } = {}) {
   return net - cost - inheritedUsdCents;
 }
 
-// Valores da venda em USD (cotação gravada de cada lado, 2.9) e "≈ R$" pela cotação atual (D125); null se não vendido.
-function buildSaleInfo(item, usdBrlRate = null, { inheritedUsdCents = 0 } = {}) {
+// Valores da venda em USD (cotação gravada de cada lado, 2.9) e "≈" na moeda de conversão pela cotação atual (D125); null se não vendido.
+// `fx`: contexto de conversão ({ displayCurrency, rates }) ou, no legado, a cotação do BRL.
+function buildSaleInfo(item, fx = null, { inheritedUsdCents = 0 } = {}) {
   if (item.status !== 'VENDIDO') return null;
   const salePriceUsdCents = toUsdCents(item.salePriceCents, item.saleCurrency, item.fxRateAtSale);
   const netReceivedUsdCents = toUsdCents(item.netReceivedCents, item.saleCurrency, item.fxRateAtSale);
@@ -39,7 +40,7 @@ function buildSaleInfo(item, usdBrlRate = null, { inheritedUsdCents = 0 } = {}) 
     purchase: item.purchaseCurrency === 'BRL' ? item.fxRateAtPurchase : null,
   };
   const approx = (cents) => {
-    const r = approxCounterpart(cents, 'USD', usdBrlRate);
+    const r = approxCounterpart(cents, 'USD', fx);
     return r ? r.cents : null;
   };
   return {
@@ -50,7 +51,8 @@ function buildSaleInfo(item, usdBrlRate = null, { inheritedUsdCents = 0 } = {}) 
     inheritedCostUsdCents: inheritedUsdCents,
     fxUsed,
     usesRecordedFx: fxUsed.sale !== null || fxUsed.purchase !== null,
-    approxBrl: {
+    approxCurrency: displayCurrencyOf(fx),
+    approx: {
       salePrice: approx(salePriceUsdCents),
       netReceived: approx(netReceivedUsdCents),
       purchaseCost: approx(purchaseCostUsdCents),
@@ -99,7 +101,7 @@ function computeRealProfit(input = {}) {
   const stockItems = input.stockItems ?? [];
   const settings = input.settings ?? {};
   const costIndex = input.costIndex ?? EMPTY_COST_INDEX;
-  const usdBrlRate = settings.usdBrlRate;
+  const fx = fxFromSettings(settings);
   const storeById = new Map(stores.map((store) => [store.id, store]));
   const storeOf = (record) => (record.storeId === null || record.storeId === undefined ? null : storeById.get(record.storeId) ?? null);
   const warnings = [];
@@ -108,8 +110,8 @@ function computeRealProfit(input = {}) {
     usdCents: parts.reduce((acc, part) => addNullable(acc, part.usdCents), 0),
     estimated: parts.some((part) => part.estimated),
   });
-  const deposited = sumParts(deposits.map((d) => depositBaseAmount(d, storeOf(d), usdBrlRate)));
-  const withdrawn = sumParts(withdrawals.map((w) => withdrawalBaseAmount(w, storeOf(w), usdBrlRate)));
+  const deposited = sumParts(deposits.map((d) => depositBaseAmount(d, storeOf(d), fx)));
+  const withdrawn = sumParts(withdrawals.map((w) => withdrawalBaseAmount(w, storeOf(w), fx)));
 
   const sumRows = (pick) => balanceRows.reduce((acc, row) => addNullable(acc, pick(row)), 0);
   const platformBalanceUsdCents = sumRows((row) => row.availableUsdCents);
@@ -148,7 +150,7 @@ function computeRealProfit(input = {}) {
     pendingBalance: pendingEstimated,
     stock: stock.estimated,
   };
-  const approx = (usdCents) => approxBrlOf(usdCents, usdBrlRate);
+  const approx = (usdCents) => approxOf(usdCents, fx);
   const ratio = deposited.usdCents === null || withdrawn.usdCents === null || deposited.usdCents === 0
     ? null
     : withdrawn.usdCents / deposited.usdCents;
@@ -166,20 +168,21 @@ function computeRealProfit(input = {}) {
       forSale: {
         usdCents: stockSplit.forSale.totalUsdCents,
         estimated: stockSplit.forSale.estimated,
-        approxBrl: approxBrlOf(stockSplit.forSale.totalUsdCents, usdBrlRate),
+        approx: approx(stockSplit.forSale.totalUsdCents),
         count: stockSplit.forSale.count,
       },
       offSale: {
         usdCents: stockSplit.offSale.totalUsdCents,
         estimated: stockSplit.offSale.estimated,
-        approxBrl: approxBrlOf(stockSplit.offSale.totalUsdCents, usdBrlRate),
+        approx: approx(stockSplit.offSale.totalUsdCents),
         count: stockSplit.offSale.count,
       },
     },
     realProfitUsdCents,
     estimated: Object.values(estimatedParts).some(Boolean),
     estimatedParts,
-    approxBrl: {
+    approxCurrency: displayCurrencyOf(fx),
+    approx: {
       deposits: approx(deposited.usdCents),
       withdrawals: approx(withdrawn.usdCents),
       platformBalance: approx(platformBalanceUsdCents),
@@ -211,7 +214,7 @@ function getProfitSummary({ now = new Date() } = {}) {
   return {
     ...profit,
     // Perdas por consumo (D363, E-P2-Q34): informativo, fora da fórmula (o lucro real já caiu porque a unidade saiu do estoque).
-    consumptionLosses: { ...consumptionLosses, approxBrl: approxBrlOf(consumptionLosses.usdCents, settings.usdBrlRate) },
+    consumptionLosses: { ...consumptionLosses, approxCurrency: displayCurrencyOf(fxFromSettings(settings)), approx: approxOf(consumptionLosses.usdCents, fxFromSettings(settings)) },
     balancesByStore: balances.stores,
     counts: {
       deposits: deposits.length,
@@ -227,6 +230,7 @@ function getProfitSummary({ now = new Date() } = {}) {
       source: settings.usdBrlRateSource ?? null,
       updatedAt: settings.usdBrlRateUpdatedAt ?? null,
       quotedAt: settings.rateQuotedAt ?? null,
+      displayCurrency: displayCurrencyOf(fxFromSettings(settings)),
     },
     computedAt: now.toISOString(),
   };

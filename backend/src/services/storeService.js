@@ -46,6 +46,9 @@ function listStores({ activeOnly = false } = {}) {
   return Store.findAll({ activeOnly }).map((store) => withFlags(store, used.has(store.id), steamStoreId));
 }
 
+// "Tem lançamentos" (D30, D369 A4): a loja já foi usada em compras, vendas, aportes, saques ou conferências/ajustes.
+const storeHasEntries = (id) => Store.isInUse(id);
+
 function getStore(id) {
   const store = Store.findById(id);
   if (!store) throw new NotFoundError('Loja não encontrada.', 'STORE_NOT_FOUND');
@@ -214,5 +217,5 @@ function deleteStore(id) {
 }
 
 module.exports = {
-  listStores, getStore, getStoreOrFail, quoteSale, createStore, updateStore, deleteStore, buildStoreRecord,
+  listStores, getStore, getStoreOrFail, storeHasEntries, quoteSale, createStore, updateStore, deleteStore, buildStoreRecord,
 };

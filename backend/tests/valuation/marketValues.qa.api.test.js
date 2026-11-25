@@ -331,8 +331,8 @@ describe('valor da unidade pela API', () => {
     expect(mv).toMatchObject({ costUsdCents: 100, costEstimated: true, unrealizedUsdCents: 900 });
     await request(app).put('/api/settings/fx-rate').set('Content-Type', JSON_TYPE).send({ usdBrlRate: 7 }).expect(200);
     const mv2 = (await get(`/api/items/${item.id}`)).marketValue;
-    expect({ ...mv2, approxBrl: undefined }).toEqual({ ...mv, approxBrl: undefined });
-    expect(mv2.approxBrl.marketValue).toBe(7000);
+    expect({ ...mv2, approx: undefined }).toEqual({ ...mv, approx: undefined });
+    expect(mv2.approx.marketValue).toBe(7000);
   });
 
   test('GANHEI: custo 0 e lucro igual ao valor; sem cotação, "≈ R$" é nulo', async () => {
@@ -340,7 +340,7 @@ describe('valor da unidade pela API', () => {
     await refresh();
     const mv = (await get(`/api/items/${won.id}`)).marketValue;
     expect(mv).toMatchObject({ costUsdCents: 0, unrealizedUsdCents: 1000, costEstimated: false });
-    expect(mv.approxBrl).toEqual({ marketValue: null, unrealized: null, unrealizedNet: null });
+    expect(mv.approx).toEqual({ marketValue: null, unrealized: null, unrealizedNet: null });
   });
 
   test('sem loja da integração: líquido nulo com NO_INTEGRATION_STORE; com a loja sem taxas: FEES_NOT_CONFIGURED', async () => {

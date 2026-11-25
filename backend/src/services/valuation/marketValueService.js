@@ -18,7 +18,7 @@ const backupService = require('../backupService');
 const importLock = require('../imports/importLock');
 const operationContext = require('../operations/operationContext');
 const { isOffSale } = require('../inventoryAgingService');
-const { approxBrlOf } = require('../currencyService');
+const { approxOf, fxFromSettings, displayCurrencyOf } = require('../currencyService');
 const valuationLock = require('./valuationLock');
 const valuationService = require('./valuationService');
 const valuationIndex = require('./valuationIndex');
@@ -203,18 +203,19 @@ async function runRound({ now, fetchFn, nowFn, sleepFn, source, valuationSource,
 // Totais do estoque atual (à venda, incluindo trade lock, e fora de venda) e o estado do cache. Nada é gravado.
 function getSummary({ now = new Date(), source = ACTIVE_VALUATION_SOURCE } = {}) {
   const valuationSource = getSource(source);
-  const settings = Setting.get();
+  const fx = fxFromSettings(Setting.get());
   const stock = loadStock();
   const costIndex = operationContext.loadCostIndex(stock.items);
-  const index = valuationIndex.buildValuationIndex({ ...stock, costIndex, usdBrlRate: settings.usdBrlRate, now });
+  const index = valuationIndex.buildValuationIndex({ ...stock, costIndex, fx, now });
   const totalsOf = (units) => {
     const totals = valuationService.summarize(units.map((u) => index.get(u.id)).filter(Boolean));
     return {
       ...totals,
-      approxBrl: {
-        marketValue: approxBrlOf(totals.marketValueUsdCents, settings.usdBrlRate),
-        unrealized: approxBrlOf(totals.unrealizedUsdCents, settings.usdBrlRate),
-        unrealizedNet: approxBrlOf(totals.unrealizedNetUsdCents, settings.usdBrlRate),
+      approxCurrency: displayCurrencyOf(fx),
+      approx: {
+        marketValue: approxOf(totals.marketValueUsdCents, fx),
+        unrealized: approxOf(totals.unrealizedUsdCents, fx),
+        unrealizedNet: approxOf(totals.unrealizedNetUsdCents, fx),
       },
     };
   };

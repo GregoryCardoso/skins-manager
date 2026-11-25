@@ -11,7 +11,7 @@ const Setting = require('../models/Setting');
 const { ValidationError, NotFoundError } = require('../errors/AppError');
 const { MAX_AMOUNT_CENTS, MAX_NOTE_LENGTH } = require('../config/constants');
 const { applyRateRounding } = require('./fees/rounding');
-const { toUsdBase, approxBrlOf } = require('./currencyService');
+const { toUsdBase, approxOf, fxFromSettings, displayCurrencyOf } = require('./currencyService');
 const { parseDate } = require('./dateUtils');
 const { assertNotFutureDay } = require('./inventoryAgingService');
 const { WARNINGS } = require('./warnings');
@@ -132,17 +132,17 @@ function withdrawalNetStoreCents(withdrawal) {
 }
 
 // Líquido na moeda base (D225, D228): saque com loja pelo líquido na moeda da loja; sem loja, o valor em R$ (estimado).
-function withdrawalBaseAmount(withdrawal, store, usdBrlRate) {
+function withdrawalBaseAmount(withdrawal, store, fx) {
   const net = withdrawalNetStoreCents(withdrawal);
-  if (net === null) return toUsdBase(withdrawal.amountBrlCents, 'BRL', usdBrlRate);
+  if (net === null) return toUsdBase(withdrawal.amountBrlCents, 'BRL', fx);
   // Loja referenciada que não está no mapa: a moeda é desconhecida, então não se assume USD (o lucro fica nulo).
-  if (!store) return { usdCents: null, approxBrlCents: null, estimated: false };
-  return toUsdBase(net, store.currency, usdBrlRate);
+  if (!store) return { usdCents: null, approxCents: null, approxCurrency: displayCurrencyOf(fx), estimated: false };
+  return toUsdBase(net, store.currency, fx);
 }
 
-function toWithdrawalView(row, storesById, usdBrlRate = null) {
+function toWithdrawalView(row, storesById, fx = null) {
   const store = isNil(row.storeId) ? null : storesById.get(row.storeId);
-  const base = withdrawalBaseAmount(row, store, usdBrlRate);
+  const base = withdrawalBaseAmount(row, store, fx);
   return {
     id: row.id,
     storeId: row.storeId,
@@ -156,7 +156,8 @@ function toWithdrawalView(row, storesById, usdBrlRate = null) {
     note: row.note,
     legacyWithoutStore: isNil(row.storeId),
     amountUsdCents: base.usdCents,
-    approxBrlCents: base.approxBrlCents,
+    approxCents: base.approxCents,
+    approxCurrency: base.approxCurrency,
     estimated: base.estimated,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -174,9 +175,9 @@ function findOrFail(id) {
 
 function listWithdrawals() {
   const stores = storesMap();
-  const rate = Setting.get().usdBrlRate;
+  const fx = fxFromSettings(Setting.get());
   const rows = Withdrawal.findAll(); // withdrawnAt DESC, id DESC
-  const views = rows.map((row) => toWithdrawalView(row, stores, rate));
+  const views = rows.map((row) => toWithdrawalView(row, stores, fx));
   const netUsdCents = views.reduce((acc, view) => (acc === null || view.amountUsdCents === null ? null : acc + view.amountUsdCents), 0);
   return {
     withdrawals: views,
@@ -185,7 +186,8 @@ function listWithdrawals() {
       legacyCount: views.filter((view) => view.legacyWithoutStore).length,
       withoutFeeCount: views.filter((view) => !view.legacyWithoutStore && view.feeCents === null).length,
       netUsdCents,
-      approxBrlCents: approxBrlOf(netUsdCents, rate),
+      approxCents: approxOf(netUsdCents, fx),
+      approxCurrency: displayCurrencyOf(fx),
       estimated: views.some((view) => view.estimated),
     },
   };
@@ -193,14 +195,14 @@ function listWithdrawals() {
 
 function createWithdrawal(input, { now = new Date() } = {}) {
   const record = buildWithdrawalRecord(input, { store: loadStore(input.storeId), now });
-  return toWithdrawalView(Withdrawal.create(record, { now }), storesMap(), Setting.get().usdBrlRate);
+  return toWithdrawalView(Withdrawal.create(record, { now }), storesMap(), fxFromSettings(Setting.get()));
 }
 
 function updateWithdrawal(id, partial, { now = new Date() } = {}) {
   const existing = findOrFail(id);
   const storeId = partial.storeId !== undefined ? partial.storeId : existing.storeId;
   const record = buildWithdrawalRecord(partial, { existing, store: loadStore(storeId), previousStore: loadStore(existing.storeId), now });
-  return toWithdrawalView(Withdrawal.update(id, record, { now }), storesMap(), Setting.get().usdBrlRate);
+  return toWithdrawalView(Withdrawal.update(id, record, { now }), storesMap(), fxFromSettings(Setting.get()));
 }
 
 // Excluir um saque importado desliga o vínculo e marca o registro externo como REMOVED_IN_APP (não volta a ser importado).

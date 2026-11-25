@@ -3,15 +3,17 @@
 const env = require('../config/env');
 const Setting = require('../models/Setting');
 const Store = require('../models/Store');
-const { ValidationError, ConflictError } = require('../errors/AppError');
-const { isValidFxRate } = require('./currencyService');
+const { ValidationError } = require('../errors/AppError');
+const fxRateService = require('./fxRateService');
+const storeService = require('./storeService');
 const { resolveAgingThresholds } = require('./inventoryAgingService');
-const { getProvider } = require('./fxRates');
 const {
   THEMES,
   LANGUAGES,
   INVENTORY_VIEWS,
   FX_REFRESH_SOURCES,
+  CURRENCIES,
+  AWESOMEAPI_PAIRS,
   DEFAULT_FAST_TURNOVER_DAYS,
   MIN_FAST_TURNOVER_DAYS,
   MAX_FAST_TURNOVER_DAYS,
@@ -49,9 +51,12 @@ function getAgingThresholds() {
 // Visão pública (D159): valores salvos (`*Custom`, nulo = padrão), efetivos, padrões e o sinal de ajuste.
 function toSettingsView(raw) {
   const { fastTurnoverDays, slowItemDays, adjusted } = effectiveThresholds(raw);
-  const { fastTurnoverDays: savedFast, slowItemDays: savedSlow, ...rest } = raw;
+  const { fastTurnoverDays: savedFast, slowItemDays: savedSlow, rates, ...rest } = raw;
   return {
     ...rest,
+    // Cotações por moeda (D369): `usdBrlRate*`, `rateQuotedAt` e `fxRefreshSource` continuam, derivados do BRL, até o fim da 11.3.
+    fxRates: fxRateService.listRates(),
+    requiredFxCurrencies: fxRateService.requiredCurrencies(),
     fastTurnoverDaysCustom: savedFast,
     slowItemDaysCustom: savedSlow,
     fastTurnoverDays,
@@ -66,83 +71,26 @@ function getSettings() {
   return toSettingsView(Setting.get());
 }
 
+// Cotação do BRL digitada à mão (compatibilidade da API antiga `PUT /fx-rate { usdBrlRate }`, D369): delega ao serviço por moeda.
 function updateFxRate(usdBrlRate, { now = new Date() } = {}) {
-  if (!isValidFxRate(usdBrlRate)) {
-    throw new ValidationError('Cotação USD→BRL inválida: informe um número maior que zero.', 'INVALID_FX_RATE');
-  }
-  if (fxRefreshInProgress) {
-    throw new ConflictError('Uma atualização da cotação está em andamento. Aguarde terminar.', 'FX_REFRESH_IN_PROGRESS', {
-      params: { source: Setting.get().fxRefreshSource },
-    });
-  }
-  // Edição manual: origem MANUAL e sem data de cotação (D143, D162).
-  Setting.update(
-    { usdBrlRate, usdBrlRateUpdatedAt: now.toISOString(), usdBrlRateSource: 'MANUAL', rateQuotedAt: null },
-    { now }
-  );
+  setFxRate('BRL', usdBrlRate, { now });
   return getSettings();
 }
 
-// Atualização da cotação pela fonte salva em `fxRefreshSource` (D162): AWESOMEAPI ou PTAX. Uma por vez (trava única).
-// Na falha nada é gravado e o erro sai com `params.source`.
-let fxRefreshInProgress = false;
-
-function isFxRefreshInProgress() {
-  return fxRefreshInProgress;
+// Cotação digitada à mão de qualquer moeda (D369). Devolve as configurações.
+function setFxRate(currency, rate, { now = new Date() } = {}) {
+  fxRateService.setManualRate(currency, rate, { now });
+  return getSettings();
 }
 
-// Atualização ao abrir o app (D338): no máximo uma por processo do backend (um F5 não repete; vale no desktop e no
-// start-app.bat). Pula em silêncio, sem chamar a fonte, quando a cotação gravada foi digitada à mão (origem MANUAL: nunca é
-// sobrescrita) ou quando já há uma atualização em andamento. Erro de rede ou da fonte: nada é gravado (fica a cotação anterior).
-let autoFxAttempted = false;
-const resetAutoFxForTests = () => {
-  autoFxAttempted = false;
-};
+const isFxRefreshInProgress = () => fxRateService.isRefreshInProgress();
+const resetAutoFxForTests = () => fxRateService.resetAutoForTests();
 
-function autoFxSkipReason() {
-  if (autoFxAttempted) return 'ALREADY_RAN';
-  if (Setting.get().usdBrlRateSource === 'MANUAL') return 'MANUAL_RATE';
-  if (fxRefreshInProgress) return 'BUSY';
-  return null;
-}
-
-async function refreshFxRate({ fetchFn = globalThis.fetch, now = new Date(), timeouts, trigger = 'MANUAL' } = {}) {
-  if (trigger === 'AUTO') {
-    const skipped = autoFxSkipReason();
-    if (skipped) return { settings: getSettings(), quote: null, skipped };
-    autoFxAttempted = true; // conta como "a" automática do processo, mesmo que falhe
-  }
-  const source = Setting.get().fxRefreshSource;
-  if (fxRefreshInProgress) {
-    throw new ConflictError('Já existe uma atualização da cotação em andamento.', 'FX_REFRESH_IN_PROGRESS', {
-      params: { source },
-    });
-  }
-  fxRefreshInProgress = true;
-  try {
-    const quote = await getProvider(source).fetchLatestRate({ fetchFn, now, ...timeouts });
-    Setting.update(
-      {
-        usdBrlRate: quote.rate,
-        usdBrlRateUpdatedAt: now.toISOString(),
-        usdBrlRateSource: quote.source,
-        rateQuotedAt: quote.quotedAt,
-      },
-      { now }
-    );
-    return {
-      settings: getSettings(),
-      quote: {
-        source: quote.source,
-        rate: quote.rate,
-        buyRate: quote.buyRate,
-        sellRate: quote.sellRate,
-        quotedAt: quote.quotedAt,
-      },
-    };
-  } finally {
-    fxRefreshInProgress = false;
-  }
+// Atualização da cotação de uma moeda (D162, D338, D369). `source` explícita vale só desta chamada; sem ela, a fonte salva da moeda.
+// Devolve `{ currency, settings, quote }` (e `skipped` quando o AUTO pula).
+async function refreshFxRate({ currency = 'BRL', source, fetchFn = globalThis.fetch, now = new Date(), timeouts, trigger = 'MANUAL' } = {}) {
+  const result = await fxRateService.refreshRate(currency, { source, fetchFn, now, timeouts, trigger });
+  return { currency: result.currency, settings: getSettings(), quote: result.quote, ...(result.skipped ? { skipped: result.skipped } : {}) };
 }
 
 function fieldError(code, field, message) {
@@ -164,6 +112,8 @@ function updatePreferences(partial, { now = new Date() } = {}) {
   if (partial.language !== undefined && !LANGUAGES.includes(partial.language)) {
     throw new ValidationError(`Idioma inválido. Use ${LANGUAGES.join(', ')}.`, 'INVALID_LANGUAGE');
   }
+  if (partial.displayCurrency !== undefined) assertDisplayCurrency(partial.displayCurrency);
+  if (partial.steamStore !== undefined) assertSteamStoreChoice(partial.steamStore, partial.displayCurrency);
   if (partial.inventoryView !== undefined && !INVENTORY_VIEWS.includes(partial.inventoryView)) {
     throw new ValidationError(`Visão do inventário inválida. Use ${INVENTORY_VIEWS.join(', ')}.`, 'INVALID_INVENTORY_VIEW', {
       field: 'inventoryView',
@@ -210,11 +160,45 @@ function updatePreferences(partial, { now = new Date() } = {}) {
     }
   }
   const changes = {};
-  for (const key of ['theme', 'language', 'inventoryView', 'fxRefreshSource', 'fastTurnoverDays', 'slowItemDays']) {
+  for (const key of ['theme', 'language', 'inventoryView', 'fxRefreshSource', 'fastTurnoverDays', 'slowItemDays', 'displayCurrency']) {
     if (partial[key] !== undefined) changes[key] = partial[key];
   }
   Setting.update(changes, { now });
+  if (partial.displayCurrency !== undefined) {
+    // Com `displayCurrency` a resposta é `{ settings, steamStore }` (D369 A5). Até a 11.4 a loja Steam nunca muda (só 'KEEP').
+    const steam = getSteamStore();
+    return { settings: getSettings(), steamStore: steam ? { id: steam.id, currency: steam.currency, created: false } : null };
+  }
   return getSettings();
+}
+
+// Moeda de conversão (D369 A1): uma das 17 moedas.
+function assertDisplayCurrency(currency) {
+  if (typeof currency !== 'string' || !CURRENCIES.includes(currency)) {
+    throw new ValidationError(`Moeda inválida. Use ${CURRENCIES.join(', ')}.`, 'INVALID_CURRENCY', { field: 'displayCurrency' });
+  }
+}
+
+// `steamStore` (A5): só 'KEEP' (ou ausente) até a 11.4; 'FOLLOW' e 'NEW_STORE' ainda não existem. Exige `displayCurrency` junto.
+function assertSteamStoreChoice(choice, displayCurrency) {
+  const invalid = (message) => new ValidationError(message, 'INVALID_FIELD', { field: 'steamStore' });
+  if (!['KEEP', 'FOLLOW', 'NEW_STORE'].includes(choice)) throw invalid('steamStore deve ser KEEP, FOLLOW ou NEW_STORE.');
+  if (displayCurrency === undefined) throw invalid('steamStore só vale junto com displayCurrency.');
+  if (choice !== 'KEEP') throw invalid('A opção da loja Steam ainda não está disponível: use KEEP.');
+}
+
+// Prévia da troca da moeda de conversão (D369 A5): só leitura, nada é gravado. O modal usa isto para montar as linhas.
+function getCurrencyChangePreview(currency) {
+  assertDisplayCurrency(currency);
+  const steam = getSteamStore();
+  const rate = currency === 'USD' ? null : fxRateService.getRate(currency);
+  return {
+    currency,
+    steamStore: steam ? { id: steam.id, name: steam.name, currency: steam.currency, hasEntries: storeService.storeHasEntries(steam.id) } : null,
+    // USD não tem cotação (é a base): o "≈" simplesmente some.
+    fxRateAvailable: currency === 'USD' ? true : rate !== null && rate.rate !== null,
+    automaticSource: currency !== 'USD' && AWESOMEAPI_PAIRS.includes(currency),
+  };
 }
 
 // Loja Steam do app (D363, E-P2-Q45): a loja onde o item comprado no terminal é registrado. Devolve a loja ou `null` (sem escolha, ou a
@@ -239,6 +223,8 @@ module.exports = {
   setSteamStore,
   resetAutoFxForTests,
   getSettings,
+  getCurrencyChangePreview,
+  setFxRate,
   getAgingThresholds,
   updateFxRate,
   updatePreferences,

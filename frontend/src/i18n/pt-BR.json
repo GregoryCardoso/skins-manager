@@ -175,6 +175,7 @@
     "FX_INVALID_RESPONSE": "A resposta da fonte da cotação veio em um formato inesperado ou com valor inválido. Digite a cotação manualmente.",
     "FX_REFRESH_IN_PROGRESS": "Já existe uma atualização da cotação em andamento.",
     "INVALID_FX_SOURCE": "Fonte de cotação inválida. Escolha a cotação comercial ou a PTAX.",
+    "FX_SOURCE_NOT_SUPPORTED": "Esta moeda não tem atualização automática por essa fonte. Informe a cotação manualmente.",
     "INVALID_SALE_HOLD_DAYS": "A retenção deve ser um número inteiro de dias, de 0 a 30.",
     "DEPOSITED_AT_IN_FUTURE": "A data do aporte não pode estar no futuro.",
     "DEPOSIT_NOT_FOUND": "O aporte não foi encontrado.",

@@ -123,14 +123,14 @@ describe('GET /api/items/sales: lacunas da D132', () => {
     for (const i of all) expect(i.saleInfo.netReceivedUsdCents - i.saleInfo.purchaseCostUsdCents).toBe(i.saleProfitUsdCents);
   });
 
-  test('mudar a cotação atual só altera approxBrl e meta.usdBrlRate', async () => {
+  test('mudar a cotação atual só altera approx e meta.usdBrlRate', async () => {
     await sellItem({}, { saleStoreId: storeId('Steam'), salePriceCents: 540 });
     const a = (await sales({})).body.data;
     Setting.update({ usdBrlRate: 6 });
     const b = (await sales({})).body.data;
-    const strip = ({ approxBrl, ...rest }) => rest;
+    const strip = ({ approx, ...rest }) => rest;
     expect(strip(b.items[0].saleInfo)).toEqual(strip(a.items[0].saleInfo));
-    expect(b.items[0].saleInfo.approxBrl).not.toEqual(a.items[0].saleInfo.approxBrl);
+    expect(b.items[0].saleInfo.approx).not.toEqual(a.items[0].saleInfo.approx);
     expect(b.summary.totalProfitUsdCents).toBe(a.summary.totalProfitUsdCents);
     expect(a.meta.usdBrlRate).toBe(5);
     expect(b.meta.usdBrlRate).toBe(6);

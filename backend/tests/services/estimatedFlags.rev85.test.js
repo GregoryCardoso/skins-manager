@@ -26,7 +26,7 @@ describe('flags por parcela: loja BRL', () => {
     const r = only(steam({ id: 2 }), { latestBalances: [latest(2, 4590)] });
     const row = r.stores[0];
     expect(row.availableEstimated).toBe(true);
-    expect(row.pending).toMatchObject({ cents: 0, usdCents: 0, approxBrlCents: 0, estimated: false });
+    expect(row.pending).toMatchObject({ cents: 0, usdCents: 0, approxCents: 0, estimated: false });
     expect(row.estimated).toBe(true);
     expect(r.totals).toMatchObject({
       availableEstimated: true, pendingEstimated: false, estimated: true,
@@ -63,13 +63,13 @@ describe('flags por parcela: sem cotação', () => {
     const r = only(steam({ id: 2 }), { latestBalances: [latest(2, 4590)] }, { usdBrlRate: null });
     const row = r.stores[0];
     expect(row.availableUsdCents).toBeNull();
-    expect(row.availableApproxBrlCents).toBe(4590); // o nativo continua
+    expect(row.availableApproxCents).toBe(4590); // o nativo continua
     expect(row.pending).toMatchObject({ usdCents: 0, estimated: false });
     expect(row.warningCode).toBe('FX_NOT_CONFIGURED');
     expect(r.totals.availableUsdCents).toBeNull();
     expect(r.totals.pendingUsdCents).toBe(0);
-    expect(r.totals.approxBrl.available).toBeNull();
-    expect(r.totals.approxBrl.pending).toBeNull();
+    expect(r.totals.approx.available).toBeNull();
+    expect(r.totals.approx.pending).toBeNull();
   });
 
   test('loja BRL com saldo 0 sem cotação: nada nulo (zero nunca é nulo nem estimado)', () => {
@@ -79,9 +79,9 @@ describe('flags por parcela: sem cotação', () => {
 
   test('loja USD sem cotação segue exata, sem "≈ R$" e sem estimado', () => {
     const r = only(csfloat(), { latestBalances: [latest(1, 5000)] }, { usdBrlRate: null });
-    expect(r.stores[0]).toMatchObject({ availableUsdCents: 5000, availableApproxBrlCents: null, availableEstimated: false });
+    expect(r.stores[0]).toMatchObject({ availableUsdCents: 5000, availableApproxCents: null, availableEstimated: false });
     expect(r.totals).toMatchObject({ availableUsdCents: 5000, estimated: false });
-    expect(r.totals.approxBrl.available).toBeNull();
+    expect(r.totals.approx.available).toBeNull();
   });
 });
 
@@ -152,8 +152,8 @@ describe('loja fora do mapa: lucro nulo (computeRealProfit com stores = [])', ()
     const r = computeRealProfit({ ...base, deposits: [dep] });
     expect(r.depositsUsdCents).toBeNull();
     expect(r.realProfitUsdCents).toBeNull();
-    expect(r.approxBrl.deposits).toBeNull();
-    expect(r.approxBrl.realProfit).toBeNull();
+    expect(r.approx.deposits).toBeNull();
+    expect(r.approx.realProfit).toBeNull();
     expect(r.withdrawnVsDeposited.ratio).toBeNull();
   });
 

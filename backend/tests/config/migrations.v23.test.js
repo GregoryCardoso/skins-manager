@@ -31,9 +31,9 @@ describe.each(['pt-BR', 'en'])('v23 sobre um banco v22 com idioma %s', (language
   test('a linha de settings fica idêntica (inclusive o idioma), há backup da v22 e as chaves estrangeiras estão íntegras', () => {
     const { db, before, dbPath } = migrateFrom22(`keep-${language}`, language);
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(23);
+      expect(db.pragma('user_version', { simple: true })).toBe(24);
       expect(db.pragma('foreign_key_check')).toEqual([]);
-      expect(db.prepare('SELECT * FROM settings').get()).toEqual(before);
+      expect(db.prepare('SELECT * FROM settings').get()).toEqual({ ...before, display_currency: 'BRL' }); // v24: banco existente fica em BRL
       expect(db.prepare('SELECT language FROM settings').get().language).toBe(language);
     } finally {
       db.close();

@@ -74,7 +74,7 @@ describe('computeRealProfit: exemplo de D226 (8.5)', () => {
   });
 
   test('"≈ R$" de cada total vem do backend, sobre o total já somado', () => {
-    expect(r.approxBrl).toEqual({
+    expect(r.approx).toEqual({
       deposits: 79977, withdrawals: 62963, platformBalance: 36058, pendingBalance: 46173, stock: 8148,
       realProfit: 73366,
     });
@@ -139,8 +139,8 @@ describe('computeRealProfit: referência só em USD (D226)', () => {
     const balances = balancesOf({ stores: s.stores, items: s.items, withdrawals: s.withdrawals, latestBalances: s.latestBalances, settings: NO_FX });
     const r = computeRealProfit({ ...s, balances, settings: NO_FX });
     expect(r.realProfitUsdCents).toBe(15696);
-    expect(r.approxBrl.realProfit).toBeNull();
-    expect(r.approxBrl.deposits).toBeNull();
+    expect(r.approx.realProfit).toBeNull();
+    expect(r.approx.deposits).toBeNull();
     expect(r.warnings.some((w) => w.code === 'FX_NOT_CONFIGURED')).toBe(false);
   });
 });
@@ -161,7 +161,7 @@ describe('computeRealProfit: sem cotação (8.5)', () => {
   });
 
   test('todos os "≈ R$" ficam nulos', () => {
-    expect(Object.values(r.approxBrl).every((value) => value === null)).toBe(true);
+    expect(Object.values(r.approx).every((value) => value === null)).toBe(true);
   });
 
   test('avisos FX_NOT_CONFIGURED de DEPOSITS, WITHDRAWALS e STORE (Steam); estoque não emite aviso', () => {
@@ -184,10 +184,10 @@ describe('computeRealProfit: bordas (8.5)', () => {
   test('lucro negativo: "≈ R$" afasta do zero no meio e nunca devolve -0', () => {
     const half = computeRealProfit({ deposits: [{ storeId: 1, amountStoreCents: 5, amountBrlCents: null }], stores: [csfloat()], settings: { usdBrlRate: 0.5 } });
     expect(half.realProfitUsdCents).toBe(-5);
-    expect(half.approxBrl.realProfit).toBe(-3); // -2,5 -> -3
+    expect(half.approx.realProfit).toBe(-3); // -2,5 -> -3
     const tiny = computeRealProfit({ deposits: [{ storeId: 1, amountStoreCents: 1, amountBrlCents: null }], stores: [csfloat()], settings: { usdBrlRate: 0.1 } });
-    expect(Object.is(tiny.approxBrl.realProfit, -0)).toBe(false);
-    expect(tiny.approxBrl.realProfit).toBe(0);
+    expect(Object.is(tiny.approx.realProfit, -0)).toBe(false);
+    expect(tiny.approx.realProfit).toBe(0);
   });
 
   test('nextReleaseAt é a menor data entre as lojas', () => {

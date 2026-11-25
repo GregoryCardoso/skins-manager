@@ -23,7 +23,7 @@ describe('currencyService', () => {
   });
 
   test('moeda inválida → ValidationError', () => {
-    expect(() => toUsdCents(100, 'EUR', 5)).toThrow(ValidationError);
+    expect(() => toUsdCents(100, 'XXX', 5)).toThrow(ValidationError);
   });
 
   test('convertCents na mesma moeda não converte (nem exige cotação)', () => {

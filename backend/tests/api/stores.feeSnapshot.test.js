@@ -45,7 +45,7 @@ describe('D144 snapshot de taxa', () => {
       });
       expect(res.status).toBe(200);
     }
-    // A cotação global não muda aqui: approxBrl é só exibição pela cotação atual (fora do escopo da D144).
+    // A cotação global não muda aqui: approx é só exibição pela cotação atual (fora do escopo da D144).
 
     const after = await snapshot([usd.id, brl.id]);
     expect(after.items).toEqual(before.items);

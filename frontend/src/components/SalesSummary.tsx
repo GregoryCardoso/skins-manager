@@ -24,11 +24,11 @@ export default function SalesSummary({ summary }: { summary: Summary }) {
         </div>
         <div className={styles.card}>
           <dt>{t('salesSummary.totalSold')}</dt>
-          <dd>{usd(summary.totalSalePriceUsdCents)} {approx(summary.approxBrl.totalSalePrice)}</dd>
+          <dd>{usd(summary.totalSalePriceUsdCents)} {approx(summary.approx.totalSalePrice)}</dd>
         </div>
         <div className={styles.card}>
           <dt>{t('salesSummary.totalNet')}</dt>
-          <dd>{usd(summary.totalNetReceivedUsdCents)} {approx(summary.approxBrl.totalNetReceived)}</dd>
+          <dd>{usd(summary.totalNetReceivedUsdCents)} {approx(summary.approx.totalNetReceived)}</dd>
         </div>
         <div className={styles.card}>
           <dt>{t('salesSummary.totalProfit')}</dt>
@@ -38,7 +38,7 @@ export default function SalesSummary({ summary }: { summary: Summary }) {
               net: usd(summary.totalNetReceivedUsdCents), cost: usd(summary.totalPurchaseCostUsdCents),
             })}
           >
-            {profitText} {approx(summary.approxBrl.totalProfit)}
+            {profitText} {approx(summary.approx.totalProfit)}
           </dd>
         </div>
         <div className={styles.card}>

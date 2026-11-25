@@ -51,7 +51,7 @@ export default function WithdrawalsTable({ withdrawals, onEdit, onDelete }: Prop
                     : <span className={styles.muted}>{t('common.none')}</span>}
                 </td>
                 <td className={styles.amount}>
-                  <MoneyApprox cents={w.amountUsdCents} estimated={w.estimated} approxCents={w.legacyWithoutStore ? null : w.approxBrlCents} />
+                  <MoneyApprox cents={w.amountUsdCents} estimated={w.estimated} approxCents={w.legacyWithoutStore ? null : w.approxCents} />
                 </td>
                 <td className={styles.numeric}>
                   {w.amountBrlCents === null

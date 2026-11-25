@@ -12,7 +12,7 @@ const { ValidationError, NotFoundError } = require('../errors/AppError');
 const { MAX_AMOUNT_CENTS, MAX_NOTE_LENGTH } = require('../config/constants');
 const { parseDate } = require('./dateUtils');
 const { assertNotFutureDay } = require('./inventoryAgingService');
-const { toUsdBase, approxBrlOf } = require('./currencyService');
+const { toUsdBase, approxOf, fxFromSettings, displayCurrencyOf } = require('./currencyService');
 const externalLinkService = require('./externalLinkService');
 const { runInTransaction } = require('../models/modelHelpers');
 
@@ -106,16 +106,16 @@ function buildDepositRecord(input, { existing = null, store = null, now = new Da
 
 // Valor do aporte na moeda base (D225, D227, D311): o creditado na loja + a taxa (USD, exato; "total colocado") ou, no legado,
 // o valor em R$ convertido (≈, sem taxa).
-function depositBaseAmount(deposit, store, usdBrlRate) {
-  if (isNil(deposit.amountStoreCents)) return toUsdBase(deposit.amountBrlCents, 'BRL', usdBrlRate);
+function depositBaseAmount(deposit, store, fx) {
+  if (isNil(deposit.amountStoreCents)) return toUsdBase(deposit.amountBrlCents, 'BRL', fx);
   // Loja referenciada que não está no mapa: a moeda é desconhecida, então não se assume USD (o lucro fica nulo).
-  if (!isNil(deposit.storeId) && !store) return { usdCents: null, approxBrlCents: null, estimated: false };
-  return toUsdBase(deposit.amountStoreCents + (deposit.feeCents ?? 0), store ? store.currency : 'USD', usdBrlRate);
+  if (!isNil(deposit.storeId) && !store) return { usdCents: null, approxCents: null, approxCurrency: displayCurrencyOf(fx), estimated: false };
+  return toUsdBase(deposit.amountStoreCents + (deposit.feeCents ?? 0), store ? store.currency : 'USD', fx);
 }
 
-function toDepositView(row, storesById, usdBrlRate = null) {
+function toDepositView(row, storesById, fx = null) {
   const store = row.storeId === null ? null : storesById.get(row.storeId);
-  const base = depositBaseAmount(row, store, usdBrlRate);
+  const base = depositBaseAmount(row, store, fx);
   return {
     id: row.id,
     storeId: row.storeId,
@@ -128,7 +128,8 @@ function toDepositView(row, storesById, usdBrlRate = null) {
     note: row.note,
     legacy: isNil(row.amountStoreCents),
     amountUsdCents: base.usdCents,
-    approxBrlCents: base.approxBrlCents,
+    approxCents: base.approxCents,
+    approxCurrency: base.approxCurrency,
     estimated: base.estimated,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -136,7 +137,7 @@ function toDepositView(row, storesById, usdBrlRate = null) {
 }
 
 const storesMap = () => new Map(Store.findAll().map((store) => [store.id, store]));
-const currentRate = () => Setting.get().usdBrlRate;
+const currentFx = () => fxFromSettings(Setting.get());
 
 function findOrFail(id) {
   const deposit = Deposit.findById(id);
@@ -149,9 +150,9 @@ const loadStore = (storeId) => (isNil(storeId) ? null : Store.findById(storeId))
 
 function listDeposits() {
   const stores = storesMap();
-  const rate = currentRate();
+  const fx = currentFx();
   const rows = Deposit.findAll(); // depositedAt DESC, id DESC
-  const views = rows.map((row) => toDepositView(row, stores, rate));
+  const views = rows.map((row) => toDepositView(row, stores, fx));
   const amountUsdCents = views.reduce((acc, view) => addNullable(acc, view.amountUsdCents), 0);
   return {
     deposits: views,
@@ -162,7 +163,8 @@ function listDeposits() {
       feeCents: views.reduce((acc, view) => acc + (view.legacy ? 0 : view.feeCents ?? 0), 0),
       feeMissingCount: views.filter((view) => !view.legacy && view.feeCents === null).length,
       amountUsdCents,
-      approxBrlCents: approxBrlOf(amountUsdCents, rate),
+      approxCents: approxOf(amountUsdCents, fx),
+      approxCurrency: displayCurrencyOf(fx),
       estimated: views.some((view) => view.estimated),
     },
   };
@@ -171,7 +173,7 @@ function listDeposits() {
 function createDeposit(input, { now = new Date() } = {}) {
   const record = buildDepositRecord(input, { store: loadStore(input.storeId), now });
   const created = Deposit.create(record, { now });
-  return toDepositView(created, storesMap(), currentRate());
+  return toDepositView(created, storesMap(), currentFx());
 }
 
 function updateDeposit(id, partial, { now = new Date() } = {}) {
@@ -179,7 +181,7 @@ function updateDeposit(id, partial, { now = new Date() } = {}) {
   const storeId = partial.storeId !== undefined ? partial.storeId : existing.storeId;
   const record = buildDepositRecord(partial, { existing, store: loadStore(storeId), now });
   const updated = Deposit.update(id, record, { now });
-  return toDepositView(updated, storesMap(), currentRate());
+  return toDepositView(updated, storesMap(), currentFx());
 }
 
 // Excluir um aporte importado desliga o vínculo e marca o registro externo como REMOVED_IN_APP (não volta a ser importado).

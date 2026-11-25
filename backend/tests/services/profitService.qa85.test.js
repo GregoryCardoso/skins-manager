@@ -160,7 +160,7 @@ describe('sem cotação: parcelas nulas e avisos', () => {
     expect(r.platformBalanceUsdCents).toBe(300);
     expect(r.realProfitUsdCents).toBeNull();
     expect(sources(r)).toEqual(['DEPOSITS']);
-    expect(r.approxBrl).toEqual({
+    expect(r.approx).toEqual({
       deposits: null, withdrawals: null, platformBalance: null, pendingBalance: null, stock: null, realProfit: null,
     });
     expect(r.withdrawnVsDeposited.ratio).toBeNull();
@@ -202,7 +202,7 @@ describe('sem cotação: parcelas nulas e avisos', () => {
     const r = profit({ stores, rate: null, deposits: [deposit(1000)], withdrawals: [withdrawal(700, 0)], latestBalances: [latest(1, 500)], stockItems: [stockItem(100)] });
     expect(r.realProfitUsdCents).toBe(700 + 500 + 100 - 1000);
     expect(r.warnings).toEqual([]);
-    expect(r.approxBrl.realProfit).toBeNull();
+    expect(r.approx.realProfit).toBeNull();
     expect(r.estimated).toBe(false);
   });
 
@@ -241,13 +241,13 @@ describe('fórmula e "≈ R$"', () => {
   test('"≈ R$" de cada total é o ROUND do total em US$ pela cotação, e não a soma dos "≈ R$" das linhas', () => {
     const r = profit({ rate: 5.4321, deposits: [deposit(3), deposit(3, 2)] });
     expect(r.depositsUsdCents).toBe(6);
-    expect(r.approxBrl.deposits).toBe(Math.round(6 * 5.4321)); // 33, enquanto 2 × ROUND(3 × 5,4321 = 16,3) = 32
+    expect(r.approx.deposits).toBe(Math.round(6 * 5.4321)); // 33, enquanto 2 × ROUND(3 × 5,4321 = 16,3) = 32
   });
 
   test('o "≈ R$" do lucro negativo nunca é -0', () => {
     const r = profit({ rate: 5, deposits: [deposit(0 + 1)], withdrawals: [withdrawal(1, 0)] });
-    expect(Object.is(r.approxBrl.realProfit, -0)).toBe(false);
-    expect(r.approxBrl.realProfit).toBe(0);
+    expect(Object.is(r.approx.realProfit, -0)).toBe(false);
+    expect(r.approx.realProfit).toBe(0);
   });
 
   test('entradas vazias ou ausentes: tudo 0, sem avisos e sem estimativa', () => {

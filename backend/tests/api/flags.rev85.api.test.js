@@ -83,7 +83,7 @@ describe('loja fora do mapa (dado inconsistente) no resumo', () => {
     expect(res.status).toBe(200);
     expect(res.body.data.depositsUsdCents).toBeNull();
     expect(res.body.data.realProfitUsdCents).toBeNull();
-    expect(res.body.data.approxBrl.realProfit).toBeNull();
+    expect(res.body.data.approx.realProfit).toBeNull();
   });
 });
 

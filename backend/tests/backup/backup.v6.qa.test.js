@@ -62,7 +62,7 @@ test('ida e volta: snapshot 0 continua 0 (não vira nulo), nulo continua nulo, 3
     .toEqual([{ name: 'Nulo', h: null }, { name: 'Trinta', h: 30 }, { name: 'Zero', h: 0 }]);
   expect(after.prepare("SELECT sale_hold_days AS d FROM stores WHERE name = 'CSFloat'").get().d).toBe(0);
   const deposits = (await request(app).get('/api/deposits')).body.data;
-  expect(deposits.totals).toEqual({ count: 1, legacyCount: 1, feeCents: 0, feeMissingCount: 0, amountUsdCents: null, approxBrlCents: null, estimated: true }); // v7: aporte antigo vira legado; sem cotação, sem US$
+  expect(deposits.totals).toEqual({ count: 1, legacyCount: 1, feeCents: 0, feeMissingCount: 0, amountUsdCents: null, approxCents: null, approxCurrency: 'USD', estimated: true }); // v7: aporte antigo vira legado; sem cotação, sem US$
   expect(deposits.deposits[0]).toMatchObject({ note: 'pix', storeName: 'CSFloat', legacy: true, amountBrlCents: 4200, amountStoreCents: null });
 });
 

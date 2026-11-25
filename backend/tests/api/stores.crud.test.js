@@ -77,8 +77,8 @@ describe('CRUD de lojas', () => {
   });
 
   test('PUT /settings/fx-rate grava origem MANUAL e rateQuotedAt nula', async () => {
-    getDb().prepare("UPDATE settings SET usd_brl_rate_source = 'PTAX', rate_quoted_at = 'x'").run();
+    require('../../src/models/FxRate').upsert('BRL', { rate: 5, source: 'PTAX', quotedAt: 'x' });
     await request(app).put('/api/settings/fx-rate').send({ usdBrlRate: 5.5 });
-    expect(getDb().prepare('SELECT usd_brl_rate_source AS s, rate_quoted_at AS p FROM settings').get()).toEqual({ s: 'MANUAL', p: null });
+    expect(getDb().prepare("SELECT source AS s, quoted_at AS p FROM fx_rates WHERE currency = 'BRL'").get()).toEqual({ s: 'MANUAL', p: null });
   });
 });

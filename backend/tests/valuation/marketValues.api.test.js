@@ -95,7 +95,7 @@ describe('rodada ao abrir o app', () => {
       status: 'OK', marketValueUsdCents: 1250, costUsdCents: 600, unrealizedUsdCents: 650, isComplete: true, isEstimated: true, isStale: false, basis: 'NAME',
       parts: { baseCents: 1000, hangingCents: 250, stickersInfoCents: 80, patchesInfoCents: 0 },
     });
-    expect(view.marketValue.approxBrl).toEqual({ marketValue: 6250, unrealized: 3250, unrealizedNet: expect.any(Number) });
+    expect(view.marketValue.approx).toEqual({ marketValue: 6250, unrealized: 3250, unrealizedNet: expect.any(Number) });
     const kv = (await get(`/api/items/${k.id}`)).marketValue;
     expect(kv).toMatchObject({ marketValueUsdCents: 89000, status: 'OK' });
   });
@@ -408,12 +408,12 @@ describe('resumo e views', () => {
     expect(s.totals).toMatchObject({ marketValueUsdCents: 90000, costUsdCents: 50600, pricedUnits: 2, unpricedUnits: 1, notPriceableUnits: 0, unitCount: 3 });
     expect(s.byState.holding).toMatchObject({ marketValueUsdCents: 1000, pricedUnits: 1, unitCount: 1 });
     expect(s.byState.forSale).toMatchObject({ marketValueUsdCents: 89000, unitCount: 2, unpricedUnits: 1 });
-    expect(s.totals.approxBrl.marketValue).toBe(90000 * 5);
+    expect(s.totals.approx.marketValue).toBe(90000 * 5);
     // mudar a cotação muda só o "≈ R$"
     await request(app).put('/api/settings/fx-rate').set('Content-Type', JSON_TYPE).send({ usdBrlRate: 6 });
     const s2 = await summary();
     expect(s2.totals.marketValueUsdCents).toBe(90000);
-    expect(s2.totals.approxBrl.marketValue).toBe(90000 * 6);
+    expect(s2.totals.approx.marketValue).toBe(90000 * 6);
     // depois do intervalo, nextAllowedAt volta a nulo
     clock = new Date(NOW.getTime() + 16 * MIN);
     expect((await summary()).nextAllowedAt).toBeNull();

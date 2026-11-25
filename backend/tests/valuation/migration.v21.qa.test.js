@@ -65,13 +65,13 @@ describe('v21 sobre um banco v20 mais completo', () => {
 
     const db = database.openDatabase(file, { now: NOW });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(23);
-      const after = dumpAll(db, ['market_prices']);
+      expect(db.pragma('user_version', { simple: true })).toBe(24);
+      const after = dumpAll(db, ['market_prices', 'fx_rates']);
       const { settings: settingsBefore, ...restBefore } = before;
       const { settings: settingsAfter, ...restAfter } = after;
       expect(restAfter).toEqual(restBefore);
       expect(settingsAfter).toHaveLength(1);
-      const { price_refresh_started_at: a, price_refresh_last_at: b, price_refresh_last_status: c, price_refresh_last_error_code: d, ...kept } = settingsAfter[0];
+      const { price_refresh_started_at: a, price_refresh_last_at: b, price_refresh_last_status: c, price_refresh_last_error_code: d, display_currency: _dc, ...kept } = settingsAfter[0];
       expect([a, b, c, d]).toEqual([null, null, null, null]);
       expect(kept).toEqual(settingsBefore[0]);
       expect(db.prepare('SELECT COUNT(*) AS n FROM market_prices').get().n).toBe(0);

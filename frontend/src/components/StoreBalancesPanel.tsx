@@ -22,13 +22,13 @@ type Dialog =
 
 // Valor na moeda da loja (2.8) com o aproximado discreto ao lado, calculado no backend (D229): "≈ R$" em loja USD,
 // "≈ US$" em loja BRL. Sem cotação, o aproximado some. Saldo negativo aparece em vermelho.
-function Amount({ cents, currency, usdCents, approxBrlCents, negative = false }: {
-  cents: number; currency: Currency; usdCents: number | null; approxBrlCents: number | null; negative?: boolean;
+function Amount({ cents, currency, usdCents, approxCents, negative = false }: {
+  cents: number; currency: Currency; usdCents: number | null; approxCents: number | null; negative?: boolean;
 }) {
   const t = useT();
   const locale = useLocale();
   const approx = currency === 'USD'
-    ? (approxBrlCents === null ? null : formatMoney(approxBrlCents, 'BRL', locale))
+    ? (approxCents === null ? null : formatMoney(approxCents, 'BRL', locale))
     : (usdCents === null ? null : formatMoney(usdCents, 'USD', locale));
   return (
     <span className={styles.amount}>
@@ -80,7 +80,7 @@ function StoreRow({ store, onCheck, onHistory, csfloat = false, onRegisterCsfloa
             cents={store.availableCents}
             currency={store.currency}
             usdCents={store.availableUsdCents}
-            approxBrlCents={store.availableApproxBrlCents}
+            approxCents={store.availableApproxCents}
             negative={store.negative}
           />{' '}
           {t('storeBalances.available')}
@@ -88,7 +88,7 @@ function StoreRow({ store, onCheck, onHistory, csfloat = false, onRegisterCsfloa
         {pending.cents > 0 && (
           <span>
             {'+ '}
-            <Amount cents={pending.cents} currency={store.currency} usdCents={pending.usdCents} approxBrlCents={pending.approxBrlCents} />{' '}
+            <Amount cents={pending.cents} currency={store.currency} usdCents={pending.usdCents} approxCents={pending.approxCents} />{' '}
             {t('storeBalances.pending', {
               date: pending.nextReleaseAt ? formatDate(pending.nextReleaseAt, locale) : t('common.none'),
             })}
@@ -189,15 +189,15 @@ export default function StoreBalancesPanel() {
             <div className={styles.totalsBar} role="group" aria-label={t('storeBalances.totalsTitle')}>
               <h3 className={styles.totalsTitle}>{t('storeBalances.totalsTitle')}</h3>
               <p className={styles.totalLine}>
-                {t('storeBalances.totalAvailable', { value: moneyLine({ cents: data.totals.availableUsdCents, estimated: data.totals.availableEstimated, approxCents: data.totals.approxBrl.available }) })}
+                {t('storeBalances.totalAvailable', { value: moneyLine({ cents: data.totals.availableUsdCents, estimated: data.totals.availableEstimated, approxCents: data.totals.approx.available }) })}
               </p>
               <p className={styles.totalLine}>
                 {data.totals.nextReleaseAt
                   ? t('storeBalances.totalPendingDate', {
-                    value: moneyLine({ cents: data.totals.pendingUsdCents, estimated: data.totals.pendingEstimated, approxCents: data.totals.approxBrl.pending }),
+                    value: moneyLine({ cents: data.totals.pendingUsdCents, estimated: data.totals.pendingEstimated, approxCents: data.totals.approx.pending }),
                     date: formatDate(data.totals.nextReleaseAt, locale),
                   })
-                  : t('storeBalances.totalPending', { value: moneyLine({ cents: data.totals.pendingUsdCents, estimated: data.totals.pendingEstimated, approxCents: data.totals.approxBrl.pending }) })}
+                  : t('storeBalances.totalPending', { value: moneyLine({ cents: data.totals.pendingUsdCents, estimated: data.totals.pendingEstimated, approxCents: data.totals.approx.pending }) })}
               </p>
               {showNonWithdrawable && (
                 <p className={styles.totalLine}>
@@ -207,7 +207,7 @@ export default function StoreBalancesPanel() {
                       value: moneyLine({
                         cents: nonWithdrawable,
                         estimated: data.totals.nonWithdrawableEstimated,
-                        approxCents: data.totals.approxBrl.nonWithdrawable,
+                        approxCents: data.totals.approx.nonWithdrawable,
                       }),
                     })}
                 </p>

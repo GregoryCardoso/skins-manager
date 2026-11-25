@@ -283,7 +283,7 @@ describe('runDevSeed em arquivo temporário (DB_PATH isolado)', () => {
               `SELECT catalog_id, name, category, status, variant, float_value, acquisition_type, purchase_price_cents,
                       acquired_at, sale_price_cents FROM items ORDER BY id`,
             ).all(),
-            fx: db.getDb().prepare('SELECT usd_brl_rate FROM settings').get(),
+            fx: db.getDb().prepare("SELECT rate AS usd_brl_rate FROM fx_rates WHERE currency = 'BRL'").get(),
             catalogCount: db.getDb().prepare('SELECT COUNT(*) AS n FROM catalog_items').get().n,
           };
         } finally {

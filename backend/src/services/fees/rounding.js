@@ -49,4 +49,14 @@ function roundCents(value, mode) {
   return result + 0; // evita -0
 }
 
-module.exports = { applyRateRounding, roundCents, MODES };
+// Arredonda para um múltiplo da unidade mínima da moeda (`unitCents`: 1 nas moedas com 2 casas; 100 em JPY, KRW e CLP, D369 A3).
+// Com unidade 1 é igual a `roundCents`.
+function roundToUnit(valueCents, unitCents, mode) {
+  if (!Number.isSafeInteger(unitCents) || unitCents < 1) {
+    throw new ValidationError('Unidade mínima inválida para arredondamento.', 'INVALID_AMOUNT');
+  }
+  if (unitCents === 1) return roundCents(valueCents, mode);
+  return roundCents(valueCents / unitCents, mode) * unitCents + 0; // evita -0
+}
+
+module.exports = { applyRateRounding, roundCents, roundToUnit, MODES };

@@ -14,7 +14,7 @@ const { ValidationError, NotFoundError } = require('../errors/AppError');
 const { MAX_AMOUNT_CENTS, MAX_NOTE_LENGTH } = require('../config/constants');
 const { parseDate } = require('./dateUtils');
 const { assertNotFutureDay } = require('./inventoryAgingService');
-const { isValidFxRate, toUsdBase, approxBrlOf } = require('./currencyService');
+const { isValidFxRate, toUsdBase, approxOf, fxFromSettings, displayCurrencyOf } = require('./currencyService');
 const { splitStoreSales } = require('./saleHoldService');
 const { WARNINGS } = require('./warnings');
 
@@ -185,16 +185,16 @@ const latestOf = (rows) => rows.reduce((best, row) => {
 }, null);
 
 // Uma linha por loja (inclusive inativas) + totais (D246). Disponível e pendente de cada loja são convertidos UMA vez
-// para USD, com ROUND (D225); o "≈ R$" dos totais vem do total já somado. `entries`: todas as linhas de `store_balances`.
+// para USD, com ROUND (D225); o "≈" dos totais vem do total já somado. `entries`: todas as linhas de `store_balances`.
 function buildCurrentBalances({
   stores = [], entries = [], deposits = [], withdrawals = [], items = [], settings = null, now = new Date(),
 } = {}) {
-  const rate = settings ? settings.usdBrlRate : null;
+  const fx = fxFromSettings(settings);
   const rows = stores.map((store) => {
     const own = entries.filter((entry) => entry.storeId === store.id);
     const computed = computeStoreBalance({ store, checks: own, deposits, withdrawals, items, at: now });
-    const available = toUsdBase(computed.availableCents, store.currency, rate);
-    const pending = toUsdBase(computed.pending.cents, store.currency, rate);
+    const available = toUsdBase(computed.availableCents, store.currency, fx);
+    const pending = toUsdBase(computed.pending.cents, store.currency, fx);
     const lastCheck = latestOf(own);
     const negative = computed.availableCents < 0;
     let warningCode = null;
@@ -212,10 +212,11 @@ function buildCurrentBalances({
       breakdown: computed.breakdown,
       availableCents: computed.availableCents,
       availableUsdCents: available.usdCents,
-      availableApproxBrlCents: available.approxBrlCents,
+      availableApproxCents: available.approxCents,
+      approxCurrency: available.approxCurrency,
       availableEstimated: available.estimated,
       negative,
-      pending: { ...computed.pending, usdCents: pending.usdCents, approxBrlCents: pending.approxBrlCents, estimated: pending.estimated },
+      pending: { ...computed.pending, usdCents: pending.usdCents, approxCents: pending.approxCents, estimated: pending.estimated },
       ignored: computed.ignored,
       estimated: available.estimated || pending.estimated,
       warningCode,
@@ -235,10 +236,11 @@ function buildCurrentBalances({
     availableEstimated: rows.some((row) => row.availableEstimated),
     pendingEstimated: rows.some((row) => row.pending.estimated),
     nonWithdrawableEstimated: rows.some((row) => !row.allowsWithdrawal && row.estimated),
-    approxBrl: {
-      available: approxBrlOf(availableUsd, rate),
-      pending: approxBrlOf(pendingUsd, rate),
-      nonWithdrawable: approxBrlOf(nonWithdrawableUsd, rate),
+    approxCurrency: displayCurrencyOf(fx),
+    approx: {
+      available: approxOf(availableUsd, fx),
+      pending: approxOf(pendingUsd, fx),
+      nonWithdrawable: approxOf(nonWithdrawableUsd, fx),
     },
     nextReleaseAt: nextReleases.length ? nextReleases[0] : null,
     estimated: rows.some((row) => row.estimated),
@@ -247,6 +249,7 @@ function buildCurrentBalances({
     stores: rows,
     totals,
     usdBrlRate: settings && isValidFxRate(settings.usdBrlRate) ? settings.usdBrlRate : null,
+    displayCurrency: displayCurrencyOf(fx),
     computedAt: now.toISOString(),
   };
 }
@@ -305,7 +308,7 @@ function prepareCheck(input, { now }) {
 function previewCheck(query, { now = new Date() } = {}) {
   const { record, store, settings } = prepareCheck({ ...query, adjust: false }, { now });
   const differenceCents = record.balanceCents - record.computedCents;
-  const diff = toUsdBase(differenceCents, store.currency, settings.usdBrlRate);
+  const diff = toUsdBase(differenceCents, store.currency, fxFromSettings(settings));
   return {
     storeId: store.id,
     currency: store.currency,
@@ -314,7 +317,8 @@ function previewCheck(query, { now = new Date() } = {}) {
     computedCents: record.computedCents,
     differenceCents,
     differenceUsdCents: diff.usdCents,
-    differenceApproxBrlCents: diff.approxBrlCents,
+    differenceApproxCents: diff.approxCents,
+    approxCurrency: diff.approxCurrency,
     estimated: diff.estimated,
   };
 }

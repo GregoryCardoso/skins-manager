@@ -27,7 +27,7 @@ describe('buildSaleInfo', () => {
     expect(info).toEqual({
       salePriceUsdCents: 125, netReceivedUsdCents: 122, purchaseCostUsdCents: 100, ownCostUsdCents: 100, inheritedCostUsdCents: 0,
       fxUsed: { sale: null, purchase: null }, usesRecordedFx: false,
-      approxBrl: { salePrice: 625, netReceived: 610, purchaseCost: 500, profit: 110 },
+      approxCurrency: 'BRL', approx: { salePrice: 625, netReceived: 610, purchaseCost: 500, profit: 110 },
     });
     expect(info.netReceivedUsdCents - info.purchaseCostUsdCents).toBe(computeSaleProfitUsdCents(item));
   });
@@ -52,16 +52,16 @@ describe('buildSaleInfo', () => {
   test('GANHEI com custo 0', () => {
     const info = buildSaleInfo(sold(0, 100, 98, '2026-10-05T12:00:00.000Z'), 5);
     expect(info.purchaseCostUsdCents).toBe(0);
-    expect(info.approxBrl.profit).toBe(490);
+    expect(info.approx.profit).toBe(490);
   });
 
-  test('mudar a cotação atual muda só approxBrl; sem cotação -> approxBrl nulo', () => {
+  test('mudar a cotação atual muda só approx; sem cotação -> approx nulo', () => {
     const item = sold(100, 125, 122, '2026-10-05T12:00:00.000Z');
     const a = buildSaleInfo(item, 5);
     const b = buildSaleInfo(item, 6);
-    expect({ ...a, approxBrl: null }).toEqual({ ...b, approxBrl: null });
-    expect(a.approxBrl).not.toEqual(b.approxBrl);
-    expect(buildSaleInfo(item, null).approxBrl).toEqual({ salePrice: null, netReceived: null, purchaseCost: null, profit: null });
+    expect({ ...a, approx: null }).toEqual({ ...b, approx: null });
+    expect(a.approx).not.toEqual(b.approx);
+    expect(buildSaleInfo(item, null).approx).toEqual({ salePrice: null, netReceived: null, purchaseCost: null, profit: null });
   });
 });
 
@@ -79,10 +79,10 @@ describe('computeStats: unitCount e soldWithFxCount', () => {
 
 describe('computeSalesSummary', () => {
   test('vazio', () => {
-    expect(computeSalesSummary([], { usdBrlRate: 5 })).toEqual({
+    expect(computeSalesSummary([], { fx: 5 })).toEqual({
       count: 0, totalSalePriceUsdCents: 0, totalNetReceivedUsdCents: 0, totalPurchaseCostUsdCents: 0,
       totalProfitUsdCents: 0, avgTurnaroundDays: null, soldWithFxCount: 0,
-      approxBrl: { totalSalePrice: 0, totalNetReceived: 0, totalProfit: 0 },
+      approxCurrency: 'BRL', approx: { totalSalePrice: 0, totalNetReceived: 0, totalProfit: 0 },
     });
   });
 
@@ -93,7 +93,7 @@ describe('computeSalesSummary', () => {
       sold(500, 100, 98, '2026-10-06T12:00:00.000Z'), // 5 dias
       stock(999),
     ];
-    const s = computeSalesSummary(items, { usdBrlRate: 5 });
+    const s = computeSalesSummary(items, { fx: 5 });
     expect(s.count).toBe(3);
     expect(s.totalSalePriceUsdCents).toBe(125 + 100 + 100);
     expect(s.totalNetReceivedUsdCents).toBe(122 + 87 + 98);
@@ -102,7 +102,7 @@ describe('computeSalesSummary', () => {
     expect(s.totalProfitUsdCents).toBe(-393);
     expect(s.avgTurnaroundDays).toBe(4);
     expect(s.soldWithFxCount).toBe(1);
-    expect(s.approxBrl.totalProfit).toBe(-1965);
+    expect(s.approx.totalProfit).toBe(-1965);
   });
 
   test('média de giro com 1 casa; sem cotação -> approx nulo', () => {
@@ -111,9 +111,9 @@ describe('computeSalesSummary', () => {
       sold(1, 2, 2, '2026-10-02T12:00:00.000Z'),
       sold(1, 2, 2, '2026-10-03T12:00:00.000Z'),
     ];
-    const s = computeSalesSummary(items, { usdBrlRate: null });
+    const s = computeSalesSummary(items, { fx: null });
     expect(s.avgTurnaroundDays).toBe(1.3);
-    expect(s.approxBrl).toEqual({ totalSalePrice: null, totalNetReceived: null, totalProfit: null });
+    expect(s.approx).toEqual({ totalSalePrice: null, totalNetReceived: null, totalProfit: null });
   });
 });
 

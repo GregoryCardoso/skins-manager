@@ -76,7 +76,7 @@ describe('GET /api/profit/summary: vazio', () => {
       depositsUsdCents: 0, withdrawalsNetUsdCents: 0, platformBalanceUsdCents: 0, pendingBalanceUsdCents: 0,
       nextReleaseAt: null, stockUsdCents: 0, realProfitUsdCents: 0,
       estimated: false, warnings: [], computedAt: '2026-11-21T12:00:00.000Z',
-      approxBrl: { deposits: 0, withdrawals: 0, platformBalance: 0, pendingBalance: 0, stock: 0, realProfit: 0 },
+      approx: { deposits: 0, withdrawals: 0, platformBalance: 0, pendingBalance: 0, stock: 0, realProfit: 0 },
       withdrawnVsDeposited: { withdrawnUsdCents: 0, depositedUsdCents: 0, ratio: null },
       counts: {
         deposits: 0, legacyDeposits: 0, withdrawals: 0, legacyWithdrawals: 0, withdrawalsWithoutFee: 0, stockItems: 0,
@@ -92,8 +92,8 @@ describe('GET /api/profit/summary: vazio', () => {
   test('sem cotação: tudo zerado continua 0 (parcelas 0 nunca ficam nulas)', async () => {
     const data = await summary();
     expect(data.realProfitUsdCents).toBe(0);
-    expect(data.approxBrl.realProfit).toBeNull();
-    expect(data.fx).toEqual({ usdBrlRate: null, source: null, updatedAt: null, quotedAt: null });
+    expect(data.approx.realProfit).toBeNull();
+    expect(data.fx).toEqual({ usdBrlRate: null, source: null, updatedAt: null, quotedAt: null, displayCurrency: 'BRL' });
   });
 
   test('Host estranho -> 403; POST -> 404 padrão', async () => {
@@ -120,7 +120,7 @@ describe('GET /api/profit/summary: exemplo de D206 centavo a centavo', () => {
       realProfitUsdCents: 8055,
       estimated: true,
       estimatedParts: { deposits: true, withdrawals: true, platformBalance: true, pendingBalance: false, stock: true },
-      approxBrl: {
+      approx: {
         deposits: 151632, withdrawals: 62963, platformBalance: 78103, pendingBalance: 46173, stock: 8148,
         realProfit: 43756,
       },
@@ -214,8 +214,8 @@ describe('GET /api/profit/summary: sem cotação', () => {
     expect(data.pendingBalanceUsdCents).toBe(2500);
     expect(data.platformBalanceUsdCents).toBe(0);
     expect(data.realProfitUsdCents).toBe(2500);
-    expect(data.approxBrl.pendingBalance).toBeNull();
-    expect(data.approxBrl.realProfit).toBeNull();
+    expect(data.approx.pendingBalance).toBeNull();
+    expect(data.approx.realProfit).toBeNull();
     expect(data.warnings.some((w) => w.code === 'FX_NOT_CONFIGURED')).toBe(false);
   });
 

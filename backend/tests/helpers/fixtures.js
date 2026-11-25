@@ -2,9 +2,14 @@
 const { getDb, closeDb } = require('../../src/config/database');
 
 // Garante um banco :memory: novo (schema + seed) a cada teste.
-function freshDb() {
+// A moeda de conversão (D369, v024) de um banco novo é USD; a maioria dos testes foi escrita quando o "≈" era sempre "≈ R$", então por
+// padrão o banco de teste usa BRL (como os bancos existentes após a migração). Passe `{ displayCurrency: null }` para ficar com o padrão
+// de uma instalação nova (USD) ou outra moeda para testá-la.
+function freshDb({ displayCurrency = 'BRL' } = {}) {
   closeDb();
-  return getDb();
+  const db = getDb();
+  if (displayCurrency !== null) db.prepare('UPDATE settings SET display_currency = ?').run(displayCurrency);
+  return db;
 }
 
 function storeIdByName(name) {

@@ -110,7 +110,7 @@ export default function WithdrawalsSection() {
       {data && data.totals.count > 0 && (
         <p className={styles.total}>
           {t('withdrawals.total', {
-            value: moneyLine({ cents: data.totals.netUsdCents, estimated: data.totals.estimated, approxCents: data.totals.approxBrlCents }),
+            value: moneyLine({ cents: data.totals.netUsdCents, estimated: data.totals.estimated, approxCents: data.totals.approxCents }),
           })}
         </p>
       )}

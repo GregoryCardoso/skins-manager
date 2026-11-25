@@ -257,10 +257,10 @@ describe('conferência: datas passadas, ordem dos erros e nota só com espaços'
     expect(withRate.body.data).toMatchObject({ currency: 'BRL', differenceCents: 1000, differenceUsdCents: 200, estimated: true });
     await post(q);
     expect(getDb().prepare('SELECT fx_rate FROM store_balances WHERE store_id = ?').get(steam).fx_rate).toBe(5);
-    getDb().prepare('UPDATE settings SET usd_brl_rate = NULL').run();
+    getDb().prepare('UPDATE fx_rates SET rate = NULL').run();
     const noRate = await preview({ ...q, recordedAt: '2026-11-06T12:00:00.000Z' });
     expect(noRate.status).toBe(200);
-    expect(noRate.body.data).toMatchObject({ differenceUsdCents: null, differenceApproxBrlCents: 1000 });
+    expect(noRate.body.data).toMatchObject({ differenceUsdCents: null, differenceApproxCents: 1000 });
     await post({ ...q, recordedAt: '2026-11-06T12:00:00.000Z' });
     expect(getDb().prepare('SELECT fx_rate FROM store_balances WHERE store_id = ? ORDER BY id DESC').get(steam).fx_rate).toBeNull();
   });

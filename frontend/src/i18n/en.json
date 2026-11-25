@@ -175,6 +175,7 @@
     "FX_INVALID_RESPONSE": "The exchange rate source returned an unexpected format or an invalid value. Type the rate manually.",
     "FX_REFRESH_IN_PROGRESS": "A rate update is already in progress.",
     "INVALID_FX_SOURCE": "Invalid exchange rate source. Choose the commercial rate or the PTAX.",
+    "FX_SOURCE_NOT_SUPPORTED": "This currency has no automatic update from that source. Enter the rate by hand.",
     "INVALID_SALE_HOLD_DAYS": "The hold must be a whole number of days, from 0 to 30.",
     "DEPOSITED_AT_IN_FUTURE": "The deposit date cannot be in the future.",
     "DEPOSIT_NOT_FOUND": "The deposit was not found.",

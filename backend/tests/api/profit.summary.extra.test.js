@@ -48,8 +48,8 @@ describe('GET /api/profit/summary: complemento 8.4', () => {
     const data = await get('/api/profit/summary');
     expect(data.platformBalanceUsdCents).toBeNull();
     expect(data.realProfitUsdCents).toBeNull();
-    expect(data.balancesByStore.find((r) => r.storeName === 'CSFloat')).toMatchObject({ availableUsdCents: 1000, availableApproxBrlCents: null });
-    expect(data.balancesByStore.find((r) => r.storeName === 'Steam')).toMatchObject({ availableUsdCents: null, availableApproxBrlCents: 4590 });
+    expect(data.balancesByStore.find((r) => r.storeName === 'CSFloat')).toMatchObject({ availableUsdCents: 1000, availableApproxCents: null });
+    expect(data.balancesByStore.find((r) => r.storeName === 'Steam')).toMatchObject({ availableUsdCents: null, availableApproxCents: 4590 });
     expect(data.warnings).toContainEqual({ source: 'STORE', storeId: storeId('Steam'), storeName: 'Steam', code: 'FX_NOT_CONFIGURED', text: expect.any(String) });
   });
 
@@ -88,7 +88,7 @@ describe('GET /api/profit/summary: complemento 8.4', () => {
     }, { now: NOW });
     const data = await get('/api/profit/summary');
     expect(data.realProfitUsdCents).toBe(-500);
-    expect(data.approxBrl.realProfit).toBe(-2500);
+    expect(data.approx.realProfit).toBe(-2500);
     expect(data.withdrawnVsDeposited.ratio).toBe(0);
   });
 
@@ -103,8 +103,8 @@ describe('GET /api/profit/summary: complemento 8.4', () => {
     const sum = (pick) => current.stores.reduce((acc, row) => acc + pick(row), 0);
     expect(summary.platformBalanceUsdCents).toBe(sum((r) => r.availableUsdCents));
     expect(summary.pendingBalanceUsdCents).toBe(sum((r) => r.pending.usdCents));
-    expect(summary.approxBrl.platformBalance).toBe(current.totals.approxBrl.available);
-    expect(summary.approxBrl.pendingBalance).toBe(current.totals.approxBrl.pending);
+    expect(summary.approx.platformBalance).toBe(current.totals.approx.available);
+    expect(summary.approx.pendingBalance).toBe(current.totals.approx.pending);
     expect(summary.counts.pendingSales).toBe(1);
     expect(summary.nextReleaseAt).toBe('2026-11-27T18:00:00.000Z');
     expect(summary.fx.usdBrlRate).toBe(5.4321);

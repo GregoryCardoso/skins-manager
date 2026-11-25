@@ -10,7 +10,7 @@ const ItemOperation = require('../models/ItemOperation');
 const { runInTransaction } = require('../models/modelHelpers');
 const { MAX_AMOUNT_CENTS, MAX_NAME_LENGTH } = require('../config/constants');
 const { AppError, ValidationError, NotFoundError, ConflictError } = require('../errors/AppError');
-const { isValidFxRate } = require('./currencyService');
+const { isValidFxRate, fxFromSettings } = require('./currencyService');
 const { parseDate, toIso, formatDateTimeBr } = require('./dateUtils');
 const {
   CATEGORIES, CATALOG_CATEGORIES, isWeaponCategory, normalizeAttributes, assertFloatInCatalogRange,
@@ -485,7 +485,7 @@ function toItemView(
     aging: getAging(item, { thresholds, now }),
     minPrices: inStock ? minPricesForItem({ item, stores, settings, costParts: costIndex.hasOperations ? cost.parts : undefined }) : null,
     saleProfitUsdCents: computeSaleProfitUsdCents(item, { inheritedUsdCents }),
-    saleInfo: buildSaleInfo(item, settings ? settings.usdBrlRate : null, { inheritedUsdCents }),
+    saleInfo: buildSaleInfo(item, fxFromSettings(settings), { inheritedUsdCents }),
     saleRelease: computeSaleRelease(item, now),
     stats: statsIndex.get(buildStatsKey(item)) ?? computeStats([item], { costIndex }),
     // Valor de mercado (10.5, D364): só informativo; vendida e consumida = null. Nunca entra no lucro real nem nos números do app.
@@ -511,7 +511,7 @@ function loadContext(ctxNow = new Date(), { withValuation = true } = {}) {
   return {
     items, stores: Store.findAll(), settings, statsIndex: buildStatsIndex(items, { costIndex: operationContext.costIndex }),
     catalogById, componentsByItemId,
-    valuationIndex: !withValuation ? null : buildValuationIndex({ items, componentsByItemId, catalogById, costIndex: operationContext.costIndex, usdBrlRate: settings.usdBrlRate, now: ctxNow }),
+    valuationIndex: !withValuation ? null : buildValuationIndex({ items, componentsByItemId, catalogById, costIndex: operationContext.costIndex, fx: fxFromSettings(settings), now: ctxNow }),
     externalSources: externalLinkService.sourcesByItemIds(), operationContext,
     stockKeys: items.filter((item) => item.status === 'EM_ESTOQUE' && openingRules.isKey(item)),
   };
@@ -536,7 +536,7 @@ function viewOf(item, { now, thresholds }) {
   const externalSources = externalLinkService.sourcesByItemIds([item.id]);
   const settings = Setting.get();
   const valuationIndex = buildValuationIndex({
-    items: [item], componentsByItemId, catalogById, costIndex: operationContext.costIndex, usdBrlRate: settings.usdBrlRate, now,
+    items: [item], componentsByItemId, catalogById, costIndex: operationContext.costIndex, fx: fxFromSettings(settings), now,
   });
   return toItemView(item, {
     stores: Store.findAll(), settings, valuationIndex, statsIndex, catalogById, externalSources, componentsByItemId, now, thresholds, operationContext,
@@ -678,10 +678,10 @@ function listItemGroups(query = {}, { now = new Date(), thresholds = getAgingThr
       catalog: withCatalog ? toCatalogSummary(catalogById.get(withCatalog.catalogId)) : null,
       // QTD e custos do grupo inteiro em estoque (9.5.1a, D334 revista pelo usuário): batem com "X à venda · Y no holding";
       // ao expandir aparecem só as unidades da aba e dos filtros.
-      ...summarizeGroupCost(stockByKey.get(key) ?? units, settings.usdBrlRate, { costIndex: operationContext.costIndex }),
+      ...summarizeGroupCost(stockByKey.get(key) ?? units, fxFromSettings(settings), { costIndex: operationContext.costIndex }),
       // Unidades do grupo em estoque com algum componente (10.1, D344); fora da chave do agrupamento (2.7).
       // Valor de mercado do estoque inteiro do grupo (10.5, D364), só informativo.
-      marketValue: groupValuation(stockByKey.get(key) ?? units, valuationIndex, settings.usdBrlRate),
+      marketValue: groupValuation(stockByKey.get(key) ?? units, valuationIndex, fxFromSettings(settings)),
       componentUnits: (stockByKey.get(key) ?? units).filter((u) => (componentsByItemId.get(u.id) ?? []).length > 0).length,
       stagnantCount: countStagnant(units, thresholds, now),
       stock: summarizeStockStates(stockByKey.get(key) ?? [], now),
@@ -714,7 +714,7 @@ function listSales(query = {}, { now = new Date(), thresholds = getAgingThreshol
   else items = sortBySoldAt(items, query.order ?? 'desc');
   return {
     items: items.map((item) => toItemView(item, { stores, settings, statsIndex, catalogById, externalSources, componentsByItemId, now, thresholds, operationContext, stockKeys })),
-    summary: computeSalesSummary(items, { usdBrlRate: settings.usdBrlRate, costIndex: operationContext.costIndex }),
+    summary: computeSalesSummary(items, { fx: fxFromSettings(settings), costIndex: operationContext.costIndex }),
     meta: {
       count: items.length,
       fastTurnoverDays: thresholds.fastTurnoverDays,

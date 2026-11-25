@@ -27,13 +27,13 @@ describe('buildSaleInfo: casos extras', () => {
     expect(info.netReceivedUsdCents - info.purchaseCostUsdCents).toBe(computeSaleProfitUsdCents(item));
   });
 
-  test('a cotação atual nunca altera os campos em USD, só approxBrl', () => {
+  test('a cotação atual nunca altera os campos em USD, só approx', () => {
     const item = mk({ saleCurrency: 'BRL', fxRateAtSale: 5.4, salePriceCents: 5400, netReceivedCents: 4700 });
     const a = buildSaleInfo(item, 5);
     const b = buildSaleInfo(item, 7.5);
-    const strip = ({ approxBrl, ...rest }) => rest;
+    const strip = ({ approx, ...rest }) => rest;
     expect(strip(a)).toEqual(strip(b));
-    expect(b.approxBrl.profit).toBe(Math.round((b.netReceivedUsdCents - b.purchaseCostUsdCents) * 7.5));
+    expect(b.approx.profit).toBe(Math.round((b.netReceivedUsdCents - b.purchaseCostUsdCents) * 7.5));
   });
 
   test('venda em estoque com cotação undefined -> null (sem lançar)', () => {
@@ -44,11 +44,11 @@ describe('buildSaleInfo: casos extras', () => {
     const info = buildSaleInfo(mk({ purchasePriceCents: 0, acquisitionType: 'GANHEI' }), 5);
     expect(info.purchaseCostUsdCents).toBe(0);
     expect(info.fxUsed.purchase).toBeNull();
-    expect(info.approxBrl.purchaseCost).toBe(0);
+    expect(info.approx.purchaseCost).toBe(0);
   });
 
   test('cotação inválida (0) não gera approx', () => {
-    expect(buildSaleInfo(mk(), 0).approxBrl.profit).toBeNull();
+    expect(buildSaleInfo(mk(), 0).approx.profit).toBeNull();
   });
 });
 
@@ -60,7 +60,7 @@ describe('computeSalesSummary: identidades', () => {
       mk({ id: 3, purchaseCurrency: 'BRL', fxRateAtPurchase: 5.11, purchasePriceCents: 9999 }),
       mk({ id: 4, purchaseCurrency: 'BRL', fxRateAtPurchase: 5.11, purchasePriceCents: 777, saleCurrency: 'BRL', fxRateAtSale: 5.9, salePriceCents: 333, netReceivedCents: 301 }),
     ];
-    const s = computeSalesSummary(items, { usdBrlRate: 5.5 });
+    const s = computeSalesSummary(items, { fx: 5.5 });
     expect(s.totalProfitUsdCents).toBe(s.totalNetReceivedUsdCents - s.totalPurchaseCostUsdCents);
     expect(s.totalProfitUsdCents).toBe(items.reduce((a, i) => a + computeSaleProfitUsdCents(i), 0));
     expect(s.soldWithFxCount).toBe(3);
@@ -70,7 +70,7 @@ describe('computeSalesSummary: identidades', () => {
   test('um item vendido; sem opções -> approx nulo', () => {
     const s = computeSalesSummary([mk({ soldAt: '2026-10-01T12:00:00.000Z' })]);
     expect(s.avgTurnaroundDays).toBe(0);
-    expect(s.approxBrl.totalProfit).toBeNull();
+    expect(s.approx.totalProfit).toBeNull();
   });
 
   test('média com 1 casa arredondada (2/3 -> 0.7)', () => {
@@ -79,7 +79,7 @@ describe('computeSalesSummary: identidades', () => {
       mk({ soldAt: '2026-10-02T12:00:00.000Z' }),
       mk({ soldAt: '2026-10-02T12:00:00.000Z' }),
     ];
-    expect(computeSalesSummary(items, { usdBrlRate: 5 }).avgTurnaroundDays).toBe(0.7);
+    expect(computeSalesSummary(items, { fx: 5 }).avgTurnaroundDays).toBe(0.7);
   });
 });
 

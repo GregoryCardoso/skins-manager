@@ -61,10 +61,10 @@ describe('consistência entre /summary, /current e as listas', () => {
     const deposits = await get('/api/deposits');
     const withdrawals = await get('/api/withdrawals');
     expect(deposits.totals.amountUsdCents).toBe(summary.depositsUsdCents);
-    expect(deposits.totals.approxBrlCents).toBe(summary.approxBrl.deposits);
+    expect(deposits.totals.approxCents).toBe(summary.approx.deposits);
     expect(deposits.totals.estimated).toBe(summary.estimatedParts.deposits);
     expect(withdrawals.totals.netUsdCents).toBe(summary.withdrawalsNetUsdCents);
-    expect(withdrawals.totals.approxBrlCents).toBe(summary.approxBrl.withdrawals);
+    expect(withdrawals.totals.approxCents).toBe(summary.approx.withdrawals);
     expect(withdrawals.totals.estimated).toBe(summary.estimatedParts.withdrawals);
     expect(deposits.totals.legacyCount).toBe(summary.counts.legacyDeposits);
     expect(deposits.totals.count).toBe(summary.counts.deposits);
@@ -81,7 +81,7 @@ describe('consistência entre /summary, /current e as listas', () => {
     // legados: ROUND(30001 / 5,4321) = 5523 e ROUND(777 / 5,4321) = 143
     expect(deposits.deposits.filter((d) => d.legacy).map((d) => d.amountUsdCents).sort()).toEqual([143, 5523]);
     expect(sum).toBe(9200 + 3333 + 5523 + 143 + 12346);
-    expect(deposits.totals.approxBrlCents).toBe(Math.round(sum * RATE));
+    expect(deposits.totals.approxCents).toBe(Math.round(sum * RATE));
     const withdrawals = await get('/api/withdrawals');
     const net = withdrawals.withdrawals.reduce((acc, w) => acc + w.amountUsdCents, 0);
     expect(withdrawals.totals.netUsdCents).toBe(net);
@@ -96,8 +96,8 @@ describe('consistência entre /summary, /current e as listas', () => {
     expect(summary.platformBalanceUsdCents).toBe(current.totals.availableUsdCents);
     expect(summary.pendingBalanceUsdCents).toBe(current.totals.pendingUsdCents);
     expect(summary.nextReleaseAt).toBe(current.totals.nextReleaseAt);
-    expect(summary.approxBrl.platformBalance).toBe(current.totals.approxBrl.available);
-    expect(summary.approxBrl.pendingBalance).toBe(current.totals.approxBrl.pending);
+    expect(summary.approx.platformBalance).toBe(current.totals.approx.available);
+    expect(summary.approx.pendingBalance).toBe(current.totals.approx.pending);
     // sem saldo inicial (D252): CSFloat 9200 + 12346 − saque 10000 = 11546; CSMoney 3333 − 2000 = 1333;
     // Steam (BRL): venda 4591 − compra 2501 = 2090, convertida uma vez
     expect(current.totals.availableUsdCents).toBe(11546 + 1333 + Math.round(2090 / RATE));
@@ -111,7 +111,7 @@ describe('consistência entre /summary, /current e as listas', () => {
       s.withdrawalsNetUsdCents + s.platformBalanceUsdCents + s.pendingBalanceUsdCents + s.stockUsdCents - s.depositsUsdCents
     );
     expect(s.stockUsdCents).toBe(Math.round(2501 / 5.0)); // cotação gravada, não a das configurações
-    expect(s.approxBrl.realProfit).toBe(Math.round(s.realProfitUsdCents * RATE));
+    expect(s.approx.realProfit).toBe(Math.round(s.realProfitUsdCents * RATE));
     expect(s.estimated).toBe(true);
     expect(s.counts).toMatchObject({ legacyDeposits: 2, legacyWithdrawals: 2, withdrawalsWithoutFee: 1, deposits: 5, withdrawals: 4, stockItems: 1, pendingSales: 1 });
   });
@@ -134,8 +134,8 @@ describe('consistência entre /summary, /current e as listas', () => {
     expect(fx.sort()).toEqual(['DEPOSITS', 'STORE:Steam', 'WITHDRAWALS']);
     expect(summary.warnings.some((w) => w.source === 'STOCK')).toBe(false);
     // linhas USD continuam exatas; legados nulos
-    expect(deposits.deposits.filter((d) => !d.legacy).every((d) => d.amountUsdCents !== null && d.approxBrlCents === null)).toBe(true);
-    expect(deposits.deposits.filter((d) => d.legacy).every((d) => d.amountUsdCents === null && d.approxBrlCents === d.amountBrlCents)).toBe(true);
+    expect(deposits.deposits.filter((d) => !d.legacy).every((d) => d.amountUsdCents !== null && d.approxCents === null)).toBe(true);
+    expect(deposits.deposits.filter((d) => d.legacy).every((d) => d.amountUsdCents === null && d.approxCents === d.amountBrlCents)).toBe(true);
     expect(summary.fx.usdBrlRate).toBeNull();
   });
 
@@ -147,7 +147,7 @@ describe('consistência entre /summary, /current e as listas', () => {
     expect(s).toMatchObject({ depositsUsdCents: 10000, withdrawalsNetUsdCents: 4900, platformBalanceUsdCents: 5000, realProfitUsdCents: -100, estimated: false }); // o saldo calculado fica com 10000 − 5000; o lucro é só a taxa
     expect(s.withdrawnVsDeposited.ratio).toBe(0.49);
     expect(s.warnings).toEqual([]);
-    expect(s.approxBrl.realProfit).toBeNull();
+    expect(s.approx.realProfit).toBeNull();
   });
 
   test('o R$ informativo de aportes e saques não altera o resumo: PATCH do valor pago deixa o lucro igual', async () => {
@@ -174,7 +174,7 @@ describe('saques sem valor recebido em R$ pela API', () => {
   test('POST sem R$ e com null: 201, amountBrlCents null e líquido na moeda da loja', async () => {
     const a = await post(body({ feeCents: 250 }));
     expect(a.status).toBe(201);
-    expect(a.body.data).toMatchObject({ amountBrlCents: null, netStoreCents: 9750, amountUsdCents: 9750, approxBrlCents: 52963, estimated: false, legacyWithoutStore: false });
+    expect(a.body.data).toMatchObject({ amountBrlCents: null, netStoreCents: 9750, amountUsdCents: 9750, approxCents: 52963, estimated: false, legacyWithoutStore: false });
     const b = await post(body({ amountBrlCents: null }));
     expect(b.status).toBe(201);
     expect(b.body.data).toMatchObject({ amountBrlCents: null, feeCents: null, netStoreCents: 10000, amountUsdCents: 10000 });
@@ -204,7 +204,7 @@ describe('saques sem valor recebido em R$ pela API', () => {
   test('taxa igual ao valor: líquido 0, parcela 0 e não nula, mesmo sem cotação', async () => {
     Setting.update({ usdBrlRate: null }, { now: NOW });
     const res = await post(body({ amountStoreCents: 500, feeCents: 500 }));
-    expect(res.body.data).toMatchObject({ netStoreCents: 0, amountUsdCents: 0, approxBrlCents: 0, estimated: false });
+    expect(res.body.data).toMatchObject({ netStoreCents: 0, amountUsdCents: 0, approxCents: 0, estimated: false });
     expect((await get('/api/withdrawals')).totals.netUsdCents).toBe(0);
   });
 
@@ -212,10 +212,10 @@ describe('saques sem valor recebido em R$ pela API', () => {
     await request(app).patch(`/api/stores/${steam}`).send({ allowsWithdrawal: true }).expect(200);
     const res = await post(body({ storeId: steam, amountStoreCents: 10000, feeCents: 1000 }));
     expect(res.status).toBe(201);
-    expect(res.body.data).toMatchObject({ currency: 'BRL', netStoreCents: 9000, amountUsdCents: Math.round(9000 / RATE), approxBrlCents: 9000, estimated: true });
+    expect(res.body.data).toMatchObject({ currency: 'BRL', netStoreCents: 9000, amountUsdCents: Math.round(9000 / RATE), approxCents: 9000, estimated: true });
     Setting.update({ usdBrlRate: null }, { now: NOW });
     const list = await get('/api/withdrawals');
-    expect(list.withdrawals[0]).toMatchObject({ amountUsdCents: null, approxBrlCents: 9000, estimated: true });
+    expect(list.withdrawals[0]).toMatchObject({ amountUsdCents: null, approxCents: 9000, estimated: true });
     expect(list.totals.netUsdCents).toBeNull();
   });
 

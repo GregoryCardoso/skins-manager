@@ -27,7 +27,7 @@ describe('GET /api/withdrawals', () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual({
       success: true,
-      data: { withdrawals: [], totals: { count: 0, legacyCount: 0, withoutFeeCount: 0, netUsdCents: 0, approxBrlCents: null, estimated: false } },
+      data: { withdrawals: [], totals: { count: 0, legacyCount: 0, withoutFeeCount: 0, netUsdCents: 0, approxCents: null, approxCurrency: 'BRL', estimated: false } },
     });
   });
 
@@ -40,12 +40,12 @@ describe('GET /api/withdrawals', () => {
     expect(res.body.data.withdrawals.map((w) => w.id)).toEqual([c.id, b.id, a.id, old.id]);
     // sem cotação: o saque antigo (R$ 300,00) não converte; os três com loja somam 1000 + 2500 + 400
     expect(res.body.data.totals).toEqual({
-      count: 4, legacyCount: 1, withoutFeeCount: 1, netUsdCents: null, approxBrlCents: null, estimated: true,
+      count: 4, legacyCount: 1, withoutFeeCount: 1, netUsdCents: null, approxCents: null, approxCurrency: 'BRL', estimated: true,
     });
     expect(res.body.data.withdrawals[3]).toEqual({
       id: old.id, storeId: null, storeName: null, currency: null, amountStoreCents: null, feeCents: null, netStoreCents: null,
       amountBrlCents: 30000, withdrawnAt: '2026-01-05T12:00:00.000Z', note: 'antigo', legacyWithoutStore: true,
-      amountUsdCents: null, approxBrlCents: 30000, estimated: true,
+      amountUsdCents: null, approxCents: 30000, approxCurrency: 'BRL', estimated: true,
       createdAt: NOW.toISOString(), updatedAt: NOW.toISOString(),
     });
     expect(res.body.data.withdrawals.slice(0, 3).map((w) => w.amountUsdCents)).toEqual([400, 2500, 1000]);
@@ -57,10 +57,10 @@ describe('GET /api/withdrawals', () => {
     legacy({ amountBrlCents: 10000 });
     const res = (await request(app).get('/api/withdrawals')).body.data;
     expect(res.withdrawals.find((w) => !w.legacyWithoutStore)).toMatchObject({
-      netStoreCents: 9750, amountUsdCents: 9750, approxBrlCents: 52963, estimated: false,
+      netStoreCents: 9750, amountUsdCents: 9750, approxCents: 52963, approxCurrency: 'BRL', estimated: false,
     });
-    expect(res.withdrawals.find((w) => w.legacyWithoutStore)).toMatchObject({ amountUsdCents: 1841, approxBrlCents: 10000, estimated: true });
-    expect(res.totals).toEqual({ count: 2, legacyCount: 1, withoutFeeCount: 0, netUsdCents: 11591, approxBrlCents: 62963, estimated: true });
+    expect(res.withdrawals.find((w) => w.legacyWithoutStore)).toMatchObject({ amountUsdCents: 1841, approxCents: 10000, approxCurrency: 'BRL', estimated: true });
+    expect(res.totals).toEqual({ count: 2, legacyCount: 1, withoutFeeCount: 0, netUsdCents: 11591, approxCents: 62963, approxCurrency: 'BRL', estimated: true });
   });
 });
 
@@ -81,7 +81,7 @@ describe('POST /api/withdrawals', () => {
       note: 'pix',
       legacyWithoutStore: false,
       amountUsdCents: 9750,
-      approxBrlCents: null,
+      approxCents: null, approxCurrency: 'BRL',
       estimated: false,
       createdAt: NOW.toISOString(),
       updatedAt: NOW.toISOString(),

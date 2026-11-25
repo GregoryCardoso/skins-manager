@@ -88,10 +88,10 @@ describe('summarizeGroupCost (bordas)', () => {
       .toMatchObject({ totalCostUsdCents: 1000, avgCostUsdCents: 500 });
   });
 
-  test('approxBrl com a cotação das configurações; cotação inválida (0, negativa, NaN) -> null', () => {
+  test('approx com a cotação das configurações; cotação inválida (0, negativa, NaN) -> null', () => {
     const items = [unit(1, { purchasePriceCents: 1000 })];
-    expect(summarizeGroupCost(items, 5.4).approxBrl).toEqual({ totalCostCents: 5400, avgCostCents: 5400 });
-    for (const bad of [0, -1, NaN, undefined]) expect(summarizeGroupCost(items, bad).approxBrl).toBeNull();
+    expect(summarizeGroupCost(items, 5.4).approx).toEqual({ totalCostCents: 5400, avgCostCents: 5400 });
+    for (const bad of [0, -1, NaN, undefined]) expect(summarizeGroupCost(items, bad).approx).toBeNull();
   });
 
   test('costUsesRecordedFx só olha a moeda da compra', () => {

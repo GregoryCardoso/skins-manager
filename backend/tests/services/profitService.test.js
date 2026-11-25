@@ -114,7 +114,7 @@ describe('profitService.computeRealProfit', () => {
     const r = computeRealProfit(s);
     expect(r.platformBalanceUsdCents).toBe(11600);
     expect(r.realProfitUsdCents).toBe(1600);
-    expect(r.approxBrl.realProfit).toBe(8000);
+    expect(r.approx.realProfit).toBe(8000);
     // a soma "não sacável" é só informativa e não é somada de novo
     expect(s.balances.totals.nonWithdrawableUsdCents).toBe(1600);
   });
@@ -128,12 +128,12 @@ describe('profitService.computeRealProfit', () => {
     expect(r.platformBalanceUsdCents).toBe(12346 + 1200); // a venda liberada depois do saldo inicial já está no disponível
     expect(r.pendingBalanceUsdCents).toBe(7500);
     expect(r).not.toHaveProperty('releasedAfterBalanceUsdCents');
-    expect(r.approxBrl).not.toHaveProperty('releasedAfterBalance');
+    expect(r.approx).not.toHaveProperty('releasedAfterBalance');
     expect(r.estimatedParts).not.toHaveProperty('releasedAfterBalance');
     expect(r.nextReleaseAt).toBe('2026-11-27T18:00:00.000Z');
     expect(r.realProfitUsdCents).toBe(12346 + 7500 + 1200);
     expect(r.estimated).toBe(false);
-    expect(r.approxBrl.pendingBalance).toBe(40741);
+    expect(r.approx.pendingBalance).toBe(40741);
   });
 
   test('estoque pelo custo: USD nominal e BRL pela cotação gravada (3000 / 5,0 = 600)', () => {

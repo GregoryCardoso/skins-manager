@@ -32,7 +32,7 @@ describe('summarizeGroupCost', () => {
   test('tudo em USD', () => {
     expect(summarizeGroupCost([unit(1), unit(2, { purchasePriceCents: 500 })], 5)).toEqual({
       quantity: 2, totalCostUsdCents: 1500, avgCostUsdCents: 750, costUsesRecordedFx: false,
-      approxBrl: { totalCostCents: 7500, avgCostCents: 3750 },
+      approxCurrency: 'BRL', approx: { totalCostCents: 7500, avgCostCents: 3750 },
     });
   });
 
@@ -45,10 +45,10 @@ describe('summarizeGroupCost', () => {
     expect(summarizeGroupCost([unit(1, { purchasePriceCents: 0 })], 5)).toMatchObject({ totalCostUsdCents: 0, avgCostUsdCents: 0 });
   });
 
-  test('média arredondada (1000 em 3 unidades = 333) e approxBrl nulo sem cotação', () => {
+  test('média arredondada (1000 em 3 unidades = 333) e approx nulo sem cotação', () => {
     const items = [unit(1, { purchasePriceCents: 500 }), unit(2, { purchasePriceCents: 250 }), unit(3, { purchasePriceCents: 250 })];
     const result = summarizeGroupCost(items, null);
-    expect(result).toMatchObject({ totalCostUsdCents: 1000, avgCostUsdCents: 333, approxBrl: null });
+    expect(result).toMatchObject({ totalCostUsdCents: 1000, avgCostUsdCents: 333, approx: null });
   });
 });
 

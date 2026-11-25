@@ -12,7 +12,7 @@ interface Props {
   // Mesmo valor em USD, pela cotação gravada (oficial do relatório, 2.9).
   usdCents: number;
   // "≈ R$" pela cotação atual (só ilustrativo, 2.11); null sem cotação.
-  approxBrlCents: number | null;
+  approxCents: number | null;
   // Nota da cotação gravada (ex.: "cotação da venda R$ 5,40"), quando o valor nativo é BRL.
   rateNote?: string | null;
   signed?: boolean;
@@ -22,7 +22,7 @@ interface Props {
 
 // Regras de D125: nativo USD -> "≈ R$"; nativo BRL -> "= US$" com a marca da cotação gravada (não é aproximado).
 export default function MoneyWithApprox({
-  cents, currency, usdCents, approxBrlCents, rateNote = null, signed = false, colorBySign = false,
+  cents, currency, usdCents, approxCents, rateNote = null, signed = false, colorBySign = false,
 }: Props) {
   const t = useT();
   const locale = useLocale();
@@ -40,8 +40,8 @@ export default function MoneyWithApprox({
           {rateNote ? ` · ${rateNote}` : ''}
         </span>
       ) : (
-        approxBrlCents !== null && (
-          <span className={styles.side}>{t('common.approx', { value: formatMoney(approxBrlCents, 'BRL', locale) })}</span>
+        approxCents !== null && (
+          <span className={styles.side}>{t('common.approx', { value: formatMoney(approxCents, 'BRL', locale) })}</span>
         )
       )}
     </div>

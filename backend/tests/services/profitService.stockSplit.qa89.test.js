@@ -89,22 +89,22 @@ describe('computeRealProfit com stockBreakdown', () => {
     expect(b.stockUsdCents).toBe(a.stockUsdCents);
     expect(b.realProfitUsdCents).toBe(a.realProfitUsdCents);
     expect(b.estimatedParts).toEqual(a.estimatedParts);
-    expect(b.approxBrl).toEqual(a.approxBrl);
+    expect(b.approx).toEqual(a.approx);
     const { forSale, offSale } = b.stockBreakdown;
     expect(forSale.usdCents + offSale.usdCents).toBe(b.stockUsdCents);
-    expect(forSale).toEqual({ usdCents: 1000, estimated: false, approxBrl: 5000, count: 1 });
-    expect(offSale).toEqual({ usdCents: 900, estimated: true, approxBrl: 4500, count: 2 });
+    expect(forSale).toEqual({ usdCents: 1000, estimated: false, approx: 5000, count: 1 });
+    expect(offSale).toEqual({ usdCents: 900, estimated: true, approx: 4500, count: 2 });
   });
 
-  test('sem cotação: approxBrl nulo nas duas partes, USD continua', () => {
+  test('sem cotação: approx nulo nas duas partes, USD continua', () => {
     const r = computeRealProfit({ stockItems: [stock(1000), holding(400)], settings: { usdBrlRate: null } });
-    expect(r.stockBreakdown.forSale).toMatchObject({ usdCents: 1000, approxBrl: null });
-    expect(r.stockBreakdown.offSale).toMatchObject({ usdCents: 400, approxBrl: null });
+    expect(r.stockBreakdown.forSale).toMatchObject({ usdCents: 1000, approx: null });
+    expect(r.stockBreakdown.offSale).toMatchObject({ usdCents: 400, approx: null });
   });
 
   test('sem itens: partes zeradas', () => {
     const r = computeRealProfit({ stockItems: [], settings });
-    expect(r.stockBreakdown.forSale).toEqual({ usdCents: 0, estimated: false, approxBrl: 0, count: 0 });
-    expect(r.stockBreakdown.offSale).toEqual({ usdCents: 0, estimated: false, approxBrl: 0, count: 0 });
+    expect(r.stockBreakdown.forSale).toEqual({ usdCents: 0, estimated: false, approx: 0, count: 0 });
+    expect(r.stockBreakdown.offSale).toEqual({ usdCents: 0, estimated: false, approx: 0, count: 0 });
   });
 });

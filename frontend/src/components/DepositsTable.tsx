@@ -35,7 +35,7 @@ export default function DepositsTable({ deposits, onEdit, onDelete }: Props) {
               <td className={styles.date}>{formatDate(deposit.depositedAt, locale)}</td>
               <td className={styles.amount}>
                 {/* Valor creditado em US$ com "≈ R$" (tudo calculado no backend). Legado: "≈ US$" + selo + R$ gravado. */}
-                <MoneyApprox cents={deposit.amountUsdCents} estimated={deposit.estimated} approxCents={deposit.legacy ? null : deposit.approxBrlCents} />
+                <MoneyApprox cents={deposit.amountUsdCents} estimated={deposit.estimated} approxCents={deposit.legacy ? null : deposit.approxCents} />
                 {!deposit.legacy && deposit.feeCents !== null && deposit.feeCents !== undefined && deposit.amountStoreCents !== null && (
                   <>
                     <br />

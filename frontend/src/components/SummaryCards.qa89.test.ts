@@ -27,7 +27,7 @@ describe('SummaryCards 8.9', () => {
     expect(translate(ptBR, 'profit.summary.stock')).toBe('Estoque (pelo custo)');
     expect(translate(en, 'profit.summary.stock')).toBe('Stock (at cost)');
     expect(source).toMatch(/t\('profit\.summary\.stock'\)/);
-    expect(source).toMatch(/amount\(data\.stockUsdCents, data\.approxBrl\.stock, data\.estimatedParts\.stock\)/);
+    expect(source).toMatch(/amount\(data\.stockUsdCents, data\.approx\.stock, data\.estimatedParts\.stock\)/);
   });
 
   test('os dois cards novos vêm depois do de estoque, nesta ordem, e antes do "já sacado vs. colocado"', () => {
@@ -43,8 +43,8 @@ describe('SummaryCards 8.9', () => {
   });
 
   test('os cards novos usam o breakdown do backend (US$ com ≈ e ≈ R$ abaixo)', () => {
-    expect(source).toContain('amount(data.stockBreakdown.forSale.usdCents, data.stockBreakdown.forSale.approxBrl, data.stockBreakdown.forSale.estimated)');
-    expect(source).toContain('amount(data.stockBreakdown.offSale.usdCents, data.stockBreakdown.offSale.approxBrl, data.stockBreakdown.offSale.estimated)');
+    expect(source).toContain('amount(data.stockBreakdown.forSale.usdCents, data.stockBreakdown.forSale.approx, data.stockBreakdown.forSale.estimated)');
+    expect(source).toContain('amount(data.stockBreakdown.offSale.usdCents, data.stockBreakdown.offSale.approx, data.stockBreakdown.offSale.estimated)');
   });
 
   test('as invalidações de holding refrescam o resumo mas não aportes, saques, saldos nem conferências', async () => {

@@ -5,7 +5,7 @@ const { toUsdCents } = require('./currencyService');
 const { roundCents } = require('./fees/rounding');
 const { turnaroundDaysOf, soldWhileOffSale } = require('./inventoryAgingService');
 const { computeSaleProfitUsdCents, buildSaleInfo } = require('./profitService');
-const { approxCounterpart } = require('./currencyService');
+const { approxCounterpart, displayCurrencyOf } = require('./currencyService');
 const { EMPTY_COST_INDEX } = require('./operations/costService');
 
 function normalizeName(name) {
@@ -84,18 +84,19 @@ function buildStatsIndex(items, { costIndex = EMPTY_COST_INDEX } = {}) {
   return index;
 }
 
-// Resumo das vendas já filtradas (D126). Tudo em USD com a cotação gravada de cada venda; "≈ R$" pela cotação atual.
-function computeSalesSummary(items, { usdBrlRate = null, costIndex = EMPTY_COST_INDEX } = {}) {
+// Resumo das vendas já filtradas (D126). Tudo em USD com a cotação gravada de cada venda; "≈" na moeda de conversão pela cotação atual.
+// `fx`: contexto de conversão ({ displayCurrency, rates }) ou, no legado, a cotação do BRL.
+function computeSalesSummary(items, { fx = null, costIndex = EMPTY_COST_INDEX } = {}) {
   const sold = items.filter((item) => item.status === 'VENDIDO');
   const withTurnover = sold.filter((item) => !soldWhileOffSale(item));
-  const infos = sold.map((item) => buildSaleInfo(item, usdBrlRate, { inheritedUsdCents: costIndex.inheritedUsdCents(item) }));
+  const infos = sold.map((item) => buildSaleInfo(item, fx, { inheritedUsdCents: costIndex.inheritedUsdCents(item) }));
   const sum = (pick) => infos.reduce((acc, info) => acc + pick(info), 0);
   const totalSalePriceUsdCents = sum((i) => i.salePriceUsdCents);
   const totalNetReceivedUsdCents = sum((i) => i.netReceivedUsdCents);
   const totalPurchaseCostUsdCents = sum((i) => i.purchaseCostUsdCents);
   const totalProfitUsdCents = totalNetReceivedUsdCents - totalPurchaseCostUsdCents;
   const approx = (cents) => {
-    const r = approxCounterpart(cents, 'USD', usdBrlRate);
+    const r = approxCounterpart(cents, 'USD', fx);
     return r ? r.cents : null;
   };
   return {
@@ -108,7 +109,8 @@ function computeSalesSummary(items, { usdBrlRate = null, costIndex = EMPTY_COST_
       ? Math.round(mean(withTurnover.map((item) => turnaroundDaysOf(item))) * 10) / 10
       : null,
     soldWithFxCount: infos.filter((i) => i.usesRecordedFx).length,
-    approxBrl: {
+    approxCurrency: displayCurrencyOf(fx),
+    approx: {
       totalSalePrice: approx(totalSalePriceUsdCents),
       totalNetReceived: approx(totalNetReceivedUsdCents),
       totalProfit: approx(totalProfitUsdCents),

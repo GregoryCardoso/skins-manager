@@ -51,7 +51,20 @@ export interface CatalogRefreshResult extends CatalogStatus {
 export type FxRefreshSource = 'AWESOMEAPI' | 'PTAX';
 export type FxRateSource = 'MANUAL' | FxRefreshSource;
 
+// Cotação de uma moeda (D369, 11.2): "unidades da moeda por 1 US$". As telas que a usam chegam na 11.3.
+export interface FxRateEntry {
+  currency: string;
+  rate: number | null;
+  source: FxRateSource | null;
+  refreshSource: FxRefreshSource;
+  quotedAt: string | null;
+  updatedAt: string;
+}
 export interface Settings {
+  // Moeda de conversão (D369, 11.2) e cotações por moeda; `usdBrlRate*` continuam, derivados do BRL, até o fim da 11.3.
+  displayCurrency?: string;
+  fxRates?: FxRateEntry[];
+  requiredFxCurrencies?: string[];
   usdBrlRate: number | null;
   usdBrlRateUpdatedAt: string | null;
   // Origem da cotação (null = nunca definida), data/hora da cotação na fonte (nula com origem MANUAL) e fonte do botão.
@@ -75,6 +88,7 @@ export interface Settings {
   updatedAt: string;
 }
 export interface PreferencesPatch {
+  displayCurrency?: string;
   theme?: ThemeChoice;
   language?: Language;
   inventoryView?: InventoryView;
@@ -177,7 +191,7 @@ export interface SaleInfo {
   inheritedCostUsdCents: number;
   fxUsed: { sale: number | null; purchase: number | null };
   usesRecordedFx: boolean;
-  approxBrl: {
+  approx: {
     salePrice: number | null;
     netReceived: number | null;
     purchaseCost: number | null;
@@ -330,7 +344,7 @@ export interface MarketValue {
   missing: string[];
   basis: 'NAME';
   isEstimated: true;
-  approxBrl: { marketValue: number | null; unrealized: number | null; unrealizedNet: number | null };
+  approx: { marketValue: number | null; unrealized: number | null; unrealizedNet: number | null };
 }
 
 // Soma do estoque de um grupo (ou totais do resumo).
@@ -348,7 +362,7 @@ export interface MarketValueTotals {
   staleUnits: number;
   unitCount: number;
   isComplete?: boolean;
-  approxBrl: { marketValue: number | null; unrealized: number | null; unrealizedNet: number | null };
+  approx: { marketValue: number | null; unrealized: number | null; unrealizedNet: number | null };
 }
 
 export interface MarketValueSummary {
@@ -571,7 +585,7 @@ export interface ItemGroup {
   totalCostUsdCents: number;
   avgCostUsdCents: number;
   costUsesRecordedFx: boolean;
-  approxBrl: { totalCostCents: number; avgCostCents: number } | null;
+  approx: { totalCostCents: number; avgCostCents: number } | null;
   // Unidades em estoque do grupo com algum componente (10.1); fora da chave do agrupamento.
   componentUnits: number;
   // Valor de mercado do estoque inteiro do grupo (10.5).
@@ -628,7 +642,7 @@ export interface SalesSummary {
   totalProfitUsdCents: number;
   avgTurnaroundDays: number | null;
   soldWithFxCount: number;
-  approxBrl: { totalSalePrice: number | null; totalNetReceived: number | null; totalProfit: number | null };
+  approx: { totalSalePrice: number | null; totalNetReceived: number | null; totalProfit: number | null };
 }
 
 export interface SalesList {
@@ -714,7 +728,7 @@ export interface Deposit {
   // Valor em US$ e "≈ R$" calculados pelo backend (nulos sem cotação); estimated = houve conversão R$ -> US$.
   // Desde a 9.6 é o "total colocado": creditado + taxa.
   amountUsdCents: number | null;
-  approxBrlCents: number | null;
+  approxCents: number | null;
   estimated: boolean;
   createdAt: string;
   updatedAt: string;
@@ -723,7 +737,7 @@ export interface Deposit {
 export interface DepositList {
   deposits: Deposit[];
   totals: {
-    count: number; legacyCount: number; amountUsdCents: number | null; approxBrlCents: number | null; estimated: boolean;
+    count: number; legacyCount: number; amountUsdCents: number | null; approxCents: number | null; estimated: boolean;
     // Taxas de aporte informadas (US$) e quantos aportes não informaram a taxa (9.6).
     feeCents?: number; feeMissingCount?: number;
   };
@@ -760,7 +774,7 @@ export interface Withdrawal {
   legacyWithoutStore: boolean;
   // Líquido em US$ e "≈ R$" calculados pelo backend (nulos sem cotação); estimated = houve conversão para US$.
   amountUsdCents: number | null;
-  approxBrlCents: number | null;
+  approxCents: number | null;
   estimated: boolean;
   createdAt: string;
   updatedAt: string;
@@ -773,7 +787,7 @@ export interface WithdrawalList {
     legacyCount: number;
     withoutFeeCount: number;
     netUsdCents: number | null;
-    approxBrlCents: number | null;
+    approxCents: number | null;
     estimated: boolean;
   };
 }
@@ -922,7 +936,7 @@ export interface StoreBalanceCheckPreview {
   computedCents: number;
   differenceCents: number;
   differenceUsdCents: number | null;
-  differenceApproxBrlCents: number | null;
+  differenceApproxCents: number | null;
   estimated: boolean;
 }
 
@@ -932,7 +946,7 @@ export interface PendingBalance {
   nextReleaseAt: string | null;
   // Em US$ (nulo: loja em R$ sem cotação) e "≈ R$" (em loja BRL, o próprio valor nativo); tudo vem do backend (D229).
   usdCents: number | null;
-  approxBrlCents: number | null;
+  approxCents: number | null;
   // true se a parcela teve conversão R$ -> US$ (loja BRL com valor > 0).
   estimated: boolean;
 }
@@ -958,7 +972,7 @@ export interface StoreBalanceSummary {
   breakdown: StoreBalanceBreakdown;
   availableCents: number;
   availableUsdCents: number | null;
-  availableApproxBrlCents: number | null;
+  availableApproxCents: number | null;
   availableEstimated: boolean;
   negative: boolean;
   pending: PendingBalance;
@@ -977,7 +991,7 @@ export interface CurrentStoreBalances {
     availableEstimated: boolean;
     pendingEstimated: boolean;
     nonWithdrawableEstimated: boolean;
-    approxBrl: {
+    approx: {
       available: number | null;
       pending: number | null;
       nonWithdrawable: number | null;
@@ -1002,7 +1016,7 @@ export interface ProfitWarning {
 export interface StockPart {
   usdCents: number | null;
   estimated: boolean;
-  approxBrl: number | null;
+  approx: number | null;
   count: number;
 }
 
@@ -1030,7 +1044,7 @@ export interface ProfitSummary {
     stock: boolean;
   };
   // "≈ R$" de cada total, calculado no backend (nulo sem cotação).
-  approxBrl: {
+  approx: {
     deposits: number | null;
     withdrawals: number | null;
     platformBalance: number | null;
@@ -1039,7 +1053,7 @@ export interface ProfitSummary {
     realProfit: number | null;
   };
   // Perdas por consumo (10.4): terminais recusados; informativo, fora da fórmula do lucro real.
-  consumptionLosses?: { usdCents: number; estimated: boolean; count: number; approxBrl: number | null };
+  consumptionLosses?: { usdCents: number; estimated: boolean; count: number; approx: number | null };
   withdrawnVsDeposited: { withdrawnUsdCents: number | null; depositedUsdCents: number | null; ratio: number | null };
   balancesByStore: StoreBalanceSummary[];
   counts: {

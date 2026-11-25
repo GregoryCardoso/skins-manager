@@ -75,6 +75,7 @@ function runDevSeed({ now = new Date(), allowMemory = false, realDbPaths = devDb
   const sync = catalogService.syncBundledCatalog({ now });
   if (sync.error) throw fail(`Não foi possível importar o catálogo embutido: ${sync.error.message}`);
   settingsService.updateFxRate(data.DEV_FX_RATE, { now });
+  settingsService.updatePreferences({ displayCurrency: 'BRL' }, { now }); // os dados de exemplo são em R$ (como os bancos existentes)
 
   const ctx = { now, stores: Store.findAll(), deps: { CatalogItem, normalizeSearchText } };
   const created = [];

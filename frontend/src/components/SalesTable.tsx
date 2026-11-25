@@ -119,7 +119,7 @@ function SaleRow({ item, stores, onEdit, onUnsell, onDelete, onHistory, highligh
             cents={item.purchasePriceCents}
             currency={item.purchaseCurrency}
             usdCents={info.purchaseCostUsdCents}
-            approxBrlCents={info.approxBrl.purchaseCost}
+            approxCents={info.approx.purchaseCost}
             rateNote={info.fxUsed.purchase !== null ? formatRate(info.fxUsed.purchase, locale) : null}
           />
         ) : formatMoney(item.purchasePriceCents, item.purchaseCurrency, locale)}
@@ -130,7 +130,7 @@ function SaleRow({ item, stores, onEdit, onUnsell, onDelete, onHistory, highligh
             cents={item.salePriceCents}
             currency={saleCurrency}
             usdCents={info.salePriceUsdCents}
-            approxBrlCents={info.approxBrl.salePrice}
+            approxCents={info.approx.salePrice}
             rateNote={saleRateNote}
           />
         ) : t('common.none')}
@@ -142,7 +142,7 @@ function SaleRow({ item, stores, onEdit, onUnsell, onDelete, onHistory, highligh
               cents={item.netReceivedCents}
               currency={saleCurrency}
               usdCents={info.netReceivedUsdCents}
-              approxBrlCents={info.approxBrl.netReceived}
+              approxCents={info.approx.netReceived}
             />
             {item.netReceivedManual && <span className={styles.muted}>{t('sales.manualNet')}</span>}
             <SaleReleaseNote item={item} />
@@ -156,7 +156,7 @@ function SaleRow({ item, stores, onEdit, onUnsell, onDelete, onHistory, highligh
               cents={profitUsd}
               currency="USD"
               usdCents={profitUsd}
-              approxBrlCents={info.approxBrl.profit}
+              approxCents={info.approx.profit}
               signed
               colorBySign
             />

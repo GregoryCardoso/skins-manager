@@ -28,7 +28,7 @@ interface Props extends UnitRowHandlers {
 
 const COLUMNS = 8;
 
-function GroupMoney({ group, cents, approxBrlCents }: { group: ItemGroup; cents: number; approxBrlCents: number | null }) {
+function GroupMoney({ group, cents, approxCents }: { group: ItemGroup; cents: number; approxCents: number | null }) {
   const t = useT();
   const locale = useLocale();
   const main = formatMoney(cents, 'USD', locale);
@@ -37,8 +37,8 @@ function GroupMoney({ group, cents, approxBrlCents }: { group: ItemGroup; cents:
       <span className={groupStyles.moneyMain}>{group.costUsesRecordedFx ? t('common.approx', { value: main }) : main}</span>
       {/* A dica do `title` não chega ao teclado nem ao leitor de tela (revisão da 8.8, item 6). */}
       {group.costUsesRecordedFx && <span className={groupStyles.srOnly}>{t('inventory.group.convertedCost')}</span>}
-      {approxBrlCents !== null && (
-        <small className={groupStyles.moneySide}>{t('common.approx', { value: formatMoney(approxBrlCents, 'BRL', locale) })}</small>
+      {approxCents !== null && (
+        <small className={groupStyles.moneySide}>{t('common.approx', { value: formatMoney(approxCents, 'BRL', locale) })}</small>
       )}
     </div>
   );
@@ -156,10 +156,10 @@ function GroupRow({
           </div>
         </td>
         <td className={styles.nowrap}>
-          <GroupMoney group={group} cents={group.avgCostUsdCents} approxBrlCents={group.approxBrl?.avgCostCents ?? null} />
+          <GroupMoney group={group} cents={group.avgCostUsdCents} approxCents={group.approx?.avgCostCents ?? null} />
         </td>
         <td className={styles.nowrap}>
-          <GroupMoney group={group} cents={group.totalCostUsdCents} approxBrlCents={group.approxBrl?.totalCostCents ?? null} />
+          <GroupMoney group={group} cents={group.totalCostUsdCents} approxCents={group.approx?.totalCostCents ?? null} />
         </td>
         <td><GroupMarketCell totals={group.marketValue} /></td>
         <td><GroupUnrealizedCell totals={group.marketValue} /></td>

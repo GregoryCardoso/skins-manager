@@ -324,7 +324,7 @@ describe('listagem', () => {
     const a = (await post(body({ amountStoreCents: 1000, feeCents: 0 }))).body.data;
     await post(body({ amountStoreCents: 2500, feeCents: 500 }));
     legacy({ amountBrlCents: 7000 }); // 7000 / 5 = 1400
-    const totals = async () => { const t = (await list()).totals; return [t.count, t.netUsdCents, t.approxBrlCents]; };
+    const totals = async () => { const t = (await list()).totals; return [t.count, t.netUsdCents, t.approxCents]; };
     expect(await totals()).toEqual([3, 1000 + 2000 + 1400, 22000]);
     await patch(a.id, { amountStoreCents: 1500 });
     expect(await totals()).toEqual([3, 1500 + 2000 + 1400, 24500]);
@@ -365,7 +365,7 @@ describe('saque antigo sem loja', () => {
     const data = await list();
     expect(data.withdrawals).toHaveLength(1);
     expect(data.withdrawals[0].legacyWithoutStore).toBe(true);
-    expect(data.totals).toEqual({ count: 1, legacyCount: 1, withoutFeeCount: 0, netUsdCents: null, approxBrlCents: null, estimated: true });
+    expect(data.totals).toEqual({ count: 1, legacyCount: 1, withoutFeeCount: 0, netUsdCents: null, approxCents: null, approxCurrency: 'BRL', estimated: true });
     expect((await request(app).delete(`/api/withdrawals/${old.id}`)).status).toBe(200);
   });
 

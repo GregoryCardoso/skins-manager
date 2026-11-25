@@ -3,7 +3,7 @@
 // Custo efetivo (D355, D362 item 3; 2.2.3): o custo próprio da unidade (o da compra, na cotação gravada, 2.9) mais o que ela recebeu
 // das unidades consumidas por transformações ativas. Calculado na hora, nunca gravado. Funções puras: recebem os itens, as operações
 // e os vínculos já carregados. Sem nenhuma operação, os números são idênticos aos de `purchase_price_cents` lido direto.
-const { toUsdBase } = require('../currencyService');
+const { toUsdBase, isValidFxRate } = require('../currencyService');
 
 const isNil = (v) => v === null || v === undefined;
 const BP_TOTAL = 10000;
@@ -20,7 +20,8 @@ function ownCostUsd(item) {
   let usdCents = 0;
   let estimated = false;
   for (const part of ownCostParts(item)) {
-    const base = toUsdBase(part.cents, part.currency, part.fxRate);
+    // Cotação gravada na compra, da moeda da parte (a moeda de conversão não importa aqui: só o valor em USD é usado).
+    const base = toUsdBase(part.cents, part.currency, { displayCurrency: 'USD', rates: isValidFxRate(part.fxRate) ? { [part.currency]: part.fxRate } : {} });
     if (base.estimated) estimated = true;
     usdCents = usdCents === null || base.usdCents === null ? null : usdCents + base.usdCents; // nulo: BRL sem cotação gravada (salvaguarda)
   }

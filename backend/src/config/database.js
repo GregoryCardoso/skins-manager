@@ -158,7 +158,7 @@ function runMigrations(db, migrations = MIGRATIONS, { dbPath = ':memory:', now =
     if (needsFkOff) db.pragma('foreign_keys = OFF');
     try {
       db.transaction(() => {
-        migration.up(db);
+        migration.up(db, { initialVersion: current }); // `current` = versão antes de qualquer migração desta execução (0 = banco novo)
         if (needsFkOff) {
           const violations = db.pragma('foreign_key_check');
           if (violations.length > 0) throw new Error(`A migração ${migration.version} violou chaves estrangeiras.`);

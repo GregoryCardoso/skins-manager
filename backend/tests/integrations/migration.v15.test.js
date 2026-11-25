@@ -26,7 +26,7 @@ test('v15 sobre um banco v14 com lotes: a coluna nasce nula e nada mais muda; o 
 
   const db = openDatabase(dbPath, { now: new Date('2026-11-23T12:00:00.000Z') });
   try {
-    expect(db.pragma('user_version', { simple: true })).toBe(23);
+    expect(db.pragma('user_version', { simple: true })).toBe(24);
     const after = db.prepare('SELECT * FROM import_batches').all();
     expect(after.map(({ previous_trades_cutoff_at: previous, previous_transactions_cutoff_at: previousTx, components_filled_count: _f, components_skipped_count: _s, ...rest }) => { expect(previous).toBeNull(); return rest; })).toEqual(before);
   } finally {

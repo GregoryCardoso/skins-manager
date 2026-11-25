@@ -66,9 +66,42 @@ const FX_MIN_RATE = 1;
 const FX_MAX_RATE = 50;
 const FX_MAX_RESPONSE_BYTES = 64 * 1024;
 const AWESOMEAPI_URL = 'https://economia.awesomeapi.com.br/json/last/USD-BRL';
+const AWESOMEAPI_LAST_URL_PREFIX = 'https://economia.awesomeapi.com.br/json/last/USD-'; // + código da moeda (11.2)
 const AWESOMEAPI_TIMEOUT_MS = 25000;
 const FX_REFRESH_SOURCES = Object.freeze(['AWESOMEAPI', 'PTAX']); // fx_refresh_source
 const FX_RATE_SOURCES = Object.freeze(['MANUAL', 'PTAX', 'AWESOMEAPI']); // usd_brl_rate_source
+
+// Moedas (D369, Adendo 1, 11.2). Lista única das 17 moedas de conversão (e, a partir da 11.4, das lojas). A moeda base é sempre USD.
+const CURRENCIES = Object.freeze(['USD', 'BRL', 'EUR', 'RUB', 'TRY', 'CNY', 'PLN', 'UAH', 'JPY', 'KRW', 'GBP', 'KZT', 'CAD', 'AUD', 'MXN', 'ARS', 'CLP']);
+// Moedas sem casas decimais (Intl.NumberFormat(...).resolvedOptions().maximumFractionDigits = 0), fixadas aqui. O valor continua
+// em "centavos" (1/100 da unidade); nelas a unidade mínima é 100 centavos.
+const ZERO_DECIMAL_CURRENCIES = Object.freeze(['JPY', 'KRW', 'CLP']);
+// Moeda de conversão padrão de uma instalação nova (A2). Os bancos existentes recebem BRL na migração v024.
+const DEFAULT_DISPLAY_CURRENCY = 'USD';
+// Pares USD-XXX da AwesomeAPI (economia.awesomeapi.com.br). VERIFICADO em 2026-11-25 com GET /json/available e GET /json/last/USD-XXX:
+// as 16 moedas não-USD existem e responderam com code USD, codein igual à moeda, `ask`, `bid` e `timestamp`. Observações: UAH e KZT
+// têm spread grande entre `bid` e `ask` (a venda, `ask`, é a usada, como no BRL); CNY pode ter a data do dia anterior. Moeda fora desta
+// lista não tem atualização automática (FX_SOURCE_NOT_SUPPORTED) e fica só manual (E-P3-Q16).
+const AWESOMEAPI_PAIRS = Object.freeze(['BRL', 'EUR', 'RUB', 'TRY', 'CNY', 'PLN', 'UAH', 'JPY', 'KRW', 'GBP', 'KZT', 'CAD', 'AUD', 'MXN', 'ARS', 'CLP']);
+// Faixa de sanidade da cotação ("unidades da moeda por 1 US$") por moeda. O BRL mantém [1, 50] (FX_MIN_RATE/FX_MAX_RATE).
+const FX_RATE_BOUNDS = Object.freeze({
+  BRL: Object.freeze({ min: 1, max: 50 }),
+  EUR: Object.freeze({ min: 0.2, max: 5 }),
+  RUB: Object.freeze({ min: 10, max: 1000 }),
+  TRY: Object.freeze({ min: 1, max: 500 }),
+  CNY: Object.freeze({ min: 1, max: 30 }),
+  PLN: Object.freeze({ min: 0.5, max: 30 }),
+  UAH: Object.freeze({ min: 5, max: 500 }),
+  JPY: Object.freeze({ min: 20, max: 2000 }),
+  KRW: Object.freeze({ min: 200, max: 20000 }),
+  GBP: Object.freeze({ min: 0.2, max: 5 }),
+  KZT: Object.freeze({ min: 50, max: 5000 }),
+  CAD: Object.freeze({ min: 0.5, max: 10 }),
+  AUD: Object.freeze({ min: 0.5, max: 10 }),
+  MXN: Object.freeze({ min: 3, max: 200 }),
+  ARS: Object.freeze({ min: 10, max: 100000 }),
+  CLP: Object.freeze({ min: 100, max: 10000 }),
+});
 
 // Backup (D150, D151).
 const BACKUP_MAX_BYTES = 100 * 1024 * 1024;
@@ -144,7 +177,13 @@ module.exports = Object.freeze({
   FX_MAX_RATE,
   FX_MAX_RESPONSE_BYTES,
   AWESOMEAPI_URL,
+  AWESOMEAPI_LAST_URL_PREFIX,
   AWESOMEAPI_TIMEOUT_MS,
+  CURRENCIES,
+  ZERO_DECIMAL_CURRENCIES,
+  DEFAULT_DISPLAY_CURRENCY,
+  AWESOMEAPI_PAIRS,
+  FX_RATE_BOUNDS,
   FX_REFRESH_SOURCES,
   FX_RATE_SOURCES,
   MAX_AMOUNT_CENTS,

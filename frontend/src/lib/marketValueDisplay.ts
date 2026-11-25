@@ -22,7 +22,7 @@ export function unitMarketCell(marketValue: MarketValue | null | undefined): Uni
     return {
       kind: 'OK',
       usdCents: marketValue.marketValueUsdCents,
-      brlCents: marketValue.approxBrl.marketValue,
+      brlCents: marketValue.approx.marketValue,
       pricedAt: marketValue.pricedAt,
       stale: marketValue.isStale,
       incomplete: !marketValue.isComplete,
@@ -57,7 +57,7 @@ export function unitUnrealizedCell(marketValue: MarketValue | null | undefined):
     return {
       kind: 'NET',
       cents: marketValue.unrealizedNetUsdCents,
-      brlCents: marketValue.approxBrl.unrealizedNet,
+      brlCents: marketValue.approx.unrealizedNet,
       sign: signOf(marketValue.unrealizedNetUsdCents),
       grossCents: marketValue.unrealizedUsdCents,
     };
@@ -82,7 +82,7 @@ export function groupMarketCell(totals: MarketValueTotals | null | undefined): G
   return {
     kind: 'OK',
     usdCents: totals.marketValueUsdCents,
-    brlCents: totals.approxBrl.marketValue,
+    brlCents: totals.approx.marketValue,
     pricedUnits: totals.pricedUnits,
     unitCount: totals.unitCount,
     partial: totals.pricedUnits < totals.unitCount,
@@ -102,7 +102,7 @@ export function groupUnrealizedCell(totals: MarketValueTotals | null | undefined
   return {
     kind: 'NET',
     cents: totals.unrealizedNetUsdCents,
-    brlCents: totals.approxBrl.unrealizedNet,
+    brlCents: totals.approx.unrealizedNet,
     sign: signOf(totals.unrealizedNetUsdCents),
     partial: totals.netUnits < totals.pricedUnits,
     grossCents: totals.unrealizedUsdCents,
@@ -126,9 +126,9 @@ export function tabSummary(totals: MarketValueTotals | null | undefined): TabSum
   const hasNet = totals.netUnits > 0;
   return {
     usdCents: totals.marketValueUsdCents,
-    brlCents: totals.approxBrl.marketValue,
+    brlCents: totals.approx.marketValue,
     netCents: hasNet ? totals.unrealizedNetUsdCents : null,
-    netBrlCents: hasNet ? totals.approxBrl.unrealizedNet : null,
+    netBrlCents: hasNet ? totals.approx.unrealizedNet : null,
     netSign: hasNet ? signOf(totals.unrealizedNetUsdCents) : null,
     pricedUnits: totals.pricedUnits,
     unitCount: totals.unitCount,
@@ -143,7 +143,7 @@ export type ProfitCardView =
 export function profitValueCard(totals: MarketValueTotals): ProfitCardView {
   if (totals.pricedUnits === 0) return { kind: 'NO_PRICE' };
   return {
-    kind: 'OK', usdCents: totals.marketValueUsdCents, brlCents: totals.approxBrl.marketValue,
+    kind: 'OK', usdCents: totals.marketValueUsdCents, brlCents: totals.approx.marketValue,
     pricedUnits: totals.pricedUnits, unitCount: totals.unitCount, staleUnits: totals.staleUnits,
   };
 }
@@ -158,7 +158,7 @@ export function profitUnrealizedCard(totals: MarketValueTotals): ProfitUnrealize
   if (totals.pricedUnits === 0) return { kind: 'NO_PRICE' };
   if (totals.netUnits === 0) return { kind: 'UNAVAILABLE', grossCents: totals.unrealizedUsdCents };
   return {
-    kind: 'NET', cents: totals.unrealizedNetUsdCents, brlCents: totals.approxBrl.unrealizedNet, sign: signOf(totals.unrealizedNetUsdCents),
+    kind: 'NET', cents: totals.unrealizedNetUsdCents, brlCents: totals.approx.unrealizedNet, sign: signOf(totals.unrealizedNetUsdCents),
     partial: totals.netUnits < totals.pricedUnits, grossCents: totals.unrealizedUsdCents,
   };
 }

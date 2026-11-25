@@ -2,7 +2,7 @@
 
 // Visão agrupada do inventário (8.8, D271-D275). Funções puras, sem banco: recebem os itens já filtrados e ordenados.
 const { buildStatsKey } = require('./itemStatsService');
-const { approxBrlOf, isValidFxRate } = require('./currencyService');
+const { approxOf, displayCurrencyOf } = require('./currencyService');
 const { roundCents } = require('./fees/rounding');
 const { isOffSale, isInTradeLock, filterStagnant } = require('./inventoryAgingService');
 const { parseDate } = require('./dateUtils');
@@ -19,21 +19,22 @@ function groupByStatsKey(sortedItems) {
   return [...groups].map(([key, items]) => ({ key, items }));
 }
 
-// Quantidade e custos em USD (cotação gravada em cada compra; GANHEI conta 0). `approxBrl` nulo sem cotação válida.
-function summarizeGroupCost(items, usdBrlRate = null, { costIndex = EMPTY_COST_INDEX } = {}) {
+// Quantidade e custos em USD (cotação gravada em cada compra; GANHEI conta 0). `approx` nulo sem "≈" (sem cotação da moeda de conversão
+// ou com USD como moeda de conversão); `approxCurrency` é a moeda de conversão.
+function summarizeGroupCost(items, fx = null, { costIndex = EMPTY_COST_INDEX } = {}) {
   const quantity = items.length;
   // Custo efetivo (D362): inclui o dos componentes aplicados do estoque.
   const totalCostUsdCents = items.reduce((sum, item) => sum + costIndex.effectiveUsdCents(item), 0);
   const avgCostUsdCents = quantity ? roundCents(totalCostUsdCents / quantity, 'ROUND') : 0;
-  const hasRate = isValidFxRate(usdBrlRate);
   return {
     quantity,
     totalCostUsdCents,
     avgCostUsdCents,
     costUsesRecordedFx: items.some((item) => costIndex.effectiveOf(item).estimated),
-    approxBrl: hasRate
-      ? { totalCostCents: approxBrlOf(totalCostUsdCents, usdBrlRate), avgCostCents: approxBrlOf(avgCostUsdCents, usdBrlRate) }
-      : null,
+    approxCurrency: displayCurrencyOf(fx),
+    approx: approxOf(totalCostUsdCents, fx) === null
+      ? null
+      : { totalCostCents: approxOf(totalCostUsdCents, fx), avgCostCents: approxOf(avgCostUsdCents, fx) },
   };
 }
 

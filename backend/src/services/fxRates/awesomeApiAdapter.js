@@ -1,18 +1,21 @@
 'use strict';
 
-// Adapter da AwesomeAPI (D162): cotação comercial USD→BRL em tempo real, venda = `ask`. Sem chave.
+// Adapter da AwesomeAPI (D162, D369): cotação comercial USD→<moeda> em tempo real, venda = `ask`. Sem chave. O par `USD-<moeda>` e a
+// faixa de sanidade (FX_RATE_BOUNDS) vêm da moeda pedida (padrão BRL).
 // Funções puras (`parseAwesomeApiResponse`) e a rede injetável (`fetchFn`); nunca chama a rede por conta própria.
-const { AWESOMEAPI_URL, AWESOMEAPI_TIMEOUT_MS, FX_MIN_RATE, FX_MAX_RATE } = require('../../config/constants');
+const { AWESOMEAPI_LAST_URL_PREFIX, AWESOMEAPI_TIMEOUT_MS, AWESOMEAPI_PAIRS, FX_RATE_BOUNDS } = require('../../config/constants');
+const { ValidationError } = require('../../errors/AppError');
 const { fetchJson, invalidResponse } = require('./fxHttp');
 
 const SOURCE = 'AWESOMEAPI';
 const DECIMAL = /^\d+(\.\d+)?$/;
 
-// Número em texto decimal ("5.1254") dentro de FX_MIN_RATE..FX_MAX_RATE; senão null.
-function parseRate(value) {
-  if (typeof value !== 'string' || !DECIMAL.test(value.trim())) return null;
+// Número em texto decimal ("5.1254") dentro da faixa da moeda (FX_RATE_BOUNDS); senão null.
+function parseRate(value, currency) {
+  const bounds = FX_RATE_BOUNDS[currency];
+  if (!bounds || typeof value !== 'string' || !DECIMAL.test(value.trim())) return null;
   const rate = Number(value.trim());
-  return Number.isFinite(rate) && rate >= FX_MIN_RATE && rate <= FX_MAX_RATE ? rate : null;
+  return Number.isFinite(rate) && rate >= bounds.min && rate <= bounds.max ? rate : null;
 }
 
 // `timestamp` (segundos Unix, UTC) em texto ou número -> ISO; senão null.
@@ -34,22 +37,27 @@ function quotedAtFromCreateDate(value) {
 }
 
 // JSON da AwesomeAPI -> { buyRate, sellRate, quotedAt }; formato inesperado lança FX_INVALID_RESPONSE.
-function parseAwesomeApiResponse(json) {
-  const row = json !== null && typeof json === 'object' ? json.USDBRL : null;
+function parseAwesomeApiResponse(json, currency = 'BRL') {
+  const row = json !== null && typeof json === 'object' ? json[`USD${currency}`] : null;
   if (row === null || row === undefined || typeof row !== 'object') throw invalidResponse(SOURCE, 'formato');
-  if (row.code !== 'USD' || row.codein !== 'BRL') throw invalidResponse(SOURCE, 'par de moedas');
-  const sellRate = parseRate(row.ask);
+  if (row.code !== 'USD' || row.codein !== currency) throw invalidResponse(SOURCE, 'par de moedas');
+  const sellRate = parseRate(row.ask, currency);
   if (sellRate === null) throw invalidResponse(SOURCE, 'cotação de venda');
-  const buyRate = parseRate(row.bid);
+  const buyRate = parseRate(row.bid, currency);
   const quotedAt = quotedAtFromTimestamp(row.timestamp) || quotedAtFromCreateDate(row.create_date);
   if (!quotedAt) throw invalidResponse(SOURCE, 'data da cotação');
   return { buyRate, sellRate, quotedAt };
 }
 
 // Contrato comum das fontes: { source, rate, buyRate, sellRate, quotedAt }. `now` não é usado (cotação em tempo real).
-async function fetchLatestRate({ fetchFn = globalThis.fetch, now = new Date(), callTimeoutMs = AWESOMEAPI_TIMEOUT_MS } = {}) {
-  const json = await fetchJson(AWESOMEAPI_URL, { fetchFn, source: SOURCE, callTimeoutMs });
-  const quote = parseAwesomeApiResponse(json);
+async function fetchLatestRate({ currency = 'BRL', fetchFn = globalThis.fetch, now = new Date(), callTimeoutMs = AWESOMEAPI_TIMEOUT_MS } = {}) {
+  if (!AWESOMEAPI_PAIRS.includes(currency)) {
+    throw new ValidationError(`A moeda ${currency} não tem par na AwesomeAPI.`, 'FX_SOURCE_NOT_SUPPORTED', {
+      field: 'source', params: { currency, source: SOURCE },
+    });
+  }
+  const json = await fetchJson(`${AWESOMEAPI_LAST_URL_PREFIX}${currency}`, { fetchFn, source: SOURCE, callTimeoutMs });
+  const quote = parseAwesomeApiResponse(json, currency);
   return { source: SOURCE, rate: quote.sellRate, buyRate: quote.buyRate, sellRate: quote.sellRate, quotedAt: quote.quotedAt };
 }
 

@@ -52,10 +52,10 @@ describe('GET /api/store-balances/current: exemplo de D239 (sem saldo inicial)',
   test('CSFloat: disponível 10400, decomposição, pendente 1500 e última conferência há 6 dias', async () => {
     const csf = row(await current(), 'CSFloat');
     expect(csf).toMatchObject({
-      saleHoldDays: 7, availableCents: 10400, availableUsdCents: 10400, availableApproxBrlCents: 56494, allowsWithdrawal: true,
+      saleHoldDays: 7, availableCents: 10400, availableUsdCents: 10400, availableApproxCents: 56494, allowsWithdrawal: true,
       estimated: false, negative: false, warningCode: null, daysSinceLastCheck: 6,
       breakdown: { depositsCents: 15000, purchasesCents: 3000, withdrawalsCents: 4000, salesReleasedCents: 2500, adjustmentsCents: -100 },
-      pending: { cents: 1500, count: 1, nextReleaseAt: '2026-11-27T18:00:00.000Z', usdCents: 1500, approxBrlCents: 8148, estimated: false },
+      pending: { cents: 1500, count: 1, nextReleaseAt: '2026-11-27T18:00:00.000Z', usdCents: 1500, approxCents: 8148, estimated: false },
       ignored: { legacyDeposits: 0, currencyMismatch: 0 },
       lastCheck: { id: ids.check.id, kind: 'CHECK', balanceCents: 7900, computedCents: 8000, differenceCents: -100, adjustmentCents: -100, legacy: false },
     });
@@ -79,7 +79,8 @@ describe('GET /api/store-balances/current: exemplo de D239 (sem saldo inicial)',
       availableEstimated: false,
       pendingEstimated: false,
       nonWithdrawableEstimated: false,
-      approxBrl: { available: 56494, pending: 8148, nonWithdrawable: 0 },
+      approxCurrency: 'BRL',
+      approx: { available: 56494, pending: 8148, nonWithdrawable: 0 },
       nextReleaseAt: '2026-11-27T18:00:00.000Z',
       estimated: false,
     });
@@ -130,11 +131,11 @@ describe('GET /api/store-balances/current: exemplo de D239 (sem saldo inicial)',
   });
 
   test('sem cotação: loja USD segue exata, sem "≈ R$"; Steam (BRL) com saldo fica sem US$ e com FX_NOT_CONFIGURED', async () => {
-    getDb().prepare('UPDATE settings SET usd_brl_rate = NULL').run();
+    getDb().prepare('UPDATE fx_rates SET rate = NULL').run();
     Item.create(wonSkin({ name: 'steam', ...soldFields(storeId('Steam'), { soldAt: '2026-11-21T09:00:00.000Z', netReceivedCents: 4590, salePriceCents: 4590, saleCurrency: 'BRL', fxRateAtSale: 5.4321, saleHoldDaysApplied: 0 }) }), { now: D239_NOW });
     const data = await current();
-    expect(row(data, 'CSFloat')).toMatchObject({ availableUsdCents: 10400, availableApproxBrlCents: null, warningCode: null });
-    expect(row(data, 'Steam')).toMatchObject({ availableUsdCents: null, availableApproxBrlCents: 4590, warningCode: 'FX_NOT_CONFIGURED' });
+    expect(row(data, 'CSFloat')).toMatchObject({ availableUsdCents: 10400, availableApproxCents: null, warningCode: null });
+    expect(row(data, 'Steam')).toMatchObject({ availableUsdCents: null, availableApproxCents: 4590, warningCode: 'FX_NOT_CONFIGURED' });
     expect(data.totals.availableUsdCents).toBeNull();
     expect(data.usdBrlRate).toBeNull();
   });
@@ -219,7 +220,7 @@ describe('GET /check-preview e POST (conferência)', () => {
     expect(res.status).toBe(200);
     expect(res.body.data).toEqual({
       storeId: csf, currency: 'USD', recordedAt: '2026-11-17T12:00:00.000Z', balanceCents: 7900,
-      computedCents: 7900, differenceCents: 0, differenceUsdCents: 0, differenceApproxBrlCents: 0, estimated: false,
+      computedCents: 7900, differenceCents: 0, differenceUsdCents: 0, differenceApproxCents: 0, approxCurrency: 'BRL', estimated: false,
     });
     expect(rowCount()).toBe(before);
     const diff = (await preview(previewQuery({ balanceCents: 7000 }))).body.data;

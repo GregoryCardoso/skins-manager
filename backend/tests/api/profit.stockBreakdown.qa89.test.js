@@ -19,8 +19,8 @@ describe('GET /api/profit/summary: stockBreakdown', () => {
     Setting.update({ usdBrlRate: 5 }, { now: NOW });
     const data = await summary();
     expect(data.stockBreakdown).toEqual({
-      forSale: { usdCents: 0, estimated: false, approxBrl: 0, count: 0 },
-      offSale: { usdCents: 0, estimated: false, approxBrl: 0, count: 0 },
+      forSale: { usdCents: 0, estimated: false, approx: 0, count: 0 },
+      offSale: { usdCents: 0, estimated: false, approx: 0, count: 0 },
     });
   });
 
@@ -32,8 +32,8 @@ describe('GET /api/profit/summary: stockBreakdown', () => {
     await offSale(held.id);
     const data = await summary();
     expect(data.stockUsdCents).toBe(1800);
-    expect(data.stockBreakdown.forSale).toEqual({ usdCents: 800, estimated: false, approxBrl: 4000, count: 2 });
-    expect(data.stockBreakdown.offSale).toEqual({ usdCents: 1000, estimated: false, approxBrl: 5000, count: 1 });
+    expect(data.stockBreakdown.forSale).toEqual({ usdCents: 800, estimated: false, approx: 4000, count: 2 });
+    expect(data.stockBreakdown.offSale).toEqual({ usdCents: 1000, estimated: false, approx: 5000, count: 1 });
     expect(data.stockBreakdown.forSale.usdCents + data.stockBreakdown.offSale.usdCents).toBe(data.stockUsdCents);
     expect(data.counts.stockItems).toBe(3);
   });
@@ -52,13 +52,13 @@ describe('GET /api/profit/summary: stockBreakdown', () => {
     expect((await summary()).stockBreakdown).toEqual(before.stockBreakdown);
   });
 
-  test('sem cotação: approxBrl nulo nas duas partes e USD preservado', async () => {
+  test('sem cotação: approx nulo nas duas partes e USD preservado', async () => {
     const held = await create({ purchasePriceCents: 600 });
     await create({ purchasePriceCents: 200 });
     await offSale(held.id);
     const data = await summary();
-    expect(data.stockBreakdown.forSale).toMatchObject({ usdCents: 200, approxBrl: null, count: 1 });
-    expect(data.stockBreakdown.offSale).toMatchObject({ usdCents: 600, approxBrl: null, count: 1 });
+    expect(data.stockBreakdown.forSale).toMatchObject({ usdCents: 200, approx: null, count: 1 });
+    expect(data.stockBreakdown.offSale).toMatchObject({ usdCents: 600, approx: null, count: 1 });
   });
 
   test('item vendido não entra em nenhuma parte', async () => {

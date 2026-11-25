@@ -109,7 +109,7 @@ describe('consumidores do custo efetivo', () => {
     };
     expect(computeSaleProfitUsdCents(sold)).toBe(900);
     expect(computeSaleProfitUsdCents(sold, { inheritedUsdCents: 200 })).toBe(700);
-    expect(buildSaleInfo(sold, 5, { inheritedUsdCents: 200 })).toMatchObject({ purchaseCostUsdCents: 1200, ownCostUsdCents: 1000, inheritedCostUsdCents: 200, approxBrl: { profit: 3500 } });
+    expect(buildSaleInfo(sold, 5, { inheritedUsdCents: 200 })).toMatchObject({ purchaseCostUsdCents: 1200, ownCostUsdCents: 1000, inheritedCostUsdCents: 200, approx: { profit: 3500 } });
   });
 
   test('preço mínimo: partes na moeda da loja somam com CEIL; uma parte só é o cálculo de sempre', () => {

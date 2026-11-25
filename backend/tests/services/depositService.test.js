@@ -185,7 +185,7 @@ describe('buildDepositRecord: edição (registro mesclado)', () => {
 describe('depositBaseAmount (D225, D227)', () => {
   test('aporte novo em USD é exato e traz o "≈ R$"', () => {
     expect(depositBaseAmount({ storeId: 1, amountStoreCents: 9200, amountBrlCents: 1 }, CSFLOAT, 5.4321))
-      .toEqual({ usdCents: 9200, approxBrlCents: 49975, estimated: false });
+      .toEqual({ usdCents: 9200, approxCents: 49975, approxCurrency: 'BRL', estimated: false });
   });
 
   test('o valor pago em R$ informativo não altera o resultado', () => {
@@ -196,7 +196,7 @@ describe('depositBaseAmount (D225, D227)', () => {
 
   test('legado converte o valor em R$ (30000 / 5,4321 -> 5523, estimado)', () => {
     expect(depositBaseAmount({ storeId: null, amountStoreCents: null, amountBrlCents: 30000 }, null, 5.4321))
-      .toEqual({ usdCents: 5523, approxBrlCents: 30000, estimated: true });
+      .toEqual({ usdCents: 5523, approxCents: 30000, approxCurrency: 'BRL', estimated: true });
   });
 
   test('legado sem cotação -> usdCents nulo', () => {
@@ -207,7 +207,7 @@ describe('depositBaseAmount (D225, D227)', () => {
 describe('loja referenciada fora do mapa (não assume USD)', () => {
   test('depositBaseAmount: storeId sem loja -> usdCents e approx nulos', () => {
     const deposit = { storeId: 99, amountStoreCents: 9200, amountBrlCents: null };
-    expect(depositBaseAmount(deposit, null, 5.4321)).toEqual({ usdCents: null, approxBrlCents: null, estimated: false });
+    expect(depositBaseAmount(deposit, null, 5.4321)).toEqual({ usdCents: null, approxCents: null, approxCurrency: 'BRL', estimated: false });
     expect(depositBaseAmount(deposit, CSFLOAT, 5.4321).usdCents).toBe(9200);
   });
 });

@@ -75,7 +75,7 @@ function SummaryBody({ data }: { data: ProfitSummary }) {
         <div className={`${styles.card} ${styles.hero}`}>
           <span className={styles.label}>{t('profit.summary.realProfit')}</span>
           <span className={`${styles.value} ${styles.heroValue} ${tone}`}>
-            {amount(profit, data.approxBrl.realProfit, data.estimated)}
+            {amount(profit, data.approx.realProfit, data.estimated)}
           </span>
           <p className={styles.hint}>{t('profit.summary.realProfitHint')}</p>
           {pending !== null && pending > 0 && (
@@ -98,21 +98,21 @@ function SummaryBody({ data }: { data: ProfitSummary }) {
 
         <div className={styles.card}>
           <span className={styles.label}>{t('profit.summary.deposited')}</span>
-          <span className={styles.value}>{amount(data.depositsUsdCents, data.approxBrl.deposits, data.estimatedParts.deposits)}</span>
+          <span className={styles.value}>{amount(data.depositsUsdCents, data.approx.deposits, data.estimatedParts.deposits)}</span>
         </div>
         <div className={styles.card}>
           <span className={styles.label}>{t('profit.summary.withdrawn')}</span>
-          <span className={styles.value}>{amount(data.withdrawalsNetUsdCents, data.approxBrl.withdrawals, data.estimatedParts.withdrawals)}</span>
+          <span className={styles.value}>{amount(data.withdrawalsNetUsdCents, data.approx.withdrawals, data.estimatedParts.withdrawals)}</span>
         </div>
         <div className={styles.card}>
           <span className={styles.label}>{t('profit.summary.platformBalance')}</span>
           <span className={styles.value}>
-            {amount(data.platformBalanceUsdCents, data.approxBrl.platformBalance, data.estimatedParts.platformBalance)}
+            {amount(data.platformBalanceUsdCents, data.approx.platformBalance, data.estimatedParts.platformBalance)}
           </span>
         </div>
         <div className={styles.card}>
           <span className={styles.label}>{t('profit.summary.stock')}</span>
-          <span className={styles.value}>{amount(data.stockUsdCents, data.approxBrl.stock, data.estimatedParts.stock)}</span>
+          <span className={styles.value}>{amount(data.stockUsdCents, data.approx.stock, data.estimatedParts.stock)}</span>
         </div>
         {/* Valor de mercado e PnL não realizado (10.6): informativos, lêem a própria consulta e não entram no lucro real. */}
         <MarketValueCards />
@@ -120,13 +120,13 @@ function SummaryBody({ data }: { data: ProfitSummary }) {
         <div className={styles.card}>
           <span className={styles.label}>{t('profit.summary.stockForSale')}</span>
           <span className={styles.value}>
-            {amount(data.stockBreakdown.forSale.usdCents, data.stockBreakdown.forSale.approxBrl, data.stockBreakdown.forSale.estimated)}
+            {amount(data.stockBreakdown.forSale.usdCents, data.stockBreakdown.forSale.approx, data.stockBreakdown.forSale.estimated)}
           </span>
         </div>
         <div className={styles.card}>
           <span className={styles.label}>{t('profit.summary.stockOffSale')}</span>
           <span className={styles.value}>
-            {amount(data.stockBreakdown.offSale.usdCents, data.stockBreakdown.offSale.approxBrl, data.stockBreakdown.offSale.estimated)}
+            {amount(data.stockBreakdown.offSale.usdCents, data.stockBreakdown.offSale.approx, data.stockBreakdown.offSale.estimated)}
           </span>
         </div>
         <div className={styles.card}>
@@ -153,7 +153,7 @@ function SummaryBody({ data }: { data: ProfitSummary }) {
           <div className={styles.card}>
             <span className={styles.label}>{t('profit.summary.consumptionLosses')}</span>
             <span className={styles.value}>
-              {amount(data.consumptionLosses.usdCents, data.consumptionLosses.approxBrl, data.consumptionLosses.estimated)}
+              {amount(data.consumptionLosses.usdCents, data.consumptionLosses.approx, data.consumptionLosses.estimated)}
             </span>
             <p className={styles.hint}>{tPlural('profit.summary.consumptionLossesCount', data.consumptionLosses.count)}</p>
             <p className={styles.hint}>{t('profit.summary.consumptionLossesHint')}</p>

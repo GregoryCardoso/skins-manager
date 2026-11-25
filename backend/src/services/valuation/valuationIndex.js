@@ -5,7 +5,7 @@
 const MarketPrice = require('../../models/MarketPrice');
 const Integration = require('../../models/Integration');
 const Store = require('../../models/Store');
-const { approxBrlOf } = require('../currencyService');
+const { approxOf, displayCurrencyOf } = require('../currencyService');
 const { ACTIVE_VALUATION_SOURCE } = require('./valuationSources');
 const valuationService = require('./valuationService');
 
@@ -19,17 +19,18 @@ function loadPriceRows(source = ACTIVE_VALUATION_SOURCE) {
   return new Map(MarketPrice.listBySource(source).map((row) => [row.priceKey, row]));
 }
 
-const withApprox = (valuation, usdBrlRate) => ({
+const withApprox = (valuation, fx) => ({
   ...valuation,
-  approxBrl: {
-    marketValue: approxBrlOf(valuation.marketValueUsdCents, usdBrlRate),
-    unrealized: approxBrlOf(valuation.unrealizedUsdCents, usdBrlRate),
-    unrealizedNet: approxBrlOf(valuation.unrealizedNetUsdCents, usdBrlRate),
+  approxCurrency: displayCurrencyOf(fx),
+  approx: {
+    marketValue: approxOf(valuation.marketValueUsdCents, fx),
+    unrealized: approxOf(valuation.unrealizedUsdCents, fx),
+    unrealizedNet: approxOf(valuation.unrealizedNetUsdCents, fx),
   },
 });
 
-// Map itemId -> valuation (com `approxBrl`), só das unidades em estoque.
-function buildValuationIndex({ items, componentsByItemId = new Map(), catalogById = new Map(), costIndex, usdBrlRate = null, now = new Date(), rows, saleStore }) {
+// Map itemId -> valuation (com `approx`), só das unidades em estoque.
+function buildValuationIndex({ items, componentsByItemId = new Map(), catalogById = new Map(), costIndex, fx = null, now = new Date(), rows, saleStore }) {
   const priceRows = rows ?? loadPriceRows();
   const store = saleStore === undefined ? loadSaleStore() : saleStore;
   const priceOf = (key) => priceRows.get(key) ?? null;
@@ -39,13 +40,13 @@ function buildValuationIndex({ items, componentsByItemId = new Map(), catalogByI
     const valuation = valuationService.valueUnit({
       item, components: componentsByItemId.get(item.id) ?? [], priceOf, catalogById, costIndex, saleStore: store, now,
     });
-    if (valuation) index.set(item.id, withApprox(valuation, usdBrlRate));
+    if (valuation) index.set(item.id, withApprox(valuation, fx));
   }
   return index;
 }
 
 // Soma do estoque inteiro do grupo (como os custos da Revisão 27). `units`: itens em estoque do grupo.
-function groupValuation(units, index, usdBrlRate = null) {
+function groupValuation(units, index, fx = null) {
   const valuations = units.map((u) => index.get(u.id)).filter(Boolean);
   const totals = valuationService.summarize(valuations);
   const isComplete = totals.unpricedUnits === 0 && totals.notPriceableUnits === 0 && valuations.every((v) => v.status !== 'OK' || v.isComplete);
@@ -53,10 +54,11 @@ function groupValuation(units, index, usdBrlRate = null) {
     ...totals,
     isComplete,
     isEstimated: true,
-    approxBrl: {
-      marketValue: approxBrlOf(totals.marketValueUsdCents, usdBrlRate),
-      unrealized: approxBrlOf(totals.unrealizedUsdCents, usdBrlRate),
-      unrealizedNet: approxBrlOf(totals.unrealizedNetUsdCents, usdBrlRate),
+    approxCurrency: displayCurrencyOf(fx),
+    approx: {
+      marketValue: approxOf(totals.marketValueUsdCents, fx),
+      unrealized: approxOf(totals.unrealizedUsdCents, fx),
+      unrealizedNet: approxOf(totals.unrealizedNetUsdCents, fx),
     },
   };
 }
