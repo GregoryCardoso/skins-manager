@@ -21,7 +21,7 @@ const ENUMS: Record<string, string[]> = {
 
 const NEW_KEYS = [
   'common.dayCount.one', 'common.dayCount.other', 'common.approx', 'common.refresh',
-  'inventory.title', 'inventory.count', 'inventory.refresh', 'inventory.empty', 'inventory.emptyFiltered', 'inventory.clearFilters',
+  'inventory.title', 'inventory.itemCount.one', 'inventory.itemCount.other', 'inventory.refresh', 'inventory.empty', 'inventory.emptyFiltered', 'inventory.clearFilters',
   'inventory.loadError', 'inventory.primaryStore', 'inventory.otherStores', 'inventory.noPrice', 'inventory.ganhei',
   'inventory.informativeStore', 'inventory.legacy', 'inventory.sold', 'inventory.turnaround', 'inventory.inspect', 'inventory.inspectInvalid',
   ...['image', 'item', 'store', 'cost', 'days', 'tradeLock', 'minPrice', 'actions'].map((c) => `inventory.columns.${c}`),
@@ -66,7 +66,7 @@ describe.each([['pt-BR', ptBR], ['en', en]])('chaves da 4B.2 em %s', (_name, dic
     expect(get(dict, 'filters.stagnantOnly')).toContain('{days}');
     expect(get(dict, 'tradeLock.remaining')).toContain('{time}');
     expect(get(dict, 'tradeLock.until')).toContain('{date}');
-    expect(get(dict, 'inventory.count')).toContain('{count}');
+    expect(get(dict, 'inventory.itemCount.other')).toContain('{count}');
   });
 });
 
@@ -77,7 +77,7 @@ const SALES_KEYS = [
   ...['label', 'store', 'storeAll', 'inactive', 'period', 'from', 'to', 'sort', 'sortSoldAtDesc', 'sortSoldAtAsc', 'sortTurnaroundAsc', 'sortTurnaroundDesc', 'invalidRange'].map((k) => `salesFilters.${k}`),
   ...['ALL', 'LAST_7', 'LAST_30', 'LAST_90', 'THIS_MONTH', 'LAST_MONTH', 'THIS_YEAR', 'CUSTOM'].map((k) => `salesFilters.periods.${k}`),
   ...['label', 'sales', 'totalSold', 'totalNet', 'totalProfit', 'avgTurnaround', 'avgTurnaroundValue', 'usdNote', 'profitTitle'].map((k) => `salesSummary.${k}`),
-  ...['heading', 'title', 'soldCount', 'avgDaysToSell', 'avgPurchaseCost', 'avgCostUnits.one', 'avgCostUnits.other', 'avgSalePrice', 'avgProfit', 'none', 'fxNote', 'keyNote', 'daysValue'].map((k) => `history.${k}`),
+  ...['heading', 'title', 'soldCount', 'avgDaysToSell', 'avgPurchaseCost', 'avgCostUnits.one', 'avgCostUnits.other', 'avgSalePrice', 'avgProfit', 'none', 'fxNote', 'keyNote', 'daysValue.one', 'daysValue.other'].map((k) => `history.${k}`),
 ];
 
 describe.each([['pt-BR', ptBR], ['en', en]])('chaves da 4B.4 em %s', (_name, dict) => {

@@ -1,5 +1,6 @@
 // Lógica pura do formulário de venda (D117 + revisão D122). O cálculo do líquido é do backend
 // (`GET /stores/:id/sale-quote`); aqui só se decide visibilidade, rótulos e o corpo enviado.
+import { invalidMoneyKey } from '@/lib/currencies';
 import { localInputToIso } from '@/lib/dateInput';
 import { defaultRateFor } from '@/lib/itemForm';
 import { formatCentsInput, formatDecimalInput, parseDecimalInput, parseMoneyToCents } from '@/lib/numberInput';
@@ -106,7 +107,7 @@ export function buildSellBody(
   if (state.priceText.trim() === '') errors.salePriceCents = 'sellForm.priceRequired';
   else {
     priceCents = parseMoneyToCents(state.priceText, ctx.language, store?.currency);
-    if (priceCents === null || priceCents <= 0) errors.salePriceCents = 'itemForm.invalidMoney';
+    if (priceCents === null || priceCents <= 0) errors.salePriceCents = invalidMoneyKey(store?.currency);
   }
 
   const soldIso = state.soldAt.trim() === '' ? null : localInputToIso(state.soldAt);
@@ -121,7 +122,7 @@ export function buildSellBody(
   let netCents: number | null = null;
   if (state.netText.trim() !== '') {
     netCents = parseMoneyToCents(state.netText, ctx.language, store?.currency);
-    if (netCents === null || netCents <= 0) errors.netReceivedCents = 'itemForm.invalidMoney';
+    if (netCents === null || netCents <= 0) errors.netReceivedCents = invalidMoneyKey(store?.currency);
   }
 
   if (Object.keys(errors).length > 0 || !store || priceCents === null || soldIso === null) return { ok: false, errors };

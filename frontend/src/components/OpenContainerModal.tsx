@@ -12,7 +12,7 @@ import {
   applyCatalogChoice, buildCreateBody, effectiveCategory, fieldVisibility, initialCreateState, setTradeUnlockAt, visibleItemFields,
   type CatalogChoice, type FormErrors, type ItemFormState,
 } from '@/lib/itemForm';
-import { moneyInputMode } from '@/lib/currencies';
+import { invalidMoneyKey, moneyErrorParams, moneyInputMode } from '@/lib/currencies';
 import { formatDecimalInput, parseDecimalInput, parseMoneyToCents } from '@/lib/numberInput';
 import { queryKeys } from '@/lib/queryKeys';
 import { useInvalidate } from '@/lib/useInvalidate';
@@ -167,7 +167,7 @@ export default function OpenContainerModal({ item, stores, onClose, onDone, onGo
     if (isTerminal) body.decision = decision;
     if (buying) {
       const cents = parseMoneyToCents(priceText, locale, steamStore?.currency);
-      if (cents === null) next.paidPriceCents = t('itemForm.invalidMoney');
+      if (cents === null) next.paidPriceCents = tLoose(invalidMoneyKey(steamStore?.currency), moneyErrorParams(locale, steamStore?.currency));
       else body.paidPriceCents = cents;
       if (fxVisible) {
         const rate = parseDecimalInput(fxText, locale);

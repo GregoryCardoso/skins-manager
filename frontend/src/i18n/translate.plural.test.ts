@@ -85,3 +85,36 @@ describe('translate com o inglês como reserva (D369)', () => {
     expect(translate({}, 'nav.sales')).toBe('nav.sales');
   });
 });
+
+describe('chave zero (revisão de textos 11.6)', () => {
+  const PT = { n: { zero: 'Nenhuma venda', one: '{count} venda', other: '{count} vendas' } };
+  const RU = { n: { zero: 'Нет предметов', one: '{count} предмет', few: '{count} предмета', many: '{count} предметов', other: '{count} предмета' } };
+
+  test('contagem 0 usa zero em qualquer idioma (pt-BR classifica 0 como one; ru, como many)', () => {
+    expect(translatePlural(PT, 'n', 0, 'pt-BR')).toBe('Nenhuma venda');
+    expect(translatePlural(RU, 'n', 0, 'ru')).toBe('Нет предметов');
+    expect(translatePlural(PT, 'n', 0, 'en')).toBe('Nenhuma venda');
+  });
+
+  test('só o 0 usa zero; 0,5 e outros seguem as regras do idioma', () => {
+    expect(translatePlural(PT, 'n', 1, 'pt-BR')).toBe('1 venda');
+    expect(translatePlural(PT, 'n', 2, 'pt-BR')).toBe('2 vendas');
+    expect(translatePlural(PT, 'n', 0.5, 'pt-BR')).toBe('0.5 venda');
+  });
+
+  test('sem zero no dicionário, o 0 segue o plural do idioma (como antes)', () => {
+    expect(translatePlural({ n: { one: '{count} dia', other: '{count} dias' } }, 'n', 0, 'pt-BR')).toBe('0 dia');
+    expect(translatePlural({ n: { one: '{count} day', other: '{count} days' } }, 'n', 0, 'en')).toBe('0 days');
+  });
+
+  test('o zero do idioma base vale como reserva', () => {
+    expect(translatePlural({}, 'sales.count', 0, 'ru', undefined, en)).toBe('No sales');
+  });
+
+  test('textos reais: sales.count, inventory.itemCount e inventory.bulk.selected têm zero nos dois idiomas', () => {
+    expect(translatePlural(ptBR, 'sales.count', 0, 'pt-BR')).toBe('Nenhuma venda');
+    expect(translatePlural(en, 'sales.count', 0, 'en')).toBe('No sales');
+    expect(translatePlural(ptBR, 'inventory.itemCount', 0, 'pt-BR')).toBe('Nenhum item');
+    expect(translatePlural(en, 'inventory.bulk.selected', 0, 'en')).toBe('None selected');
+  });
+});

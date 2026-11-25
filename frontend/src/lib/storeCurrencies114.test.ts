@@ -130,7 +130,7 @@ describe('compra e venda em lojas de qualquer moeda', () => {
   test('preço de compra em JPY: inteiro; decimal é recusado; vai em centavos (x100) com a cotação do iene', () => {
     const base = { ...initialCreateState(ctx), freeMode: true, category: 'OUTRO' as const, name: 'Caixa', purchaseStoreId: 6, fxText: '150.5' };
     expect(buildCreateBody({ ...base, priceText: '1500' }, ctx)).toMatchObject({ ok: true, body: { purchasePriceCents: 150000, fxRateAtPurchase: 150.5 } });
-    expect(buildCreateBody({ ...base, priceText: '1500.5' }, ctx)).toMatchObject({ ok: false, errors: { purchasePriceCents: 'itemForm.invalidMoney' } });
+    expect(buildCreateBody({ ...base, priceText: '1500.5' }, ctx)).toMatchObject({ ok: false, errors: { purchasePriceCents: 'itemForm.invalidMoneyWhole' } });
   });
 
   test('editar item comprado em JPY mostra o preço sem casas', () => {
@@ -147,8 +147,8 @@ describe('compra e venda em lojas de qualquer moeda', () => {
     const onJpy = applySaleStore({ ...onEur, fxText: '' }, 6, ctx);
     expect(onJpy.fxText).toBe('150.5');
     expect(buildSellBody({ ...onJpy, priceText: '1050' }, ctx, null)).toMatchObject({ ok: true, body: { saleStoreId: 6, salePriceCents: 105000, fxRateAtSale: 150.5 } });
-    expect(buildSellBody({ ...onJpy, priceText: '1050.5' }, ctx, null)).toMatchObject({ ok: false, errors: { salePriceCents: 'itemForm.invalidMoney' } });
-    expect(buildSellBody({ ...onJpy, priceText: '1050', netText: '1000.5', netTouched: true }, ctx, null)).toMatchObject({ ok: false, errors: { netReceivedCents: 'itemForm.invalidMoney' } });
+    expect(buildSellBody({ ...onJpy, priceText: '1050.5' }, ctx, null)).toMatchObject({ ok: false, errors: { salePriceCents: 'itemForm.invalidMoneyWhole' } });
+    expect(buildSellBody({ ...onJpy, priceText: '1050', netText: '1000.5', netTouched: true }, ctx, null)).toMatchObject({ ok: false, errors: { netReceivedCents: 'itemForm.invalidMoneyWhole' } });
   });
 
   test('"Lançar compra" em loja EUR aceita a cotação; em JPY o preço é inteiro', () => {

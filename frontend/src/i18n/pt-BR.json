@@ -59,7 +59,7 @@
       "noRateManual": "Ainda não há cotação para {currency}. Informe em Configurações.",
       "previewError": "Não foi possível verificar a cotação: {reason}",
       "steamFeesZeroed": "Sem cotação de {currency}, a taxa fixa e a taxa mínima da Steam ficam zeradas; ajuste em Lojas.",
-      "steamFollow":"A loja Steam também passa a usar {currency}.",
+      "steamFollow": "A loja Steam também passa a usar {currency}.",
       "steamLocked": "Sua loja Steam tem lançamentos em {from}, que não podem ser convertidos. Ela continua em {from}.",
       "steamNewStore": "Criar uma nova loja Steam em {currency} para os próximos lançamentos",
       "steamNewStoreHint": "A atual é desativada e renomeada (por exemplo \"Steam ({from})\"). Nada é convertido nem apagado, e o saldo dela continua contando no seu lucro. A nova mantém as mesmas taxas e regras.",
@@ -317,13 +317,16 @@
   },
   "inventory": {
     "title": "Inventário",
-    "count": "{count} itens",
-    "countOne": "{count} item",
-    "groupCount": {
-      "one": "{count} item em {groups} grupo",
-      "other": "{count} itens em {groups} grupos",
-      "inOneGroup": "{count} itens em {groups} grupo"
+    "itemCount": {
+      "zero": "Nenhum item",
+      "one": "{count} item",
+      "other": "{count} itens"
     },
+    "groupsCount": {
+      "one": "{count} grupo",
+      "other": "{count} grupos"
+    },
+    "countInGroups": "{items} em {groups}",
     "view": {
       "label": "Visão",
       "grouped": "Agrupado",
@@ -337,10 +340,10 @@
       "tradeLocked": "{count} em trade lock (libera em {date})",
       "offSale": "{count} no holding",
       "stagnant": {
-        "one": "{count} agarrada",
-        "other": "{count} agarradas"
+        "one": "{count} encalhada",
+        "other": "{count} encalhadas"
       },
-      "convertedCost": "Inclui compras em outras moedas convertidas pela cotação da compra",
+      "convertedCost": "Inclui compras em outras moedas, convertidas pela cotação do dia da compra",
       "quantitySplit": "{forSale} à venda · {holding} no holding",
       "withComponents": {
         "one": "{count} com sticker/chaveiro",
@@ -350,9 +353,9 @@
     },
     "refresh": "Atualizar",
     "empty": "Nenhum item no inventário.",
-    "emptyFiltered": "Nenhum item com estes filtros.",
+    "emptyFiltered": "Nenhum item encontrado com estes filtros.",
     "clearFilters": "Limpar filtros",
-    "loadError": "Não foi possível carregar os itens: {reason}",
+    "loadError": "Não foi possível carregar os itens ({reason}). Tente de novo.",
     "columns": {
       "image": "Imagem",
       "quantity": "Qtd.",
@@ -360,23 +363,23 @@
       "totalCost": "Custo total",
       "situation": "Situação",
       "item": "Item",
-      "store": "Loja de compra",
+      "store": "Loja da compra",
       "cost": "Custo",
       "days": "Dias",
       "tradeLock": "Trade lock",
-      "minPrice": "Preço mínimo (no saldo)",
+      "minPrice": "Preço mínimo (sem prejuízo)",
       "actions": "Ações",
       "marketValue": "Valor de mercado ≈",
-      "unrealized": "PnL não realizado ≈"
+      "unrealized": "Lucro/prejuízo não realizado ≈"
     },
     "primaryStore": "Loja principal",
     "otherStores": "Outras lojas",
     "noPrice": "Sem lojas ativas",
     "ganhei": "Ganhei",
     "informativeStore": "Loja: {store}",
-    "legacy": "Sem vínculo com o catálogo",
+    "legacy": "Fora do catálogo",
     "sold": "Vendido",
-    "turnaround": "Vendido {days} após liberar",
+    "turnaround": "Vendido {days} depois de liberar",
     "inspect": "Inspecionar",
     "inspectInvalid": "Link de inspeção inválido",
     "actions": {
@@ -387,17 +390,17 @@
       "delete": "Excluir",
       "lockedHint": "Em trade lock até {date}",
       "history": "Histórico",
-      "offSale": "Mover para holding",
+      "offSale": "Mover para o holding",
       "forSale": "Voltar para a venda",
       "apply": "Aplicar do estoque",
       "applyNoCandidates": "Não há sticker, chaveiro ou patch em estoque para aplicar.",
-      "applyFull": "Este item já tem o máximo de componentes que cabem nele.",
+      "applyFull": "Este item não tem mais espaço para stickers, chaveiro ou patches.",
       "openCase": "Abrir caixa",
       "openCapsule": "Abrir cápsula",
       "openPackage": "Abrir pacote",
       "openTerminal": "Abrir terminal",
       "openNeedsKey": "Cadastre a chave desta caixa ({keyName}) primeiro.",
-      "openNeedsKeyOther": "Cadastre a chave desta caixa ({keyName}) primeiro. As chaves em estoque não servem para ela.",
+      "openNeedsKeyOther": "Cadastre a chave desta caixa ({keyName}) primeiro. As chaves em estoque não servem para esta caixa.",
       "registerKey": "Cadastrar chave",
       "detach": "Separar chaveiro/slab"
     },
@@ -411,8 +414,8 @@
       "offSale": "Holding ({count})",
       "offSaleHint": "Itens guardados esperando valorização."
     },
-    "offSaleConfirmTitle": "Mover para holding?",
-    "offSaleConfirmMessage": "O item sai da lista à venda e vai para o holding. Ao voltar para a venda, a contagem de giro recomeça.",
+    "offSaleConfirmTitle": "Mover para o holding?",
+    "offSaleConfirmMessage": "O item sai da lista \"À venda\" e vai para o holding. Quando voltar para a venda, a contagem dos dias recomeça.",
     "offSaleSince": "No holding desde {date}",
     "offSaleEmpty": "Nenhum item no holding.",
     "offSaleDone": "{name} foi movido para o holding.",
@@ -423,17 +426,21 @@
       "offSaleTitle": "Mover para o holding",
       "forSaleTitle": "Voltar para a venda",
       "quantity": "Quantidade (de 1 a {max})",
-      "whichOffSale": "Vão para o holding as unidades mais recentes; as mais antigas continuam à venda.",
-      "whichForSale": "Voltam para a venda as unidades mais antigas do holding.",
-      "turnoverRestarts": "Ao voltar à venda, a contagem de giro recomeça.",
-      "selectedCount": "{count} unidade(s) selecionada(s).",
+      "whichOffSale": "As unidades mais recentes vão para o holding. As mais antigas continuam à venda.",
+      "whichForSale": "As unidades mais antigas do holding voltam para a venda.",
+      "turnoverRestarts": "Quando voltar para a venda, a contagem dos dias recomeça.",
+      "selectedCount": {
+        "one": "{count} unidade selecionada.",
+        "other": "{count} unidades selecionadas."
+      },
       "invalidQuantity": "Informe um número inteiro de 1 a {max}.",
-      "offSaleConfirm": "Mover",
+      "offSaleConfirm": "Mover para o holding",
       "forSaleConfirm": "Voltar para a venda",
       "selectAll": "Selecionar todas as unidades",
       "selectUnit": "Selecionar {name} (#{id})",
       "selectionBar": "Unidades selecionadas",
       "selected": {
+        "zero": "Nenhuma selecionada",
         "one": "{count} selecionada",
         "other": "{count} selecionadas"
       },
@@ -443,7 +450,7 @@
       "noPrice": "sem preço",
       "notPriceable": "sem avaliação",
       "stale": "desatualizado",
-      "staleHint": "preço de {date}; é atualizado na próxima abertura do app",
+      "staleHint": "preço de {date}; será atualizado quando você abrir o app de novo",
       "incomplete": "sem o chaveiro",
       "incompleteHint": "o chaveiro/slab não tem preço; o valor é só do item",
       "pricedAt": "preço de {date}",
@@ -454,7 +461,7 @@
         "NO_EXTERIOR": "informe o desgaste para avaliar",
         "PHASE_REQUIRED": "informe a fase para avaliar",
         "PHASE_UNMAPPED": "fase sem preço de referência conhecido",
-        "NOT_PRICEABLE": "item sem nome de mercado"
+        "NOT_PRICEABLE": "este tipo de item não tem avaliação"
       },
       "netUnavailable": {
         "NO_INTEGRATION_STORE": "escolha a loja da integração do CSFloat para descontar a taxa",
@@ -468,10 +475,10 @@
         "stickers": "Stickers (informativo, fora da soma): {value}",
         "patches": "Patches (informativo, fora da soma): {value}"
       },
-      "unrealizedHint": "valor de mercado − taxa de venda da loja da integração − custo efetivo; não é lucro nem prejuízo até vender",
+      "unrealizedHint": "valor de mercado, menos a taxa de venda da loja da integração, menos o custo efetivo. Não é lucro nem prejuízo até você vender.",
       "gross": "bruto: {value}",
       "groupOnlyPriced": "considera só as unidades com preço",
-      "coverage": "{priced} de {total} com preço",
+      "coverage": "Com preço: {priced} de {total}",
       "staleCount": {
         "one": "{count} desatualizado",
         "other": "{count} desatualizados"
@@ -479,10 +486,10 @@
       "partial": "(parcial)",
       "counts": "{unpriced} sem preço, {notPriceable} sem avaliação",
       "tabSummary": {
-        "forSale": "Valor de mercado de todo o estoque à venda {value}",
-        "holding": "Valor de mercado de todo o holding {value}",
-        "unrealized": "PnL não realizado {value}",
-        "coverage": "({priced} de {total} com preço)"
+        "forSale": "Valor de mercado do estoque à venda: {value}",
+        "holding": "Valor de mercado do holding: {value}",
+        "unrealized": "Lucro/prejuízo não realizado: {value}",
+        "coverage": "(com preço: {priced} de {total})"
       }
     }
   },
@@ -492,16 +499,16 @@
     "statusAll": "Todos",
     "category": "Categoria",
     "categoryAll": "Todas",
-    "stagnantOnly": "Só agarrados (à venda há mais de {days} dias)",
-    "order": "Ordem por idade",
+    "stagnantOnly": "Só encalhados (à venda há mais de {days})",
+    "order": "Ordenar por idade",
     "orderDesc": "Mais antigos primeiro",
     "orderAsc": "Mais novos primeiro"
   },
   "tradeLock": {
     "locked": "Trade lock",
     "released": "Liberado",
-    "remaining": "{time} restantes",
-    "until": "Liberação em {date}",
+    "remaining": "Faltam {time}",
+    "until": "Libera em {date}",
     "units": {
       "d": "d",
       "h": "h",
@@ -515,9 +522,9 @@
       "LUVA": "Luva",
       "CAIXA": "Caixa",
       "CAPSULA": "Cápsula",
-      "STICKER": "Adesivo",
-      "PINGENTE": "Pingente",
-      "PERSONAGEM": "Personagem",
+      "STICKER": "Sticker",
+      "PINGENTE": "Chaveiro",
+      "PERSONAGEM": "Agente",
       "PASSE_BATALHA": "Passe de batalha",
       "OUTRO": "Outro",
       "PATCH": "Patch"
@@ -544,7 +551,7 @@
     "acquisitionType": {
       "GANHEI": "Ganhei",
       "COMPRA": "Compra",
-      "GERADO": "Gerado"
+      "GERADO": "Obtido"
     },
     "status": {
       "EM_ESTOQUE": "Em estoque",
@@ -554,7 +561,7 @@
     "agingBucket": {
       "RECENTE": "Recente",
       "EM_GIRO": "Em giro",
-      "AGARRADO": "Agarrado",
+      "AGARRADO": "Encalhado",
       "EM_TRADE_LOCK": "Em trade lock",
       "FORA_DE_VENDA": "Holding",
       "CONSUMIDO": "Consumido"
@@ -563,7 +570,7 @@
       "GIRO_RAPIDO": "Giro rápido",
       "GIRO_NORMAL": "Giro normal",
       "DEMOROU_VENDER": "Demorou para vender",
-      "SEM_GIRO": "Vendido do holding (sem giro)"
+      "SEM_GIRO": "Vendido do holding (sem contar giro)"
     }
   },
   "fx": {
@@ -619,14 +626,14 @@
     "paintSeed": "Paint seed",
     "phase": "Fase",
     "phaseFromCatalog": "Fase definida pelo catálogo",
-    "acquisitionType": "Aquisição",
+    "acquisitionType": "Como obteve",
     "purchaseStore": "Loja da compra",
     "purchaseStoreInformative": "Loja (só informativa)",
     "purchasePrice": "Preço de compra ({currency})",
     "priceReenter": "A moeda mudou: informe o preço em {currency}",
     "fxRateAtPurchase": "Cotação USD→{currency} da compra",
     "fxRateDefault": "Padrão: cotação salva ({rate})",
-    "ganheiCost": "Itens ganhos têm custo fixo de US$ 0,00",
+    "ganheiCost": "Item que você ganhou sempre custa US$ 0,00",
     "acquiredAt": "Data da compra",
     "tradeUnlockAt": "Fim do trade lock",
     "plus7Days": "+7 dias",
@@ -637,18 +644,19 @@
     "storeInactive": "inativa",
     "legacyLink": "Vincular ao catálogo",
     "legacyNote": "Item antigo sem vínculo com o catálogo. Para trocar nome ou categoria, escolha o item no catálogo.",
-    "soldNote": "Este item foi vendido. Os dados da venda não são editáveis aqui; desfaça a venda para alterá-los.",
+    "soldNote": "Este item foi vendido. Os dados da venda não podem ser editados aqui. Para mudá-los, desfaça a venda.",
     "created": "Item cadastrado.",
     "saved": "Item salvo.",
     "noChanges": "Nenhuma alteração para salvar.",
-    "invalidNumber": "Número inválido.",
-    "invalidMoney": "Valor inválido. Use o formato 1,25.",
+    "invalidNumber": "Número inválido. Use só dígitos.",
+    "invalidMoney": "Valor inválido. Use um formato como {example}.",
+    "invalidMoneyWhole": "Valor inválido. {currency} não tem centavos: use um número inteiro, como {example}.",
     "invalidDate": "Data inválida.",
     "chooseItem": "Escolha o item no catálogo ou marque \"Item fora do catálogo\".",
     "components": {
       "title": "Stickers e chaveiro",
-      "costNote": "Só registro do que a arma tem: não muda o custo, o saldo nem o giro.",
-      "stickers": "Stickers colados ({count}/{max})",
+      "costNote": "É só um registro do que a arma tem. Não muda custo, saldo nem giro.",
+      "stickers": "Stickers aplicados ({count}/{max})",
       "noStickers": "Nenhum sticker registrado.",
       "addSticker": "Adicionar sticker",
       "removeSticker": "Remover o sticker {n}",
@@ -656,10 +664,10 @@
       "change": "Trocar",
       "limitReached": "Máximo de {max} stickers.",
       "searchSticker": "Sticker {n} (catálogo)",
-      "slot": "Slot",
+      "slot": "Posição",
       "wear": "Desgaste (%)",
       "wearPlaceholder": "0 = intacto",
-      "hanging": "Pendurado (um só)",
+      "hanging": "Chaveiro ou Sticker Slab (só um)",
       "hangingKind": "Tipo",
       "hangingNone": "Nenhum",
       "kindCharm": "Chaveiro",
@@ -671,10 +679,10 @@
       "chooseCharm": "Escolha o chaveiro no catálogo ou mude o tipo para Nenhum.",
       "chooseSlab": "Escolha o sticker do slab no catálogo ou mude o tipo para Nenhum.",
       "invalidWear": "Desgaste do sticker {n} inválido: use de 0 a menos de 100.",
-      "invalidPattern": "Pattern inválido: use um inteiro de 0 a 999999.",
-      "willRemove": "Este item não aceita stickers nem chaveiro: os componentes registrados serão removidos ao salvar.",
+      "invalidPattern": "Pattern inválido. Use um número inteiro de 0 a 999999.",
+      "willRemove": "Este item não aceita stickers nem chaveiro. Ao salvar, os que estão registrados serão removidos.",
       "thumbsLabel": "Stickers e chaveiro aplicados",
-      "slotShort": "slot",
+      "slotShort": "posição",
       "wearShort": "desgaste",
       "patternShort": "pattern",
       "patchesTitle": "Patches",
@@ -690,43 +698,43 @@
     }
   },
   "detachForm": {
-    "title": "Separar o pendurado de {name}",
+    "title": "Separar chaveiro/slab de {name}",
     "nothing": "Esta arma não tem nenhum chaveiro ou Sticker Slab para separar.",
     "pattern": "pattern {n}",
-    "returnIntro": "Este pendurado foi aplicado do estoque: a unidade original ({name}) volta ao estoque, à venda, com o custo que ela tinha, e o giro recomeça na data da separação.",
+    "returnIntro": "Este chaveiro/slab foi aplicado do estoque. A unidade original ({name}) volta ao estoque, à venda, com o custo que tinha. Os dias à venda recomeçam na data da separação.",
     "returnResult": "A unidade volta com {unit}; a arma fica com {weapon}.",
-    "splitIntro": "O pendurado vira uma unidade própria e o custo efetivo inteiro da arma é dividido entre as duas, na proporção dos valores avaliados (arma sem o pendurado e pendurado).",
+    "splitIntro": "O chaveiro/slab vira uma unidade própria. O custo efetivo da arma é dividido entre as duas, na proporção dos preços de referência (a arma sem ele e o chaveiro/slab).",
     "cost": "Custo efetivo da arma: {value}",
-    "valued": "Pelos preços de referência de {date}: arma {weapon}, pendurado {hanging} (conjunto {total}) → {share} % para o pendurado.",
+    "valued": "Pelos preços de referência de {date}: arma {weapon}, chaveiro/slab {hanging}, total {total}. Parte do chaveiro/slab: {share} %.",
     "stale": "Os preços de referência estão desatualizados.",
     "unavailable": {
-      "WEAPON_NO_PRICE": "Sem preço de referência da arma no cache: informe a porcentagem.",
-      "WEAPON_NOT_PRICEABLE": "A arma não tem como ser avaliada (falta exterior ou fase): informe a porcentagem.",
-      "HANGING_NO_PRICE": "Sem preço de referência do pendurado no cache: informe a porcentagem."
+      "WEAPON_NO_PRICE": "Não há preço de referência da arma. Informe a porcentagem.",
+      "WEAPON_NOT_PRICEABLE": "Não dá para avaliar a arma (falta o desgaste ou a fase). Informe a porcentagem.",
+      "HANGING_NO_PRICE": "Não há preço de referência do chaveiro/slab. Informe a porcentagem."
     },
-    "share": "Parte do custo para o pendurado (%)",
+    "share": "Parte do custo para o chaveiro/slab (%)",
     "shareHint": "Sugerida pelos preços; você pode editar (0 a 100).",
     "shareRequiredHint": "Obrigatória: não há preços de referência suficientes para sugerir.",
-    "shareRequired": "Informe a porcentagem do custo para o pendurado.",
-    "shareInvalid": "Use um valor entre 0 e 100, com até duas casas.",
-    "result": "A arma fica com {weapon} e o pendurado com {unit} (a soma é igual ao custo de antes).",
+    "shareRequired": "Informe a parte do custo para o chaveiro/slab.",
+    "shareInvalid": "Use um valor de 0 a 100, com até duas casas decimais.",
+    "result": "A arma fica com {weapon} e o chaveiro/slab com {unit}. A soma é igual ao custo de antes.",
     "detachedAt": "Data da separação",
     "tradeLock": "Fim do trade lock (opcional)",
-    "tradeLockHint": "Só se o item separado ficou com proteção de troca.",
+    "tradeLockHint": "Só se o item separado ficou em trade lock.",
     "note": "Observação (opcional)",
     "profitUnchanged": "O lucro real e o saldo das lojas não mudam: o custo só é dividido.",
     "submit": "Separar",
     "successSplit": "{name} separado de {weapon}. O custo foi dividido.",
-    "successReturn": "{name} voltou ao estoque. A arma ficou sem o pendurado."
+    "successReturn": "{name} voltou ao estoque. A arma ficou sem o chaveiro/slab."
   },
   "applyForm": {
     "title": "Aplicar do estoque em {name}",
     "intro": "A unidade escolhida sai do estoque e o custo dela passa para este item. O lucro real, o saldo e o total do estoque não mudam.",
-    "retroIntro": "Esta arma já foi vendida. A aplicação entra no registro com a data informada (até a data da venda). O custo da unidade passa para a arma e o lucro desta venda e o lucro real diminuem esse valor: é a correção do registro.",
+    "retroIntro": "Esta arma já foi vendida. A aplicação entra no registro com a data que você informar (no máximo a data da venda). O custo da unidade passa para a arma. O lucro desta venda e o lucro real diminuem esse valor. É uma correção do registro.",
     "retroLimit": "Até {date} (data da venda)",
     "kind": "Tipo",
     "kinds": {
-      "STICKER": "Sticker colado",
+      "STICKER": "Sticker",
       "CHARM": "Chaveiro",
       "STICKER_SLAB": "Sticker Slab",
       "PATCH": "Patch"
@@ -735,19 +743,19 @@
     "noCandidates": "Não há unidades deste tipo em estoque.",
     "limit": {
       "STICKER": "Este item já tem 5 stickers.",
-      "HANGING": "Este item já tem um pendurado (chaveiro ou Sticker Slab).",
+      "HANGING": "Este item já tem um chaveiro ou Sticker Slab.",
       "PATCH": "Este agente já tem 3 patches."
     },
     "cost": "Custo {value}",
     "tradeLock": "em trade lock",
     "holding": "Holding",
-    "slot": "Posição (slot)",
+    "slot": "Posição",
     "wear": "Desgaste (%)",
     "pattern": "Pattern",
     "appliedAt": "Data da aplicação",
     "submit": "Aplicar",
     "submitRetro": "Aplicar e registrar",
-    "success": "{name} aplicado em {target}. O custo foi para o item.",
+    "success": "{name} foi aplicado em {target}. O custo passou para o item.",
     "unitGone": "A unidade sugerida não está mais disponível no estoque."
   },
   "operations": {
@@ -755,7 +763,7 @@
     "empty": "Nenhuma operação registrada.",
     "kind": {
       "APPLY_COMPONENT": "Aplicação do estoque",
-      "DETACH_COMPONENT": "Separação de componente",
+      "DETACH_COMPONENT": "Separação de chaveiro/slab",
       "SCRAPE_OFF": "Removido para sempre",
       "OPEN_CASE": "Abertura de caixa",
       "OPEN_TERMINAL": "Abertura de terminal",
@@ -764,7 +772,7 @@
     "role": {
       "CONSUMED": "consumida",
       "TARGET": "recebeu",
-      "CREATED": "gerada"
+      "CREATED": "obtida"
     },
     "line": "{kind} · {date}",
     "counterpart": "{role}: {name}",
@@ -774,31 +782,31 @@
     "consumedBadge": "Consumido",
     "undo": "Desfazer aplicação",
     "undoTitle": "Desfazer a aplicação?",
-    "undoMessage": "A unidade volta ao estoque como estava e o custo dela sai deste item. Use só para corrigir um lançamento errado.",
+    "undoMessage": "A unidade volta ao estoque como estava, e o custo dela sai deste item. Use só para corrigir um lançamento errado.",
     "undoConfirm": "Desfazer",
     "undoDone": "Aplicação desfeita.",
     "scrape": "Remover para sempre",
     "scrapeTitle": "Remover para sempre?",
-    "scrapeMessage": "O componente sai do item de vez (não volta ao estoque). O custo dele continua neste item.",
+    "scrapeMessage": "O componente sai do item de vez e não volta ao estoque. O custo dele continua neste item.",
     "scrapeConfirm": "Remover para sempre",
-    "scrapeDone": "Componente removido. O custo continua no item.",
+    "scrapeDone": "Removido do item. O custo continua no item.",
     "costIncludes": "Inclui {value} de componentes aplicados do estoque.",
     "costSeparated": "Inclui −{value} de custo separado para outra unidade.",
     "consumedInOpen": "Consumida em {date}: usada para abrir {target}",
     "consumedInLost": "Consumida em {date}: terminal não comprado (perda)",
     "undoOpen": "Desfazer abertura",
     "undoOpenTitle": "Desfazer a abertura?",
-    "undoOpenMessage": "O item obtido é excluído (e, no terminal comprado, a compra também), e o recipiente e a chave voltam ao estoque como estavam. Use só para corrigir um lançamento errado.",
+    "undoOpenMessage": "O item obtido é excluído. Se ele foi comprado no terminal, a compra também é desfeita. Quem foi aberto (caixa, cápsula, pacote ou terminal) e a chave voltam ao estoque como estavam. Use só para corrigir um lançamento errado.",
     "undoOpenDone": "Abertura desfeita.",
     "lost": "perda de {value}",
-    "undoneGenerated": "item obtido desfeito: {name}",
+    "undoneGenerated": "item obtido desfeito ({name})",
     "detachedFrom": {
       "SPLIT": "separado de {weapon}",
       "RETURN": "separado de {weapon}"
     },
     "endedBy": "separada em {date}",
     "detach": {
-      "RETURN": "{name} separado da arma; a unidade voltou ao estoque",
+      "RETURN": "{name} foi separado da arma. A unidade voltou ao estoque.",
       "SPLIT_MARKET_CACHE": "{name} separado da arma: {share} % do custo, pelos preços de referência",
       "SPLIT_MANUAL": "{name} separado da arma: {share} % do custo (informado)"
     },
@@ -817,19 +825,19 @@
     "salePriceAdded": "Preço pago pelo comprador ({currency})",
     "soldAt": "Data e hora da venda",
     "fxRateAtSale": "Cotação USD→{currency} da venda",
-    "minPriceRef": "Preço mínimo sem prejuízo: {value}",
-    "useMinPrice": "Usar este valor",
-    "noRefInactive": "Sem referência para loja inativa",
-    "refUsesSavedRate": "A referência usa a cotação salva, não a digitada aqui.",
+    "minPriceRef": "Preço mínimo (sem prejuízo): {value}",
+    "useMinPrice": "Usar o preço mínimo",
+    "noRefInactive": "Sem preço de referência: a loja está inativa.",
+    "refUsesSavedRate": "O preço de referência usa a cotação salva, não a que você digitou aqui.",
     "lockedUntil": "Em trade lock até {date}",
     "submit": "Registrar venda",
     "success": "Venda registrada: líquido {net}, lucro {profit}",
     "netReceived": "Líquido recebido ({currency})",
-    "netReceivedHint": "Informe quanto entrou no saldo da loja",
-    "netReceivedCalculated": "Calculado pelas taxas da loja",
+    "netReceivedHint": "Informe quanto entrou no saldo da loja, já sem a taxa.",
+    "netReceivedCalculated": "Calculado com as taxas da loja",
     "recalculate": "Recalcular",
-    "feesNotConfiguredBadge": "taxas não configuradas",
-    "manualNetNote": "(líquido informado)",
+    "feesNotConfiguredBadge": "sem taxas na loja",
+    "manualNetNote": "(líquido digitado por você)",
     "chooseStore": "Escolha a loja.",
     "priceRequired": "Informe o preço de venda."
   },
@@ -837,7 +845,7 @@
     "catalogId": "Item do catálogo",
     "name": "Nome",
     "category": "Categoria",
-    "acquisitionType": "Aquisição",
+    "acquisitionType": "Como obteve",
     "variant": "Variante",
     "floatValue": "Float",
     "exterior": "Desgaste",
@@ -918,6 +926,7 @@
   "sales": {
     "title": "Vendas",
     "count": {
+      "zero": "Nenhuma venda",
       "one": "{count} venda",
       "other": "{count} vendas"
     },
@@ -986,7 +995,7 @@
   "history": {
     "heading": "Histórico do item",
     "title": "Histórico: {name}",
-    "soldCount": "Vendidas",
+    "soldCount": "Unidades vendidas",
     "avgDaysToSell": "Tempo médio até vender (desde a liberação)",
     "avgPurchaseCost": "Custo médio",
     "avgCostUnits": {
@@ -996,9 +1005,12 @@
     "avgSalePrice": "Preço médio de venda",
     "avgProfit": "Lucro médio",
     "none": "Nenhuma venda deste item ainda",
-    "fxNote": "{count} de {total} vendas usaram uma cotação gravada",
-    "keyNote": "Mesmo nome, categoria, variante, exterior e fase.",
-    "daysValue": "{days} dias",
+    "fxNote": "Vendas com cotação gravada: {count} de {total}",
+    "keyNote": "Mesmo nome, categoria, variante, desgaste e fase.",
+    "daysValue": {
+      "one": "{days} dia",
+      "other": "{days} dias"
+    },
     "soldOffSale": {
       "one": "{count} venda do holding não entra no tempo médio",
       "other": "{count} vendas do holding não entram no tempo médio"
@@ -2028,35 +2040,35 @@
     "title": "Abrir {name}",
     "introCase": "A caixa e a chave escolhida saem do estoque e o custo das duas passa para o item obtido. O lucro real, o saldo e o total do estoque não mudam.",
     "introNoKey": "O item sai do estoque e o custo dele passa para o item obtido. O lucro real, o saldo e o total do estoque não mudam.",
-    "introTerminal": "O terminal oferece um item por um preço. Você pode comprá-lo (o preço é pago na sua loja Steam) ou não comprar (o terminal some e o custo dele vira perda).",
+    "introTerminal": "O terminal oferece um item por um preço. Se você comprar, o preço sai do saldo da sua loja Steam. Se não comprar, o terminal some e o custo dele vira perda.",
     "key": "Chave",
     "keyCost": "Custo {value}",
     "keyOldest": "mais antiga",
     "noKey": "Não há chave compatível em estoque. Cadastre {keyName} primeiro.",
-    "decision": "O que fazer com o terminal",
+    "decision": "O que você quer fazer?",
     "buy": "Comprar o item",
     "decline": "Não comprar (perda de {value})",
     "price": "Preço pago ({currency})",
     "fx": "Cotação USD→{currency}",
     "fxDefault": "Padrão: cotação salva ({rate})",
     "steamStore": "Pago na loja Steam: {store} ({currency})",
-    "noSteamStore": "Escolha a sua loja Steam em Lojas para comprar o item do terminal.",
+    "noSteamStore": "Para comprar o item do terminal, escolha sua loja Steam na tela Lojas.",
     "goToStores": "Ir para Lojas",
     "openedAt": "Data da abertura",
     "generatedTitle": "Item obtido",
     "generatedTradeLock": "Fim do trade lock (opcional)",
-    "generatedHint": "Escolha no catálogo o item que saiu. Ele nasce como \"Gerado\" e herda o custo.",
+    "generatedHint": "Escolha no catálogo o item que você recebeu. Ele entra como \"Obtido\" e herda o custo.",
     "summaryCase": "A caixa e a chave saem do estoque; o item obtido herda o custo de {value}. O lucro real não muda.",
     "summaryNoKey": "O item sai do estoque; o item obtido herda o custo de {value}. O lucro real não muda.",
-    "summaryBuy": "O terminal sai do estoque e o preço pago desconta do saldo da loja Steam; o item obtido custa o terminal ({value}) mais o preço pago.",
+    "summaryBuy": "O terminal sai do estoque e o preço pago sai do saldo da loja Steam. O item obtido custa o do terminal ({value}) mais o preço pago.",
     "summaryDecline": "O terminal some e o lucro real cai {value}.",
     "confirmDeclineTitle": "Não comprar o item do terminal?",
-    "confirmDeclineMessage": "O terminal será consumido e o custo dele ({value}) vira perda: o lucro real cai esse valor. Dá para desfazer depois.",
+    "confirmDeclineMessage": "O terminal será consumido e o custo dele ({value}) vira perda. O lucro real cai esse valor. Você pode desfazer depois.",
     "confirmDeclineConfirm": "Não comprar",
     "submit": "Abrir",
     "submitDecline": "Registrar a perda",
     "chooseItem": "Escolha no catálogo o item obtido.",
-    "success": "{name} aberto: {generated} entrou no estoque.",
+    "success": "{name} foi aberto. {generated} entrou no estoque.",
     "successLost": "{name} não foi comprado: o custo virou perda."
   },
   "prices": {

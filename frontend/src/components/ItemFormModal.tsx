@@ -16,7 +16,7 @@ import {
   visibleItemFields,
   type CatalogChoice, type FormContext, type FormErrors, type ItemFormState,
 } from '@/lib/itemForm';
-import { moneyInputMode } from '@/lib/currencies';
+import { moneyErrorParams, moneyInputMode } from '@/lib/currencies';
 import { ratesRecord } from '@/lib/fxRates';
 import { formatDecimalInput } from '@/lib/numberInput';
 import { queryKeys } from '@/lib/queryKeys';
@@ -143,7 +143,7 @@ export default function ItemFormModal({ item, preset, stores, onClose, onSaved, 
     const built = editing ? buildPatchBody(state, item, ctx) : buildCreateBody(state, ctx);
     if (!built.ok) {
       const translated: FormErrors = {};
-      for (const [field, key] of Object.entries(built.errors)) translated[field] = key ? tLoose(key) : undefined;
+      for (const [field, key] of Object.entries(built.errors)) translated[field] = key ? tLoose(key, moneyErrorParams(locale, priceCurrency)) : undefined;
       setErrors(translated);
       return;
     }

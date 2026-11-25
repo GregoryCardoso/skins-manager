@@ -6,7 +6,7 @@ import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
 import { nowLocalInput } from '@/lib/dateInput';
 import { resolveErrorTarget } from '@/lib/formErrors';
 import { formatApprox, formatMoney } from '@/lib/format';
-import { moneyInputMode } from '@/lib/currencies';
+import { moneyErrorParams, moneyInputMode } from '@/lib/currencies';
 import { ratesRecord } from '@/lib/fxRates';
 import { formatCentsInput, parseMoneyToCents } from '@/lib/numberInput';
 import {
@@ -113,7 +113,7 @@ export default function SellItemModal({ item, stores, onClose, onSold, onGone }:
     const built = buildSellBody(state, ctx, quoteNet);
     if (!built.ok) {
       const translated: Partial<Record<string, string>> = {};
-      for (const [field, key] of Object.entries(built.errors)) translated[field] = key ? tLoose(key) : undefined;
+      for (const [field, key] of Object.entries(built.errors)) translated[field] = key ? tLoose(key, moneyErrorParams(locale, storeCurrency)) : undefined;
       setErrors(translated);
       return;
     }

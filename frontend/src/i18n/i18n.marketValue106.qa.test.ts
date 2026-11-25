@@ -77,13 +77,13 @@ describe('textos novos do valor de mercado nos dois idiomas', () => {
   });
 
   test('Adendo 1: colunas e cards se chamam PnL não realizado / Unrealized PnL, e o título antigo "Lucro não realizado" não sobrou', () => {
-    expect(dicts['pt-BR']['inventory.columns.unrealized']).toBe('PnL não realizado ≈');
-    expect(dicts.en['inventory.columns.unrealized']).toBe('Unrealized PnL ≈');
+    expect(dicts['pt-BR']['inventory.columns.unrealized']).toBe('Lucro/prejuízo não realizado ≈');
+    expect(dicts.en['inventory.columns.unrealized']).toBe('Unrealized profit/loss ≈');
     expect(dicts['pt-BR']['profit.market.pnlLabel']).toBe('PnL não realizado');
     expect(dicts['pt-BR']['profit.market.valueLabel']).toBe('Valor atual de mercado do estoque');
     expect(dicts['pt-BR']['profit.market.badge']).toBe('estimado — não entra no lucro real');
     for (const dict of Object.values(dicts)) {
-      for (const [key, text] of Object.entries(dict).filter(([k]) => NEW_SCOPE.test(k))) expect(text, key).not.toMatch(/Lucro não realizado|Unrealized profit/i);
+      for (const [key, text] of Object.entries(dict).filter(([k]) => NEW_SCOPE.test(k))) expect(text, key).not.toMatch(/Lucro não realizado|Unrealized profit(?!\/loss)/i);
     }
   });
 

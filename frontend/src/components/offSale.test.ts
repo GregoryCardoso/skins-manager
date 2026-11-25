@@ -29,10 +29,10 @@ describe('chaves i18n do "fora de venda"', () => {
   });
 
   test('textos confirmados em D266', () => {
-    expect(translate(ptBR, 'inventory.actions.offSale')).toBe('Mover para holding');
+    expect(translate(ptBR, 'inventory.actions.offSale')).toBe('Mover para o holding');
     expect(translate(ptBR, 'inventory.actions.forSale')).toBe('Voltar para a venda');
     expect(translate(ptBR, 'inventory.tabs.offSale', { count: 3 })).toBe('Holding (3)');
-    expect(translate(ptBR, 'inventory.offSaleConfirmMessage')).toContain('a contagem de giro recomeça');
+    expect(translate(ptBR, 'inventory.offSaleConfirmMessage')).toContain('a contagem dos dias recomeça');
     expect(translate(en, 'inventory.tabs.forSale', { count: 2 })).toBe('For sale (2)');
   });
 });

@@ -30,7 +30,7 @@ export default function ItemHistoryBox({ stats, compact = false }: Props) {
           </div>
           <div className={styles.cell}>
             <dt>{t('history.avgDaysToSell')}</dt>
-            <dd>{stats.avgDaysToSell === null ? t('common.none') : t('history.daysValue', { days: new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(stats.avgDaysToSell) })}</dd>
+            <dd>{stats.avgDaysToSell === null ? t('common.none') : tPlural('history.daysValue', stats.avgDaysToSell, { days: new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(stats.avgDaysToSell) })}</dd>
           </div>
           <div className={styles.cell}>
             <dt>{t('history.avgPurchaseCost')}</dt>

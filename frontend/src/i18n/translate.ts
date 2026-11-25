@@ -27,7 +27,7 @@ function fill(text: string, params?: TranslateParams): string {
 }
 
 // Plural pelas categorias do CLDR (`Intl.PluralRules`): `key` aponta para um objeto com `zero`, `one`, `two`, `few`, `many` e
-// `other`, e vale a categoria do número no idioma (russo: one/few/many/other; chinês: só other). A forma que o idioma não tem
+// `other`. Quando a contagem é 0 e o objeto tem `zero`, vale o `zero` em qualquer idioma ("Nenhuma venda"); senão vale a categoria do número no idioma (russo: one/few/many/other; chinês: só other). A forma que o idioma não tem
 // cai em `other`. Se o idioma não tem o texto, vale o do idioma base (com as regras do inglês).
 export function translatePlural(
   messages: unknown,
@@ -48,6 +48,10 @@ export function translatePlural(
 }
 
 function pluralText(messages: unknown, key: string, count: number, locale: string): string | undefined {
+  if (count === 0) {
+    const zero = lookup(messages, `${key}.zero`);
+    if (zero !== undefined) return zero;
+  }
   let category: string;
   try {
     category = new Intl.PluralRules(locale).select(count);

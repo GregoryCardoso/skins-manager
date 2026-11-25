@@ -21,13 +21,13 @@ function pluralGroups(node: unknown, prefix = ''): string[] {
 
 describe('plural com os textos reais de en e pt-BR', () => {
   const groups = pluralGroups(en);
-  test('há grupos de plural e todos existem nos dois idiomas, só com categorias one/other e sempre com other', () => {
+  test('há grupos de plural e todos existem nos dois idiomas, só com categorias zero/one/other e sempre com other', () => {
     expect(groups.length).toBeGreaterThan(5);
     expect(pluralGroups(ptBR).sort()).toEqual([...groups].sort());
     for (const dict of [en, ptBR]) {
       for (const path of groups) {
         const node = path.split('.').reduce<Record<string, unknown>>((acc, part) => acc[part] as Record<string, unknown>, dict as unknown as Record<string, unknown>);
-        expect(Object.keys(node).every((key) => ['one', 'other'].includes(key))).toBe(true);
+        expect(Object.keys(node).every((key) => ['zero', 'one', 'other'].includes(key))).toBe(true);
         expect(typeof node.other).toBe('string');
       }
     }
@@ -51,8 +51,10 @@ describe('plural com os textos reais de en e pt-BR', () => {
     expect(new Intl.PluralRules('pt-BR').select(0)).toBe('one');
     expect(new Intl.PluralRules('pt-BR').select(1.5)).toBe('one');
     expect(new Intl.PluralRules('en').select(0)).toBe('other');
-    expect(translatePlural(ptBR, 'sales.count', 0, 'pt-BR')).toBe(translate(ptBR, 'sales.count.one', { count: 0 }));
-    expect(translatePlural(en, 'sales.count', 0, 'en')).toBe(translate(en, 'sales.count.other', { count: 0 }));
+    // 11.6: a chave `zero` (quando existe) vale para a contagem 0 em qualquer idioma
+    expect(translatePlural(ptBR, 'sales.count', 0, 'pt-BR')).toBe('Nenhuma venda');
+    expect(translatePlural(en, 'sales.count', 0, 'en')).toBe('No sales');
+    expect(translatePlural(ptBR, 'common.dayCount', 0, 'pt-BR')).toBe(translate(ptBR, 'common.dayCount.one', { count: 0 }));
   });
 
   test('ru/uk/pl com os cortes 0, 1, 2, 5, 11, 12, 14, 21, 22, 25, 101, 111, negativos e decimais', () => {

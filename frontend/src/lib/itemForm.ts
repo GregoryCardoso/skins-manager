@@ -1,5 +1,6 @@
 // Lógica pura do formulário de item (D116). Nenhuma regra de negócio: só decide visibilidade e monta o corpo
 // que o backend valida. Textos de erro local são chaves de tradução (`itemForm.invalidMoney` etc.).
+import { invalidMoneyKey } from '@/lib/currencies';
 import { dateToLocalInput, isoToLocalInput, localInputToDate, localInputToIso, addDaysToLocalInput } from '@/lib/dateInput';
 import { formatFloat } from '@/lib/format';
 import {
@@ -286,7 +287,7 @@ function parseNumbers(state: ItemFormState, vis: FieldVisibility, language: stri
   }
   if (vis.price && state.priceText.trim() !== '') {
     priceCents = parseMoneyToCents(state.priceText, language, currency);
-    if (priceCents === null) errors.purchasePriceCents = 'itemForm.invalidMoney';
+    if (priceCents === null) errors.purchasePriceCents = invalidMoneyKey(currency);
   }
   if (vis.fx && state.fxText.trim() !== '') {
     fxRate = parseDecimalInput(state.fxText, language);

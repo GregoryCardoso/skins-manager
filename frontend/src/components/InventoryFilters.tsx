@@ -1,7 +1,7 @@
 'use client';
 
 import { useId } from 'react';
-import { useT, useTLoose } from '@/i18n/I18nProvider';
+import { useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import {
   CATEGORIES, STATUS_FILTERS, hasActiveFilters, isStagnantDisabled,
   type AgeOrder, type CategoryFilter, type InventoryFilters as Filters, type StatusFilter,
@@ -20,6 +20,7 @@ interface Props {
 export default function InventoryFilters({ filters, slowItemDays, loading, onChange, onClear, onRefresh }: Props) {
   const t = useT();
   const tLoose = useTLoose();
+  const tPlural = useTPlural();
   const id = useId();
   // "Só agarrados" não vale para vendidos nem para a aba "Fora de venda" dos itens em estoque (D266).
   const stagnantDisabled = isStagnantDisabled(filters);
@@ -74,7 +75,7 @@ export default function InventoryFilters({ filters, slowItemDays, loading, onCha
           disabled={stagnantDisabled}
           onChange={(e) => onChange({ ...filters, stagnant: e.target.checked })}
         />
-        <span>{t('filters.stagnantOnly', { days: slowItemDays })}</span>
+        <span>{t('filters.stagnantOnly', { days: tPlural('common.dayCount', slowItemDays) })}</span>
       </label>
 
       <div className={styles.actions}>

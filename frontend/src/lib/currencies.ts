@@ -59,3 +59,22 @@ export function currencyOptions(locale: string): CurrencyOption[] {
 
 // Teclado do campo de valor: só números inteiros nas moedas sem casas decimais (JPY, KRW e CLP); decimal nas demais.
 export const moneyInputMode = (currency: string | undefined): 'numeric' | 'decimal' => (currency !== undefined && hasNoDecimals(currency) ? 'numeric' : 'decimal');
+
+// Chaves de erro de valor digitado (D369, revisão de textos 11.6, seção 14): moeda sem casas decimais (JPY, KRW e CLP) tem texto próprio.
+export function invalidMoneyKey(currency: string | undefined): 'itemForm.invalidMoney' | 'itemForm.invalidMoneyWhole' {
+  return currency !== undefined && hasNoDecimals(currency) ? 'itemForm.invalidMoneyWhole' : 'itemForm.invalidMoney';
+}
+
+// Parâmetros dos textos de erro de valor: o exemplo vem do idioma (1,25 em pt-BR, 1.25 em en; 1500 nas moedas sem casas decimais).
+export function moneyErrorParams(locale: string, currency: string | undefined): { example: string; currency: string } {
+  const whole = currency !== undefined && hasNoDecimals(currency);
+  let example: string;
+  try {
+    example = whole
+      ? new Intl.NumberFormat(locale, { maximumFractionDigits: 0, useGrouping: false }).format(1500)
+      : new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: false }).format(1.25);
+  } catch {
+    example = whole ? '1500' : '1.25';
+  }
+  return { example, currency: currency ?? '' };
+}

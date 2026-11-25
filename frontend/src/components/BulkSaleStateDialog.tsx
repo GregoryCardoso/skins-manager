@@ -2,7 +2,7 @@
 
 import { useId, useState, type FormEvent } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import { parseBulkQuantity } from '@/lib/bulkSaleState';
 import { useInvalidate } from '@/lib/useInvalidate';
 import { bulkMarkForSale, bulkMarkOffSale } from '@/services/api';
@@ -24,6 +24,7 @@ interface Props {
 export default function BulkSaleStateDialog({ direction, name, target, onClose, onDone }: Props) {
   const t = useT();
   const tLoose = useTLoose();
+  const tPlural = useTPlural();
   const locale = useLocale();
   const invalidate = useInvalidate();
   const quantityId = useId();
@@ -75,7 +76,7 @@ export default function BulkSaleStateDialog({ direction, name, target, onClose, 
             <p className={forms.hint}>{t(toHolding ? 'inventory.bulk.whichOffSale' : 'inventory.bulk.whichForSale')}</p>
           </>
         ) : (
-          <p>{t('inventory.bulk.selectedCount', { count: max })}</p>
+          <p>{tPlural('inventory.bulk.selectedCount', max)}</p>
         )}
         {!toHolding && <p className={forms.hint}>{t('inventory.bulk.turnoverRestarts')}</p>}
         {error && <div className={forms.topError} role="alert">{error}</div>}

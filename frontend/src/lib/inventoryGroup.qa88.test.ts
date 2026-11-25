@@ -204,17 +204,17 @@ describe('textos do holding (bordas, D282)', () => {
 
   test('os textos pedidos em D282, nos dois idiomas', () => {
     const expected: Record<string, [string, string]> = {
-      'inventory.actions.offSale': ['Mover para holding', 'Move to holding'],
-      'inventory.actions.forSale': ['Voltar para a venda', 'Put back up for sale'],
+      'inventory.actions.offSale': ['Mover para o holding', 'Move to holding'],
+      'inventory.actions.forSale': ['Voltar para a venda', 'Put back on sale'],
       'inventory.tabs.offSale': ['Holding ({count})', 'Holding ({count})'],
       'inventory.tabs.offSaleHint': ['Itens guardados esperando valorização.', 'Items held while waiting for their value to rise.'],
-      'inventory.offSaleConfirmTitle': ['Mover para holding?', 'Move to holding?'],
+      'inventory.offSaleConfirmTitle': ['Mover para o holding?', 'Move to holding?'],
       'inventory.offSaleSince': ['No holding desde {date}', 'In holding since {date}'],
       'inventory.offSaleEmpty': ['Nenhum item no holding.', 'No items in holding.'],
       'inventory.offSaleDone': ['{name} foi movido para o holding.', '{name} moved to holding.'],
-      'inventory.forSaleDone': ['{name} voltou para a venda.', '{name} put back up for sale.'],
+      'inventory.forSaleDone': ['{name} voltou para a venda.', '{name} put back on sale.'],
       'enums.agingBucket.FORA_DE_VENDA': ['Holding', 'Holding'],
-      'enums.turnaroundBucket.SEM_GIRO': ['Vendido do holding (sem giro)', 'Sold from holding (no turnover)'],
+      'enums.turnaroundBucket.SEM_GIRO': ['Vendido do holding (sem contar giro)', 'Sold from holding (not counted)'],
       'history.soldOffSale.one': ['{count} venda do holding não entra no tempo médio', '{count} sale from holding is not in the average time'],
       'history.soldOffSale.other': ['{count} vendas do holding não entram no tempo médio', '{count} sales from holding are not in the average time'],
       'inventory.group.offSale': ['{count} no holding', '{count} in holding'],
@@ -223,8 +223,8 @@ describe('textos do holding (bordas, D282)', () => {
       expect(pt[key], `pt ${key}`).toBe(ptText);
       expect(enFlat[key], `en ${key}`).toBe(enText);
     }
-    expect(pt['inventory.offSaleConfirmMessage']).toBe('O item sai da lista à venda e vai para o holding. Ao voltar para a venda, a contagem de giro recomeça.');
-    expect(enFlat['inventory.offSaleConfirmMessage']).toBe('The item leaves the for-sale list and goes to holding. When put back up for sale, the turnover count restarts.');
+    expect(pt['inventory.offSaleConfirmMessage']).toBe('O item sai da lista "À venda" e vai para o holding. Quando voltar para a venda, a contagem dos dias recomeça.');
+    expect(enFlat['inventory.offSaleConfirmMessage']).toBe('The item leaves the "For sale" list and goes to holding. When you put it back on sale, the day count starts again.');
   });
 
   test('textos que não deviam mudar continuam iguais', () => {
@@ -236,7 +236,7 @@ describe('textos do holding (bordas, D282)', () => {
 describe('chaves da visão agrupada (D278)', () => {
   const keys = [
     'inventory.view.label', 'inventory.view.grouped', 'inventory.view.individual', 'inventory.view.onlyInStock',
-    'inventory.groupCount.one', 'inventory.groupCount.other', 'inventory.groupCount.inOneGroup',
+    'inventory.itemCount.one', 'inventory.itemCount.other', 'inventory.groupsCount.one', 'inventory.groupsCount.other', 'inventory.countInGroups',
     'inventory.columns.quantity', 'inventory.columns.avgCost', 'inventory.columns.totalCost', 'inventory.columns.situation',
     'inventory.group.expand', 'inventory.group.collapse', 'inventory.group.forSale', 'inventory.group.tradeLocked',
     'inventory.group.offSale', 'inventory.group.stagnant.one', 'inventory.group.stagnant.other', 'inventory.group.convertedCost',
@@ -265,19 +265,17 @@ describe('chaves da visão agrupada (D278)', () => {
   test('placeholders esperados nas chaves de grupo', () => {
     expect(params(pt['inventory.group.expand'])).toEqual(['name']);
     expect(params(pt['inventory.group.tradeLocked'])).toEqual(['count', 'date']);
-    expect(params(pt['inventory.groupCount.other'])).toEqual(['count', 'groups']);
-    expect(params(pt['inventory.groupCount.inOneGroup'])).toEqual(['count', 'groups']);
+    expect(params(pt['inventory.countInGroups'])).toEqual(['groups', 'items']);
   });
 });
 
-describe('plural de groupCount e stagnant', () => {
-  // Espelha a lógica de app/page.tsx: 1 unidade -> one; N unidades em 1 grupo -> inOneGroup; senão other.
+describe('plural do título (itemCount, groupsCount, countInGroups) e stagnant', () => {
+  // Espelha a lógica de lib/inventoryCount.ts.
   const title = (messages: unknown, locale: string, count: number, groups: number) =>
-    count === 1
-      ? translatePlural(messages, 'inventory.groupCount', 1, locale, { groups })
-      : groups === 1
-        ? translate(messages, 'inventory.groupCount.inOneGroup', { count, groups })
-        : translatePlural(messages, 'inventory.groupCount', count, locale, { groups });
+    translate(messages, 'inventory.countInGroups', {
+      items: translatePlural(messages, 'inventory.itemCount', count, locale),
+      groups: translatePlural(messages, 'inventory.groupsCount', groups, locale),
+    });
 
   test('pt-BR', () => {
     expect(title(ptBR, 'pt-BR', 1, 1)).toBe('1 item em 1 grupo');
@@ -301,10 +299,10 @@ describe('plural de groupCount e stagnant', () => {
   });
 
   test('stagnant: singular e plural', () => {
-    expect(translatePlural(ptBR, 'inventory.group.stagnant', 1, 'pt-BR')).toBe('1 agarrada');
-    expect(translatePlural(ptBR, 'inventory.group.stagnant', 3, 'pt-BR')).toBe('3 agarradas');
-    expect(translatePlural(en, 'inventory.group.stagnant', 1, 'en')).toBe('1 stagnant');
-    expect(translatePlural(en, 'inventory.group.stagnant', 4, 'en')).toBe('4 stagnant');
+    expect(translatePlural(ptBR, 'inventory.group.stagnant', 1, 'pt-BR')).toBe('1 encalhada');
+    expect(translatePlural(ptBR, 'inventory.group.stagnant', 3, 'pt-BR')).toBe('3 encalhadas');
+    expect(translatePlural(en, 'inventory.group.stagnant', 1, 'en')).toBe('1 stuck');
+    expect(translatePlural(en, 'inventory.group.stagnant', 4, 'en')).toBe('4 stuck');
   });
 
   test('situação do grupo: textos preenchidos', () => {

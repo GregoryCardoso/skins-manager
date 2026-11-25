@@ -88,7 +88,7 @@ describe('textos do holding (D282)', () => {
   });
 
   test('textos novos', () => {
-    expect(ptBR.inventory.actions.offSale).toBe('Mover para holding');
+    expect(ptBR.inventory.actions.offSale).toBe('Mover para o holding');
     expect(ptBR.inventory.actions.forSale).toBe('Voltar para a venda');
     expect(ptBR.inventory.tabs.offSaleHint).toBe('Itens guardados esperando valorização.');
     expect(en.inventory.actions.offSale).toBe('Move to holding');

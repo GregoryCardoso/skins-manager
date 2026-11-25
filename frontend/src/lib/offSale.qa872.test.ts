@@ -120,8 +120,8 @@ describe('i18n: paridade e textos', () => {
   test('os novos baldes seguem o padrão dos existentes (enums.agingBucket / enums.turnaroundBucket) e não há duplicata em aging.bucket', () => {
     expect(flatPt['enums.agingBucket.FORA_DE_VENDA']).toBe('Holding');
     expect(flatEn['enums.agingBucket.FORA_DE_VENDA']).toBe('Holding');
-    expect(flatPt['enums.turnaroundBucket.SEM_GIRO']).toBe('Vendido do holding (sem giro)');
-    expect(flatEn['enums.turnaroundBucket.SEM_GIRO']).toBe('Sold from holding (no turnover)');
+    expect(flatPt['enums.turnaroundBucket.SEM_GIRO']).toBe('Vendido do holding (sem contar giro)');
+    expect(flatEn['enums.turnaroundBucket.SEM_GIRO']).toBe('Sold from holding (not counted)');
     expect(Object.keys(flatPt).filter((k) => /^aging\.bucket\./.test(k))).toEqual([]);
     // os baldes antigos continuam ao lado dos novos
     for (const bucket of ['RECENTE', 'EM_TRADE_LOCK', 'AGARRADO']) expect(flatPt[`enums.agingBucket.${bucket}`], bucket).toBeTruthy();
@@ -139,7 +139,7 @@ describe('i18n: paridade e textos', () => {
     expect(holders(flatPt['inventory.offSaleDone'])).toEqual(['{name}']);
     expect(holders(flatEn['inventory.forSaleDone'])).toEqual(['{name}']);
     expect(translate(ptBR, 'inventory.offSaleConfirmMessage')).toMatch(/recomeça/);
-    expect(translate(en, 'inventory.offSaleConfirmMessage')).toMatch(/restarts/);
+    expect(translate(en, 'inventory.offSaleConfirmMessage')).toMatch(/starts again/);
   });
 });
 

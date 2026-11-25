@@ -21,8 +21,8 @@ describe('i18n do valor de mercado', () => {
     const pick = (m: unknown) => keysOf(m).filter((k) => /marketValue|^prices\.|common\.ago|profit\.market|columns\.(marketValue|unrealized)/.test(k)).sort();
     expect(pick(en)).toEqual(pick(ptBR));
   });
-  test('a coluna e o card se chamam PnL não realizado', () => {
-    expect(ptBR.inventory.columns.unrealized).toContain('PnL não realizado');
+  test('a coluna e o card se chamam PnL não realizado (a coluna virou Lucro/prejuízo não realizado na 11.6)', () => {
+    expect(ptBR.inventory.columns.unrealized).toContain('Lucro/prejuízo não realizado');
     expect(en.profit.market.pnlLabel).toBe('Unrealized PnL');
     expect(en.profit.market.valueLabel).toBe('Current market value of inventory');
   });
