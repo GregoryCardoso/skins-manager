@@ -51,7 +51,7 @@ describe('migração v3', () => {
     const before = seedV2(dbPath);
     const db = openDatabase(dbPath, { now: new Date('2026-11-20T12:00:00.000Z') });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(22);
+      expect(db.pragma('user_version', { simple: true })).toBe(23);
       const after = db.prepare('SELECT * FROM items ORDER BY id').all();
       expect(after).toHaveLength(2);
       after.forEach((row, i) => {

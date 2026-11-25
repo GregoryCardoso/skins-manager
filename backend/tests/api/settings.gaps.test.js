@@ -61,7 +61,7 @@ describe('PUT /api/settings/fx-rate (lacunas)', () => {
       success: true,
       data: {
         usdBrlRate: 5.5, usdBrlRateUpdatedAt: '2026-11-20T10:00:00.000Z', catalogUpdatedAt: null,
-        theme: 'SYSTEM', language: 'pt-BR', inventoryView: 'GROUPED', usdBrlRateSource: 'MANUAL',
+        theme: 'SYSTEM', language: 'en', inventoryView: 'GROUPED', usdBrlRateSource: 'MANUAL',
         agingThresholdsAdjusted: false, fastTurnoverDays: 7, fastTurnoverDaysCustom: null, fastTurnoverDaysDefault: 7,
       slowItemDays: 21, slowItemDaysCustom: null, slowItemDaysDefault: 21, steamStoreId: expect.any(Number), rateQuotedAt: null, fxRefreshSource: 'AWESOMEAPI', updatedAt: '2026-11-20T10:00:00.000Z',
       },

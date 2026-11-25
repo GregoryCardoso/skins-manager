@@ -93,7 +93,7 @@ test('v19 sobre v18 cheio de dados: linhas idênticas, contador preservado, índ
   expect(before.items).toHaveLength(5);
   const db = openDatabase(dbPath, { now: NOW });
   try {
-    expect(db.pragma('user_version', { simple: true })).toBe(22);
+    expect(db.pragma('user_version', { simple: true })).toBe(23);
     expect(db.pragma('foreign_key_check')).toEqual([]);
     const after = snapshot(db);
     for (const key of Object.keys(before)) expect(after[key]).toEqual(before[key]);
@@ -156,7 +156,7 @@ test('v19 falha no meio: rollback total, versão 18 e dados intactos; depois mig
   }
   const ok = openDatabase(dbPath, { now: NOW });
   try {
-    expect(ok.pragma('user_version', { simple: true })).toBe(22);
+    expect(ok.pragma('user_version', { simple: true })).toBe(23);
     expect(ok.prepare('SELECT COUNT(*) AS n FROM items').get().n).toBe(5);
   } finally {
     ok.close();
@@ -165,5 +165,5 @@ test('v19 falha no meio: rollback total, versão 18 e dados intactos; depois mig
 
 test('a migração tem número e nome estáveis e é a última', () => {
   expect(v019).toMatchObject({ version: 19, name: 'consumed_generated_patch', disableForeignKeys: true });
-  expect(MIGRATIONS[MIGRATIONS.length - 1].version).toBe(22);
+  expect(MIGRATIONS[MIGRATIONS.length - 1].version).toBe(23);
 });

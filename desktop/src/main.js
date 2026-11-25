@@ -14,7 +14,7 @@ const windowSetup = require('./window');
 const dialogs = require('./dialogs');
 const { registerIpc, createStatePublisher } = require('./ipc');
 const { createUpdater } = require('./updater');
-const { normalizeLanguage, DEFAULT_LANGUAGE } = require('./i18n');
+const { normalizeLanguage, languageFromLocale } = require('./i18n');
 
 const APP_USER_MODEL_ID = 'io.github.gregorycardoso.skinsmanager';
 
@@ -52,21 +52,31 @@ let appOrigin = null;
 let appPort = null;
 let pageLoaded = false; // a interface (não a tela de carregamento) já foi carregada
 let quitting = false;
-let currentLanguage = DEFAULT_LANGUAGE;
+let currentLanguage = null; // último idioma lido das configurações; null = ainda não lido
 
 const getAppOrigin = () => appOrigin;
 
+// Sem idioma lido das configurações, usa o do sistema se for um dos disponíveis; senão, o inglês (D369).
+function knownLanguage() {
+  if (currentLanguage) return currentLanguage;
+  try {
+    return languageFromLocale(app.getLocale());
+  } catch (err) {
+    return languageFromLocale('');
+  }
+}
+
 // Idioma dos diálogos (E7-Q19): lido de GET /api/settings; se o backend não responde, usa o último conhecido.
 async function refreshLanguage(port) {
-  if (!port) return currentLanguage;
+  if (!port) return knownLanguage();
   try {
     const response = await fetch(`http://localhost:${port}/api/settings`, { signal: AbortSignal.timeout(1000) });
     const json = await response.json();
     if (json && json.data) currentLanguage = normalizeLanguage(json.data.language);
   } catch (err) {
-    // mantém o último idioma conhecido (padrão pt-BR)
+    // mantém o último idioma conhecido (ou o do sistema)
   }
-  return currentLanguage;
+  return knownLanguage();
 }
 
 // Porta do start-app.bat quando ele segura a pasta de dados (DATA_DIR_LOCKED): lida da trava (D173).
@@ -156,7 +166,7 @@ async function onGaveUp() {
 async function startup() {
   if (!fs.existsSync(appPaths.backendEntry)) {
     logger.error(`Backend não encontrado em ${appPaths.backendEntry}.`);
-    await dialogs.showStageMissing({ language: currentLanguage });
+    await dialogs.showStageMissing({ language: knownLanguage() });
     quitApp();
     return;
   }
@@ -184,7 +194,7 @@ async function startup() {
     return;
   }
   if (choice.kind === 'none') {
-    await dialogs.showNoFreePort({ parent: parentWindow(), language: currentLanguage });
+    await dialogs.showNoFreePort({ parent: parentWindow(), language: knownLanguage() });
     quitApp();
     return;
   }

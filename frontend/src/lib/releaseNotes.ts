@@ -32,16 +32,21 @@ export function selectReleaseNotes(markdown: string, language: string): string {
   if (sections.length === 0) return text.trim();
 
   const head = preamble.join('\n').trim();
-  const own = language.toLowerCase();
-  const matching = sections
-    .filter((section) => section.tag === own)
-    .map((section) => section.lines.join('\n').trim())
-    .filter((part) => part !== '');
-  // Com marcadores, mas sem seção (ou só vazia) do idioma: mostra todas, na ordem, sem os marcadores.
+  const partsOf = (tag: string) =>
+    sections
+      .filter((section) => section.tag === tag)
+      .map((section) => section.lines.join('\n').trim())
+      .filter((part) => part !== '');
+  // Seção do idioma; sem ela (ou só vazia), a seção `en` (o inglês é o idioma base, D369); sem ela também, todas, na ordem,
+  // sem os marcadores.
+  const own = partsOf(language.toLowerCase());
+  const english = partsOf('en');
   const chosen =
-    matching.length > 0
-      ? matching
-      : sections.map((section) => section.lines.join('\n').trim()).filter((part) => part !== '');
+    own.length > 0
+      ? own
+      : english.length > 0
+        ? english
+        : sections.map((section) => section.lines.join('\n').trim()).filter((part) => part !== '');
   return [head, ...chosen].filter((part) => part !== '').join('\n\n');
 }
 

@@ -1,10 +1,34 @@
 'use strict';
 
-const { translate, normalizeLanguage, MESSAGES } = require('../src/i18n');
+const fs = require('fs');
+const path = require('path');
+const { translate, normalizeLanguage, languageFromLocale, MESSAGES, LANGUAGES, DEFAULT_LANGUAGE } = require('../src/i18n');
 
-describe('i18n dos diálogos', () => {
-  test('pt-BR e en têm exatamente as mesmas chaves', () => {
-    expect(Object.keys(MESSAGES.en).sort()).toEqual(Object.keys(MESSAGES['pt-BR']).sort());
+const placeholders = (text) => [...text.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();
+
+describe('i18n dos diálogos (D369: inglês é a base)', () => {
+  test('o idioma base é o inglês e os idiomas disponíveis hoje são en e pt-BR', () => {
+    expect(DEFAULT_LANGUAGE).toBe('en');
+    expect([...LANGUAGES].sort()).toEqual(['en', 'pt-BR']);
+  });
+
+  test.each(LANGUAGES.filter((code) => code !== 'en'))('%s tem as mesmas chaves, os mesmos marcadores e nenhum texto vazio do inglês', (code) => {
+    expect(Object.keys(MESSAGES[code]).sort()).toEqual(Object.keys(MESSAGES.en).sort());
+    for (const [key, text] of Object.entries(MESSAGES[code])) {
+      expect([`${code}.${key}`, text.trim() === '']).toEqual([`${code}.${key}`, false]);
+      expect([`${code}.${key}`, placeholders(text)]).toEqual([`${code}.${key}`, placeholders(MESSAGES.en[key])]);
+    }
+  });
+
+  test('o inglês não tem texto vazio', () => {
+    for (const [key, text] of Object.entries(MESSAGES.en)) expect([key, text.trim() === '']).toEqual([key, false]);
+  });
+
+  test('toda chave usada nos diálogos existe no inglês', () => {
+    const source = fs.readFileSync(path.join(__dirname, '..', 'src', 'dialogs.js'), 'utf8');
+    const used = new Set([...source.matchAll(/'([a-zA-Z]+\.[a-zA-Z]+)'/g)].map((m) => m[1]));
+    expect(used.size).toBeGreaterThan(10);
+    expect([...used].filter((key) => !(key in MESSAGES.en))).toEqual([]);
   });
 
   test('traduz e interpola', () => {
@@ -13,10 +37,23 @@ describe('i18n dos diálogos', () => {
     expect(translate('pt-BR', 'common.close')).toBe('Fechar');
   });
 
-  test('idioma desconhecido ou ausente cai em pt-BR; chave desconhecida devolve a chave', () => {
-    expect(normalizeLanguage('fr')).toBe('pt-BR');
-    expect(normalizeLanguage(undefined)).toBe('pt-BR');
-    expect(translate('fr', 'common.close')).toBe('Fechar');
+  test('idioma desconhecido ou ausente cai no inglês; chave desconhecida devolve a chave', () => {
+    expect(normalizeLanguage('fr')).toBe('en');
+    expect(normalizeLanguage(undefined)).toBe('en');
+    expect(translate('xx', 'common.close')).toBe('Close');
+    expect(translate(undefined, 'common.close')).toBe('Close');
     expect(translate('en', 'nao.existe')).toBe('nao.existe');
+  });
+
+  test('languageFromLocale: idioma do sistema entre os disponíveis; senão, inglês', () => {
+    expect(languageFromLocale('pt-BR')).toBe('pt-BR');
+    expect(languageFromLocale('pt_BR')).toBe('pt-BR');
+    expect(languageFromLocale('pt-PT')).toBe('pt-BR');
+    expect(languageFromLocale('pt')).toBe('pt-BR');
+    expect(languageFromLocale('en-US')).toBe('en');
+    expect(languageFromLocale('en')).toBe('en');
+    expect(languageFromLocale('ru')).toBe('en');
+    expect(languageFromLocale('')).toBe('en');
+    expect(languageFromLocale(undefined)).toBe('en');
   });
 });

@@ -103,7 +103,7 @@ function reasonMessage(error: ApiRequestError, t: LooseT, locale: string): strin
   return text !== key ? text : null;
 }
 
-export function errorMessageFor(error: unknown, t: LooseT, locale = 'pt-BR'): string {
+export function errorMessageFor(error: unknown, t: LooseT, locale = 'en'): string {
   if (error instanceof ApiRequestError) {
     const byReason = reasonMessage(error, t, locale);
     if (byReason) return byReason;

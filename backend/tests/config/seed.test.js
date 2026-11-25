@@ -102,7 +102,7 @@ describe('config/seed', () => {
     runSeed(db, NOW);
     expect(db.prepare('SELECT * FROM settings').get()).toEqual({
       id: 1, usd_brl_rate: 5.25, usd_brl_rate_updated_at: 'a', updated_at: 'b',
-      catalog_updated_at: null, theme: 'SYSTEM', language: 'pt-BR', inventory_view: 'GROUPED',
+      catalog_updated_at: null, theme: 'SYSTEM', language: 'en', inventory_view: 'GROUPED',
       usd_brl_rate_source: null, rate_quoted_at: null, slow_item_days: null, fast_turnover_days: null, stores_seeded: 1, fx_refresh_source: 'AWESOMEAPI', steam_store_id: expect.any(Number), price_refresh_started_at: null, price_refresh_last_at: null, price_refresh_last_status: null, price_refresh_last_error_code: null,
     });
   });

@@ -12,10 +12,12 @@ import {
   isThemeChoice,
   readCachedPreferences,
   readInventoryView,
+  shouldAdoptDetectedLanguage,
   toResolvedTheme,
   writeCachedPreferences,
   writeInventoryView,
 } from '@/lib/preferences';
+import { BASE_LANGUAGE, browserLocales, detectLanguage } from '@/i18n/languages';
 import { queryKeys } from '@/lib/queryKeys';
 import { useInvalidate } from '@/lib/useInvalidate';
 import { getSettings, refreshFxRate, updateFxRate, updatePreferences } from '@/services/api';
@@ -66,6 +68,12 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const [fxRefreshSource, setFxRefreshSource] = useState<FxRefreshSource>('AWESOMEAPI');
   // Campos trocados localmente: a resposta tardia do GET /settings não os sobrescreve.
   const touched = useRef({ theme: false, language: false, inventoryView: false });
+  // Instalação nova (D369, E-P3-Q6): sem idioma no cache do navegador, o idioma inicial é o do Windows/navegador, se for um dos
+  // disponíveis; senão, o inglês. Quem já usa o app tem o idioma no cache e no banco e não muda nada.
+  const languageCachedAtStart = useRef(true);
+  const detectedLanguage = useRef<Language>(BASE_LANGUAGE);
+  const firstSettingsApplied = useRef(false);
+  const saveDetectedLanguage = useRef<(language: Language) => void>(() => {});
   const invalidate = useInvalidate();
   // As configurações vêm do cache compartilhado (D259): mudar cotação, limites ou preferências as invalida.
   const settingsQuery = useQuery({ queryKey: queryKeys.settings.all, queryFn: ({ signal }) => getSettings(signal) });
@@ -92,7 +100,9 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     }
     const cached = readCachedPreferences();
     setThemeState(effectiveTheme(cached.theme, systemDark));
-    if (cached.language) setLanguageState(cached.language);
+    languageCachedAtStart.current = cached.language !== undefined;
+    detectedLanguage.current = detectLanguage(browserLocales());
+    setLanguageState(cached.language ?? detectedLanguage.current);
     setInventoryViewState(readInventoryView());
     setReady(true);
 
@@ -122,7 +132,18 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     applyFx(settingsData);
     // 'SYSTEM' no banco (padrão ou valor antigo) = sem preferência: tema do sistema e cache limpo.
     if (!touched.current.theme) setThemeState(effectiveTheme(settingsData.theme, systemDark));
-    if (!touched.current.language) setLanguageState(settingsData.language);
+    if (!touched.current.language) {
+      const detected = detectedLanguage.current;
+      // O banco de uma instalação nova nasce em inglês (o padrão), sem escolha do usuário: vale o idioma do sistema.
+      if (shouldAdoptDetectedLanguage({ firstSettingsLoad: !firstSettingsApplied.current, languageCachedAtStart: languageCachedAtStart.current, savedLanguage: settingsData.language, detectedLanguage: detected })) {
+        touched.current.language = true;
+        setLanguageState(detected);
+        saveDetectedLanguage.current(detected);
+      } else {
+        setLanguageState(settingsData.language);
+      }
+    }
+    firstSettingsApplied.current = true;
     // O banco prevalece sobre o cache (D276), salvo uma troca em andamento.
     if (!touched.current.inventoryView && settingsData.inventoryView) {
       setInventoryViewState(settingsData.inventoryView);
@@ -152,6 +173,8 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       })
       .catch((error: unknown) => setSaveError(error));
   }, [invalidate]);
+
+  saveDetectedLanguage.current = (next) => save({ language: next });
 
   const setTheme = useCallback(
     (next: ThemeChoice) => {

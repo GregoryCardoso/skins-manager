@@ -1,5 +1,30 @@
 import { describe, expect, test } from 'vitest';
-import { formatDecimalInput, parseDecimalInput } from './numberInput';
+import { formatDecimalInput, parseDecimalInput, parseMoneyToCents, usesCommaDecimal } from './numberInput';
+
+describe('separador decimal pelo Intl de cada idioma (D369)', () => {
+  test.each(['pt-BR', 'es', 'ru', 'tr', 'fr', 'it', 'de', 'pl', 'uk'])('%s usa vírgula decimal: "1.234,56" e "5,4"', (language) => {
+    expect(usesCommaDecimal(language)).toBe(true);
+    expect(parseDecimalInput('1.234,56', language)).toBe(1234.56);
+    expect(parseDecimalInput('5,4', language)).toBe(5.4);
+  });
+
+  test.each(['en', 'ja', 'ko', 'zh-CN'])('%s usa ponto decimal: "1,234.56", "5.4" e "5,4" sem ponto', (language) => {
+    expect(usesCommaDecimal(language)).toBe(false);
+    expect(parseDecimalInput('1,234.56', language)).toBe(1234.56);
+    expect(parseDecimalInput('5.4', language)).toBe(5.4);
+    expect(parseDecimalInput('5,4', language)).toBe(5.4);
+  });
+
+  test('espaço (inclusive o fino e o inseparável do francês e do russo) como milhar', () => {
+    expect(parseDecimalInput('1 234,56', 'fr')).toBe(1234.56);
+    expect(parseDecimalInput('1 234,56', 'ru')).toBe(1234.56);
+    expect(parseMoneyToCents('1 234,56', 'de')).toBe(123456);
+  });
+
+  test('código desconhecido cai no formato do inglês (ponto)', () => {
+    expect(usesCommaDecimal('xx')).toBe(false);
+  });
+});
 
 describe('parseDecimalInput pt-BR', () => {
   test.each([

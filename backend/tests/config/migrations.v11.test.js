@@ -36,7 +36,7 @@ describe('migração v11', () => {
     old.close();
     const db = openDatabase(dbPath, { now: new Date('2026-11-22T12:00:00.000Z') });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(22);
+      expect(db.pragma('user_version', { simple: true })).toBe(23);
       const { inventory_view: view, steam_store_id: _steam, price_refresh_started_at: _p1, price_refresh_last_at: _p2, price_refresh_last_status: _p3, price_refresh_last_error_code: _p4, ...rest } = db.prepare('SELECT * FROM settings').get();
       expect(view).toBe('GROUPED');
       expect(rest).toEqual(before);

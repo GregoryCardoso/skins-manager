@@ -16,7 +16,7 @@ describe('/api/settings', () => {
     const res = await request(app).get('/api/settings');
     expect(res.status).toBe(200);
     expect(res.body.data).toEqual({
-      usdBrlRate: null, usdBrlRateUpdatedAt: null, usdBrlRateSource: null, catalogUpdatedAt: null, theme: 'SYSTEM', language: 'pt-BR', inventoryView: 'GROUPED',
+      usdBrlRate: null, usdBrlRateUpdatedAt: null, usdBrlRateSource: null, catalogUpdatedAt: null, theme: 'SYSTEM', language: 'en', inventoryView: 'GROUPED',
       agingThresholdsAdjusted: false, fastTurnoverDays: 7, fastTurnoverDaysCustom: null, fastTurnoverDaysDefault: 7,
       slowItemDays: 21, slowItemDaysCustom: null, slowItemDaysDefault: 21, steamStoreId: expect.any(Number), rateQuotedAt: null, fxRefreshSource: 'AWESOMEAPI', updatedAt: expect.any(String),
     });
@@ -29,7 +29,7 @@ describe('/api/settings', () => {
     expect(res.body.data).toEqual({
       usdBrlRate: 5.25,
       usdBrlRateUpdatedAt: '2026-11-19T15:00:00.000Z',
-      catalogUpdatedAt: null, theme: 'SYSTEM', language: 'pt-BR', inventoryView: 'GROUPED', usdBrlRateSource: 'MANUAL',
+      catalogUpdatedAt: null, theme: 'SYSTEM', language: 'en', inventoryView: 'GROUPED', usdBrlRateSource: 'MANUAL',
       agingThresholdsAdjusted: false, fastTurnoverDays: 7, fastTurnoverDaysCustom: null, fastTurnoverDaysDefault: 7,
       slowItemDays: 21, slowItemDaysCustom: null, slowItemDaysDefault: 21, steamStoreId: expect.any(Number), rateQuotedAt: null, fxRefreshSource: 'AWESOMEAPI',
       updatedAt: '2026-11-19T15:00:00.000Z',
@@ -58,14 +58,14 @@ describe('/api/settings', () => {
   describe('PATCH /api/settings (preferências, D83)', () => {
     const patch = (body) => request(app).patch('/api/settings').set('Content-Type', 'application/json').send(body);
 
-    test('GET inicial traz theme SYSTEM, language pt-BR e catalogUpdatedAt nulo', async () => {
+    test('GET inicial traz theme SYSTEM, language en e catalogUpdatedAt nulo', async () => {
       const res = await request(app).get('/api/settings');
-      expect(res.body.data).toMatchObject({ theme: 'SYSTEM', language: 'pt-BR', inventoryView: 'GROUPED', catalogUpdatedAt: null });
+      expect(res.body.data).toMatchObject({ theme: 'SYSTEM', language: 'en', inventoryView: 'GROUPED', catalogUpdatedAt: null });
     });
 
     test.each([
-      [{ theme: 'DARK' }, { theme: 'DARK', language: 'pt-BR' }],
-      [{ theme: 'LIGHT' }, { theme: 'LIGHT', language: 'pt-BR' }],
+      [{ theme: 'DARK' }, { theme: 'DARK', language: 'en' }],
+      [{ theme: 'LIGHT' }, { theme: 'LIGHT', language: 'en' }],
       [{ language: 'en' }, { theme: 'SYSTEM', language: 'en' }],
       [{ theme: 'DARK', language: 'en' }, { theme: 'DARK', language: 'en' }],
     ])('%j grava e responde Settings completo', async (body, expected) => {
@@ -114,7 +114,7 @@ describe('/api/settings', () => {
       expectError(await patch({ theme: 'dark' }), 400, 'INVALID_THEME');
       expectError(await patch({ language: 'es' }), 400, 'INVALID_LANGUAGE');
       expectError(await patch({ theme: 'DARK', language: 'es' }), 400, 'INVALID_LANGUAGE');
-      expect((await request(app).get('/api/settings')).body.data).toMatchObject({ theme: 'SYSTEM', language: 'pt-BR' });
+      expect((await request(app).get('/api/settings')).body.data).toMatchObject({ theme: 'SYSTEM', language: 'en' });
     });
 
     test('PUT /fx-rate continua funcionando e não mexe nas preferências', async () => {
@@ -146,5 +146,20 @@ describe('/api/settings', () => {
       const after = (await request(app).get(`/api/items/${item.id}`)).body.data;
       expect(after.minPrices.find((m) => m.storeName === 'Steam')).toMatchObject({ minPriceCents: 5750, warning: null, warningCode: null });
     });
+  });
+});
+
+describe('PATCH /api/settings language (11.1, D369)', () => {
+  test.each(['es-ES', 'ES', '', 'xx', 'pt-br', 'EN'])('código %j fora da lista -> INVALID_LANGUAGE e nada é gravado', async (code) => {
+    expectError(await request(app).patch('/api/settings').send({ language: code }), 400, 'INVALID_LANGUAGE');
+    expect((await request(app).get('/api/settings')).body.data.language).toBe('en');
+  });
+
+  test('en e pt-BR continuam aceitos', async () => {
+    for (const code of ['pt-BR', 'en']) {
+      const res = await request(app).patch('/api/settings').send({ language: code });
+      expect(res.status).toBe(200);
+      expect(res.body.data.language).toBe(code);
+    }
   });
 });

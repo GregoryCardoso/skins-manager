@@ -6,7 +6,8 @@
     "dev": "next dev -p 3000",
     "build": "next build",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "i18n:report": "node scripts/i18n-report.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "5.107.1",

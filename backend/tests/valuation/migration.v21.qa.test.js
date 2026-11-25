@@ -65,7 +65,7 @@ describe('v21 sobre um banco v20 mais completo', () => {
 
     const db = database.openDatabase(file, { now: NOW });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(22);
+      expect(db.pragma('user_version', { simple: true })).toBe(23);
       const after = dumpAll(db, ['market_prices']);
       const { settings: settingsBefore, ...restBefore } = before;
       const { settings: settingsAfter, ...restAfter } = after;

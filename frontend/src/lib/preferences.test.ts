@@ -1,4 +1,5 @@
 import { describe, expect, test, vi } from 'vitest';
+import { BASE_LANGUAGE, LANGUAGES, matchLanguage } from '@/i18n/languages';
 import {
   bootstrapPreferences,
   bootstrapScript,
@@ -6,6 +7,7 @@ import {
   isThemeChoice,
   nextTheme,
   readCachedPreferences,
+  shouldAdoptDetectedLanguage,
   toResolvedTheme,
   writeCachedPreferences,
 } from './preferences';
@@ -23,6 +25,9 @@ function fakeStorage(initial: Record<string, string> = {}) {
     },
   };
 }
+
+// Ambiente de idiomas que o `bootstrapScript` injeta no navegador (D369); `navigatorLocales` simula `navigator.languages`.
+const LANG_ENV = { languages: LANGUAGES, baseLanguage: BASE_LANGUAGE, pickLanguage: matchLanguage, navigatorLocales: [] as string[] };
 
 const throwing = () => {
   throw new Error('x');
@@ -112,25 +117,41 @@ describe('cache', () => {
   });
 });
 
+describe('shouldAdoptDetectedLanguage (instalação nova, D369)', () => {
+  const base = { firstSettingsLoad: true, languageCachedAtStart: false, savedLanguage: 'en', detectedLanguage: 'pt-BR' };
+  test('instalação nova com o Windows em outro idioma disponível: adota o idioma do sistema', () => {
+    expect(shouldAdoptDetectedLanguage(base)).toBe(true);
+  });
+  test('instalação nova com o sistema em inglês ou em idioma indisponível (detectado = en): fica em inglês', () => {
+    expect(shouldAdoptDetectedLanguage({ ...base, detectedLanguage: 'en' })).toBe(false);
+  });
+  test('quem já usa o app não muda nada: cache presente, banco em pt-BR ou leitura que não é a primeira', () => {
+    expect(shouldAdoptDetectedLanguage({ ...base, languageCachedAtStart: true })).toBe(false);
+    expect(shouldAdoptDetectedLanguage({ ...base, savedLanguage: 'pt-BR', detectedLanguage: 'en' })).toBe(false);
+    expect(shouldAdoptDetectedLanguage({ ...base, savedLanguage: 'pt-BR' })).toBe(false);
+    expect(shouldAdoptDetectedLanguage({ ...base, firstSettingsLoad: false })).toBe(false);
+  });
+});
+
 describe('bootstrapPreferences', () => {
-  test('tema escuro do sistema, pt-BR: sem i18n-pending', () => {
+  test('tema escuro do sistema, sem idioma salvo e sem idioma do navegador: inglês (base), sem i18n-pending', () => {
     const { attrs, classes, doc } = fakeDoc();
-    bootstrapPreferences({ doc, storage: fakeStorage(), matchMedia: () => ({ matches: true }) });
+    bootstrapPreferences({ ...LANG_ENV, doc, storage: fakeStorage(), matchMedia: () => ({ matches: true }) });
     expect(attrs['data-theme']).toBe('dark');
-    expect(attrs.lang).toBe('pt-BR');
+    expect(attrs.lang).toBe('en');
     expect(doc.documentElement.style.colorScheme).toBe('dark');
     expect(classes.has('i18n-pending')).toBe(false);
   });
 
-  test('en em cache: i18n-pending e remoção agendada em 3 s', () => {
+  test('pt-BR em cache: i18n-pending e remoção agendada em 3 s', () => {
     const { attrs, classes, doc } = fakeDoc();
     const setTimeoutFn = vi.fn();
     bootstrapPreferences({
-      doc, storage: fakeStorage({ 'sm.theme': 'LIGHT', 'sm.language': 'en' }),
+      ...LANG_ENV, doc, storage: fakeStorage({ 'sm.theme': 'LIGHT', 'sm.language': 'pt-BR' }),
       matchMedia: () => ({ matches: true }), setTimeoutFn,
     });
     expect(attrs['data-theme']).toBe('light');
-    expect(attrs.lang).toBe('en');
+    expect(attrs.lang).toBe('pt-BR');
     expect(classes.has('i18n-pending')).toBe(true);
     expect(setTimeoutFn).toHaveBeenCalledWith(expect.any(Function), 3000);
     setTimeoutFn.mock.calls[0][0]();
@@ -162,28 +183,55 @@ describe('bootstrapPreferences', () => {
     expect(doc.documentElement.style.colorScheme).toBe('light');
   });
 
-  test('valores inválidos em cache caem no padrão (tema do sistema / pt-BR)', () => {
+  test('valores inválidos em cache caem no padrão (tema do sistema / inglês)', () => {
     const { attrs, classes, doc } = fakeDoc();
     bootstrapPreferences({
-      doc, storage: fakeStorage({ 'sm.theme': 'PURPLE', 'sm.language': 'fr' }), matchMedia: () => ({ matches: true }),
+      ...LANG_ENV, doc, storage: fakeStorage({ 'sm.theme': 'PURPLE', 'sm.language': 'fr' }), matchMedia: () => ({ matches: true }),
     });
     expect(attrs['data-theme']).toBe('dark');
-    expect(attrs.lang).toBe('pt-BR');
+    expect(attrs.lang).toBe('en');
     expect(classes.has('i18n-pending')).toBe(false);
   });
 
   test('sem matchMedia (null) e storage null: tema claro, sem lançar', () => {
     const { attrs, doc } = fakeDoc();
-    expect(() => bootstrapPreferences({ doc, storage: null, matchMedia: null })).not.toThrow();
+    expect(() => bootstrapPreferences({ ...LANG_ENV, doc, storage: null, matchMedia: null })).not.toThrow();
     expect(attrs['data-theme']).toBe('light');
-    expect(attrs.lang).toBe('pt-BR');
+    expect(attrs.lang).toBe('en');
   });
 
-  test('pt-BR explícito em cache não agenda timer', () => {
+  test('en explícito em cache não agenda timer', () => {
     const { doc } = fakeDoc();
     const setTimeoutFn = vi.fn();
-    bootstrapPreferences({ doc, storage: fakeStorage({ 'sm.language': 'pt-BR' }), matchMedia: () => ({ matches: false }), setTimeoutFn });
+    bootstrapPreferences({ ...LANG_ENV, doc, storage: fakeStorage({ 'sm.language': 'en' }), matchMedia: () => ({ matches: false }), setTimeoutFn });
     expect(setTimeoutFn).not.toHaveBeenCalled();
+  });
+
+  test('instalação nova (sem idioma salvo): usa o idioma do navegador se for um dos disponíveis; senão, o inglês', () => {
+    for (const [locales, expected] of [[['pt-BR', 'en'], 'pt-BR'], [['pt-PT'], 'pt-BR'], [['ru-RU', 'pt-BR'], 'pt-BR'], [['en-US'], 'en'], [['ru-RU'], 'en'], [[], 'en']] as const) {
+      const { attrs, doc } = fakeDoc();
+      bootstrapPreferences({ ...LANG_ENV, navigatorLocales: [...locales], doc, storage: fakeStorage(), matchMedia: () => ({ matches: false }) });
+      expect(attrs.lang).toBe(expected);
+    }
+  });
+
+  test('idioma salvo vale sempre, mesmo com outro idioma no navegador (quem já usa o app não muda)', () => {
+    const a = fakeDoc();
+    bootstrapPreferences({ ...LANG_ENV, navigatorLocales: ['en-US'], doc: a.doc, storage: fakeStorage({ 'sm.language': 'pt-BR' }), matchMedia: () => ({ matches: false }) });
+    expect(a.attrs.lang).toBe('pt-BR');
+    const b = fakeDoc();
+    bootstrapPreferences({ ...LANG_ENV, navigatorLocales: ['pt-BR'], doc: b.doc, storage: fakeStorage({ 'sm.language': 'en' }), matchMedia: () => ({ matches: false }) });
+    expect(b.attrs.lang).toBe('en');
+  });
+
+  test('idioma do navegador a partir de navigator.languages (padrão)', () => {
+    const { attrs, doc } = fakeDoc();
+    const { navigatorLocales: _unused, ...env } = LANG_ENV;
+    void _unused;
+    vi.stubGlobal('navigator', { languages: ['pt-BR', 'en-US'], language: 'pt-BR' });
+    bootstrapPreferences({ ...env, doc, storage: fakeStorage(), matchMedia: () => ({ matches: false }) });
+    vi.unstubAllGlobals();
+    expect(attrs.lang).toBe('pt-BR');
   });
 
   test('nunca lança, mesmo com tudo quebrado', () => {
@@ -201,8 +249,23 @@ describe('bootstrapPreferences', () => {
     const script = bootstrapScript();
     expect(script.startsWith('(')).toBe(true);
     const { attrs, doc } = fakeDoc();
-    const run = new Function('document', 'localStorage', 'window', 'setTimeout', script);
-    run(doc, fakeStorage({ 'sm.theme': 'DARK' }), { matchMedia: () => ({ matches: false }) }, () => 0);
+    const run = new Function('document', 'localStorage', 'window', 'setTimeout', 'navigator', script);
+    run(doc, fakeStorage({ 'sm.theme': 'DARK' }), { matchMedia: () => ({ matches: false }) }, () => 0, { languages: [], language: '' });
     expect(attrs['data-theme']).toBe('dark');
+    expect(attrs.lang).toBe('en');
+  });
+
+  test('script serializado: idioma do navegador numa instalação nova e idioma salvo (sem referenciar nada de fora)', () => {
+    const script = bootstrapScript();
+    const run = (storage: ReturnType<typeof fakeStorage>, languages: string[]) => {
+      const { attrs, doc } = fakeDoc();
+      new Function('document', 'localStorage', 'window', 'setTimeout', 'navigator', script)(
+        doc, storage, { matchMedia: () => ({ matches: false }) }, () => 0, { languages, language: languages[0] },
+      );
+      return attrs.lang;
+    };
+    expect(run(fakeStorage(), ['pt-BR', 'en'])).toBe('pt-BR');
+    expect(run(fakeStorage(), ['ja-JP'])).toBe('en');
+    expect(run(fakeStorage({ 'sm.language': 'en' }), ['pt-BR'])).toBe('en');
   });
 });

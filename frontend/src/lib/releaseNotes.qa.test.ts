@@ -300,8 +300,12 @@ describe('QA: divisão por idioma (D192)', () => {
     expect(selectReleaseNotes('<!-- pt-BR -->\nSó português', 'en')).toBe('Só português');
   });
 
-  test('idioma ausente com várias seções: todas na ordem, sem marcadores', () => {
-    expect(selectReleaseNotes('<!-- pt-BR -->\nA\n<!-- en -->\nB', 'es')).toBe('A\n\nB');
+  test('idioma ausente com a seção en: mostra a seção en (o inglês é a reserva, D369)', () => {
+    expect(selectReleaseNotes('<!-- pt-BR -->\nA\n<!-- en -->\nB', 'es')).toBe('B');
+  });
+
+  test('idioma ausente sem a seção en: todas na ordem, sem marcadores', () => {
+    expect(selectReleaseNotes('<!-- pt-BR -->\nA\n<!-- es -->\nB', 'ru')).toBe('A\n\nB');
   });
 
   test('seção do idioma só com espaços cai na reserva', () => {
@@ -312,7 +316,7 @@ describe('QA: divisão por idioma (D192)', () => {
     const md = 'Comum\n<!-- pt-BR -->\nA\n<!-- en -->\nB';
     expect(selectReleaseNotes(md, 'pt-BR')).toBe('Comum\n\nA');
     expect(selectReleaseNotes(md, 'en')).toBe('Comum\n\nB');
-    expect(selectReleaseNotes(md, 'fr')).toBe('Comum\n\nA\n\nB');
+    expect(selectReleaseNotes(md, 'fr')).toBe('Comum\n\nB');
   });
 
   test('só preâmbulo e marcadores vazios: sobra o preâmbulo', () => {
@@ -343,8 +347,8 @@ describe('QA: divisão por idioma (D192)', () => {
 
   test('idioma desconhecido ou vazio não quebra', () => {
     const md = '<!-- pt-BR -->\nA\n<!-- en -->\nB';
-    expect(selectReleaseNotes(md, '')).toBe('A\n\nB');
-    expect(selectReleaseNotes(md, '??')).toBe('A\n\nB');
+    expect(selectReleaseNotes(md, '')).toBe('B');
+    expect(selectReleaseNotes(md, '??')).toBe('B');
   });
 
   test('marcador dentro de bloco de código também divide (limitação conhecida, documentada no teste)', () => {

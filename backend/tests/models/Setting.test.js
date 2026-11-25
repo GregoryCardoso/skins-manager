@@ -20,7 +20,7 @@ describe('models/Setting', () => {
       jest.setSystemTime(new Date('2026-06-02T00:00:00.000Z'));
       const s = Setting.update({ usdBrlRate: 5.3 });
       expect(s).toEqual({
-        usdBrlRate: 5.3, usdBrlRateUpdatedAt: '2026-06-01T00:00:00.000Z', catalogUpdatedAt: null, theme: 'SYSTEM', language: 'pt-BR', inventoryView: 'GROUPED',
+        usdBrlRate: 5.3, usdBrlRateUpdatedAt: '2026-06-01T00:00:00.000Z', catalogUpdatedAt: null, theme: 'SYSTEM', language: 'en', inventoryView: 'GROUPED',
         usdBrlRateSource: null, rateQuotedAt: null, fxRefreshSource: 'AWESOMEAPI', fastTurnoverDays: null, slowItemDays: null, steamStoreId: expect.any(Number),
         updatedAt: '2026-06-02T00:00:00.000Z',
       });

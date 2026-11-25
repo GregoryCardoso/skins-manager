@@ -1,9 +1,25 @@
+import { LANGUAGE_REGISTRY } from '@/i18n/languages';
+
+// O idioma usa vírgula como separador decimal? Vem do `Intl` do locale do registro (D369), e não de uma lista de idiomas:
+// de, fr, es, ru, pl, uk, tr, it, pt-BR... usam vírgula; en, ja, ko e zh-CN usam ponto.
+export function usesCommaDecimal(language: string): boolean {
+  try {
+    // Idioma do registro: o locale dele. Outro código (idiomas ainda fora do registro): ele mesmo, se o Intl o conhece; senão, o inglês.
+    const entry = LANGUAGE_REGISTRY.find((item) => item.code === language);
+    const locale = entry ? entry.intlLocale : Intl.NumberFormat.supportedLocalesOf([language]).length > 0 ? language : 'en';
+    const parts = new Intl.NumberFormat(locale).formatToParts(1.5);
+    return parts.find((part) => part.type === 'decimal')?.value === ',';
+  } catch {
+    return false;
+  }
+}
+
 // Interpreta um número digitado ("5,40" em pt-BR, "5.40" em en). Devolve null se inválido ou <= 0.
 export function parseDecimalInput(text: string, language: string): number | null {
   const raw = text.trim().replace(/\s+/g, '');
   if (raw === '') return null;
   let normalized: string;
-  if (language === 'pt-BR') {
+  if (usesCommaDecimal(language)) {
     // "1.234,56" -> "1234.56"; aceita também "5.40" quando não há vírgula.
     normalized = raw.includes(',') ? raw.replace(/\./g, '').replace(',', '.') : raw;
   } else {
@@ -23,7 +39,7 @@ export function formatDecimalInput(value: number, language: string): string {
 // Normaliza o texto digitado para o formato "1234.56" (ponto decimal), sem validar o resto.
 export function normalizeNumberText(text: string, language: string): string {
   const raw = text.trim().replace(/\s+/g, '');
-  if (language === 'pt-BR') return raw.includes(',') ? raw.replace(/\./g, '').replace(',', '.') : raw;
+  if (usesCommaDecimal(language)) return raw.includes(',') ? raw.replace(/\./g, '').replace(',', '.') : raw;
   return raw.includes('.') ? raw.replace(/,/g, '') : raw.replace(',', '.');
 }
 

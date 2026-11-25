@@ -1,9 +1,12 @@
+import type { Language } from '@/i18n/languages';
+
 // Valor gravado no banco. 'SYSTEM' (padrão da migração v2) = "sem preferência": vale o tema do sistema
 // operacional como valor inicial. A interface só oferece Claro/Escuro e nunca envia 'SYSTEM' (D112).
 export type Theme = 'SYSTEM' | 'LIGHT' | 'DARK';
 // Tema escolhido/exibido na interface.
 export type ThemeChoice = 'LIGHT' | 'DARK';
-export type Language = 'pt-BR' | 'en';
+// Idiomas disponíveis (registro único em `i18n/languages.ts`, D369).
+export type { Language };
 // Visão do inventário (D276): agrupada (padrão) ou individual.
 export type InventoryView = 'INDIVIDUAL' | 'GROUPED';
 export type ResolvedTheme = 'light' | 'dark';

@@ -30,7 +30,7 @@ test('v16 sobre um banco v15: as colunas nascem nulas, aportes e lotes ficam int
 
   const db = openDatabase(dbPath, { now: new Date('2026-11-23T12:00:00.000Z') });
   try {
-    expect(db.pragma('user_version', { simple: true })).toBe(22);
+    expect(db.pragma('user_version', { simple: true })).toBe(23);
     expect(db.prepare('SELECT * FROM deposits').all().map(({ fee_cents: fee, ...rest }) => { expect(fee).toBeNull(); return rest; })).toEqual(before.deposits);
     expect(db.prepare('SELECT * FROM import_batches').all()
       .map(({ previous_transactions_cutoff_at: previous, components_filled_count: _f, components_skipped_count: _s, ...rest }) => { expect(previous).toBeNull(); return rest; })).toEqual(before.batches);

@@ -68,7 +68,7 @@ test('v18 sobre v17 com dados: tudo idêntico; o índice de slot sai; as colunas
   const { before } = seedV17(dbPath);
   const db = openDatabase(dbPath, { now: new Date('2026-11-24T12:00:00.000Z') });
   try {
-    expect(db.pragma('user_version', { simple: true })).toBe(22);
+    expect(db.pragma('user_version', { simple: true })).toBe(23);
     const after = snapshot(db);
     expect(after.items).toEqual(before.items);
     expect(after.components).toEqual(before.components);
@@ -145,7 +145,7 @@ test('v18 falha no meio: rollback total (índice de volta, sem colunas), versão
   }
   const ok = openDatabase(dbPath);
   try {
-    expect(ok.pragma('user_version', { simple: true })).toBe(22);
+    expect(ok.pragma('user_version', { simple: true })).toBe(23);
   } finally {
     ok.close();
   }

@@ -46,9 +46,7 @@
     "switchTo": "Theme: {current}. Click to switch to {next}."
   },
   "language": {
-    "label": "Language",
-    "pt-BR": "Português (Brasil)",
-    "en": "English"
+    "label": "Language"
   },
   "pages": {
     "inventoryTitle": "Inventory",

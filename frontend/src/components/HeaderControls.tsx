@@ -2,7 +2,8 @@
 
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useT, useTLoose } from '@/i18n/I18nProvider';
-import { LANGUAGES, nextTheme } from '@/lib/preferences';
+import { LANGUAGE_REGISTRY } from '@/i18n/languages';
+import { nextTheme } from '@/lib/preferences';
 import type { Language, ThemeChoice } from '@/types/api';
 import styles from './HeaderControls.module.css';
 import { usePreferences } from './PreferencesProvider';
@@ -42,9 +43,9 @@ export default function HeaderControls() {
         aria-label={t('language.label')}
         title={t('language.label')}
       >
-        {LANGUAGES.map((code) => (
-          <option key={code} value={code}>
-            {t(`language.${code}`)}
+        {LANGUAGE_REGISTRY.map((entry) => (
+          <option key={entry.code} value={entry.code} lang={entry.code}>
+            {entry.nativeName}
           </option>
         ))}
       </select>

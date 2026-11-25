@@ -2,7 +2,8 @@
 
 import { useId } from 'react';
 import { useT } from '@/i18n/I18nProvider';
-import { LANGUAGES, THEME_CHOICES } from '@/lib/preferences';
+import { LANGUAGE_REGISTRY } from '@/i18n/languages';
+import { THEME_CHOICES } from '@/lib/preferences';
 import type { Language, ThemeChoice } from '@/types/api';
 import { usePreferences } from './PreferencesProvider';
 import styles from './settings.module.css';
@@ -39,8 +40,8 @@ export default function PreferencesSettings() {
             value={language}
             onChange={(e) => setLanguage(e.target.value as Language)}
           >
-            {LANGUAGES.map((code) => (
-              <option key={code} value={code}>{t(`language.${code}`)}</option>
+            {LANGUAGE_REGISTRY.map((entry) => (
+              <option key={entry.code} value={entry.code} lang={entry.code}>{entry.nativeName}</option>
             ))}
           </select>
         </div>

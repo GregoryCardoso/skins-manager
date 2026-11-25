@@ -64,8 +64,13 @@ describe('conversão do valor por idioma', () => {
     expect(valid(text, language)).toBe(false);
   });
 
-  test('o idioma fora de pt-BR/en usa a regra do inglês, sem lançar', () => {
-    expect(cents('1,234.56', 'es')).toBe(123456);
+  test('o idioma desconhecido usa a regra do inglês, sem lançar', () => {
+    expect(cents('1,234.56', 'xx')).toBe(123456);
+  });
+
+  test('o separador decimal vem do Intl do idioma (D369): o espanhol usa vírgula, o japonês usa ponto', () => {
+    expect(cents('1.234,56', 'es')).toBe(123456);
+    expect(cents('1,234.56', 'ja')).toBe(123456);
   });
 });
 

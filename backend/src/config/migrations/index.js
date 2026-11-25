@@ -23,7 +23,8 @@ const v019 = require('./v019_consumed_generated_patch');
 const v020 = require('./v020_steam_store');
 const v021 = require('./v021_market_prices');
 const v022 = require('./v022_operation_ended_by');
+const v023 = require('./v023_language_format');
 
-const MIGRATIONS = Object.freeze([v001, v002, v003, v004, v005, v006, v007, v008, v009, v010, v011, v012, v013, v014, v015, v016, v017, v018, v019, v020, v021, v022]);
+const MIGRATIONS = Object.freeze([v001, v002, v003, v004, v005, v006, v007, v008, v009, v010, v011, v012, v013, v014, v015, v016, v017, v018, v019, v020, v021, v022, v023]);
 
 module.exports = { MIGRATIONS };
