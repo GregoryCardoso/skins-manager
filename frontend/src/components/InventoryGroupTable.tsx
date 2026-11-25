@@ -242,7 +242,7 @@ export default function InventoryGroupTable({
 }: Props) {
   const t = useT();
   return (
-    <div className={styles.scroll}>
+    <div className={styles.scroll} data-wide-table="">
       <table className={`${styles.table} ${groupStyles.groupTable}`}>
         <thead>
           <tr>

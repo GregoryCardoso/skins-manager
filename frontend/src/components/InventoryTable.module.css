@@ -1,4 +1,9 @@
-.scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+/* Rola dentro da janela: a barra horizontal fica sempre visível e o cabeçalho fica fixo no topo ao rolar. */
+.scroll {
+  overflow: auto; border: 1px solid var(--border); border-radius: 10px; background: var(--surface);
+  max-height: calc(100vh - 4rem); max-height: calc(100dvh - 4rem);
+}
+.scroll > .table > thead th { position: sticky; top: 0; z-index: 2; box-shadow: inset 0 -1px 0 var(--border); }
 .table { width: 100%; border-collapse: collapse; min-width: 62rem; }
 .table th {
   text-align: left; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted);
@@ -19,3 +24,10 @@
 .nowrap { white-space: nowrap; }
 .inspect { font-size: 0.85rem; white-space: nowrap; }
 .srOnly { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* Janelas menores: células e textos mais compactos para caber mais colunas. */
+@media (max-width: 90rem) {
+  .table th, .table td { padding: 0.45rem 0.5rem; }
+  .table td { font-size: 0.875rem; }
+  .itemCell { min-width: 10rem; }
+}

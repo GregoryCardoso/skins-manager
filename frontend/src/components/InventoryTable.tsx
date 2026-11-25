@@ -16,7 +16,7 @@ interface Props extends UnitRowHandlers {
 
 export default function InventoryTable({ items, stores, forSalePendingId = null, highlightedItemId = null, showMarket = true, ...handlers }: Props) {
   return (
-    <div className={styles.scroll}>
+    <div className={styles.scroll} data-wide-table="">
       <table className={styles.table}>
         <UnitTableHead showMarket={showMarket} />
         <tbody>

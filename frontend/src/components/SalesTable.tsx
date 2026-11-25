@@ -158,7 +158,7 @@ function SaleRow({ item, stores, onEdit, onUnsell, onDelete, onHistory, highligh
               usdCents={profitUsd}
               approxBrlCents={info.approxBrl.profit}
               signed
-              highlightNegative
+              colorBySign
             />
             {info.usesRecordedFx && (
               <Badge
@@ -183,7 +183,7 @@ function SaleRow({ item, stores, onEdit, onUnsell, onDelete, onHistory, highligh
 export default function SalesTable(props: Props) {
   const t = useT();
   return (
-    <div className={styles.scroll}>
+    <div className={styles.scroll} data-wide-table="">
       <table className={styles.table}>
         <thead>
           <tr>

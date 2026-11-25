@@ -2,3 +2,4 @@
 .main { font-weight: 600; }
 .side { font-size: 0.78rem; color: var(--text-muted); opacity: 0.9; }
 .negative { color: var(--danger); }
+.positive { color: var(--success); }
