@@ -113,7 +113,7 @@ describe('detecção do idioma inicial: casos de borda', () => {
     expect(matchLanguage(['zh-TW', 'zh-CN'], available, 'en')).toBe('zh-CN');
   });
   test('ordem do navegador manda: o primeiro idioma disponível vence', () => {
-    expect(detectLanguage(['fr-FR', 'pt-BR', 'en-US'])).toBe('pt-BR');
+    expect(detectLanguage(['sv-SE', 'pt-BR', 'en-US'])).toBe('pt-BR');
     expect(detectLanguage(['en-US', 'pt-BR'])).toBe('en');
   });
 });
@@ -152,8 +152,8 @@ describe('bootstrap: prioridade entre cache e navegador', () => {
     expect(run(null, null)).toEqual({ lang: 'en', pending: true });
     expect(run(null, [])).toEqual({ lang: 'en', pending: true });
   });
-  test('cache com idioma desconhecido (es, "pt-br") é ignorado e vale o navegador', () => {
-    expect(run('es', ['pt-BR']).lang).toBe('pt-BR');
+  test('cache com idioma desconhecido (sv, "pt-br") é ignorado e vale o navegador', () => {
+    expect(run('sv', ['pt-BR']).lang).toBe('pt-BR');
     expect(run('pt-br', ['en']).lang).toBe('en');
   });
   test('o script serializado carrega o registro e a função de detecção', () => {

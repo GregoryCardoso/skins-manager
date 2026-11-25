@@ -112,8 +112,8 @@ describe('/api/settings', () => {
     test('valor fora da lista -> INVALID_THEME / INVALID_LANGUAGE', async () => {
       expectError(await patch({ theme: 'BLUE' }), 400, 'INVALID_THEME');
       expectError(await patch({ theme: 'dark' }), 400, 'INVALID_THEME');
-      expectError(await patch({ language: 'es' }), 400, 'INVALID_LANGUAGE');
-      expectError(await patch({ theme: 'DARK', language: 'es' }), 400, 'INVALID_LANGUAGE');
+      expectError(await patch({ language: 'sv' }), 400, 'INVALID_LANGUAGE');
+      expectError(await patch({ theme: 'DARK', language: 'sv' }), 400, 'INVALID_LANGUAGE');
       expect((await request(app).get('/api/settings')).body.data).toMatchObject({ theme: 'SYSTEM', language: 'en' });
     });
 
@@ -150,13 +150,13 @@ describe('/api/settings', () => {
 });
 
 describe('PATCH /api/settings language (11.1, D369)', () => {
-  test.each(['es-ES', 'ES', '', 'xx', 'pt-br', 'EN'])('código %j fora da lista -> INVALID_LANGUAGE e nada é gravado', async (code) => {
+  test.each(['es-ES', 'es-MX', 'ES', 'De', 'fr-FR', '', 'xx', 'sv', 'pt-br', 'EN'])('código %j fora da lista -> INVALID_LANGUAGE e nada é gravado', async (code) => {
     expectError(await request(app).patch('/api/settings').send({ language: code }), 400, 'INVALID_LANGUAGE');
     expect((await request(app).get('/api/settings')).body.data.language).toBe('en');
   });
 
-  test('en e pt-BR continuam aceitos', async () => {
-    for (const code of ['pt-BR', 'en']) {
+  test('en, pt-BR, es, fr, it e de são aceitos (11.7)', async () => {
+    for (const code of ['pt-BR', 'es', 'fr', 'it', 'de', 'en']) {
       const res = await request(app).patch('/api/settings').send({ language: code });
       expect(res.status).toBe(200);
       expect(res.body.data.language).toBe(code);

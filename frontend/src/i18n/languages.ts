@@ -1,5 +1,6 @@
 // Registro único de idiomas do frontend (D369, 11.1). Acrescentar um idioma = um JSON em `src/i18n/`, uma entrada aqui, uma entrada
-// em `loadDictionary` (dictionaries.ts) e uma entrada em `MESSAGES` do desktop (desktop/src/i18n.js), sem migração. Um idioma só entra
+// em `loadDictionary` (dictionaries.ts), uma entrada em `LANGUAGES` do backend (constants.js) e uma entrada em `MESSAGES` do desktop
+// (desktop/src/i18n.js), sem migração. Ordem do seletor = ordem deste registro (a mesma do backend). Um idioma só entra
 // neste registro (e, portanto, no seletor) quando o arquivo dele está completo: o teste `i18n.languages.parity.test.ts` roda sobre o registro.
 // O inglês é o idioma base: referência das chaves (tipo `MessageKey`) e reserva quando falta um texto.
 
@@ -12,11 +13,18 @@ export interface LanguageInfo {
   readonly intlLocale: string;
   // Pasta do idioma na CSGO-API (nomes dos itens; usado a partir da 11.5).
   readonly catalogFolder: string;
+  // Traduzido pelo Claude (D369, E-P3-Q4): a interface mostra o aviso discreto "a tradução pode ter erros" em Configurações. Ausente = false.
+  // Os lotes de tradução (11.8, 11.9) só acrescentam `machineTranslated: true` na entrada nova.
+  readonly machineTranslated?: boolean;
 }
 
 export const LANGUAGE_REGISTRY = [
   { code: 'en', nativeName: 'English', intlLocale: 'en', catalogFolder: 'en' },
   { code: 'pt-BR', nativeName: 'Português (Brasil)', intlLocale: 'pt-BR', catalogFolder: 'pt-BR' },
+  { code: 'es', nativeName: 'Español', intlLocale: 'es', catalogFolder: 'es-MX', machineTranslated: true },
+  { code: 'fr', nativeName: 'Français', intlLocale: 'fr', catalogFolder: 'fr', machineTranslated: true },
+  { code: 'it', nativeName: 'Italiano', intlLocale: 'it', catalogFolder: 'it', machineTranslated: true },
+  { code: 'de', nativeName: 'Deutsch', intlLocale: 'de', catalogFolder: 'de', machineTranslated: true },
 ] as const satisfies readonly LanguageInfo[];
 
 export type Language = (typeof LANGUAGE_REGISTRY)[number]['code'];
@@ -33,6 +41,11 @@ export function isLanguage(value: unknown): value is Language {
 // Idioma vindo de fora (servidor, cache, backup de uma versao mais nova): fora do registro, vale o base. Nunca derruba a interface.
 export function languageOrBase(value: unknown): Language {
   return isLanguage(value) ? value : BASE_LANGUAGE;
+}
+
+// Idioma traduzido pelo Claude (mostra o aviso "a tradução pode ter erros"). Desconhecido, en e pt-BR: não.
+export function isMachineTranslated(code: string): boolean {
+  return (LANGUAGE_REGISTRY as readonly LanguageInfo[]).find((entry) => entry.code === code)?.machineTranslated === true;
 }
 
 export function languageInfo(code: string): LanguageInfo {

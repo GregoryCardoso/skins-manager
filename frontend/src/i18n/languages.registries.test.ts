@@ -37,7 +37,7 @@ describe('os três registros de idiomas têm os mesmos códigos', () => {
 // A mesma tabela vale para o frontend (matchLanguage) e para o desktop (languageFromLocale), que têm de concordar.
 const CASES: [string, string][] = [
   ['pt', 'pt-BR'], ['pt-PT', 'pt-BR'], ['pt_BR', 'pt-BR'], ['PT-br', 'pt-BR'], [' pt-BR ', 'pt-BR'],
-  ['en-US', 'en'], ['EN', 'en'], ['fr-FR', 'en'], ['', 'en'], ['---', 'en'],
+  ['en-US', 'en'], ['EN', 'en'], ['sv-SE', 'en'], ['', 'en'], ['es-MX', 'es'], ['es', 'es'], ['fr-FR', 'fr'], ['fr_CA', 'fr'], ['it-IT', 'it'], ['de-AT', 'de'], ['DE', 'de'], ['---', 'en'],
   ['zh-TW', 'en'], ['zh-HK', 'en'], ['zh-Hant', 'en'], ['zh-Hant-TW', 'en'],
 ];
 
@@ -60,19 +60,20 @@ describe('idioma do sistema -> idioma disponível (frontend e desktop concordam)
 
 describe('idioma fora do registro não derruba a interface (M1)', () => {
   test('languageOrBase', () => {
-    expect(languageOrBase('es')).toBe('en');
+    expect(languageOrBase('sv')).toBe('en');
     expect(languageOrBase('pt-br')).toBe('en');
     expect(languageOrBase(undefined)).toBe('en');
     expect(languageOrBase(null)).toBe('en');
     expect(languageOrBase(5)).toBe('en');
     expect(languageOrBase('pt-BR')).toBe('pt-BR');
+    for (const code of ['es', 'fr', 'it', 'de']) expect(languageOrBase(code)).toBe(code);
   });
 
   test('loadDictionary sem loader devolve o inglês, sem lançar erro', async () => {
-    await expect(loadDictionary('es')).resolves.toBe(BASE_DICTIONARY);
+    await expect(loadDictionary('sv')).resolves.toBe(BASE_DICTIONARY);
     await expect(loadDictionary('__proto__')).resolves.toBe(BASE_DICTIONARY);
     await expect(loadDictionary('toString')).resolves.toBe(BASE_DICTIONARY);
-    await expect(loadDictionary('pt-BR')).resolves.not.toBe(BASE_DICTIONARY);
+    for (const code of ['pt-BR', 'es', 'fr', 'it', 'de']) await expect(loadDictionary(code)).resolves.not.toBe(BASE_DICTIONARY);
   });
 
   test('PreferencesProvider usa languageOrBase onde o idioma do servidor entra', () => {

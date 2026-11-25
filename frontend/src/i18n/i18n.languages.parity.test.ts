@@ -67,6 +67,27 @@ const IDENTICAL_BY_LANGUAGE: Record<string, readonly string[]> = {
     'Backup', 'Trade lock', 'Float', 'Paint seed', 'Asset ID', 'Sticker', 'Stickers', 'Pattern', 'pattern', 'pattern {n}', 'Sticker Slab',
     'Holding', 'Holding ({count})', '{count} min', '{count} h', '{count} d', 'd', 'h', 'min',
   ],
+  es: [
+    '{count} min', '{count} h', '{count} d', 'Skins', 'Stickers', 'Individual', 'Trade lock', 'Holding ({count})', 'd', 'h', 'min', 'Skin',
+    'Sticker', 'Normal', 'Souvenir', 'Holding', 'Manual', 'Float', 'Paint seed', 'Asset ID', 'Sticker Slab', 'Pattern', 'pattern',
+    'pattern {n}', 'No', 'Stock: {message}',
+  ],
+  fr: [
+    '{count} min', '{count} h', 'Skins', 'Stickers', 'Agents', 'Image', 'Trade lock', 'Actions', 'Holding ({count})', 'h', 'min', 'Skin',
+    'Capsule', 'Sticker', 'Agent', 'Normal', 'Souvenir', 'Holding', 'Commercial', 'Commercial (AwesomeAPI)', 'Float', 'Paint seed', 'Phase',
+    'Asset ID', 'inactive', 'Position', 'Type', 'Sticker Slab', 'Pattern', 'position', 'pattern', 'pattern {n}', 'Active', 'Note',
+    'Inactive', 'minimum {value}', 'portable', 'Date', '{name} (inactive)', 'Net', '{count} transaction', '{count} transactions',
+  ],
+  it: [
+    '{count} min', '{count} h', '{items} in {groups}', '{count} in holding', 'Trade lock', 'In trade lock · {time}', 'Holding ({count})',
+    'h', 'min', 'Skin', 'Sticker', 'Patch', 'Souvenir', 'In trade lock', 'Holding', 'Float', 'Paint seed', 'Asset ID', 'Sticker Slab',
+    'Pattern', 'pattern', 'pattern {n}', 'in trade lock', 'No', 'Backup', 'in holding',
+  ],
+  de: [
+    '(optional)', 'Skins', 'Patches', '{items} in {groups}', 'Status', 'Item', 'Trade lock', 'Holding ({count})', 'Item: {value}', 'Skin',
+    'Sticker', 'Agent', 'Patch', 'Normal', 'Souvenir', 'Holding', 'Name', 'Float', 'Phase', 'Position', 'Sticker Slab', 'Pattern', 'Backup',
+    'Details',
+  ],
 };
 
 const hasLetters = (text: string) => /\p{L}/u.test(text.replace(/\{\w+\}/g, ''));

@@ -5,8 +5,8 @@ import { BASE_LANGUAGE, LANGUAGES, LANGUAGE_REGISTRY, detectLanguage, intlLocale
 const PLANNED = ['en', 'pt-BR', 'es', 'ru', 'tr', 'fr', 'it', 'zh-CN', 'de', 'pl', 'uk', 'ja', 'ko'];
 
 describe('registro de idiomas (D369, 11.1)', () => {
-  test('na 11.1 só en e pt-BR estão disponíveis, com o inglês como base e primeiro da lista', () => {
-    expect([...LANGUAGES]).toEqual(['en', 'pt-BR']);
+  test('na 11.7 estão disponíveis en, pt-BR, es, fr, it e de (nesta ordem, a do backend), com o inglês como base e primeiro da lista', () => {
+    expect([...LANGUAGES]).toEqual(['en', 'pt-BR', 'es', 'fr', 'it', 'de']);
     expect(BASE_LANGUAGE).toBe('en');
     expect(LANGUAGE_REGISTRY[0].code).toBe(BASE_LANGUAGE);
   });
@@ -25,12 +25,18 @@ describe('registro de idiomas (D369, 11.1)', () => {
   test('nomes nativos sem tradução: cada idioma escrito nele mesmo', () => {
     expect(languageInfo('en').nativeName).toBe('English');
     expect(languageInfo('pt-BR').nativeName).toBe('Português (Brasil)');
+    expect(languageInfo('es').nativeName).toBe('Español');
+    expect(languageInfo('fr').nativeName).toBe('Français');
+    expect(languageInfo('it').nativeName).toBe('Italiano');
+    expect(languageInfo('de').nativeName).toBe('Deutsch');
+    expect(languageInfo('es').catalogFolder).toBe('es-MX');
   });
 
   test('isLanguage e intlLocaleOf', () => {
     expect(isLanguage('en')).toBe(true);
     expect(isLanguage('pt-BR')).toBe(true);
-    for (const bad of ['es', 'ES', 'pt-br', '', null, undefined, 5]) expect(isLanguage(bad)).toBe(false);
+    for (const code of ['es', 'fr', 'it', 'de']) expect(isLanguage(code)).toBe(true);
+    for (const bad of ['sv', 'ES', 'es-MX', 'pt-br', '', null, undefined, 5]) expect(isLanguage(bad)).toBe(false);
     expect(intlLocaleOf('pt-BR')).toBe('pt-BR');
     expect(intlLocaleOf('xx')).toBe('en');
   });

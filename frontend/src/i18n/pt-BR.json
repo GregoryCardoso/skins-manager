@@ -1182,7 +1182,9 @@
     "preferences": {
       "title": "Preferências",
       "theme": "Tema",
-      "language": "Idioma"
+      "language": "Idioma",
+      "translationNotice": "A tradução pode ter erros. Sugestões pelas {link}.",
+      "translationNoticeLink": "Issues do GitHub"
     },
     "aging": {
       "title": "Limites de giro",

@@ -71,7 +71,7 @@ const CATALOG_SNAPSHOT_PATH = path.join(__dirname, '..', '..', 'data', 'seed', '
 const THEMES = Object.freeze(['SYSTEM', 'LIGHT', 'DARK']);
 // Idiomas aceitos (D369, 11.1): o inglês é o idioma base. O banco só confere o formato (v023); a lista fica aqui, e acrescentar
 // um idioma é uma entrada nesta lista (mais o registro do frontend e o desktop), sem migração.
-const LANGUAGES = Object.freeze(['en', 'pt-BR']);
+const LANGUAGES = Object.freeze(['en', 'pt-BR', 'es', 'fr', 'it', 'de']);
 // Visão do inventário (D276): padrão 'GROUPED' (coluna NOT NULL com DEFAULT no banco).
 const INVENTORY_VIEWS = Object.freeze(['INDIVIDUAL', 'GROUPED']);
 

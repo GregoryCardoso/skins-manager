@@ -1182,7 +1182,9 @@
     "preferences": {
       "title": "Preferences",
       "theme": "Theme",
-      "language": "Language"
+      "language": "Language",
+      "translationNotice": "The translation may contain errors. Send suggestions through {link}.",
+      "translationNoticeLink": "GitHub Issues"
     },
     "aging": {
       "title": "Turnover limits",

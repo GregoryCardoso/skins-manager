@@ -7,6 +7,7 @@ import { THEME_CHOICES } from '@/lib/preferences';
 import type { Language, ThemeChoice } from '@/types/api';
 import CurrencySelect from './CurrencySelect';
 import { usePreferences } from './PreferencesProvider';
+import TranslationNotice from './TranslationNotice';
 import styles from './settings.module.css';
 
 // Tema, idioma e moeda de conversão (os mesmos controles do cabeçalho, com o mesmo estado). Trocar o idioma nunca muda a moeda.
@@ -53,6 +54,7 @@ export default function PreferencesSettings() {
         </div>
       </div>
       <p className={styles.muted}>{t('currency.hint')}</p>
+      <TranslationNotice language={language} />
     </section>
   );
 }

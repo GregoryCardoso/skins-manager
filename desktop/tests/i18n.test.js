@@ -7,9 +7,9 @@ const { translate, normalizeLanguage, languageFromLocale, MESSAGES, LANGUAGES, D
 const placeholders = (text) => [...text.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();
 
 describe('i18n dos diálogos (D369: inglês é a base)', () => {
-  test('o idioma base é o inglês e os idiomas disponíveis hoje são en e pt-BR', () => {
+  test('o idioma base é o inglês e os idiomas disponíveis hoje são en, pt-BR, es, fr, it e de', () => {
     expect(DEFAULT_LANGUAGE).toBe('en');
-    expect([...LANGUAGES].sort()).toEqual(['en', 'pt-BR']);
+    expect([...LANGUAGES].sort()).toEqual(['de', 'en', 'es', 'fr', 'it', 'pt-BR']);
   });
 
   test.each(LANGUAGES.filter((code) => code !== 'en'))('%s tem as mesmas chaves, os mesmos marcadores e nenhum texto vazio do inglês', (code) => {
@@ -37,8 +37,19 @@ describe('i18n dos diálogos (D369: inglês é a base)', () => {
     expect(translate('pt-BR', 'common.close')).toBe('Fechar');
   });
 
+  test('es, fr, it e de traduzem e interpolam (11.7)', () => {
+    expect(translate('es', 'common.close')).toBe('Cerrar');
+    expect(translate('de', 'common.close')).toBe('Schließen');
+    for (const code of ['es', 'fr', 'it', 'de']) {
+      expect(translate(code, 'alreadyOpen.message', { port: 3001 })).toContain('http://localhost:3001');
+      expect(translate(code, 'crashLoop.detail', { dataDir: 'C:\dados' })).toContain('C:\dados');
+      expect(translate(code, 'startFailure.title')).not.toBe(MESSAGES.en['startFailure.title']);
+    }
+  });
+
   test('idioma desconhecido ou ausente cai no inglês; chave desconhecida devolve a chave', () => {
-    expect(normalizeLanguage('fr')).toBe('en');
+    expect(normalizeLanguage('sv')).toBe('en');
+    for (const code of ['es', 'fr', 'it', 'de']) expect(normalizeLanguage(code)).toBe(code);
     expect(normalizeLanguage(undefined)).toBe('en');
     expect(translate('xx', 'common.close')).toBe('Close');
     expect(translate(undefined, 'common.close')).toBe('Close');
@@ -52,7 +63,11 @@ describe('i18n dos diálogos (D369: inglês é a base)', () => {
     expect(languageFromLocale('pt')).toBe('pt-BR');
     expect(languageFromLocale('en-US')).toBe('en');
     expect(languageFromLocale('en')).toBe('en');
-    expect(languageFromLocale('ru')).toBe('en');
+    expect(languageFromLocale('sv')).toBe('en');
+    expect(languageFromLocale('es-MX')).toBe('es');
+    expect(languageFromLocale('fr-CA')).toBe('fr');
+    expect(languageFromLocale('it-IT')).toBe('it');
+    expect(languageFromLocale('de-AT')).toBe('de');
     expect(languageFromLocale('')).toBe('en');
     expect(languageFromLocale(undefined)).toBe('en');
   });
@@ -67,14 +82,14 @@ describe('textos da parada D (11.6)', () => {
     }
   });
 
-  test('a porta só aparece em noPort.message, entre parênteses, nos dois idiomas', () => {
+  test('a porta só aparece em noPort.message, entre parênteses, em todos os idiomas', () => {
     for (const code of LANGUAGES) {
-      expect(MESSAGES[code]['noPort.message']).toMatch(/\(3001 (a|to) 3010\)/);
-      expect(MESSAGES[code]['noPort.title']).not.toMatch(/porta|port/i);
+      expect(MESSAGES[code]['noPort.message']).toMatch(/\([^()]*3001[^()]*3010\)/);
+      expect(MESSAGES[code]['noPort.title']).not.toMatch(/porta|port|puerto|porte/i);
     }
   });
 
-  test('crashLoop.detail mantém o marcador {dataDir} nos dois idiomas', () => {
+  test('crashLoop.detail mantém o marcador {dataDir} em todos os idiomas', () => {
     expect(translate('pt-BR', 'crashLoop.detail', { dataDir: 'D:/dados' })).toBe('Seus dados continuam salvos em D:/dados.');
     expect(translate('en', 'crashLoop.detail', { dataDir: 'D:/dados' })).toBe('Your data is still saved in D:/dados.');
   });

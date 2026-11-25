@@ -220,7 +220,7 @@ describe('PATCH /api/settings: preferências (bordas)', () => {
     [{ language: 'PT-BR' }, 'INVALID_LANGUAGE'],
     [{ language: 'pt' }, 'INVALID_LANGUAGE'],
     [{ language: 'EN' }, 'INVALID_LANGUAGE'],
-    [{ theme: 'BLUE', language: 'es' }, 'INVALID_THEME'],
+    [{ theme: 'BLUE', language: 'sv' }, 'INVALID_THEME'],
   ])('%j -> %s e nada muda', async (body, code) => {
     const app = makeApp();
     const before = (await request(app).get('/api/settings')).body.data;
@@ -230,7 +230,7 @@ describe('PATCH /api/settings: preferências (bordas)', () => {
 
   test('um valor válido com outro inválido não aplica o válido', async () => {
     const app = makeApp();
-    expectError(await patch(app, { theme: 'DARK', language: 'es' }), 400, 'INVALID_LANGUAGE');
+    expectError(await patch(app, { theme: 'DARK', language: 'sv' }), 400, 'INVALID_LANGUAGE');
     expect((await request(app).get('/api/settings')).body.data.theme).toBe('SYSTEM');
   });
 

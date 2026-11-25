@@ -77,7 +77,7 @@ describe('effectiveTheme / nextTheme (D112: só Claro e Escuro)', () => {
 describe('cache', () => {
   test('lê valores válidos e ignora inválidos', () => {
     expect(readCachedPreferences(fakeStorage({ 'sm.theme': 'DARK', 'sm.language': 'en' }))).toEqual({ theme: 'DARK', language: 'en' });
-    expect(readCachedPreferences(fakeStorage({ 'sm.theme': 'x', 'sm.language': 'fr' }))).toEqual({});
+    expect(readCachedPreferences(fakeStorage({ 'sm.theme': 'x', 'sm.language': 'sv' }))).toEqual({});
     expect(readCachedPreferences(fakeStorage())).toEqual({});
     expect(readCachedPreferences(null)).toEqual({});
   });
@@ -203,7 +203,7 @@ describe('bootstrapPreferences', () => {
   test('valores inválidos em cache caem no padrão (tema do sistema / inglês)', () => {
     const { attrs, classes, doc } = fakeDoc();
     bootstrapPreferences({
-      ...LANG_ENV, doc, storage: fakeStorage({ 'sm.theme': 'PURPLE', 'sm.language': 'fr' }), matchMedia: () => ({ matches: true }),
+      ...LANG_ENV, doc, storage: fakeStorage({ 'sm.theme': 'PURPLE', 'sm.language': 'sv' }), matchMedia: () => ({ matches: true }),
     });
     expect(attrs['data-theme']).toBe('dark');
     expect(attrs.lang).toBe('en');

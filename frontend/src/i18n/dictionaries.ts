@@ -7,6 +7,10 @@ export type Dictionary = typeof en;
 const LOADERS: Partial<Record<string, () => Promise<Dictionary>>> = {
   en: () => Promise.resolve(en),
   'pt-BR': () => import('./pt-BR.json').then((module) => module.default as Dictionary),
+  es: () => import('./es.json').then((module) => module.default as Dictionary),
+  fr: () => import('./fr.json').then((module) => module.default as Dictionary),
+  it: () => import('./it.json').then((module) => module.default as Dictionary),
+  de: () => import('./de.json').then((module) => module.default as Dictionary),
 };
 
 export const BASE_DICTIONARY: Dictionary = en;
