@@ -151,8 +151,8 @@ function summarize(rows = []) {
 }
 
 // Visão pública: imagem e nome em pt-BR vêm do catálogo (por id); o nome canônico é o gravado.
-// `undoableOf(row)`: o desfazer da aplicação vale para o componente? (só os aplicados do estoque; D362).
-function toView(rows = [], { catalogById = new Map(), undoableOf = null } = {}) {
+// `undoableOf(row)`: o desfazer da aplicação vale para o componente? (só os aplicados do estoque; D362). `canDetach`: a unidade está em estoque (D366).
+function toView(rows = [], { catalogById = new Map(), undoableOf = null, canDetach = false } = {}) {
   return rows.map((row) => {
     const entry = isNil(row.catalogId) ? null : catalogById.get(row.catalogId);
     let namePtBr = entry ? entry.namePtBr ?? null : null;
@@ -174,6 +174,8 @@ function toView(rows = [], { catalogById = new Map(), undoableOf = null } = {}) 
       // Aplicado do estoque: pode ser desfeito (correção) e, se for sticker ou patch, removido para sempre (D362 itens 5 e 6).
       undoable: row.origin === 'APPLIED_FROM_STOCK' && undoableOf ? Boolean(undoableOf(row)) : false,
       scrapeable: row.origin === 'APPLIED_FROM_STOCK' && !isDetachable(row.kind),
+      // Pendurado de uma arma em estoque: pode ser separado da arma (D366).
+      detachable: canDetach && isDetachable(row.kind),
     };
   });
 }

@@ -4,7 +4,7 @@
 const { getDb } = require('../config/database');
 const { mapRow, insertRow } = require('./modelHelpers');
 
-const OPERATION_FIELDS = ['kind', 'outcome', 'occurredAt', 'note', 'undoneAt', 'detailJson'];
+const OPERATION_FIELDS = ['kind', 'outcome', 'occurredAt', 'note', 'undoneAt', 'detailJson', 'endedByOperationId'];
 const LINK_FIELDS = ['operationId', 'itemId', 'role', 'costShareBp'];
 const CHUNK = 500;
 const marks = (list) => list.map(() => '?').join(',');
@@ -33,9 +33,9 @@ function markUndone(id, stamp) {
   return getDb().prepare('UPDATE item_operations SET undone_at = ? WHERE id = ? AND undone_at IS NULL').run(stamp, id).changes > 0;
 }
 
-// Operações ativas (não desfeitas). As tabelas são pequenas: uma consulta só.
+// Operações ativas (nem desfeitas nem encerradas por uma separação, D366). As tabelas são pequenas: uma consulta só.
 function listActive() {
-  return getDb().prepare('SELECT * FROM item_operations WHERE undone_at IS NULL ORDER BY id ASC').all().map((row) => mapRow(row));
+  return getDb().prepare('SELECT * FROM item_operations WHERE undone_at IS NULL AND ended_by_operation_id IS NULL ORDER BY id ASC').all().map((row) => mapRow(row));
 }
 
 function listLinksByOperationIds(operationIds) {
@@ -61,7 +61,7 @@ function hasActiveLink(itemId) {
   return Boolean(
     getDb()
       .prepare(
-        `SELECT 1 FROM item_operation_links l JOIN item_operations o ON o.id = l.operation_id WHERE l.item_id = ? AND o.undone_at IS NULL LIMIT 1`
+        `SELECT 1 FROM item_operation_links l JOIN item_operations o ON o.id = l.operation_id WHERE l.item_id = ? AND o.undone_at IS NULL AND o.ended_by_operation_id IS NULL LIMIT 1`
       )
       .get(itemId)
   );
@@ -74,7 +74,7 @@ function itemIdsWithActiveLink(itemIds) {
     const rows = getDb()
       .prepare(
         `SELECT DISTINCT l.item_id AS itemId FROM item_operation_links l JOIN item_operations o ON o.id = l.operation_id
-          WHERE o.undone_at IS NULL AND l.item_id IN (${marks(chunk)})`
+          WHERE o.undone_at IS NULL AND o.ended_by_operation_id IS NULL AND l.item_id IN (${marks(chunk)})`
       )
       .all(...chunk);
     for (const row of rows) out.add(row.itemId);
@@ -98,7 +98,7 @@ function findActiveCreatingOperation(itemId) {
     getDb()
       .prepare(
         `SELECT o.* FROM item_operations o JOIN item_operation_links l ON l.operation_id = o.id
-          WHERE l.item_id = ? AND l.role = 'CREATED' AND o.undone_at IS NULL ORDER BY o.id DESC LIMIT 1`
+          WHERE l.item_id = ? AND l.role = 'CREATED' AND o.undone_at IS NULL AND o.ended_by_operation_id IS NULL ORDER BY o.id DESC LIMIT 1`
       )
       .get(itemId)
   );
@@ -114,8 +114,17 @@ function updateDetail(id, detailJson) {
   return getDb().prepare('UPDATE item_operations SET detail_json = ? WHERE id = ?').run(detailJson, id).changes > 0;
 }
 
+// Encerra uma aplicação (a separação devolveu a unidade) e reabre no desfazer da separação (D366).
+function markEnded(id, byOperationId) {
+  return getDb().prepare('UPDATE item_operations SET ended_by_operation_id = ? WHERE id = ? AND ended_by_operation_id IS NULL').run(byOperationId, id).changes > 0;
+}
+
+function clearEnded(id) {
+  return getDb().prepare('UPDATE item_operations SET ended_by_operation_id = NULL WHERE id = ?').run(id).changes > 0;
+}
+
 module.exports = {
-  findActiveCreatingOperation, deleteCreatedLink, updateDetail,
+  markEnded, clearEnded, findActiveCreatingOperation, deleteCreatedLink, updateDetail,
   findById, createOperation, createLink, markUndone, listActive, listLinksByOperationIds, listByItem, hasActiveLink, itemIdsWithActiveLink,
   deleteUndoneForItem,
 };

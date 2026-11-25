@@ -32,7 +32,7 @@ describe('cada função de escrita do api.ts invalida a ação certa onde é usa
   const WRITES: Record<string, InvalidationAction[]> = {
     createItem: ['item.create'], updateItem: ['item.update'], sellItem: ['item.sell'],
     deleteItem: ['item.delete'], unsellItem: ['item.unsell'],
-    applyComponent: ['item.applyComponent'], scrapeOffComponent: ['item.scrapeOff'], undoOperation: ['operation.undo'],
+    applyComponent: ['item.applyComponent'], scrapeOffComponent: ['item.scrapeOff'], detachComponent: ['item.detachComponent'], undoOperation: ['operation.undo'],
     openContainer: ['item.open'], setSteamStore: ['settings.steamStore'],
     markItemOffSale: ['item.offSale'], markItemForSale: ['item.backOnSale'],
     createDeposit: ['deposit.create'], updateDeposit: ['deposit.update'], deleteDeposit: ['deposit.delete'],

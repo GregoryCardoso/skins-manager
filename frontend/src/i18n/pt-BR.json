@@ -254,7 +254,9 @@
     "GENERATED_ITEM_REQUIRED": "Escolha no catálogo o item obtido.",
     "GENERATED_COST_NOT_ALLOWED": "Este item veio de uma abertura: o custo vem da operação, sem loja, preço nem cotação próprios.",
     "GENERATED_FIELD_LOCKED": "Este item veio de uma abertura: desfaça a abertura para mudar este campo.",
-    "STEAM_STORE_REQUIRED": "Escolha a sua loja Steam em Lojas para comprar o item do terminal."
+    "STEAM_STORE_REQUIRED": "Escolha a sua loja Steam em Lojas para comprar o item do terminal.",
+    "COMPONENT_NOT_DETACHABLE": "Só o chaveiro e o Sticker Slab podem ser separados da arma. Atualize a lista.",
+    "SPLIT_SHARE_REQUIRED": "Informe a porcentagem do custo que vai para o pendurado: faltam preços de referência."
   },
   "errorReasons": {
     "OPERATION_DATE_INVALID_FUTURE": "A data não pode ser futura.",
@@ -276,7 +278,13 @@
     "INVALID_OPERATION_INPUT_DECISION_NOT_ALLOWED": "Só o terminal tem essa escolha.",
     "INVALID_OPERATION_INPUT_PRICE_NOT_ALLOWED": "Preço e cotação só valem ao comprar o item do terminal.",
     "INVALID_OPERATION_INPUT_GENERATED_NOT_ALLOWED": "Não comprar o item do terminal não gera nenhum item.",
-    "INVALID_OPERATION_INPUT_GENERATED_FIELD_NOT_ALLOWED": "O item obtido herda a aquisição da abertura: não informe loja, preço, cotação nem data de compra."
+    "INVALID_OPERATION_INPUT_GENERATED_FIELD_NOT_ALLOWED": "O item obtido herda a aquisição da abertura: não informe loja, preço, cotação nem data de compra.",
+    "INVALID_OPERATION_INPUT_SHARE_NOT_ALLOWED": "A porcentagem só vale para o pendurado que veio junto com a arma.",
+    "INVALID_OPERATION_INPUT_SHARE_INVALID": "A porcentagem deve estar entre 0 e 100, com até duas casas.",
+    "OPERATION_DATE_INVALID_BEFORE_APPLIED": "A data não pode ser anterior à aplicação do pendurado ({date}).",
+    "OPERATION_DATE_INVALID_TRADE_UNLOCK_BEFORE_DETACHED": "O fim do trade lock não pode ser anterior à separação.",
+    "OPERATION_UNDO_BLOCKED_HANGING_OCCUPIED": "A arma já tem outro pendurado. Remova-o antes de desfazer a separação.",
+    "OPERATION_UNDO_BLOCKED_DETACHED": "Este pendurado foi separado da arma. Desfaça a separação antes de desfazer a aplicação."
   },
   "warnings": {
     "FEES_NOT_CONFIGURED": "As taxas da loja não estão configuradas.",
@@ -368,7 +376,8 @@
       "openTerminal": "Abrir terminal",
       "openNeedsKey": "Cadastre a chave desta caixa ({keyName}) primeiro.",
       "openNeedsKeyOther": "Cadastre a chave desta caixa ({keyName}) primeiro. As chaves em estoque não servem para ela.",
-      "registerKey": "Cadastrar chave"
+      "registerKey": "Cadastrar chave",
+      "detach": "Separar chaveiro/slab"
     },
     "itemGone": "Este item não existe mais (talvez tenha sido excluído em outra aba). A lista foi atualizada.",
     "daysForSale": "à venda há {days}",
@@ -658,6 +667,36 @@
       "appliedNote": "O custo deles já está neste item. Só a posição, o desgaste e o pattern podem mudar aqui."
     }
   },
+  "detachForm": {
+    "title": "Separar o pendurado de {name}",
+    "nothing": "Esta arma não tem nenhum chaveiro ou Sticker Slab para separar.",
+    "pattern": "pattern {n}",
+    "returnIntro": "Este pendurado foi aplicado do estoque: a unidade original ({name}) volta ao estoque, à venda, com o custo que ela tinha, e o giro recomeça na data da separação.",
+    "returnResult": "A unidade volta com {unit}; a arma fica com {weapon}.",
+    "splitIntro": "O pendurado vira uma unidade própria e o custo efetivo inteiro da arma é dividido entre as duas, na proporção dos valores avaliados (arma sem o pendurado e pendurado).",
+    "cost": "Custo efetivo da arma: {value}",
+    "valued": "Pelos preços de referência de {date}: arma {weapon}, pendurado {hanging} (conjunto {total}) → {share} % para o pendurado.",
+    "stale": "Os preços de referência estão desatualizados.",
+    "unavailable": {
+      "WEAPON_NO_PRICE": "Sem preço de referência da arma no cache: informe a porcentagem.",
+      "WEAPON_NOT_PRICEABLE": "A arma não tem como ser avaliada (falta exterior ou fase): informe a porcentagem.",
+      "HANGING_NO_PRICE": "Sem preço de referência do pendurado no cache: informe a porcentagem."
+    },
+    "share": "Parte do custo para o pendurado (%)",
+    "shareHint": "Sugerida pelos preços; você pode editar (0 a 100).",
+    "shareRequiredHint": "Obrigatória: não há preços de referência suficientes para sugerir.",
+    "shareRequired": "Informe a porcentagem do custo para o pendurado.",
+    "shareInvalid": "Use um valor entre 0 e 100, com até duas casas.",
+    "result": "A arma fica com {weapon} e o pendurado com {unit} (a soma é igual ao custo de antes).",
+    "detachedAt": "Data da separação",
+    "tradeLock": "Fim do trade lock (opcional)",
+    "tradeLockHint": "Só se o item separado ficou com proteção de troca.",
+    "note": "Observação (opcional)",
+    "profitUnchanged": "O lucro real e o saldo das lojas não mudam: o custo só é dividido.",
+    "submit": "Separar",
+    "successSplit": "{name} separado de {weapon}. O custo foi dividido.",
+    "successReturn": "{name} voltou ao estoque. A arma ficou sem o pendurado."
+  },
   "applyForm": {
     "title": "Aplicar do estoque em {name}",
     "intro": "A unidade escolhida sai do estoque e o custo dela passa para este item. O lucro real, o saldo e o total do estoque não mudam.",
@@ -730,6 +769,16 @@
     "undoOpenDone": "Abertura desfeita.",
     "lost": "perda de {value}",
     "undoneGenerated": "item obtido desfeito: {name}",
+    "detachedFrom": {
+      "SPLIT": "separado de {weapon}",
+      "RETURN": "separado de {weapon}"
+    },
+    "endedBy": "separada em {date}",
+    "detach": {
+      "RETURN": "{name} separado da arma; a unidade voltou ao estoque",
+      "SPLIT_MARKET_CACHE": "{name} separado da arma: {share} % do custo, pelos preços de referência",
+      "SPLIT_MANUAL": "{name} separado da arma: {share} % do custo (informado)"
+    },
     "generatedFrom": {
       "CASE": "aberto de {container}",
       "CASE_KEY": "aberto de {container} com {key}",

@@ -70,7 +70,7 @@ describe('migração v9', () => {
     const { snapshot } = seedV8(dbPath);
     const db = openDatabase(dbPath, { now: NOW });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(21);
+      expect(db.pragma('user_version', { simple: true })).toBe(22);
       expect(db.pragma('foreign_key_check')).toEqual([]);
       const rows = db.prepare('SELECT * FROM store_balances ORDER BY id').all();
       expect(rows).toHaveLength(snapshot.balances.length);
@@ -126,7 +126,7 @@ describe('migração v9', () => {
     old.close();
     const db = openDatabase(dbPath, { now: NOW });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(21);
+      expect(db.pragma('user_version', { simple: true })).toBe(22);
       expect(db.prepare('SELECT balance_cents AS b, kind, computed_cents AS c, adjustment_cents AS a FROM store_balances ORDER BY id').all())
         .toEqual([{ b: 1, kind: 'CHECK', c: null, a: null }, { b: 2, kind: 'CHECK', c: null, a: null }]);
     } finally {

@@ -108,7 +108,7 @@ function InventoryPageContent() {
   }, [focusItemId, itemsData, groupsData, expandedKeys]);
 
   const {
-    openCreate, openEdit, openSell, openUnsell, openDelete, openHistory, openOffSale, openApply, openOpen, openRegisterKey, putForSale, forSalePendingId, notice, dismissNotice, dialogs,
+    openCreate, openEdit, openSell, openUnsell, openDelete, openHistory, openOffSale, openApply, openOpen, openDetach, openRegisterKey, putForSale, forSalePendingId, notice, dismissNotice, dialogs,
   } = useItemDialogs(stores);
 
   const setFilters = useCallback(
@@ -250,6 +250,7 @@ function InventoryPageContent() {
               onOffSale={openOffSale}
               onApply={openApply}
               onOpen={openOpen}
+              onDetach={openDetach}
               onRegisterKey={openRegisterKey}
               onForSale={putForSale}
               forSalePendingId={forSalePendingId}
@@ -268,6 +269,7 @@ function InventoryPageContent() {
               onOffSale={openOffSale}
               onApply={openApply}
               onOpen={openOpen}
+              onDetach={openDetach}
               onRegisterKey={openRegisterKey}
               onForSale={putForSale}
               forSalePendingId={forSalePendingId}

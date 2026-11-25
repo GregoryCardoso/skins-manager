@@ -254,7 +254,9 @@
     "GENERATED_ITEM_REQUIRED": "Pick the item obtained from the catalog.",
     "GENERATED_COST_NOT_ALLOWED": "This item came from an opening: its cost comes from the operation, with no store, price or rate of its own.",
     "GENERATED_FIELD_LOCKED": "This item came from an opening: undo the opening to change this field.",
-    "STEAM_STORE_REQUIRED": "Choose your Steam store in Stores to buy the terminal item."
+    "STEAM_STORE_REQUIRED": "Choose your Steam store in Stores to buy the terminal item.",
+    "COMPONENT_NOT_DETACHABLE": "Only the charm and the Sticker Slab can be separated from the weapon. Refresh the list.",
+    "SPLIT_SHARE_REQUIRED": "Enter the share of the cost that goes to the hanging item: reference prices are missing."
   },
   "errorReasons": {
     "OPERATION_DATE_INVALID_FUTURE": "The date cannot be in the future.",
@@ -276,7 +278,13 @@
     "INVALID_OPERATION_INPUT_DECISION_NOT_ALLOWED": "Only the terminal has this choice.",
     "INVALID_OPERATION_INPUT_PRICE_NOT_ALLOWED": "Price and rate only apply when buying the terminal item.",
     "INVALID_OPERATION_INPUT_GENERATED_NOT_ALLOWED": "Not buying the terminal item generates no item.",
-    "INVALID_OPERATION_INPUT_GENERATED_FIELD_NOT_ALLOWED": "The item obtained inherits the acquisition of the opening: do not send a store, price, rate or purchase date."
+    "INVALID_OPERATION_INPUT_GENERATED_FIELD_NOT_ALLOWED": "The item obtained inherits the acquisition of the opening: do not send a store, price, rate or purchase date.",
+    "INVALID_OPERATION_INPUT_SHARE_NOT_ALLOWED": "The share only applies to the hanging item that came with the weapon.",
+    "INVALID_OPERATION_INPUT_SHARE_INVALID": "The share must be between 0 and 100, with up to two decimals.",
+    "OPERATION_DATE_INVALID_BEFORE_APPLIED": "The date cannot be before the application of the hanging item ({date}).",
+    "OPERATION_DATE_INVALID_TRADE_UNLOCK_BEFORE_DETACHED": "The trade lock end cannot be before the separation.",
+    "OPERATION_UNDO_BLOCKED_HANGING_OCCUPIED": "The weapon already has another hanging item. Remove it before undoing the separation.",
+    "OPERATION_UNDO_BLOCKED_DETACHED": "This hanging item was separated from the weapon. Undo the separation before undoing the application."
   },
   "warnings": {
     "FEES_NOT_CONFIGURED": "The store fees are not configured.",
@@ -368,7 +376,8 @@
       "openTerminal": "Open terminal",
       "openNeedsKey": "Register this case's key ({keyName}) first.",
       "openNeedsKeyOther": "Register this case's key ({keyName}) first. The keys in stock do not fit it.",
-      "registerKey": "Register key"
+      "registerKey": "Register key",
+      "detach": "Separate charm/slab"
     },
     "itemGone": "This item no longer exists (it may have been deleted in another tab). The list was refreshed.",
     "daysForSale": "for sale for {days}",
@@ -658,6 +667,36 @@
       "appliedNote": "Their cost is already in this item. Only position, wear and pattern can change here."
     }
   },
+  "detachForm": {
+    "title": "Separate the hanging item from {name}",
+    "nothing": "This weapon has no charm or Sticker Slab to separate.",
+    "pattern": "pattern {n}",
+    "returnIntro": "This hanging item was applied from stock: the original unit ({name}) goes back to stock, for sale, with the cost it had, and the turnover restarts on the separation date.",
+    "returnResult": "The unit comes back with {unit}; the weapon keeps {weapon}.",
+    "splitIntro": "The hanging item becomes its own unit and the whole effective cost of the weapon is split between the two, in proportion to the valued prices (weapon without the hanging item, and the hanging item).",
+    "cost": "Effective cost of the weapon: {value}",
+    "valued": "By the reference prices of {date}: weapon {weapon}, hanging item {hanging} (set {total}) → {share} % to the hanging item.",
+    "stale": "The reference prices are outdated.",
+    "unavailable": {
+      "WEAPON_NO_PRICE": "No reference price for the weapon in the cache: enter the share.",
+      "WEAPON_NOT_PRICEABLE": "The weapon cannot be valued (missing exterior or phase): enter the share.",
+      "HANGING_NO_PRICE": "No reference price for the hanging item in the cache: enter the share."
+    },
+    "share": "Share of the cost for the hanging item (%)",
+    "shareHint": "Suggested from the prices; you can edit it (0 to 100).",
+    "shareRequiredHint": "Required: there are not enough reference prices to suggest one.",
+    "shareRequired": "Enter the share of the cost for the hanging item.",
+    "shareInvalid": "Use a value between 0 and 100, with up to two decimals.",
+    "result": "The weapon keeps {weapon} and the hanging item gets {unit} (the sum equals the previous cost).",
+    "detachedAt": "Separation date",
+    "tradeLock": "Trade lock end (optional)",
+    "tradeLockHint": "Only if the separated item got a trade protection.",
+    "note": "Note (optional)",
+    "profitUnchanged": "Real profit and store balances do not change: the cost is only split.",
+    "submit": "Separate",
+    "successSplit": "{name} separated from {weapon}. The cost was split.",
+    "successReturn": "{name} is back in stock. The weapon no longer has the hanging item."
+  },
   "applyForm": {
     "title": "Apply from stock onto {name}",
     "intro": "The chosen unit leaves the stock and its cost moves to this item. Real profit, balances and the stock total do not change.",
@@ -730,6 +769,16 @@
     "undoOpenDone": "Opening undone.",
     "lost": "loss of {value}",
     "undoneGenerated": "item obtained undone: {name}",
+    "detachedFrom": {
+      "SPLIT": "separated from {weapon}",
+      "RETURN": "separated from {weapon}"
+    },
+    "endedBy": "separated on {date}",
+    "detach": {
+      "RETURN": "{name} separated from the weapon; the unit went back to stock",
+      "SPLIT_MARKET_CACHE": "{name} separated from the weapon: {share} % of the cost, by reference prices",
+      "SPLIT_MANUAL": "{name} separated from the weapon: {share} % of the cost (entered)"
+    },
     "generatedFrom": {
       "CASE": "opened from {container}",
       "CASE_KEY": "opened from {container} with {key}",

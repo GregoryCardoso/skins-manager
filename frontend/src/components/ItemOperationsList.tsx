@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
 import { formatDate, formatMoney } from '@/lib/format';
+import { formatCentsInput } from '@/lib/numberInput';
 import { queryKeys } from '@/lib/queryKeys';
 import { useInvalidate } from '@/lib/useInvalidate';
 import { listItemOperations, undoOperation } from '@/services/api';
@@ -54,6 +55,13 @@ export default function ItemOperationsList({ item }: Props) {
       .finally(() => setBusy(false));
   };
 
+  // Separação: o modo e, na divisão, a porcentagem do pendurado (e de onde vieram os preços).
+  const detachText = (detach: NonNullable<NonNullable<ItemOperation['detail']>['detach']>) => {
+    if (detach.mode === 'RETURN' || !detach.share) return t('operations.detach.RETURN', { name: detach.component.name ?? '' });
+    return t(`operations.detach.SPLIT_${detach.share.basis}`, {
+      name: detach.component.name ?? '', share: formatCentsInput(detach.share.hangingShareBp, language),
+    });
+  };
   const kindLabel = (operation: ItemOperation) => tLoose(`operations.kind.${operation.kind}`);
   const blocked = (operation: ItemOperation) => {
     if (operation.undoneAt || operation.undoable || !operation.undoBlockedReason) return null;
@@ -88,6 +96,12 @@ export default function ItemOperationsList({ item }: Props) {
             ))}
             {operation.lossUsdCents !== null && operation.lossUsdCents !== undefined && (
               <span className={styles.sub}>{' · '}{t('operations.lost', { value: formatMoney(operation.lossUsdCents, 'USD', language) })}</span>
+            )}
+            {operation.endedBy && (
+              <span className={styles.sub}>{' · '}{t('operations.endedBy', { date: operation.endedBy.occurredAt ? formatDate(operation.endedBy.occurredAt, language) : t('common.none') })}</span>
+            )}
+            {operation.detail?.detach && (
+              <span className={styles.sub}>{' · '}{detachText(operation.detail.detach)}</span>
             )}
             {operation.undoneAt && <span className={styles.sub}>{' · '}{t('operations.undone', { date: formatDate(operation.undoneAt, language) })}</span>}
             {operation.undoneAt && operation.detail?.undoneGenerated && (

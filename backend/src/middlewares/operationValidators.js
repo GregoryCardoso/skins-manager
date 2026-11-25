@@ -106,4 +106,35 @@ const validateOpenBody = wrap((req) => {
   }
 });
 
-module.exports = { validateOpenBody, validateApplyBody, validateScrapeBody, validateUndoBody, validateComponentIdParam, checkApplyFields };
+// Porcentagem do pendurado: inteiro (forma); o intervalo 0..10000 é do service.
+const checkShare = (value, field) => {
+  if (value !== undefined && value !== null && !isInt(value)) throw fail('A porcentagem deve ser um número inteiro de pontos-base.', 'INVALID_FIELD', field);
+};
+
+// GET /api/items/:id/components/:componentId/detach-preview?hangingShareBp=
+const validateDetachPreviewQuery = wrap((req) => {
+  const raw = req.query.hangingShareBp;
+  if (raw === undefined || raw === '') {
+    req.validatedQuery = { hangingShareBp: null };
+    return;
+  }
+  if (typeof raw !== 'string' || !/^-?\d+$/.test(raw)) throw fail('A porcentagem deve ser um número inteiro de pontos-base.', 'INVALID_FIELD', 'hangingShareBp');
+  req.validatedQuery = { hangingShareBp: Number(raw) };
+});
+
+// POST /api/items/:id/components/:componentId/detach
+const validateDetachBody = wrap((req) => {
+  const body = req.body === undefined ? {} : req.body;
+  if (!isPlainObject(body)) throw fail('O corpo da requisição deve ser um objeto JSON.', 'INVALID_BODY');
+  rejectUnknownFields(body, ['detachedAt', 'hangingShareBp', 'tradeUnlockAt', 'note']);
+  checkShare(body.hangingShareBp, 'hangingShareBp');
+  for (const field of ['detachedAt', 'tradeUnlockAt']) {
+    if (body[field] !== undefined && body[field] !== null && typeof body[field] !== 'string') throw fail('Data inválida.', 'INVALID_FIELD', field);
+  }
+  if (body.note !== undefined && body.note !== null && (typeof body.note !== 'string' || body.note.length > MAX_NOTE_SHAPE)) {
+    throw fail('Observação inválida.', 'INVALID_FIELD', 'note');
+  }
+  req.body = body;
+});
+
+module.exports = { validateDetachPreviewQuery, validateDetachBody, validateOpenBody, validateApplyBody, validateScrapeBody, validateUndoBody, validateComponentIdParam, checkApplyFields };

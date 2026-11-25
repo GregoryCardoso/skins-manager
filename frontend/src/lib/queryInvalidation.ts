@@ -34,6 +34,8 @@ export const INVALIDATION_MAP = {
   // Aplicar do estoque (10.3, D362): uma unidade sai do estoque e o custo dela passa para a outra; itens, vendas, lojas, saldos, lucro real e importações.
   'item.applyComponent': ITEM_IMPORTS,
   'item.scrapeOff': ITEM_IMPORTS,
+  // Separar o chaveiro ou o Sticker Slab da arma (10.7, D366): cria ou devolve uma unidade e divide o custo; o total não muda.
+  'item.detachComponent': ITEM_IMPORTS,
   'operation.undo': ITEM_IMPORTS,
   // Abrir caixa, cápsula, pacote ou terminal (10.4, D363): consome unidades, gera uma e, no terminal comprado, mexe no saldo da loja Steam.
   'item.open': ITEM_IMPORTS,

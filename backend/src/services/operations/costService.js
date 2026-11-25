@@ -45,10 +45,11 @@ function splitPool(poolCents, shares) {
   return out;
 }
 
-// `operations`: operações ATIVAS (as desfeitas são ignoradas aqui também). `links`: vínculos de qualquer operação.
+// `operations`: operações ATIVAS (as desfeitas e as encerradas são ignoradas aqui também). `links`: vínculos de qualquer operação.
 // `itemsById`: Map id -> item (precisa ter as unidades consumidas).
 function buildCostIndex({ itemsById = new Map(), operations = [], links = [] } = {}) {
-  const active = new Map(operations.filter((op) => isNil(op.undoneAt)).map((op) => [op.id, op]));
+  // Ativas: nem desfeitas nem encerradas por uma separação (`endedByOperationId`, D366).
+  const active = new Map(operations.filter((op) => isNil(op.undoneAt) && isNil(op.endedByOperationId)).map((op) => [op.id, op]));
   const linksByOperation = new Map();
   const receivingByItem = new Map(); // itemId -> vínculos TARGET/CREATED de operações ativas
   for (const link of links) {
@@ -94,37 +95,75 @@ function buildCostIndex({ itemsById = new Map(), operations = [], links = [] } =
     return { ownUsdCents: own.usdCents, inheritedUsdCents: 0, effectiveUsdCents: own.usdCents, estimated: own.estimated, parts: ownCostParts(item) };
   }
 
-  function compute(item) {
+  // Parte de `parts` (partes nativas) escalada por `bp` pontos-base, como as partes de pool já são escaladas.
+  const scaleParts = (parts, bp) => (bp === BP_TOTAL ? parts : parts.map((part) => ({ ...part, cents: Math.round((part.cents * bp) / BP_TOTAL) })));
+
+  // Separação do pendurado (`DETACH_COMPONENT` com vínculo CREATED, D366): { weaponId, generatedId, weaponBp, generatedBp } ou null
+  // (modo RETURN, que não divide custo; o efeito dele vem do encerramento da aplicação).
+  function splitOf(operationId) {
+    const links = linksByOperation.get(operationId) ?? [];
+    const created = links.find((l) => l.role === 'CREATED');
+    const target = links.find((l) => l.role === 'TARGET');
+    if (!created || !target) return null;
+    const generatedBp = isNil(created.costShareBp) ? 0 : created.costShareBp;
+    return { weaponId: target.itemId, generatedId: created.itemId, weaponBp: isNil(target.costShareBp) ? BP_TOTAL - generatedBp : target.costShareBp, generatedBp };
+  }
+
+  // Custo da unidade dobrando, em ordem de id, as operações ativas em que ela recebe custo (TARGET/CREATED). `upTo`: só as operações de
+  // id menor (o estado da arma imediatamente antes de uma separação). Sem separação, é a soma de sempre: próprio + herdado de cada pool.
+  function compute(item, upTo = Infinity) {
     // Sem nenhuma operação ativa o custo é o próprio (sem memória: itens de teste ou de passagem podem não ter id).
     if (active.size === 0) return ownOnly(item);
-    if (memo.has(item.id)) return memo.get(item.id);
-    if (visiting.has(item.id)) throw new Error('OPERATION_CYCLE');
-    visiting.add(item.id);
+    const memoKey = upTo === Infinity ? item.id : `${item.id}@${upTo}`;
+    if (memo.has(memoKey)) return memo.get(memoKey);
+    if (visiting.has(memoKey)) throw new Error('OPERATION_CYCLE');
+    visiting.add(memoKey);
     try {
       const own = ownCostUsd(item);
-      let inherited = 0;
+      let usd = own.usdCents;
       let estimated = own.estimated;
-      const parts = [...ownCostParts(item)];
-      for (const link of receivingByItem.get(item.id) ?? []) {
+      let parts = [...ownCostParts(item)];
+      let poolInherited = 0; // soma das partes de pool (só usada se o custo próprio for nulo, como antes)
+      const receiving = [...(receivingByItem.get(item.id) ?? [])].filter((l) => l.operationId < upTo).sort((a, b) => a.operationId - b.operationId);
+      for (const link of receiving) {
+        const split = active.get(link.operationId).kind === 'DETACH_COMPONENT' ? splitOf(link.operationId) : null;
+        if (active.get(link.operationId).kind === 'DETACH_COMPONENT' && !split) continue; // RETURN: sem efeito de custo
+        if (split) {
+          const weapon = itemsById.get(split.weaponId) ?? (item.id === split.weaponId ? item : null);
+          if (!weapon) throw new Error(`Arma ${split.weaponId} não carregada para o cálculo do custo.`);
+          const before = compute(weapon, link.operationId);
+          if (before.estimated) estimated = true;
+          const isWeapon = item.id === split.weaponId;
+          const bp = isWeapon ? split.weaponBp : split.generatedBp;
+          const shares = [{ id: split.weaponId, bp: split.weaponBp }, { id: split.generatedId, bp: split.generatedBp }];
+          const part = before.effectiveUsdCents === null ? null : splitPool(before.effectiveUsdCents, shares).get(item.id);
+          if (isWeapon) {
+            usd = part; // a arma passa a ter só a parte dela (o próprio e o herdado até aqui já estão em `before`)
+            parts = scaleParts(before.parts, bp);
+          } else {
+            usd = usd === null || part === null ? null : usd + part;
+            parts = [...parts, ...scaleParts(before.parts, bp)];
+          }
+          continue;
+        }
         const pool = poolOf(link.operationId);
         const share = shareOf(link.operationId, item.id, pool.usdCents);
-        inherited += share.cents;
+        usd = usd === null ? null : usd + share.cents;
+        poolInherited += share.cents;
         if (pool.estimated) estimated = true;
-        for (const part of pool.parts) {
-          parts.push(share.bp === BP_TOTAL ? part : { ...part, cents: Math.round((part.cents * share.bp) / BP_TOTAL) });
-        }
+        parts = [...parts, ...scaleParts(pool.parts, share.bp)];
       }
       const result = {
         ownUsdCents: own.usdCents,
-        inheritedUsdCents: inherited,
-        effectiveUsdCents: own.usdCents === null ? null : own.usdCents + inherited,
+        inheritedUsdCents: own.usdCents === null ? poolInherited : usd === null ? 0 : usd - own.usdCents,
+        effectiveUsdCents: usd,
         estimated,
         parts,
       };
-      memo.set(item.id, result);
+      memo.set(memoKey, result);
       return result;
     } finally {
-      visiting.delete(item.id);
+      visiting.delete(memoKey);
     }
   }
 

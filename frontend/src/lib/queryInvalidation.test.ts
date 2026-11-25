@@ -39,6 +39,7 @@ const EXPECTED: Record<string, string[]> = {
   // Aplicar do estoque (10.3, D362): os mesmos alvos de editar/desfazer venda.
   'item.applyComponent': ['items', 'marketValues', 'sales', 'stores', 'storeBalances', 'profitSummary', 'imports'],
   'item.scrapeOff': ['items', 'marketValues', 'sales', 'stores', 'storeBalances', 'profitSummary', 'imports'],
+  'item.detachComponent': ['items', 'marketValues', 'sales', 'stores', 'storeBalances', 'profitSummary', 'imports'],
   'operation.undo': ['items', 'marketValues', 'sales', 'stores', 'storeBalances', 'profitSummary', 'imports'],
   'item.open': ['items', 'marketValues', 'sales', 'stores', 'storeBalances', 'profitSummary', 'imports'],
   'settings.steamStore': ['settings', 'stores', 'items', 'marketValues'],

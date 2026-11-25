@@ -21,6 +21,8 @@ interface Props {
   // "Abrir caixa/cápsula/pacote/terminal" (10.4, D363) e o atalho "Cadastrar chave" da caixa sem chave compatível.
   onOpen?: (item: ItemView) => void;
   onRegisterKey?: (keyName: string) => void;
+  // "Separar chaveiro/slab" (10.7, D366): só em arma em estoque com um pendurado separável.
+  onDetach?: (item: ItemView) => void;
   // "Colocar à venda" em andamento: o botão fica desabilitado (evita clique duplo).
   forSaleBusy?: boolean;
   // Ação extra no fim (ex.: "Inspecionar").
@@ -29,7 +31,7 @@ interface Props {
 
 // Botões por situação do item (D118): EM_ESTOQUE -> Editar, Vender, Excluir; VENDIDO -> Editar, Desfazer venda, Excluir.
 // "Vender" fica desabilitado em trade lock (D74); o backend continua sendo a fonte da regra.
-export default function ItemActions({ item, onEdit, onSell, onUnsell, onDelete, onHistory, onOffSale, onForSale, onApply, onOpen, onRegisterKey, forSaleBusy = false, children }: Props) {
+export default function ItemActions({ item, onEdit, onSell, onUnsell, onDelete, onHistory, onOffSale, onForSale, onApply, onOpen, onRegisterKey, onDetach, forSaleBusy = false, children }: Props) {
   const t = useT();
   const locale = useLanguage();
   const sold = item.status === 'VENDIDO';
@@ -58,6 +60,9 @@ export default function ItemActions({ item, onEdit, onSell, onUnsell, onDelete, 
       )}
       {item.canReceiveComponents && onApply && (
         <button type="button" className={styles.button} onClick={() => onApply(item)}>{t('inventory.actions.apply')}</button>
+      )}
+      {onDetach && item.status === 'EM_ESTOQUE' && item.components.some((c) => c.detachable) && (
+        <button type="button" className={styles.button} onClick={() => onDetach(item)}>{t('inventory.actions.detach')}</button>
       )}
       {item.openable && onOpen && (() => {
         const { kind, compatibleKeys, requiredKeyName } = item.openable;

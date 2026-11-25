@@ -34,5 +34,14 @@ router.post(
   '/:id/components/:componentId/scrape-off', validateIdParam, operationValidators.validateComponentIdParam,
   operationValidators.validateScrapeBody, operationController.scrapeOff
 );
+// Separar o chaveiro ou o Sticker Slab da arma (10.7, D366).
+router.get(
+  '/:id/components/:componentId/detach-preview', validateIdParam, operationValidators.validateComponentIdParam,
+  operationValidators.validateDetachPreviewQuery, operationController.detachPreview
+);
+router.post(
+  '/:id/components/:componentId/detach', validateIdParam, operationValidators.validateComponentIdParam,
+  operationValidators.validateDetachBody, operationController.detach
+);
 
 module.exports = router;

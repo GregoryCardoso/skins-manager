@@ -9,6 +9,7 @@ const ItemOperation = require('../../models/ItemOperation');
 const { runInTransaction } = require('../../models/modelHelpers');
 const { NotFoundError, ConflictError } = require('../../errors/AppError');
 const externalLinkService = require('../externalLinkService');
+const itemComponentService = require('../itemComponentService');
 const operationContext = require('./operationContext');
 
 function undoOperation(operationId, { now = new Date() } = {}) {
@@ -58,6 +59,44 @@ function undoOperation(operationId, { now = new Date() } = {}) {
       ItemOperation.updateDetail(operation.id, JSON.stringify({ ...detail, undoneGenerated: snapshot }));
       for (const link of links) if (link.role === 'CONSUMED') Item.update(link.itemId, { status: 'EM_ESTOQUE', consumedAt: null }, { now });
       itemIds = itemIds.filter((id) => !removedItemIds.includes(id));
+    } else if (operation.kind === 'DETACH_COMPONENT') {
+      // Separação (D366 item 6): o pendurado volta para a arma, que não pode ter outro (colocado à mão depois).
+      const detail = operation.detailJson ? JSON.parse(operation.detailJson) : {};
+      const target = links.find((link) => link.role === 'TARGET' && link.itemId === detail.weaponItemId) ?? links.find((link) => link.role === 'TARGET');
+      const weaponRows = ItemComponent.listByItemIds([target.itemId]).get(target.itemId) ?? [];
+      if (weaponRows.some((row) => itemComponentService.isDetachable(row.kind))) {
+        throw new ConflictError('A arma já tem outro pendurado: remova-o antes de desfazer a separação.', 'OPERATION_UNDO_BLOCKED', {
+          params: { reason: 'HANGING_OCCUPIED', itemId: target.itemId },
+        });
+      }
+      if (detail.mode === 'RETURN') {
+        const returnedId = detail.returnedItemId;
+        const previous = detail.previous ?? {};
+        Item.update(returnedId, {
+          status: 'CONSUMIDO', consumedAt: ItemOperation.findById(detail.applyOperationId).occurredAt,
+          forSaleSince: previous.forSaleSince ?? null, offSaleAt: previous.offSaleAt ?? null, tradeUnlockAt: previous.tradeUnlockAt ?? null,
+        }, { now });
+        ItemOperation.clearEnded(detail.applyOperationId);
+      } else {
+        const created = links.find((link) => link.role === 'CREATED');
+        const generated = created ? Item.findById(created.itemId) : null;
+        let snapshot = null;
+        if (generated) {
+          snapshot = {
+            name: generated.name, catalogId: generated.catalogId, category: generated.category, acquisitionType: generated.acquisitionType,
+            tradeUnlockAt: generated.tradeUnlockAt, acquiredAt: generated.acquiredAt,
+          };
+          ItemOperation.deleteCreatedLink(operation.id, generated.id); // o vínculo é RESTRICT
+          ItemOperation.deleteUndoneForItem(generated.id);
+          externalLinkService.detachOnRemove('ITEM_PURCHASE', generated.id, { now });
+          externalLinkService.detachOnRemove('ITEM_SALE', generated.id, { now });
+          Item.remove(generated.id);
+          removedItemIds.push(generated.id);
+        }
+        ItemOperation.updateDetail(operation.id, JSON.stringify({ ...detail, undoneGenerated: snapshot }));
+        itemIds = itemIds.filter((id) => !removedItemIds.includes(id));
+      }
+      ItemComponent.insertOne(target.itemId, detail.component, { now });
     } else {
       throw new ConflictError('Este tipo de operação não pode ser desfeito.', 'OPERATION_UNDO_BLOCKED', { params: { reason: 'KIND_NOT_SUPPORTED' } });
     }

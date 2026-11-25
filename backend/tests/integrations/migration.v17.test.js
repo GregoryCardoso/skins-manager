@@ -69,7 +69,7 @@ test('v17 sobre v16 com dados variados: itens, aportes, lojas e configurações 
   const before = seedV16(dbPath);
   const db = openDatabase(dbPath, { now: new Date('2026-11-23T12:00:00.000Z') });
   try {
-    expect(db.pragma('user_version', { simple: true })).toBe(21);
+    expect(db.pragma('user_version', { simple: true })).toBe(22);
     const after = snapshot(db);
     expect(withoutNewColumn(after.items)).toEqual(before.items);
     expect(after.deposits).toEqual(before.deposits);
@@ -95,7 +95,7 @@ test('reabrir um banco já na v17 não reaplica a migração nem cria outro back
   const first = count();
   const reopened = openDatabase(dbPath);
   try {
-    expect(reopened.pragma('user_version', { simple: true })).toBe(21);
+    expect(reopened.pragma('user_version', { simple: true })).toBe(22);
   } finally {
     reopened.close();
   }
@@ -126,7 +126,7 @@ test('v17 falha no meio: rollback total (sem tabelas nem coluna), versão 16 e d
   }
   const ok = openDatabase(dbPath);
   try {
-    expect(ok.pragma('user_version', { simple: true })).toBe(21);
+    expect(ok.pragma('user_version', { simple: true })).toBe(22);
     expect(ok.prepare('SELECT COUNT(*) n FROM items').get().n).toBe(before.items.length);
   } finally {
     ok.close();

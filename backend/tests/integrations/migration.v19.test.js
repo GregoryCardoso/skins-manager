@@ -31,7 +31,7 @@ const snapshot = (d) => ({
   }),
   catalog: d.prepare('SELECT * FROM catalog_items ORDER BY id').all(),
   components: d.prepare('SELECT * FROM item_components ORDER BY id').all(),
-  operations: d.prepare('SELECT * FROM item_operations ORDER BY id').all().map(({ detail_json: detail, ...rest }) => rest), // a v19 acrescenta detail_json
+  operations: d.prepare('SELECT * FROM item_operations ORDER BY id').all().map(({ detail_json: detail, ended_by_operation_id: ended, ...rest }) => rest), // a v19 acrescenta detail_json e a v22, ended_by_operation_id
   links: d.prepare('SELECT * FROM item_operation_links ORDER BY id').all(),
   stores: d.prepare('SELECT * FROM stores ORDER BY id').all(),
   deposits: d.prepare('SELECT * FROM deposits ORDER BY id').all(),
@@ -93,7 +93,7 @@ test('v19 sobre v18 cheio de dados: linhas idênticas, contador preservado, índ
   expect(before.items).toHaveLength(5);
   const db = openDatabase(dbPath, { now: NOW });
   try {
-    expect(db.pragma('user_version', { simple: true })).toBe(21);
+    expect(db.pragma('user_version', { simple: true })).toBe(22);
     expect(db.pragma('foreign_key_check')).toEqual([]);
     const after = snapshot(db);
     for (const key of Object.keys(before)) expect(after[key]).toEqual(before[key]);
@@ -156,7 +156,7 @@ test('v19 falha no meio: rollback total, versão 18 e dados intactos; depois mig
   }
   const ok = openDatabase(dbPath, { now: NOW });
   try {
-    expect(ok.pragma('user_version', { simple: true })).toBe(21);
+    expect(ok.pragma('user_version', { simple: true })).toBe(22);
     expect(ok.prepare('SELECT COUNT(*) AS n FROM items').get().n).toBe(5);
   } finally {
     ok.close();
@@ -165,5 +165,5 @@ test('v19 falha no meio: rollback total, versão 18 e dados intactos; depois mig
 
 test('a migração tem número e nome estáveis e é a última', () => {
   expect(v019).toMatchObject({ version: 19, name: 'consumed_generated_patch', disableForeignKeys: true });
-  expect(MIGRATIONS[MIGRATIONS.length - 1].version).toBe(21);
+  expect(MIGRATIONS[MIGRATIONS.length - 1].version).toBe(22);
 });

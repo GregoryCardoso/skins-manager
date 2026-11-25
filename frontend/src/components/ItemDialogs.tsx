@@ -9,6 +9,7 @@ import type { ItemView, Store } from '@/types/api';
 import ConfirmDialog from './ConfirmDialog';
 import ItemFormModal from './ItemFormModal';
 import ApplyComponentModal from './ApplyComponentModal';
+import DetachComponentModal from './DetachComponentModal';
 import OpenContainerModal from './OpenContainerModal';
 import ItemHistoryBox from './ItemHistoryBox';
 import ItemOperationsList from './ItemOperationsList';
@@ -25,6 +26,7 @@ type Dialog =
   | { kind: 'offSale'; item: ItemView }
   | { kind: 'apply'; item: ItemView }
   | { kind: 'open'; item: ItemView }
+  | { kind: 'detach'; item: ItemView }
   | { kind: 'registerKey'; keyName: string }
   | { kind: 'history'; item: ItemView };
 
@@ -40,6 +42,8 @@ export interface ItemDialogsApi {
   openApply: (item: ItemView) => void;
   // Abrir caixa, cápsula, pacote ou terminal (10.4, D363) e o atalho "Cadastrar chave" (cadastro em OUTRO com o nome sugerido).
   openOpen: (item: ItemView) => void;
+  // "Separar chaveiro/slab" da arma (10.7, D366).
+  openDetach: (item: ItemView) => void;
   openRegisterKey: (keyName: string) => void;
   putForSale: (item: ItemView) => void;
   // Id do item cujo "Colocar à venda" está em andamento (o botão fica desabilitado).
@@ -166,6 +170,9 @@ export function useItemDialogs(stores: Store[]): ItemDialogsApi {
           onRegisterKey={(keyName) => setDialog({ kind: 'registerKey', keyName })}
         />
       )}
+      {dialog?.kind === 'detach' && (
+        <DetachComponentModal item={dialog.item} onClose={closeDialog} onDone={finish} onGone={itemGone} />
+      )}
       {dialog?.kind === 'apply' && (
         <ApplyComponentModal
           target={{ id: dialog.item.id, name: dialog.item.name }}
@@ -221,6 +228,7 @@ export function useItemDialogs(stores: Store[]): ItemDialogsApi {
     openOffSale: (item) => setDialog({ kind: 'offSale', item }),
     openApply: (item) => setDialog({ kind: 'apply', item }),
     openOpen: (item) => setDialog({ kind: 'open', item }),
+    openDetach: (item) => setDialog({ kind: 'detach', item }),
     openRegisterKey: (keyName) => setDialog({ kind: 'registerKey', keyName }),
     putForSale,
     forSalePendingId,

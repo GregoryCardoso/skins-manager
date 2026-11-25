@@ -17,7 +17,7 @@ import { makeItem } from './testFixtures';
 
 const component = (over: Partial<ItemComponent>): ItemComponent => ({
   id: 1, kind: 'STICKER', catalogId: 'st1', name: 'Sticker | st1', namePtBr: null, imageUrl: null, slot: 1, wear: 0.1, pattern: null,
-  source: 'MANUAL', origin: 'APPLIED_FROM_STOCK', sourceItemId: 7, operationId: 3, undoable: true, scrapeable: true, ...over,
+  source: 'MANUAL', origin: 'APPLIED_FROM_STOCK', sourceItemId: 7, operationId: 3, undoable: true, scrapeable: true, detachable: false, ...over,
 });
 
 describe('componentes: o que veio junto e o aplicado do estoque ficam separados', () => {

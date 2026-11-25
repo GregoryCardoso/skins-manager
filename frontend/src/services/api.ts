@@ -2,6 +2,9 @@ import type {
   ApplyCandidates,
   ApplyComponentBody,
   ApplyComponentResult,
+  DetachBody,
+  DetachPreview,
+  DetachResult,
   ItemOperation,
   UndoOperationResult,
   BulkSaleStateBody,
@@ -324,6 +327,15 @@ export const applyComponent = (id: number, body: ApplyComponentBody) =>
 
 export const scrapeOffComponent = (itemId: number, componentId: number, body: { occurredAt?: string } = {}) =>
   request<ApplyComponentResult>('POST', `/items/${itemId}/components/${componentId}/scrape-off`, { body });
+
+// Separar o chaveiro ou o Sticker Slab da arma (10.7, D366): prévia (só leitura, sem rede) e a separação.
+export const getDetachPreview = (itemId: number, componentId: number, hangingShareBp: number | null, signal?: AbortSignal) =>
+  request<DetachPreview>('GET', `/items/${itemId}/components/${componentId}/detach-preview`, {
+    signal, query: hangingShareBp === null ? undefined : { hangingShareBp },
+  });
+
+export const detachComponent = (itemId: number, componentId: number, body: DetachBody) =>
+  request<DetachResult>('POST', `/items/${itemId}/components/${componentId}/detach`, { body });
 
 export const listItemOperations = (id: number, signal?: AbortSignal) => request<ItemOperation[]>('GET', `/items/${id}/operations`, { signal });
 

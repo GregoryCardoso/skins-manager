@@ -391,7 +391,7 @@ function generatedFromOf(item, opCtx) {
   const link = opCtx.createdByItem.get(item.id);
   if (!link) return null;
   const operation = opCtx.opsById.get(link.operationId);
-  if (!operation) return null;
+  if (!operation || operation.kind === 'DETACH_COMPONENT') return null; // a separada tem `detachedFrom`
   const consumed = (opCtx.linksByOperation.get(operation.id) ?? []).filter((l) => l.role === 'CONSUMED').map((l) => opCtx.itemsById.get(l.itemId));
   let detail = {};
   try {
@@ -407,6 +407,22 @@ function generatedFromOf(item, opCtx) {
     decision: detail.decision ?? null,
     containerName: consumed[0] ? consumed[0].name : null,
     keyName: consumed[1] ? consumed[1].name : null,
+  };
+}
+
+// De onde a unidade veio (separação ativa mais recente da unidade): { operationId, occurredAt, mode, weaponItemId, weaponName, pattern } ou null (D366).
+function detachedFromOf(item, opCtx) {
+  const found = opCtx.detachByItem.get(item.id);
+  if (!found || opCtx.latestOpIdByItem.get(item.id) !== found.operation.id) return null;
+  const weapon = isNil(found.detail.weaponItemId) ? null : opCtx.itemsById.get(found.detail.weaponItemId) ?? null;
+  const component = found.detail.component ?? {};
+  return {
+    operationId: found.operation.id,
+    occurredAt: found.operation.occurredAt,
+    mode: found.detail.mode ?? null,
+    weaponItemId: found.detail.weaponItemId ?? null,
+    weaponName: weapon ? weapon.name : null,
+    pattern: component.pattern ?? null,
   };
 }
 
@@ -438,12 +454,13 @@ function toItemView(
   return {
     ...item,
     // Componentes (10.1, D344; 10.3, D362): os que vieram junto e os aplicados do estoque.
-    components: itemComponentService.toView(componentRows, { catalogById, undoableOf }),
+    components: itemComponentService.toView(componentRows, { catalogById, undoableOf, canDetach: inStock }),
     componentSummary: itemComponentService.toSummary(componentRows),
     // Custo efetivo (D362): o próprio mais o dos componentes aplicados do estoque; o `purchasePrice` nunca muda.
     cost: { ownUsdCents: cost.ownUsdCents, inheritedUsdCents, effectiveUsdCents: cost.effectiveUsdCents, estimated: cost.estimated },
     consumedIn: consumedInOf(item, opCtx),
     generatedFrom: generatedFromOf(item, opCtx),
+    detachedFrom: detachedFromOf(item, opCtx),
     openable: inStock ? openableOf(item, isNil(item.catalogId) ? null : catalogById.get(item.catalogId) ?? null, stockKeys) : null,
     canReceiveComponents: inStock && itemComponentService.allowedKindsFor(item.category).length > 0,
     // Origem da importação (D318): 'CSFLOAT' se o item tem vínculo de compra ou venda com a loja externa; senão null.

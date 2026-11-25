@@ -96,7 +96,7 @@ describe('visões', () => {
     const [view] = svc.toView([{ id: 1, kind: 'STICKER', catalogId: 'sumiu', name: 'Sticker | Antigo', slot: 0, wear: 0.1, pattern: null, source: 'MANUAL', origin: 'CAME_WITH' }]);
     expect(view).toEqual({
       id: 1, kind: 'STICKER', catalogId: 'sumiu', name: 'Sticker | Antigo', namePtBr: null, imageUrl: null, slot: 0, wear: 0.1, pattern: null,
-      source: 'MANUAL', origin: 'CAME_WITH', sourceItemId: null, operationId: null, undoable: false, scrapeable: false,
+      source: 'MANUAL', origin: 'CAME_WITH', sourceItemId: null, operationId: null, undoable: false, scrapeable: false, detachable: false,
     });
   });
 

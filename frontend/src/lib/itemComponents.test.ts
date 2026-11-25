@@ -9,7 +9,7 @@ import type { ItemComponent } from '@/types/api';
 const catalog = (id: string) => ({ id, name: `Sticker | ${id}`, namePtBr: null, imageUrl: null });
 const component = (over: Partial<ItemComponent>): ItemComponent => ({
   id: 1, kind: 'STICKER', catalogId: 'st1', name: 'Sticker | st1', namePtBr: null, imageUrl: null, slot: null, wear: null, pattern: null,
-  source: 'MANUAL', origin: 'CAME_WITH', sourceItemId: null, operationId: null, undoable: false, scrapeable: false, ...over,
+  source: 'MANUAL', origin: 'CAME_WITH', sourceItemId: null, operationId: null, undoable: false, scrapeable: false, detachable: false, ...over,
 });
 
 describe('desgaste em %', () => {

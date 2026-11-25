@@ -8,6 +8,7 @@ export const queryKeys = {
     groups: (query: unknown) => ['items', 'groups', query] as const,
     // Candidatas e operações de uma unidade (10.3): sob o prefixo `items`, então toda invalidação de item as recarrega.
     candidates: (id: number) => ['items', 'candidates', id] as const,
+    detachPreview: (id: number, componentId: number, share: number | null) => ['items', 'detachPreview', id, componentId, share] as const,
     operations: (id: number) => ['items', 'operations', id] as const,
     // Prévia da abertura de uma caixa, cápsula, pacote ou terminal (10.4).
     openOptions: (id: number) => ['items', 'openOptions', id] as const,

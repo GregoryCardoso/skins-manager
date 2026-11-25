@@ -15,6 +15,14 @@ function scrapeOff(req, res) {
   ok(res, itemOperationService.scrapeComponent(req.params.id, req.params.componentId, req.body, ctx(req)));
 }
 
+function detachPreview(req, res) {
+  ok(res, itemOperationService.detachPreview(req.params.id, req.params.componentId, req.validatedQuery, ctx(req)));
+}
+
+function detach(req, res) {
+  ok(res, itemOperationService.detachComponent(req.params.id, req.params.componentId, req.body, ctx(req)), 201);
+}
+
 function openOptions(req, res) {
   ok(res, itemOperationService.openOptions(req.params.id, ctx(req)));
 }
@@ -31,4 +39,4 @@ function undo(req, res) {
   ok(res, itemOperationService.undo(req.params.id, ctx(req)));
 }
 
-module.exports = { openOptions, open, candidates, apply, scrapeOff, listForItem, undo };
+module.exports = { detachPreview, detach, openOptions, open, candidates, apply, scrapeOff, listForItem, undo };

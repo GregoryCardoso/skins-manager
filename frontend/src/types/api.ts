@@ -212,6 +212,8 @@ export interface ItemComponent {
   operationId: number | null;
   undoable: boolean;
   scrapeable: boolean;
+  // Pendurado (chaveiro ou slab) de uma arma em estoque: pode ser separado da arma (10.7, D366).
+  detachable: boolean;
 }
 // `charms` conta o pendurado (chaveiro ou Sticker Slab).
 export interface ComponentSummary {
@@ -292,6 +294,8 @@ export interface ItemView {
   consumedIn: ItemConsumedIn | null;
   // De onde a unidade veio (abertura ativa): "aberto de <caixa>" / "comprado no terminal" (10.4, D363); senão nulo.
   generatedFrom: ItemGeneratedFrom | null;
+  // De onde a unidade veio ao ser separada de uma arma (10.7, D366): "separado de <arma>"; senão nulo.
+  detachedFrom: ItemDetachedFrom | null;
   // Em estoque e abrível (caixa, cápsula, pacote, terminal): { kind, quantas chaves compatíveis, nome da chave exigida }; senão nulo.
   openable: ItemOpenable | null;
   // Em estoque e de uma categoria que aceita componentes: mostra "Aplicar do estoque".
@@ -404,6 +408,14 @@ export interface ItemGeneratedFrom {
   containerName: string | null;
   keyName: string | null;
 }
+export interface ItemDetachedFrom {
+  operationId: number;
+  occurredAt: string;
+  mode: DetachMode | null;
+  weaponItemId: number | null;
+  weaponName: string | null;
+  pattern: number | null;
+}
 export interface ItemOpenable {
   kind: OpeningKind;
   compatibleKeys: number;
@@ -475,7 +487,7 @@ export interface ApplyComponentBody {
 }
 export type OperationKind = 'APPLY_COMPONENT' | 'DETACH_COMPONENT' | 'SCRAPE_OFF' | 'OPEN_CASE' | 'OPEN_TERMINAL' | 'TRADE_UP';
 export type OperationRole = 'CONSUMED' | 'TARGET' | 'CREATED';
-export type OperationBlockReason = 'ALREADY_UNDONE' | 'NOT_LATEST' | 'TARGET_SOLD' | 'TARGET_NOT_IN_STOCK';
+export type OperationBlockReason = 'ALREADY_UNDONE' | 'DETACHED' | 'HANGING_OCCUPIED' | 'NOT_LATEST' | 'TARGET_SOLD' | 'TARGET_NOT_IN_STOCK';
 export interface OperationSummary {
   id: number;
   kind: OperationKind;
@@ -491,8 +503,19 @@ export interface ItemOperation extends OperationSummary {
   detail?: {
     container: OpenContainerKind | null;
     decision: OpenDecision | null;
-    undoneGenerated: { name: string; catalogId: string | null; category: Category; acquisitionType: AcquisitionType; purchasePriceCents: number; purchaseCurrency: Currency } | null;
+    undoneGenerated: { name: string; catalogId: string | null; category: Category; acquisitionType: AcquisitionType; purchasePriceCents?: number; purchaseCurrency?: Currency } | null;
+    // Separação (10.7): modo, componente e a divisão (porcentagem em pontos-base e os preços usados).
+    detach?: {
+      mode: DetachMode | null;
+      weaponItemId: number | null;
+      component: { kind: ComponentKind | null; name: string | null; pattern: number | null; source: ComponentSource | null };
+      share: { hangingShareBp: number; basis: 'MARKET_CACHE' | 'MANUAL'; basePriceCents: number | null; hangingPriceCents: number | null; pricedAt: string | null } | null;
+      applyOperationId: number | null;
+      returnedItemId: number | null;
+    } | null;
   } | null;
+  // Aplicação encerrada por uma separação (10.7).
+  endedBy?: { operationId: number; occurredAt: string | null } | null;
   role: OperationRole | null;
   counterparts: { itemId: number; name: string | null; role: OperationRole; status: ItemStatus | null }[];
   undoable: boolean;
@@ -1324,4 +1347,40 @@ export interface UndoPreview {
   blockers: UndoPreviewIssue[];
   warnings: UndoPreviewIssue[];
   counts: { itemsToDelete: number; linksToRemove: number; salesToUndo: number; transfersToDelete?: number };
+}
+
+// Separar o chaveiro ou o Sticker Slab da arma (10.7, D366).
+export type DetachMode = 'SPLIT' | 'RETURN';
+export type DetachUnavailableReason = 'WEAPON_NO_PRICE' | 'WEAPON_NOT_PRICEABLE' | 'HANGING_NO_PRICE';
+export interface DetachSuggestion {
+  hangingShareBp: number;
+  basePriceCents: number;
+  hangingPriceCents: number;
+  basePricedAt: string | null;
+  hangingPricedAt: string | null;
+  pricedAt: string | null;
+  isStale: boolean;
+}
+export interface DetachPreview {
+  mode: DetachMode;
+  component: { id: number; kind: ComponentKind; catalogId: string | null; name: string; slot: number | null; pattern: number | null; source: ComponentSource; origin: 'CAME_WITH' | 'APPLIED_FROM_STOCK' };
+  weapon: { effectiveUsdCents: number | null; estimated: boolean };
+  suggestion: DetachSuggestion | null;
+  suggestionUnavailableReason: DetachUnavailableReason | null;
+  // Valor avaliado do conjunto (arma sem o pendurado + pendurado), pelo cache.
+  valuedTotalUsdCents: number | null;
+  appliedShareBp?: number | null;
+  result: { weaponUsdCents: number; detachedUsdCents: number } | null;
+  detached: { category: Category; name: string; catalogId: string | null; returnedItemId?: number };
+}
+export interface DetachBody {
+  detachedAt?: string;
+  hangingShareBp?: number;
+  tradeUnlockAt?: string;
+  note?: string;
+}
+export interface DetachResult {
+  operation: OperationSummary;
+  item: ItemView;
+  detachedItem: ItemView;
 }

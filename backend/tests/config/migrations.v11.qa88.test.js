@@ -43,7 +43,7 @@ describe('v11 com dados', () => {
 
     const db = openDatabase(dbPath, { now: new Date('2026-11-22T12:00:00.000Z') });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(21);
+      expect(db.pragma('user_version', { simple: true })).toBe(22);
       expect(dump(db)).toEqual(before);
       const { inventory_view: view, steam_store_id: _steam, price_refresh_started_at: _p1, price_refresh_last_at: _p2, price_refresh_last_status: _p3, price_refresh_last_error_code: _p4, ...rest } = db.prepare('SELECT * FROM settings').get();
       expect(view).toBe('GROUPED');
@@ -63,7 +63,7 @@ describe('v11 com dados', () => {
     first.close();
     const second = openDatabase(dbPath);
     try {
-      expect(second.pragma('user_version', { simple: true })).toBe(21);
+      expect(second.pragma('user_version', { simple: true })).toBe(22);
       expect(second.prepare('SELECT inventory_view AS v FROM settings').get().v).toBe('INDIVIDUAL');
     } finally {
       second.close();
@@ -73,7 +73,7 @@ describe('v11 com dados', () => {
   test('banco novo (sem migração anterior) já nasce em v11 com GROUPED', () => {
     const db = openDatabase(dbIn('novo'));
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(21);
+      expect(db.pragma('user_version', { simple: true })).toBe(22);
       expect(db.prepare('SELECT inventory_view AS v FROM settings').get().v).toBe('GROUPED');
     } finally {
       db.close();

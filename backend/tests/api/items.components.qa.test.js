@@ -227,9 +227,12 @@ describe('ciclo de vida e visões', () => {
   test('vender e desfazer a venda preservam a lista (mesmos ids); item vendido aparece com componentes nas vendas', async () => {
     const item = await createItemViaApi(app, purchaseBody({ components: [sticker(0), charm] }));
     const sold = (await sell(item.id)).body.data.item;
-    expect(sold.components).toEqual(item.components);
+    // `detachable` só vale com a arma em estoque (10.7): na venda o pendurado deixa de ser separável.
+    const sameButDetach = (list) => list.map(({ detachable, ...rest }) => rest);
+    expect(sameButDetach(sold.components)).toEqual(sameButDetach(item.components));
+    expect(sold.components.some((c) => c.detachable)).toBe(false);
     const sales = (await get('/api/items/sales')).body.data.items;
-    expect(sales[0].components).toEqual(item.components);
+    expect(sameButDetach(sales[0].components)).toEqual(sameButDetach(item.components));
     const back = (await request(app).post(`/api/items/${item.id}/unsell`).send({})).body.data;
     expect(back.components).toEqual(item.components);
     expect(rowCount()).toBe(2);
@@ -392,7 +395,7 @@ describe('segurança das rotas alteradas', () => {
   test('a resposta de componentes não vaza campos internos (item_id, timestamps, referência de compra)', async () => {
     const item = await createItemViaApi(app, purchaseBody({ components: [sticker(0)] }));
     expect(Object.keys(item.components[0]).sort()).toEqual(
-      ['catalogId', 'id', 'imageUrl', 'kind', 'name', 'namePtBr', 'operationId', 'origin', 'pattern', 'scrapeable', 'slot', 'source', 'sourceItemId', 'undoable', 'wear'].sort()
+      ['catalogId', 'detachable', 'id', 'imageUrl', 'kind', 'name', 'namePtBr', 'operationId', 'origin', 'pattern', 'scrapeable', 'slot', 'source', 'sourceItemId', 'undoable', 'wear'].sort()
     );
   });
 });

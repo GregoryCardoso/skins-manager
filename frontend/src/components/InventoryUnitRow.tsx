@@ -25,6 +25,7 @@ export interface UnitRowHandlers {
   onApply?: (item: ItemView) => void;
   onOpen?: (item: ItemView) => void;
   onRegisterKey?: (keyName: string) => void;
+  onDetach?: (item: ItemView) => void;
 }
 
 interface Props extends UnitRowHandlers {
@@ -233,7 +234,7 @@ export function UnitTableHead({ selection, showMarket = true }: { selection?: { 
 
 // Linha de uma unidade (extraída do InventoryTable na 8.8, sem mudar o visual).
 export default function InventoryUnitRow({
-  item, stores, onEdit, onSell, onUnsell, onDelete, onHistory, onOffSale, onForSale, onApply, onOpen, onRegisterKey, forSalePendingId = null, highlighted = false, selection, showMarket = true,
+  item, stores, onEdit, onSell, onUnsell, onDelete, onHistory, onOffSale, onForSale, onApply, onOpen, onRegisterKey, onDetach, forSalePendingId = null, highlighted = false, selection, showMarket = true,
 }: Props & { selection?: { checked: boolean; onChange: (checked: boolean) => void }; showMarket?: boolean }) {
   const t = useT();
   const locale = useLanguage();
@@ -279,6 +280,7 @@ export default function InventoryUnitRow({
           onApply={onApply}
           onOpen={onOpen}
           onRegisterKey={onRegisterKey}
+          onDetach={onDetach}
           forSaleBusy={forSalePendingId === item.id}
         >
           <InspectAction link={item.inspectLink} />

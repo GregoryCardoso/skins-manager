@@ -9,6 +9,11 @@ import styles from './InventoryTable.module.css';
 export default function GeneratedFromNote({ item }: { item: ItemView }) {
   const t = useT();
   const tLoose = useTLoose();
+  const detached = item.detachedFrom;
+  if (detached && detached.weaponName) {
+    const text = tLoose(`operations.detachedFrom.${detached.mode ?? 'SPLIT'}`, { weapon: detached.weaponName, pattern: detached.pattern ?? '' });
+    return <span className={styles.details} title={t('operations.title')}>{text}</span>;
+  }
   const from = item.generatedFrom;
   if (!from || !from.containerName) return null;
   const variant = from.container === 'CASE' && from.keyName ? 'CASE_KEY' : from.container ?? 'CASE';
