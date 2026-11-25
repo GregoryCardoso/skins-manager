@@ -1,3 +1,5 @@
+import { hasNoDecimals } from '@/lib/currencies';
+
 export function formatDateTime(iso: string, locale: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
@@ -8,12 +10,15 @@ export function formatInteger(value: number, locale: string): string {
   return new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(value);
 }
 
-export function formatMoney(cents: number, currency: 'USD' | 'BRL', locale: string): string {
-  return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(cents / 100);
+// Valor em "centavos" (1/100 da unidade) de qualquer das 17 moedas. JPY, KRW e CLP saem sem casas decimais (o valor já vem do backend
+// arredondado para a unidade); as demais, com 2.
+export function formatMoney(cents: number, currency: string, locale: string): string {
+  const digits = hasNoDecimals(currency) ? { minimumFractionDigits: 0, maximumFractionDigits: 0 } : {};
+  return new Intl.NumberFormat(locale, { style: 'currency', currency, ...digits }).format(cents / 100);
 }
 
-// Valor aproximado na outra moeda (calculado no backend, D101); sempre 2 casas decimais (D104).
-export function formatApprox(approx: { currency: 'USD' | 'BRL'; cents: number }, locale: string): string {
+// Valor aproximado na moeda de conversão (calculado no backend, D101): 2 casas (D104), 0 nas moedas sem casas.
+export function formatApprox(approx: { currency: string; cents: number }, locale: string): string {
   return formatMoney(approx.cents, approx.currency, locale);
 }
 
@@ -49,9 +54,9 @@ export function remainingToText(parts: RemainingParts, units: { d: string; h: st
   return out.join(' ');
 }
 
-// Cotação em reais com 2 a 4 casas decimais ("R$ 5,40", "R$ 5,4123").
-export function formatRate(rate: number, locale: string): string {
-  return new Intl.NumberFormat(locale, { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 4 }).format(rate);
+// Cotação ("unidades da moeda por 1 US$") na moeda dela, com 2 a 4 casas decimais ("R$ 5,40", "R$ 5,4123", "¥ 151,23"). Sem moeda, BRL.
+export function formatRate(rate: number, locale: string, currency: string = 'BRL'): string {
+  return new Intl.NumberFormat(locale, { style: 'currency', currency, minimumFractionDigits: 2, maximumFractionDigits: 4 }).format(rate);
 }
 
 // Razão (0,7754 -> "77,5%") com uma casa decimal, no idioma da tela.

@@ -34,10 +34,18 @@ describe('PUT /api/settings/fx-rate (lacunas)', () => {
     expect(res.body.error.message).toBe('Cotação USD→BRL inválida: informe um número maior que zero.');
   });
 
-  test('valores positivos sem limite de casas nem teto são aceitos', async () => {
-    expect((await put({ usdBrlRate: 0.0001 })).body.data.usdBrlRate).toBe(0.0001);
+  test('valores positivos sem limite de casas são aceitos dentro da faixa manual do BRL (0,5 a 100)', async () => {
+    expect((await put({ usdBrlRate: 0.5 })).body.data.usdBrlRate).toBe(0.5);
     expect((await put({ usdBrlRate: 5.123456789 })).body.data.usdBrlRate).toBe(5.123456789);
-    expect((await put({ usdBrlRate: 1e6 })).body.data.usdBrlRate).toBe(1e6);
+    expect((await put({ usdBrlRate: 100 })).body.data.usdBrlRate).toBe(100);
+  });
+
+  test('valores fora da faixa manual do BRL -> FX_RATE_OUT_OF_RANGE (0,0001 e 1e6 deixaram de valer)', async () => {
+    for (const v of [0.0001, 0.49, 100.01, 1e6]) {
+      const res = await put({ usdBrlRate: v });
+      expectError(res, 400, 'FX_RATE_OUT_OF_RANGE');
+      expect(res.body.error.params).toEqual({ currency: 'BRL', min: 0.5, max: 100 });
+    }
   });
 
   test('string vazia, objeto e array -> INVALID_FIELD', async () => {

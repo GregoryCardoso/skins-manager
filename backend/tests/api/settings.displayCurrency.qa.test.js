@@ -7,6 +7,7 @@ const { closeDb, getDb } = require('../../src/config/database');
 const Item = require('../../src/models/Item');
 const Deposit = require('../../src/models/Deposit');
 const Withdrawal = require('../../src/models/Withdrawal');
+const FxRate = require('../../src/models/FxRate');
 const { freshDb, wonSkin, soldFields } = require('../helpers/fixtures');
 const { makeCatalogApp, expectError, NOW, storeId } = require('../helpers/apiFixtures');
 const settingsService = require('../../src/services/settingsService');
@@ -208,9 +209,10 @@ describe('PUT /api/settings/fx-rate hostil', () => {
     expect((await settings(app)).fxRates).toEqual([]);
   });
 
-  test('cotação manual extrema não produz NaN, Infinity nem 500 no "≈"', async () => {
+  // Desde a 11.3 a API recusa esses valores (faixa manual); a cotação já gravada fora da faixa (banco antigo) segue sendo lida.
+  test('cotação gravada extrema não produz NaN, Infinity nem 500 no "≈"', async () => {
     for (const rate of [1e308, 1e-300, Number.MAX_VALUE, Number.MIN_VALUE]) {
-      expect((await putRate(app, { currency: 'GBP', rate })).status).toBe(200);
+      FxRate.upsert('GBP', { rate, source: 'MANUAL', quotedAt: null, updatedAt: NOW.toISOString() }, { now: NOW });
       await patch(app, { displayCurrency: 'GBP' });
       await putRate(app, { currency: 'EUR', rate: 0.9 });
       await request(app).post('/api/deposits').set('Content-Type', JSON_TYPE)

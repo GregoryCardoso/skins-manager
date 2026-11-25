@@ -38,7 +38,7 @@ function GroupMoney({ group, cents, approxCents }: { group: ItemGroup; cents: nu
       {/* A dica do `title` não chega ao teclado nem ao leitor de tela (revisão da 8.8, item 6). */}
       {group.costUsesRecordedFx && <span className={groupStyles.srOnly}>{t('inventory.group.convertedCost')}</span>}
       {approxCents !== null && (
-        <small className={groupStyles.moneySide}>{t('common.approx', { value: formatMoney(approxCents, 'BRL', locale) })}</small>
+        <small className={groupStyles.moneySide}>{t('common.approx', { value: formatMoney(approxCents, group.approxCurrency, locale) })}</small>
       )}
     </div>
   );

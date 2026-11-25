@@ -20,8 +20,10 @@ import {
 import { BASE_LANGUAGE, browserLocales, detectLanguage, languageOrBase } from '@/i18n/languages';
 import { queryKeys } from '@/lib/queryKeys';
 import { useInvalidate } from '@/lib/useInvalidate';
-import { getSettings, refreshFxRate, updateFxRate, updatePreferences } from '@/services/api';
-import type { FxRateSource, FxRefreshResult, FxRefreshSource, InventoryView, Language, Settings, ThemeChoice } from '@/types/api';
+import { changeDisplayCurrency, getSettings, refreshFxRate, updateFxRate, updatePreferences } from '@/services/api';
+import type {
+  DisplayCurrencyChangeResult, FxRateEntry, FxRefreshResult, FxRefreshSource, InventoryView, Language, SteamStoreChoice, ThemeChoice,
+} from '@/types/api';
 
 interface PreferencesContextValue {
   // Tema exibido (D112): a escolha salva ou, sem escolha, o do sistema lido ao abrir o app.
@@ -38,19 +40,21 @@ interface PreferencesContextValue {
   // Visão do inventário (D276): o banco prevalece; a troca é otimista e volta ao valor anterior se o PATCH falhar.
   inventoryView: InventoryView;
   setInventoryView: (view: InventoryView) => void;
-  // Cotação USD→BRL (D107): null = não definida (ou ainda não carregada).
+  // Moeda de conversão (D369): a do "≈". Instalação nova = USD (sem "≈"); banco existente = BRL. Enquanto as configurações não chegam, USD.
+  displayCurrency: string;
+  // Cotações gravadas por moeda e as moedas que precisam de cotação (a de conversão, as das lojas e, com legado, o BRL).
+  fxRates: FxRateEntry[];
+  requiredFxCurrencies: string[];
+  // Troca a moeda de conversão (o modal já confirmou). Na 11.3 a loja Steam sempre fica como está ('KEEP'). Invalida as telas com dinheiro.
+  changeDisplayCurrency: (currency: string, steamStore?: SteamStoreChoice) => Promise<DisplayCurrencyChangeResult>;
+  // Cotação do BRL (D107), usada como padrão nos formulários de compra e venda em R$: null = não definida (ou ainda não carregada).
   usdBrlRate: number | null;
-  // Grava a cotação no servidor; rejeita com o erro da API (para o chamador mostrar a mensagem).
-  saveFxRate: (rate: number) => Promise<void>;
-  // Origem da cotação (null = nunca definida), data/hora na fonte, data da última gravação e fonte do botão (D162).
-  fxSource: FxRateSource | null;
-  rateQuotedAt: string | null;
-  fxRateUpdatedAt: string | null;
-  fxRefreshSource: FxRefreshSource;
-  // Salva a fonte do botão "atualizar cotação" na hora; rejeita com o erro da API.
+  // Grava a cotação de uma moeda no servidor; rejeita com o erro da API (para o chamador mostrar a mensagem).
+  saveFxRate: (currency: string, rate: number) => Promise<void>;
+  // Salva a fonte do botão "atualizar cotação" do BRL (AwesomeAPI ou PTAX) na hora; rejeita com o erro da API.
   saveFxRefreshSource: (source: FxRefreshSource) => Promise<void>;
-  // Busca a cotação na fonte salva e grava direto; rejeita com o erro da API.
-  refreshFxRate: () => Promise<FxRefreshResult>;
+  // Busca a cotação de uma moeda na fonte salva e grava direto; rejeita com o erro da API.
+  refreshFxRate: (currency: string) => Promise<FxRefreshResult>;
   // Relê a cotação do servidor (usado ao tentar de novo depois de o backend ter ficado fora do ar).
   reloadFxRate: () => void;
 }
@@ -64,11 +68,6 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [languageSettled, setLanguageSettled] = useState(false);
   const [saveError, setSaveError] = useState<unknown>(null);
-  const [usdBrlRate, setUsdBrlRate] = useState<number | null>(null);
-  const [fxSource, setFxSource] = useState<FxRateSource | null>(null);
-  const [rateQuotedAt, setRateQuotedAt] = useState<string | null>(null);
-  const [fxRateUpdatedAt, setFxRateUpdatedAt] = useState<string | null>(null);
-  const [fxRefreshSource, setFxRefreshSource] = useState<FxRefreshSource>('AWESOMEAPI');
   // Campos trocados localmente: a resposta tardia do GET /settings não os sobrescreve.
   const touched = useRef({ theme: false, language: false, inventoryView: false });
   // Instalação nova (D369, E-P3-Q6): sem idioma no cache do navegador, o idioma inicial é o do Windows/navegador, se for um dos
@@ -81,17 +80,12 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   // As configurações vêm do cache compartilhado (D259): mudar cotação, limites ou preferências as invalida.
   const settingsQuery = useQuery({ queryKey: queryKeys.settings.all, queryFn: ({ signal }) => getSettings(signal) });
   const settingsData = settingsQuery.data;
-
-  const applyFx = useCallback(
-    (settings: Pick<Settings, 'usdBrlRate' | 'usdBrlRateSource' | 'rateQuotedAt' | 'usdBrlRateUpdatedAt' | 'fxRefreshSource'>) => {
-      setUsdBrlRate(settings.usdBrlRate);
-      setFxSource(settings.usdBrlRateSource);
-      setRateQuotedAt(settings.rateQuotedAt);
-      setFxRateUpdatedAt(settings.usdBrlRateUpdatedAt);
-      setFxRefreshSource(settings.fxRefreshSource);
-    },
-    [],
-  );
+  // Moeda de conversão e cotações vêm direto do cache das configurações (sem cópia em estado): trocar a moeda ou a cotação invalida
+  // `settings` e todas as telas leem o mesmo valor.
+  const displayCurrency = settingsData?.displayCurrency ?? 'USD';
+  const fxRates = useMemo(() => settingsData?.fxRates ?? [], [settingsData]);
+  const requiredFxCurrencies = useMemo(() => settingsData?.requiredFxCurrencies ?? [], [settingsData]);
+  const usdBrlRate = useMemo(() => fxRates.find((entry) => entry.currency === 'BRL')?.rate ?? null, [fxRates]);
 
   useEffect(() => {
     // Tema do sistema lido uma vez, só como valor inicial; o app não acompanha mudanças do Windows (D112).
@@ -133,7 +127,6 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     } catch {
       // sem matchMedia: claro
     }
-    applyFx(settingsData);
     // 'SYSTEM' no banco (padrão ou valor antigo) = sem preferência: tema do sistema e cache limpo.
     if (!touched.current.theme) setThemeState(effectiveTheme(settingsData.theme, systemDark));
     if (!touched.current.language) {
@@ -159,7 +152,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       theme: touched.current.theme ? undefined : isThemeChoice(settingsData.theme) ? settingsData.theme : null,
       language: touched.current.language ? undefined : languageOrBase(settingsData.language),
     });
-  }, [settingsData, applyFx]);
+  }, [settingsData]);
 
   useEffect(() => {
     if (!ready) return;
@@ -239,22 +232,28 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     [invalidate],
   );
 
-  const saveFxRate = useCallback(async (rate: number) => {
-    applyFx(await updateFxRate(rate));
-    invalidate('settings.fx');
-  }, [applyFx, invalidate]);
+  const saveFxRate = useCallback(async (currency: string, rate: number) => {
+    await updateFxRate(currency, rate);
+    await invalidate('settings.fx');
+  }, [invalidate]);
 
   const saveFxRefreshSource = useCallback(async (source: FxRefreshSource) => {
-    applyFx(await updatePreferences({ fxRefreshSource: source }));
-    invalidate('settings.fx');
-  }, [applyFx, invalidate]);
+    await updatePreferences({ fxRefreshSource: source });
+    await invalidate('settings.fx');
+  }, [invalidate]);
 
-  const refreshFx = useCallback(async () => {
-    const result = await refreshFxRate();
-    applyFx(result.settings);
-    invalidate('settings.fx');
+  const refreshFx = useCallback(async (currency: string) => {
+    const result = await refreshFxRate({ currency });
+    await invalidate('settings.fx');
     return result;
-  }, [applyFx, invalidate]);
+  }, [invalidate]);
+
+  // Trocar a moeda de conversão muda todo "≈" (itens, vendas, lojas, saldos e lucro real): recarrega tudo o que tem dinheiro.
+  const changeCurrency = useCallback(async (currency: string, steamStore: SteamStoreChoice = 'KEEP') => {
+    const result = await changeDisplayCurrency(currency, steamStore);
+    await invalidate('settings.fx');
+    return result;
+  }, [invalidate]);
 
   // Relê as configurações (ex.: tentar de novo depois de o backend ter ficado fora do ar).
   const reloadFxRate = useCallback(() => {
@@ -263,11 +262,11 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(
     () => ({
-      theme, language, ready, languageSettled, saveError, setTheme, setLanguage, inventoryView, setInventoryView, usdBrlRate, saveFxRate, fxSource, rateQuotedAt,
-      fxRateUpdatedAt, fxRefreshSource, saveFxRefreshSource, refreshFxRate: refreshFx, reloadFxRate,
+      theme, language, ready, languageSettled, saveError, setTheme, setLanguage, inventoryView, setInventoryView, displayCurrency, fxRates,
+      requiredFxCurrencies, changeDisplayCurrency: changeCurrency, usdBrlRate, saveFxRate, saveFxRefreshSource, refreshFxRate: refreshFx, reloadFxRate,
     }),
-    [theme, language, ready, languageSettled, saveError, setTheme, setLanguage, inventoryView, setInventoryView, usdBrlRate, saveFxRate, fxSource, rateQuotedAt,
-      fxRateUpdatedAt, fxRefreshSource, saveFxRefreshSource, refreshFx, reloadFxRate],
+    [theme, language, ready, languageSettled, saveError, setTheme, setLanguage, inventoryView, setInventoryView, displayCurrency, fxRates,
+      requiredFxCurrencies, changeCurrency, usdBrlRate, saveFxRate, saveFxRefreshSource, refreshFx, reloadFxRate],
   );
 
   return <PreferencesContext.Provider value={value}>{children}</PreferencesContext.Provider>;

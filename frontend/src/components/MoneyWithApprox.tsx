@@ -11,18 +11,19 @@ interface Props {
   currency: Currency;
   // Mesmo valor em USD, pela cotação gravada (oficial do relatório, 2.9).
   usdCents: number;
-  // "≈ R$" pela cotação atual (só ilustrativo, 2.11); null sem cotação.
+  // "≈" na moeda de conversão pela cotação atual (só ilustrativo, 2.11); null sem cotação ou com US$ como moeda de conversão.
   approxCents: number | null;
-  // Nota da cotação gravada (ex.: "cotação da venda R$ 5,40"), quando o valor nativo é BRL.
+  approxCurrency: string;
+  // Nota da cotação gravada (ex.: "cotação da venda R$ 5,40"), quando o valor nativo não é USD.
   rateNote?: string | null;
   signed?: boolean;
   // Colore pelo sinal: positivo em verde (lucro), negativo em vermelho (prejuízo); zero fica neutro.
   colorBySign?: boolean;
 }
 
-// Regras de D125: nativo USD -> "≈ R$"; nativo BRL -> "= US$" com a marca da cotação gravada (não é aproximado).
+// Regras de D125: nativo USD -> "≈" na moeda de conversão; nativo de outra moeda -> "= US$" com a marca da cotação gravada (não é aproximado).
 export default function MoneyWithApprox({
-  cents, currency, usdCents, approxCents, rateNote = null, signed = false, colorBySign = false,
+  cents, currency, usdCents, approxCents, approxCurrency, rateNote = null, signed = false, colorBySign = false,
 }: Props) {
   const t = useT();
   const locale = useLocale();
@@ -34,14 +35,14 @@ export default function MoneyWithApprox({
       <span className={`${styles.main} ${tone}`}>
         {sign(cents, formatMoney(cents, currency, locale))}
       </span>
-      {currency === 'BRL' ? (
+      {currency !== 'USD' ? (
         <span className={styles.side} title={rateNote ?? undefined}>
           {`= ${formatMoney(usdCents, 'USD', locale)}`}
           {rateNote ? ` · ${rateNote}` : ''}
         </span>
       ) : (
         approxCents !== null && (
-          <span className={styles.side}>{t('common.approx', { value: formatMoney(approxCents, 'BRL', locale) })}</span>
+          <span className={styles.side}>{t('common.approx', { value: formatMoney(approxCents, approxCurrency, locale) })}</span>
         )
       )}
     </div>

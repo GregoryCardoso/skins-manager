@@ -48,6 +48,19 @@
   "language": {
     "label": "Idioma"
   },
+  "currency": {
+    "label": "Moeda de conversão",
+    "hint": "Os valores com \"≈\" aparecem nesta moeda. Seu saldo e seu lucro são sempre contados em dólar (US$) e não mudam com esta escolha.",
+    "modal": {
+      "title": "Mostrar valores em {currency}?",
+      "body": "Os valores em {currency} são aproximados: eles são convertidos pela cotação e mudam quando ela muda. Seu saldo e seu lucro continuam sendo contados em dólar (US$).",
+      "bodyBase": "Os valores deixam de ser convertidos e passam a aparecer só em dólar (US$). Seu saldo e seu lucro continuam sendo contados em dólar (US$).",
+      "noRateAuto": "Ainda não há cotação para {currency}. O app vai buscá-la agora; se não conseguir, informe em Configurações.",
+      "noRateManual": "Ainda não há cotação para {currency}. Informe em Configurações.",
+      "previewError": "Não foi possível verificar a cotação: {reason}",
+      "confirm": "Usar {currency}"
+    }
+  },
   "pages": {
     "inventoryTitle": "Inventário",
     "salesTitle": "Vendas",
@@ -176,6 +189,7 @@
     "FX_REFRESH_IN_PROGRESS": "Já existe uma atualização da cotação em andamento.",
     "INVALID_FX_SOURCE": "Fonte de cotação inválida. Escolha a cotação comercial ou a PTAX.",
     "FX_SOURCE_NOT_SUPPORTED": "Esta moeda não tem atualização automática por essa fonte. Informe a cotação manualmente.",
+    "FX_RATE_OUT_OF_RANGE": "Essa cotação parece errada. Para {currency}, ela deve ficar entre {min} e {max}.",
     "INVALID_SALE_HOLD_DAYS": "A retenção deve ser um número inteiro de dias, de 0 a 30.",
     "DEPOSITED_AT_IN_FUTURE": "A data do aporte não pode estar no futuro.",
     "DEPOSIT_NOT_FOUND": "O aporte não foi encontrado.",
@@ -1104,14 +1118,18 @@
   "settings": {
     "title": "Configurações",
     "fx": {
-      "title": "Cotação USD→BRL",
+      "title": "Cotações",
+      "intro": "Quantas unidades de cada moeda valem US$ 1. Elas servem para os valores com \"≈\" e para lojas em outras moedas.",
+      "noneNeeded": "Nenhuma cotação é necessária agora: tudo está em dólar. Escolha outra moeda de conversão, ou crie uma loja em outra moeda, e a cotação dela aparece aqui.",
+      "displayBadge": "Moeda de conversão",
+      "staleHint": "Esta cotação tem {age}. Atualize para obter uma recente.",
       "current": "Cotação atual",
       "notSet": "Cotação não definida",
       "value": "US$ 1 = {rate}",
       "manualLabel": "Cotação manual",
       "save": "Salvar cotação",
       "saved": "Cotação salva (manual).",
-      "refreshSourceLabel": "Fonte da cotação automática (botão \"Atualizar cotação\" e ao abrir o app)",
+      "refreshSourceLabel": "Fonte da cotação automática do BRL (botão \"Atualizar cotação\" e ao abrir o app)",
       "refreshSource": {
         "AWESOMEAPI": "Comercial em tempo real (AwesomeAPI) — padrão, próxima da CSFloat/Google",
         "PTAX": "PTAX do Banco Central — oficial, 1 vez por dia"
@@ -1123,8 +1141,8 @@
       "note": "A cotação só é consultada quando você clica no botão e é salva na hora. Cotações já gravadas em itens não mudam.",
       "autoRefreshHint": "Com esta fonte, a cotação é atualizada sozinha sempre que o app é aberto (uma vez por abertura). Se você digitar a cotação à mão, ela passa a valer e não é mais atualizada ao abrir, até você clicar em \"Atualizar cotação\".",
       "autoRefreshPausedManual": "A cotação atual foi digitada à mão, então ela não é atualizada ao abrir o app. Clique em \"Atualizar cotação\" para voltar a usar a fonte acima; a partir daí, ela é atualizada sozinha sempre que o app é aberto.",
-      "autoFailed": "Não foi possível atualizar a cotação ao abrir o app: {reason}",
-      "autoFailedWithRate": "Não foi possível atualizar a cotação ao abrir o app ({reason}). Usando a última: {rate}."
+      "autoFailed": "Não foi possível atualizar a cotação do {currency} ao abrir o app: {reason}",
+      "autoFailedWithRate": "Não foi possível atualizar a cotação do {currency} ao abrir o app ({reason}). Usando a última: {rate}."
     },
     "preferences": {
       "title": "Preferências",

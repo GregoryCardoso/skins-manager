@@ -5,3 +5,4 @@
 }
 .button:hover, .select:hover { border-color: var(--accent); }
 .warning { color: var(--warning); font-size: 0.8rem; max-width: 22rem; }
+.currency { max-width: 13rem; text-overflow: ellipsis; }

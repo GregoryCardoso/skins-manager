@@ -10,8 +10,10 @@ const read = (rel: string) => fs.readFileSync(path.join(__dirname, '..', rel), '
 test('o host fica no layout (desktop e start-app.bat), pede o modo AUTO e não chama nada com a cotação manual', () => {
   expect(read('app/layout.tsx')).toMatch(/<FxAutoRefreshHost \/>/);
   const host = read('components/FxAutoRefreshHost.tsx');
-  expect(host).toMatch(/refreshFxRate\(\{ trigger: 'AUTO' \}\)/);
-  expect(host).toMatch(/usdBrlRateSource === 'MANUAL'/);
+  // 11.3: percorre, em série, todas as moedas necessárias (sem as digitadas à mão, que `currenciesToAutoRefresh` tira da lista).
+  expect(host).toMatch(/refreshFxRate\(\{ currency, trigger: 'AUTO' \}\)/);
+  expect(host).toMatch(/currenciesToAutoRefresh\(settings\.requiredFxCurrencies, settings\.fxRates\)/);
+  expect(host).toMatch(/for \(const currency of currencies\)/);
   expect(host).toMatch(/invalidate\('settings\.fx'\)/);
 });
 

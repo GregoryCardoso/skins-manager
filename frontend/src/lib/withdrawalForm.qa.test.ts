@@ -10,7 +10,7 @@ import type { Store, Withdrawal } from '@/types/api';
 const withdrawal = (overrides: Partial<Withdrawal> = {}): Withdrawal => ({
   id: 1, storeId: 1, storeName: 'CSFloat', currency: 'USD', amountStoreCents: 123456, feeCents: 250, amountBrlCents: 654321,
   withdrawnAt: '2026-11-10T15:30:00.000Z', note: 'pix', legacyWithoutStore: false,
-  netStoreCents: 9750, amountUsdCents: 9750, approxCents: null, estimated: false,
+  netStoreCents: 9750, amountUsdCents: 9750, approxCents: null, approxCurrency: 'BRL', estimated: false,
   createdAt: '2026-11-10T15:30:00.000Z', updatedAt: '2026-11-10T15:30:00.000Z', ...overrides,
 });
 const legacy = (overrides: Partial<Withdrawal> = {}) =>

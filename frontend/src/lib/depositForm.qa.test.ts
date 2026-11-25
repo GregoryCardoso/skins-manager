@@ -13,7 +13,7 @@ import type { Deposit } from '@/types/api';
 
 const deposit = (overrides: Partial<Deposit> = {}): Deposit => ({
   id: 1, storeId: 2, storeName: 'CSFloat', currency: 'USD', amountStoreCents: 12345, amountBrlCents: null,
-  depositedAt: '2026-11-10T15:30:45.123Z', note: 'pix', legacy: false, amountUsdCents: 12345, approxCents: null, estimated: false,
+  depositedAt: '2026-11-10T15:30:45.123Z', note: 'pix', legacy: false, amountUsdCents: 12345, approxCents: null, approxCurrency: 'BRL', estimated: false,
   createdAt: '2026-11-10T15:30:45.123Z', updatedAt: '2026-11-10T15:30:45.123Z', ...overrides,
 });
 const state = (overrides: Partial<DepositFormState> = {}): DepositFormState => ({

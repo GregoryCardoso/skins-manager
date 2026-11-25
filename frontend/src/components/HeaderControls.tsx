@@ -5,6 +5,7 @@ import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
 import { LANGUAGE_REGISTRY } from '@/i18n/languages';
 import { nextTheme } from '@/lib/preferences';
 import type { Language, ThemeChoice } from '@/types/api';
+import CurrencySelect from './CurrencySelect';
 import styles from './HeaderControls.module.css';
 import { usePreferences } from './PreferencesProvider';
 
@@ -50,6 +51,7 @@ export default function HeaderControls() {
           </option>
         ))}
       </select>
+      <CurrencySelect className={`${styles.select} ${styles.currency}`} ariaLabel={t('currency.label')} />
     </div>
   );
 }

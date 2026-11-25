@@ -48,6 +48,19 @@
   "language": {
     "label": "Language"
   },
+  "currency": {
+    "label": "Conversion currency",
+    "hint": "Values with \"≈\" are shown in this currency. Your balance and profit are always counted in US dollars (US$) and do not change with this choice.",
+    "modal": {
+      "title": "Show values in {currency}?",
+      "body": "Values in {currency} are approximate: they are converted using the exchange rate and change when it changes. Your balance and your profit keep being counted in US dollars (US$).",
+      "bodyBase": "Values will no longer be converted and will appear only in US dollars (US$). Your balance and your profit keep being counted in US dollars (US$).",
+      "noRateAuto": "There is no exchange rate for {currency} yet. The app will fetch it now; if that fails, enter it in Settings.",
+      "noRateManual": "There is no exchange rate for {currency} yet. Enter it in Settings.",
+      "previewError": "Could not check the exchange rate: {reason}",
+      "confirm": "Use {currency}"
+    }
+  },
   "pages": {
     "inventoryTitle": "Inventory",
     "salesTitle": "Sales",
@@ -176,6 +189,7 @@
     "FX_REFRESH_IN_PROGRESS": "A rate update is already in progress.",
     "INVALID_FX_SOURCE": "Invalid exchange rate source. Choose the commercial rate or the PTAX.",
     "FX_SOURCE_NOT_SUPPORTED": "This currency has no automatic update from that source. Enter the rate by hand.",
+    "FX_RATE_OUT_OF_RANGE": "That rate looks wrong. For {currency} it must be between {min} and {max}.",
     "INVALID_SALE_HOLD_DAYS": "The hold must be a whole number of days, from 0 to 30.",
     "DEPOSITED_AT_IN_FUTURE": "The deposit date cannot be in the future.",
     "DEPOSIT_NOT_FOUND": "The deposit was not found.",
@@ -1104,14 +1118,18 @@
   "settings": {
     "title": "Settings",
     "fx": {
-      "title": "USD→BRL rate",
+      "title": "Exchange rates",
+      "intro": "How many units of each currency equal US$ 1. They are used for the \"≈\" values and for stores in other currencies.",
+      "noneNeeded": "No exchange rate is needed right now: everything is in US dollars. Choose another conversion currency, or add a store in another currency, and its rate appears here.",
+      "displayBadge": "Conversion currency",
+      "staleHint": "This quote is {age} old. Update it to get a recent one.",
       "current": "Current rate",
       "notSet": "Rate not set",
       "value": "US$ 1 = {rate}",
       "manualLabel": "Manual rate",
       "save": "Save rate",
       "saved": "Rate saved (manual).",
-      "refreshSourceLabel": "Automatic rate source (\"Update rate\" button and on app open)",
+      "refreshSourceLabel": "Automatic source for the BRL rate (\"Update rate\" button and on app open)",
       "refreshSource": {
         "AWESOMEAPI": "Real-time commercial rate (AwesomeAPI) — default, close to CSFloat/Google",
         "PTAX": "Central Bank PTAX — official, once a day"
@@ -1123,8 +1141,8 @@
       "note": "The rate is only queried when you click the button and is saved right away. Rates already stored on items do not change.",
       "autoRefreshHint": "With this source, the rate is updated by itself every time the app opens (once per opening). If you type the rate by hand, it takes effect and is no longer updated on opening, until you click \"Update rate\".",
       "autoRefreshPausedManual": "The current rate was typed by hand, so it is not updated when the app opens. Click \"Update rate\" to use the source above again; from then on, it is updated by itself every time the app opens.",
-      "autoFailed": "Could not update the rate when opening the app: {reason}",
-      "autoFailedWithRate": "Could not update the rate when opening the app ({reason}). Using the last one: {rate}."
+      "autoFailed": "Could not update the {currency} rate when opening the app: {reason}",
+      "autoFailedWithRate": "Could not update the {currency} rate when opening the app ({reason}). Using the last one: {rate}."
     },
     "preferences": {
       "title": "Preferences",

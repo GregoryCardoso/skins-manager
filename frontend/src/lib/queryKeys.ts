@@ -18,7 +18,8 @@ export const queryKeys = {
   },
   sales: { all: ['sales'] as const, list: (query: unknown) => ['sales', query] as const },
   stores: { all: ['stores'] as const },
-  settings: { all: ['settings'] as const },
+  // Prévia da troca da moeda de conversão (11.3): sob o prefixo `settings`.
+  settings: { all: ['settings'] as const, currencyPreview: (currency: string) => ['settings', 'currencyPreview', currency] as const },
   deposits: { all: ['deposits'] as const },
   withdrawals: { all: ['withdrawals'] as const },
   storeBalances: {

@@ -32,11 +32,12 @@ function Hinted({ title, children }: { title: string | null; children: ReactNode
   );
 }
 
-function BrlLine({ cents }: { cents: number | null }) {
+// Linha discreta com o "≈" na moeda de conversão que veio na resposta; sem valor (sem cotação ou US$ como moeda de conversão), some.
+function ApproxLine({ cents, currency }: { cents: number | null; currency: string }) {
   const t = useT();
   const locale = useLocale();
-  if (cents === null) return null;
-  return <small className={styles.side}>{t('common.approx', { value: formatMoney(cents, 'BRL', locale) })}</small>;
+  if (cents === null || !currency) return null;
+  return <small className={styles.side}>{t('common.approx', { value: formatMoney(cents, currency, locale) })}</small>;
 }
 
 export function UnitMarketCell({ marketValue }: { marketValue: MarketValue | null | undefined }) {
@@ -75,7 +76,7 @@ export function UnitMarketCell({ marketValue }: { marketValue: MarketValue | nul
   return (
     <Hinted title={lines.join(' · ')}>
       <span className={styles.main}>{t('common.approx', { value: usd(view.usdCents) })}</span>
-      <BrlLine cents={view.brlCents} />
+      <ApproxLine cents={view.approxCents} currency={view.approxCurrency} />
       {view.stale && <small className={styles.mark}>{t('inventory.marketValue.stale')}</small>}
       {view.incomplete && <small className={styles.mark}>{t('inventory.marketValue.incomplete')}</small>}
     </Hinted>
@@ -100,7 +101,7 @@ export function UnitUnrealizedCell({ marketValue }: { marketValue: MarketValue |
   return (
     <Hinted title={[t('inventory.marketValue.unrealizedHint'), gross(view.grossCents)].filter(Boolean).join(' · ')}>
       <span className={`${styles.main} ${signClass(view.sign)}`}>{t('common.approx', { value: signed(view.cents, view.sign) })}</span>
-      <BrlLine cents={view.brlCents} />
+      <ApproxLine cents={view.approxCents} currency={view.approxCurrency} />
     </Hinted>
   );
 }
@@ -122,7 +123,7 @@ export function GroupMarketCell({ totals }: { totals: MarketValueTotals | null |
   return (
     <Hinted title={t('inventory.marketValue.groupOnlyPriced')}>
       <span className={styles.main}>{t('common.approx', { value: formatMoney(view.usdCents, 'USD', locale) })}</span>
-      <BrlLine cents={view.brlCents} />
+      <ApproxLine cents={view.approxCents} currency={view.approxCurrency} />
       {view.partial && <small className={styles.side}>{t('inventory.marketValue.coverage', { priced: view.pricedUnits, total: view.unitCount })}</small>}
       {view.staleUnits > 0 && <small className={styles.mark}>{tPlural('inventory.marketValue.staleCount', view.staleUnits)}</small>}
     </Hinted>
@@ -145,7 +146,7 @@ export function GroupUnrealizedCell({ totals }: { totals: MarketValueTotals | nu
   return (
     <Hinted title={[t('inventory.marketValue.unrealizedHint'), gross, t('inventory.marketValue.groupOnlyPriced')].join(' · ')}>
       <span className={`${styles.main} ${signClass(view.sign)}`}>{t('common.approx', { value: signed(view.cents, view.sign) })}</span>
-      <BrlLine cents={view.brlCents} />
+      <ApproxLine cents={view.approxCents} currency={view.approxCurrency} />
       {view.partial && <small className={styles.side}>{t('inventory.marketValue.partial')}</small>}
     </Hinted>
   );

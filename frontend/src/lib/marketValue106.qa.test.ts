@@ -327,7 +327,7 @@ describe('formatAgo e agoParts', () => {
 const mv = (extra: Partial<MarketValue> = {}): MarketValue => ({
   marketValueUsdCents: 1000, parts: { baseCents: 1000, hangingCents: null, stickersInfoCents: 0, patchesInfoCents: 0 }, costUsdCents: 600, costEstimated: false,
   unrealizedUsdCents: 400, unrealizedNetUsdCents: 380, netUnavailableReason: null, pricedAt: '2026-11-24T10:00:00.000Z', isStale: false, status: 'OK',
-  reason: null, isComplete: true, missing: [], basis: 'NAME', isEstimated: true, approx: { marketValue: 5000, unrealized: 2000, unrealizedNet: 1900 }, ...extra,
+  reason: null, isComplete: true, missing: [], basis: 'NAME', isEstimated: true, approxCurrency: 'BRL', approx: { marketValue: 5000, unrealized: 2000, unrealizedNet: 1900 }, ...extra,
 });
 const noPrice = (reason: MarketValue['reason']) => mv({ status: 'NO_PRICE', marketValueUsdCents: null, reason, unrealizedUsdCents: null, unrealizedNetUsdCents: null, approx: { marketValue: null, unrealized: null, unrealizedNet: null } });
 const notPriceable = (reason: MarketValue['reason']) => ({ ...noPrice(reason), status: 'NOT_PRICEABLE' }) as MarketValue;
@@ -341,13 +341,13 @@ describe('célula de valor da unidade (unitMarketCell)', () => {
   test('OK com as partes, a data do preço e o "≈ R$"', () => {
     const view = unitMarketCell(mv({ approx: { marketValue: 6250, unrealized: null, unrealizedNet: null } }));
     expect(view).toEqual({
-      kind: 'OK', usdCents: 1000, brlCents: 6250, pricedAt: '2026-11-24T10:00:00.000Z', stale: false, incomplete: false,
+      kind: 'OK', usdCents: 1000, approxCents: 6250, approxCurrency: 'BRL', pricedAt: '2026-11-24T10:00:00.000Z', stale: false, incomplete: false,
       parts: { itemCents: 1000, hangingCents: null, stickersInfoCents: 0, patchesInfoCents: 0 },
     });
   });
 
-  test('sem cotação: brlCents nulo (a célula não desenha a linha "≈ R$")', () => {
-    expect(unitMarketCell(mv({ approx: { marketValue: null, unrealized: null, unrealizedNet: null } }))).toMatchObject({ kind: 'OK', brlCents: null });
+  test('sem cotação: approxCents nulo (a célula não desenha a linha "≈ R$")', () => {
+    expect(unitMarketCell(mv({ approx: { marketValue: null, unrealized: null, unrealizedNet: null } }))).toMatchObject({ kind: 'OK', approxCents: null });
   });
 
   test('desatualizado, incompleto (sem o chaveiro) e os dois juntos', () => {
@@ -412,7 +412,7 @@ describe('PnL não realizado da unidade (unitUnrealizedCell)', () => {
   });
 
   test('"≈ R$" some sem cotação', () => {
-    expect(unitUnrealizedCell(mv({ approx: { marketValue: null, unrealized: null, unrealizedNet: null } }))).toMatchObject({ kind: 'NET', brlCents: null });
+    expect(unitUnrealizedCell(mv({ approx: { marketValue: null, unrealized: null, unrealizedNet: null } }))).toMatchObject({ kind: 'NET', approxCents: null });
   });
 
   test.each(['NO_INTEGRATION_STORE', 'FEES_NOT_CONFIGURED', 'NET_NOT_COMPUTABLE'] as const)('sem líquido (%s): "—" com o motivo e o bruto', (reason) => {
@@ -438,19 +438,19 @@ describe('PnL não realizado da unidade (unitUnrealizedCell)', () => {
 
 const totals = (extra: Partial<MarketValueTotals> = {}): MarketValueTotals => ({
   marketValueUsdCents: 3000, costUsdCents: 2000, unrealizedUsdCents: 1000, unrealizedNetUsdCents: 900, costEstimated: false, pricedUnits: 3, netUnits: 3,
-  unpricedUnits: 0, notPriceableUnits: 0, staleUnits: 0, unitCount: 3, approx: { marketValue: 15000, unrealized: 5000, unrealizedNet: 4500 }, ...extra,
+  unpricedUnits: 0, notPriceableUnits: 0, staleUnits: 0, unitCount: 3, approxCurrency: 'BRL', approx: { marketValue: 15000, unrealized: 5000, unrealizedNet: 4500 }, ...extra,
 });
 
 describe('célula de grupo, resumo da aba e cards', () => {
   test('grupo: vazio, N de N, parcial, desatualizados, todos sem preço, todos sem avaliação, misto sem nenhum preço', () => {
     expect(groupMarketCell(null)).toEqual({ kind: 'NONE' });
     expect(groupMarketCell(totals({ unitCount: 0, pricedUnits: 0 }))).toEqual({ kind: 'NONE' });
-    expect(groupMarketCell(totals())).toEqual({ kind: 'OK', usdCents: 3000, brlCents: 15000, pricedUnits: 3, unitCount: 3, partial: false, staleUnits: 0 });
+    expect(groupMarketCell(totals())).toEqual({ kind: 'OK', usdCents: 3000, approxCents: 15000, approxCurrency: 'BRL', pricedUnits: 3, unitCount: 3, partial: false, staleUnits: 0 });
     expect(groupMarketCell(totals({ pricedUnits: 1, unitCount: 3, staleUnits: 1 }))).toMatchObject({ partial: true, staleUnits: 1 });
     expect(groupMarketCell(totals({ pricedUnits: 0, unpricedUnits: 3 }))).toEqual({ kind: 'NO_PRICE', unpricedUnits: 3, notPriceableUnits: 0 });
     expect(groupMarketCell(totals({ pricedUnits: 0, notPriceableUnits: 3 }))).toEqual({ kind: 'NOT_PRICEABLE', unpricedUnits: 0, notPriceableUnits: 3 });
     expect(groupMarketCell(totals({ pricedUnits: 0, unpricedUnits: 1, notPriceableUnits: 2 }))).toMatchObject({ kind: 'NO_PRICE' });
-    expect(groupMarketCell(totals({ approx: { marketValue: null, unrealized: null, unrealizedNet: null } }))).toMatchObject({ kind: 'OK', brlCents: null });
+    expect(groupMarketCell(totals({ approx: { marketValue: null, unrealized: null, unrealizedNet: null } }))).toMatchObject({ kind: 'OK', approxCents: null });
   });
 
   test('grupo: não realizado completo, parcial, sem líquido (bruto na dica), sem preço', () => {
@@ -467,21 +467,21 @@ describe('célula de grupo, resumo da aba e cards', () => {
     expect(profitUnrealizedCard(totals({ unrealizedNetUsdCents: 0, netUnits: 2, pricedUnits: 2 }))).toMatchObject({ kind: 'NET', sign: 'ZERO', partial: false });
     expect(profitUnrealizedCard(totals({ unrealizedNetUsdCents: 0, netUnits: 0, pricedUnits: 2 }))).toMatchObject({ kind: 'UNAVAILABLE' });
     expect(tabSummary(totals({ unrealizedNetUsdCents: 0, netUnits: 2 }))).toMatchObject({ netCents: 0, netSign: 'ZERO' });
-    expect(tabSummary(totals({ unrealizedNetUsdCents: 0, netUnits: 0 }))).toMatchObject({ netCents: null, netSign: null, netBrlCents: null });
+    expect(tabSummary(totals({ unrealizedNetUsdCents: 0, netUnits: 0 }))).toMatchObject({ netCents: null, netSign: null, netApproxCents: null });
   });
 
   test('resumo da aba: some sem unidades ou sem preço; traz a cobertura', () => {
     expect(tabSummary(null)).toBeNull();
     expect(tabSummary(totals({ unitCount: 0, pricedUnits: 0 }))).toBeNull();
     expect(tabSummary(totals({ pricedUnits: 0, unpricedUnits: 3 }))).toBeNull();
-    expect(tabSummary(totals({ pricedUnits: 2, unitCount: 5 }))).toMatchObject({ pricedUnits: 2, unitCount: 5, usdCents: 3000, brlCents: 15000 });
+    expect(tabSummary(totals({ pricedUnits: 2, unitCount: 5 }))).toMatchObject({ pricedUnits: 2, unitCount: 5, usdCents: 3000, approxCents: 15000 });
   });
 
   test('card de valor: sem preço nunca vira US$ 0,00; preço real 0 com unidade avaliada é OK; desatualizados e cobertura repassados', () => {
     expect(profitValueCard(totals({ pricedUnits: 0, marketValueUsdCents: 0 }))).toEqual({ kind: 'NO_PRICE' });
     expect(profitValueCard(totals({ pricedUnits: 1, marketValueUsdCents: 0 }))).toMatchObject({ kind: 'OK', usdCents: 0 });
     expect(profitValueCard(totals({ pricedUnits: 2, unitCount: 5, staleUnits: 1 }))).toEqual({
-      kind: 'OK', usdCents: 3000, brlCents: 15000, pricedUnits: 2, unitCount: 5, staleUnits: 1,
+      kind: 'OK', usdCents: 3000, approxCents: 15000, approxCurrency: 'BRL', pricedUnits: 2, unitCount: 5, staleUnits: 1,
     });
   });
 
@@ -491,13 +491,13 @@ describe('célula de grupo, resumo da aba e cards', () => {
     expect(profitUnrealizedCard(totals({ netUnits: 1 }))).toMatchObject({ kind: 'NET', partial: true });
     expect(profitUnrealizedCard(totals())).toMatchObject({ kind: 'NET', partial: false, sign: 'POSITIVE', cents: 900 });
     expect(profitUnrealizedCard(totals({ unrealizedNetUsdCents: -1 }))).toMatchObject({ sign: 'NEGATIVE' });
-    expect(profitUnrealizedCard(totals({ approx: { marketValue: null, unrealized: null, unrealizedNet: null } }))).toMatchObject({ kind: 'NET', brlCents: null });
+    expect(profitUnrealizedCard(totals({ approx: { marketValue: null, unrealized: null, unrealizedNet: null } }))).toMatchObject({ kind: 'NET', approxCents: null });
   });
 
   test('os cards usam só números do backend: nenhuma função some valores (conta direta nos tipos de retorno)', () => {
     const t = totals({ marketValueUsdCents: 12345, unrealizedNetUsdCents: -678, approx: { marketValue: 61725, unrealized: 1, unrealizedNet: -3390 } });
-    expect(profitValueCard(t)).toMatchObject({ usdCents: 12345, brlCents: 61725 });
-    expect(profitUnrealizedCard(t)).toMatchObject({ cents: -678, brlCents: -3390 });
+    expect(profitValueCard(t)).toMatchObject({ usdCents: 12345, approxCents: 61725 });
+    expect(profitUnrealizedCard(t)).toMatchObject({ cents: -678, approxCents: -3390 });
   });
 });
 
@@ -554,9 +554,9 @@ describe('os cards do Lucro real (ligação pelo código-fonte, Adendo 1 da D365
     expect(cards).toMatch(/pnl\.kind === 'NET' \? signClass\(pnl\.sign\) : ''/);
   });
 
-  test('"≈ R$" no card de valor (MoneyApprox estimado) e no PnL só com cotação (brlCents não nulo)', () => {
-    expect(cards).toMatch(/<MoneyApprox cents=\{value\.usdCents\} estimated approxCents=\{value\.brlCents\} \/>/);
-    expect(cards).toMatch(/pnl\.brlCents !== null &&/);
+  test('"≈" no card de valor (MoneyApprox estimado) e no PnL só com cotação (approxCents não nulo), na moeda que veio', () => {
+    expect(cards).toMatch(/<MoneyApprox cents=\{value\.usdCents\} estimated approxCents=\{value\.approxCents\} approxCurrency=\{value\.approxCurrency\} \/>/);
+    expect(cards).toMatch(/pnl\.approxCents !== null &&/);
   });
 });
 

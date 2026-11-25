@@ -6,6 +6,9 @@ type LooseT = (key: string, params?: Record<string, string | number>) => string;
 // Nome de uma fonte de importação para as mensagens (D316).
 const sourceDisplayName = (source: string) => (source === 'CSFLOAT' ? 'CSFloat' : source);
 
+// Limite da faixa de cotação: inteiro ou até 4 casas, sem agrupar milhar em excesso (ex.: 0,5 e 100.000).
+const formatRateBound = (value: number, locale: string) => new Intl.NumberFormat(locale, { maximumFractionDigits: 4 }).format(value);
+
 // Valores do backend (`error.params`) já formatados para interpolar na mensagem, por código (D120).
 // Devolve null quando o código não tem texto detalhado ou faltam os valores necessários.
 export function errorDetailParams(
@@ -42,6 +45,11 @@ export function errorDetailParams(
     case 'BACKUP_NEWER_VERSION':
       return typeof p.fileVersion === 'number' && typeof p.appVersion === 'number'
         ? { fileVersion: p.fileVersion, appVersion: p.appVersion }
+        : null;
+    case 'FX_RATE_OUT_OF_RANGE':
+      // A faixa aceita para a cotação digitada à mão (11.3): números pelo `Intl` do idioma, sem símbolo de moeda.
+      return typeof p.currency === 'string' && typeof p.min === 'number' && typeof p.max === 'number'
+        ? { currency: p.currency, min: formatRateBound(p.min, locale), max: formatRateBound(p.max, locale) }
         : null;
     case 'FX_FETCH_FAILED':
     case 'FX_RATE_LIMITED':

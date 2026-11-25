@@ -51,7 +51,7 @@ export interface CatalogRefreshResult extends CatalogStatus {
 export type FxRefreshSource = 'AWESOMEAPI' | 'PTAX';
 export type FxRateSource = 'MANUAL' | FxRefreshSource;
 
-// Cotação de uma moeda (D369, 11.2): "unidades da moeda por 1 US$". As telas que a usam chegam na 11.3.
+// Cotação de uma moeda (D369, 11.2/11.3): "unidades da moeda por 1 US$". Só existe linha para moeda que já teve cotação.
 export interface FxRateEntry {
   currency: string;
   rate: number | null;
@@ -61,16 +61,12 @@ export interface FxRateEntry {
   updatedAt: string;
 }
 export interface Settings {
-  // Moeda de conversão (D369, 11.2) e cotações por moeda; `usdBrlRate*` continuam, derivados do BRL, até o fim da 11.3.
-  displayCurrency?: string;
-  fxRates?: FxRateEntry[];
-  requiredFxCurrencies?: string[];
-  usdBrlRate: number | null;
-  usdBrlRateUpdatedAt: string | null;
-  // Origem da cotação (null = nunca definida), data/hora da cotação na fonte (nula com origem MANUAL) e fonte do botão.
-  usdBrlRateSource: FxRateSource | null;
-  rateQuotedAt: string | null;
-  fxRefreshSource: FxRefreshSource;
+  // Moeda de conversão (D369): a do "≈". A base é sempre USD. Instalação nova = USD; banco existente = BRL.
+  displayCurrency: string;
+  // Cotações por moeda (a fonte, a data na fonte e a fonte do botão "atualizar" estão em cada linha) e as moedas que precisam de
+  // cotação (a de conversão, as das lojas e, se houver legado, o BRL). Sem USD.
+  fxRates: FxRateEntry[];
+  requiredFxCurrencies: string[];
   catalogUpdatedAt: string | null;
   // Loja Steam do app (10.4, D363): onde o item comprado no terminal é registrado; nulo = não escolhida.
   steamStoreId: number | null;
@@ -87,24 +83,45 @@ export interface Settings {
   agingThresholdsAdjusted: boolean;
   updatedAt: string;
 }
+// Escolha da loja Steam ao trocar a moeda de conversão (A5). Na 11.3 só 'KEEP'; 'FOLLOW' e 'NEW_STORE' chegam na 11.4.
+export type SteamStoreChoice = 'KEEP' | 'FOLLOW' | 'NEW_STORE';
 export interface PreferencesPatch {
   displayCurrency?: string;
+  steamStore?: SteamStoreChoice;
   theme?: ThemeChoice;
   language?: Language;
   inventoryView?: InventoryView;
+  // Fonte do "atualizar cotação" do BRL (a PTAX só existe nele).
   fxRefreshSource?: FxRefreshSource;
   // Inteiro ou null (volta ao padrão).
   fastTurnoverDays?: number | null;
   slowItemDays?: number | null;
 }
 
+// Resposta de PATCH /settings com `displayCurrency` (A5): as configurações e o que aconteceu com a loja Steam.
+export interface DisplayCurrencyChangeResult {
+  settings: Settings;
+  steamStore: { id: number; currency: string; created: boolean; previousStoreId?: number } | null;
+}
+
+// Prévia da troca da moeda de conversão (A5): só leitura; o modal monta as linhas com ela.
+export interface CurrencyChangePreview {
+  currency: string;
+  steamStore: { id: number; name: string; currency: string; hasEntries: boolean } | null;
+  // Há cotação gravada para a moeda nova (USD sempre tem: é a base).
+  fxRateAvailable: boolean;
+  // A moeda tem atualização automática (AwesomeAPI).
+  automaticSource: boolean;
+}
+
 // Resposta de POST /settings/fx-rate/refresh (D162): cotação da fonte salva em `fxRefreshSource`.
 export interface FxRefreshResult {
+  currency: string;
   settings: Settings;
   // Nulo quando a atualização ao abrir o app foi pulada (`skipped`).
   quote: { source: FxRefreshSource | null; rate: number; buyRate: number | null; sellRate: number; quotedAt: string } | null;
   // Atualização ao abrir o app (D338) que não rodou: já rodou neste processo, cotação digitada à mão ou outra em andamento.
-  skipped?: 'ALREADY_RAN' | 'MANUAL_RATE' | 'BUSY';
+  skipped?: 'ALREADY_RAN' | 'MANUAL_RATE' | 'BUSY' | 'NOT_SUPPORTED';
 }
 
 // --- Itens, lojas e cotação (4B.2; espelham D49/D72 do backend) ---
@@ -138,7 +155,8 @@ export type Aging =
   | { turnaroundDays: number | null; turnaroundBucket: TurnaroundBucket; daysHeld: number };
 
 export interface ApproxAmount {
-  currency: Currency;
+  // Moeda do "≈": a de conversão (ou US$, quando a moeda da loja é a de conversão).
+  currency: string;
   cents: number;
 }
 
@@ -191,6 +209,8 @@ export interface SaleInfo {
   inheritedCostUsdCents: number;
   fxUsed: { sale: number | null; purchase: number | null };
   usesRecordedFx: boolean;
+  // Moeda de conversão em que `approx` está.
+  approxCurrency: string;
   approx: {
     salePrice: number | null;
     netReceived: number | null;
@@ -344,6 +364,7 @@ export interface MarketValue {
   missing: string[];
   basis: 'NAME';
   isEstimated: true;
+  approxCurrency: string;
   approx: { marketValue: number | null; unrealized: number | null; unrealizedNet: number | null };
 }
 
@@ -362,6 +383,7 @@ export interface MarketValueTotals {
   staleUnits: number;
   unitCount: number;
   isComplete?: boolean;
+  approxCurrency: string;
   approx: { marketValue: number | null; unrealized: number | null; unrealizedNet: number | null };
 }
 
@@ -585,6 +607,7 @@ export interface ItemGroup {
   totalCostUsdCents: number;
   avgCostUsdCents: number;
   costUsesRecordedFx: boolean;
+  approxCurrency: string;
   approx: { totalCostCents: number; avgCostCents: number } | null;
   // Unidades em estoque do grupo com algum componente (10.1); fora da chave do agrupamento.
   componentUnits: number;
@@ -642,6 +665,7 @@ export interface SalesSummary {
   totalProfitUsdCents: number;
   avgTurnaroundDays: number | null;
   soldWithFxCount: number;
+  approxCurrency: string;
   approx: { totalSalePrice: number | null; totalNetReceived: number | null; totalProfit: number | null };
 }
 
@@ -729,6 +753,7 @@ export interface Deposit {
   // Desde a 9.6 é o "total colocado": creditado + taxa.
   amountUsdCents: number | null;
   approxCents: number | null;
+  approxCurrency: string;
   estimated: boolean;
   createdAt: string;
   updatedAt: string;
@@ -737,7 +762,7 @@ export interface Deposit {
 export interface DepositList {
   deposits: Deposit[];
   totals: {
-    count: number; legacyCount: number; amountUsdCents: number | null; approxCents: number | null; estimated: boolean;
+    count: number; legacyCount: number; amountUsdCents: number | null; approxCents: number | null; approxCurrency: string; estimated: boolean;
     // Taxas de aporte informadas (US$) e quantos aportes não informaram a taxa (9.6).
     feeCents?: number; feeMissingCount?: number;
   };
@@ -775,6 +800,7 @@ export interface Withdrawal {
   // Líquido em US$ e "≈ R$" calculados pelo backend (nulos sem cotação); estimated = houve conversão para US$.
   amountUsdCents: number | null;
   approxCents: number | null;
+  approxCurrency: string;
   estimated: boolean;
   createdAt: string;
   updatedAt: string;
@@ -788,6 +814,7 @@ export interface WithdrawalList {
     withoutFeeCount: number;
     netUsdCents: number | null;
     approxCents: number | null;
+    approxCurrency: string;
     estimated: boolean;
   };
 }
@@ -937,6 +964,7 @@ export interface StoreBalanceCheckPreview {
   differenceCents: number;
   differenceUsdCents: number | null;
   differenceApproxCents: number | null;
+  approxCurrency: string;
   estimated: boolean;
 }
 
@@ -973,6 +1001,7 @@ export interface StoreBalanceSummary {
   availableCents: number;
   availableUsdCents: number | null;
   availableApproxCents: number | null;
+  approxCurrency: string;
   availableEstimated: boolean;
   negative: boolean;
   pending: PendingBalance;
@@ -991,6 +1020,7 @@ export interface CurrentStoreBalances {
     availableEstimated: boolean;
     pendingEstimated: boolean;
     nonWithdrawableEstimated: boolean;
+    approxCurrency: string;
     approx: {
       available: number | null;
       pending: number | null;
@@ -1043,7 +1073,8 @@ export interface ProfitSummary {
     pendingBalance: boolean;
     stock: boolean;
   };
-  // "≈ R$" de cada total, calculado no backend (nulo sem cotação).
+  // "≈" de cada total na moeda de conversão (`approxCurrency`), calculado no backend (nulo sem cotação ou com US$ como moeda de conversão).
+  approxCurrency: string;
   approx: {
     deposits: number | null;
     withdrawals: number | null;
@@ -1053,7 +1084,7 @@ export interface ProfitSummary {
     realProfit: number | null;
   };
   // Perdas por consumo (10.4): terminais recusados; informativo, fora da fórmula do lucro real.
-  consumptionLosses?: { usdCents: number; estimated: boolean; count: number; approx: number | null };
+  consumptionLosses?: { usdCents: number; estimated: boolean; count: number; approxCurrency: string; approx: number | null };
   withdrawnVsDeposited: { withdrawnUsdCents: number | null; depositedUsdCents: number | null; ratio: number | null };
   balancesByStore: StoreBalanceSummary[];
   counts: {
@@ -1066,7 +1097,7 @@ export interface ProfitSummary {
     pendingSales: number;
   };
   warnings: ProfitWarning[];
-  fx: { usdBrlRate: number | null; source: FxRateSource | null; updatedAt: string | null; quotedAt: string | null };
+  fx: { usdBrlRate: number | null; source: FxRateSource | null; updatedAt: string | null; quotedAt: string | null; displayCurrency: string };
   computedAt: string;
 }
 

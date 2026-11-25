@@ -42,7 +42,7 @@ export default function MarketValueCards() {
         <span className={styles.value}>
           {value.kind === 'NO_PRICE'
             ? <span className={styles.unavailable}>{t('profit.market.noPrice')}</span>
-            : <MoneyApprox cents={value.usdCents} estimated approxCents={value.brlCents} />}
+            : <MoneyApprox cents={value.usdCents} estimated approxCents={value.approxCents} approxCurrency={value.approxCurrency} />}
         </span>
         <p className={styles.hint}>{t('profit.market.badge')}</p>
         <p className={styles.hint}>
@@ -60,7 +60,7 @@ export default function MarketValueCards() {
           {pnl.kind === 'NET' && (
             <>
               <span>{t('common.approx', { value: signedUsd(pnl.cents) })}</span>
-              {pnl.brlCents !== null && <small className={styles.approx}>{t('common.approx', { value: formatMoney(pnl.brlCents, 'BRL', locale) })}</small>}
+              {pnl.approxCents !== null && <small className={styles.approx}>{t('common.approx', { value: formatMoney(pnl.approxCents, pnl.approxCurrency, locale) })}</small>}
             </>
           )}
         </span>

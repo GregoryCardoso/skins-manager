@@ -39,7 +39,7 @@ describe('cada função de escrita do api.ts invalida a ação certa onde é usa
     createWithdrawal: ['withdrawal.create'], updateWithdrawal: ['withdrawal.update'], deleteWithdrawal: ['withdrawal.delete'],
     createStoreBalanceCheck: ['balanceCheck.create'], deleteStoreBalanceEntry: ['balanceCheck.delete'],
     createStore: ['store.create'], updateStore: ['store.update'], deleteStore: ['store.delete'],
-    updateFxRate: ['settings.fx'], refreshFxRate: ['settings.fx'],
+    updateFxRate: ['settings.fx'], refreshFxRate: ['settings.fx'], changeDisplayCurrency: ['settings.fx'],
     updatePreferences: ['settings.preferences', 'settings.aging', 'settings.fx'],
     refreshCatalog: ['catalog.refresh'],
     saveCsfloatApiKey: ['integration.apiKey'], removeCsfloatApiKey: ['integration.apiKey'],

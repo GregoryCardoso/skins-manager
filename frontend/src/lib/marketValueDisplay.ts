@@ -7,7 +7,7 @@ export type UnitMarketCellView =
   | {
     kind: 'OK';
     usdCents: number;
-    brlCents: number | null;
+    approxCents: number | null; approxCurrency: string;
     pricedAt: string | null;
     stale: boolean;
     incomplete: boolean;
@@ -22,7 +22,7 @@ export function unitMarketCell(marketValue: MarketValue | null | undefined): Uni
     return {
       kind: 'OK',
       usdCents: marketValue.marketValueUsdCents,
-      brlCents: marketValue.approx.marketValue,
+      approxCents: marketValue.approx.marketValue, approxCurrency: marketValue.approxCurrency,
       pricedAt: marketValue.pricedAt,
       stale: marketValue.isStale,
       incomplete: !marketValue.isComplete,
@@ -47,7 +47,7 @@ export const signOf = (cents: number): Sign => (cents > 0 ? 'POSITIVE' : cents <
 
 export type UnrealizedCellView =
   | { kind: 'NONE' }
-  | { kind: 'NET'; cents: number; brlCents: number | null; sign: Sign; grossCents: number | null }
+  | { kind: 'NET'; cents: number; approxCents: number | null; approxCurrency: string; sign: Sign; grossCents: number | null }
   | { kind: 'NET_UNAVAILABLE'; reason: NetUnavailableReason | null; grossCents: number | null };
 
 // Principal = líquido da taxa de venda da loja da integração (2.13). Sem o líquido: "—" com o motivo e o bruto na dica (E-P2-Q57).
@@ -57,7 +57,7 @@ export function unitUnrealizedCell(marketValue: MarketValue | null | undefined):
     return {
       kind: 'NET',
       cents: marketValue.unrealizedNetUsdCents,
-      brlCents: marketValue.approx.unrealizedNet,
+      approxCents: marketValue.approx.unrealizedNet, approxCurrency: marketValue.approxCurrency,
       sign: signOf(marketValue.unrealizedNetUsdCents),
       grossCents: marketValue.unrealizedUsdCents,
     };
@@ -69,7 +69,7 @@ export type GroupMarketCellView =
   | { kind: 'NONE' }
   | { kind: 'NO_PRICE'; unpricedUnits: number; notPriceableUnits: number }
   | { kind: 'NOT_PRICEABLE'; unpricedUnits: number; notPriceableUnits: number }
-  | { kind: 'OK'; usdCents: number; brlCents: number | null; pricedUnits: number; unitCount: number; partial: boolean; staleUnits: number };
+  | { kind: 'OK'; usdCents: number; approxCents: number | null; approxCurrency: string; pricedUnits: number; unitCount: number; partial: boolean; staleUnits: number };
 
 export function groupMarketCell(totals: MarketValueTotals | null | undefined): GroupMarketCellView {
   if (!totals || totals.unitCount === 0) return { kind: 'NONE' };
@@ -82,7 +82,7 @@ export function groupMarketCell(totals: MarketValueTotals | null | undefined): G
   return {
     kind: 'OK',
     usdCents: totals.marketValueUsdCents,
-    brlCents: totals.approx.marketValue,
+    approxCents: totals.approx.marketValue, approxCurrency: totals.approxCurrency,
     pricedUnits: totals.pricedUnits,
     unitCount: totals.unitCount,
     partial: totals.pricedUnits < totals.unitCount,
@@ -92,7 +92,7 @@ export function groupMarketCell(totals: MarketValueTotals | null | undefined): G
 
 export type GroupUnrealizedCellView =
   | { kind: 'NONE' }
-  | { kind: 'NET'; cents: number; brlCents: number | null; sign: Sign; partial: boolean; grossCents: number }
+  | { kind: 'NET'; cents: number; approxCents: number | null; approxCurrency: string; sign: Sign; partial: boolean; grossCents: number }
   | { kind: 'NET_UNAVAILABLE'; grossCents: number };
 
 // Soma só das unidades com preço. `netUnits = pricedUnits` -> completo; entre 0 e `pricedUnits` -> parcial; 0 -> "—" com o bruto na dica.
@@ -102,7 +102,7 @@ export function groupUnrealizedCell(totals: MarketValueTotals | null | undefined
   return {
     kind: 'NET',
     cents: totals.unrealizedNetUsdCents,
-    brlCents: totals.approx.unrealizedNet,
+    approxCents: totals.approx.unrealizedNet, approxCurrency: totals.approxCurrency,
     sign: signOf(totals.unrealizedNetUsdCents),
     partial: totals.netUnits < totals.pricedUnits,
     grossCents: totals.unrealizedUsdCents,
@@ -111,10 +111,10 @@ export function groupUnrealizedCell(totals: MarketValueTotals | null | undefined
 
 export interface TabSummaryView {
   usdCents: number;
-  brlCents: number | null;
+  approxCents: number | null; approxCurrency: string;
   // Não realizado líquido; nulo quando nenhuma unidade tem líquido.
   netCents: number | null;
-  netBrlCents: number | null;
+  netApproxCents: number | null;
   netSign: Sign | null;
   pricedUnits: number;
   unitCount: number;
@@ -126,9 +126,9 @@ export function tabSummary(totals: MarketValueTotals | null | undefined): TabSum
   const hasNet = totals.netUnits > 0;
   return {
     usdCents: totals.marketValueUsdCents,
-    brlCents: totals.approx.marketValue,
+    approxCents: totals.approx.marketValue, approxCurrency: totals.approxCurrency,
     netCents: hasNet ? totals.unrealizedNetUsdCents : null,
-    netBrlCents: hasNet ? totals.approx.unrealizedNet : null,
+    netApproxCents: hasNet ? totals.approx.unrealizedNet : null,
     netSign: hasNet ? signOf(totals.unrealizedNetUsdCents) : null,
     pricedUnits: totals.pricedUnits,
     unitCount: totals.unitCount,
@@ -137,13 +137,13 @@ export function tabSummary(totals: MarketValueTotals | null | undefined): TabSum
 
 export type ProfitCardView =
   | { kind: 'NO_PRICE' }
-  | { kind: 'OK'; usdCents: number; brlCents: number | null; pricedUnits: number; unitCount: number; staleUnits: number };
+  | { kind: 'OK'; usdCents: number; approxCents: number | null; approxCurrency: string; pricedUnits: number; unitCount: number; staleUnits: number };
 
 // Card de valor do Lucro real: sem unidade com preço, "sem preço", nunca US$ 0,00.
 export function profitValueCard(totals: MarketValueTotals): ProfitCardView {
   if (totals.pricedUnits === 0) return { kind: 'NO_PRICE' };
   return {
-    kind: 'OK', usdCents: totals.marketValueUsdCents, brlCents: totals.approx.marketValue,
+    kind: 'OK', usdCents: totals.marketValueUsdCents, approxCents: totals.approx.marketValue, approxCurrency: totals.approxCurrency,
     pricedUnits: totals.pricedUnits, unitCount: totals.unitCount, staleUnits: totals.staleUnits,
   };
 }
@@ -151,14 +151,14 @@ export function profitValueCard(totals: MarketValueTotals): ProfitCardView {
 export type ProfitUnrealizedView =
   | { kind: 'NO_PRICE' }
   | { kind: 'UNAVAILABLE'; grossCents: number }
-  | { kind: 'NET'; cents: number; brlCents: number | null; sign: Sign; partial: boolean; grossCents: number };
+  | { kind: 'NET'; cents: number; approxCents: number | null; approxCurrency: string; sign: Sign; partial: boolean; grossCents: number };
 
 // Card "Lucro não realizado": líquido; sem nenhum líquido, "indisponível" com o bruto na dica; parcial com "(parcial)".
 export function profitUnrealizedCard(totals: MarketValueTotals): ProfitUnrealizedView {
   if (totals.pricedUnits === 0) return { kind: 'NO_PRICE' };
   if (totals.netUnits === 0) return { kind: 'UNAVAILABLE', grossCents: totals.unrealizedUsdCents };
   return {
-    kind: 'NET', cents: totals.unrealizedNetUsdCents, brlCents: totals.approx.unrealizedNet, sign: signOf(totals.unrealizedNetUsdCents),
+    kind: 'NET', cents: totals.unrealizedNetUsdCents, approxCents: totals.approx.unrealizedNet, approxCurrency: totals.approxCurrency, sign: signOf(totals.unrealizedNetUsdCents),
     partial: totals.netUnits < totals.pricedUnits, grossCents: totals.unrealizedUsdCents,
   };
 }

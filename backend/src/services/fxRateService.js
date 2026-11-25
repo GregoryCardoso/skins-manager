@@ -9,7 +9,7 @@ const Store = require('../models/Store');
 const Deposit = require('../models/Deposit');
 const Withdrawal = require('../models/Withdrawal');
 const { ValidationError, ConflictError } = require('../errors/AppError');
-const { CURRENCIES, AWESOMEAPI_PAIRS, FX_REFRESH_SOURCES } = require('../config/constants');
+const { CURRENCIES, AWESOMEAPI_PAIRS, FX_REFRESH_SOURCES, FX_MANUAL_RATE_BOUNDS } = require('../config/constants');
 const { isValidFxRate } = require('./currencyService');
 const { getProvider } = require('./fxRates');
 
@@ -59,14 +59,22 @@ function requiredCurrencies() {
 let refreshInProgress = false;
 const isRefreshInProgress = () => refreshInProgress;
 
-// Edição manual: origem MANUAL e sem data de cotação (D143, D162). Sem teto nem piso além de > 0: a faixa de sanidade (FX_RATE_BOUNDS)
-// vale só para a cotação que vem de uma fonte automática (a decisão antiga de aceitar qualquer valor positivo digitado continua).
+// Edição manual: origem MANUAL e sem data de cotação (D143, D162). Além de > 0, o valor precisa estar na faixa larga da moeda
+// (FX_MANUAL_RATE_BOUNDS, 11.3), que só barra erro absurdo de digitação; a faixa estreita (FX_RATE_BOUNDS) vale para as fontes automáticas.
 function setManualRate(currency, rate, { now = new Date() } = {}) {
   assertQuotableCurrency(currency);
   if (!isValidFxRate(rate)) {
     throw new ValidationError(`Cotação USD→${currency} inválida: informe um número maior que zero.`, 'INVALID_FX_RATE', {
       field: 'rate', params: { currency },
     });
+  }
+  const bounds = FX_MANUAL_RATE_BOUNDS[currency];
+  if (bounds && (rate < bounds.min || rate > bounds.max)) {
+    throw new ValidationError(
+      `Cotação USD→${currency} fora da faixa aceita (${bounds.min} a ${bounds.max}). Confira o valor digitado.`,
+      'FX_RATE_OUT_OF_RANGE',
+      { field: 'rate', params: { currency, min: bounds.min, max: bounds.max } }
+    );
   }
   if (refreshInProgress) {
     throw new ConflictError('Uma atualização da cotação está em andamento. Aguarde terminar.', 'FX_REFRESH_IN_PROGRESS', {

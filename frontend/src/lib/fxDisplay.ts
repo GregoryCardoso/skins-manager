@@ -5,6 +5,8 @@ type Translate = (key: string, params?: Record<string, string | number>) => stri
 
 export interface FxRateInfo {
   rate: number;
+  // Moeda da cotação ("unidades desta moeda por 1 US$"); sem ela, BRL (o caso do aviso do lucro real, que fala do BRL).
+  currency?: string;
   source: FxRateSource | null;
   // Data/hora da cotação na fonte (nula com origem MANUAL) e da última gravação (edição manual).
   quotedAt: string | null;
@@ -32,7 +34,7 @@ export function fxDateText(info: Pick<FxRateInfo, 'source' | 'quotedAt' | 'updat
 // Exibição sempre com fonte e data/hora (D162):
 // "R$ 5,1254 · Comercial · 20/11/2026 12:00", "R$ 5,3012 · PTAX de 19/11/2026 13:04" ou "R$ 5,50 · Manual · editada em 20/11/2026 10:15".
 export function describeFxRate(info: FxRateInfo, locale: string, t: Translate): string {
-  const parts = [formatRate(info.rate, locale)];
+  const parts = [formatRate(info.rate, locale, info.currency ?? 'BRL')];
   if (info.source === 'PTAX') {
     parts.push(info.quotedAt ? t('fx.ptaxOf', { date: formatDate(info.quotedAt, locale) }) : t('fx.sourceShort.PTAX'));
     return parts.join(' · ');

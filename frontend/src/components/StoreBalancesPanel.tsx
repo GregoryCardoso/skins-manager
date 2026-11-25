@@ -5,6 +5,7 @@ import { useCallback, useState } from 'react';
 import pageStyles from '@/app/profit/page.module.css';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLocale, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
+import { storeCounterpart } from '@/lib/baseMoney';
 import { formatDate, formatMoney } from '@/lib/format';
 import { queryKeys } from '@/lib/queryKeys';
 import { getCsfloatIntegration, getCurrentStoreBalances } from '@/services/api';
@@ -22,14 +23,13 @@ type Dialog =
 
 // Valor na moeda da loja (2.8) com o aproximado discreto ao lado, calculado no backend (D229): "≈ R$" em loja USD,
 // "≈ US$" em loja BRL. Sem cotação, o aproximado some. Saldo negativo aparece em vermelho.
-function Amount({ cents, currency, usdCents, approxCents, negative = false }: {
-  cents: number; currency: Currency; usdCents: number | null; approxCents: number | null; negative?: boolean;
+function Amount({ cents, currency, usdCents, approxCents, approxCurrency, negative = false }: {
+  cents: number; currency: Currency; usdCents: number | null; approxCents: number | null; approxCurrency: string; negative?: boolean;
 }) {
   const t = useT();
   const locale = useLocale();
-  const approx = currency === 'USD'
-    ? (approxCents === null ? null : formatMoney(approxCents, 'BRL', locale))
-    : (usdCents === null ? null : formatMoney(usdCents, 'USD', locale));
+  const counterpart = storeCounterpart({ currency, usdCents, approxCents, approxCurrency });
+  const approx = counterpart === null ? null : formatMoney(counterpart.cents, counterpart.currency, locale);
   return (
     <span className={styles.amount}>
       <strong className={negative ? styles.negative : undefined}>{formatMoney(cents, currency, locale)}</strong>
@@ -81,6 +81,7 @@ function StoreRow({ store, onCheck, onHistory, csfloat = false, onRegisterCsfloa
             currency={store.currency}
             usdCents={store.availableUsdCents}
             approxCents={store.availableApproxCents}
+            approxCurrency={store.approxCurrency}
             negative={store.negative}
           />{' '}
           {t('storeBalances.available')}
@@ -88,7 +89,7 @@ function StoreRow({ store, onCheck, onHistory, csfloat = false, onRegisterCsfloa
         {pending.cents > 0 && (
           <span>
             {'+ '}
-            <Amount cents={pending.cents} currency={store.currency} usdCents={pending.usdCents} approxCents={pending.approxCents} />{' '}
+            <Amount cents={pending.cents} currency={store.currency} usdCents={pending.usdCents} approxCents={pending.approxCents} approxCurrency={store.approxCurrency} />{' '}
             {t('storeBalances.pending', {
               date: pending.nextReleaseAt ? formatDate(pending.nextReleaseAt, locale) : t('common.none'),
             })}
@@ -189,15 +190,15 @@ export default function StoreBalancesPanel() {
             <div className={styles.totalsBar} role="group" aria-label={t('storeBalances.totalsTitle')}>
               <h3 className={styles.totalsTitle}>{t('storeBalances.totalsTitle')}</h3>
               <p className={styles.totalLine}>
-                {t('storeBalances.totalAvailable', { value: moneyLine({ cents: data.totals.availableUsdCents, estimated: data.totals.availableEstimated, approxCents: data.totals.approx.available }) })}
+                {t('storeBalances.totalAvailable', { value: moneyLine({ cents: data.totals.availableUsdCents, estimated: data.totals.availableEstimated, approxCents: data.totals.approx.available, approxCurrency: data.totals.approxCurrency }) })}
               </p>
               <p className={styles.totalLine}>
                 {data.totals.nextReleaseAt
                   ? t('storeBalances.totalPendingDate', {
-                    value: moneyLine({ cents: data.totals.pendingUsdCents, estimated: data.totals.pendingEstimated, approxCents: data.totals.approx.pending }),
+                    value: moneyLine({ cents: data.totals.pendingUsdCents, estimated: data.totals.pendingEstimated, approxCents: data.totals.approx.pending, approxCurrency: data.totals.approxCurrency }),
                     date: formatDate(data.totals.nextReleaseAt, locale),
                   })
-                  : t('storeBalances.totalPending', { value: moneyLine({ cents: data.totals.pendingUsdCents, estimated: data.totals.pendingEstimated, approxCents: data.totals.approx.pending }) })}
+                  : t('storeBalances.totalPending', { value: moneyLine({ cents: data.totals.pendingUsdCents, estimated: data.totals.pendingEstimated, approxCents: data.totals.approx.pending, approxCurrency: data.totals.approxCurrency }) })}
               </p>
               {showNonWithdrawable && (
                 <p className={styles.totalLine}>
@@ -207,7 +208,7 @@ export default function StoreBalancesPanel() {
                       value: moneyLine({
                         cents: nonWithdrawable,
                         estimated: data.totals.nonWithdrawableEstimated,
-                        approxCents: data.totals.approx.nonWithdrawable,
+                        approxCents: data.totals.approx.nonWithdrawable, approxCurrency: data.totals.approxCurrency,
                       }),
                     })}
                 </p>

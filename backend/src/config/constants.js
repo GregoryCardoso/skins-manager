@@ -103,6 +103,28 @@ const FX_RATE_BOUNDS = Object.freeze({
   CLP: Object.freeze({ min: 100, max: 10000 }),
 });
 
+// Faixa larga da cotação DIGITADA à mão (11.3), por moeda: só barra erro absurdo de digitação (vírgula no lugar errado, zero a mais).
+// Bem mais larga que FX_RATE_BOUNDS (a das fontes automáticas) e com margem ampla (cerca de 10x para cada lado) em torno do valor de
+// hoje. Vale só na escrita: cotações já gravadas fora da faixa continuam sendo lidas normalmente.
+const FX_MANUAL_RATE_BOUNDS = Object.freeze({
+  BRL: Object.freeze({ min: 0.5, max: 100 }),
+  EUR: Object.freeze({ min: 0.1, max: 10 }),
+  RUB: Object.freeze({ min: 5, max: 1500 }),
+  TRY: Object.freeze({ min: 0.5, max: 1000 }),
+  CNY: Object.freeze({ min: 0.5, max: 70 }),
+  PLN: Object.freeze({ min: 0.25, max: 40 }),
+  UAH: Object.freeze({ min: 2, max: 1000 }),
+  JPY: Object.freeze({ min: 10, max: 3000 }),
+  KRW: Object.freeze({ min: 100, max: 30000 }),
+  GBP: Object.freeze({ min: 0.1, max: 10 }),
+  KZT: Object.freeze({ min: 25, max: 10000 }),
+  CAD: Object.freeze({ min: 0.15, max: 15 }),
+  AUD: Object.freeze({ min: 0.15, max: 15 }),
+  MXN: Object.freeze({ min: 1.5, max: 300 }),
+  ARS: Object.freeze({ min: 5, max: 500000 }),
+  CLP: Object.freeze({ min: 50, max: 20000 }),
+});
+
 // Backup (D150, D151).
 const BACKUP_MAX_BYTES = 100 * 1024 * 1024;
 const { AUTO_BACKUP_KEEP } = require('./backupRetention'); // retenção dos backups automáticos (D151)
@@ -184,6 +206,7 @@ module.exports = Object.freeze({
   DEFAULT_DISPLAY_CURRENCY,
   AWESOMEAPI_PAIRS,
   FX_RATE_BOUNDS,
+  FX_MANUAL_RATE_BOUNDS,
   FX_REFRESH_SOURCES,
   FX_RATE_SOURCES,
   MAX_AMOUNT_CENTS,

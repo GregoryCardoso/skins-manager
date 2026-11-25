@@ -51,7 +51,11 @@ import type {
   OpenContainerResult,
   OpenOptions,
   PreferencesPatch,
+  CurrencyChangePreview,
+  DisplayCurrencyChangeResult,
   FxRefreshResult,
+  FxRefreshSource,
+  SteamStoreChoice,
   SaleQuote,
   SalesList,
   SalesQuery,
@@ -206,6 +210,15 @@ export const getSettings = (signal?: AbortSignal) => request<Settings>('GET', '/
 export const updatePreferences = (patch: PreferencesPatch) =>
   request<Settings>('PATCH', '/settings', { body: patch });
 
+// Prévia da troca da moeda de conversão (D369 A5): só leitura; o modal monta as linhas com ela.
+export const getCurrencyChangePreview = (currency: string, signal?: AbortSignal) =>
+  request<CurrencyChangePreview>('GET', '/settings/currency-change-preview', { signal, query: { currency } });
+
+// Troca a moeda de conversão (D369 A5). Na 11.3 a loja Steam fica sempre como está (`KEEP`); a resposta traz as configurações e o que
+// aconteceu com a Steam.
+export const changeDisplayCurrency = (currency: string, steamStore: SteamStoreChoice = 'KEEP') =>
+  request<DisplayCurrencyChangeResult>('PATCH', '/settings', { body: { displayCurrency: currency, steamStore } });
+
 export const getCatalogStatus = (signal?: AbortSignal) =>
   request<CatalogStatus>('GET', '/catalog/status', { signal });
 
@@ -307,13 +320,15 @@ export const createStoreBalanceCheck = (body: StoreBalanceCheckBody) =>
 
 export const deleteStoreBalanceEntry = (id: number) => request<{ id: number }>('DELETE', `/store-balances/${id}`);
 
-export const updateFxRate = (usdBrlRate: number) =>
-  request<Settings>('PUT', '/settings/fx-rate', { body: { usdBrlRate } });
+// Cotação digitada à mão de uma moeda (D369): "unidades da moeda por 1 US$". Devolve as configurações.
+export const updateFxRate = (currency: string, rate: number) =>
+  request<Settings>('PUT', '/settings/fx-rate', { body: { currency, rate } });
 
 // Atualiza a cotação pela fonte salva (D162; AwesomeAPI ou PTAX, até 20 s no backend); salva direto.
 // Corpo `{}` JSON obrigatório.
 // `trigger: 'AUTO'` = ao abrir o app (D338): uma vez por processo e nunca sobre a cotação digitada à mão (devolve `skipped`).
-export const refreshFxRate = (body: { trigger?: 'MANUAL' | 'AUTO' } = {}) =>
+// `currency` (padrão BRL no backend) escolhe a moeda; `source` vale só desta chamada (sem ela, a fonte salva da moeda).
+export const refreshFxRate = (body: { currency?: string; source?: FxRefreshSource; trigger?: 'MANUAL' | 'AUTO' } = {}) =>
   request<FxRefreshResult>('POST', '/settings/fx-rate/refresh', { body, timeoutMs: 60000 });
 
 // "Não está à venda" e "Colocar à venda" (D265): a data é a do servidor; o corpo é `{}` (JSON obrigatório).

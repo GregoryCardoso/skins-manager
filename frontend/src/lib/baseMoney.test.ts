@@ -4,13 +4,13 @@ import { moneyTexts } from './baseMoney';
 // 8.5 (D225, D231): o "≈" no valor principal só aparece quando houve conversão; o "≈ R$" abaixo vem do backend.
 describe('moneyTexts', () => {
   test('valor exato (estimated false): sem "≈" no principal, com o "≈ R$" abaixo', () => {
-    expect(moneyTexts({ cents: 24196, estimated: false, approxCents: 131435 }, 'pt-BR')).toEqual({
+    expect(moneyTexts({ cents: 24196, estimated: false, approxCents: 131435, approxCurrency: 'BRL' }, 'pt-BR')).toEqual({
       main: expect.stringContaining('241,96'), mainEstimated: false, approx: expect.stringContaining('1.314,35'),
     });
   });
 
   test('valor estimado (estimated true): o principal ganha o "≈"', () => {
-    const texts = moneyTexts({ cents: 21859, estimated: true, approxCents: 118740 }, 'en');
+    const texts = moneyTexts({ cents: 21859, estimated: true, approxCents: 118740, approxCurrency: 'BRL' }, 'en');
     expect(texts.main).toBe('$218.59');
     expect(texts.mainEstimated).toBe(true);
     expect(texts.approx).toContain('1,187.40');
@@ -32,6 +32,6 @@ describe('moneyTexts', () => {
   });
 
   test('zero não é tratado como indisponível', () => {
-    expect(moneyTexts({ cents: 0, approxCents: 0 }, 'en')).toMatchObject({ main: '$0.00', approx: expect.stringContaining('0.00') });
+    expect(moneyTexts({ cents: 0, approxCents: 0, approxCurrency: 'BRL' }, 'en')).toMatchObject({ main: '$0.00', approx: expect.stringContaining('0.00') });
   });
 });

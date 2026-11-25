@@ -5,15 +5,17 @@ import { useT } from '@/i18n/I18nProvider';
 import { LANGUAGE_REGISTRY } from '@/i18n/languages';
 import { THEME_CHOICES } from '@/lib/preferences';
 import type { Language, ThemeChoice } from '@/types/api';
+import CurrencySelect from './CurrencySelect';
 import { usePreferences } from './PreferencesProvider';
 import styles from './settings.module.css';
 
-// Tema e idioma (os mesmos controles do cabeçalho, com o mesmo estado).
+// Tema, idioma e moeda de conversão (os mesmos controles do cabeçalho, com o mesmo estado). Trocar o idioma nunca muda a moeda.
 export default function PreferencesSettings() {
   const t = useT();
   const { theme, language, setTheme, setLanguage } = usePreferences();
   const themeId = useId();
   const languageId = useId();
+  const currencyId = useId();
 
   return (
     <section className={styles.card} aria-labelledby="settings-prefs-title">
@@ -45,7 +47,12 @@ export default function PreferencesSettings() {
             ))}
           </select>
         </div>
+        <div className={styles.field}>
+          <label htmlFor={currencyId} className={styles.label}>{t('currency.label')}</label>
+          <CurrencySelect id={currencyId} className={styles.select} />
+        </div>
       </div>
+      <p className={styles.muted}>{t('currency.hint')}</p>
     </section>
   );
 }

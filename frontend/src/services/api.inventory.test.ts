@@ -68,13 +68,13 @@ describe('listStores / updateFxRate', () => {
     expect(fn.mock.calls[0][1].method).toBe('GET');
   });
 
-  test('updateFxRate: PUT /settings/fx-rate com { usdBrlRate }', async () => {
+  test('updateFxRate: PUT /settings/fx-rate com { currency, rate }', async () => {
     const fn = stubFetch({});
-    await updateFxRate(5.4);
+    await updateFxRate('BRL', 5.4);
     expect(urlOf(fn).pathname).toBe('/api/settings/fx-rate');
     const init = fn.mock.calls[0][1];
     expect(init.method).toBe('PUT');
     expect(init.headers).toEqual({ 'Content-Type': 'application/json' });
-    expect(JSON.parse(init.body)).toEqual({ usdBrlRate: 5.4 });
+    expect(JSON.parse(init.body)).toEqual({ currency: 'BRL', rate: 5.4 });
   });
 });

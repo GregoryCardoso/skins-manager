@@ -98,7 +98,7 @@ function SaleRow({ item, stores, onEdit, onUnsell, onDelete, onHistory, highligh
   const saleCurrency = item.saleCurrency ?? 'USD';
   const rate = (value: number | null) => (value === null ? t('common.none') : formatRate(value, locale));
 
-  const saleRateNote = info && info.fxUsed.sale !== null ? t('sales.saleRateNote', { rate: formatRate(info.fxUsed.sale, locale) }) : null;
+  const saleRateNote = info && info.fxUsed.sale !== null ? t('sales.saleRateNote', { rate: formatRate(info.fxUsed.sale, locale, saleCurrency ?? 'BRL') }) : null;
   const profitUsd = info ? info.netReceivedUsdCents - info.purchaseCostUsdCents : item.saleProfitUsdCents;
 
   return (
@@ -120,7 +120,8 @@ function SaleRow({ item, stores, onEdit, onUnsell, onDelete, onHistory, highligh
             currency={item.purchaseCurrency}
             usdCents={info.purchaseCostUsdCents}
             approxCents={info.approx.purchaseCost}
-            rateNote={info.fxUsed.purchase !== null ? formatRate(info.fxUsed.purchase, locale) : null}
+            approxCurrency={info.approxCurrency}
+            rateNote={info.fxUsed.purchase !== null ? formatRate(info.fxUsed.purchase, locale, item.purchaseCurrency) : null}
           />
         ) : formatMoney(item.purchasePriceCents, item.purchaseCurrency, locale)}
       </td>
@@ -131,6 +132,7 @@ function SaleRow({ item, stores, onEdit, onUnsell, onDelete, onHistory, highligh
             currency={saleCurrency}
             usdCents={info.salePriceUsdCents}
             approxCents={info.approx.salePrice}
+            approxCurrency={info.approxCurrency}
             rateNote={saleRateNote}
           />
         ) : t('common.none')}
@@ -143,6 +145,7 @@ function SaleRow({ item, stores, onEdit, onUnsell, onDelete, onHistory, highligh
               currency={saleCurrency}
               usdCents={info.netReceivedUsdCents}
               approxCents={info.approx.netReceived}
+            approxCurrency={info.approxCurrency}
             />
             {item.netReceivedManual && <span className={styles.muted}>{t('sales.manualNet')}</span>}
             <SaleReleaseNote item={item} />
@@ -157,6 +160,7 @@ function SaleRow({ item, stores, onEdit, onUnsell, onDelete, onHistory, highligh
               currency="USD"
               usdCents={profitUsd}
               approxCents={info.approx.profit}
+            approxCurrency={info.approxCurrency}
               signed
               colorBySign
             />

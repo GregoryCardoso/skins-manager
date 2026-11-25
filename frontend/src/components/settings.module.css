@@ -36,3 +36,7 @@
 .counts { margin: 0; padding-left: 1.1rem; }
 .sub { font-size: 0.85rem; color: var(--text-muted); }
 .catalogTotal { margin: 0; font-weight: 600; }
+.fxRow {
+  display: flex; flex-direction: column; gap: 0.5rem; padding: 0.75rem 0; border-top: 1px solid var(--border);
+}
+.staleNote { margin: 0; font-size: 0.82rem; color: var(--warning); }

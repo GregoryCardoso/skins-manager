@@ -49,7 +49,7 @@ function SummaryBody({ data }: { data: ProfitSummary }) {
   const tPlural = useTPlural();
   // Valor em US$ com "≈" só quando a parcela teve conversão; o "≈ R$" abaixo vem do backend.
   const amount = (cents: number | null, approx: number | null, estimated: boolean, className?: string) => (
-    <MoneyApprox cents={cents} estimated={estimated} approxCents={approx} className={className} />
+    <MoneyApprox cents={cents} estimated={estimated} approxCents={approx} approxCurrency={data.approxCurrency} className={className} />
   );
 
   const profit = data.realProfitUsdCents;

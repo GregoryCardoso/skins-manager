@@ -10,7 +10,7 @@ export default function SalesSummary({ summary }: { summary: Summary }) {
   const locale = useLocale();
   const usd = (cents: number) => formatMoney(cents, 'USD', locale);
   const approx = (cents: number | null) =>
-    cents === null ? null : <span className={styles.approx}>{t('common.approx', { value: formatMoney(cents, 'BRL', locale) })}</span>;
+    cents === null ? null : <span className={styles.approx}>{t('common.approx', { value: formatMoney(cents, summary.approxCurrency, locale) })}</span>;
   const profit = summary.totalProfitUsdCents;
   const profitText = `${profit > 0 ? '+' : ''}${usd(profit)}`;
   const avg = summary.avgTurnaroundDays;
