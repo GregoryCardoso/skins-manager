@@ -47,7 +47,8 @@ describe('buildPriceTarget (nome de mercado e chave)', () => {
   });
 
   test('fase sem índice conhecido, ou Doppler sem fase -> PHASE_UNMAPPED', () => {
-    expect(buildPriceTarget(skin({ name: 'Glock-18 | Gamma Doppler', exterior: 'FN', phase: 'Phase 1' }))).toEqual({ notPriceable: 'PHASE_UNMAPPED' });
+    expect(buildPriceTarget(skin({ name: 'Glock-18 | Gamma Doppler', exterior: 'FN', phase: 'Phase 1' })).paintIndex).toBe(1120);
+    expect(buildPriceTarget(skin({ name: 'P250 | Gamma Doppler', exterior: 'FN', phase: 'Phase 1' }))).toEqual({ notPriceable: 'PHASE_UNMAPPED' });
     expect(buildPriceTarget({ category: 'FACA', name: '★ Karambit | Doppler', variant: 'NORMAL', exterior: 'FN', phase: 'Fase Nova' })).toEqual({ notPriceable: 'PHASE_UNMAPPED' });
     expect(buildPriceTarget({ category: 'FACA', name: '★ Karambit | Doppler', variant: 'NORMAL', exterior: 'FN', phase: null })).toEqual({ notPriceable: 'PHASE_REQUIRED' });
     // B1 (D365): arma Doppler/Gamma Doppler sem fase também pede a fase; vanilla e skin comum seguem avaliáveis.

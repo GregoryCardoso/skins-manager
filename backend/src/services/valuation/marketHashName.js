@@ -2,28 +2,36 @@
 
 // Nome de mercado e chave de cache de uma unidade ou componente (D364 item 4). Funções puras.
 // O float não entra na chave: o preço é do item igual (nome + fase).
-const { DOPPLER_PHASES } = require('../imports/adapters/csfloatStates');
+const { DOPPLER_PHASES_BY_FINISH } = require('../imports/adapters/csfloatStates');
 
 const EXTERIOR_NAMES = Object.freeze({ FN: 'Factory New', MW: 'Minimal Wear', FT: 'Field-Tested', WW: 'Well-Worn', BS: 'Battle-Scarred' });
 const WEAPON = ['SKIN', 'FACA', 'LUVA'];
 const isNil = (v) => v === null || v === undefined;
 const norm = (text) => String(text).trim().toLowerCase();
 
-// Inverso de DOPPLER_PHASES por acabamento: Gamma Doppler = 568 a 572; Doppler = 415 a 421.
-const PHASE_INDEX = (() => {
-  const out = { DOPPLER: new Map(), GAMMA: new Map() };
-  for (const [index, phase] of Object.entries(DOPPLER_PHASES)) {
-    (Number(index) >= 568 ? out.GAMMA : out.DOPPLER).set(norm(phase), Number(index));
-  }
-  return out;
-})();
+// Inverso de DOPPLER_PHASES_BY_FINISH: por acabamento, fase normalizada -> paint_index.
+const PHASE_INDEX = Object.freeze(Object.fromEntries(Object.entries(DOPPLER_PHASES_BY_FINISH).map(([finish, table]) => [
+  finish,
+  new Map(Object.entries(table).map(([index, phase]) => [norm(phase), Number(index)])),
+])));
 
-// paint_index da fase de uma faca, ou null (fase fora da tabela, ou acabamento sem fases conhecidas, como a Gamma Doppler de armas).
+// Tabela de fases do item (chave de DOPPLER_PHASES_BY_FINISH), ou null se o acabamento não tem fases conhecidas.
+function phaseTableOf({ category, name }) {
+  const text = String(name ?? '').trim();
+  if (category === 'FACA') {
+    if (/\|\s*Gamma Doppler$/i.test(text)) return 'GAMMA_DOPPLER_KNIFE';
+    if (/\|\s*Doppler$/i.test(text)) return 'DOPPLER_KNIFE';
+    return null;
+  }
+  if (category === 'SKIN' && text.toLowerCase() === 'glock-18 | gamma doppler') return 'GLOCK_GAMMA_DOPPLER';
+  return null;
+}
+
+// paint_index da fase do item, ou null (sem tabela para o acabamento, ou fase fora dela).
 function paintIndexOf({ category, name, phase }) {
-  if (category !== 'FACA') return null;
-  const finish = /\|\s*Gamma Doppler\s*$/i.test(name) ? PHASE_INDEX.GAMMA : /\|\s*Doppler\s*$/i.test(name) ? PHASE_INDEX.DOPPLER : null;
-  if (!finish) return null;
-  return finish.get(norm(phase)) ?? null;
+  const table = phaseTableOf({ category, name });
+  if (!table) return null;
+  return PHASE_INDEX[table].get(norm(phase)) ?? null;
 }
 
 const keyOf = (marketHashName, paintIndex) => `${marketHashName}|${isNil(paintIndex) ? '' : paintIndex}`;
@@ -72,4 +80,4 @@ function buildPriceTarget(subject, { catalogById = new Map() } = {}) {
   return name === '' ? { notPriceable: 'NOT_PRICEABLE' } : target(name);
 }
 
-module.exports = { EXTERIOR_NAMES, paintIndexOf, buildPriceTarget };
+module.exports = { EXTERIOR_NAMES, phaseTableOf, paintIndexOf, buildPriceTarget };

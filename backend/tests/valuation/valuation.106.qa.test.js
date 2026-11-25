@@ -9,7 +9,7 @@ const { buildPriceTarget } = require('../../src/services/valuation/marketHashNam
 const { valueUnit, summarize } = require('../../src/services/valuation/valuationService');
 const { buildValuationIndex, groupValuation } = require('../../src/services/valuation/valuationIndex');
 const { collectTargets } = require('../../src/services/valuation/marketValueService');
-const { DOPPLER_PHASES } = require('../../src/services/imports/adapters/csfloatStates');
+const { DOPPLER_PHASES_BY_FINISH } = require('../../src/services/imports/adapters/csfloatStates');
 
 const NOW = new Date('2026-11-24T12:00:00.000Z');
 const FINISHES = ['Doppler', 'Gamma Doppler'];
@@ -44,6 +44,7 @@ describe('B1: Doppler e Gamma Doppler, SKIN e FACA', () => {
       const catalogById = new Map([['c1', { id: 'c1', phase: 'Phase 2' }]]);
       const target = buildPriceTarget(subject(category, finish, { catalogId: 'c1' }), { catalogById });
       if (category === 'FACA') expect(target.paintIndex).toBe(finish === 'Doppler' ? 419 : 570);
+      else if (finish === 'Gamma Doppler') expect(target.paintIndex).toBe(1121);
       else expect(target).toEqual({ notPriceable: 'PHASE_UNMAPPED' });
     });
 
@@ -51,6 +52,7 @@ describe('B1: Doppler e Gamma Doppler, SKIN e FACA', () => {
       const catalogById = new Map([['c1', { id: 'c1', phase: 'Phase 2' }]]);
       const target = buildPriceTarget(subject(category, finish, { catalogId: 'c1', phase: 'Phase 1' }), { catalogById });
       if (category === 'FACA') expect(target.paintIndex).toBe(finish === 'Doppler' ? 418 : 569);
+      else if (finish === 'Gamma Doppler') expect(target.paintIndex).toBe(1120);
       else expect(target).toEqual({ notPriceable: 'PHASE_UNMAPPED' });
     });
 
@@ -60,12 +62,15 @@ describe('B1: Doppler e Gamma Doppler, SKIN e FACA', () => {
     });
   });
 
-  test('toda fase da tabela: faca tem índice; arma com fase continua PHASE_UNMAPPED (E-P2-Q56)', () => {
-    for (const [index, phase] of Object.entries(DOPPLER_PHASES)) {
-      const finish = Number(index) >= 568 ? 'Gamma Doppler' : 'Doppler';
-      expect(buildPriceTarget(subject('FACA', finish, { phase })).paintIndex).toBe(Number(index));
-      expect(buildPriceTarget(subject('SKIN', finish, { phase }))).toEqual({ notPriceable: 'PHASE_UNMAPPED' });
+  test('toda fase da tabela tem índice; Glock Gamma Doppler usa a sua tabela; outras armas com fase seguem PHASE_UNMAPPED (E-P2-Q56, D368)', () => {
+    const cases = { DOPPLER_KNIFE: ['FACA', 'Doppler'], GAMMA_DOPPLER_KNIFE: ['FACA', 'Gamma Doppler'], GLOCK_GAMMA_DOPPLER: ['SKIN', 'Gamma Doppler'] };
+    for (const [key, table] of Object.entries(DOPPLER_PHASES_BY_FINISH)) {
+      for (const [index, phase] of Object.entries(table)) {
+        const [category, finish] = cases[key];
+        expect(buildPriceTarget(subject(category, finish, { phase })).paintIndex).toBe(Number(index));
+      }
     }
+    expect(buildPriceTarget(subject('SKIN', 'Doppler', { phase: 'Phase 1' }))).toEqual({ notPriceable: 'PHASE_UNMAPPED' });
   });
 
   test('faca Doppler com a fase de outro acabamento (Emerald numa Doppler comum) -> PHASE_UNMAPPED', () => {
@@ -87,14 +92,14 @@ describe('B1: Doppler e Gamma Doppler, SKIN e FACA', () => {
     const { targets, notPriceableUnits } = collectTargets({
       items: [
         stock(1), // sem fase
-        stock(2, { phase: 'Phase 2' }), // PHASE_UNMAPPED
+        stock(2, { phase: 'Phase 2' }), // Glock Gamma Doppler com fase: 1121
         { id: 3, status: 'EM_ESTOQUE', ...subject('FACA', 'Doppler') }, // sem fase
         { id: 4, status: 'EM_ESTOQUE', ...subject('FACA', 'Doppler', { phase: 'Phase 1' }) }, // 418
         { id: 5, status: 'VENDIDO', ...subject('FACA', 'Doppler') }, // vendido: nem conta
       ],
     });
-    expect(notPriceableUnits).toBe(3);
-    expect(targets.map((t) => t.priceKey)).toEqual(['★ Karambit | Doppler (Factory New)|418']);
+    expect(notPriceableUnits).toBe(2);
+    expect(targets.map((t) => t.priceKey).sort()).toEqual(['Glock-18 | Gamma Doppler (Factory New)|1121', '★ Karambit | Doppler (Factory New)|418']);
   });
 
   test('valueUnit: PHASE_REQUIRED não consulta o cache, mesmo com linha antiga da chave sem fase; custo é mantido', () => {

@@ -3,7 +3,7 @@
 // 10.5 (D364, Adendo 1): complementos de QA das partes puras: nome de mercado, mapper/adapter (privacidade, chave só no header),
 // ordenação das chaves a buscar e valor da unidade. Sem rede; dados INVENTADOS.
 const { buildPriceTarget, paintIndexOf } = require('../../src/services/valuation/marketHashName');
-const { DOPPLER_PHASES } = require('../../src/services/imports/adapters/csfloatStates');
+const { DOPPLER_PHASES_BY_FINISH } = require('../../src/services/imports/adapters/csfloatStates');
 const { mapListingReference } = require('../../src/services/imports/adapters/csfloatMapper');
 const csfloatAdapter = require('../../src/services/imports/adapters/csfloatAdapter');
 const { valueUnit, summarize, isStaleRow } = require('../../src/services/valuation/valuationService');
@@ -16,10 +16,12 @@ const HOUR = 3600000;
 
 describe('marketHashName: complementos', () => {
   test('toda fase da tabela vira o mesmo índice na ida e na volta (Doppler e Gamma Doppler)', () => {
-    for (const [index, phase] of Object.entries(DOPPLER_PHASES)) {
-      const finish = Number(index) >= 568 ? 'Gamma Doppler' : 'Doppler';
-      const target = buildPriceTarget({ category: 'FACA', name: `★ Butterfly Knife | ${finish}`, variant: 'NORMAL', exterior: 'FN', phase });
-      expect(target.paintIndex).toBe(Number(index));
+    const names = { DOPPLER_KNIFE: ['FACA', '★ Butterfly Knife | Doppler'], GAMMA_DOPPLER_KNIFE: ['FACA', '★ Butterfly Knife | Gamma Doppler'], GLOCK_GAMMA_DOPPLER: ['SKIN', 'Glock-18 | Gamma Doppler'] };
+    for (const [key, table] of Object.entries(DOPPLER_PHASES_BY_FINISH)) {
+      for (const [index, phase] of Object.entries(table)) {
+        const target = buildPriceTarget({ category: names[key][0], name: names[key][1], variant: 'NORMAL', exterior: 'FN', phase });
+        expect(target.paintIndex).toBe(Number(index));
+      }
     }
   });
 
@@ -52,8 +54,9 @@ describe('marketHashName: complementos', () => {
     expect(buildPriceTarget({ kind: 'STICKER', catalogId: 'zz' }, { catalogById })).toEqual({ notPriceable: 'NOT_PRICEABLE' });
   });
 
-  test('Doppler em arma (não faca) com fase: PHASE_UNMAPPED (desvio declarado); sem fase pede a fase (B1, D365)', () => {
-    expect(buildPriceTarget({ category: 'SKIN', name: 'Glock-18 | Gamma Doppler', variant: 'NORMAL', exterior: 'FN', phase: 'Phase 2' })).toEqual({ notPriceable: 'PHASE_UNMAPPED' });
+  test('Gamma Doppler de arma: Glock tem índice; outra arma com fase é PHASE_UNMAPPED; sem fase pede a fase (B1, D365)', () => {
+    expect(buildPriceTarget({ category: 'SKIN', name: 'Glock-18 | Gamma Doppler', variant: 'NORMAL', exterior: 'FN', phase: 'Phase 2' }).paintIndex).toBe(1121);
+    expect(buildPriceTarget({ category: 'SKIN', name: 'P250 | Gamma Doppler', variant: 'NORMAL', exterior: 'FN', phase: 'Phase 2' })).toEqual({ notPriceable: 'PHASE_UNMAPPED' });
     const noPhase = buildPriceTarget({ category: 'SKIN', name: 'Glock-18 | Gamma Doppler', variant: 'NORMAL', exterior: 'FN', phase: null });
     expect(noPhase).toEqual({ notPriceable: 'PHASE_REQUIRED' });
   });

@@ -28,20 +28,15 @@ const PURCHASE_REVERSAL_TX_TYPES = Object.freeze(['contract_purchase_refund', 'r
 // Transações que, com o mesmo `contract_id`, indicam que uma venda foi desfeita (D294, D301).
 const SALE_REVERSAL_TX_TYPES = Object.freeze(['contract_sale_refund', 'rollback']);
 
-// `paint_index` das fases da Doppler e da Gamma Doppler (conhecidas do jogo; "conferir com exemplo real", D318).
-const DOPPLER_PHASES = Object.freeze({
-  415: 'Ruby',
-  416: 'Sapphire',
-  417: 'Black Pearl',
-  418: 'Phase 1',
-  419: 'Phase 2',
-  420: 'Phase 3',
-  421: 'Phase 4',
-  568: 'Emerald',
-  569: 'Phase 1',
-  570: 'Phase 2',
-  571: 'Phase 3',
-  572: 'Phase 4',
+// `paint_index` das fases por acabamento. Faca Doppler (415-421) e Gamma Doppler (568-572) são conhecidos do jogo;
+// os da Glock-18 | Gamma Doppler (1119-1123) vieram de exemplo real (E-P2-Q56, D368, confirmados com 100 anúncios).
+const DOPPLER_PHASES_BY_FINISH = Object.freeze({
+  DOPPLER_KNIFE: Object.freeze({ 415: 'Ruby', 416: 'Sapphire', 417: 'Black Pearl', 418: 'Phase 1', 419: 'Phase 2', 420: 'Phase 3', 421: 'Phase 4' }),
+  GAMMA_DOPPLER_KNIFE: Object.freeze({ 568: 'Emerald', 569: 'Phase 1', 570: 'Phase 2', 571: 'Phase 3', 572: 'Phase 4' }),
+  GLOCK_GAMMA_DOPPLER: Object.freeze({ 1119: 'Emerald', 1120: 'Phase 1', 1121: 'Phase 2', 1122: 'Phase 3', 1123: 'Phase 4' }),
 });
 
-module.exports = { CSFLOAT_TRADE_STATES, STEAM_OFFER_STATES, KNOWN_TX_TYPES, PURCHASE_REVERSAL_TX_TYPES, SALE_REVERSAL_TX_TYPES, DOPPLER_PHASES };
+// União plana (índice -> fase) das três tabelas; os índices não se repetem entre elas.
+const DOPPLER_PHASES = Object.freeze(Object.assign({}, ...Object.values(DOPPLER_PHASES_BY_FINISH)));
+
+module.exports = { CSFLOAT_TRADE_STATES, STEAM_OFFER_STATES, KNOWN_TX_TYPES, PURCHASE_REVERSAL_TX_TYPES, SALE_REVERSAL_TX_TYPES, DOPPLER_PHASES, DOPPLER_PHASES_BY_FINISH };
