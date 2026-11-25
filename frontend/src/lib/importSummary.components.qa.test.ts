@@ -15,7 +15,7 @@ function entry(outcome: ImportEntryView['outcome'], display: Partial<ImportEntry
   return {
     id: 1, batchId: 1, outcome, reasonCode: null, entityType: 'ITEM_PURCHASE', entityId: 5, candidateIds: [], resolution: null, resolvedAt: null,
     display: {
-      direction: 'BUY', marketHashName: 'X', name: 'X', namePtBr: null, imageUrl: null, catalogId: null, category: 'SKIN', variant: 'NORMAL',
+      direction: 'BUY', marketHashName: 'X', name: 'X', localizedName: null, imageUrl: null, catalogId: null, category: 'SKIN', variant: 'NORMAL',
       floatValue: null, paintSeed: null, phase: null, priceCents: 100, currency: 'USD', date: null, state: null, ...display,
     },
   };

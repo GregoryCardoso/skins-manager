@@ -164,7 +164,7 @@ function scrapeOff({ targetId, componentId, occurredAt = null }, ctx = {}) {
 }
 
 // Unidades do estoque que podem ser aplicadas no alvo (D362 item 10). Vazio se o alvo não aceitar componentes ou não estiver em estoque.
-// Cada candidata: { itemId, kind, catalogId, name, namePtBr, imageUrl, acquiredAt, effectiveCostUsdCents, costEstimated, tradeLocked, offSale }.
+// Cada candidata: { itemId, kind, catalogId, name, localizedName, imageUrl, acquiredAt, effectiveCostUsdCents, costEstimated, tradeLocked, offSale }.
 function listCandidates(targetId, { now = new Date() } = {}) {
   const target = findOrFail(targetId, 'TARGET');
   const allowedKinds = target.status === 'EM_ESTOQUE' ? itemComponentService.allowedKindsFor(target.category) : [];
@@ -185,14 +185,14 @@ function listCandidates(targetId, { now = new Date() } = {}) {
   const candidates = chosen.map((unit) => {
     const { kind, entry } = resolvedBy.get(unit.id);
     const cost = costIndex.effectiveOf(unit);
-    let namePtBr = entry.namePtBr ?? null;
-    if (namePtBr && kind === 'STICKER_SLAB') namePtBr = `${SLAB_PREFIX}${itemComponentService.stripPrefix(namePtBr, 'Sticker | ')}`;
+    let localizedName = entry.localizedName ?? null;
+    if (localizedName && kind === 'STICKER_SLAB') localizedName = itemComponentService.localizedSlabName(localizedName);
     return {
       itemId: unit.id,
       kind,
       catalogId: entry.id,
       name: unit.name,
-      namePtBr,
+      localizedName,
       imageUrl: entry.imageUrl ?? null,
       acquiredAt: unit.acquiredAt,
       effectiveCostUsdCents: cost.effectiveUsdCents,

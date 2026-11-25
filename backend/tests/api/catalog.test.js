@@ -1,5 +1,7 @@
 'use strict';
 
+const Setting = require('../../src/models/Setting');
+
 const fs = require('fs');
 const path = require('path');
 const request = require('supertest');
@@ -22,6 +24,7 @@ function fixtureFetch(overrides = {}) {
     const rel = url.slice(CATALOG_BASE_URL.length);
     if (overrides[rel]) return overrides[rel];
     const [lang, file] = rel.split('/');
+    if (!require('fs').existsSync(require('path').join(API_FIX, lang))) return { ok: false, status: 404, text: async () => '[]' }; // pasta de idioma não hospedada
     const body = fs.readFileSync(path.join(API_FIX, lang, file), 'utf8');
     return { ok: true, status: 200, text: async () => body };
   };
@@ -52,12 +55,13 @@ describe('GET /api/catalog/search', () => {
   });
 
   test('"ak red" acha "AK-47 | Redline" com o contrato completo', async () => {
+    Setting.update({ language: 'pt-BR' });
     const res = await search(app, { q: 'ak red' });
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.body.data.items).toEqual([
       {
-        id: 'skin-ak-redline', source: 'SKINS', category: 'SKIN', name: 'AK-47 | Redline', namePtBr: 'AK-47 | Linha Vermelha',
+        id: 'skin-ak-redline', source: 'SKINS', category: 'SKIN', name: 'AK-47 | Redline', localizedName: 'AK-47 | Linha Vermelha',
         imageUrl: 'https://img.test/skin-ak-redline.png', minFloat: 0.1, maxFloat: 0.7, hasStattrak: true, hasSouvenir: false,
         phase: null, rarity: 'Classified',
       },
@@ -125,7 +129,7 @@ describe('GET /api/catalog/:id e /status', () => {
     expect(res.status).toBe(200);
     expect(res.body.data).toMatchObject({ id: CAT.KARAMBIT_DOPPLER_P2, category: 'FACA', phase: 'Phase 2', name: '★ Karambit | Doppler' });
     expect(Object.keys(res.body.data).sort()).toEqual(
-      ['category', 'hasSouvenir', 'hasStattrak', 'id', 'imageUrl', 'maxFloat', 'minFloat', 'name', 'namePtBr', 'phase', 'rarity', 'source']
+      ['category', 'hasSouvenir', 'hasStattrak', 'id', 'imageUrl', 'localizedName', 'maxFloat', 'minFloat', 'name', 'phase', 'rarity', 'source']
     );
   });
 
@@ -171,8 +175,10 @@ describe('POST /api/catalog/refresh', () => {
       total: 21,
       skipped: 3,
       linkedLegacyItems: 0,
+      skippedLanguages: [],
     });
-    expect((await request(app).get('/api/catalog/skin-ak-redline')).body.data.namePtBr).toBe('AK-47 | Linha Vermelha');
+    Setting.update({ language: 'pt-BR' });
+    expect((await request(app).get('/api/catalog/skin-ak-redline')).body.data.localizedName).toBe('AK-47 | Linha Vermelha');
   });
 
   test('corpo {} é aceito', async () => {

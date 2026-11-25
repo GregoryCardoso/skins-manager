@@ -26,7 +26,7 @@ export function makeItem(overrides: Partial<ItemView> = {}): ItemView {
     catalogId: 'skin-ak-redline',
     isLegacy: false,
     catalog: {
-      id: 'skin-ak-redline', name: 'AK-47 | Redline', namePtBr: 'AK-47 | Linha Vermelha', imageUrl: null,
+      id: 'skin-ak-redline', name: 'AK-47 | Redline', localizedName: 'AK-47 | Linha Vermelha', imageUrl: null,
       minFloat: 0.1, maxFloat: 0.7, hasStattrak: true, hasSouvenir: false, phase: null,
     },
     variant: 'NORMAL',

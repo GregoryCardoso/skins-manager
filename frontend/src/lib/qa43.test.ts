@@ -16,7 +16,7 @@ const ctx: FormContext = { stores: STORES, usdBrlRate: 5.4, language: 'pt-BR', n
 const sctx: SellContext = { stores: STORES, usdBrlRate: 5.4, language: 'pt-BR' };
 
 const AK: CatalogChoice = {
-  id: 'skin-ak-redline', name: 'AK-47 | Redline', namePtBr: null, imageUrl: null, minFloat: 0.1, maxFloat: 0.7,
+  id: 'skin-ak-redline', name: 'AK-47 | Redline', localizedName: null, imageUrl: null, minFloat: 0.1, maxFloat: 0.7,
   hasStattrak: true, hasSouvenir: false, phase: null, category: 'SKIN',
 };
 

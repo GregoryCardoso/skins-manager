@@ -56,7 +56,7 @@ function entry(id: number, outcome: ImportEntryView['outcome'], extra: Partial<I
   return {
     id, batchId: 1, outcome, reasonCode: null, entityType: null, entityId: null, candidateIds: [], resolution: null, resolvedAt: null,
     display: {
-      direction: 'BUY', marketHashName: 'AK-47 | Redline (Field-Tested)', name: 'AK-47 | Redline', namePtBr: 'AK-47 | Linha Vermelha', imageUrl: null,
+      direction: 'BUY', marketHashName: 'AK-47 | Redline (Field-Tested)', name: 'AK-47 | Redline', localizedName: 'AK-47 | Linha Vermelha', imageUrl: null,
       catalogId: 'skin-ak-redline', category: 'SKIN', variant: 'NORMAL', floatValue: 0.2534, paintSeed: 661, phase: null, priceCents: 1250,
       currency: 'USD', date: '2026-11-20T14:00:00.000Z', state: 'pending', ...display,
     },
@@ -312,7 +312,7 @@ describe('modal de resumo e lista de entradas', () => {
       entry(2, 'MATCHED', { entityType: 'ITEM_PURCHASE', entityId: 43 }),
       entry(3, 'POSSIBLE_DUPLICATE', { candidateIds: [5, 6] }),
       entry(4, 'REVERTED', { entityType: 'ITEM_PURCHASE', entityId: 44, reasonCode: 'REVERTED_PENDING_ACTION' }),
-      entry(5, 'FAILED', { reasonCode: 'CATALOG_NOT_FOUND' }, { name: null, namePtBr: null, marketHashName: null, imageUrl: null, category: null }),
+      entry(5, 'FAILED', { reasonCode: 'CATALOG_NOT_FOUND' }, { name: null, localizedName: null, marketHashName: null, imageUrl: null, category: null }),
       entry(6, 'UNKNOWN_STATE', { reasonCode: 'UNKNOWN_STATE' }, { state: 'weird_state' }),
     ];
     expect(groupEntries(entries).map((g) => g.key)).toEqual(['POSSIBLE_DUPLICATE', 'REVERTED', 'FAILED', 'CREATED', 'MATCHED']);

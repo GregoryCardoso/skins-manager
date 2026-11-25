@@ -67,6 +67,9 @@ export const INVALIDATION_MAP = {
   'settings.fx': [K.settings.all, ...MONEY],
   'settings.aging': [K.settings.all, K.items.all, K.sales.all, K.marketValues.all],
   'settings.preferences': [K.settings.all],
+  // Trocar o idioma (11.5, D369): o backend devolve os nomes dos itens no idioma das configurações (`localizedName`); tudo o que mostra
+  // nome de item recarrega. O tema e a visão do inventário continuam só em `settings.preferences`.
+  'settings.language': [K.settings.all, K.items.all, K.sales.all, K.imports.all, K.marketValues.all, K.catalog.all],
   // Integrações (9.1, D316): chave, loja, teste de conexão e troca de conta só mudam o card.
   // A chave muda o `configured` do valor de mercado.
   'integration.apiKey': [K.integrations.all, K.marketValues.all],

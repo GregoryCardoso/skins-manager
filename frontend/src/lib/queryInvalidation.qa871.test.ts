@@ -40,7 +40,7 @@ describe('cada função de escrita do api.ts invalida a ação certa onde é usa
     createStoreBalanceCheck: ['balanceCheck.create'], deleteStoreBalanceEntry: ['balanceCheck.delete'],
     createStore: ['store.create'], updateStore: ['store.update'], deleteStore: ['store.delete'],
     updateFxRate: ['settings.fx'], refreshFxRate: ['settings.fx'], changeDisplayCurrency: ['settings.fx'],
-    updatePreferences: ['settings.preferences', 'settings.aging', 'settings.fx'],
+    updatePreferences: ['settings.preferences', 'settings.language', 'settings.aging', 'settings.fx'],
     refreshCatalog: ['catalog.refresh'],
     saveCsfloatApiKey: ['integration.apiKey'], removeCsfloatApiKey: ['integration.apiKey'],
     testCsfloatConnection: ['integration.test'],
@@ -133,6 +133,7 @@ describe('o mapa cobre os efeitos entre telas (nenhuma tela dependente fica sem 
   test('limites de giro, tema e idioma, catálogo', () => {
     must('settings.aging', ['settings', 'items', 'sales']);
     expect(groupsOf('settings.preferences')).toEqual(['settings']);
+    must('settings.language', ['settings', 'items', 'sales', 'imports', 'catalog']);
     must('catalog.refresh', ['catalog', 'items', 'sales', 'health']);
   });
 

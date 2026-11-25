@@ -102,11 +102,11 @@ describe('auxiliares', () => {
   });
 
   test('toView traz imagem e nome pt-BR do catálogo', () => {
-    const catalogById = new Map([['st2', { imageUrl: 'https://x/img.png', namePtBr: 'Sticker | Coroa' }]]);
+    const catalogById = new Map([['st2', { imageUrl: 'https://x/img.png', localizedName: 'Adesivo | Coroa' }]]);
     const [view] = svc.toView(
       [{ id: 9, kind: 'STICKER_SLAB', catalogId: 'st2', name: 'Sticker Slab | Crown', slot: null, wear: null, pattern: 3, source: 'MANUAL', origin: 'CAME_WITH' }],
       { catalogById }
     );
-    expect(view).toMatchObject({ id: 9, imageUrl: 'https://x/img.png', namePtBr: 'Sticker Slab | Coroa', pattern: 3 });
+    expect(view).toMatchObject({ id: 9, imageUrl: 'https://x/img.png', localizedName: 'Sticker Slab | Coroa', pattern: 3 });
   });
 });

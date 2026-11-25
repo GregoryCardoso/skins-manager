@@ -5,6 +5,7 @@ import { useInvalidate } from '@/lib/useInvalidate';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
 import { ApiRequestError, deleteItem, markItemForSale, markItemOffSale, unsellItem } from '@/services/api';
+import { itemDisplayName, itemEnglishTitle } from '@/lib/itemName';
 import type { ItemView, Store } from '@/types/api';
 import ConfirmDialog from './ConfirmDialog';
 import ItemFormModal from './ItemFormModal';
@@ -127,7 +128,7 @@ export function useItemDialogs(stores: Store[]): ItemDialogsApi {
       })
       .then(() => {
         invalidate('item.backOnSale');
-        setNotice(t('inventory.forSaleDone', { name: item.name }));
+        setNotice(t('inventory.forSaleDone', { name: itemDisplayName(item) }));
       })
       .catch((err: unknown) => {
         if (err instanceof ApiRequestError && err.code === 'ITEM_NOT_FOUND') {
@@ -158,7 +159,7 @@ export function useItemDialogs(stores: Store[]): ItemDialogsApi {
         <SellItemModal item={dialog.item} stores={stores} onClose={closeDialog} onSold={finish} onGone={itemGone} />
       )}
       {dialog?.kind === 'history' && (
-        <Modal title={t('history.title', { name: dialog.item.name })} onClose={closeDialog}>
+        <Modal title={t('history.title', { name: itemDisplayName(dialog.item) })} onClose={closeDialog}>
           <SaleReleaseNote item={dialog.item} />
           <ItemHistoryBox stats={dialog.item.stats} />
           <ItemOperationsList item={dialog.item} />
@@ -182,7 +183,7 @@ export function useItemDialogs(stores: Store[]): ItemDialogsApi {
       )}
       {dialog?.kind === 'apply' && (
         <ApplyComponentModal
-          target={{ id: dialog.item.id, name: dialog.item.name }}
+          target={{ id: dialog.item.id, name: itemDisplayName(dialog.item) }}
           mode={{ type: 'stock' }}
           onClose={closeDialog}
           onDone={finish}
@@ -192,7 +193,7 @@ export function useItemDialogs(stores: Store[]): ItemDialogsApi {
       {dialog?.kind === 'delete' && (
         <ConfirmDialog
           title={t('confirm.deleteTitle')}
-          message={t('confirm.deleteMessage', { name: dialog.item.name })}
+          message={t('confirm.deleteMessage', { name: itemDisplayName(dialog.item) })}
           confirmLabel={t('confirm.confirmDelete')}
           danger
           busy={confirmBusy}
@@ -209,7 +210,7 @@ export function useItemDialogs(stores: Store[]): ItemDialogsApi {
           busy={confirmBusy}
           error={confirmError}
           onCancel={closeDialog}
-          onConfirm={() => runConfirm(markItemOffSale(dialog.item.id), t('inventory.offSaleDone', { name: dialog.item.name }), 'item.offSale')}
+          onConfirm={() => runConfirm(markItemOffSale(dialog.item.id), t('inventory.offSaleDone', { name: itemDisplayName(dialog.item) }), 'item.offSale')}
         />
       )}
       {dialog?.kind === 'unsell' && (

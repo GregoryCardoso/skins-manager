@@ -1,5 +1,7 @@
 'use strict';
 
+const Setting = require('../../src/models/Setting');
+
 // catalogId, nome canônico, categoria derivada, faixa de float e itens legados (D78, D82, D84).
 const request = require('supertest');
 const { closeDb, getDb } = require('../../src/config/database');
@@ -30,12 +32,13 @@ function legacyItem(overrides = {}) {
 
 describe('POST com catalogId', () => {
   test('nome canônico, categoria e catalog vêm do catálogo; isLegacy false', async () => {
+    Setting.update({ language: 'pt-BR' });
     const res = await post(purchaseBody());
     expect(res.status).toBe(201);
     expect(res.body.data).toMatchObject({
       catalogId: CAT.AK_REDLINE, name: 'AK-47 | Redline', category: 'SKIN', variant: 'NORMAL', phase: null, isLegacy: false,
       catalog: {
-        id: CAT.AK_REDLINE, name: 'AK-47 | Redline', namePtBr: 'AK-47 | Linha Vermelha', minFloat: 0.1, maxFloat: 0.7,
+        id: CAT.AK_REDLINE, name: 'AK-47 | Redline', localizedName: 'AK-47 | Linha Vermelha', minFloat: 0.1, maxFloat: 0.7,
         hasStattrak: true, hasSouvenir: false, phase: null, imageUrl: 'https://img.test/skin-ak-redline.png',
       },
     });
@@ -48,7 +51,7 @@ describe('POST com catalogId', () => {
     const list = (await request(app).get('/api/items')).body.data.items;
     expect(list[0].catalog).toEqual(item.catalog);
     expect(Object.keys(item.catalog).sort()).toEqual(
-      ['hasSouvenir', 'hasStattrak', 'id', 'imageUrl', 'maxFloat', 'minFloat', 'name', 'namePtBr', 'phase']
+      ['hasSouvenir', 'hasStattrak', 'id', 'imageUrl', 'localizedName', 'maxFloat', 'minFloat', 'name', 'phase']
     );
   });
 

@@ -6,9 +6,9 @@ import {
 import { makeItem } from './testFixtures';
 import type { ItemComponent } from '@/types/api';
 
-const catalog = (id: string) => ({ id, name: `Sticker | ${id}`, namePtBr: null, imageUrl: null });
+const catalog = (id: string) => ({ id, name: `Sticker | ${id}`, localizedName: null, imageUrl: null });
 const component = (over: Partial<ItemComponent>): ItemComponent => ({
-  id: 1, kind: 'STICKER', catalogId: 'st1', name: 'Sticker | st1', namePtBr: null, imageUrl: null, slot: null, wear: null, pattern: null,
+  id: 1, kind: 'STICKER', catalogId: 'st1', name: 'Sticker | st1', localizedName: null, imageUrl: null, slot: null, wear: null, pattern: null,
   source: 'MANUAL', origin: 'CAME_WITH', sourceItemId: null, operationId: null, undoable: false, scrapeable: false, detachable: false, ...over,
 });
 
@@ -81,5 +81,5 @@ test('só SKIN mostra a seção (10.1)', () => {
 test('componentTooltip', () => {
   const labels = { slot: 'slot', wear: 'wear', pattern: 'pattern' };
   expect(componentTooltip(component({ slot: 1, wear: 0.1, pattern: 3 }), 'en', labels)).toBe('Sticker | st1 · slot 1 · wear 10% · pattern 3');
-  expect(componentTooltip(component({ namePtBr: 'Adesivo' }), 'pt-BR', labels)).toBe('Adesivo');
+  expect(componentTooltip(component({ localizedName: 'Adesivo' }), 'pt-BR', labels)).toBe('Adesivo');
 });

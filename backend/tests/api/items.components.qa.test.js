@@ -4,6 +4,7 @@ const request = require('supertest');
 const { freshDb } = require('../helpers/fixtures');
 const { getDb, closeDb } = require('../../src/config/database');
 const ItemComponent = require('../../src/models/ItemComponent');
+const Setting = require('../../src/models/Setting');
 const { CAT, NOW, makeCatalogApp, storeId, purchaseBody, createItemViaApi, expectError } = require('../helpers/apiFixtures');
 
 let app;
@@ -82,8 +83,9 @@ describe('limites e slots', () => {
 
 describe('catálogo do componente', () => {
   test('slab aponta para um sticker do catálogo e o chaveiro para um PINGENTE; o nome do slab é derivado', async () => {
+    Setting.update({ language: 'pt-BR' });
     const res = await post(purchaseBody({ components: [charm, ...[]] }));
-    expect(res.body.data.components[0]).toMatchObject({ catalogId: CAT.CHARM_LIL_AVA, name: "Charm | Lil' Ava", namePtBr: "Pingente | Lil' Ava" });
+    expect(res.body.data.components[0]).toMatchObject({ catalogId: CAT.CHARM_LIL_AVA, name: "Charm | Lil' Ava", localizedName: "Pingente | Lil' Ava" });
     const res2 = await post(purchaseBody({ components: [slab] }));
     expect(res2.status).toBe(201);
     expect(res2.body.data.components[0].catalogId).toBe(CAT.STICKER_CROWN);
@@ -395,7 +397,7 @@ describe('segurança das rotas alteradas', () => {
   test('a resposta de componentes não vaza campos internos (item_id, timestamps, referência de compra)', async () => {
     const item = await createItemViaApi(app, purchaseBody({ components: [sticker(0)] }));
     expect(Object.keys(item.components[0]).sort()).toEqual(
-      ['catalogId', 'detachable', 'id', 'imageUrl', 'kind', 'name', 'namePtBr', 'operationId', 'origin', 'pattern', 'scrapeable', 'slot', 'source', 'sourceItemId', 'undoable', 'wear'].sort()
+      ['catalogId', 'detachable', 'id', 'imageUrl', 'kind', 'localizedName', 'name', 'operationId', 'origin', 'pattern', 'scrapeable', 'slot', 'source', 'sourceItemId', 'undoable', 'wear'].sort()
     );
   });
 });

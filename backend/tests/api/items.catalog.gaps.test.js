@@ -382,6 +382,7 @@ describe('vínculo automático via API (refresh e boot)', () => {
       const [lang, file] = rel.split('/');
       const fs = require('fs');
       const path = require('path');
+      if (!fs.existsSync(path.join(__dirname, '..', 'fixtures', 'csgo-api', lang))) return { ok: false, status: 404, text: async () => '[]' };
       const body = fs.readFileSync(path.join(__dirname, '..', 'fixtures', 'csgo-api', lang, file), 'utf8');
       return { ok: true, status: 200, text: async () => body };
     };

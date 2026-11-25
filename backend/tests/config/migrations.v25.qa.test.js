@@ -96,7 +96,8 @@ describe('v25 sobre um banco v24 cheio', () => {
 
   test('todas as tabelas ficam com linhas idênticas (só as colunas novas de aportes e saques, em BRL)', () => {
     const after = dumpTables(db);
-    expect(db.pragma('user_version', { simple: true })).toBe(25);
+    delete after.catalog_item_names; // tabela da v026
+    expect(db.pragma('user_version', { simple: true })).toBe(26);
     for (const name of Object.keys(ctx.tables)) {
       if (name === 'deposits' || name === 'withdrawals') expect(stripNewColumn(after[name])).toEqual(ctx.tables[name]);
       else expect({ [name]: after[name] }).toEqual({ [name]: ctx.tables[name] });
@@ -108,11 +109,14 @@ describe('v25 sobre um banco v24 cheio', () => {
 
   test('foreign_key_check vazio e a lista de FKs de TODAS as tabelas é a mesma de antes', () => {
     expect(db.pragma('foreign_key_check')).toEqual([]);
-    expect(fkOf(db)).toEqual(ctx.fk);
+    const fkNow = fkOf(db);
+    delete fkNow.catalog_item_names; // tabela da v026
+    expect(fkNow).toEqual(ctx.fk);
   });
 
   test('sqlite_master: só stores, items, deposits e withdrawals mudam o SQL; índices e demais objetos idênticos', () => {
     const after = masterOf(db);
+    delete after['table:catalog_item_names']; // tabela da v026
     expect(Object.keys(after).sort()).toEqual(Object.keys(ctx.master).sort());
     const changed = Object.keys(after).filter((key) => JSON.stringify(after[key]) !== JSON.stringify(ctx.master[key])).sort();
     expect(changed).toEqual(['table:deposits', 'table:items', 'table:stores', 'table:withdrawals']);

@@ -6,18 +6,23 @@ const IDS_CHUNK = 500;
 
 const UPSERT_SQL = `
   INSERT INTO catalog_items (
-    id, source, category, name, name_pt_br, name_key, search_text, image_url, min_float, max_float,
+    id, source, category, name, name_key, search_text, image_url, min_float, max_float,
     has_stattrak, has_souvenir, phase, rarity, updated_at
   ) VALUES (
-    @id, @source, @category, @name, @namePtBr, @nameKey, @searchText, @imageUrl, @minFloat, @maxFloat,
+    @id, @source, @category, @name, @nameKey, @searchText, @imageUrl, @minFloat, @maxFloat,
     @hasStattrak, @hasSouvenir, @phase, @rarity, @updatedAt
   )
   ON CONFLICT(id) DO UPDATE SET
     source = excluded.source, category = excluded.category, name = excluded.name,
-    name_pt_br = excluded.name_pt_br, name_key = excluded.name_key, search_text = excluded.search_text,
+    name_key = excluded.name_key, search_text = excluded.search_text,
     image_url = excluded.image_url, min_float = excluded.min_float, max_float = excluded.max_float,
     has_stattrak = excluded.has_stattrak, has_souvenir = excluded.has_souvenir, phase = excluded.phase,
     rarity = excluded.rarity, updated_at = excluded.updated_at`;
+
+// Nomes traduzidos (D369, 11.5): uma linha por item e idioma. Só exibição; o nome canônico é `catalog_items.name`.
+const UPSERT_NAME_SQL = `
+  INSERT INTO catalog_item_names (catalog_id, language, name) VALUES (@catalogId, @language, @name)
+  ON CONFLICT(catalog_id, language) DO UPDATE SET name = excluded.name`;
 
 const mapItem = (row) => mapRow(row, BOOLEAN_FIELDS);
 
@@ -27,6 +32,7 @@ const bit = (v) => (v === true || v === 1 ? 1 : 0);
 function upsertMany(rows, { now = new Date() } = {}) {
   const db = getDb();
   const stmt = db.prepare(UPSERT_SQL);
+  const nameStmt = db.prepare(UPSERT_NAME_SQL);
   const updatedAt = now.toISOString();
   db.transaction(() => {
     for (const row of rows) {
@@ -35,7 +41,6 @@ function upsertMany(rows, { now = new Date() } = {}) {
         source: row.source,
         category: row.category,
         name: row.name,
-        namePtBr: row.namePtBr ?? null,
         nameKey: row.nameKey,
         searchText: row.searchText,
         imageUrl: row.imageUrl ?? null,
@@ -47,9 +52,32 @@ function upsertMany(rows, { now = new Date() } = {}) {
         rarity: row.rarity ?? null,
         updatedAt,
       });
+      for (const [language, name] of Object.entries(row.names || {})) {
+        if (typeof name === 'string' && name.trim() !== '') nameStmt.run({ catalogId: row.id, language, name });
+      }
     }
   })();
   return rows.length;
+}
+
+// Nomes de um idioma: [{ catalogId, name }] (os ids sem tradução não aparecem).
+function findNames(ids, language) {
+  const unique = [...new Set(ids)];
+  const out = [];
+  for (let i = 0; i < unique.length; i += IDS_CHUNK) {
+    const chunk = unique.slice(i, i + IDS_CHUNK);
+    const sql = `SELECT catalog_id, name FROM catalog_item_names WHERE language = ? AND catalog_id IN (${chunk.map(() => '?').join(',')})`;
+    for (const row of getDb().prepare(sql).all(language, ...chunk)) out.push({ catalogId: row.catalog_id, name: row.name });
+  }
+  return out;
+}
+
+// Todos os nomes gravados (todos os idiomas): [{ catalogId, language, name }].
+function findAllNames() {
+  return getDb()
+    .prepare('SELECT catalog_id, language, name FROM catalog_item_names')
+    .all()
+    .map((row) => ({ catalogId: row.catalog_id, language: row.language, name: row.name }));
 }
 
 function findById(id) {
@@ -139,4 +167,4 @@ function countBySource() {
   return counts;
 }
 
-module.exports = { upsertMany, findById, findByIds, findByNameKey, findByNameKeys, findByNameKeyAnyCategory, search, countBySource };
+module.exports = { upsertMany, findNames, findAllNames, findById, findByIds, findByNameKey, findByNameKeys, findByNameKeyAnyCategory, search, countBySource };

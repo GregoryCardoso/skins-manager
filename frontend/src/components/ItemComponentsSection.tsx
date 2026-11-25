@@ -1,6 +1,6 @@
 'use client';
 
-import { useLanguage, useLocale, useT } from '@/i18n/I18nProvider';
+import { useLocale, useT } from '@/i18n/I18nProvider';
 import {
   MAX_PATCHES, MAX_STICKERS, PATCH_SLOTS, STICKER_SLOTS, newPatchDraft, newStickerDraft,
   type ComponentCatalogChoice, type ComponentsState, type HangingKind, type PatchDraft, type StickerDraft,
@@ -30,18 +30,17 @@ interface Props {
 }
 
 const toChoice = (item: CatalogItem): ComponentCatalogChoice => ({
-  id: item.id, name: item.name, namePtBr: item.namePtBr, imageUrl: item.imageUrl,
+  id: item.id, name: item.name, localizedName: item.localizedName, imageUrl: item.imageUrl,
 });
 
 // Escolhido no catálogo: imagem, nome e botão para trocar.
 function Chosen({ choice, kind, onClear, disabled }: { choice: ComponentCatalogChoice; kind: 'STICKER' | 'PINGENTE' | 'PATCH'; onClear: () => void; disabled: boolean }) {
   const t = useT();
-  const language = useLanguage();
   const locale = useLocale();
   return (
     <div className={sectionStyles.chosen}>
       <ItemImage category={kind} url={choice.imageUrl} size={32} />
-      <strong className={sectionStyles.chosenName}>{catalogDisplayName(choice, language)}</strong>
+      <strong className={sectionStyles.chosenName}>{catalogDisplayName(choice)}</strong>
       <button type="button" className={`${styles.button} ${styles.small}`} onClick={onClear} disabled={disabled}>
         {t('itemForm.components.change')}
       </button>

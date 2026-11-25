@@ -171,7 +171,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     updatePreferences(patch)
       .then(() => {
         setSaveError(null);
-        invalidate('settings.preferences');
+        invalidate(patch.language !== undefined ? 'settings.language' : 'settings.preferences');
       })
       .catch((error: unknown) => setSaveError(error));
   }, [invalidate]);

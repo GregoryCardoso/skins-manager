@@ -361,7 +361,7 @@ function toCatalogSummary(entry) {
   return {
     id: entry.id,
     name: entry.name,
-    namePtBr: entry.namePtBr,
+    localizedName: entry.localizedName,
     imageUrl: entry.imageUrl,
     minFloat: entry.minFloat,
     maxFloat: entry.maxFloat,

@@ -3,7 +3,7 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLanguage, useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
 import { dateToLocalInput, isoToLocalInput, localInputToIso, nowLocalInput } from '@/lib/dateInput';
 import { formatDate, formatMoney } from '@/lib/format';
 import { MAX_PATTERN, MAX_STICKERS, PATCH_SLOTS, STICKER_SLOTS, parseWearText } from '@/lib/itemComponents';
@@ -51,7 +51,6 @@ function kindOfCategory(category: string, name: string): ComponentKind | null {
 export default function ApplyComponentModal({ target, mode, onClose, onDone, onGone }: Props) {
   const t = useT();
   const tLoose = useTLoose();
-  const language = useLanguage();
   const locale = useLocale();
   const invalidate = useInvalidate();
   const retro = mode.type === 'retro';
@@ -82,7 +81,7 @@ export default function ApplyComponentModal({ target, mode, onClose, onDone, onG
     const kind = kindOfCategory(source.category, source.name);
     if (!kind) return { allowedKinds: [], remaining: { stickers: 0, hanging: 0, patches: 0 }, candidates: [] };
     const candidate: ApplyCandidate = {
-      itemId: source.id, kind, catalogId: source.catalogId ?? '', name: source.name, namePtBr: source.catalog?.namePtBr ?? null,
+      itemId: source.id, kind, catalogId: source.catalogId ?? '', name: source.name, localizedName: source.catalog?.localizedName ?? null,
       imageUrl: source.catalog?.imageUrl ?? null, acquiredAt: source.acquiredAt, effectiveCostUsdCents: source.cost.effectiveUsdCents,
       costEstimated: source.cost.estimated, tradeLocked: source.tradeLock.isLocked, offSale: source.saleState === 'OFF_SALE',
     };
@@ -109,7 +108,7 @@ export default function ApplyComponentModal({ target, mode, onClose, onDone, onG
   const full = data && kind ? data.remaining[REMAINING_KEY[kind]] <= 0 : false;
   const limitKey = kind === 'STICKER' ? 'STICKER' : kind === 'PATCH' ? 'PATCH' : 'HANGING';
   const chosen = options.find((c) => c.itemId === sourceId) ?? null;
-  const displayName = (c: ApplyCandidate) => (language === 'pt-BR' ? c.namePtBr ?? c.name : c.name);
+  const displayName = (c: ApplyCandidate) => (c.localizedName ?? c.name);
 
   const showApiError = (err: unknown) => {
     if (err instanceof ApiRequestError && err.code === 'ITEM_NOT_FOUND') {

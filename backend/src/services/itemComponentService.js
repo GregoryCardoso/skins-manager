@@ -38,6 +38,12 @@ function stripPrefix(name, prefix) {
   return name.startsWith(prefix) ? name.slice(prefix.length) : name;
 }
 
+// Nome traduzido do slab: o prefixo do sticker traduzido ("Adesivo | ", "印花 | ") é trocado por "Sticker Slab | ".
+function localizedSlabName(localizedStickerName) {
+  const at = localizedStickerName.indexOf(' | ');
+  return `Sticker Slab | ${at >= 0 ? localizedStickerName.slice(at + 3) : localizedStickerName}`;
+}
+
 // Nome canônico gravado: o do catálogo; no slab, "Sticker Slab | <sticker>".
 function buildName(kind, catalogName) {
   const name = kind === 'STICKER_SLAB' ? `Sticker Slab | ${stripPrefix(catalogName, 'Sticker | ')}` : catalogName;
@@ -150,19 +156,19 @@ function summarize(rows = []) {
   return { stickers, hanging, patches, kinds: [...new Set(rows.map((r) => r.kind))] };
 }
 
-// Visão pública: imagem e nome em pt-BR vêm do catálogo (por id); o nome canônico é o gravado.
+// Visão pública: imagem e nome no idioma das configurações vêm do catálogo (por id); o nome canônico é o gravado.
 // `undoableOf(row)`: o desfazer da aplicação vale para o componente? (só os aplicados do estoque; D362). `canDetach`: a unidade está em estoque (D366).
 function toView(rows = [], { catalogById = new Map(), undoableOf = null, canDetach = false } = {}) {
   return rows.map((row) => {
     const entry = isNil(row.catalogId) ? null : catalogById.get(row.catalogId);
-    let namePtBr = entry ? entry.namePtBr ?? null : null;
-    if (namePtBr && row.kind === 'STICKER_SLAB') namePtBr = `Sticker Slab | ${stripPrefix(namePtBr, 'Sticker | ')}`;
+    let localizedName = entry ? entry.localizedName ?? null : null;
+    if (localizedName && row.kind === 'STICKER_SLAB') localizedName = localizedSlabName(localizedName);
     return {
       id: row.id,
       kind: row.kind,
       catalogId: row.catalogId,
       name: row.name,
-      namePtBr,
+      localizedName,
       imageUrl: entry ? entry.imageUrl ?? null : null,
       slot: row.slot,
       wear: row.wear,
@@ -188,5 +194,5 @@ function toSummary(rows = []) {
 
 module.exports = {
   KINDS, CATALOG_CATEGORY, SLOT_MAX, MAX_STICKERS, MAX_HANGING, MAX_PATCHES, isDetachable, allowedKindsFor, normalizeComponents, assertExistingAllowed,
-  assertLimits, remainingFor, checkNumbers, buildName, stripPrefix, summarize, toView, toSummary,
+  assertLimits, remainingFor, checkNumbers, buildName, stripPrefix, localizedSlabName, summarize, toView, toSummary,
 };

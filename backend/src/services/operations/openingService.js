@@ -95,11 +95,13 @@ function getOpenOptions(containerId, { now = new Date() } = {}) {
     .filter((key) => openingRules.keyMatchesCase(key.name, container.name))
     .sort((a, b) => Date.parse(a.acquiredAt) - Date.parse(b.acquiredAt) || a.id - b.id);
   const { costIndex } = operationContext.loadOperationContext(compatible);
+  const localizedKeys = new Map(catalogService.getCatalogItemsByIds(compatible.map((k) => k.catalogId).filter(Boolean)).map((c) => [c.id, c.localizedName]));
   const keys = compatible.map((key) => {
     const cost = costIndex.effectiveOf(key);
     return {
       itemId: key.id,
       name: key.name,
+      localizedName: localizedKeys.get(key.catalogId) || null,
       acquiredAt: key.acquiredAt,
       effectiveCostUsdCents: cost.effectiveUsdCents,
       costEstimated: cost.estimated,

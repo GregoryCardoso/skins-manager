@@ -9,6 +9,7 @@ import { candidateLink, componentWarningsOf, entryActions, stockCandidateOf, ent
 import { bulkActionsOf, commonBulkActions, type BulkEntryAction } from '@/lib/pendingActions';
 import { useInvalidate } from '@/lib/useInvalidate';
 import { ApiRequestError, bulkResolveImportEntries, reopenImportEntry, resolveImportEntry } from '@/services/api';
+import { localizedOrName } from '@/lib/itemName';
 import type { Category, ImportEntryAction, ImportEntryView } from '@/types/api';
 import ApplyComponentModal from './ApplyComponentModal';
 import ConfirmDialog from './ConfirmDialog';
@@ -139,7 +140,7 @@ function EntryActions({ entry, resolvedAs, onResolved }: { entry: ImportEntryVie
       )}
       {dialog === 'APPLY' && entry.entityId !== null && stockCandidateOf(entry) !== null && (
         <ApplyComponentModal
-          target={{ id: entry.entityId, name: entry.display.name ?? entry.display.marketHashName ?? '' }}
+          target={{ id: entry.entityId, name: entry.display.name ? localizedOrName(entry.display.name, entry.display.localizedName) : entry.display.marketHashName ?? '' }}
           mode={{ type: 'retro', entryId: entry.id, sourceItemId: stockCandidateOf(entry) as number }}
           onClose={() => setDialog(null)}
           onDone={() => done('APPLIED')}
@@ -195,7 +196,7 @@ function EntryRow({
   const link = entryLink(entry);
   const category = (display.category ?? 'OUTRO') as Category;
   // Aporte ou saque do extrato (9.6): o título é o tipo, e o valor e a taxa vão nos detalhes.
-  const title = display.txKind ? tLoose(`imports.txKind.${display.txKind}`) : display.name ?? display.marketHashName ?? t('imports.unknownItem');
+  const title = display.txKind ? tLoose(`imports.txKind.${display.txKind}`) : (display.name ? localizedOrName(display.name, display.localizedName) : display.marketHashName) ?? t('imports.unknownItem');
   if (display.txKind && display.feeCents !== null && display.feeCents !== undefined) {
     details.push(t('imports.txFee', { value: formatMoney(display.feeCents, display.currency, locale) }));
   }

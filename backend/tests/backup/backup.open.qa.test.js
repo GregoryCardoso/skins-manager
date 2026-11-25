@@ -62,7 +62,7 @@ test('backup v19 com uma loja Steam em BRL, importado: migra para a v20, a loja 
   });
   const res = await octet(fs.readFileSync(v19));
   expect(res.status).toBe(200);
-  expect(res.body.data).toMatchObject({ fileVersion: 19, schemaVersion: 25, migrationsApplied: [20, 21, 22, 23, 24, 25] });
+  expect(res.body.data).toMatchObject({ fileVersion: 19, schemaVersion: 26, migrationsApplied: [20, 21, 22, 23, 24, 25, 26] });
   expect(database.getDb().pragma('foreign_key_check')).toEqual([]);
   const settings = await json('/api/settings');
   expect(settings.steamStoreId).toBe(await storeIdOf('Steam'));
@@ -143,7 +143,7 @@ test('exportar e importar leva a abertura de caixa, o terminal comprado, o recus
 
   const res = await octet(file);
   expect(res.status).toBe(200);
-  expect(res.body.data).toMatchObject({ schemaVersion: 25 });
+  expect(res.body.data).toMatchObject({ schemaVersion: 26 });
   const after = await snapshot();
   expect(after).toEqual(before);
   expect(after.settings.steamStoreId).toBe(steam);

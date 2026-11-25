@@ -17,6 +17,7 @@ import { formatDecimalInput, parseDecimalInput, parseMoneyToCents } from '@/lib/
 import { queryKeys } from '@/lib/queryKeys';
 import { useInvalidate } from '@/lib/useInvalidate';
 import { ApiRequestError, getCatalogStatus, getOpenOptions, openContainer } from '@/services/api';
+import { englishNameTitle, itemDisplayName, itemEnglishTitle, localizedOrName } from '@/lib/itemName';
 import type { CatalogItem, ItemView, OpenContainerBody, OpenDecision, OpenGeneratedBody, Store } from '@/types/api';
 import { Badge } from './badges';
 import ConfirmDialog from './ConfirmDialog';
@@ -204,8 +205,8 @@ export default function OpenContainerModal({ item, stores, onClose, onDone, onGo
         invalidate('item.open');
         onDone(
           result.generatedItem
-            ? t('openForm.success', { name: item.name, generated: result.generatedItem.name })
-            : t('openForm.successLost', { name: item.name }),
+            ? t('openForm.success', { name: itemDisplayName(item), generated: itemDisplayName(result.generatedItem) })
+            : t('openForm.successLost', { name: itemDisplayName(item) }),
         );
       })
       .catch((err: unknown) => {
@@ -229,13 +230,13 @@ export default function OpenContainerModal({ item, stores, onClose, onDone, onGo
   const canSubmit = !saving && options !== null && (!isCase || keyId !== null) && (!isTerminal || (decision !== null && (decision === 'DECLINE' || steamStore !== null)));
 
   return (
-    <Modal title={t('openForm.title', { name: item.name })} onClose={onClose} busy={saving} wide>
+    <Modal title={t('openForm.title', { name: itemDisplayName(item) })} onClose={onClose} busy={saving} wide>
       <form className={styles.form} onSubmit={submit} noValidate>
         {topError && <div className={styles.topError} role="alert">{topError}</div>}
         <div className={styles.chosen}>
           <ItemImage category={item.category} url={item.catalog?.imageUrl} size={48} />
           <div className={styles.chosenText}>
-            <strong>{item.name}</strong>
+            <strong title={itemEnglishTitle(item)}>{itemDisplayName(item)}</strong>
             <span className={styles.muted}>{t('openForm.keyCost', { value: usd(containerCost) })}</span>
           </div>
         </div>
@@ -268,7 +269,7 @@ export default function OpenContainerModal({ item, stores, onClose, onDone, onGo
                         <input type="radio" name="key" checked={key.itemId === keyId} onChange={() => setChosenKey(key.itemId)} />
                       )}
                       <span className={modalStyles.optionText}>
-                        <strong>{key.name}</strong>
+                        <strong title={englishNameTitle(key.name, key.localizedName)}>{localizedOrName(key.name, key.localizedName)}</strong>
                         <span className={styles.muted}>
                           {t('openForm.keyCost', { value: `${key.costEstimated ? '≈ ' : ''}${usd(key.effectiveCostUsdCents)}` })} · {formatDate(key.acquiredAt, locale)}
                           {index === 0 && options.keys.length > 1 ? ` · ${t('openForm.keyOldest')}` : ''}

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLanguage, useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
 import { PATCH_SLOTS, STICKER_SLOTS, type AppliedDraft, type ComponentsState } from '@/lib/itemComponents';
 import { useInvalidate } from '@/lib/useInvalidate';
 import { scrapeOffComponent, undoOperation } from '@/services/api';
@@ -32,7 +32,6 @@ type Pending = { kind: 'undo' | 'scrape'; component: ItemComponent };
 export default function AppliedComponentsEditor({ itemId, state, onChange, onItemChanged, onDetach, disabled = false }: Props) {
   const t = useT();
   const tLoose = useTLoose();
-  const language = useLanguage();
   const locale = useLocale();
   const invalidate = useInvalidate();
   const [pending, setPending] = useState<Pending | null>(null);
@@ -66,7 +65,7 @@ export default function AppliedComponentsEditor({ itemId, state, onChange, onIte
       <p className={styles.muted}>{t('itemForm.components.appliedNote')}</p>
       {state.applied.map((draft) => {
         const { component } = draft;
-        const name = language === 'pt-BR' ? component.namePtBr ?? component.name : component.name;
+        const name = component.localizedName ?? component.name;
         const isSticker = component.kind === 'STICKER';
         const isHanging = component.kind === 'CHARM' || component.kind === 'STICKER_SLAB';
         const slots = component.kind === 'PATCH' ? PATCH_SLOTS : STICKER_SLOTS;

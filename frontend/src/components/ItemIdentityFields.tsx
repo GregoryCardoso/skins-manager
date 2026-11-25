@@ -1,6 +1,6 @@
 'use client';
 
-import { useLanguage, useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
 import {
   ALL_EXTERIORS, FREE_NAME_CATEGORIES, effectiveCategory, variantOptions, type FieldVisibility, type FormErrors, type ItemFormState,
 } from '@/lib/itemForm';
@@ -32,7 +32,6 @@ interface Props {
 export default function ItemIdentityFields({ state, patch, errors, clearError, vis, showSearch, changingItem, setChangingItem, isLegacy, item, onPickCatalog }: Props) {
   const t = useT();
   const tLoose = useTLoose();
-  const language = useLanguage();
   const locale = useLocale();
   const category = effectiveCategory(state);
   const categoryText = (c: Category | '') => (c === '' ? '' : tLoose(`enums.category.${c}`));
@@ -47,7 +46,7 @@ export default function ItemIdentityFields({ state, patch, errors, clearError, v
       <div className={styles.chosen}>
         <ItemImage category={state.catalog.category} url={state.catalog.imageUrl} size={48} />
         <div className={styles.chosenText}>
-          <strong>{catalogDisplayName(state.catalog, language)}</strong>
+          <strong>{catalogDisplayName(state.catalog)}</strong>
           <span className={styles.muted}>
             {categoryText(state.catalog.category)}{state.catalog.phase ? ` · ${state.catalog.phase}` : ''}
           </span>

@@ -1,5 +1,7 @@
 'use strict';
 
+const Setting = require('../../src/models/Setting');
+
 // 9.2 (D318): API /api/imports com fetchFn falso roteado, banco em memória e dados INVENTADOS. Nenhuma chamada real ao CSFloat.
 const request = require('supertest');
 const { getDb, closeDb } = require('../../src/config/database');
@@ -94,6 +96,7 @@ describe('primeira importação e corte', () => {
   });
 
   test('importa a compra aceita (pending + oferta 3 + aceite), com trade lock até o fim da proteção', async () => {
+    Setting.update({ language: 'pt-BR' });
     state.trades = [fakeTrade({ id: '1001', state: 'pending', offerState: 3 })];
     state.transactions = [purchaseTx('91001', 1250)];
     const res = await firstRun();
@@ -106,7 +109,7 @@ describe('primeira importação e corte', () => {
     expect(batch.entries).toHaveLength(1);
     expect(batch.entries[0]).toMatchObject({
       outcome: 'CREATED', entityType: 'ITEM_PURCHASE', reasonCode: null,
-      display: { marketHashName: 'AK-47 | Redline (Field-Tested)', name: 'AK-47 | Redline', namePtBr: 'AK-47 | Linha Vermelha', priceCents: 1250, currency: 'USD', floatValue: 0.2534, paintSeed: 661 },
+      display: { marketHashName: 'AK-47 | Redline (Field-Tested)', name: 'AK-47 | Redline', localizedName: 'AK-47 | Linha Vermelha', priceCents: 1250, currency: 'USD', floatValue: 0.2534, paintSeed: 661 },
     });
     const items = await getItems();
     expect(items).toHaveLength(1);

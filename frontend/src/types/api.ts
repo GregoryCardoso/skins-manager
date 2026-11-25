@@ -46,6 +46,8 @@ export interface CatalogStatus {
 export interface CatalogRefreshResult extends CatalogStatus {
   skipped: number;
   linkedLegacyItems: number;
+  // Idiomas opcionais que falharam no download (os nomes gravados foram mantidos); ausente em respostas antigas.
+  skippedLanguages?: { language: string; reason: string }[];
 }
 
 // Origem da cotação salva e fonte do botão "atualizar cotação" (D162).
@@ -175,7 +177,7 @@ export interface MinPrice {
 export interface CatalogSummary {
   id: string;
   name: string;
-  namePtBr: string | null;
+  localizedName: string | null;
   imageUrl: string | null;
   minFloat: number | null;
   maxFloat: number | null;
@@ -238,7 +240,7 @@ export interface ItemComponent {
   catalogId: string | null;
   // Nome canônico em inglês (no slab, "Sticker Slab | <sticker>").
   name: string;
-  namePtBr: string | null;
+  localizedName: string | null;
   imageUrl: string | null;
   slot: number | null;
   // Desgaste do sticker, de 0 (intacto) a menos de 1.
@@ -474,6 +476,7 @@ export type OpenDecision = 'BUY' | 'DECLINE';
 export interface OpenOptionKey {
   itemId: number;
   name: string;
+  localizedName: string | null;
   acquiredAt: string;
   effectiveCostUsdCents: number;
   costEstimated: boolean;
@@ -512,7 +515,7 @@ export interface ApplyCandidate {
   kind: ComponentKind;
   catalogId: string;
   name: string;
-  namePtBr: string | null;
+  localizedName: string | null;
   imageUrl: string | null;
   acquiredAt: string;
   effectiveCostUsdCents: number;
@@ -564,7 +567,7 @@ export interface ItemOperation extends OperationSummary {
   // Aplicação encerrada por uma separação (10.7).
   endedBy?: { operationId: number; occurredAt: string | null } | null;
   role: OperationRole | null;
-  counterparts: { itemId: number; name: string | null; role: OperationRole; status: ItemStatus | null }[];
+  counterparts: { itemId: number; name: string | null; localizedName: string | null; role: OperationRole; status: ItemStatus | null }[];
   undoable: boolean;
   undoBlockedReason: OperationBlockReason | null;
 }
@@ -853,7 +856,7 @@ export interface CatalogItem {
   source: CatalogSource;
   category: Category;
   name: string;
-  namePtBr: string | null;
+  localizedName: string | null;
   imageUrl: string | null;
   minFloat: number | null;
   maxFloat: number | null;
@@ -1172,7 +1175,7 @@ export interface ImportEntryDisplay {
   direction: 'BUY' | 'SELL' | null;
   marketHashName: string | null;
   name: string | null;
-  namePtBr: string | null;
+  localizedName: string | null;
   imageUrl: string | null;
   catalogId: string | null;
   category: Category | null;

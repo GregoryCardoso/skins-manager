@@ -134,6 +134,7 @@ function fixtureFetch(overrides = {}) {
       return typeof o === 'string' ? { ok: true, status: 200, text: async () => o } : o;
     }
     const [lang, file] = rel.split('/');
+    if (!require('fs').existsSync(require('path').join(API_FIX, lang))) return { ok: false, status: 404, text: async () => '[]' }; // pasta de idioma não hospedada
     return { ok: true, status: 200, text: async () => fs.readFileSync(path.join(API_FIX, lang, file), 'utf8') };
   };
 }
@@ -227,7 +228,7 @@ describe('5. PASSE_BATALHA com catalogId: null', () => {
 });
 
 describe('6. Nomes pt-BR preservados no refresh', () => {
-  const ptNames = (id) => CatalogItem.findById(id).namePtBr;
+  const ptNames = (id) => (CatalogItem.findNames([id], 'pt-BR')[0] || {}).name ?? null;
 
   test('pt-BR em 404: nome e busca em português continuam; en atualiza normalmente', async () => {
     importCatalogFixture();

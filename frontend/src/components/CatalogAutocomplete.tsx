@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLanguage, useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
 import { formatDate } from '@/lib/format';
 import { useInvalidate } from '@/lib/useInvalidate';
 import { ApiRequestError, MIN_CATALOG_QUERY_LENGTH, refreshCatalog, searchCatalog } from '@/services/api';
@@ -29,15 +29,14 @@ const CATEGORY_FILTERS: Category[] = [
   'SKIN', 'FACA', 'LUVA', 'CAIXA', 'CAPSULA', 'STICKER', 'PINGENTE', 'PERSONAGEM', 'PATCH', 'PASSE_BATALHA',
 ];
 
-export function catalogDisplayName(item: Pick<CatalogItem, 'name' | 'namePtBr'>, language: string): string {
-  return language === 'pt-BR' ? item.namePtBr ?? item.name : item.name;
+export function catalogDisplayName(item: Pick<CatalogItem, 'name' | 'localizedName'>): string {
+  return item.localizedName?.trim() ? item.localizedName : item.name;
 }
 
 // Busca no catálogo local com debounce, imagem, teclado e atualização do catálogo (D116).
 export default function CatalogAutocomplete({ label, fixedCategory, error, autoFocus = false, hideRefresh = false, onSelect }: Props) {
   const t = useT();
   const tLoose = useTLoose();
-  const language = useLanguage();
   const locale = useLocale();
   const invalidate = useInvalidate();
   const listId = useId();
@@ -208,7 +207,7 @@ export default function CatalogAutocomplete({ label, fixedCategory, error, autoF
               >
                 <ItemImage category={item.category} url={item.imageUrl} size={36} />
                 <span className={styles.optionText}>
-                  <strong>{catalogDisplayName(item, language)}</strong>
+                  <strong>{catalogDisplayName(item)}</strong>
                   <span className={styles.meta}>
                     {tLoose(`enums.category.${item.category}`)}
                     {item.phase ? ` · ${item.phase}` : ''}

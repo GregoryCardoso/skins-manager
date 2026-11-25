@@ -4,6 +4,7 @@ import { useEffect, useId, useState } from 'react';
 import { useLocale, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import { formatDate, formatMoney } from '@/lib/format';
 import { forSaleCount, groupBulkAction, holdingCount } from '@/lib/bulkSaleState';
+import { itemDisplayName, itemEnglishTitle } from '@/lib/itemName';
 import type { ItemGroup, SaleState, Store } from '@/types/api';
 import BulkSaleStateDialog, { type BulkDirection } from './BulkSaleStateDialog';
 import { Badge } from './badges';
@@ -107,7 +108,8 @@ function GroupRow({
 
   const classes = [styles.row, groupStyles.groupRow];
   if (group.stagnantCount > 0) classes.push(styles.stagnant);
-  const toggleLabel = t(expanded ? 'inventory.group.collapse' : 'inventory.group.expand', { name: group.name });
+  const groupName = itemDisplayName(group);
+  const toggleLabel = t(expanded ? 'inventory.group.collapse' : 'inventory.group.expand', { name: groupName });
 
   return (
     <>
@@ -130,7 +132,7 @@ function GroupRow({
         </td>
         <td>
           <div className={styles.itemCell}>
-            <strong className={styles.name}>{group.name}</strong>
+            <strong className={styles.name} title={itemEnglishTitle(group)}>{groupName}</strong>
             {details.length > 0 && (
               <span className={styles.details} title={exteriorLabel ?? undefined}>{details.join(' · ')}</span>
             )}
@@ -177,7 +179,7 @@ function GroupRow({
           {dialog && (
             <BulkSaleStateDialog
               direction={dialog.direction}
-              name={group.name}
+              name={groupName}
               target={dialog.target}
               onClose={() => setDialog(null)}
               onDone={() => {

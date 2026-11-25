@@ -3,13 +3,14 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLanguage, useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
 import { dateToLocalInput, localInputToIso, nowLocalInput } from '@/lib/dateInput';
 import { formatDate, formatMoney } from '@/lib/format';
 import { formatCentsInput, normalizeNumberText } from '@/lib/numberInput';
 import { queryKeys } from '@/lib/queryKeys';
 import { useInvalidate } from '@/lib/useInvalidate';
 import { ApiRequestError, detachComponent, getDetachPreview } from '@/services/api';
+import { itemDisplayName, itemEnglishTitle } from '@/lib/itemName';
 import type { DetachBody, ItemView } from '@/types/api';
 import FormField from './FormField';
 import styles from './forms.module.css';
@@ -42,7 +43,6 @@ function parseShareText(text: string, locale: string): number | null {
 export default function DetachComponentModal({ item, componentId, onClose, onDone, onGone }: Props) {
   const t = useT();
   const tLoose = useTLoose();
-  const language = useLanguage();
   const locale = useLocale();
   const invalidate = useInvalidate();
   const component = item.components.find((c) => c.detachable && (componentId === undefined || c.id === componentId)) ?? null;
@@ -73,7 +73,7 @@ export default function DetachComponentModal({ item, componentId, onClose, onDon
   // Texto mostrado no campo: o digitado ou, sem digitar, a sugestão.
   const shownShare = shareText ?? (suggestion ? formatCentsInput(suggestion.hangingShareBp, locale) : '');
   const usd = (cents: number | null) => (cents === null ? t('common.none') : formatMoney(cents, 'USD', locale));
-  const hangingName = component ? (language === 'pt-BR' ? component.namePtBr ?? component.name : component.name) : '';
+  const hangingName = component ? (component.localizedName ?? component.name) : '';
 
   const showApiError = (err: unknown) => {
     if (err instanceof ApiRequestError && err.code === 'ITEM_NOT_FOUND') {
@@ -124,7 +124,7 @@ export default function DetachComponentModal({ item, componentId, onClose, onDon
     detachComponent(item.id, component.id, body)
       .then(() => {
         invalidate('item.detachComponent');
-        onDone(t(preview.mode === 'RETURN' ? 'detachForm.successReturn' : 'detachForm.successSplit', { name: hangingName, weapon: item.name }));
+        onDone(t(preview.mode === 'RETURN' ? 'detachForm.successReturn' : 'detachForm.successSplit', { name: hangingName, weapon: itemDisplayName(item) }));
       })
       .catch((err: unknown) => {
         setSaving(false);
@@ -138,7 +138,7 @@ export default function DetachComponentModal({ item, componentId, onClose, onDon
   );
 
   return (
-    <Modal title={t('detachForm.title', { name: item.name })} onClose={onClose} busy={saving}>
+    <Modal title={t('detachForm.title', { name: itemDisplayName(item) })} onClose={onClose} busy={saving}>
       <form className={styles.form} onSubmit={submit} noValidate>
         {topError && <div className={styles.topError} role="alert">{topError}</div>}
         {!component && <div className={styles.note} role="status">{t('detachForm.nothing')}</div>}

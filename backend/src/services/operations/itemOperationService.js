@@ -7,6 +7,7 @@ const ItemComponent = require('../../models/ItemComponent');
 const ItemOperation = require('../../models/ItemOperation');
 const { NotFoundError } = require('../../errors/AppError');
 const itemService = require('../itemService');
+const catalogService = require('../catalogService');
 const applicationService = require('./componentApplicationService');
 const undoService = require('./operationUndoService');
 const operationContext = require('./operationContext');
@@ -101,6 +102,9 @@ function listForItem(itemId) {
   }
   const itemsById = Item.findByIds(links.map((link) => link.itemId));
   const context = operationContext.loadOperationContext([...itemsById.values()]);
+  const localizedByCatalogId = new Map(
+    catalogService.getCatalogItemsByIds([...itemsById.values()].map((i) => i.catalogId).filter(Boolean)).map((c) => [c.id, c.localizedName])
+  );
   return operations.map((operation) => {
     const own = (linksByOperation.get(operation.id) ?? []).find((link) => link.itemId === itemId);
     const verdict = operationContext.assessUndo(operation, { ...context, componentRowsOf });
@@ -125,7 +129,7 @@ function listForItem(itemId) {
         .filter((link) => link.itemId !== itemId)
         .map((link) => {
           const other = itemsById.get(link.itemId);
-          return { itemId: link.itemId, name: other ? other.name : null, role: link.role, status: other ? other.status : null };
+          return { itemId: link.itemId, name: other ? other.name : null, localizedName: (other && localizedByCatalogId.get(other.catalogId)) || null, role: link.role, status: other ? other.status : null };
         }),
       undoable: verdict.undoable,
       undoBlockedReason: verdict.reason,

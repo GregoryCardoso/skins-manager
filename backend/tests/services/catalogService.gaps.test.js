@@ -44,6 +44,7 @@ function makeFetch(overrides = {}) {
       return typeof o === 'function' ? o(url, opts) : o;
     }
     const [lang, file] = rel.split('/');
+    if (!require('fs').existsSync(require('path').join(API_FIX, lang))) return { ok: false, status: 404, text: async () => '[]' }; // pasta de idioma não hospedada
     return okResponse(apiFile(lang, file.replace('.json', '')));
   };
   fn.calls = calls;
@@ -51,7 +52,7 @@ function makeFetch(overrides = {}) {
 }
 
 const row = (id, name, extra = {}) => ({
-  id, source: 'SKINS', category: 'SKIN', name, namePtBr: null, imageUrl: null, minFloat: null, maxFloat: null,
+  id, source: 'SKINS', category: 'SKIN', name, names: {}, imageUrl: null, minFloat: null, maxFloat: null,
   hasStattrak: 0, hasSouvenir: 0, phase: null, rarity: null, ...extra,
 });
 const writeFile = (name, text) => {
@@ -65,17 +66,16 @@ describe('refresh: 404 só é tolerado em idioma secundário', () => {
   test('pt-BR com 404 em alguns arquivos e ok em outros: traduz só o que veio', async () => {
     const overrides = { 'pt-BR/skins.json': statusResponse(404), 'pt-BR/crates.json': statusResponse(404) };
     await svc.refreshCatalog({ fetchFn: makeFetch(overrides), now: NOW });
-    expect(svc.getCatalogItem('skin-ak-redline').namePtBr).toBeNull();
-    expect(svc.getCatalogItem('sticker-1').namePtBr).toBe('Adesivo | Titan | Katowice 2014');
+    Setting.update({ language: 'pt-BR' });
+    expect(svc.getCatalogItem('skin-ak-redline').localizedName).toBeNull();
+    expect(svc.getCatalogItem('sticker-1').localizedName).toBe('Adesivo | Titan | Katowice 2014');
   });
 
-  test.each([403, 429, 500, 502, 503, 301])('pt-BR com HTTP %i NÃO é tolerado (só 404)', async (status) => {
+  test.each([403, 429, 500, 502, 503, 301])('pt-BR com HTTP %i é ignorado com aviso (só o en é obrigatório)', async (status) => {
     importCatalogFixture();
-    const before = svc.getCatalogStatus();
-    await expect(
-      svc.refreshCatalog({ fetchFn: makeFetch({ 'pt-BR/agents.json': statusResponse(status) }), now: NOW })
-    ).rejects.toMatchObject({ status: 502, code: 'CATALOG_FETCH_FAILED' });
-    expect(svc.getCatalogStatus()).toEqual(before);
+    const result = await svc.refreshCatalog({ fetchFn: makeFetch({ 'pt-BR/agents.json': statusResponse(status) }), now: NOW });
+    expect(result.skippedLanguages).toEqual([{ language: 'pt-BR', reason: 'CATALOG_FETCH_FAILED' }]);
+    expect(result.total).toBeGreaterThanOrEqual(21);
   });
 
   test('en com 404 em um arquivo falha mesmo com todo o pt-BR em 404 (tolerância não vaza para o en)', async () => {
@@ -86,9 +86,11 @@ describe('refresh: 404 só é tolerado em idioma secundário', () => {
     expect(Setting.get().catalogUpdatedAt).toBeNull();
   });
 
-  test('pt-BR com JSON que não é lista (200) é erro de formato, não tolerado', async () => {
+  test('pt-BR com JSON que não é lista (200) é ignorado com aviso de formato; no en continua sendo erro', async () => {
+    const result = await svc.refreshCatalog({ fetchFn: makeFetch({ 'pt-BR/skins.json': okResponse('{"erro":"x"}') }), now: NOW });
+    expect(result.skippedLanguages).toEqual([{ language: 'pt-BR', reason: 'CATALOG_INVALID_FORMAT' }]);
     await expect(
-      svc.refreshCatalog({ fetchFn: makeFetch({ 'pt-BR/skins.json': okResponse('{"erro":"x"}') }), now: NOW })
+      svc.refreshCatalog({ fetchFn: makeFetch({ 'en/skins.json': okResponse('{"erro":"x"}') }), now: NOW })
     ).rejects.toMatchObject({ code: 'CATALOG_INVALID_FORMAT' });
   });
 
@@ -112,14 +114,14 @@ describe('refresh: tudo ou nada', () => {
     expect(Item.findById(legacy.id).catalogId).toBeNull();
   });
 
-  test('falha tardia (último arquivo) não grava nada dos arquivos que já tinham chegado', async () => {
+  test('falha tardia (último arquivo) do en não grava nada dos arquivos que já tinham chegado', async () => {
     const before = CatalogItem.findById('skin-ak-redline');
     const slowFail = async () => {
       await new Promise((r) => setTimeout(r, 30));
       return statusResponse(500);
     };
     await expect(
-      svc.refreshCatalog({ fetchFn: makeFetch({ 'pt-BR/agents.json': slowFail }), now: NOW })
+      svc.refreshCatalog({ fetchFn: makeFetch({ 'en/agents.json': slowFail }), now: NOW })
     ).rejects.toMatchObject({ code: 'CATALOG_FETCH_FAILED' });
     expect(CatalogItem.findById('skin-ak-redline')).toEqual(before);
   });
@@ -136,16 +138,13 @@ describe('refresh: tudo ou nada', () => {
     expect(signal.aborted).toBe(true);
   });
 
-  test('timeout em arquivo pt-BR: 502, nada gravado e trava liberada', async () => {
-    const before = svc.getCatalogStatus();
+  test('timeout em arquivo pt-BR: o idioma é ignorado com aviso, o resto grava e a trava é liberada', async () => {
     const hang = (url, { signal }) =>
       new Promise((resolve, reject) => {
         signal.addEventListener('abort', () => reject(Object.assign(new Error('aborted'), { name: 'AbortError' })));
       });
-    await expect(
-      svc.refreshCatalog({ fetchFn: makeFetch({ 'pt-BR/keychains.json': hang }), now: NOW, timeoutMs: 30 })
-    ).rejects.toMatchObject({ status: 502, code: 'CATALOG_FETCH_FAILED' });
-    expect(svc.getCatalogStatus()).toEqual(before);
+    const result = await svc.refreshCatalog({ fetchFn: makeFetch({ 'pt-BR/keychains.json': hang }), now: NOW, timeoutMs: 100 });
+    expect(result.skippedLanguages).toEqual([{ language: 'pt-BR', reason: 'CATALOG_FETCH_FAILED' }]);
     await expect(svc.refreshCatalog({ fetchFn: makeFetch(), now: NOW })).resolves.toMatchObject({ total: expect.any(Number) });
   });
 
@@ -235,7 +234,7 @@ describe('syncBundledCatalog: bordas', () => {
     'arquivo vazio': () => '',
     'JSON truncado': () => svc.serializeSnapshot([row('a-1', 'Um'), row('a-2', 'Dois')], { now: new Date('2026-12-01T00:00:00.000Z') }).slice(0, 200),
     'ids repetidos': () => svc.serializeSnapshot([row('a-1', 'Um'), row('a-1', 'Um de novo')], { now: new Date('2026-12-01T00:00:00.000Z') }),
-    formatVersion: () => svc.serializeSnapshot([row('a-1', 'Um')], { now: new Date('2026-12-01T00:00:00.000Z') }).replace('"formatVersion":1', '"formatVersion":2'),
+    formatVersion: () => svc.serializeSnapshot([row('a-1', 'Um')], { now: new Date('2026-12-01T00:00:00.000Z') }).replace('"formatVersion":2', '"formatVersion":3'),
     'categoria inválida na última linha': () => {
       const snap = JSON.parse(svc.serializeSnapshot([row('a-1', 'Um'), row('a-2', 'Dois')], { now: new Date('2026-12-01T00:00:00.000Z') }));
       snap.rows[1][2] = 'ARMA';
@@ -330,7 +329,7 @@ describe('parseSnapshot: bordas adicionais', () => {
   });
 
   test('calcula nameKey e searchText (sem tradução: só nameKey; com tradução igual: sem repetir)', () => {
-    const snap = JSON.parse(svc.serializeSnapshot([row('a-1', '★ Faca™ ÁÉ'), row('a-2', 'Igual', { namePtBr: 'IGUAL' }), row('a-3', 'Um', { namePtBr: 'Úm Dois' })], { now: NOW }));
+    const snap = JSON.parse(svc.serializeSnapshot([row('a-1', '★ Faca™ ÁÉ'), row('a-2', 'Igual', { names: { 'pt-BR': 'IGUAL' } }), row('a-3', 'Um', { names: { 'pt-BR': 'Úm Dois' } })], { now: NOW }));
     const { rows } = svc.parseSnapshot(snap);
     expect(rows[0]).toMatchObject({ nameKey: 'faca ae', searchText: 'faca ae' });
     expect(rows[1].searchText).toBe('igual');

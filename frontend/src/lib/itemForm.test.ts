@@ -9,7 +9,7 @@ import { STORES, makeItem } from './testFixtures';
 const ctx: FormContext = { stores: STORES, usdBrlRate: 5.4, language: 'pt-BR', now: new Date(2026, 10, 20, 12, 0) };
 
 const AK: CatalogChoice = {
-  id: 'skin-ak-redline', name: 'AK-47 | Redline', namePtBr: null, imageUrl: null, minFloat: 0.1, maxFloat: 0.7,
+  id: 'skin-ak-redline', name: 'AK-47 | Redline', localizedName: null, imageUrl: null, minFloat: 0.1, maxFloat: 0.7,
   hasStattrak: true, hasSouvenir: false, phase: null, category: 'SKIN',
 };
 const DOPPLER: CatalogChoice = { ...AK, id: 'skin-karambit-doppler-p2', category: 'FACA', phase: 'Phase 2', hasStattrak: true };

@@ -54,7 +54,7 @@ describe('backup e a v24', () => {
     expect((await settings()).displayCurrency).toBe('USD');
     const res = await octet(makeV23Backup('v23.sqlite'));
     expect(res.status).toBe(200);
-    expect(res.body.data).toMatchObject({ fileVersion: 23, schemaVersion: 25, migrationsApplied: [24, 25] });
+    expect(res.body.data).toMatchObject({ fileVersion: 23, schemaVersion: 26, migrationsApplied: [24, 25, 26] });
     const s = await settings();
     expect(s).toMatchObject({ displayCurrency: 'BRL', usdBrlRate: 5.31, usdBrlRateSource: 'MANUAL', language: 'en' });
     expect(s.fxRates).toEqual([
@@ -62,11 +62,11 @@ describe('backup e a v24', () => {
     ]);
   });
 
-  test('backup mais novo que o app (v26) é recusado e nada muda', async () => {
+  test('backup mais novo que o app (v27) é recusado e nada muda', async () => {
     const before = await settings();
     const file = path.join(dir, 'newer.sqlite');
     const newer = database.openDatabase(file, { migrations: MIGRATIONS });
-    newer.pragma('user_version = 26');
+    newer.pragma('user_version = 27');
     newer.close();
     const res = await octet(fs.readFileSync(file));
     expect(res.status).toBe(400);

@@ -275,9 +275,9 @@ describe('undo, corte e views (puros)', () => {
   test('importViews: nome e imagem vêm do catálogo; JSON inválido não quebra', () => {
     const view = importViews.toEntryView(
       { id: 1, batchId: 1, outcome: 'CREATED', displayJson: JSON.stringify({ catalogId: 'c', marketHashName: 'X (FT)', priceCents: 5 }), candidateIds: '[1,2]' },
-      new Map([['c', { name: 'X', namePtBr: 'Xis', imageUrl: 'https://i/x.png' }]])
+      new Map([['c', { name: 'X', localizedName: 'Xis', imageUrl: 'https://i/x.png' }]])
     );
-    expect(view).toMatchObject({ candidateIds: [1, 2], display: { name: 'X', namePtBr: 'Xis', imageUrl: 'https://i/x.png', priceCents: 5, currency: 'USD' } });
+    expect(view).toMatchObject({ candidateIds: [1, 2], display: { name: 'X', localizedName: 'Xis', imageUrl: 'https://i/x.png', priceCents: 5, currency: 'USD' } });
     expect(importViews.toEntryView({ id: 1, displayJson: '{nope', candidateIds: null }, new Map()).display.name).toBeNull();
   });
 });

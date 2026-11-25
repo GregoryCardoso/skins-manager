@@ -91,11 +91,11 @@ describe('csgoApiAdapter.mapCatalog', () => {
     expect(byId('skin-no-image').imageUrl).toBeNull();
   });
 
-  test('namePtBr pelo id; null se ausente; id só no pt-BR é ignorado', () => {
-    expect(byId('skin-ak-redline').namePtBr).toBe('AK-47 | Linha Vermelha');
-    expect(byId('sticker-1').namePtBr).toBe('Adesivo | Titan | Katowice 2014');
-    expect(byId('skin-deagle-ddpat').namePtBr).toBeNull();
-    expect(byId('agent-4613').namePtBr).toBeNull();
+  test('names por idioma pelo id; null se ausente; id só no pt-BR é ignorado', () => {
+    expect(byId('skin-ak-redline').names).toEqual({ 'pt-BR': 'AK-47 | Linha Vermelha' });
+    expect(byId('sticker-1').names).toEqual({ 'pt-BR': 'Adesivo | Titan | Katowice 2014' });
+    expect(byId('skin-deagle-ddpat').names).toEqual({});
+    expect(byId('agent-4613').names).toEqual({});
     expect(byId('skin-so-no-ptbr')).toBeUndefined();
   });
 
@@ -119,17 +119,21 @@ describe('csgoApiAdapter.mapCatalog', () => {
   test('funciona sem pt-BR (todo ou por fonte) e com fontes ausentes', () => {
     const noPt = adapter.mapCatalog({ en });
     expect(noPt.rows.length).toBe(result.rows.length);
-    expect(noPt.rows.every((r) => r.namePtBr === null)).toBe(true);
+    expect(noPt.rows.every((r) => Object.keys(r.names).length === 0)).toBe(true);
     const partial = adapter.mapCatalog({ en, ptBr: { STICKERS: ptBr.STICKERS } });
-    expect(partial.rows.find((r) => r.id === 'sticker-1').namePtBr).toBe('Adesivo | Titan | Katowice 2014');
-    expect(partial.rows.find((r) => r.id === 'skin-ak-redline').namePtBr).toBeNull();
+    expect(partial.rows.find((r) => r.id === 'sticker-1').names).toEqual({ 'pt-BR': 'Adesivo | Titan | Katowice 2014' });
+    expect(partial.rows.find((r) => r.id === 'skin-ak-redline').names).toEqual({});
+    // vários idiomas de uma vez; o nome igual ao inglês não é guardado
+    const multi = adapter.mapCatalog({ en, translations: { 'pt-BR': ptBr, 'zh-CN': { STICKERS: [{ id: 'sticker-1', name: '印花 | Titan' }] } } });
+    expect(multi.rows.find((r) => r.id === 'sticker-1').names).toEqual({ 'pt-BR': 'Adesivo | Titan | Katowice 2014', 'zh-CN': '印花 | Titan' });
+    expect(multi.rows.find((r) => r.id === 'sticker-1').searchText).toContain('印花 | titan');
     expect(adapter.mapCatalog({ en: { SKINS: [] } })).toEqual({ rows: [], skipped: 0 });
     expect(adapter.mapCatalog()).toEqual({ rows: [], skipped: 0 });
   });
 
   test('mapeadores individuais recebem (rawEn, mapa de nomes)', () => {
-    const one = adapter.mapStickers(en.STICKERS, new Map([['sticker-2', 'Adesivo Coroa']]));
-    expect(one.rows.map((r) => r.namePtBr)).toEqual([null, 'Adesivo Coroa']);
+    const one = adapter.mapStickers(en.STICKERS, { 'pt-BR': new Map([['sticker-2', 'Adesivo Coroa']]) });
+    expect(one.rows.map((r) => r.names)).toEqual([{}, { 'pt-BR': 'Adesivo Coroa' }]);
     expect(adapter.mapSkins(undefined).rows).toEqual([]);
   });
 });

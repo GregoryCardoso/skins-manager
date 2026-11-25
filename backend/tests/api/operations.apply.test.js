@@ -362,7 +362,7 @@ describe('desfazer', () => {
     const history = (await get(`/api/items/${ak.id}/operations`)).body.data;
     expect(history).toHaveLength(1);
     expect(history[0]).toMatchObject({ id: opId, kind: 'APPLY_COMPONENT', role: 'TARGET', undoneAt: expect.any(String), undoable: false, undoBlockedReason: 'ALREADY_UNDONE' });
-    expect(history[0].counterparts).toEqual([{ itemId: sticker.id, name: 'Sticker | Titan | Katowice 2014', role: 'CONSUMED', status: 'EM_ESTOQUE' }]);
+    expect(history[0].counterparts).toEqual([{ itemId: sticker.id, name: 'Sticker | Titan | Katowice 2014', localizedName: null, role: 'CONSUMED', status: 'EM_ESTOQUE' }]);
     expectError(await post(`/api/operations/${opId}/undo`), 409, 'OPERATION_ALREADY_UNDONE');
     expectError(await post('/api/operations/99999/undo'), 404, 'OPERATION_NOT_FOUND');
   });

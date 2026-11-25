@@ -38,10 +38,16 @@ function normalizeSearchText(text) {
     .trim();
 }
 
-// Texto de busca: nome em inglês + tradução (quando existe e difere).
-function buildSearchText(nameKey, namePtBr) {
-  const ptKey = namePtBr ? normalizeSearchText(namePtBr) : '';
-  return ptKey && ptKey !== nameKey ? `${nameKey} ${ptKey}` : nameKey;
+// Texto de busca: nome em inglês + os nomes de todos os idiomas (D369, 11.5), sem repetir. `names`: { idioma: nome } ou nulo.
+function buildSearchText(nameKey, names) {
+  const keys = [nameKey];
+  if (names && typeof names === 'object') {
+    for (const name of Object.values(names)) {
+      const key = typeof name === 'string' ? normalizeSearchText(name) : '';
+      if (key && !keys.includes(key)) keys.push(key);
+    }
+  }
+  return keys.join(' ');
 }
 
 const isNonEmptyString = (v) => typeof v === 'string' && v.trim().length > 0;
@@ -78,17 +84,19 @@ function floatOrNull(v) {
   return typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 1 ? v : null;
 }
 
-function baseRow(entry, { source, category, namePtBr }) {
+function baseRow(entry, { source, category, names }) {
   const name = entry.name.trim();
   const nameKey = normalizeSearchText(name);
+  // Nome traduzido igual ao inglês não tem utilidade (sem tradução, a exibição já cai no inglês): não é guardado.
+  names = Object.fromEntries(Object.entries(names || {}).filter(([, translated]) => translated !== name));
   return {
     id: entry.id,
     source,
     category,
     name,
-    namePtBr: namePtBr || null,
+    names,
     nameKey,
-    searchText: buildSearchText(nameKey, namePtBr),
+    searchText: buildSearchText(nameKey, names),
     imageUrl: toSafeImageUrl(entry.image),
     minFloat: null,
     maxFloat: null,
@@ -99,8 +107,20 @@ function baseRow(entry, { source, category, namePtBr }) {
   };
 }
 
+// `nameMaps`: { idioma: Map(id -> nome) } dos idiomas baixados; devolve só os nomes que existem para o id.
+function namesFor(nameMaps, id) {
+  const names = {};
+  if (nameMaps) {
+    for (const [lang, map] of Object.entries(nameMaps)) {
+      const name = map.get(id);
+      if (name) names[lang] = name;
+    }
+  }
+  return names;
+}
+
 // Mapeia uma lista bruta com a regra `categoryOf(entry)` e extras por fonte.
-function mapSource(raw, ptNames, { source, categoryOf, extend }) {
+function mapSource(raw, nameMaps, { source, categoryOf, extend }) {
   const rows = [];
   let skipped = 0;
   const list = Array.isArray(raw) ? raw : [];
@@ -109,15 +129,15 @@ function mapSource(raw, ptNames, { source, categoryOf, extend }) {
       skipped += 1;
       continue;
     }
-    const row = baseRow(entry, { source, category: categoryOf(entry), namePtBr: ptNames ? ptNames.get(entry.id) : null });
+    const row = baseRow(entry, { source, category: categoryOf(entry), names: namesFor(nameMaps, entry.id) });
     if (extend) extend(row, entry);
     rows.push(row);
   }
   return { rows, skipped };
 }
 
-function mapSkins(raw, ptNames) {
-  return mapSource(raw, ptNames, {
+function mapSkins(raw, nameMaps) {
+  return mapSource(raw, nameMaps, {
     source: 'SKINS',
     categoryOf: (e) => {
       const catId = e.category && e.category.id;
@@ -141,40 +161,44 @@ function mapSkins(raw, ptNames) {
   });
 }
 
-function mapStickers(raw, ptNames) {
-  return mapSource(raw, ptNames, { source: 'STICKERS', categoryOf: () => 'STICKER' });
+function mapStickers(raw, nameMaps) {
+  return mapSource(raw, nameMaps, { source: 'STICKERS', categoryOf: () => 'STICKER' });
 }
 
-function mapCrates(raw, ptNames) {
-  return mapSource(raw, ptNames, {
+function mapCrates(raw, nameMaps) {
+  return mapSource(raw, nameMaps, {
     source: 'CRATES',
     categoryOf: (e) => CRATE_TYPE_TO_CATEGORY[e.type] || 'OUTRO',
   });
 }
 
-function mapKeychains(raw, ptNames) {
-  return mapSource(raw, ptNames, { source: 'KEYCHAINS', categoryOf: () => 'PINGENTE' });
+function mapKeychains(raw, nameMaps) {
+  return mapSource(raw, nameMaps, { source: 'KEYCHAINS', categoryOf: () => 'PINGENTE' });
 }
 
-function mapAgents(raw, ptNames) {
-  return mapSource(raw, ptNames, { source: 'AGENTS', categoryOf: () => 'PERSONAGEM' });
+function mapAgents(raw, nameMaps) {
+  return mapSource(raw, nameMaps, { source: 'AGENTS', categoryOf: () => 'PERSONAGEM' });
 }
 
 // Patches de agente (10.3, D362): "Patch | ..." do patches.json; categoria PATCH.
-function mapPatches(raw, ptNames) {
-  return mapSource(raw, ptNames, { source: 'PATCHES', categoryOf: () => 'PATCH' });
+function mapPatches(raw, nameMaps) {
+  return mapSource(raw, nameMaps, { source: 'PATCHES', categoryOf: () => 'PATCH' });
 }
 
 const MAPPERS = { SKINS: mapSkins, STICKERS: mapStickers, CRATES: mapCrates, KEYCHAINS: mapKeychains, AGENTS: mapAgents, PATCHES: mapPatches };
 
-// `en` e `ptBr`: { SKINS, STICKERS, CRATES, KEYCHAINS, AGENTS, PATCHES } com o JSON bruto (ptBr pode faltar, no
-// todo ou por fonte). As linhas vêm do `en`; do `ptBr` só se usa o nome, pelo mesmo id.
-function mapCatalog({ en, ptBr } = {}) {
+// `en`: { SKINS, STICKERS, CRATES, KEYCHAINS, AGENTS, PATCHES } com o JSON bruto. `translations`: { idioma: { fonte: JSON bruto } }
+// (qualquer idioma ou fonte pode faltar; `ptBr` é o atalho antigo de `translations['pt-BR']`). As linhas vêm do `en`; dos demais
+// idiomas só se usa o nome, pelo mesmo id. Cada linha sai com `names: { idioma: nome }`.
+function mapCatalog({ en, translations, ptBr } = {}) {
+  const all = { ...(translations || {}) };
+  if (ptBr && !all['pt-BR']) all['pt-BR'] = ptBr;
   const rows = [];
   let skipped = 0;
   for (const source of SOURCES) {
-    const ptNames = ptBr && ptBr[source] ? buildNameMap(ptBr[source]) : null;
-    const result = MAPPERS[source]((en && en[source]) || [], ptNames);
+    const nameMaps = {};
+    for (const [lang, data] of Object.entries(all)) if (data && data[source]) nameMaps[lang] = buildNameMap(data[source]);
+    const result = MAPPERS[source]((en && en[source]) || [], nameMaps);
     rows.push(...result.rows);
     skipped += result.skipped;
   }

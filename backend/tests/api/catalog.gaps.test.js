@@ -25,6 +25,7 @@ function fixtureFetch(overrides = {}) {
       return typeof o === 'function' ? o(url, opts) : o;
     }
     const [lang, file] = rel.split('/');
+    if (!require('fs').existsSync(require('path').join(API_FIX, lang))) return { ok: false, status: 404, text: async () => '[]' }; // pasta de idioma não hospedada
     const body = fs.readFileSync(path.join(API_FIX, lang, file), 'utf8');
     return { ok: true, status: 200, text: async () => body };
   };
@@ -97,15 +98,17 @@ describe('GET /api/catalog/search: bordas de forma', () => {
 });
 
 describe('POST /api/catalog/refresh: bordas', () => {
-  test('falha só em pt-BR (500) -> 502 e catálogo anterior intacto; 404 só em pt-BR -> 200', async () => {
+  test('falha só em pt-BR (500) -> 200 com aviso em skippedLanguages; 404 só em pt-BR -> 200 sem aviso', async () => {
     importCatalogFixture();
     const bad = makeApp(NOW, { fetchFn: fixtureFetch({ 'pt-BR/stickers.json': status(500) }) });
-    expectError(await request(bad).post('/api/catalog/refresh').set('Content-Type', 'application/json').send({}), 502, 'CATALOG_FETCH_FAILED');
-    expect(Setting.get().catalogUpdatedAt).toBe('2026-11-01T00:00:00.000Z');
+    const warned = await request(bad).post('/api/catalog/refresh').set('Content-Type', 'application/json').send({});
+    expect(warned.status).toBe(200);
+    expect(warned.body.data.skippedLanguages).toEqual([{ language: 'pt-BR', reason: 'CATALOG_FETCH_FAILED' }]);
     const tolerated = makeApp(NOW, { fetchFn: fixtureFetch({ 'pt-BR/stickers.json': status(404) }) });
     const ok = await request(tolerated).post('/api/catalog/refresh').set('Content-Type', 'application/json').send({});
     expect(ok.status).toBe(200);
     expect(ok.body.data.catalogUpdatedAt).toBe(NOW.toISOString());
+    expect(ok.body.data.skippedLanguages).toEqual([]);
   });
 
   test('404 no en -> 502; JSON inválido -> 502 CATALOG_INVALID_FORMAT', async () => {
@@ -151,7 +154,7 @@ describe('POST /api/catalog/refresh: bordas', () => {
   test('resposta traz o contrato completo e /status reflete o refresh', async () => {
     const app = makeApp(NOW, { fetchFn: fixtureFetch() });
     const res = await request(app).post('/api/catalog/refresh').set('Content-Type', 'application/json').send({});
-    expect(Object.keys(res.body.data).sort()).toEqual(['catalogUpdatedAt', 'countsBySource', 'linkedLegacyItems', 'skipped', 'total']);
+    expect(Object.keys(res.body.data).sort()).toEqual(['catalogUpdatedAt', 'countsBySource', 'linkedLegacyItems', 'skipped', 'skippedLanguages', 'total']);
     const st = await request(app).get('/api/catalog/status');
     expect(st.body.data).toEqual({ catalogUpdatedAt: NOW.toISOString(), countsBySource: res.body.data.countsBySource, total: res.body.data.total });
   });
@@ -168,8 +171,9 @@ describe('POST /api/catalog/refresh: bordas', () => {
     importCatalogFixture();
     const app = makeApp(NOW, { fetchFn: fixtureFetch(Object.fromEntries(FILES.map((f) => [`pt-BR/${f}.json`, status(404)]))) });
     await request(app).post('/api/catalog/refresh').set('Content-Type', 'application/json').send({});
+    Setting.update({ language: 'pt-BR' });
     const res = await request(app).get('/api/catalog/skin-ak-redline');
-    expect(res.body.data.namePtBr).toBe('AK-47 | Linha Vermelha');
+    expect(res.body.data.localizedName).toBe('AK-47 | Linha Vermelha');
   });
 });
 

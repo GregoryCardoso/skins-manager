@@ -16,6 +16,7 @@ import {
 import { useInvalidate } from '@/lib/useInvalidate';
 import { ApiRequestError, getSaleQuote, sellItem } from '@/services/api';
 import { launchStoreOptions } from '@/lib/storeOptions';
+import { itemDisplayName, itemEnglishTitle } from '@/lib/itemName';
 import type { ItemView, Store } from '@/types/api';
 import { Badge } from './badges';
 import FormField from './FormField';
@@ -144,7 +145,7 @@ export default function SellItemModal({ item, stores, onClose, onSold, onGone }:
   };
 
   return (
-    <Modal title={`${t('sellForm.title')}: ${item.name}`} onClose={onClose} busy={saving}>
+    <Modal title={`${t('sellForm.title')}: ${itemDisplayName(item)}`} onClose={onClose} busy={saving}>
       <form className={styles.form} onSubmit={submit} noValidate>
         {topError && <div className={styles.topError} role="alert">{topError}</div>}
 

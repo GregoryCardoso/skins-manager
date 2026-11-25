@@ -47,7 +47,7 @@ export default function CatalogSettings() {
   const loadError = statusQuery.error ?? null;
   const [refreshing, setRefreshing] = useState(false);
   const [refreshError, setRefreshError] = useState<unknown>(null);
-  const [info, setInfo] = useState<{ total: number; skipped: number; linked: number } | null>(null);
+  const [info, setInfo] = useState<{ total: number; skipped: number; linked: number; skippedLanguages: string[] } | null>(null);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -57,7 +57,7 @@ export default function CatalogSettings() {
       .then((result) => {
         // Atualizar o catálogo muda o status, os itens e as vendas (imagens e vínculos, D259).
         invalidate('catalog.refresh');
-        setInfo({ total: result.total, skipped: result.skipped, linked: result.linkedLegacyItems });
+        setInfo({ total: result.total, skipped: result.skipped, linked: result.linkedLegacyItems, skippedLanguages: (result.skippedLanguages ?? []).map((s) => s.language) });
       })
       .catch((err: unknown) => setRefreshError(err))
       .finally(() => setRefreshing(false));
@@ -85,6 +85,11 @@ export default function CatalogSettings() {
             skipped: formatInteger(info.skipped, locale),
             linked: formatInteger(info.linked, locale),
           })}
+        </p>
+      )}
+      {info && info.skippedLanguages.length > 0 && (
+        <p className={styles.muted} role="status">
+          {t('catalog.refreshSkippedLanguages', { languages: info.skippedLanguages.join(', ') })}
         </p>
       )}
       {refreshError !== null && <p className={styles.error} role="alert">{errorMessageFor(refreshError, tLoose, locale)}</p>}

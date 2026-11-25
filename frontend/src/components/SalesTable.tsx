@@ -2,6 +2,7 @@
 
 import { useLocale, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import { formatDate, formatFloat, formatMoney, formatRate } from '@/lib/format';
+import { itemDisplayName, itemEnglishTitle } from '@/lib/itemName';
 import type { ItemView, Store } from '@/types/api';
 import { Badge, type BadgeTone } from './badges';
 import ComponentThumbs from './ComponentThumbs';
@@ -44,7 +45,7 @@ function ItemCell({ item }: { item: ItemView }) {
   if (item.phase) details.push(item.phase);
   return (
     <div className={styles.itemCell}>
-      <strong className={styles.name}>{item.name}</strong>
+      <strong className={styles.name} title={itemEnglishTitle(item)}>{itemDisplayName(item)}</strong>
       {details.length > 0 && <span className={styles.details}>{details.join(' · ')}</span>}
       <GeneratedFromNote item={item} />
       <ComponentThumbs components={item.components} />

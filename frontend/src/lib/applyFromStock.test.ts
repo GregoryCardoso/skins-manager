@@ -16,7 +16,7 @@ import { INVALIDATION_MAP } from './queryInvalidation';
 import { makeItem } from './testFixtures';
 
 const component = (over: Partial<ItemComponent>): ItemComponent => ({
-  id: 1, kind: 'STICKER', catalogId: 'st1', name: 'Sticker | st1', namePtBr: null, imageUrl: null, slot: 1, wear: 0.1, pattern: null,
+  id: 1, kind: 'STICKER', catalogId: 'st1', name: 'Sticker | st1', localizedName: null, imageUrl: null, slot: 1, wear: 0.1, pattern: null,
   source: 'MANUAL', origin: 'APPLIED_FROM_STOCK', sourceItemId: 7, operationId: 3, undoable: true, scrapeable: true, detachable: false, ...over,
 });
 
@@ -79,7 +79,7 @@ describe('patches no agente', () => {
 
   test('o corpo leva os patches com a posição; sem item do catálogo é erro local', () => {
     const state = emptyComponentsState();
-    const draft = { ...newPatchDraft(), catalog: { id: 'patch-1', name: 'Patch | A', namePtBr: null, imageUrl: null }, slot: '2' };
+    const draft = { ...newPatchDraft(), catalog: { id: 'patch-1', name: 'Patch | A', localizedName: null, imageUrl: null }, slot: '2' };
     expect(buildComponentsBody({ ...state, patches: [draft] }, 'en')).toEqual({ ok: true, body: [{ kind: 'PATCH', catalogId: 'patch-1', slot: 2 }] });
     expect(buildComponentsBody({ ...state, patches: [newPatchDraft()] }, 'en')).toMatchObject({ ok: false, errorKey: 'itemForm.components.choosePatch' });
   });
@@ -89,7 +89,7 @@ describe('avisos de componente possivelmente aplicado do estoque', () => {
   const entry = (outcome: ImportEntryView['outcome'], warnings: ImportEntryView['display']['componentWarnings'], allowedActions?: ImportEntryView['allowedActions']): ImportEntryView => ({
     id: 9, batchId: 1, outcome, reasonCode: null, entityType: 'ITEM_SALE', entityId: 5, candidateIds: [], resolution: null, resolvedAt: null, allowedActions,
     display: {
-      direction: 'SELL', marketHashName: 'X', name: 'X', namePtBr: null, imageUrl: null, catalogId: null, category: 'SKIN', variant: 'NORMAL',
+      direction: 'SELL', marketHashName: 'X', name: 'X', localizedName: null, imageUrl: null, catalogId: null, category: 'SKIN', variant: 'NORMAL',
       floatValue: null, paintSeed: null, phase: null, priceCents: 100, currency: 'USD', date: null, state: null, componentWarnings: warnings,
     },
   });

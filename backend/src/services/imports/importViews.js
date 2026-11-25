@@ -22,7 +22,7 @@ function toDisplay(displayJson, catalogById) {
     direction: display.direction ?? null,
     marketHashName: display.marketHashName ?? null,
     name: catalog ? catalog.name : display.marketHashName ?? null,
-    namePtBr: catalog ? catalog.namePtBr ?? null : null,
+    localizedName: catalog ? catalog.localizedName ?? null : null,
     imageUrl: catalog ? catalog.imageUrl ?? null : null,
     catalogId: display.catalogId ?? null,
     category: display.category ?? null,

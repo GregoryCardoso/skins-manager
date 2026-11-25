@@ -32,9 +32,16 @@ describe('models/CatalogItem', () => {
 
   test('upsertMany atualiza linha existente e não apaga as ausentes', () => {
     CatalogItem.upsertMany([row('a', 'Um'), row('b', 'Dois')], { now: NOW });
-    CatalogItem.upsertMany([row('a', 'Um Novo', { namePtBr: 'Um BR' })], { now: new Date('2026-11-21T00:00:00.000Z') });
-    expect(CatalogItem.findById('a')).toMatchObject({ name: 'Um Novo', namePtBr: 'Um BR', updatedAt: '2026-11-21T00:00:00.000Z' });
+    CatalogItem.upsertMany([row('a', 'Um Novo', { names: { 'pt-BR': 'Um BR', es: 'Uno' } })], { now: new Date('2026-11-21T00:00:00.000Z') });
+    expect(CatalogItem.findById('a')).toMatchObject({ name: 'Um Novo', updatedAt: '2026-11-21T00:00:00.000Z' });
     expect(CatalogItem.findById('b')).not.toBeNull();
+    // nomes traduzidos (11.5): uma linha por item e idioma; regravar atualiza; idioma sem nome não aparece
+    expect(CatalogItem.findNames(['a', 'b'], 'pt-BR')).toEqual([{ catalogId: 'a', name: 'Um BR' }]);
+    expect(CatalogItem.findNames(['a'], 'es')).toEqual([{ catalogId: 'a', name: 'Uno' }]);
+    expect(CatalogItem.findNames(['a'], 'ja')).toEqual([]);
+    CatalogItem.upsertMany([row('a', 'Um Novo', { names: { 'pt-BR': 'Um BR 2' } })], { now: NOW });
+    expect(CatalogItem.findNames(['a'], 'pt-BR')).toEqual([{ catalogId: 'a', name: 'Um BR 2' }]);
+    expect(CatalogItem.findAllNames().map((n) => n.language).sort()).toEqual(['es', 'pt-BR'])
   });
 
   test('upsertMany é atômico: linha inválida desfaz o lote', () => {

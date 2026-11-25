@@ -91,6 +91,7 @@
     "refresh": "Atualizar catálogo",
     "refreshing": "Atualizando (pode levar até 2 minutos)...",
     "refreshDone": "Catálogo atualizado: {total} itens ({skipped} ignorados, {linked} itens vinculados).",
+    "refreshSkippedLanguages": "Não foi possível atualizar os nomes dos itens em: {languages}. Os nomes já salvos foram mantidos.",
     "source": {
       "SKINS": "Skins",
       "STICKERS": "Adesivos",

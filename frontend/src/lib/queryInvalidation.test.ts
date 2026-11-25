@@ -67,6 +67,7 @@ const EXPECTED: Record<string, string[]> = {
   'settings.fx': ['settings', ...MONEY],
   'settings.aging': ['settings', 'items', 'marketValues', 'sales'],
   'settings.preferences': ['settings'],
+  'settings.language': ['settings', 'items', 'marketValues', 'sales', 'imports', 'catalog'],
   'catalog.refresh': ['catalog', 'items', 'marketValues', 'sales', 'health'],
   'integration.apiKey': ['integrations', 'marketValues'],
   'integration.test': ['integrations'],

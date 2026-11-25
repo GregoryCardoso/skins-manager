@@ -95,14 +95,14 @@ describe('visões', () => {
   test('toView sem entrada no catálogo devolve imagem e nome pt-BR nulos, mantendo o nome gravado', () => {
     const [view] = svc.toView([{ id: 1, kind: 'STICKER', catalogId: 'sumiu', name: 'Sticker | Antigo', slot: 0, wear: 0.1, pattern: null, source: 'MANUAL', origin: 'CAME_WITH' }]);
     expect(view).toEqual({
-      id: 1, kind: 'STICKER', catalogId: 'sumiu', name: 'Sticker | Antigo', namePtBr: null, imageUrl: null, slot: 0, wear: 0.1, pattern: null,
+      id: 1, kind: 'STICKER', catalogId: 'sumiu', name: 'Sticker | Antigo', localizedName: null, imageUrl: null, slot: 0, wear: 0.1, pattern: null,
       source: 'MANUAL', origin: 'CAME_WITH', sourceItemId: null, operationId: null, undoable: false, scrapeable: false, detachable: false,
     });
   });
 
   test('toView sem catalogId (componente sem vínculo) não quebra', () => {
     const [view] = svc.toView([{ id: 2, kind: 'CHARM', catalogId: null, name: 'x', slot: null, wear: null, pattern: 5, source: 'CSFLOAT', origin: 'CAME_WITH' }]);
-    expect(view).toMatchObject({ catalogId: null, imageUrl: null, namePtBr: null, source: 'CSFLOAT' });
+    expect(view).toMatchObject({ catalogId: null, imageUrl: null, localizedName: null, source: 'CSFLOAT' });
   });
 
   test('toView não expõe campos internos (item, referência de compra); a origem do estoque aparece (D362)', () => {

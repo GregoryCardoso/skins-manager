@@ -91,6 +91,7 @@
     "refresh": "Update catalog",
     "refreshing": "Updating (may take up to 2 minutes)...",
     "refreshDone": "Catalog updated: {total} items ({skipped} skipped, {linked} items linked).",
+    "refreshSkippedLanguages": "Item names could not be updated for: {languages}. The saved names were kept.",
     "source": {
       "SKINS": "Skins",
       "STICKERS": "Stickers",

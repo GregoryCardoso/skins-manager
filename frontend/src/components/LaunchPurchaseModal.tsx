@@ -12,6 +12,7 @@ import { addDaysToLocalInput } from '@/lib/dateInput';
 import { queryKeys } from '@/lib/queryKeys';
 import { useInvalidate } from '@/lib/useInvalidate';
 import { ApiRequestError, getCsfloatIntegration, listStores, resolveImportEntry } from '@/services/api';
+import { localizedOrName } from '@/lib/itemName';
 import type { ImportEntryView } from '@/types/api';
 import forms from './forms.module.css';
 import Modal from './Modal';
@@ -109,7 +110,7 @@ export default function LaunchPurchaseModal({ entry, onClose, onDone }: Props) {
     <Modal title={t('imports.launch.title')} onClose={onClose} busy={busy}>
       <form className={forms.form} onSubmit={submit} noValidate>
         <div>
-          <p><strong>{display.name ?? display.marketHashName}</strong></p>
+          <p><strong>{display.name ? localizedOrName(display.name, display.localizedName) : display.marketHashName}</strong></p>
           {details.length > 0 && <p className={forms.hint}>{details.join(' · ')}</p>}
           <p className={forms.hint}>
             {t('imports.launch.saleInfo', {

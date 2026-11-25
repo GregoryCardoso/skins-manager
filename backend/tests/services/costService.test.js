@@ -176,9 +176,9 @@ describe('patches no catálogo (CSGO-API)', () => {
   test('mapPatches vira PATCH com a fonte PATCHES; entrada inválida é ignorada; pt-BR é opcional', () => {
     const { rows, skipped } = mapPatches(raw, null);
     expect(skipped).toBe(1);
-    expect(rows[0]).toMatchObject({ id: 'patch-4550', source: 'PATCHES', category: 'PATCH', name: 'Patch | Crazy Banana', namePtBr: null, nameKey: 'patch | crazy banana' });
+    expect(rows[0]).toMatchObject({ id: 'patch-4550', source: 'PATCHES', category: 'PATCH', name: 'Patch | Crazy Banana', names: {}, nameKey: 'patch | crazy banana' });
     const mapped = mapCatalog({ en: { PATCHES: raw }, ptBr: { PATCHES: [{ id: 'patch-4550', name: 'Patch | Banana Maluca' }] } });
-    expect(mapped.rows.find((r) => r.source === 'PATCHES')).toMatchObject({ namePtBr: 'Patch | Banana Maluca' });
+    expect(mapped.rows.find((r) => r.source === 'PATCHES')).toMatchObject({ names: { 'pt-BR': 'Patch | Banana Maluca' } });
     expect(mapCatalog({ en: {} }).rows).toEqual([]);
   });
 });

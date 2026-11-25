@@ -45,6 +45,7 @@ function makeFetch(overrides = {}) {
       return typeof o === 'function' ? o(url, opts) : o;
     }
     const [lang, file] = rel.split('/');
+    if (!require('fs').existsSync(require('path').join(API_FIX, lang))) return { ok: false, status: 404, text: async () => '[]' }; // pasta de idioma não hospedada
     return okResponse(apiFile(lang, file.replace('.json', '')));
   };
   fn.calls = calls;
@@ -58,15 +59,16 @@ function writeSnapshotFile(name, rows, now) {
 }
 
 const row = (id, name, extra = {}) => ({
-  id, source: 'SKINS', category: 'SKIN', name, namePtBr: null, imageUrl: null, minFloat: null, maxFloat: null,
+  id, source: 'SKINS', category: 'SKIN', name, names: {}, imageUrl: null, minFloat: null, maxFloat: null,
   hasStattrak: 0, hasSouvenir: 0, phase: null, rarity: null, ...extra,
 });
 
 describe('refreshCatalog', () => {
-  test('caminho feliz: 10 URLs, contagens, catalogUpdatedAt = now e skipped', async () => {
+  test('caminho feliz: 78 URLs, contagens, catalogUpdatedAt = now e skipped', async () => {
     const fetchFn = makeFetch();
     const result = await svc.refreshCatalog({ fetchFn, now: NOW });
-    expect(fetchFn.calls).toHaveLength(12);
+    expect(fetchFn.calls).toHaveLength(78); // 13 idiomas x 6 fontes (pastas não hospedadas dão 404 e são toleradas)
+    expect(fetchFn.calls).toContain(`${CATALOG_BASE_URL}es-MX/skins.json`); // o espanhol usa a pasta es-MX (E-P3-Q7)
     for (const lang of ['en', 'pt-BR']) {
       for (const f of FILES) expect(fetchFn.calls).toContain(`${CATALOG_BASE_URL}${lang}/${f}.json`);
     }
@@ -76,16 +78,19 @@ describe('refreshCatalog', () => {
       total: 21,
       skipped: 3,
       linkedLegacyItems: 0,
+      skippedLanguages: [],
     });
     expect(Setting.get().catalogUpdatedAt).toBe(NOW.toISOString());
-    expect(svc.getCatalogItem('skin-ak-redline')).toMatchObject({ namePtBr: 'AK-47 | Linha Vermelha', category: 'SKIN' });
+    Setting.update({ language: 'pt-BR' });
+    expect(svc.getCatalogItem('skin-ak-redline')).toMatchObject({ localizedName: 'AK-47 | Linha Vermelha', category: 'SKIN' });
   });
 
   test('pt-BR não hospedado (404) é tolerado: nomes traduzidos ficam nulos', async () => {
     const overrides = Object.fromEntries(FILES.map((f) => [`pt-BR/${f}.json`, statusResponse(404)]));
     const result = await svc.refreshCatalog({ fetchFn: makeFetch(overrides), now: NOW });
     expect(result.total).toBe(21);
-    expect(svc.getCatalogItem('skin-ak-redline').namePtBr).toBeNull();
+    Setting.update({ language: 'pt-BR' });
+    expect(svc.getCatalogItem('skin-ak-redline').localizedName).toBeNull();
   });
 
   test('refresh vincula itens legados e informa a quantidade', async () => {
@@ -100,12 +105,9 @@ describe('refreshCatalog', () => {
 
     const failures = [
       ['HTTP 500 em arquivo en', { 'en/skins.json': statusResponse(500) }, 'CATALOG_FETCH_FAILED'],
-      ['HTTP 500 em arquivo pt-BR', { 'pt-BR/stickers.json': statusResponse(500) }, 'CATALOG_FETCH_FAILED'],
       ['HTTP 404 em arquivo en', { 'en/crates.json': statusResponse(404) }, 'CATALOG_FETCH_FAILED'],
       ['rede caindo', { 'en/agents.json': () => Promise.reject(new TypeError('fetch failed')) }, 'CATALOG_FETCH_FAILED'],
-      ['rede caindo só no pt-BR', { 'pt-BR/agents.json': () => Promise.reject(new TypeError('fetch failed')) }, 'CATALOG_FETCH_FAILED'],
       ['JSON inválido', { 'en/keychains.json': okResponse('{nao e json') }, 'CATALOG_INVALID_FORMAT'],
-      ['JSON inválido só no pt-BR', { 'pt-BR/skins.json': okResponse('<html>') }, 'CATALOG_INVALID_FORMAT'],
       ['JSON que não é lista', { 'en/skins.json': okResponse('{"a":1}') }, 'CATALOG_INVALID_FORMAT'],
     ];
 
@@ -116,6 +118,18 @@ describe('refreshCatalog', () => {
       });
       expect(svc.getCatalogStatus()).toEqual(before);
       expect(svc.getCatalogItem('skin-ak-redline').updatedAt).toBeUndefined();
+    });
+
+    test.each([
+      ['HTTP 500 em arquivo pt-BR', { 'pt-BR/stickers.json': statusResponse(500) }, 'CATALOG_FETCH_FAILED'],
+      ['rede caindo só no pt-BR', { 'pt-BR/agents.json': () => Promise.reject(new TypeError('fetch failed')) }, 'CATALOG_FETCH_FAILED'],
+      ['JSON inválido só no pt-BR', { 'pt-BR/skins.json': okResponse('<html>') }, 'CATALOG_INVALID_FORMAT'],
+    ])('idioma opcional: %s vira aviso, sem abortar e sem apagar os nomes gravados', async (_name, overrides, reason) => {
+      const result = await svc.refreshCatalog({ fetchFn: makeFetch(overrides), now: NOW });
+      expect(result.skippedLanguages).toEqual([{ language: 'pt-BR', reason }]);
+      expect(result.total).toBeGreaterThanOrEqual(21);
+      Setting.update({ language: 'pt-BR' });
+      expect(svc.getCatalogItem('skin-ak-redline').localizedName).toBe('AK-47 | Linha Vermelha');
     });
 
     test('timeout: aborta e responde CATALOG_FETCH_FAILED', async () => {
@@ -172,20 +186,20 @@ describe('refreshCatalog', () => {
 describe('snapshot', () => {
   test('serializeSnapshot -> parseSnapshot: ida e volta', () => {
     const rows = [
-      row('b-2', 'Segundo', { namePtBr: 'Segunda Opção', minFloat: 0.1, maxFloat: 0.5, hasStattrak: 1, phase: 'Phase 1', rarity: 'Covert', imageUrl: 'https://x/y.png' }),
+      row('b-2', 'Segundo', { names: { 'pt-BR': 'Segunda Opção' }, minFloat: 0.1, maxFloat: 0.5, hasStattrak: 1, phase: 'Phase 1', rarity: 'Covert', imageUrl: 'https://x/y.png' }),
       row('a-1', '★ Primeiro'),
     ];
     const text = svc.serializeSnapshot(rows, { now: NOW });
     const json = JSON.parse(text);
-    expect(json).toMatchObject({ formatVersion: 1, generatedAt: NOW.toISOString(), counts: { SKINS: 2, STICKERS: 0, CRATES: 0, KEYCHAINS: 0, AGENTS: 0 } });
+    expect(json).toMatchObject({ formatVersion: 2, generatedAt: NOW.toISOString(), counts: { SKINS: 2, STICKERS: 0, CRATES: 0, KEYCHAINS: 0, AGENTS: 0 } });
     expect(json.rows.map((r) => r[0])).toEqual(['a-1', 'b-2']); // ordenado por id
     expect(text.trim().split('\n')).toHaveLength(json.rows.length + 2); // cabeçalho + 1 linha por row + fechamento
     const parsed = svc.parseSnapshot(text);
     expect(parsed.generatedAt).toBe(NOW.toISOString());
     expect(parsed.rows).toEqual([
-      expect.objectContaining({ id: 'a-1', name: '★ Primeiro', nameKey: 'primeiro', searchText: 'primeiro', namePtBr: null }),
+      expect.objectContaining({ id: 'a-1', name: '★ Primeiro', nameKey: 'primeiro', searchText: 'primeiro', names: {} }),
       expect.objectContaining({
-        id: 'b-2', namePtBr: 'Segunda Opção', nameKey: 'segundo', searchText: 'segundo segunda opcao', minFloat: 0.1, maxFloat: 0.5,
+        id: 'b-2', names: { 'pt-BR': 'Segunda Opção' }, nameKey: 'segundo', searchText: 'segundo segunda opcao', minFloat: 0.1, maxFloat: 0.5,
         hasStattrak: 1, hasSouvenir: 0, phase: 'Phase 1', rarity: 'Covert', imageUrl: 'https://x/y.png',
       }),
     ]);
@@ -201,7 +215,7 @@ describe('snapshot', () => {
       return s;
     };
     test.each([
-      ['formatVersion 2', (s) => { s.formatVersion = 2; }],
+      ['formatVersion 3', (s) => { s.formatVersion = 3; }],
       ['columns diferentes', (s) => { s.columns = [...s.columns].reverse(); }],
       ['columns a menos', (s) => { s.columns = s.columns.slice(1); }],
       ['categoria inválida', (s) => { s.rows[0][2] = 'XYZ'; }],
@@ -375,11 +389,12 @@ describe('consultas', () => {
   beforeEach(() => importCatalogFixture());
 
   test('searchCatalog: busca por nome, tradução, acento e meta', () => {
+    Setting.update({ language: 'pt-BR' });
     const r = svc.searchCatalog({ q: 'ak red' });
     expect(r.items.map((i) => i.id)).toEqual([CAT.AK_REDLINE]);
     expect(r.meta).toEqual({ catalogUpdatedAt: '2026-11-01T00:00:00.000Z', total: 1 });
     expect(r.items[0]).toEqual({
-      id: 'skin-ak-redline', source: 'SKINS', category: 'SKIN', name: 'AK-47 | Redline', namePtBr: 'AK-47 | Linha Vermelha',
+      id: 'skin-ak-redline', source: 'SKINS', category: 'SKIN', name: 'AK-47 | Redline', localizedName: 'AK-47 | Linha Vermelha',
       imageUrl: 'https://img.test/skin-ak-redline.png', minFloat: 0.1, maxFloat: 0.7, hasStattrak: true, hasSouvenir: false,
       phase: null, rarity: 'Classified',
     });

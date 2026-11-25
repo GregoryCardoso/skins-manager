@@ -3,6 +3,7 @@
 import { useLocale, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import { formatDate, formatFloat, formatMoney, formatRemaining, remainingToText } from '@/lib/format';
 import { isHttpsLink, isSafeInspectLink } from '@/lib/safeUrl';
+import { itemDisplayName, itemEnglishTitle } from '@/lib/itemName';
 import type { ItemView, Store } from '@/types/api';
 import { Badge, type BadgeTone } from './badges';
 import ComponentThumbs from './ComponentThumbs';
@@ -71,7 +72,7 @@ function ItemCell({ item }: { item: ItemView }) {
 
   return (
     <div className={styles.itemCell}>
-      <strong className={styles.name}>{item.name}</strong>
+      <strong className={styles.name} title={itemEnglishTitle(item)}>{itemDisplayName(item)}</strong>
       {details.length > 0 && (
         <span className={styles.details} title={exteriorLabel ?? undefined}>
           {details.join(' · ')}
@@ -250,7 +251,7 @@ export default function InventoryUnitRow({
             type="checkbox"
             checked={selection.checked}
             onChange={(event) => selection.onChange(event.target.checked)}
-            aria-label={t('inventory.bulk.selectUnit', { name: item.name, id: item.id })}
+            aria-label={t('inventory.bulk.selectUnit', { name: itemDisplayName(item), id: item.id })}
           />
         </td>
       )}

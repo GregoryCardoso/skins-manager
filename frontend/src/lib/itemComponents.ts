@@ -14,7 +14,7 @@ export type HangingKind = 'CHARM' | 'STICKER_SLAB';
 export interface ComponentCatalogChoice {
   id: string;
   name: string;
-  namePtBr: string | null;
+  localizedName: string | null;
   imageUrl: string | null;
 }
 
@@ -79,10 +79,10 @@ export function newPatchDraft(): PatchDraft {
   return { key: `patch-${draftCounter}`, catalog: null, slot: '' };
 }
 
-const toChoice = (component: { catalogId: string | null; name: string; namePtBr: string | null; imageUrl: string | null }): ComponentCatalogChoice => ({
+const toChoice = (component: { catalogId: string | null; name: string; localizedName: string | null; imageUrl: string | null }): ComponentCatalogChoice => ({
   id: component.catalogId ?? '',
   name: component.name,
-  namePtBr: component.namePtBr,
+  localizedName: component.localizedName,
   imageUrl: component.imageUrl,
 });
 
@@ -235,11 +235,11 @@ export function componentsBodyFromItem(item: ItemView): ItemComponentInput[] {
 
 // Texto curto de um componente para o `title` das miniaturas (nome, slot, desgaste e pattern).
 export function componentTooltip(
-  component: { name: string; namePtBr: string | null; slot: number | null; wear: number | null; pattern: number | null },
+  component: { name: string; localizedName: string | null; slot: number | null; wear: number | null; pattern: number | null },
   language: string,
   labels: { slot: string; wear: string; pattern: string },
 ): string {
-  const name = language === 'pt-BR' ? component.namePtBr ?? component.name : component.name;
+  const name = component.localizedName ?? component.name;
   const parts = [name];
   if (component.slot !== null) parts.push(`${labels.slot} ${component.slot}`);
   if (component.wear !== null) parts.push(`${labels.wear} ${wearToText(component.wear, language)}%`);

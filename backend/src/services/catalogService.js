@@ -4,7 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const {
-  CATALOG_BASE_URL, CATALOG_LANGUAGES, CATALOG_FILES, CATALOG_FETCH_TIMEOUT_MS, CATALOG_MAX_FILE_BYTES, CATALOG_SEARCH_DEFAULT_LIMIT,
+  CATALOG_BASE_URL, CATALOG_LANGUAGE_FOLDERS, CATALOG_FILES, CATALOG_FETCH_TIMEOUT_MS, CATALOG_MAX_FILE_BYTES, CATALOG_SEARCH_DEFAULT_LIMIT,
   CATALOG_SEARCH_MAX_LIMIT, CATALOG_ID_MAX_LENGTH, CATALOG_SNAPSHOT_PATH, CATALOG_MIN_ROWS, CATALOG_MAX_SKIPPED_RATIO,
 } = require('../config/constants');
 const CatalogItem = require('../models/CatalogItem');
@@ -16,12 +16,15 @@ const { CATEGORIES, CATALOG_CATEGORIES } = require('./itemAttributesService');
 const { readLimitedText } = require('./fxRates/fxHttp');
 const { SOURCES, normalizeSearchText, buildSearchText, toSafeImageUrl, mapCatalog } = require('./catalog/csgoApiAdapter');
 
-const SNAPSHOT_FORMAT_VERSION = 1;
+// Formato 2 (11.5): a coluna `namePtBr` virou `names` (objeto { idioma: nome } ou nulo). O formato 1 ainda é aceito na leitura.
+const SNAPSHOT_FORMAT_VERSION = 2;
 const SNAPSHOT_SOURCE_URL = 'https://github.com/ByMykel/CSGO-API';
 const SNAPSHOT_COLUMNS = Object.freeze([
-  'id', 'source', 'category', 'name', 'namePtBr', 'imageUrl', 'minFloat', 'maxFloat', 'hasStattrak',
+  'id', 'source', 'category', 'name', 'names', 'imageUrl', 'minFloat', 'maxFloat', 'hasStattrak',
   'hasSouvenir', 'phase', 'rarity',
 ]);
+const SNAPSHOT_COLUMNS_V1 = Object.freeze(SNAPSHOT_COLUMNS.map((c) => (c === 'names' ? 'namePtBr' : c)));
+const LANGUAGE_CODE_PATTERN = /^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})?$/;
 const ID_PATTERN = /^[A-Za-z0-9_-]+$/;
 const MIN_QUERY_LENGTH = 2;
 
@@ -46,14 +49,15 @@ const isNil = (v) => v === null || v === undefined;
 
 // --- Visão pública ------------------------------------------------------------------------------
 
-function toCatalogView(row) {
+// `localizedName`: o nome no idioma das configurações (só exibição; o canônico em inglês é `name`) ou nulo (inglês ou sem tradução).
+function toCatalogView(row, localizedName = null) {
   if (!row) return null;
   return {
     id: row.id,
     source: row.source,
     category: row.category,
     name: row.name,
-    namePtBr: row.namePtBr,
+    localizedName: localizedName || null,
     imageUrl: toSafeImageUrl(row.imageUrl),
     minFloat: row.minFloat,
     maxFloat: row.maxFloat,
@@ -62,6 +66,18 @@ function toCatalogView(row) {
     phase: row.phase,
     rarity: row.rarity,
   };
+}
+
+// Idioma das configurações e os nomes das linhas nesse idioma (uma consulta por chamada). Em inglês não há consulta.
+function loadLocalizedNames(rows) {
+  const language = Setting.get().language;
+  if (!language || language === 'en' || rows.length === 0) return new Map();
+  return new Map(CatalogItem.findNames(rows.map((r) => r.id), language).map((n) => [n.catalogId, n.name]));
+}
+
+function toCatalogViews(rows) {
+  const names = loadLocalizedNames(rows);
+  return rows.map((row) => toCatalogView(row, names.get(row.id)));
 }
 
 // --- Consulta -----------------------------------------------------------------------------------
@@ -84,12 +100,13 @@ function searchCatalog({ q, category, limit } = {}) {
     limit: finalLimit,
     dedupe: true, // D115
   });
-  return { items: rows.map(toCatalogView), meta: { catalogUpdatedAt: Setting.get().catalogUpdatedAt, total } };
+  return { items: toCatalogViews(rows), meta: { catalogUpdatedAt: Setting.get().catalogUpdatedAt, total } };
 }
 
 function getCatalogItem(id) {
   if (typeof id !== 'string' || id.length === 0 || id.length > CATALOG_ID_MAX_LENGTH) return null;
-  return toCatalogView(CatalogItem.findById(id));
+  const row = CatalogItem.findById(id);
+  return row ? toCatalogViews([row])[0] : null;
 }
 
 // Rota do catálogo: 404. (O itemService converte para 400 no corpo do item.)
@@ -100,20 +117,27 @@ function getCatalogItemOrFail(id) {
 }
 
 function getCatalogItemsByIds(ids) {
-  return CatalogItem.findByIds(ids.filter((id) => typeof id === 'string')).map(toCatalogView);
+  return toCatalogViews(CatalogItem.findByIds(ids.filter((id) => typeof id === 'string')));
 }
 
 // Entrada de nome igual (normalizado) e categoria igual, ou `null` (D78, PASSE_BATALHA livre).
 function findExactMatch({ name, category }) {
   const [first] = CatalogItem.findByNameKey(normalizeSearchText(name), category);
-  return first ? toCatalogView(first) : null;
+  return first ? toCatalogViews([first])[0] : null;
 }
 
 // Várias entradas exatas de uma vez (S1): Map nome normalizado -> entrada (a de menor id, como `findExactMatch`).
 function findExactMatches(names, category) {
   const keys = names.map((name) => normalizeSearchText(name));
   const out = new Map();
-  for (const row of CatalogItem.findByNameKeys(keys, category)) if (!out.has(row.nameKey)) out.set(row.nameKey, toCatalogView(row));
+  const unique = [];
+  for (const row of CatalogItem.findByNameKeys(keys, category)) {
+    if (out.has(row.nameKey)) continue;
+    out.set(row.nameKey, row);
+    unique.push(row);
+  }
+  const views = toCatalogViews(unique);
+  unique.forEach((row, i) => out.set(row.nameKey, views[i]));
   return out;
 }
 
@@ -125,8 +149,8 @@ function getCatalogStatus() {
 
 // --- Download online ----------------------------------------------------------------------------
 
-function urlFor(lang, file) {
-  return `${CATALOG_BASE_URL}${lang}/${file}`;
+function urlFor(folder, file) {
+  return `${CATALOG_BASE_URL}${folder}/${file}`;
 }
 
 function tooLarge() {
@@ -138,7 +162,7 @@ async function fetchJson(fetchFn, url, { signal, optional }) {
   let text;
   try {
     response = await fetchFn(url, { signal });
-    // Idioma secundário não hospedado (404) é tolerado: o nome traduzido fica nulo (adendo D80).
+    // Idioma secundário não hospedado (404) é tolerado: o nome traduzido fica ausente (adendo D80, D369 11.5).
     if (optional && response.status === 404) return null;
     if (!response.ok) {
       throw new UpstreamError(
@@ -196,19 +220,27 @@ async function downloadCatalog({ fetchFn = globalThis.fetch, timeoutMs = CATALOG
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const jobs = [];
-    for (const lang of CATALOG_LANGUAGES) {
+    // Idiomas opcionais (qualquer um além do en) que falharam: ignorados por inteiro, mantendo os nomes gravados (D369, 11.5).
+    const skippedLanguages = new Map();
+    for (const [lang, folder] of Object.entries(CATALOG_LANGUAGE_FOLDERS)) {
       for (const source of SOURCES) {
-        // O pt-BR é opcional em todas as fontes; os patches (10.3, D362) também no inglês: sem a fonte, o catálogo fica sem PATCH
-        // e as funções de patch ficam escondidas, sem bloquear o resto.
+        // Todo idioma além do inglês é opcional em todas as fontes; os patches (10.3, D362) também no inglês: sem a fonte, o
+        // catálogo fica sem PATCH e as funções de patch ficam escondidas, sem bloquear o resto.
         const optional = lang !== 'en' || source === 'PATCHES';
-        jobs.push(
-          fetchJson(fetchFn, urlFor(lang, CATALOG_FILES[source]), { signal: controller.signal, optional }).then((json) => {
-            if (json !== null && !Array.isArray(json)) {
-              throw new UpstreamError('O catálogo baixado está em um formato inválido.', 'CATALOG_INVALID_FORMAT');
-            }
-            return { lang, source, json };
-          })
-        );
+        let job = fetchJson(fetchFn, urlFor(folder, CATALOG_FILES[source]), { signal: controller.signal, optional }).then((json) => {
+          if (json !== null && !Array.isArray(json)) {
+            throw new UpstreamError('O catálogo baixado está em um formato inválido.', 'CATALOG_INVALID_FORMAT');
+          }
+          return { lang, source, json };
+        });
+        if (lang !== 'en') {
+          // Qualquer erro (500, rede, timeout, JSON quebrado) num idioma secundário vira aviso, não aborta o refresh.
+          job = job.catch((err) => {
+            if (!skippedLanguages.has(lang)) skippedLanguages.set(lang, err && err.code ? err.code : 'CATALOG_FETCH_FAILED');
+            return { lang, source, json: null };
+          });
+        }
+        jobs.push(job);
       }
     }
     let results;
@@ -219,12 +251,19 @@ async function downloadCatalog({ fetchFn = globalThis.fetch, timeoutMs = CATALOG
       jobs.forEach((job) => job.catch(() => {}));
       throw err;
     }
-    const data = { en: {}, 'pt-BR': {} };
-    for (const { lang, source, json } of results) if (json !== null) data[lang][source] = json;
-    const mapped = mapCatalog({ en: data.en, ptBr: data['pt-BR'] });
+    const data = Object.fromEntries(Object.keys(CATALOG_LANGUAGE_FOLDERS).map((lang) => [lang, {}]));
+    for (const { lang, source, json } of results) {
+      if (json !== null && !skippedLanguages.has(lang)) data[lang][source] = json;
+    }
+    for (const lang of skippedLanguages.keys()) data[lang] = {};
+    const { en, ...translations } = data;
+    const mapped = mapCatalog({ en, translations });
     validateDownloadedCatalog(mapped, validation || defaultValidation);
-    // Fontes sem pt-BR (404): o refresh preserva as traduções já gravadas.
-    return { ...mapped, ptBrMissing: SOURCES.filter((s) => !data['pt-BR'][s]) };
+    // Idiomas/fontes sem pasta (404) ou com erro: o refresh preserva os nomes já gravados (`keepStoredNames`).
+    return {
+      ...mapped,
+      skippedLanguages: [...skippedLanguages].map(([language, reason]) => ({ language, reason })),
+    };
   } finally {
     clearTimeout(timer);
   }
@@ -239,16 +278,21 @@ function writeCatalog(rows, { now, catalogUpdatedAt }) {
   });
 }
 
-// Linhas de fontes sem pt-BR herdam a tradução gravada; o texto de busca é recalculado junto.
-function keepStoredTranslations(rows, ptBrMissing) {
-  const missing = rows.filter((r) => ptBrMissing.includes(r.source) && !r.namePtBr);
-  if (missing.length === 0) return;
-  const stored = new Map(CatalogItem.findByIds(missing.map((r) => r.id)).map((r) => [r.id, r.namePtBr]));
-  for (const row of missing) {
-    const namePtBr = stored.get(row.id);
-    if (!namePtBr) continue;
-    row.namePtBr = namePtBr;
-    row.searchText = buildSearchText(row.nameKey, namePtBr);
+// Os nomes já gravados de um idioma que o download não trouxe (pasta ausente, 404) são preservados; o texto de busca é recalculado.
+// Idioma que o download trouxe para a linha vale mais que o gravado.
+function keepStoredNames(rows) {
+  const stored = new Map();
+  for (const n of CatalogItem.findAllNames()) {
+    if (!stored.has(n.catalogId)) stored.set(n.catalogId, {});
+    stored.get(n.catalogId)[n.language] = n.name;
+  }
+  for (const row of rows) {
+    const old = stored.get(row.id);
+    if (!old) continue;
+    const merged = { ...old, ...row.names };
+    for (const [lang, name] of Object.entries(merged)) if (name === row.name) delete merged[lang];
+    row.names = merged;
+    row.searchText = buildSearchText(row.nameKey, merged);
   }
 }
 
@@ -258,11 +302,11 @@ async function refreshCatalog({ fetchFn = globalThis.fetch, now = new Date(), ti
   }
   refreshInProgress = true;
   try {
-    const { rows, skipped, ptBrMissing } = await downloadCatalog({ fetchFn, timeoutMs, validation });
-    keepStoredTranslations(rows, ptBrMissing);
+    const { rows, skipped, skippedLanguages } = await downloadCatalog({ fetchFn, timeoutMs, validation });
+    keepStoredNames(rows);
     writeCatalog(rows, { now, catalogUpdatedAt: now.toISOString() });
     const linkedLegacyItems = linkLegacyItems({ now });
-    return { ...getCatalogStatus(), skipped, linkedLegacyItems };
+    return { ...getCatalogStatus(), skipped, linkedLegacyItems, skippedLanguages };
   } finally {
     refreshInProgress = false;
   }
@@ -278,15 +322,32 @@ function isStringOrNull(v) {
   return v === null || typeof v === 'string';
 }
 
-function validateSnapshotRow(row, index) {
+// Nomes da linha como objeto { idioma: nome } (ou {}): `names` (formato 2) ou `namePtBr` (formato 1), com a validação.
+function snapshotNames(raw, where, version) {
+  if (raw === null) return {};
+  if (version === 1) {
+    if (typeof raw !== 'string') throw invalidSnapshot(`${where} com texto inválido`);
+    return raw.trim() === '' ? {} : { 'pt-BR': raw };
+  }
+  if (typeof raw !== 'object' || Array.isArray(raw)) throw invalidSnapshot(`${where} com nomes inválidos`);
+  const names = {};
+  for (const [lang, value] of Object.entries(raw)) {
+    if (!LANGUAGE_CODE_PATTERN.test(lang) || typeof value !== 'string') throw invalidSnapshot(`${where} com nomes inválidos`);
+    if (value.trim() !== '') names[lang] = value.trim();
+  }
+  return names;
+}
+
+function validateSnapshotRow(row, index, version) {
   const where = `linha ${index}`;
   if (!Array.isArray(row) || row.length !== SNAPSHOT_COLUMNS.length) throw invalidSnapshot(`${where} com formato incorreto`);
-  const [id, source, category, name, namePtBr, imageUrl, minFloat, maxFloat, hasStattrak, hasSouvenir, phase, rarity] = row;
+  const [id, source, category, name, rawNames, imageUrl, minFloat, maxFloat, hasStattrak, hasSouvenir, phase, rarity] = row;
   if (typeof id !== 'string' || id.length > CATALOG_ID_MAX_LENGTH || !ID_PATTERN.test(id)) throw invalidSnapshot(`${where} com id inválido`);
   if (!SOURCES.includes(source)) throw invalidSnapshot(`${where} com fonte inválida`);
   if (!CATEGORIES.includes(category)) throw invalidSnapshot(`${where} com categoria inválida`);
   if (typeof name !== 'string' || name.trim() === '') throw invalidSnapshot(`${where} sem nome`);
-  if (!isStringOrNull(namePtBr) || !isStringOrNull(imageUrl) || !isStringOrNull(phase) || !isStringOrNull(rarity)) {
+  snapshotNames(rawNames, where, version);
+  if (!isStringOrNull(imageUrl) || !isStringOrNull(phase) || !isStringOrNull(rarity)) {
     throw invalidSnapshot(`${where} com texto inválido`);
   }
   for (const f of [minFloat, maxFloat]) {
@@ -307,8 +368,10 @@ function parseSnapshot(json) {
     }
   }
   if (data === null || typeof data !== 'object' || Array.isArray(data)) throw invalidSnapshot('estrutura inesperada');
-  if (data.formatVersion !== SNAPSHOT_FORMAT_VERSION) throw invalidSnapshot(`formatVersion ${data.formatVersion} não suportado`);
-  if (!Array.isArray(data.columns) || data.columns.length !== SNAPSHOT_COLUMNS.length || data.columns.some((c, i) => c !== SNAPSHOT_COLUMNS[i])) {
+  if (data.formatVersion !== SNAPSHOT_FORMAT_VERSION && data.formatVersion !== 1) throw invalidSnapshot(`formatVersion ${data.formatVersion} não suportado`);
+  const version = data.formatVersion;
+  const expectedColumns = version === 1 ? SNAPSHOT_COLUMNS_V1 : SNAPSHOT_COLUMNS;
+  if (!Array.isArray(data.columns) || data.columns.length !== expectedColumns.length || data.columns.some((c, i) => c !== expectedColumns[i])) {
     throw invalidSnapshot('colunas diferentes do esperado');
   }
   if (typeof data.generatedAt !== 'string' || Number.isNaN(Date.parse(data.generatedAt))) throw invalidSnapshot('generatedAt inválido');
@@ -316,19 +379,26 @@ function parseSnapshot(json) {
 
   const seen = new Set();
   const rows = data.rows.map((row, index) => {
-    validateSnapshotRow(row, index);
+    validateSnapshotRow(row, index, version);
     if (seen.has(row[0])) throw invalidSnapshot(`id repetido (${row[0]})`);
     seen.add(row[0]);
-    const [id, source, category, name, namePtBr, imageUrl, minFloat, maxFloat, hasStattrak, hasSouvenir, phase, rarity] = row;
+    const [id, source, category, name, rawNames, imageUrl, minFloat, maxFloat, hasStattrak, hasSouvenir, phase, rarity] = row;
     const nameKey = normalizeSearchText(name);
-    const ptKey = namePtBr ? normalizeSearchText(namePtBr) : '';
+    const names = snapshotNames(rawNames, `linha ${index}`, version);
     return {
-      id, source, category, name, namePtBr, nameKey,
-      searchText: ptKey && ptKey !== nameKey ? `${nameKey} ${ptKey}` : nameKey,
+      id, source, category, name, names, nameKey,
+      searchText: buildSearchText(nameKey, names),
       imageUrl: toSafeImageUrl(imageUrl), minFloat, maxFloat, hasStattrak, hasSouvenir, phase, rarity,
     };
   });
   return { generatedAt: data.generatedAt, rows };
+}
+
+// Nomes no snapshot: objeto com os idiomas em ordem alfabética, sem os iguais ao inglês; `null` quando não há nenhum.
+function serializeNames(names, canonical) {
+  const entries = Object.entries(names || {}).filter(([, n]) => typeof n === 'string' && n.trim() !== '' && n !== canonical);
+  if (entries.length === 0) return null;
+  return Object.fromEntries(entries.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
 }
 
 // Texto do snapshot: JSON válido, uma linha de `rows` por linha do arquivo, ordenado por id.
@@ -345,7 +415,7 @@ function serializeSnapshot(rows, { now = new Date() } = {}) {
   };
   const lines = sorted.map((r) =>
     JSON.stringify([
-      r.id, r.source, r.category, r.name, r.namePtBr ?? null, r.imageUrl ?? null, r.minFloat ?? null, r.maxFloat ?? null,
+      r.id, r.source, r.category, r.name, serializeNames(r.names, r.name), r.imageUrl ?? null, r.minFloat ?? null, r.maxFloat ?? null,
       r.hasStattrak ? 1 : 0, r.hasSouvenir ? 1 : 0, r.phase ?? null, r.rarity ?? null,
     ])
   );
@@ -356,6 +426,7 @@ function serializeSnapshot(rows, { now = new Date() } = {}) {
 // Importa um snapshot (objeto ou texto) sem consultar datas: upsert + `catalog_updated_at = generatedAt`.
 function importSnapshot(snapshot, { now = new Date() } = {}) {
   const { generatedAt, rows } = parseSnapshot(snapshot);
+  keepStoredNames(rows);
   writeCatalog(rows, { now, catalogUpdatedAt: generatedAt });
   return { imported: rows.length, generatedAt };
 }
@@ -368,6 +439,7 @@ function syncBundledCatalog({ now = new Date(), snapshotPath = CATALOG_SNAPSHOT_
     const parsed = parseSnapshot(text);
     const current = Setting.get().catalogUpdatedAt;
     if (current === null || Date.parse(current) < Date.parse(parsed.generatedAt)) {
+      keepStoredNames(parsed.rows);
       writeCatalog(parsed.rows, { now, catalogUpdatedAt: parsed.generatedAt });
       result.imported = parsed.rows.length;
     }

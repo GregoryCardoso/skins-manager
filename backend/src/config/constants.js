@@ -25,7 +25,27 @@ const MAX_NOTE_LENGTH = 500; // note de deposits e withdrawals (Etapa 8); valida
 // Catálogo de itens (D70, D80, D81).
 // Adendo D80: o GitHub Pages antigo (bymykel.github.io) redireciona para um 404; a API hospedada vive no raw do GitHub.
 const CATALOG_BASE_URL = 'https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/';
-const CATALOG_LANGUAGES = Object.freeze(['en', 'pt-BR']);
+// Idioma do app -> pasta da CSGO-API (D369, 11.5). Verificado em 2026-11-25 (README e listagem do repositório): a API HOSPEDADA
+// serve só `en` e `zh-CN` (completos: 100% dos ids de skins, stickers, crates, chaveiros, agentes e patches). `pt-BR`, `es-MX`, `ru`,
+// `tr`, `fr`, `it`, `de`, `pl`, `uk`, `ja` e `ko` existem só como idiomas "disponíveis" para quem hospeda a própria cópia (404 hoje).
+// Pasta ausente (404) é tolerada: o nome fica em inglês (ou o já gravado é preservado) e, quando a pasta passar a existir, o próximo
+// refresh traz os nomes sem mudar o código. O espanhol usa `es-MX` (E-P3-Q7).
+const CATALOG_LANGUAGE_FOLDERS = Object.freeze({
+  en: 'en',
+  'pt-BR': 'pt-BR',
+  es: 'es-MX',
+  ru: 'ru',
+  tr: 'tr',
+  fr: 'fr',
+  it: 'it',
+  'zh-CN': 'zh-CN',
+  de: 'de',
+  pl: 'pl',
+  uk: 'uk',
+  ja: 'ja',
+  ko: 'ko',
+});
+const CATALOG_LANGUAGES = Object.freeze(Object.keys(CATALOG_LANGUAGE_FOLDERS));
 const CATALOG_FILES = Object.freeze({
   SKINS: 'skins.json',
   STICKERS: 'stickers.json',
@@ -221,6 +241,7 @@ module.exports = Object.freeze({
   RATE_MAX_DECIMALS,
   CATALOG_BASE_URL,
   CATALOG_LANGUAGES,
+  CATALOG_LANGUAGE_FOLDERS,
   CATALOG_FILES,
   CATALOG_FETCH_TIMEOUT_MS,
   CATALOG_MAX_FILE_BYTES,

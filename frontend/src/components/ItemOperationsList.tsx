@@ -9,6 +9,7 @@ import { formatCentsInput } from '@/lib/numberInput';
 import { queryKeys } from '@/lib/queryKeys';
 import { useInvalidate } from '@/lib/useInvalidate';
 import { listItemOperations, undoOperation } from '@/services/api';
+import { localizedOrName } from '@/lib/itemName';
 import type { ItemOperation, ItemView } from '@/types/api';
 import ConfirmDialog from './ConfirmDialog';
 import forms from './forms.module.css';
@@ -91,7 +92,7 @@ export default function ItemOperationsList({ item }: Props) {
             <strong>{t('operations.line', { kind: kindLabel(operation), date: formatDate(operation.occurredAt, locale) })}</strong>
             {operation.counterparts.map((c) => (
               <span key={c.itemId} className={styles.sub}>
-                {' · '}{t('operations.counterpart', { role: tLoose(`operations.role.${c.role}`), name: c.name ?? t('common.none') })}
+                {' · '}{t('operations.counterpart', { role: tLoose(`operations.role.${c.role}`), name: c.name ? localizedOrName(c.name, c.localizedName) : t('common.none') })}
               </span>
             ))}
             {operation.lossUsdCents !== null && operation.lossUsdCents !== undefined && (
