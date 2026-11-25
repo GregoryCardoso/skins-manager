@@ -3,7 +3,7 @@
 import { useId, useMemo, useState, type FormEvent } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLocale, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
-import { currencyLabel } from '@/lib/currencies';
+import { currencyLabel, moneyErrorParams } from '@/lib/currencies';
 import { formatRate } from '@/lib/format';
 import { describeFxRate } from '@/lib/fxDisplay';
 import { buildFxRows, type FxRow } from '@/lib/fxRates';
@@ -39,7 +39,7 @@ function FxRateRow({ row }: { row: FxRow }) {
     event.preventDefault();
     const parsed = parseDecimalInput(shownText, locale);
     if (parsed === null) {
-      setError(t('fx.invalidInput'));
+      setError(t('fx.invalidInput', { example: moneyErrorParams(locale, undefined).example }));
       setOk(null);
       return;
     }

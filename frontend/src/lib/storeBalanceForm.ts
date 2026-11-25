@@ -1,5 +1,6 @@
 // Formulário de conferência de saldo (D242, D247): conversões puras entre o texto digitado e o corpo da API.
 // O valor digitado é o saldo REAL visto no site da loja, na moeda da loja. O cálculo e a diferença vêm do backend.
+import { hasNoDecimals } from '@/lib/currencies';
 import { localInputToIso, nowLocalInput } from '@/lib/dateInput';
 import { parseMoneyToCents } from '@/lib/numberInput';
 import type { StoreBalanceCheckBody } from '@/types/api';
@@ -31,7 +32,7 @@ export function validateStoreBalanceForm(
 ): StoreBalanceFormErrors {
   const errors: StoreBalanceFormErrors = {};
   if (state.amountText.trim() === '') errors.balanceCents = 'storeBalances.form.amountRequired';
-  else if (parseMoneyToCents(state.amountText, language, currency) === null) errors.balanceCents = 'storeBalances.form.invalidMoney';
+  else if (parseMoneyToCents(state.amountText, language, currency) === null) errors.balanceCents = hasNoDecimals(currency ?? '') ? 'storeBalances.form.invalidMoneyWhole' : 'storeBalances.form.invalidMoney';
   if (state.recordedAt.trim() === '' || localInputToIso(state.recordedAt) === null) errors.recordedAt = 'storeBalances.form.invalidDate';
   if (adjust && state.noteText.trim() === '') errors.note = 'errors.ADJUSTMENT_NOTE_REQUIRED';
   return errors;

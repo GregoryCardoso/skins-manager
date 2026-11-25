@@ -68,7 +68,7 @@ describe('modal da troca', () => {
   test('textos aprovados (E-P3-Q18 e Q19) em pt-BR e en', () => {
     expect(ptBR.currency.modal.title).toBe('Mostrar valores em {currency}?');
     expect(ptBR.currency.modal.body).toBe(
-      'Os valores em {currency} são aproximados: eles são convertidos pela cotação e mudam quando ela muda. Seu saldo e seu lucro continuam sendo contados em dólar (US$).',
+      'Os valores em {currency} são aproximados. Eles usam a cotação e mudam quando ela muda. Seu saldo e seu lucro continuam em dólar (US$).',
     );
     expect(ptBR.currency.modal.confirm).toBe('Usar {currency}');
     expect(en.currency.modal.title).toBe('Show values in {currency}?');
@@ -113,7 +113,6 @@ describe('"≈" na moeda escolhida: nenhum componente fixa BRL', () => {
   test('o texto "≈ {value}" é genérico nos dois idiomas (sem R$ nem moeda fixa)', () => {
     for (const dict of [ptBR, en]) {
       expect(dict.common.approx).toBe('≈ {value}');
-      expect(dict.profit.summary.brlApprox).toBe('≈ {value}');
     }
   });
 });
@@ -145,9 +144,9 @@ describe('FX_RATE_OUT_OF_RANGE (faixa manual)', () => {
     const t = (key: string, params?: Record<string, string | number>) => translate(ptBR, key, params);
     const params = errorDetailParams(error({ currency: 'BRL', min: 0.5, max: 100 }), t, 'pt-BR');
     expect(params).toEqual({ currency: 'BRL', min: '0,5', max: '100' });
-    expect(translate(ptBR, 'errors.FX_RATE_OUT_OF_RANGE', params ?? {})).toBe('Essa cotação parece errada. Para BRL, ela deve ficar entre 0,5 e 100.');
+    expect(translate(ptBR, 'errors.FX_RATE_OUT_OF_RANGE', params ?? {})).toBe('Essa cotação parece errada. Para BRL, use um valor entre 0,5 e 100.');
     expect(translate(en, 'errors.FX_RATE_OUT_OF_RANGE', errorDetailParams(error({ currency: 'ARS', min: 5, max: 500000 }), (k) => k, 'en') ?? {})).toBe(
-      'That rate looks wrong. For ARS it must be between 5 and 500,000.',
+      'That rate looks wrong. For ARS, enter a value between 5 and 500,000.',
     );
   });
 

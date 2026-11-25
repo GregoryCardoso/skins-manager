@@ -76,7 +76,7 @@ const SALES_KEYS = [
   ...['image', 'item', 'purchaseStore', 'saleStore', 'cost', 'salePrice', 'netReceived', 'profit', 'soldAt', 'days', 'actions'].map((k) => `sales.columns.${k}`),
   ...['label', 'store', 'storeAll', 'inactive', 'period', 'from', 'to', 'sort', 'sortSoldAtDesc', 'sortSoldAtAsc', 'sortTurnaroundAsc', 'sortTurnaroundDesc', 'invalidRange'].map((k) => `salesFilters.${k}`),
   ...['ALL', 'LAST_7', 'LAST_30', 'LAST_90', 'THIS_MONTH', 'LAST_MONTH', 'THIS_YEAR', 'CUSTOM'].map((k) => `salesFilters.periods.${k}`),
-  ...['label', 'sales', 'totalSold', 'totalNet', 'totalProfit', 'avgTurnaround', 'avgTurnaroundValue', 'usdNote', 'profitTitle'].map((k) => `salesSummary.${k}`),
+  ...['label', 'sales', 'totalSold', 'totalNet', 'totalProfit', 'avgTurnaround', 'avgTurnaroundValue.one', 'avgTurnaroundValue.other', 'usdNote', 'profitTitle'].map((k) => `salesSummary.${k}`),
   ...['heading', 'title', 'soldCount', 'avgDaysToSell', 'avgPurchaseCost', 'avgCostUnits.one', 'avgCostUnits.other', 'avgSalePrice', 'avgProfit', 'none', 'fxNote', 'keyNote', 'daysValue.one', 'daysValue.other'].map((k) => `history.${k}`),
 ];
 

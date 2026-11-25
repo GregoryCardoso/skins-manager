@@ -7,7 +7,7 @@ import {
   buildDepositCreateBody, buildDepositPatchBody, depositFormFromDeposit, depositStoreOptions, initialDepositState,
   legacyStoreIsNotUsd, validateDepositForm, type DepositFormState,
 } from '@/lib/depositForm';
-import { moneyInputMode } from '@/lib/currencies';
+import { moneyErrorParams, moneyInputMode } from '@/lib/currencies';
 import { resolveErrorTarget } from '@/lib/formErrors';
 import { formatMoney } from '@/lib/format';
 import { MAX_NOTE_LENGTH } from '@/lib/limits';
@@ -73,7 +73,7 @@ export default function DepositFormModal({ deposit, stores, onClose, onSaved, on
     const local = validateDepositForm(state, locale, paidCurrency);
     if (Object.keys(local).length > 0) {
       const translated: Partial<Record<string, string>> = {};
-      for (const [field, key] of Object.entries(local)) translated[field] = tLoose(key);
+      for (const [field, key] of Object.entries(local)) translated[field] = tLoose(key, moneyErrorParams(locale, field === 'amountBrlCents' ? paidCurrency : 'USD'));
       setErrors(translated);
       return;
     }

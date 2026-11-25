@@ -26,5 +26,5 @@ test('as configurações avisam que a fonte automática atualiza ao abrir (e que
       expect(lang.settings.fx[key]).toBeTruthy();
     }
   }
-  expect(ptBR.settings.fx.autoRefreshHint).toMatch(/atualizada sozinha sempre que o app é aberto/);
+  expect(ptBR.settings.fx.autoRefreshHint).toMatch(/se atualiza sozinha quando você abre o app/);
 });

@@ -31,7 +31,7 @@ describe('SummaryCards: chaves i18n (8.4)', () => {
   });
 
   test('textos do pendente em en e pt-BR; a linha do liberado após o registro não existe mais (D245)', () => {
-    expect(translate(en, 'profit.pendingIncluded', { amount: '$1', date: 'Nov 25' })).toBe('includes $1 pending (releases from Nov 25)');
+    expect(translate(en, 'profit.pendingIncluded', { amount: '$1', date: 'Nov 25' })).toBe('includes $1 pending (first release on Nov 25)');
     expect(translate(ptBR, 'profit.releasedIncluded')).toBe('profit.releasedIncluded');
     expect(translate(en, 'profit.releasedIncluded')).toBe('profit.releasedIncluded');
   });

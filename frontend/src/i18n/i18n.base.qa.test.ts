@@ -54,7 +54,7 @@ describe('plural com os textos reais de en e pt-BR', () => {
     // 11.6: a chave `zero` (quando existe) vale para a contagem 0 em qualquer idioma
     expect(translatePlural(ptBR, 'sales.count', 0, 'pt-BR')).toBe('Nenhuma venda');
     expect(translatePlural(en, 'sales.count', 0, 'en')).toBe('No sales');
-    expect(translatePlural(ptBR, 'common.dayCount', 0, 'pt-BR')).toBe(translate(ptBR, 'common.dayCount.one', { count: 0 }));
+    expect(translatePlural(ptBR, 'common.dayCount', 0, 'pt-BR')).toBe('0 dias'); // B1 (11.6): `zero` = "{count} dias"
   });
 
   test('ru/uk/pl com os cortes 0, 1, 2, 5, 11, 12, 14, 21, 22, 25, 101, 111, negativos e decimais', () => {

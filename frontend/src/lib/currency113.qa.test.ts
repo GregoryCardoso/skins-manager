@@ -345,7 +345,7 @@ describe('paridade de textos e varredura do "≈"', () => {
   test('nenhum texto genérico do "≈" fixa "R$"', () => {
     for (const dict of [en, ptBR]) {
       expect(dict.common.approx).not.toMatch(/R\$|BRL/);
-      expect(dict.profit.summary.brlApprox).not.toMatch(/R\$|BRL/);
+      expect(dict.common.approx).not.toMatch(/R\$|BRL/);
       expect(JSON.stringify(get(dict, 'currency'))).not.toMatch(/R\$|reais/i);
     }
   });

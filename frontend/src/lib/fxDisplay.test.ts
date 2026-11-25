@@ -49,7 +49,7 @@ describe('rótulos da fonte', () => {
     expect(fxSourceShort('AWESOMEAPI', tPt)).toBe('Comercial');
     expect(fxSourceShort(null, tPt)).toBeNull();
     expect(fxSourceName('AWESOMEAPI', tPt)).toBe('Comercial (AwesomeAPI)');
-    expect(fxSourceName('PTAX', tPt)).toBe('PTAX do Banco Central');
+    expect(fxSourceName('PTAX', tPt)).toBe('PTAX (Banco Central do Brasil)');
     expect(fxDateText({ source: 'AWESOMEAPI', quotedAt: QUOTED, updatedAt: null }, 'pt-BR', tPt)).toContain('20/11/2026');
     expect(fxDateText({ source: 'MANUAL', quotedAt: null, updatedAt: null }, 'pt-BR', tPt)).toBeNull();
   });
@@ -61,9 +61,9 @@ describe('erros FX_* traduzidos com o nome da fonte', () => {
   test('com params.source', () => {
     expect(errorMessageFor(err('FX_FETCH_FAILED', 'AWESOMEAPI'), tPt)).toContain('Comercial (AwesomeAPI)');
     expect(errorMessageFor(err('FX_RATE_LIMITED', 'AWESOMEAPI'), tPt)).toContain('Comercial (AwesomeAPI)');
-    expect(errorMessageFor(err('FX_INVALID_RESPONSE', 'PTAX'), tEn)).toContain('Central Bank PTAX');
+    expect(errorMessageFor(err('FX_INVALID_RESPONSE', 'PTAX'), tEn)).toContain('PTAX (Central Bank of Brazil)');
     expect(errorMessageFor(err('PTAX_NOT_FOUND', 'PTAX'), tPt)).toBe(
-      'O Banco Central não publicou a PTAX nos últimos dias. Tente mais tarde, use a cotação comercial ou digite a cotação manualmente.',
+      'O Banco Central não publicou a PTAX nos últimos dias. Tente mais tarde, use a cotação comercial ou digite a cotação.',
     );
   });
 

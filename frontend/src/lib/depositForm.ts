@@ -2,6 +2,7 @@
 // O frontend não soma nem converte nada. O aporte é na moeda da loja (só lojas em USD, E8-Q16): o valor creditado
 // é obrigatório; o valor pago em R$ é opcional e só informativo.
 import { isoToLocalInput, localInputToIso, nowLocalInput } from '@/lib/dateInput';
+import { hasNoDecimals } from '@/lib/currencies';
 import { formatCentsInput, parseMoneyToCents } from '@/lib/numberInput';
 import type { Deposit, DepositCreateBody, DepositPatchBody, Store } from '@/types/api';
 
@@ -65,7 +66,7 @@ export function validateDepositForm(state: DepositFormState, language: string, p
   }
   if (state.paidText.trim() !== '') {
     const cents = parseMoneyToCents(state.paidText, language, paidCurrency);
-    if (cents === null || cents <= 0) errors.amountBrlCents = 'deposits.form.invalidMoney';
+    if (cents === null || cents <= 0) errors.amountBrlCents = hasNoDecimals(paidCurrency ?? '') ? 'deposits.form.invalidMoneyWhole' : 'deposits.form.invalidMoney';
   }
   if (state.feeText.trim() !== '') {
     const cents = parseMoneyToCents(state.feeText, language);

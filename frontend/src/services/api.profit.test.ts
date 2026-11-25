@@ -34,7 +34,7 @@ describe('resumo do lucro real (8.4)', () => {
       expect(holders(translate(en, key)), key).toEqual(holders(translate(ptBR, key)));
     }
     expect(translate(ptBR, 'profit.pendingIncluded', { amount: 'R$ 461,73', date: '25/11/2026' }))
-      .toBe('inclui R$ 461,73 pendente (libera a partir de 25/11/2026)'); // o "≈" vem junto do valor, só se estimado
+      .toBe('inclui R$ 461,73 pendente (primeira liberação em 25/11/2026)'); // o "≈" vem junto do valor, só se estimado
   });
 
   test('o subtítulo não promete mais o resumo para depois', () => {

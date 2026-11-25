@@ -32,5 +32,5 @@ test('textos da 9.7 nos dois idiomas', () => {
     expect(lang.imports.warnings.ACCOUNT_SALE_FEE_DIFFERS).toBeTruthy();
     expect(lang.imports.warnings.ACCOUNT_WITHDRAWAL_FEE_DIFFERS).toBeTruthy();
   }
-  expect(ptBR.balanceCheck.checkedAt).toMatch(/Nada foi gravado/);
+  expect(ptBR.balanceCheck.checkedAt).toMatch(/Nada foi salvo/);
 });

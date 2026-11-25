@@ -28,9 +28,9 @@ describe('paridade das chaves da revisão final da Etapa 8', () => {
 
   test('realProfitHint cita o saldo calculado e o pendente nos dois idiomas (sem o liberado, D245)', () => {
     expect(translate(ptBR, 'profit.summary.realProfitHint').toLowerCase()).toMatch(/pendente/);
-    expect(translate(ptBR, 'profit.summary.realProfitHint').toLowerCase()).toMatch(/calculado/);
+    expect(translate(ptBR, 'profit.summary.realProfitHint').toLowerCase()).toMatch(/saldo das lojas/);
     expect(translate(en, 'profit.summary.realProfitHint').toLowerCase()).toMatch(/pending/);
-    expect(translate(en, 'profit.summary.realProfitHint').toLowerCase()).toMatch(/calculated/);
+    expect(translate(en, 'profit.summary.realProfitHint').toLowerCase()).toMatch(/store balances/);
   });
 
   test('as linhas indisponível citam a cotação do dólar', () => {

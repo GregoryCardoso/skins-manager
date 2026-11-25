@@ -13,7 +13,7 @@ const KEYS = [
   'deposits.amountStore', 'deposits.noUsdStores', 'deposits.legacyStoreNotUsd', 'deposits.amountBrlOptional', 'deposits.legacyBadge',
   'deposits.legacyEditHint', 'deposits.columns.paid', 'deposits.form.storeRequired', 'deposits.form.chooseStore',
   'withdrawals.amountBrlOptional', 'withdrawals.net', 'withdrawals.legacyRecordedBrl',
-  'profit.summary.brlApprox', 'profit.summary.warningDeposits', 'profit.summary.warningWithdrawals',
+  'common.approx', 'profit.summary.warningDeposits', 'profit.summary.warningWithdrawals',
   'DEPOSIT_STORE_CURRENCY_NOT_ALLOWED',
 ];
 
@@ -40,8 +40,8 @@ describe('textos da 8.5', () => {
   });
 
   test('o texto do erro novo é o do D230', () => {
-    expect(translate(ptBR, 'errors.DEPOSIT_STORE_CURRENCY_NOT_ALLOWED')).toBe('O aporte só pode ser registrado em loja em dólar (US$).');
-    expect(translate(en, 'errors.DEPOSIT_STORE_CURRENCY_NOT_ALLOWED')).toBe('Deposits can only be recorded in a US dollar (USD) store.');
+    expect(translate(ptBR, 'errors.DEPOSIT_STORE_CURRENCY_NOT_ALLOWED')).toBe('O aporte só pode ser registrado em uma loja em dólar (US$). Escolha outra loja.');
+    expect(translate(en, 'errors.DEPOSIT_STORE_CURRENCY_NOT_ALLOWED')).toBe('Deposits can only be recorded in a US dollar (US$) store. Choose another store.');
   });
 
   test('o código novo está em errorCodes.ts', () => {
@@ -49,7 +49,7 @@ describe('textos da 8.5', () => {
   });
 
   test('o "≈" vem junto do valor: pendente e liberado não repetem o símbolo no texto', () => {
-    expect(translate(ptBR, 'profit.pendingIncluded', { amount: '≈ US$ 1,00', date: '25/11' })).toBe('inclui ≈ US$ 1,00 pendente (libera a partir de 25/11)');
+    expect(translate(ptBR, 'profit.pendingIncluded', { amount: '≈ US$ 1,00', date: '25/11' })).toBe('inclui ≈ US$ 1,00 pendente (primeira liberação em 25/11)');
     expect(translate(ptBR, 'profit.pendingIncluded', { amount: 'US$ 1,00', date: '25/11' })).not.toContain('≈');
     expect(translate(en, 'profit.releasedIncluded', { amount: 'US$ 1.00' })).not.toContain('≈');
   });

@@ -3,7 +3,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
-import { moneyInputMode } from '@/lib/currencies';
+import { moneyErrorParams, moneyInputMode } from '@/lib/currencies';
 import { resolveErrorTarget } from '@/lib/formErrors';
 import {
   applyFeeSuggestion, buildWithdrawalCreateBody, buildWithdrawalPatchBody, editFee, feeSuggestionRequest,
@@ -116,7 +116,7 @@ export default function WithdrawalFormModal({ withdrawal, stores, onClose, onSav
     const local = validateWithdrawalForm(state, locale, currencies);
     if (Object.keys(local).length > 0) {
       const translated: Partial<Record<string, string>> = {};
-      for (const [field, key] of Object.entries(local)) translated[field] = tLoose(key);
+      for (const [field, key] of Object.entries(local)) translated[field] = tLoose(key, moneyErrorParams(locale, field === 'amountBrlCents' ? receivedCurrency : currency));
       setErrors(translated);
       return;
     }

@@ -2,6 +2,7 @@
 // O frontend não calcula a taxa: só pré-preenche com a sugestão do backend enquanto o campo não foi "tocado".
 import { isoToLocalInput, localInputToIso, nowLocalInput } from '@/lib/dateInput';
 import { formatMoney } from '@/lib/format';
+import { hasNoDecimals } from '@/lib/currencies';
 import { formatCentsInput, parseMoneyToCents } from '@/lib/numberInput';
 import type { Store, Withdrawal, WithdrawalCreateBody, WithdrawalPatchBody } from '@/types/api';
 
@@ -91,14 +92,14 @@ export function validateWithdrawalForm(state: WithdrawalFormState, language: str
   if (state.amountText.trim() === '') errors.amountStoreCents = 'withdrawals.form.amountRequired';
   else {
     const cents = parseMoneyToCents(state.amountText, language, currencies.store);
-    if (cents === null || cents <= 0) errors.amountStoreCents = 'withdrawals.form.invalidMoney';
+    if (cents === null || cents <= 0) errors.amountStoreCents = hasNoDecimals(currencies.store ?? '') ? 'withdrawals.form.invalidMoneyWhole' : 'withdrawals.form.invalidMoney';
   }
   // Taxa: vazia = não informada; 0 é permitido.
-  if (state.feeText.trim() !== '' && parseMoneyToCents(state.feeText, language, currencies.store) === null) errors.feeCents = 'withdrawals.form.invalidFee';
+  if (state.feeText.trim() !== '' && parseMoneyToCents(state.feeText, language, currencies.store) === null) errors.feeCents = hasNoDecimals(currencies.store ?? '') ? 'withdrawals.form.invalidFeeWhole' : 'withdrawals.form.invalidFee';
   // Valor recebido em R$: opcional; quando informado, maior que zero.
   if (state.receivedText.trim() !== '') {
     const cents = parseMoneyToCents(state.receivedText, language, currencies.received);
-    if (cents === null || cents <= 0) errors.amountBrlCents = 'withdrawals.form.invalidMoney';
+    if (cents === null || cents <= 0) errors.amountBrlCents = hasNoDecimals(currencies.received ?? '') ? 'withdrawals.form.invalidMoneyWhole' : 'withdrawals.form.invalidMoney';
   }
   if (state.withdrawnAt.trim() === '' || localInputToIso(state.withdrawnAt) === null) errors.withdrawnAt = 'withdrawals.form.invalidDate';
   return errors;

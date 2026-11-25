@@ -108,8 +108,9 @@ describe('plural de dias (translatePlural)', () => {
   });
 
   test('pt-BR: 0 segue a regra CLDR do idioma (Intl.PluralRules)', () => {
-    const expected = new Intl.PluralRules('pt-BR').select(0) === 'one' ? '0 dia' : '0 dias';
-    expect(translatePlural(ptBR, 'common.dayCount', 0, 'pt-BR')).toBe(expected);
+    // B1 (11.6): a chave `zero` vale para 0 em qualquer idioma, então o pt-BR diz "0 dias" mesmo com o CLDR dizendo `one`.
+    expect(new Intl.PluralRules('pt-BR').select(0)).toBe('one');
+    expect(translatePlural(ptBR, 'common.dayCount', 0, 'pt-BR')).toBe('0 dias');
   });
 
   test('en', () => {

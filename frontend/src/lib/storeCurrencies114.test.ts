@@ -100,7 +100,7 @@ describe('rótulos e campos de valor seguem a moeda da loja', () => {
   test('conferência de saldo em JPY: valor inteiro, na unidade da moeda', () => {
     const state = { amountText: '12300', recordedAt: '2026-11-10T10:00', noteText: '' };
     expect(validateStoreBalanceForm(state, 'en', { currency: 'JPY' })).toEqual({});
-    expect(validateStoreBalanceForm({ ...state, amountText: '123.5' }, 'en', { currency: 'JPY' })).toEqual({ balanceCents: 'storeBalances.form.invalidMoney' });
+    expect(validateStoreBalanceForm({ ...state, amountText: '123.5' }, 'en', { currency: 'JPY' })).toEqual({ balanceCents: 'storeBalances.form.invalidMoneyWhole' });
     expect(buildStoreBalanceBody(state, 3, 'en', false, 'JPY').balanceCents).toBe(1230000);
     expect(buildCheckPreviewQuery(state, 3, 'en', 'JPY')).toMatchObject({ balanceCents: 1230000 });
     expect(buildStoreBalanceBody({ ...state, amountText: '123.45' }, 3, 'en', false, 'EUR').balanceCents).toBe(12345);
@@ -179,8 +179,8 @@ describe('saques e aportes: moeda da loja e moeda do valor informativo', () => {
     const currencies = { store: 'JPY', received: 'EUR' };
     expect(validateWithdrawalForm(state, 'pt-BR', currencies)).toEqual({});
     expect(buildWithdrawalCreateBody(state, 'pt-BR', currencies)).toMatchObject({ storeId: 6, amountStoreCents: 500000, feeCents: 10000, amountBrlCents: 3000 });
-    expect(validateWithdrawalForm({ ...state, amountText: '5000,5' }, 'pt-BR', currencies)).toMatchObject({ amountStoreCents: 'withdrawals.form.invalidMoney' });
-    expect(validateWithdrawalForm({ ...state, receivedText: '30,00' }, 'pt-BR', { store: 'JPY', received: 'KRW' })).toMatchObject({ amountBrlCents: 'withdrawals.form.invalidMoney' });
+    expect(validateWithdrawalForm({ ...state, amountText: '5000,5' }, 'pt-BR', currencies)).toMatchObject({ amountStoreCents: 'withdrawals.form.invalidMoneyWhole' });
+    expect(validateWithdrawalForm({ ...state, receivedText: '30,00' }, 'pt-BR', { store: 'JPY', received: 'KRW' })).toMatchObject({ amountBrlCents: 'withdrawals.form.invalidMoneyWhole' });
   });
 
   test('editar um saque mostra cada valor na sua moeda e o PATCH só leva o que mudou', () => {
@@ -199,7 +199,7 @@ describe('saques e aportes: moeda da loja e moeda do valor informativo', () => {
     };
     const state = depositFormFromDeposit(deposit, 'en');
     expect(state.paidText).toBe('7500');
-    expect(validateDepositForm({ ...state, paidText: '7500.5' }, 'en', 'JPY')).toEqual({ amountBrlCents: 'deposits.form.invalidMoney' });
+    expect(validateDepositForm({ ...state, paidText: '7500.5' }, 'en', 'JPY')).toEqual({ amountBrlCents: 'deposits.form.invalidMoneyWhole' });
     expect(validateDepositForm(state, 'en', 'JPY')).toEqual({});
     expect(buildDepositCreateBody({ ...state, storeId: 1 }, 'en', 'JPY')).toMatchObject({ amountBrlCents: 750000 });
     expect(buildDepositPatchBody(state, deposit, 'en', 'JPY')).toEqual({});
@@ -225,7 +225,7 @@ describe('textos novos (en e pt-BR)', () => {
   test('STORE_CURRENCY_LOCKED continua traduzido; FX_RATE_REQUIRED cita a moeda', () => {
     expect(errorMessageFor(new ApiRequestError('STORE_CURRENCY_LOCKED', 'msg', 409, {}), tPt, 'pt-BR')).toMatch(/moeda não pode mudar/);
     const fx = new ApiRequestError('FX_RATE_REQUIRED', 'msg', 400, { params: { currency: 'EUR' } });
-    expect(errorMessageFor(fx, tEn, 'en')).toBe('Enter the USD→EUR exchange rate, or save one in Settings.');
+    expect(errorMessageFor(fx, tEn, 'en')).toBe('Enter the exchange rate for US$ 1 in EUR, or save one in Settings.');
   });
 
   test('as linhas da Steam no modal existem nos dois idiomas, com {currency} e {from}', () => {

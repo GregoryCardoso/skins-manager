@@ -1,12 +1,13 @@
 'use client';
 
-import { useLocale, useT } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTPlural } from '@/i18n/I18nProvider';
 import { formatMoney } from '@/lib/format';
 import type { SalesSummary as Summary } from '@/types/api';
 import styles from './SalesSummary.module.css';
 
 export default function SalesSummary({ summary }: { summary: Summary }) {
   const t = useT();
+  const tPlural = useTPlural();
   const locale = useLocale();
   const usd = (cents: number) => formatMoney(cents, 'USD', locale);
   const approx = (cents: number | null) =>
@@ -46,7 +47,7 @@ export default function SalesSummary({ summary }: { summary: Summary }) {
           <dd>
             {avg === null
               ? t('common.none')
-              : t('salesSummary.avgTurnaroundValue', { days: new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(avg) })}
+              : tPlural('salesSummary.avgTurnaroundValue', avg, { days: new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(avg) })}
           </dd>
         </div>
       </dl>

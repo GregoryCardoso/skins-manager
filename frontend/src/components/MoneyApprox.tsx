@@ -11,8 +11,8 @@ export function useMoneyLine(): (input: MoneyInput) => string {
   return (input) => {
     const texts = moneyTexts(input, locale);
     if (texts.main === null) return t('profit.summary.unavailable');
-    const main = texts.mainEstimated ? t('profit.summary.brlApprox', { value: texts.main }) : texts.main;
-    return texts.approx === null ? main : `${main} (${t('profit.summary.brlApprox', { value: texts.approx })})`;
+    const main = texts.mainEstimated ? t('common.approx', { value: texts.main }) : texts.main;
+    return texts.approx === null ? main : `${main} (${t('common.approx', { value: texts.approx })})`;
   };
 }
 
@@ -23,11 +23,11 @@ export default function MoneyApprox(input: MoneyInput & { className?: string }) 
   const texts = moneyTexts(input, locale);
   const main = texts.main === null
     ? <span className={styles.unavailable} title={t('profit.summary.unavailableHint')}>{t('profit.summary.unavailable')}</span>
-    : <span>{texts.mainEstimated ? t('profit.summary.brlApprox', { value: texts.main }) : texts.main}</span>;
+    : <span>{texts.mainEstimated ? t('common.approx', { value: texts.main }) : texts.main}</span>;
   return (
     <span className={`${styles.wrap} ${input.className ?? ''}`}>
       {main}
-      {texts.approx !== null && <small className={styles.approx}>{t('profit.summary.brlApprox', { value: texts.approx })}</small>}
+      {texts.approx !== null && <small className={styles.approx}>{t('common.approx', { value: texts.approx })}</small>}
     </span>
   );
 }

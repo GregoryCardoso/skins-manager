@@ -3,7 +3,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
-import { currencySymbol, moneyInputMode } from '@/lib/currencies';
+import { currencySymbol, moneyErrorParams, moneyInputMode } from '@/lib/currencies';
 import { resolveErrorTarget } from '@/lib/formErrors';
 import { formatMoney } from '@/lib/format';
 import { formatCentsInput } from '@/lib/numberInput';
@@ -97,7 +97,7 @@ export default function StoreBalanceFormModal({ store, onClose, onSaved, initial
     const local = validateStoreBalanceForm(state, locale, { adjust, currency: store.currency });
     if (Object.keys(local).length > 0) {
       const translated: Partial<Record<string, string>> = {};
-      for (const [field, key] of Object.entries(local)) translated[field] = tLoose(key);
+      for (const [field, key] of Object.entries(local)) translated[field] = tLoose(key, moneyErrorParams(locale, store.currency));
       setErrors(translated);
       return;
     }
