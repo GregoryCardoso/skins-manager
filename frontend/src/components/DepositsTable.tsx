@@ -1,6 +1,6 @@
 'use client';
 
-import { useLanguage, useT } from '@/i18n/I18nProvider';
+import { useLocale, useT } from '@/i18n/I18nProvider';
 import { formatDate, formatMoney } from '@/lib/format';
 import type { Deposit } from '@/types/api';
 import styles from './DepositsTable.module.css';
@@ -14,7 +14,7 @@ interface Props {
 
 export default function DepositsTable({ deposits, onEdit, onDelete }: Props) {
   const t = useT();
-  const language = useLanguage();
+  const locale = useLocale();
 
   return (
     <div className={styles.scroll}>
@@ -32,7 +32,7 @@ export default function DepositsTable({ deposits, onEdit, onDelete }: Props) {
         <tbody>
           {deposits.map((deposit) => (
             <tr key={deposit.id} className={styles.row}>
-              <td className={styles.date}>{formatDate(deposit.depositedAt, language)}</td>
+              <td className={styles.date}>{formatDate(deposit.depositedAt, locale)}</td>
               <td className={styles.amount}>
                 {/* Valor creditado em US$ com "≈ R$" (tudo calculado no backend). Legado: "≈ US$" + selo + R$ gravado. */}
                 <MoneyApprox cents={deposit.amountUsdCents} estimated={deposit.estimated} approxCents={deposit.legacy ? null : deposit.approxBrlCents} />
@@ -41,8 +41,8 @@ export default function DepositsTable({ deposits, onEdit, onDelete }: Props) {
                     <br />
                     <small className={styles.muted}>
                       {t('deposits.creditedAndFee', {
-                        credited: formatMoney(deposit.amountStoreCents, 'USD', language),
-                        fee: formatMoney(deposit.feeCents, 'USD', language),
+                        credited: formatMoney(deposit.amountStoreCents, 'USD', locale),
+                        fee: formatMoney(deposit.feeCents, 'USD', locale),
                       })}
                     </small>
                   </>
@@ -51,13 +51,13 @@ export default function DepositsTable({ deposits, onEdit, onDelete }: Props) {
                   <>
                     <br />
                     <small className={styles.badge} title={t('deposits.legacyEditHint')}>{t('deposits.legacyBadge')}</small>
-                    {deposit.amountBrlCents !== null && <small className={styles.muted}> {formatMoney(deposit.amountBrlCents, 'BRL', language)}</small>}
+                    {deposit.amountBrlCents !== null && <small className={styles.muted}> {formatMoney(deposit.amountBrlCents, 'BRL', locale)}</small>}
                   </>
                 )}
               </td>
               <td className={styles.numeric}>
                 {!deposit.legacy && deposit.amountBrlCents !== null
-                  ? formatMoney(deposit.amountBrlCents, 'BRL', language)
+                  ? formatMoney(deposit.amountBrlCents, 'BRL', locale)
                   : <span className={styles.muted}>{t('common.none')}</span>}
               </td>
               <td>{deposit.storeName ?? <span className={styles.muted}>{t('common.none')}</span>}</td>

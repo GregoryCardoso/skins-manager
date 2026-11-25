@@ -3,7 +3,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
 import { formatInteger } from '@/lib/format';
 import { saveBlobAs } from '@/lib/download';
 import { BACKUP_MAX_BYTES, isBackupTooLarge } from '@/lib/backupFile';
@@ -20,7 +20,7 @@ const RELOAD_DELAY_MS = 4000;
 export default function BackupSettings() {
   const t = useT();
   const tLoose = useTLoose();
-  const locale = useLanguage();
+  const locale = useLocale();
   const fileInput = useRef<HTMLInputElement>(null);
   const [exporting, setExporting] = useState(false);
   const [exportedName, setExportedName] = useState<string | null>(null);

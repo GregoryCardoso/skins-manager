@@ -3,7 +3,7 @@
 import { useCallback, useRef, useState, type ReactNode } from 'react';
 import { useInvalidate } from '@/lib/useInvalidate';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
 import { ApiRequestError, deleteItem, markItemForSale, markItemOffSale, unsellItem } from '@/services/api';
 import type { ItemView, Store } from '@/types/api';
 import ConfirmDialog from './ConfirmDialog';
@@ -60,7 +60,7 @@ export interface ItemDialogsApi {
 export function useItemDialogs(stores: Store[]): ItemDialogsApi {
   const t = useT();
   const tLoose = useTLoose();
-  const language = useLanguage();
+  const locale = useLocale();
   const invalidate = useInvalidate();
   const [dialog, setDialog] = useState<Dialog | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -110,7 +110,7 @@ export function useItemDialogs(stores: Store[]): ItemDialogsApi {
           invalidate('item.offSale');
         }
         setConfirmBusy(false);
-        setConfirmError(errorMessageFor(err, tLoose, language));
+        setConfirmError(errorMessageFor(err, tLoose, locale));
       });
   };
 
@@ -135,7 +135,7 @@ export function useItemDialogs(stores: Store[]): ItemDialogsApi {
           return;
         }
         if (err instanceof ApiRequestError && err.code === 'ITEM_ALREADY_SOLD') invalidate('item.sell');
-        setNotice(errorMessageFor(err, tLoose, language));
+        setNotice(errorMessageFor(err, tLoose, locale));
       });
   };
 

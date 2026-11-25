@@ -30,13 +30,21 @@ export function isLanguage(value: unknown): value is Language {
   return typeof value === 'string' && (LANGUAGES as readonly string[]).includes(value);
 }
 
+// Idioma vindo de fora (servidor, cache, backup de uma versao mais nova): fora do registro, vale o base. Nunca derruba a interface.
+export function languageOrBase(value: unknown): Language {
+  return isLanguage(value) ? value : BASE_LANGUAGE;
+}
+
 export function languageInfo(code: string): LanguageInfo {
   return LANGUAGE_REGISTRY.find((entry) => entry.code === code) ?? LANGUAGE_REGISTRY[0];
 }
 
-// Locale do `Intl` de um código (desconhecido -> o do inglês).
+// Locale do `Intl` de um código (desconhecido -> o do inglês). Idempotente: um locale do próprio registro volta ele mesmo, então
+// funções de formatação aceitam tanto o código quanto o locale que `useLocale()` já devolveu.
 export function intlLocaleOf(code: string): string {
-  return languageInfo(code).intlLocale;
+  const byCode = LANGUAGE_REGISTRY.find((entry) => entry.code === code);
+  if (byCode) return byCode.intlLocale;
+  return LANGUAGE_REGISTRY.find((entry) => entry.intlLocale === code)?.intlLocale ?? languageInfo(code).intlLocale;
 }
 
 // Idioma do sistema/navegador -> um idioma disponível. Percorre a lista em ordem de preferência (ex.: `navigator.languages`):

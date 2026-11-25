@@ -1,7 +1,7 @@
 'use client';
 
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useT, useTLoose } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
 import { LANGUAGE_REGISTRY } from '@/i18n/languages';
 import { nextTheme } from '@/lib/preferences';
 import type { Language, ThemeChoice } from '@/types/api';
@@ -15,6 +15,7 @@ export default function HeaderControls() {
   const { theme, language, saveError, setTheme, setLanguage } = usePreferences();
   const t = useT();
   const tLoose = useTLoose();
+  const locale = useLocale();
 
   const current = t(`theme.${theme}`);
   const next = t(`theme.${nextTheme(theme)}`);
@@ -24,7 +25,7 @@ export default function HeaderControls() {
     <div className={styles.controls} role="group" aria-label={t('header.controls')}>
       {saveError !== null && (
         <span className={styles.warning} role="status">
-          {t('header.preferenceNotSaved', { reason: errorMessageFor(saveError, tLoose) })}
+          {t('header.preferenceNotSaved', { reason: errorMessageFor(saveError, tLoose, locale) })}
         </span>
       )}
       <button

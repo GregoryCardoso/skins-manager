@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useState, type ReactNode } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
 import { queryKeys } from '@/lib/queryKeys';
 import { useInvalidate } from '@/lib/useInvalidate';
 import { formatDateTime } from '@/lib/format';
@@ -44,7 +44,7 @@ export interface CsfloatImportControls {
 export function useCsfloatImport(): CsfloatImportControls {
   const t = useT();
   const tLoose = useTLoose();
-  const language = useLanguage();
+  const locale = useLocale();
   const invalidate = useInvalidate();
 
   // Enquanto o backend importa (outra aba, por exemplo), consulta de novo até terminar (D303).
@@ -114,7 +114,7 @@ export function useCsfloatImport(): CsfloatImportControls {
     setChangingCutoff(true);
   }, [disabledReason, integration]);
 
-  const errorText = error === null ? null : errorMessageFor(error, tLoose, language);
+  const errorText = error === null ? null : errorMessageFor(error, tLoose, locale);
   const inlineError = cutoffFor !== null || confirmFullScan || changingCutoff;
 
   const dialogs = (
@@ -134,7 +134,7 @@ export function useCsfloatImport(): CsfloatImportControls {
       {confirmFullScan && integration?.tradesCutoffAt && (
         <ConfirmDialog
           title={t('imports.fullScanConfirm.title')}
-          message={`${t('imports.fullScanConfirm.body', { date: formatDateTime(integration.tradesCutoffAt, language) })} ${t('imports.fullScanConfirm.componentsNote')}`}
+          message={`${t('imports.fullScanConfirm.body', { date: formatDateTime(integration.tradesCutoffAt, locale) })} ${t('imports.fullScanConfirm.componentsNote')}`}
           confirmLabel={t('imports.fullScanConfirm.confirm')}
           busy={running}
           error={errorText}

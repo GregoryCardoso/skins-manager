@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
 import { resolveErrorTarget } from '@/lib/formErrors';
 import {
   applyFeeSuggestion, buildWithdrawalCreateBody, buildWithdrawalPatchBody, editFee, feeSuggestionRequest,
@@ -33,11 +33,11 @@ export default function WithdrawalFormModal({ withdrawal, stores, onClose, onSav
   const invalidate = useInvalidate();
   const t = useT();
   const tLoose = useTLoose();
-  const language = useLanguage();
+  const locale = useLocale();
   const editing = withdrawal !== undefined;
 
   const [state, setState] = useState<WithdrawalFormState>(() =>
-    withdrawal ? withdrawalFormFromWithdrawal(withdrawal, language) : initialWithdrawalState());
+    withdrawal ? withdrawalFormFromWithdrawal(withdrawal, locale) : initialWithdrawalState());
   const [errors, setErrors] = useState<Partial<Record<string, string>>>({});
   const [topError, setTopError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -49,7 +49,7 @@ export default function WithdrawalFormModal({ withdrawal, stores, onClose, onSav
   const clearError = (field: string) => setErrors((e) => (e[field] ? { ...e, [field]: undefined } : e));
 
   // Sugestão de taxa (E8-Q12): debounce de 300 ms; só enquanto a taxa não foi tocada.
-  const request = feeSuggestionRequest(state, language);
+  const request = feeSuggestionRequest(state, locale);
   const requestKey = request ? `${request.storeId}:${request.amountStoreCents}` : null;
   const feeTouched = state.feeTouched;
   useEffect(() => {
@@ -59,7 +59,7 @@ export default function WithdrawalFormModal({ withdrawal, stores, onClose, onSav
       return undefined;
     }
     if (requestKey === null) {
-      setState((s) => applyFeeSuggestion(s, null, language));
+      setState((s) => applyFeeSuggestion(s, null, locale));
       setFeeFromSuggestion(false);
       setFeeWarning(null);
       return undefined;
@@ -69,7 +69,7 @@ export default function WithdrawalFormModal({ withdrawal, stores, onClose, onSav
     const timer = setTimeout(() => {
       getWithdrawalFeeSuggestion(storeId, amountStoreCents, controller.signal)
         .then((suggestion) => {
-          setState((s) => applyFeeSuggestion(s, suggestion.suggestedFeeCents, language));
+          setState((s) => applyFeeSuggestion(s, suggestion.suggestedFeeCents, locale));
           setFeeFromSuggestion(suggestion.suggestedFeeCents !== null);
           setFeeWarning(suggestion.warningCode);
         })
@@ -81,14 +81,14 @@ export default function WithdrawalFormModal({ withdrawal, stores, onClose, onSav
       clearTimeout(timer);
       controller.abort();
     };
-  }, [requestKey, feeTouched, language]);
+  }, [requestKey, feeTouched, locale]);
 
   const showApiError = (err: unknown) => {
     if (err instanceof ApiRequestError && err.code === 'WITHDRAWAL_NOT_FOUND') {
       onGone();
       return;
     }
-    const message = errorMessageFor(err, tLoose, language);
+    const message = errorMessageFor(err, tLoose, locale);
     const { target, topLabelField } = resolveErrorTarget(err, FORM_FIELDS);
     if (target) {
       setErrors({ [target]: message });
@@ -104,7 +104,7 @@ export default function WithdrawalFormModal({ withdrawal, stores, onClose, onSav
     event.preventDefault();
     if (saving) return;
     setTopError(null);
-    const local = validateWithdrawalForm(state, language);
+    const local = validateWithdrawalForm(state, locale);
     if (Object.keys(local).length > 0) {
       const translated: Partial<Record<string, string>> = {};
       for (const [field, key] of Object.entries(local)) translated[field] = tLoose(key);
@@ -113,7 +113,7 @@ export default function WithdrawalFormModal({ withdrawal, stores, onClose, onSav
     }
     setErrors({});
     if (withdrawal) {
-      const body = buildWithdrawalPatchBody(state, withdrawal, language);
+      const body = buildWithdrawalPatchBody(state, withdrawal, locale);
       if (Object.keys(body).length === 0) {
         onClose();
         return;
@@ -131,10 +131,10 @@ export default function WithdrawalFormModal({ withdrawal, stores, onClose, onSav
       return;
     }
     setSaving(true);
-    createWithdrawal(buildWithdrawalCreateBody(state, language))
+    createWithdrawal(buildWithdrawalCreateBody(state, locale))
       .then((saved) => {
         invalidate('withdrawal.create');
-        onSaved(t('withdrawals.created', { value: withdrawalAmountText(saved, language) }));
+        onSaved(t('withdrawals.created', { value: withdrawalAmountText(saved, locale) }));
       })
       .catch((err: unknown) => {
         setSaving(false);

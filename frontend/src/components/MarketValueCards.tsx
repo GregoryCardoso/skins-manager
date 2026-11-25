@@ -1,6 +1,6 @@
 'use client';
 
-import { useLanguage, useT, useTPlural } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTPlural } from '@/i18n/I18nProvider';
 import { formatMoney } from '@/lib/format';
 import { profitUnrealizedCard, profitValueCard, type Sign } from '@/lib/marketValueDisplay';
 import MoneyApprox from './MoneyApprox';
@@ -15,19 +15,19 @@ const signClass = (sign: Sign) => (sign === 'POSITIVE' ? styles.positive : sign 
 export default function MarketValueCards() {
   const t = useT();
   const tPlural = useTPlural();
-  const language = useLanguage();
+  const locale = useLocale();
   const { summary } = useMarketSummary();
   if (!summary || summary.totals.unitCount === 0) return null;
   const { totals, byState } = summary;
   const value = profitValueCard(totals);
   const pnl = profitUnrealizedCard(totals);
   const signedUsd = (cents: number) => {
-    const abs = formatMoney(Math.abs(cents), 'USD', language);
+    const abs = formatMoney(Math.abs(cents), 'USD', locale);
     return cents > 0 ? `+${abs}` : cents < 0 ? `−${abs}` : abs;
   };
   const split = t('profit.market.split', {
-    forSale: byState.forSale.pricedUnits > 0 ? t('common.approx', { value: formatMoney(byState.forSale.marketValueUsdCents, 'USD', language) }) : t('profit.market.noPrice'),
-    holding: byState.holding.pricedUnits > 0 ? t('common.approx', { value: formatMoney(byState.holding.marketValueUsdCents, 'USD', language) }) : t('profit.market.noPrice'),
+    forSale: byState.forSale.pricedUnits > 0 ? t('common.approx', { value: formatMoney(byState.forSale.marketValueUsdCents, 'USD', locale) }) : t('profit.market.noPrice'),
+    holding: byState.holding.pricedUnits > 0 ? t('common.approx', { value: formatMoney(byState.holding.marketValueUsdCents, 'USD', locale) }) : t('profit.market.noPrice'),
   });
   const valueHint = `${t('profit.market.valueHint')} ${split}`;
   const staleText = value.kind === 'OK' && value.staleUnits > 0 ? tPlural('profit.market.staleCount', value.staleUnits) : null;
@@ -60,7 +60,7 @@ export default function MarketValueCards() {
           {pnl.kind === 'NET' && (
             <>
               <span>{t('common.approx', { value: signedUsd(pnl.cents) })}</span>
-              {pnl.brlCents !== null && <small className={styles.approx}>{t('common.approx', { value: formatMoney(pnl.brlCents, 'BRL', language) })}</small>}
+              {pnl.brlCents !== null && <small className={styles.approx}>{t('common.approx', { value: formatMoney(pnl.brlCents, 'BRL', locale) })}</small>}
             </>
           )}
         </span>

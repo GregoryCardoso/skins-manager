@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import { formatDateTime, formatMoney } from '@/lib/format';
 import { checkCsfloatBalance, explainCsfloatBalance } from '@/services/api';
 import type { CsfloatBalanceCheckResult, CsfloatBalanceExplanation } from '@/types/api';
@@ -19,12 +19,12 @@ export default function CsfloatBalanceCheck({ onRegister }: Props) {
   const t = useT();
   const tLoose = useTLoose();
   const tPlural = useTPlural();
-  const language = useLanguage();
+  const locale = useLocale();
   const [busy, setBusy] = useState<'check' | 'explain' | null>(null);
   const [result, setResult] = useState<CsfloatBalanceCheckResult | null>(null);
   const [explanation, setExplanation] = useState<CsfloatBalanceExplanation | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const usd = (cents: number) => formatMoney(cents, 'USD', language);
+  const usd = (cents: number) => formatMoney(cents, 'USD', locale);
   const signed = (cents: number) => `${cents > 0 ? '+' : ''}${usd(cents)}`;
 
   const runCheck = () => {
@@ -33,7 +33,7 @@ export default function CsfloatBalanceCheck({ onRegister }: Props) {
     setExplanation(null);
     checkCsfloatBalance()
       .then(setResult)
-      .catch((err: unknown) => setError(errorMessageFor(err, tLoose, language)))
+      .catch((err: unknown) => setError(errorMessageFor(err, tLoose, locale)))
       .finally(() => setBusy(null));
   };
   const runExplain = () => {
@@ -41,7 +41,7 @@ export default function CsfloatBalanceCheck({ onRegister }: Props) {
     setError(null);
     explainCsfloatBalance()
       .then(setExplanation)
-      .catch((err: unknown) => setError(errorMessageFor(err, tLoose, language)))
+      .catch((err: unknown) => setError(errorMessageFor(err, tLoose, locale)))
       .finally(() => setBusy(null));
   };
 
@@ -88,7 +88,7 @@ export default function CsfloatBalanceCheck({ onRegister }: Props) {
             </p>
           )}
           {result.feeCheck.saleFeeMatches === false && <p className={styles.line}>{t('balanceCheck.saleFeeDiffers')}</p>}
-          <p className={styles.muted}>{t('balanceCheck.checkedAt', { date: formatDateTime(result.checkedAt, language) })}</p>
+          <p className={styles.muted}>{t('balanceCheck.checkedAt', { date: formatDateTime(result.checkedAt, locale) })}</p>
         </div>
       )}
 

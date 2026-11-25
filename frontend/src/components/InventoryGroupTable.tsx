@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useId, useState } from 'react';
-import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import { formatDate, formatMoney } from '@/lib/format';
 import { forSaleCount, groupBulkAction, holdingCount } from '@/lib/bulkSaleState';
 import type { ItemGroup, SaleState, Store } from '@/types/api';
@@ -30,7 +30,7 @@ const COLUMNS = 8;
 
 function GroupMoney({ group, cents, approxBrlCents }: { group: ItemGroup; cents: number; approxBrlCents: number | null }) {
   const t = useT();
-  const locale = useLanguage();
+  const locale = useLocale();
   const main = formatMoney(cents, 'USD', locale);
   return (
     <div className={groupStyles.money} title={group.costUsesRecordedFx ? t('inventory.group.convertedCost') : undefined}>
@@ -46,7 +46,7 @@ function GroupMoney({ group, cents, approxBrlCents }: { group: ItemGroup; cents:
 
 function SituationCell({ group }: { group: ItemGroup }) {
   const t = useT();
-  const locale = useLanguage();
+  const locale = useLocale();
   const { stock } = group;
   const parts: string[] = [];
   if (stock.forSale > 0) parts.push(t('inventory.group.forSale', { count: stock.forSale }));

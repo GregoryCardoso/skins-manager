@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import { reportAutoImport } from '@/lib/autoImportProgress';
 import { autoImportNotice, NOTHING_NEW_DISMISS_MS, shouldRunAutoImport, type AutoImportNotice } from '@/lib/autoImport';
 import { browserOnline, isOfflineFailure, reportStartup } from '@/lib/startupStatus';
@@ -28,7 +28,7 @@ export default function CsfloatAutoImportHost() {
   const t = useT();
   const tLoose = useTLoose();
   const tPlural = useTPlural();
-  const language = useLanguage();
+  const locale = useLocale();
   const invalidate = useInvalidate();
   const queryClient = useQueryClient();
   const integrationQuery = useQuery({
@@ -68,12 +68,12 @@ export default function CsfloatAutoImportHost() {
           reportAutoImport('DONE');
           // Sem internet: o modal único "Sem conexão" avisa (junto com a cotação); outros erros, o aviso discreto.
           if (isOfflineFailure(err instanceof ApiRequestError ? err.code : null, browserOnline())) reportStartup('csfloat', 'OFFLINE');
-          else setError(errorMessageFor(err, tLoose, language));
+          else setError(errorMessageFor(err, tLoose, locale));
           invalidate('integration.update').catch(() => undefined);
         });
     }, START_DELAY_MS);
     return () => clearTimeout(timer);
-  }, [integration, invalidate, queryClient, tLoose, language]);
+  }, [integration, invalidate, queryClient, tLoose, locale]);
 
   const dismiss = () => {
     setNotice(null);

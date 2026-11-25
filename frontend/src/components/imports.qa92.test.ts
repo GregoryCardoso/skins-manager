@@ -21,7 +21,7 @@ const dict = () => (LANG.current === 'en' ? en : ptBR);
 vi.mock('@/i18n/I18nProvider', () => {
   const t = (key: string, params?: Record<string, string | number>) => translate(dict(), key, params);
   const tPlural = (key: string, count: number, params?: Record<string, string | number>) => translatePlural(dict(), key, count, LANG.current, params);
-  return { useT: () => t, useTLoose: () => t, useTPlural: () => tPlural, useLanguage: () => LANG.current };
+  return { useT: () => t, useTLoose: () => t, useTPlural: () => tPlural, useLanguage: () => LANG.current, useLocale: () => LANG.current };
 });
 
 import ImportButton from './ImportButton';

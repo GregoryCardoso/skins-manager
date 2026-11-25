@@ -1,6 +1,6 @@
 'use client';
 
-import { useLanguage, useT, useTPlural } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTPlural } from '@/i18n/I18nProvider';
 import { formatMoney } from '@/lib/format';
 import type { ItemStats } from '@/types/api';
 import styles from './ItemHistoryBox.module.css';
@@ -14,7 +14,7 @@ interface Props {
 export default function ItemHistoryBox({ stats, compact = false }: Props) {
   const t = useT();
   const tPlural = useTPlural();
-  const locale = useLanguage();
+  const locale = useLocale();
   const usd = (cents: number | null) => (cents === null ? t('common.none') : formatMoney(cents, 'USD', locale));
   const hasSales = stats.soldCount > 0;
   const profitNegative = stats.avgProfitUsdCents !== null && stats.avgProfitUsdCents < 0;

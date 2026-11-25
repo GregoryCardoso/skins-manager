@@ -1,6 +1,6 @@
 'use client';
 
-import { useLanguage, useT } from '@/i18n/I18nProvider';
+import { useLocale, useT } from '@/i18n/I18nProvider';
 import { formatMoney } from '@/lib/format';
 import type { Currency } from '@/types/api';
 import styles from './MoneyWithApprox.module.css';
@@ -25,7 +25,7 @@ export default function MoneyWithApprox({
   cents, currency, usdCents, approxBrlCents, rateNote = null, signed = false, colorBySign = false,
 }: Props) {
   const t = useT();
-  const locale = useLanguage();
+  const locale = useLocale();
   const sign = (value: number, text: string) => (signed && value > 0 ? `+${text}` : text);
   const tone = !colorBySign || cents === 0 ? '' : cents > 0 ? styles.positive : styles.negative;
 

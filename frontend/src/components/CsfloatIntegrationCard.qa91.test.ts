@@ -17,7 +17,7 @@ const dict = () => (LANG.current === 'en' ? en : ptBR);
 vi.mock('@/i18n/I18nProvider', () => {
   const t = (key: string, params?: Record<string, string | number>) => translate(dict(), key, params);
   const tPlural = (key: string, count: number, params?: Record<string, string | number>) => translatePlural(dict(), key, count, LANG.current, params);
-  return { useT: () => t, useTLoose: () => t, useTPlural: () => tPlural, useLanguage: () => LANG.current };
+  return { useT: () => t, useTLoose: () => t, useTPlural: () => tPlural, useLanguage: () => LANG.current, useLocale: () => LANG.current };
 });
 
 import CsfloatIntegrationCard from './CsfloatIntegrationCard';
@@ -143,7 +143,7 @@ describe('o que depende de clique (análise do código-fonte)', () => {
   test('validação do formato antes de enviar (mesma regra do backend) e erros via errorMessageFor com o código', () => {
     expect(source).toMatch(/validateApiKeyInput\(keyText\)/);
     expect(source).toContain("'errors.INVALID_API_KEY_FORMAT'");
-    expect(source).toMatch(/errorMessageFor\(error, tLoose, language\)/);
+    expect(source).toMatch(/errorMessageFor\(error, tLoose, locale\)/);
   });
 
   test('remover e trocar de conta exigem confirmação (diálogo) e a atualização de taxas da loja também', () => {

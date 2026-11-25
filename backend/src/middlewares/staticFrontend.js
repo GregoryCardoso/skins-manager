@@ -3,10 +3,10 @@ const path = require('path');
 const express = require('express');
 
 const MISSING_UI_HTML = `<!doctype html>
-<html lang="pt-BR"><head><meta charset="utf-8"><title>Skins Manager</title></head>
+<html lang="en"><head><meta charset="utf-8"><title>Skins Manager</title></head>
 <body style="font-family:sans-serif;max-width:40rem;margin:4rem auto">
 <h1>Skins Manager</h1>
-<p>Interface não encontrada. Rode <code>npm start</code> (ou <code>npm run build</code>) na raiz do projeto.</p>
+<p>Interface not found. Run <code>npm start</code> (or <code>npm run build</code>) in the project root.</p>
 </body></html>`;
 
 function setCacheHeaders(res, filePath) {

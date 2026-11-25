@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import { ApiRequestError } from '@/services/api';
 import ptBR from './pt-BR.json';
 import en from './en.json';
@@ -38,5 +38,21 @@ describe('errorMessageFor', () => {
   });
   test('erro que não é da API', () => {
     expect(errorMessageFor(new Error('boom'), t)).toBe(ptBR.errors.UNKNOWN);
+  });
+});
+
+describe('aviso de chave ausente (só quando nem o inglês tem a chave)', () => {
+  test('chave que só falta no idioma e existe no inglês não avisa; chave que nenhum tem, avisa', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      vi.stubEnv('NODE_ENV', 'development');
+      expect(translate({}, 'a.b', undefined, { a: { b: 'Base' } })).toBe('Base');
+      expect(warn).not.toHaveBeenCalled();
+      expect(translate({}, 'a.c', undefined, { a: { b: 'Base' } })).toBe('a.c');
+      expect(warn).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.unstubAllEnvs();
+      warn.mockRestore();
+    }
   });
 });

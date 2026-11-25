@@ -15,7 +15,7 @@ import { usePreferences } from '@/components/PreferencesProvider';
 import { useItemDialogs } from '@/components/ItemDialogs';
 import SystemStatus from '@/components/SystemStatus';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
 import {
   clearedFilters, hasActiveFilters, isGroupedAvailable, parseFilters, toApiQuery, toGroupQuery, toSearchString, type InventoryFilters as Filters,
 } from '@/lib/inventoryQuery';
@@ -30,7 +30,7 @@ const CONNECTION_ERRORS = ['NETWORK_ERROR', 'TIMEOUT', 'INVALID_RESPONSE'];
 function InventoryPageContent() {
   const t = useT();
   const tLoose = useTLoose();
-  const language = useLanguage();
+  const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname() ?? '/';
   const searchParams = useSearchParams();
@@ -212,7 +212,7 @@ function InventoryPageContent() {
 
       {error !== null && (
         <div className={styles.error} role="alert">
-          <p>{t('inventory.loadError', { reason: errorMessageFor(error, tLoose, language) })}</p>
+          <p>{t('inventory.loadError', { reason: errorMessageFor(error, tLoose, locale) })}</p>
           <button type="button" className={styles.retry} onClick={reload}>{t('common.retry')}</button>
         </div>
       )}

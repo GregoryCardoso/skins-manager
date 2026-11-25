@@ -2,7 +2,7 @@
 
 import { useId, useState, type FormEvent } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
 import { formatRate } from '@/lib/format';
 import { describeFxRate } from '@/lib/fxDisplay';
 import { formatDecimalInput, parseDecimalInput } from '@/lib/numberInput';
@@ -13,7 +13,7 @@ import styles from './settings.module.css';
 export default function FxRateSettings() {
   const t = useT();
   const tLoose = useTLoose();
-  const language = useLanguage();
+  const locale = useLocale();
   const {
     usdBrlRate, fxSource, rateQuotedAt, fxRateUpdatedAt, fxRefreshSource, saveFxRate, saveFxRefreshSource, refreshFxRate,
   } = usePreferences();
@@ -29,11 +29,11 @@ export default function FxRateSettings() {
   const [savingSource, setSavingSource] = useState(false);
 
   const busy = saving || refreshing || savingSource;
-  const shownText = touched ? text : usdBrlRate !== null ? formatDecimalInput(usdBrlRate, language) : '';
+  const shownText = touched ? text : usdBrlRate !== null ? formatDecimalInput(usdBrlRate, locale) : '';
 
   const onSave = (event: FormEvent) => {
     event.preventDefault();
-    const rate = parseDecimalInput(shownText, language);
+    const rate = parseDecimalInput(shownText, locale);
     if (rate === null) {
       setError(t('fx.invalidInput'));
       setOk(null);
@@ -47,7 +47,7 @@ export default function FxRateSettings() {
         setTouched(false);
         setOk(t('settings.fx.saved'));
       })
-      .catch((err: unknown) => setError(errorMessageFor(err, tLoose, language)))
+      .catch((err: unknown) => setError(errorMessageFor(err, tLoose, locale)))
       .finally(() => setSaving(false));
   };
 
@@ -62,11 +62,11 @@ export default function FxRateSettings() {
         setOk(
           t('settings.fx.refreshed', {
             source: tLoose(`fx.sourceName.${result.quote.source}`),
-            rate: formatRate(result.quote.rate, language),
+            rate: formatRate(result.quote.rate, locale),
           }),
         );
       })
-      .catch((err: unknown) => setError(errorMessageFor(err, tLoose, language)))
+      .catch((err: unknown) => setError(errorMessageFor(err, tLoose, locale)))
       .finally(() => setRefreshing(false));
   };
 
@@ -77,7 +77,7 @@ export default function FxRateSettings() {
     setOk(null);
     saveFxRefreshSource(value)
       .then(() => setOk(t('settings.fx.refreshSourceSaved')))
-      .catch((err: unknown) => setError(errorMessageFor(err, tLoose, language)))
+      .catch((err: unknown) => setError(errorMessageFor(err, tLoose, locale)))
       .finally(() => setSavingSource(false));
   };
 
@@ -87,14 +87,14 @@ export default function FxRateSettings() {
 
       <div className={styles.row}>
         <span className={styles.big}>
-          {usdBrlRate !== null ? t('settings.fx.value', { rate: formatRate(usdBrlRate, language) }) : t('settings.fx.notSet')}
+          {usdBrlRate !== null ? t('settings.fx.value', { rate: formatRate(usdBrlRate, locale) }) : t('settings.fx.notSet')}
         </span>
       </div>
       {usdBrlRate !== null && (
         <p className={styles.muted} data-testid="fx-description">
           {describeFxRate(
             { rate: usdBrlRate, source: fxSource, quotedAt: rateQuotedAt, updatedAt: fxRateUpdatedAt },
-            language,
+            locale,
             tLoose,
           )}
         </p>

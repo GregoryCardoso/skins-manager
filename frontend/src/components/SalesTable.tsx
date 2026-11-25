@@ -1,6 +1,6 @@
 'use client';
 
-import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import { formatDate, formatFloat, formatMoney, formatRate } from '@/lib/format';
 import type { ItemView, Store } from '@/types/api';
 import { Badge, type BadgeTone } from './badges';
@@ -36,7 +36,7 @@ const noop = () => undefined;
 function ItemCell({ item }: { item: ItemView }) {
   const t = useT();
   const tLoose = useTLoose();
-  const locale = useLanguage();
+  const locale = useLocale();
   const details: string[] = [];
   if (item.variant && item.variant !== 'NORMAL') details.push(tLoose(`enums.variant.${item.variant}`));
   if (item.exterior) details.push(tLoose(`enums.exteriorShort.${item.exterior}`));
@@ -92,7 +92,7 @@ function DaysCell({ item }: { item: ItemView }) {
 
 function SaleRow({ item, stores, onEdit, onUnsell, onDelete, onHistory, highlightedItemId = null }: Props & { item: ItemView }) {
   const t = useT();
-  const locale = useLanguage();
+  const locale = useLocale();
   const info = item.saleInfo;
   const saleStore = item.saleStoreId !== null ? stores.find((s) => s.id === item.saleStoreId)?.name : undefined;
   const saleCurrency = item.saleCurrency ?? 'USD';

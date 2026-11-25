@@ -10,6 +10,7 @@ vi.mock('next/link', () => ({
 vi.mock('@/i18n/I18nProvider', () => ({
   useT: () => (key: string, vars?: Record<string, string>) => (vars ? `${key}:${JSON.stringify(vars)}` : key),
   useLanguage: () => 'pt-BR',
+  useLocale: () => 'pt-BR',
 }));
 vi.mock('./HeaderControls', () => ({ default: () => createElement('div', { 'data-testid': 'header-controls' }) }));
 

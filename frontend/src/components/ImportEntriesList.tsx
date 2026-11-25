@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import { formatDate, formatFloat, formatMoney } from '@/lib/format';
 import { candidateLink, componentWarningsOf, entryActions, stockCandidateOf, entryLink, entryLinkLabelKey, groupEntries, reasonKey, removeConfirmKey } from '@/lib/importSummary';
 import { bulkActionsOf, commonBulkActions, type BulkEntryAction } from '@/lib/pendingActions';
@@ -29,7 +29,7 @@ interface Props {
 // Mensagem do erro ao resolver: o conflito traz o motivo (ex.: ITEM_SOLD_IN_APP) com texto próprio.
 function useResolveErrorText() {
   const tLoose = useTLoose();
-  const language = useLanguage();
+  const locale = useLocale();
   return (error: unknown): string => {
     if (error instanceof ApiRequestError && (error.code === 'IMPORT_ENTRY_CONFLICT' || error.code === 'IMPORT_ENTRY_NOT_REOPENABLE')) {
       const reason = (error.params as Record<string, unknown> | undefined)?.reason;
@@ -37,7 +37,7 @@ function useResolveErrorText() {
       const text = tLoose(key);
       if (reason && text !== key) return text;
     }
-    return errorMessageFor(error, tLoose, language);
+    return errorMessageFor(error, tLoose, locale);
   };
 }
 
@@ -174,19 +174,19 @@ function EntryRow({
 }) {
   const t = useT();
   const tLoose = useTLoose();
-  const language = useLanguage();
+  const locale = useLocale();
   const { display } = entry;
 
   const details: string[] = [];
   if (display.variant && display.variant !== 'NORMAL') details.push(tLoose(`enums.variant.${display.variant}`));
-  if (display.floatValue !== null) details.push(`float ${formatFloat(display.floatValue, language)}`);
+  if (display.floatValue !== null) details.push(`float ${formatFloat(display.floatValue, locale)}`);
   if (display.phase) details.push(display.phase);
   if (display.paintSeed !== null) details.push(`seed ${display.paintSeed}`);
-  if (display.priceCents !== null) details.push(formatMoney(display.priceCents, display.currency, language));
-  if (display.date) details.push(formatDate(display.date, language));
+  if (display.priceCents !== null) details.push(formatMoney(display.priceCents, display.currency, locale));
+  if (display.date) details.push(formatDate(display.date, locale));
 
   const key = reasonKey(entry);
-  const money = (cents: number | null | undefined) => (cents === null || cents === undefined ? '' : formatMoney(cents, display.currency, language));
+  const money = (cents: number | null | undefined) => (cents === null || cents === undefined ? '' : formatMoney(cents, display.currency, locale));
   const reason = key ? tLoose(key, { state: display.state ?? '', fee: money(display.feeCents), expected: money(display.expectedFeeCents) }) : null;
   // Sem texto próprio, o motivo pode ser um código de erro do app (ex.: FLOAT_OUT_OF_RANGE); senão mostra só o código.
   const errorKey = entry.reasonCode ? `errors.${entry.reasonCode}` : null;
@@ -197,7 +197,7 @@ function EntryRow({
   // Aporte ou saque do extrato (9.6): o título é o tipo, e o valor e a taxa vão nos detalhes.
   const title = display.txKind ? tLoose(`imports.txKind.${display.txKind}`) : display.name ?? display.marketHashName ?? t('imports.unknownItem');
   if (display.txKind && display.feeCents !== null && display.feeCents !== undefined) {
-    details.push(t('imports.txFee', { value: formatMoney(display.feeCents, display.currency, language) }));
+    details.push(t('imports.txFee', { value: formatMoney(display.feeCents, display.currency, locale) }));
   }
 
   return (

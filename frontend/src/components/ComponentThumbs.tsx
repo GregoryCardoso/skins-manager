@@ -1,6 +1,6 @@
 'use client';
 
-import { useLanguage, useT } from '@/i18n/I18nProvider';
+import { useLanguage, useLocale, useT } from '@/i18n/I18nProvider';
 import { componentTooltip } from '@/lib/itemComponents';
 import type { ItemComponent } from '@/types/api';
 import styles from './ComponentThumbs.module.css';
@@ -16,6 +16,7 @@ interface Props {
 export default function ComponentThumbs({ components, size = 26 }: Props) {
   const t = useT();
   const language = useLanguage();
+  const locale = useLocale();
   if (components.length === 0) return null;
   const labels = { slot: t('itemForm.components.slotShort'), wear: t('itemForm.components.wearShort'), pattern: t('itemForm.components.patternShort') };
   const stickers = components.filter((c) => c.kind === 'STICKER' || c.kind === 'PATCH');

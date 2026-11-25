@@ -1,6 +1,6 @@
 'use client';
 
-import { useLanguage, useT } from '@/i18n/I18nProvider';
+import { useLocale, useT } from '@/i18n/I18nProvider';
 import { formatDate, formatMoney } from '@/lib/format';
 import type { Withdrawal } from '@/types/api';
 import styles from './DepositsTable.module.css';
@@ -16,7 +16,7 @@ interface Props {
 // Tudo o que é conversão vem do backend. Estilos compartilhados com a tabela de aportes.
 export default function WithdrawalsTable({ withdrawals, onEdit, onDelete }: Props) {
   const t = useT();
-  const language = useLanguage();
+  const locale = useLocale();
 
   return (
     <div className={styles.scroll}>
@@ -38,16 +38,16 @@ export default function WithdrawalsTable({ withdrawals, onEdit, onDelete }: Prop
             const currency = w.currency;
             return (
               <tr key={w.id} className={styles.row}>
-                <td className={styles.date}>{formatDate(w.withdrawnAt, language)}</td>
+                <td className={styles.date}>{formatDate(w.withdrawnAt, locale)}</td>
                 <td>{w.legacyWithoutStore ? <span className={styles.muted}>{t('withdrawals.legacyNoStore')}</span> : w.storeName}</td>
                 <td className={styles.amount}>
                   {w.amountStoreCents !== null && currency !== null
-                    ? formatMoney(w.amountStoreCents, currency, language)
+                    ? formatMoney(w.amountStoreCents, currency, locale)
                     : <span className={styles.muted}>{t('common.none')}</span>}
                 </td>
                 <td className={styles.numeric}>
                   {w.feeCents !== null && currency !== null
-                    ? formatMoney(w.feeCents, currency, language)
+                    ? formatMoney(w.feeCents, currency, locale)
                     : <span className={styles.muted}>{t('common.none')}</span>}
                 </td>
                 <td className={styles.amount}>
@@ -58,7 +58,7 @@ export default function WithdrawalsTable({ withdrawals, onEdit, onDelete }: Prop
                     ? <span className={styles.muted}>{t('common.none')}</span>
                     : (
                       <>
-                        {formatMoney(w.amountBrlCents, 'BRL', language)}
+                        {formatMoney(w.amountBrlCents, 'BRL', locale)}
                         {w.legacyWithoutStore && <small className={styles.muted}> {t('withdrawals.legacyRecordedBrl')}</small>}
                       </>
                     )}

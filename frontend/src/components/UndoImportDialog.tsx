@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useId, useState } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import { queryKeys } from '@/lib/queryKeys';
 import { useInvalidate } from '@/lib/useInvalidate';
 import { getUndoPreview, undoImportBatch } from '@/services/api';
@@ -37,7 +37,7 @@ export default function UndoImportDialog({ batchId, onClose, onFinished }: Props
   const t = useT();
   const tLoose = useTLoose();
   const tPlural = useTPlural();
-  const language = useLanguage();
+  const locale = useLocale();
   const invalidate = useInvalidate();
   const ackId = useId();
   const [ack, setAck] = useState(false);
@@ -83,7 +83,7 @@ export default function UndoImportDialog({ batchId, onClose, onFinished }: Props
     <Modal title={t('imports.undo.title')} onClose={onClose} busy={busy}>
       <div className={forms.form}>
         {previewQuery.isPending && <p>{t('common.loading')}</p>}
-        {previewQuery.error !== null && <div className={forms.topError} role="alert">{errorMessageFor(previewQuery.error, tLoose, language)}</div>}
+        {previewQuery.error !== null && <div className={forms.topError} role="alert">{errorMessageFor(previewQuery.error, tLoose, locale)}</div>}
         {preview !== null && !preview.undoable && preview.reason !== null && (
           <p role="status">{t(`imports.undo.reasons.${preview.reason}`)}</p>
         )}
@@ -113,7 +113,7 @@ export default function UndoImportDialog({ batchId, onClose, onFinished }: Props
             )}
           </>
         )}
-        {error !== null && <div className={forms.topError} role="alert">{errorMessageFor(error, tLoose, language)}</div>}
+        {error !== null && <div className={forms.topError} role="alert">{errorMessageFor(error, tLoose, locale)}</div>}
         <div className={forms.actions}>
           <button type="button" className={forms.button} onClick={onClose} disabled={busy} autoFocus>{t('common.cancel')}</button>
           {preview !== null && preview.undoable && !blocked && (

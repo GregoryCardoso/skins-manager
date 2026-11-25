@@ -3,7 +3,7 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
+import { useLanguage, useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
 import { dateToLocalInput, isoToLocalInput, localInputToIso, nowLocalInput } from '@/lib/dateInput';
 import { formatDate, formatMoney } from '@/lib/format';
 import { MAX_PATTERN, MAX_STICKERS, PATCH_SLOTS, STICKER_SLOTS, parseWearText } from '@/lib/itemComponents';
@@ -52,6 +52,7 @@ export default function ApplyComponentModal({ target, mode, onClose, onDone, onG
   const t = useT();
   const tLoose = useTLoose();
   const language = useLanguage();
+  const locale = useLocale();
   const invalidate = useInvalidate();
   const retro = mode.type === 'retro';
 
@@ -115,7 +116,7 @@ export default function ApplyComponentModal({ target, mode, onClose, onDone, onG
       onGone();
       return;
     }
-    const message = errorMessageFor(err, tLoose, language);
+    const message = errorMessageFor(err, tLoose, locale);
     const field = err instanceof ApiRequestError && err.field ? err.field : null;
     const mapped = field === 'components' ? 'wear' : field;
     if (mapped && (FIELDS as readonly string[]).includes(mapped)) {
@@ -139,7 +140,7 @@ export default function ApplyComponentModal({ target, mode, onClose, onDone, onG
     const body: { slot?: number | null; wear?: number | null; pattern?: number | null } = {};
     if (slot !== '') body.slot = Number(slot);
     if (kind === 'STICKER' && wearText.trim() !== '') {
-      const wear = parseWearText(wearText, language);
+      const wear = parseWearText(wearText, locale);
       if (wear === null) next.wear = t('itemForm.components.invalidWear', { n: 1 });
       else body.wear = wear;
     }
@@ -172,7 +173,7 @@ export default function ApplyComponentModal({ target, mode, onClose, onDone, onG
   const loading = retro ? retroSourceQuery.isPending || retroTargetQuery.isPending : candidatesQuery.isPending;
   const loadError = retro ? retroSourceQuery.error ?? retroTargetQuery.error : candidatesQuery.error;
   const slots = kind === 'PATCH' ? PATCH_SLOTS : STICKER_SLOTS;
-  const costText = (c: ApplyCandidate) => `${c.costEstimated ? '≈ ' : ''}${formatMoney(c.effectiveCostUsdCents, 'USD', language)}`;
+  const costText = (c: ApplyCandidate) => `${c.costEstimated ? '≈ ' : ''}${formatMoney(c.effectiveCostUsdCents, 'USD', locale)}`;
 
   return (
     <Modal title={t('applyForm.title', { name: target.name })} onClose={onClose} busy={saving}>
@@ -181,7 +182,7 @@ export default function ApplyComponentModal({ target, mode, onClose, onDone, onG
         <p className={styles.muted}>{retro ? t('applyForm.retroIntro') : t('applyForm.intro')}</p>
 
         {loading && <p className={styles.muted}>{t('common.loading')}</p>}
-        {loadError && <div className={styles.topError} role="alert">{errorMessageFor(loadError, tLoose, language)}</div>}
+        {loadError && <div className={styles.topError} role="alert">{errorMessageFor(loadError, tLoose, locale)}</div>}
         {!loading && !loadError && available.length === 0 && (
           <div className={styles.note} role="status">{retro ? t('applyForm.unitGone') : t('applyForm.noCandidates')}</div>
         )}
@@ -212,7 +213,7 @@ export default function ApplyComponentModal({ target, mode, onClose, onDone, onG
                       <span className={modalStyles.optionText}>
                         <strong>{displayName(c)}</strong>
                         <span className={styles.muted}>
-                          {t('applyForm.cost', { value: costText(c) })} · {formatDate(c.acquiredAt, language)}
+                          {t('applyForm.cost', { value: costText(c) })} · {formatDate(c.acquiredAt, locale)}
                         </span>
                       </span>
                       {c.tradeLocked && <Badge tone="info" icon="🔒">{t('applyForm.tradeLock')}</Badge>}
@@ -247,7 +248,7 @@ export default function ApplyComponentModal({ target, mode, onClose, onDone, onG
                   {(c) => <input {...c} className={styles.input} inputMode="numeric" value={patternText} onChange={(e) => setPatternText(e.target.value)} />}
                 </FormField>
               )}
-              <FormField label={t('applyForm.appliedAt')} error={errors.appliedAt} hint={retro && soldAt ? t('applyForm.retroLimit', { date: formatDate(soldAt, language) }) : null}>
+              <FormField label={t('applyForm.appliedAt')} error={errors.appliedAt} hint={retro && soldAt ? t('applyForm.retroLimit', { date: formatDate(soldAt, locale) }) : null}>
                 {(c) => (
                   <input
                     {...c}

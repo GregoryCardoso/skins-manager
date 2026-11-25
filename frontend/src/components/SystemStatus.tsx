@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
 import { formatDateTime, formatInteger } from '@/lib/format';
 import { queryKeys } from '@/lib/queryKeys';
 import { getCatalogStatus, getHealth } from '@/services/api';
@@ -21,7 +21,7 @@ interface Loadable<T> {
 export default function SystemStatus() {
   const t = useT();
   const tLoose = useTLoose();
-  const locale = useLanguage();
+  const locale = useLocale();
   // Saúde do backend e status do catálogo vêm do cache compartilhado (D259); "Verificar de novo" recarrega as duas.
   const healthQuery = useQuery({ queryKey: queryKeys.health.all, queryFn: ({ signal }) => getHealth(signal) });
   const catalogQuery = useQuery({ queryKey: queryKeys.catalog.status, queryFn: ({ signal }) => getCatalogStatus(signal) });

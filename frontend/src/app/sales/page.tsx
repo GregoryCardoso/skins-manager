@@ -11,7 +11,7 @@ import SalesSummary from '@/components/SalesSummary';
 import SalesTable from '@/components/SalesTable';
 import SystemStatus from '@/components/SystemStatus';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import {
   DEFAULT_SALES_FILTERS, hasActiveSalesFilters, parseSalesFilters, toSalesApiQuery, toSalesSearchString,
   type SalesFilters as Filters,
@@ -27,7 +27,7 @@ function SalesView() {
   const t = useT();
   const tPlural = useTPlural();
   const tLoose = useTLoose();
-  const language = useLanguage();
+  const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname() ?? '/sales';
   const searchParams = useSearchParams();
@@ -125,7 +125,7 @@ function SalesView() {
 
       {error !== null && (
         <div className={styles.error} role="alert">
-          <p>{t('sales.loadError', { reason: errorMessageFor(error, tLoose, language) })}</p>
+          <p>{t('sales.loadError', { reason: errorMessageFor(error, tLoose, locale) })}</p>
           <button type="button" className={styles.retry} onClick={reload}>{t('common.retry')}</button>
         </div>
       )}

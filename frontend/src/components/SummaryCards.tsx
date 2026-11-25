@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import pageStyles from '@/app/profit/page.module.css';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import { describeFxRate } from '@/lib/fxDisplay';
 import { formatDate, formatPercent } from '@/lib/format';
 import MarketValueCards from './MarketValueCards';
@@ -18,7 +18,7 @@ import styles from './SummaryCards.module.css';
 export default function SummaryCards() {
   const t = useT();
   const tLoose = useTLoose();
-  const language = useLanguage();
+  const locale = useLocale();
   const query = useQuery({ queryKey: queryKeys.profitSummary.all, queryFn: ({ signal }) => getProfitSummary(signal) });
   const data = query.data ?? null;
   const error = query.error ?? null;
@@ -29,7 +29,7 @@ export default function SummaryCards() {
 
       {error !== null && (
         <div className={pageStyles.error} role="alert">
-          <p>{t('profit.summary.loadError', { reason: errorMessageFor(error, tLoose, language) })}</p>
+          <p>{t('profit.summary.loadError', { reason: errorMessageFor(error, tLoose, locale) })}</p>
           <button type="button" className={pageStyles.retry} onClick={() => query.refetch()}>{t('common.retry')}</button>
         </div>
       )}
@@ -44,7 +44,7 @@ export default function SummaryCards() {
 function SummaryBody({ data }: { data: ProfitSummary }) {
   const t = useT();
   const tLoose = useTLoose();
-  const language = useLanguage();
+  const locale = useLocale();
   const moneyLine = useMoneyLine();
   const tPlural = useTPlural();
   // Valor em US$ com "≈" só quando a parcela teve conversão; o "≈ R$" abaixo vem do backend.
@@ -64,7 +64,7 @@ function SummaryBody({ data }: { data: ProfitSummary }) {
   const fxText = data.fx.usdBrlRate !== null
     ? describeFxRate(
       { rate: data.fx.usdBrlRate, source: data.fx.source, quotedAt: data.fx.quotedAt, updatedAt: data.fx.updatedAt },
-      language,
+      locale,
       tLoose,
     )
     : null;
@@ -81,7 +81,7 @@ function SummaryBody({ data }: { data: ProfitSummary }) {
           {pending !== null && pending > 0 && (
             <p className={styles.included}>
               {data.nextReleaseAt
-                ? t('profit.pendingIncluded', { amount: pendingText(pending), date: formatDate(data.nextReleaseAt, language) })
+                ? t('profit.pendingIncluded', { amount: pendingText(pending), date: formatDate(data.nextReleaseAt, locale) })
                 : t('profit.pendingIncludedNoDate', { amount: pendingText(pending) })}
             </p>
           )}
@@ -134,7 +134,7 @@ function SummaryBody({ data }: { data: ProfitSummary }) {
           <span className={styles.value}>
             {ratio.ratio === null
               ? <span className={styles.unavailable}>{t('profit.summary.withdrawnVsDepositedNone')}</span>
-              : formatPercent(ratio.ratio, language)}
+              : formatPercent(ratio.ratio, locale)}
           </span>
           {ratio.ratio !== null && ratio.withdrawnUsdCents !== null && ratio.depositedUsdCents !== null && (
             <p className={styles.hint}>

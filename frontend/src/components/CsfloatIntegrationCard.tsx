@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useId, useState, type FormEvent } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import { formatDateTime } from '@/lib/format';
 import { validateApiKeyInput } from '@/lib/apiKeyInput';
 import { pausedReason } from '@/lib/autoImport';
@@ -29,7 +29,7 @@ export default function CsfloatIntegrationCard() {
   const t = useT();
   const tLoose = useTLoose();
   const tPlural = useTPlural();
-  const language = useLanguage();
+  const locale = useLocale();
   const invalidate = useInvalidate();
   const keyId = useId();
 
@@ -166,14 +166,14 @@ export default function CsfloatIntegrationCard() {
   };
 
   const storeName = integration?.storeName ?? '';
-  const warnings = buildFeeWarnings(testResult?.feeCheck ?? null, storeName, language, tLoose);
+  const warnings = buildFeeWarnings(testResult?.feeCheck ?? null, storeName, locale, tLoose);
 
   return (
     <section className={styles.card} aria-labelledby="settings-csfloat-title" id="csfloat">
       <h3 id="settings-csfloat-title" className={styles.cardTitle}>{t('settings.integrations.csfloat.title')}</h3>
 
       {integrationQuery.error !== null && (
-        <p className={styles.error} role="alert">{errorMessageFor(integrationQuery.error, tLoose, language)}</p>
+        <p className={styles.error} role="alert">{errorMessageFor(integrationQuery.error, tLoose, locale)}</p>
       )}
       {integration === null && integrationQuery.error === null && <p className={styles.muted}>{t('common.loading')}</p>}
 
@@ -237,7 +237,7 @@ export default function CsfloatIntegrationCard() {
           <div className={cardStyles.importBox} data-testid="csfloat-import-box">
             <p className={styles.muted} data-testid="csfloat-last-import">
               {integration.lastImportAt
-                ? t('settings.integrations.csfloat.lastImport', { date: formatDateTime(integration.lastImportAt, language) })
+                ? t('settings.integrations.csfloat.lastImport', { date: formatDateTime(integration.lastImportAt, locale) })
                 : t('settings.integrations.csfloat.neverImported')}
             </p>
             {integration.lastImportStatus === 'FAILED' && (
@@ -267,7 +267,7 @@ export default function CsfloatIntegrationCard() {
                 <div className={styles.warning} role="status" data-testid="csfloat-auto-paused">
                   <p>
                     {reason.kind === 'UNDO'
-                      ? t('settings.integrations.csfloat.autoPausedUndo', { date: formatDateTime(reason.at, language) })
+                      ? t('settings.integrations.csfloat.autoPausedUndo', { date: formatDateTime(reason.at, locale) })
                       : t('settings.integrations.csfloat.autoPausedSwitch')}
                   </p>
                   <button type="button" className={styles.button} onClick={() => patchIntegration({ autoImportPaused: false })} disabled={working}>
@@ -279,7 +279,7 @@ export default function CsfloatIntegrationCard() {
             {integration.tradesCutoffAt && (
               <div className={cardStyles.cutoffRow}>
                 <p className={styles.muted}>
-                  {t('settings.integrations.csfloat.cutoffInfo', { date: formatDateTime(integration.tradesCutoffAt, language) })}
+                  {t('settings.integrations.csfloat.cutoffInfo', { date: formatDateTime(integration.tradesCutoffAt, locale) })}
                 </p>
                 <Link href="/imports/" className={styles.button} data-testid="csfloat-review-imports">
                   {t('settings.integrations.csfloat.reviewImports')}
@@ -342,7 +342,7 @@ export default function CsfloatIntegrationCard() {
           )}
 
           {ok !== null && <p className={styles.ok} role="status">{ok}</p>}
-          {error !== null && <p className={styles.error} role="alert">{errorMessageFor(error, tLoose, language)}</p>}
+          {error !== null && <p className={styles.error} role="alert">{errorMessageFor(error, tLoose, locale)}</p>}
 
           <p className={styles.muted}>{t('settings.integrations.csfloat.privacy')}</p>
           {integration.hasApiKey && (

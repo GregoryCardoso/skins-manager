@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useState, type FormEvent } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
 import {
   agingStateFromSettings, buildAgingPatch, hasAgingChanges, restoreDefaultPatch,
   type AgingErrors, type AgingField, type AgingFormState,
@@ -20,7 +20,7 @@ interface Props {
 export default function AgingSettings({ settings }: Props) {
   const t = useT();
   const tLoose = useTLoose();
-  const language = useLanguage();
+  const locale = useLocale();
   const invalidate = useInvalidate();
   const fastId = useId();
   const slowId = useId();
@@ -35,7 +35,7 @@ export default function AgingSettings({ settings }: Props) {
   }, [settings]);
 
   const apiErrors = (err: unknown): AgingErrors => {
-    const message = errorMessageFor(err, tLoose, language);
+    const message = errorMessageFor(err, tLoose, locale);
     if (err instanceof ApiRequestError) {
       // A ordem entre os dois limites vale para os dois campos (D159).
       if (err.code === 'AGING_THRESHOLDS_ORDER') return { fastTurnoverDays: message, slowItemDays: message };

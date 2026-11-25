@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
 import { nowLocalInput } from '@/lib/dateInput';
 import { resolveErrorTarget } from '@/lib/formErrors';
 import { formatApprox, formatMoney } from '@/lib/format';
@@ -35,10 +35,10 @@ interface Props {
 export default function SellItemModal({ item, stores, onClose, onSold, onGone }: Props) {
   const t = useT();
   const tLoose = useTLoose();
-  const language = useLanguage();
+  const locale = useLocale();
   const invalidate = useInvalidate();
   const { usdBrlRate } = usePreferences();
-  const ctx: SellContext = useMemo(() => ({ stores, usdBrlRate, language }), [stores, usdBrlRate, language]);
+  const ctx: SellContext = useMemo(() => ({ stores, usdBrlRate, language: locale }), [stores, usdBrlRate, locale]);
 
   const [state, setState] = useState<SellFormState>(() => initialSellState(ctx, nowLocalInput()));
   const [quoteNet, setQuoteNet] = useState<number | null>(null);
@@ -55,7 +55,7 @@ export default function SellItemModal({ item, stores, onClose, onSold, onGone }:
   const storeId = state.storeId;
   const priceText = state.priceText;
   useEffect(() => {
-    const cents = priceText.trim() === '' ? null : parseMoneyToCents(priceText, language);
+    const cents = priceText.trim() === '' ? null : parseMoneyToCents(priceText, locale);
     if (storeId === null || !configured || cents === null || cents <= 0) {
       setQuoteNet(null);
       setState((s) => (s.netTouched || !configured ? s : { ...s, netText: '' }));
@@ -66,7 +66,7 @@ export default function SellItemModal({ item, stores, onClose, onSold, onGone }:
       getSaleQuote(storeId, cents, controller.signal)
         .then((quote) => {
           setQuoteNet(quote.netReceivedCents);
-          setState((s) => (s.netTouched ? s : { ...s, netText: netTextFromQuote(quote.netReceivedCents, language) }));
+          setState((s) => (s.netTouched ? s : { ...s, netText: netTextFromQuote(quote.netReceivedCents, locale) }));
         })
         .catch((err: unknown) => {
           if (controller.signal.aborted || (err instanceof ApiRequestError && err.code === 'ABORTED')) return;
@@ -79,7 +79,7 @@ export default function SellItemModal({ item, stores, onClose, onSold, onGone }:
       clearTimeout(timer);
       controller.abort();
     };
-  }, [storeId, priceText, configured, language]);
+  }, [storeId, priceText, configured, locale]);
 
   const reference = referenceFor(item, store);
 
@@ -88,7 +88,7 @@ export default function SellItemModal({ item, stores, onClose, onSold, onGone }:
       onGone();
       return;
     }
-    const message = errorMessageFor(err, tLoose, language);
+    const message = errorMessageFor(err, tLoose, locale);
     const { target, topLabelField } = resolveErrorTarget(err, SELL_FORM_FIELDS);
     if (target) {
       setErrors({ [target]: message });
@@ -116,10 +116,10 @@ export default function SellItemModal({ item, stores, onClose, onSold, onGone }:
     sellItem(item.id, built.body)
       .then((result) => {
         const currency = store?.currency ?? 'USD';
-        const net = formatMoney(result.sale.netReceivedCents, currency, language);
+        const net = formatMoney(result.sale.netReceivedCents, currency, locale);
         const profit = result.sale.saleProfitUsdCents === null
           ? t('common.none')
-          : formatMoney(result.sale.saleProfitUsdCents, 'USD', language);
+          : formatMoney(result.sale.saleProfitUsdCents, 'USD', locale);
         const note = result.sale.netReceivedManual ? ` ${t('sellForm.manualNetNote')}` : '';
         invalidate('item.sell');
         onSold(`${t('sellForm.success', { net, profit })}${note}`);
@@ -183,17 +183,17 @@ export default function SellItemModal({ item, stores, onClose, onSold, onGone }:
             <>
               <span>
                 {t('sellForm.minPriceRef', {
-                  value: formatMoney(reference.entry.minPriceCents ?? 0, reference.entry.currency, language),
+                  value: formatMoney(reference.entry.minPriceCents ?? 0, reference.entry.currency, locale),
                 })}
                 {reference.entry.approx && (
-                  <span className={styles.muted}> {t('common.approx', { value: formatApprox(reference.entry.approx, language) })}</span>
+                  <span className={styles.muted}> {t('common.approx', { value: formatApprox(reference.entry.approx, locale) })}</span>
                 )}
               </span>
               <button
                 type="button"
                 className={`${styles.button} ${styles.small}`}
                 onClick={() => patch({
-                  priceText: formatCentsInput(reference.entry.minPriceCents ?? 0, language),
+                  priceText: formatCentsInput(reference.entry.minPriceCents ?? 0, locale),
                   netTouched: false,
                 })}
               >
@@ -233,7 +233,7 @@ export default function SellItemModal({ item, stores, onClose, onSold, onGone }:
                 <button
                   type="button"
                   className={`${styles.button} ${styles.small}`}
-                  onClick={() => setState((s) => recalculate(s, quoteNet, language))}
+                  onClick={() => setState((s) => recalculate(s, quoteNet, locale))}
                 >
                   {t('sellForm.recalculate')}
                 </button>

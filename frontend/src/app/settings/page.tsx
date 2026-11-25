@@ -9,7 +9,7 @@ import FxRateSettings from '@/components/FxRateSettings';
 import IntegrationsSettings from '@/components/IntegrationsSettings';
 import PreferencesSettings from '@/components/PreferencesSettings';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
 import { queryKeys } from '@/lib/queryKeys';
 import { getSettings } from '@/services/api';
 import styles from './page.module.css';
@@ -17,7 +17,7 @@ import styles from './page.module.css';
 export default function SettingsPage() {
   const t = useT();
   const tLoose = useTLoose();
-  const language = useLanguage();
+  const locale = useLocale();
   const query = useQuery({ queryKey: queryKeys.settings.all, queryFn: ({ signal }) => getSettings(signal) });
   const settings = query.data ?? null;
   const error = query.error ?? null;
@@ -28,7 +28,7 @@ export default function SettingsPage() {
 
       {error !== null && (
         <div className={styles.error} role="alert">
-          <p>{t('settings.loadError', { reason: errorMessageFor(error, tLoose, language) })}</p>
+          <p>{t('settings.loadError', { reason: errorMessageFor(error, tLoose, locale) })}</p>
           <button type="button" className={styles.retry} onClick={() => {
               query.refetch();
             }}>

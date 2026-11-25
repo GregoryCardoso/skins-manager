@@ -1,6 +1,6 @@
 'use client';
 
-import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
 import { formatApprox, formatMoney } from '@/lib/format';
 import type { MinPrice, Store } from '@/types/api';
 import styles from './MinPriceCell.module.css';
@@ -13,7 +13,7 @@ interface Props {
 function Entry({ entry, primary }: { entry: MinPrice; primary: boolean }) {
   const t = useT();
   const tLoose = useTLoose();
-  const locale = useLanguage();
+  const locale = useLocale();
 
   let value;
   if (entry.minPriceCents === null) {

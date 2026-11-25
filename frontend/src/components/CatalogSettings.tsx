@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
 import { formatDateTime, formatInteger } from '@/lib/format';
 import { queryKeys } from '@/lib/queryKeys';
 import { useInvalidate } from '@/lib/useInvalidate';
@@ -16,7 +16,7 @@ const SOURCES: CatalogSource[] = ['SKINS', 'STICKERS', 'CRATES', 'KEYCHAINS', 'A
 // Total do catálogo, contagens por fonte e data da última atualização.
 export function CatalogSummary({ status }: { status: CatalogStatus }) {
   const t = useT();
-  const locale = useLanguage();
+  const locale = useLocale();
   return (
     <>
       <p className={styles.catalogTotal}>{t('catalog.total', { total: formatInteger(status.total, locale) })}</p>
@@ -40,7 +40,7 @@ export function CatalogSummary({ status }: { status: CatalogStatus }) {
 export default function CatalogSettings() {
   const t = useT();
   const tLoose = useTLoose();
-  const locale = useLanguage();
+  const locale = useLocale();
   const invalidate = useInvalidate();
   const statusQuery = useQuery({ queryKey: queryKeys.catalog.status, queryFn: ({ signal }) => getCatalogStatus(signal) });
   const status = statusQuery.data ?? null;

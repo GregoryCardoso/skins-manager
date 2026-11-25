@@ -19,6 +19,9 @@ interface I18nContextValue {
   tPlural: (key: string, count: number, params?: TranslateParams) => string;
 }
 
+// Espera antes de tentar de novo um dicionário que falhou ao carregar.
+const DICTIONARY_RETRY_MS = 15000;
+
 const I18nContext = createContext<I18nContextValue | null>(null);
 
 interface LoadedDictionary {
@@ -27,41 +30,59 @@ interface LoadedDictionary {
 }
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const { language, ready } = usePreferences();
+  const { language, ready, languageSettled } = usePreferences();
   // O inglês (base e reserva) já está carregado; os outros idiomas chegam sob demanda (`import()` dinâmico).
   const [loaded, setLoaded] = useState<LoadedDictionary>({ language: BASE_LANGUAGE, messages: BASE_DICTIONARY });
+  // Idioma cujo `import()` falhou (null = nenhum): a tela segue no idioma já carregado (a base), sem travar, e tenta de novo
+  // quando a janela volta ao foco ou depois de alguns segundos. Trocar de idioma também recomeça a tentativa.
+  const [failedFor, setFailedFor] = useState<Language | null>(null);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     if (loaded.language === language) return;
     let cancelled = false;
     loadDictionary(language)
       .then((messages) => {
-        if (!cancelled) setLoaded({ language, messages });
+        if (cancelled) return;
+        setFailedFor(null);
+        setLoaded({ language, messages });
       })
       .catch(() => {
-        // Sem o arquivo do idioma: segue em inglês (a base), nunca com a tela quebrada.
-        if (!cancelled) setLoaded({ language, messages: BASE_DICTIONARY });
+        if (!cancelled) setFailedFor(language);
       });
     return () => {
       cancelled = true;
     };
-  }, [language, loaded.language]);
+  }, [language, loaded.language, attempt]);
 
-  const dictionaryReady = loaded.language === language;
+  useEffect(() => {
+    if (failedFor === null || failedFor !== language) return;
+    const retry = () => setAttempt((n) => n + 1);
+    const timer = setTimeout(retry, DICTIONARY_RETRY_MS);
+    window.addEventListener('focus', retry);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('focus', retry);
+    };
+  }, [failedFor, language, attempt]);
+
+  // Pronto = o dicionário do idioma escolhido está carregado, ou o carregamento falhou (segue em inglês, sem prender a tela).
+  const dictionaryReady = loaded.language === language || failedFor === language;
 
   const value = useMemo<I18nContextValue>(() => {
     const messages = loaded.messages;
+    // O idioma exposto é o do dicionário carregado: número/data e texto nunca ficam desencontrados durante o `import()`.
     const locale = intlLocaleOf(loaded.language);
     const tLoose: LooseTranslator = (key, params) => translate(messages, key, params, BASE_DICTIONARY);
     const tPlural = (key: string, count: number, params?: TranslateParams) =>
       translatePlural(messages, key, count, locale, params, BASE_DICTIONARY);
-    return { language, t: tLoose as Translator, tLoose, tPlural };
-  }, [language, loaded]);
+    return { language: loaded.language, t: tLoose as Translator, tLoose, tPlural };
+  }, [loaded]);
 
   // Depois de renderizar no idioma certo (preferências lidas e dicionário carregado), mostra a página (ver script de bootstrap).
   useEffect(() => {
-    if (ready && dictionaryReady) document.documentElement.classList.remove('i18n-pending');
-  }, [ready, dictionaryReady, language]);
+    if (ready && languageSettled && dictionaryReady) document.documentElement.classList.remove('i18n-pending');
+  }, [ready, languageSettled, dictionaryReady, language]);
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }
@@ -75,4 +96,7 @@ function useI18n(): I18nContextValue {
 export const useT = (): Translator => useI18n().t;
 export const useTLoose = (): LooseTranslator => useI18n().tLoose;
 export const useTPlural = (): I18nContextValue['tPlural'] => useI18n().tPlural;
+// Código do idioma do dicionário carregado (ex.: para escolher o nome do item em pt-BR).
 export const useLanguage = (): Language => useI18n().language;
+// Locale do `Intl` (números, moedas, datas): sempre o do registro, nunca o código do idioma.
+export const useLocale = (): string => intlLocaleOf(useI18n().language);

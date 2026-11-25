@@ -1,13 +1,13 @@
 'use client';
 
-import { useLanguage, useT } from '@/i18n/I18nProvider';
+import { useLocale, useT } from '@/i18n/I18nProvider';
 import { formatMoney } from '@/lib/format';
 import type { SalesSummary as Summary } from '@/types/api';
 import styles from './SalesSummary.module.css';
 
 export default function SalesSummary({ summary }: { summary: Summary }) {
   const t = useT();
-  const locale = useLanguage();
+  const locale = useLocale();
   const usd = (cents: number) => formatMoney(cents, 'USD', locale);
   const approx = (cents: number | null) =>
     cents === null ? null : <span className={styles.approx}>{t('common.approx', { value: formatMoney(cents, 'BRL', locale) })}</span>;

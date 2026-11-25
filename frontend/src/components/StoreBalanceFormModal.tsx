@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
 import { resolveErrorTarget } from '@/lib/formErrors';
 import { formatMoney } from '@/lib/format';
 import { formatCentsInput } from '@/lib/numberInput';
@@ -39,12 +39,12 @@ interface Props {
 export default function StoreBalanceFormModal({ store, onClose, onSaved, initialAmountCents = null }: Props) {
   const t = useT();
   const tLoose = useTLoose();
-  const language = useLanguage();
+  const locale = useLocale();
   const invalidate = useInvalidate();
 
   const [state, setState] = useState<StoreBalanceFormState>(() => {
     const initial = initialStoreBalanceState();
-    return initialAmountCents === null ? initial : { ...initial, amountText: formatCentsInput(initialAmountCents, language) };
+    return initialAmountCents === null ? initial : { ...initial, amountText: formatCentsInput(initialAmountCents, locale) };
   });
   const [errors, setErrors] = useState<Partial<Record<string, string>>>({});
   const [topError, setTopError] = useState<string | null>(null);
@@ -56,7 +56,7 @@ export default function StoreBalanceFormModal({ store, onClose, onSaved, initial
 
   // Prévia: espera 300 ms depois da última digitação e cancela a chamada anterior.
   useEffect(() => {
-    const query = buildCheckPreviewQuery({ amountText: state.amountText, recordedAt: state.recordedAt, noteText: '' }, store.storeId, language);
+    const query = buildCheckPreviewQuery({ amountText: state.amountText, recordedAt: state.recordedAt, noteText: '' }, store.storeId, locale);
     if (query === null) {
       setPreview({ status: 'idle' });
       return undefined;
@@ -68,17 +68,17 @@ export default function StoreBalanceFormModal({ store, onClose, onSaved, initial
         .then((data) => setPreview({ status: 'ok', data }))
         .catch((err: unknown) => {
           if (controller.signal.aborted || (err instanceof ApiRequestError && err.code === 'ABORTED')) return;
-          setPreview({ status: 'error', message: errorMessageFor(err, tLoose, language) });
+          setPreview({ status: 'error', message: errorMessageFor(err, tLoose, locale) });
         });
     }, PREVIEW_DEBOUNCE_MS);
     return () => {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [state.amountText, state.recordedAt, store.storeId, language, tLoose]);
+  }, [state.amountText, state.recordedAt, store.storeId, locale, tLoose]);
 
   const showApiError = (err: unknown) => {
-    const message = errorMessageFor(err, tLoose, language);
+    const message = errorMessageFor(err, tLoose, locale);
     const { target, topLabelField } = resolveErrorTarget(err, FORM_FIELDS);
     if (target) {
       setErrors({ [target]: message });
@@ -93,7 +93,7 @@ export default function StoreBalanceFormModal({ store, onClose, onSaved, initial
   const submit = (adjust: boolean) => {
     if (saving) return;
     setTopError(null);
-    const local = validateStoreBalanceForm(state, language, { adjust });
+    const local = validateStoreBalanceForm(state, locale, { adjust });
     if (Object.keys(local).length > 0) {
       const translated: Partial<Record<string, string>> = {};
       for (const [field, key] of Object.entries(local)) translated[field] = tLoose(key);
@@ -102,12 +102,12 @@ export default function StoreBalanceFormModal({ store, onClose, onSaved, initial
     }
     setErrors({});
     setSaving(true);
-    createStoreBalanceCheck(buildStoreBalanceBody(state, store.storeId, language, adjust))
+    createStoreBalanceCheck(buildStoreBalanceBody(state, store.storeId, locale, adjust))
       .then((saved) => {
         invalidate('balanceCheck.create');
         onSaved(
           saved.adjustmentCents !== null
-            ? t('storeBalances.checkAdjusted', { store: store.storeName, value: formatMoney(saved.adjustmentCents, store.currency, language) })
+            ? t('storeBalances.checkAdjusted', { store: store.storeName, value: formatMoney(saved.adjustmentCents, store.currency, locale) })
             : t('storeBalances.checkSaved', { store: store.storeName })
         );
       })
@@ -170,10 +170,10 @@ export default function StoreBalanceFormModal({ store, onClose, onSaved, initial
           {preview.status === 'ok' && (
             hasDifference
               ? t('storeBalances.checkPreview', {
-                computed: formatMoney(preview.data.computedCents, store.currency, language),
-                difference: formatMoney(preview.data.differenceCents, store.currency, language),
+                computed: formatMoney(preview.data.computedCents, store.currency, locale),
+                difference: formatMoney(preview.data.differenceCents, store.currency, locale),
               })
-              : `${t('storeBalances.computed')}: ${formatMoney(preview.data.computedCents, store.currency, language)}. ${t('storeBalances.checkPreviewMatch')}`
+              : `${t('storeBalances.computed')}: ${formatMoney(preview.data.computedCents, store.currency, locale)}. ${t('storeBalances.checkPreviewMatch')}`
           )}
         </div>
 

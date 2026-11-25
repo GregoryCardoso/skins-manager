@@ -1,14 +1,21 @@
-import { LANGUAGE_REGISTRY } from '@/i18n/languages';
+import { LANGUAGE_REGISTRY, intlLocaleOf } from '@/i18n/languages';
 
 // O idioma usa vírgula como separador decimal? Vem do `Intl` do locale do registro (D369), e não de uma lista de idiomas:
 // de, fr, es, ru, pl, uk, tr, it, pt-BR... usam vírgula; en, ja, ko e zh-CN usam ponto.
+// O resultado é guardado por locale: `Intl.NumberFormat` é caro e esta função roda a cada tecla nos campos de valor.
+const commaDecimalCache = new Map<string, boolean>();
+
 export function usesCommaDecimal(language: string): boolean {
   try {
     // Idioma do registro: o locale dele. Outro código (idiomas ainda fora do registro): ele mesmo, se o Intl o conhece; senão, o inglês.
     const entry = LANGUAGE_REGISTRY.find((item) => item.code === language);
     const locale = entry ? entry.intlLocale : Intl.NumberFormat.supportedLocalesOf([language]).length > 0 ? language : 'en';
+    const cached = commaDecimalCache.get(locale);
+    if (cached !== undefined) return cached;
     const parts = new Intl.NumberFormat(locale).formatToParts(1.5);
-    return parts.find((part) => part.type === 'decimal')?.value === ',';
+    const result = parts.find((part) => part.type === 'decimal')?.value === ',';
+    commaDecimalCache.set(locale, result);
+    return result;
   } catch {
     return false;
   }
@@ -33,7 +40,7 @@ export function parseDecimalInput(text: string, language: string): number | null
 
 // Texto para preencher o campo de edição no formato do idioma.
 export function formatDecimalInput(value: number, language: string): string {
-  return new Intl.NumberFormat(language, { maximumFractionDigits: 6, useGrouping: false }).format(value);
+  return new Intl.NumberFormat(intlLocaleOf(language), { maximumFractionDigits: 6, useGrouping: false }).format(value);
 }
 
 // Normaliza o texto digitado para o formato "1234.56" (ponto decimal), sem validar o resto.
@@ -55,7 +62,7 @@ export function parseMoneyToCents(text: string, language: string): number | null
 
 // Centavos -> texto de edição no formato do idioma, sempre com 2 casas ("1,25" / "1.25").
 export function formatCentsInput(cents: number, language: string): string {
-  return new Intl.NumberFormat(language, { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: false }).format(cents / 100);
+  return new Intl.NumberFormat(intlLocaleOf(language), { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: false }).format(cents / 100);
 }
 
 // Float digitado (>= 0, qualquer quantidade de casas). A faixa é validada pelo backend. Inválido -> null.

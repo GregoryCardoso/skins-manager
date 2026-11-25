@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
+import { useLanguage, useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
 import { PATCH_SLOTS, STICKER_SLOTS, type AppliedDraft, type ComponentsState } from '@/lib/itemComponents';
 import { useInvalidate } from '@/lib/useInvalidate';
 import { scrapeOffComponent, undoOperation } from '@/services/api';
@@ -33,6 +33,7 @@ export default function AppliedComponentsEditor({ itemId, state, onChange, onIte
   const t = useT();
   const tLoose = useTLoose();
   const language = useLanguage();
+  const locale = useLocale();
   const invalidate = useInvalidate();
   const [pending, setPending] = useState<Pending | null>(null);
   const [busy, setBusy] = useState(false);
@@ -55,7 +56,7 @@ export default function AppliedComponentsEditor({ itemId, state, onChange, onIte
         setPending(null);
         onItemChanged(t(kind === 'undo' ? 'operations.undoDone' : 'operations.scrapeDone'));
       })
-      .catch((err: unknown) => setError(errorMessageFor(err, tLoose, language)))
+      .catch((err: unknown) => setError(errorMessageFor(err, tLoose, locale)))
       .finally(() => setBusy(false));
   };
 

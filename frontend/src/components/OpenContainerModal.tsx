@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useMemo, useState, type FormEvent } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
 import { dateToLocalInput, localInputToIso, nowLocalInput } from '@/lib/dateInput';
 import { formatDate, formatMoney } from '@/lib/format';
 import { buildComponentsBody, componentsAllowedFor, emptyComponentsState, type ComponentsState } from '@/lib/itemComponents';
@@ -44,9 +44,9 @@ const OWN_FIELDS = ['keyItemId', 'decision', 'paidPriceCents', 'fxRateAtPurchase
 const ITEM_FIELDS = ['catalogId', 'name', 'category', 'variant', 'floatValue', 'exterior', 'paintSeed', 'phase', 'tradeUnlockAt', 'components'];
 
 // Estado inicial do item obtido: sem aquisição própria (a abertura define loja, preço, cotação e data) e sem trade lock sugerido.
-function initialGeneratedState(stores: Store[], usdBrlRate: number | null, language: string): ItemFormState {
+function initialGeneratedState(stores: Store[], usdBrlRate: number | null, locale: string): ItemFormState {
   return {
-    ...initialCreateState({ stores, usdBrlRate, language }),
+    ...initialCreateState({ stores, usdBrlRate, language: locale }),
     acquisitionType: 'GANHEI',
     purchaseStoreId: null,
     fxText: '',
@@ -59,7 +59,7 @@ function initialGeneratedState(stores: Store[], usdBrlRate: number | null, langu
 export default function OpenContainerModal({ item, stores, onClose, onDone, onGone, onRegisterKey }: Props) {
   const t = useT();
   const tLoose = useTLoose();
-  const language = useLanguage();
+  const locale = useLocale();
   const invalidate = useInvalidate();
   const { usdBrlRate } = usePreferences();
 
@@ -79,7 +79,7 @@ export default function OpenContainerModal({ item, stores, onClose, onDone, onGo
   const [fxTyped, setFxTyped] = useState<string | null>(null);
   const [typedAt, setTypedAt] = useState<string | null>(null);
   const openedAtText = typedAt ?? nowLocalInput();
-  const [state, setState] = useState<ItemFormState>(() => initialGeneratedState(stores, usdBrlRate, language));
+  const [state, setState] = useState<ItemFormState>(() => initialGeneratedState(stores, usdBrlRate, locale));
   const [components, setComponents] = useState<ComponentsState>(() => emptyComponentsState());
   const [changingItem, setChangingItem] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -100,12 +100,12 @@ export default function OpenContainerModal({ item, stores, onClose, onDone, onGo
   const allowComponents = componentsAllowedFor(category, (catalogStatus.data?.countsBySource.PATCHES ?? 0) > 0);
 
   const fxDefault = options?.defaultFxRate ?? usdBrlRate;
-  const fxText = fxTyped ?? (fxDefault !== null ? formatDecimalInput(fxDefault, language) : '');
+  const fxText = fxTyped ?? (fxDefault !== null ? formatDecimalInput(fxDefault, locale) : '');
   const fxVisible = buying && steamStore?.currency === 'BRL';
 
   const containerCost = item.cost.effectiveUsdCents;
   const keyCost = isCase && options ? options.keys.find((k) => k.itemId === keyId)?.effectiveCostUsdCents ?? 0 : 0;
-  const usd = (cents: number) => formatMoney(cents, 'USD', language);
+  const usd = (cents: number) => formatMoney(cents, 'USD', locale);
 
   const summary = useMemo(() => {
     if (isTerminal) {
@@ -115,7 +115,7 @@ export default function OpenContainerModal({ item, stores, onClose, onDone, onGo
     }
     return isCase ? t('openForm.summaryCase', { value: usd(containerCost + keyCost) }) : t('openForm.summaryNoKey', { value: usd(containerCost) });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isTerminal, isCase, decision, containerCost, keyCost, language]);
+  }, [isTerminal, isCase, decision, containerCost, keyCost, locale]);
 
   const onPickCatalog = (picked: CatalogItem) => {
     setState((s) => applyCatalogChoice(s, picked as CatalogChoice));
@@ -128,7 +128,7 @@ export default function OpenContainerModal({ item, stores, onClose, onDone, onGo
       onGone();
       return;
     }
-    const message = errorMessageFor(err, tLoose, language);
+    const message = errorMessageFor(err, tLoose, locale);
     const raw = err instanceof ApiRequestError && err.field ? err.field : null;
     const field = raw && raw.startsWith('generated.') ? raw.slice('generated.'.length) : raw;
     const itemVisible = visibleItemFields(ITEM_FIELDS, vis, { showSearch, freeMode: state.freeMode, hasCatalog: !!state.catalog });
@@ -163,18 +163,18 @@ export default function OpenContainerModal({ item, stores, onClose, onDone, onGo
     }
     if (isTerminal) body.decision = decision;
     if (buying) {
-      const cents = parseMoneyToCents(priceText, language);
+      const cents = parseMoneyToCents(priceText, locale);
       if (cents === null) next.paidPriceCents = t('itemForm.invalidMoney');
       else body.paidPriceCents = cents;
       if (fxVisible) {
-        const rate = parseDecimalInput(fxText, language);
+        const rate = parseDecimalInput(fxText, locale);
         if (fxText.trim() !== '' && rate === null) next.fxRateAtPurchase = t('itemForm.invalidNumber');
         else if (rate !== null) body.fxRateAtPurchase = rate;
       }
     }
     if (generates) {
       if (!state.catalog && !state.freeMode) next.catalogId = t('openForm.chooseItem');
-      const built = buildCreateBody(state, { stores, usdBrlRate, language });
+      const built = buildCreateBody(state, { stores, usdBrlRate, language: locale });
       if (!built.ok) {
         for (const [field, key] of Object.entries(built.errors)) next[field] = key ? tLoose(key) : undefined;
       } else {
@@ -182,7 +182,7 @@ export default function OpenContainerModal({ item, stores, onClose, onDone, onGo
         const { acquisitionType: _a, purchaseStoreId: _s, purchasePriceCents: _p, fxRateAtPurchase: _f, acquiredAt: _d, ...generated } = built.body;
         const payload: OpenGeneratedBody = { ...generated };
         if (allowComponents) {
-          const comp = buildComponentsBody(components, language);
+          const comp = buildComponentsBody(components, locale);
           if (!comp.ok) next.components = tLoose(comp.errorKey, comp.params);
           else if (comp.body.length > 0) payload.components = comp.body;
         }
@@ -240,7 +240,7 @@ export default function OpenContainerModal({ item, stores, onClose, onDone, onGo
         <p className={styles.muted}>{t(introKey)}</p>
 
         {optionsQuery.isPending && <p className={styles.muted}>{t('common.loading')}</p>}
-        {optionsQuery.error && <div className={styles.topError} role="alert">{errorMessageFor(optionsQuery.error, tLoose, language)}</div>}
+        {optionsQuery.error && <div className={styles.topError} role="alert">{errorMessageFor(optionsQuery.error, tLoose, locale)}</div>}
 
         {options && isCase && (
           <fieldset className={styles.details} disabled={saving}>
@@ -268,7 +268,7 @@ export default function OpenContainerModal({ item, stores, onClose, onDone, onGo
                       <span className={modalStyles.optionText}>
                         <strong>{key.name}</strong>
                         <span className={styles.muted}>
-                          {t('openForm.keyCost', { value: `${key.costEstimated ? '≈ ' : ''}${usd(key.effectiveCostUsdCents)}` })} · {formatDate(key.acquiredAt, language)}
+                          {t('openForm.keyCost', { value: `${key.costEstimated ? '≈ ' : ''}${usd(key.effectiveCostUsdCents)}` })} · {formatDate(key.acquiredAt, locale)}
                           {index === 0 && options.keys.length > 1 ? ` · ${t('openForm.keyOldest')}` : ''}
                         </span>
                       </span>
@@ -316,7 +316,7 @@ export default function OpenContainerModal({ item, stores, onClose, onDone, onGo
                     <FormField
                       label={t('openForm.fx')}
                       error={errors.fxRateAtPurchase}
-                      hint={fxDefault !== null ? t('openForm.fxDefault', { rate: formatDecimalInput(fxDefault, language) }) : null}
+                      hint={fxDefault !== null ? t('openForm.fxDefault', { rate: formatDecimalInput(fxDefault, locale) }) : null}
                     >
                       {(c) => <input {...c} className={styles.input} inputMode="decimal" value={fxText} onChange={(e) => setFxTyped(e.target.value)} />}
                     </FormField>

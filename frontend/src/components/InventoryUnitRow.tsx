@@ -1,6 +1,6 @@
 'use client';
 
-import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import { formatDate, formatFloat, formatMoney, formatRemaining, remainingToText } from '@/lib/format';
 import { isHttpsLink, isSafeInspectLink } from '@/lib/safeUrl';
 import type { ItemView, Store } from '@/types/api';
@@ -59,7 +59,7 @@ function isLockedStock(item: ItemView): boolean {
 function ItemCell({ item }: { item: ItemView }) {
   const t = useT();
   const tLoose = useTLoose();
-  const locale = useLanguage();
+  const locale = useLocale();
 
   const details: string[] = [];
   if (item.variant && item.variant !== 'NORMAL') details.push(tLoose(`enums.variant.${item.variant}`));
@@ -107,7 +107,7 @@ function StoreCell({ item, stores }: { item: ItemView; stores: Store[] }) {
 
 function DaysCell({ item }: { item: ItemView }) {
   const t = useT();
-  const locale = useLanguage();
+  const locale = useLocale();
   const tLoose = useTLoose();
   const tPlural = useTPlural();
   const aging = item.aging;
@@ -164,7 +164,7 @@ function DaysCell({ item }: { item: ItemView }) {
 
 function TradeLockCell({ item }: { item: ItemView }) {
   const t = useT();
-  const locale = useLanguage();
+  const locale = useLocale();
   if (item.status === 'VENDIDO') return <span className={styles.muted}>{t('common.none')}</span>;
   const lock = item.tradeLock;
   if (!lock.isLocked) return <span className={styles.muted}>{t('tradeLock.released')}</span>;
@@ -237,7 +237,7 @@ export default function InventoryUnitRow({
   item, stores, onEdit, onSell, onUnsell, onDelete, onHistory, onOffSale, onForSale, onApply, onOpen, onRegisterKey, onDetach, forSalePendingId = null, highlighted = false, selection, showMarket = true,
 }: Props & { selection?: { checked: boolean; onChange: (checked: boolean) => void }; showMarket?: boolean }) {
   const t = useT();
-  const locale = useLanguage();
+  const locale = useLocale();
   const classes = [styles.row];
   if (isStagnant(item)) classes.push(styles.stagnant);
   if (isLockedStock(item)) classes.push(styles.locked);

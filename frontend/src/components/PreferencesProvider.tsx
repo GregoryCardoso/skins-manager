@@ -17,7 +17,7 @@ import {
   writeCachedPreferences,
   writeInventoryView,
 } from '@/lib/preferences';
-import { BASE_LANGUAGE, browserLocales, detectLanguage } from '@/i18n/languages';
+import { BASE_LANGUAGE, browserLocales, detectLanguage, languageOrBase } from '@/i18n/languages';
 import { queryKeys } from '@/lib/queryKeys';
 import { useInvalidate } from '@/lib/useInvalidate';
 import { getSettings, refreshFxRate, updateFxRate, updatePreferences } from '@/services/api';
@@ -29,6 +29,8 @@ interface PreferencesContextValue {
   language: Language;
   // Falso até o cache ser lido (o estado inicial é o do HTML pré-gerado, para evitar erro de hidratação).
   ready: boolean;
+  // Verdadeiro quando o idioma ja e o definitivo: veio do cache ou as configuracoes ja responderam (ver i18n-pending).
+  languageSettled: boolean;
   // Último erro ao salvar a preferência no servidor (null = ok).
   saveError: unknown;
   setTheme: (theme: ThemeChoice) => void;
@@ -60,6 +62,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<Language>(DEFAULT_LANGUAGE);
   const [inventoryView, setInventoryViewState] = useState<InventoryView>(DEFAULT_INVENTORY_VIEW);
   const [ready, setReady] = useState(false);
+  const [languageSettled, setLanguageSettled] = useState(false);
   const [saveError, setSaveError] = useState<unknown>(null);
   const [usdBrlRate, setUsdBrlRate] = useState<number | null>(null);
   const [fxSource, setFxSource] = useState<FxRateSource | null>(null);
@@ -101,6 +104,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     const cached = readCachedPreferences();
     setThemeState(effectiveTheme(cached.theme, systemDark));
     languageCachedAtStart.current = cached.language !== undefined;
+    if (cached.language !== undefined) setLanguageSettled(true);
     detectedLanguage.current = detectLanguage(browserLocales());
     setLanguageState(cached.language ?? detectedLanguage.current);
     setInventoryViewState(readInventoryView());
@@ -140,10 +144,12 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
         setLanguageState(detected);
         saveDetectedLanguage.current(detected);
       } else {
-        setLanguageState(settingsData.language);
+        // Idioma fora do registro (ex.: backup de uma versão mais nova): usa o inglês, nunca derruba a interface.
+        setLanguageState(languageOrBase(settingsData.language));
       }
     }
     firstSettingsApplied.current = true;
+    setLanguageSettled(true);
     // O banco prevalece sobre o cache (D276), salvo uma troca em andamento.
     if (!touched.current.inventoryView && settingsData.inventoryView) {
       setInventoryViewState(settingsData.inventoryView);
@@ -151,7 +157,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     }
     writeCachedPreferences({
       theme: touched.current.theme ? undefined : isThemeChoice(settingsData.theme) ? settingsData.theme : null,
-      language: touched.current.language ? undefined : settingsData.language,
+      language: touched.current.language ? undefined : languageOrBase(settingsData.language),
     });
   }, [settingsData, applyFx]);
 
@@ -257,10 +263,10 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(
     () => ({
-      theme, language, ready, saveError, setTheme, setLanguage, inventoryView, setInventoryView, usdBrlRate, saveFxRate, fxSource, rateQuotedAt,
+      theme, language, ready, languageSettled, saveError, setTheme, setLanguage, inventoryView, setInventoryView, usdBrlRate, saveFxRate, fxSource, rateQuotedAt,
       fxRateUpdatedAt, fxRefreshSource, saveFxRefreshSource, refreshFxRate: refreshFx, reloadFxRate,
     }),
-    [theme, language, ready, saveError, setTheme, setLanguage, inventoryView, setInventoryView, usdBrlRate, saveFxRate, fxSource, rateQuotedAt,
+    [theme, language, ready, languageSettled, saveError, setTheme, setLanguage, inventoryView, setInventoryView, usdBrlRate, saveFxRate, fxSource, rateQuotedAt,
       fxRateUpdatedAt, fxRefreshSource, saveFxRefreshSource, refreshFx, reloadFxRate],
   );
 

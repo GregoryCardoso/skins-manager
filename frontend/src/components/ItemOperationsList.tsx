@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
 import { formatDate, formatMoney } from '@/lib/format';
 import { formatCentsInput } from '@/lib/numberInput';
 import { queryKeys } from '@/lib/queryKeys';
@@ -26,7 +26,7 @@ const isOpening = (operation: { kind: string }) => operation.kind === 'OPEN_CASE
 export default function ItemOperationsList({ item }: Props) {
   const t = useT();
   const tLoose = useTLoose();
-  const language = useLanguage();
+  const locale = useLocale();
   const invalidate = useInvalidate();
   const query = useQuery({
     queryKey: queryKeys.items.operations(item.id),
@@ -51,7 +51,7 @@ export default function ItemOperationsList({ item }: Props) {
         setNotice(t(isOpening(undoing) ? 'operations.undoOpenDone' : 'operations.undoDone'));
         return invalidate('operation.undo');
       })
-      .catch((err: unknown) => setError(errorMessageFor(err, tLoose, language)))
+      .catch((err: unknown) => setError(errorMessageFor(err, tLoose, locale)))
       .finally(() => setBusy(false));
   };
 
@@ -59,7 +59,7 @@ export default function ItemOperationsList({ item }: Props) {
   const detachText = (detach: NonNullable<NonNullable<ItemOperation['detail']>['detach']>) => {
     if (detach.mode === 'RETURN' || !detach.share) return t('operations.detach.RETURN', { name: detach.component.name ?? '' });
     return t(`operations.detach.SPLIT_${detach.share.basis}`, {
-      name: detach.component.name ?? '', share: formatCentsInput(detach.share.hangingShareBp, language),
+      name: detach.component.name ?? '', share: formatCentsInput(detach.share.hangingShareBp, locale),
     });
   };
   const kindLabel = (operation: ItemOperation) => tLoose(`operations.kind.${operation.kind}`);
@@ -77,33 +77,33 @@ export default function ItemOperationsList({ item }: Props) {
       {consumed && (
         <p className={styles.note}>
           {consumed.lost
-            ? t('operations.consumedInLost', { date: formatDate(consumed.occurredAt, language) })
+            ? t('operations.consumedInLost', { date: formatDate(consumed.occurredAt, locale) })
             : consumed.kind === 'OPEN_CASE' || consumed.kind === 'OPEN_TERMINAL'
-              ? t('operations.consumedInOpen', { date: formatDate(consumed.occurredAt, language), target: consumed.targetName ?? t('common.none') })
-              : t('operations.consumedIn', { date: formatDate(consumed.occurredAt, language), target: consumed.targetName ?? t('common.none') })}
+              ? t('operations.consumedInOpen', { date: formatDate(consumed.occurredAt, locale), target: consumed.targetName ?? t('common.none') })
+              : t('operations.consumedIn', { date: formatDate(consumed.occurredAt, locale), target: consumed.targetName ?? t('common.none') })}
         </p>
       )}
       {query.isPending && <p className={styles.note}>{t('common.loading')}</p>}
-      {query.error && <p className={styles.note} role="alert">{errorMessageFor(query.error, tLoose, language)}</p>}
+      {query.error && <p className={styles.note} role="alert">{errorMessageFor(query.error, tLoose, locale)}</p>}
       <ul className={styles.operations}>
         {operations.map((operation) => (
           <li key={operation.id} className={operation.undoneAt ? styles.undone : undefined}>
-            <strong>{t('operations.line', { kind: kindLabel(operation), date: formatDate(operation.occurredAt, language) })}</strong>
+            <strong>{t('operations.line', { kind: kindLabel(operation), date: formatDate(operation.occurredAt, locale) })}</strong>
             {operation.counterparts.map((c) => (
               <span key={c.itemId} className={styles.sub}>
                 {' · '}{t('operations.counterpart', { role: tLoose(`operations.role.${c.role}`), name: c.name ?? t('common.none') })}
               </span>
             ))}
             {operation.lossUsdCents !== null && operation.lossUsdCents !== undefined && (
-              <span className={styles.sub}>{' · '}{t('operations.lost', { value: formatMoney(operation.lossUsdCents, 'USD', language) })}</span>
+              <span className={styles.sub}>{' · '}{t('operations.lost', { value: formatMoney(operation.lossUsdCents, 'USD', locale) })}</span>
             )}
             {operation.endedBy && (
-              <span className={styles.sub}>{' · '}{t('operations.endedBy', { date: operation.endedBy.occurredAt ? formatDate(operation.endedBy.occurredAt, language) : t('common.none') })}</span>
+              <span className={styles.sub}>{' · '}{t('operations.endedBy', { date: operation.endedBy.occurredAt ? formatDate(operation.endedBy.occurredAt, locale) : t('common.none') })}</span>
             )}
             {operation.detail?.detach && (
               <span className={styles.sub}>{' · '}{detachText(operation.detail.detach)}</span>
             )}
-            {operation.undoneAt && <span className={styles.sub}>{' · '}{t('operations.undone', { date: formatDate(operation.undoneAt, language) })}</span>}
+            {operation.undoneAt && <span className={styles.sub}>{' · '}{t('operations.undone', { date: formatDate(operation.undoneAt, locale) })}</span>}
             {operation.undoneAt && operation.detail?.undoneGenerated && (
               <span className={styles.sub}>{' · '}{t('operations.undoneGenerated', { name: operation.detail.undoneGenerated.name })}</span>
             )}

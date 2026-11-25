@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 import styles from '@/app/profit/page.module.css';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import { formatDate } from '@/lib/format';
 import { queryKeys } from '@/lib/queryKeys';
 import { useInvalidate } from '@/lib/useInvalidate';
@@ -25,7 +25,7 @@ export default function WithdrawalsSection() {
   const t = useT();
   const tLoose = useTLoose();
   const tPlural = useTPlural();
-  const language = useLanguage();
+  const locale = useLocale();
   const moneyLine = useMoneyLine();
 
   const invalidate = useInvalidate();
@@ -70,7 +70,7 @@ export default function WithdrawalsSection() {
     deleteWithdrawal(withdrawal.id)
       .then(() => {
         invalidate('withdrawal.delete');
-        finish(t('withdrawals.deleted', { value: withdrawalAmountText(withdrawal, language) }));
+        finish(t('withdrawals.deleted', { value: withdrawalAmountText(withdrawal, locale) }));
       })
       .catch((err: unknown) => {
         if (err instanceof ApiRequestError && err.code === 'WITHDRAWAL_NOT_FOUND') {
@@ -78,7 +78,7 @@ export default function WithdrawalsSection() {
           return;
         }
         setConfirmBusy(false);
-        setConfirmError(errorMessageFor(err, tLoose, language));
+        setConfirmError(errorMessageFor(err, tLoose, locale));
       });
   };
 
@@ -124,7 +124,7 @@ export default function WithdrawalsSection() {
 
       {error !== null && (
         <div className={styles.error} role="alert">
-          <p>{t('withdrawals.loadError', { reason: errorMessageFor(error, tLoose, language) })}</p>
+          <p>{t('withdrawals.loadError', { reason: errorMessageFor(error, tLoose, locale) })}</p>
           <button type="button" className={styles.retry} onClick={reload}>{t('common.retry')}</button>
         </div>
       )}
@@ -156,8 +156,8 @@ export default function WithdrawalsSection() {
         <ConfirmDialog
           title={t('withdrawals.deleteTitle')}
           message={t('withdrawals.deleteMessage', {
-            value: withdrawalAmountText(dialog.withdrawal, language),
-            date: formatDate(dialog.withdrawal.withdrawnAt, language),
+            value: withdrawalAmountText(dialog.withdrawal, locale),
+            date: formatDate(dialog.withdrawal.withdrawnAt, locale),
           })}
           confirmLabel={t('withdrawals.confirmDelete')}
           danger

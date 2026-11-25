@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 import pageStyles from '@/app/profit/page.module.css';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import { formatDate, formatMoney } from '@/lib/format';
 import { queryKeys } from '@/lib/queryKeys';
 import { getCsfloatIntegration, getCurrentStoreBalances } from '@/services/api';
@@ -26,13 +26,13 @@ function Amount({ cents, currency, usdCents, approxBrlCents, negative = false }:
   cents: number; currency: Currency; usdCents: number | null; approxBrlCents: number | null; negative?: boolean;
 }) {
   const t = useT();
-  const language = useLanguage();
+  const locale = useLocale();
   const approx = currency === 'USD'
-    ? (approxBrlCents === null ? null : formatMoney(approxBrlCents, 'BRL', language))
-    : (usdCents === null ? null : formatMoney(usdCents, 'USD', language));
+    ? (approxBrlCents === null ? null : formatMoney(approxBrlCents, 'BRL', locale))
+    : (usdCents === null ? null : formatMoney(usdCents, 'USD', locale));
   return (
     <span className={styles.amount}>
-      <strong className={negative ? styles.negative : undefined}>{formatMoney(cents, currency, language)}</strong>
+      <strong className={negative ? styles.negative : undefined}>{formatMoney(cents, currency, locale)}</strong>
       {approx !== null && <span className={styles.approx}> {t('common.approx', { value: approx })}</span>}
     </span>
   );
@@ -49,7 +49,7 @@ function StoreRow({ store, onCheck, onHistory, csfloat = false, onRegisterCsfloa
   const t = useT();
   const tLoose = useTLoose();
   const tPlural = useTPlural();
-  const language = useLanguage();
+  const locale = useLocale();
   const [showDetails, setShowDetails] = useState(false);
   const { pending, breakdown, ignored } = store;
   const fxMissing = store.warningCode === 'FX_NOT_CONFIGURED';
@@ -90,7 +90,7 @@ function StoreRow({ store, onCheck, onHistory, csfloat = false, onRegisterCsfloa
             {'+ '}
             <Amount cents={pending.cents} currency={store.currency} usdCents={pending.usdCents} approxBrlCents={pending.approxBrlCents} />{' '}
             {t('storeBalances.pending', {
-              date: pending.nextReleaseAt ? formatDate(pending.nextReleaseAt, language) : t('common.none'),
+              date: pending.nextReleaseAt ? formatDate(pending.nextReleaseAt, locale) : t('common.none'),
             })}
           </span>
         )}
@@ -108,7 +108,7 @@ function StoreRow({ store, onCheck, onHistory, csfloat = false, onRegisterCsfloa
           {detailLines.map(([key, cents]) => (
             <div key={key} className={styles.breakdownLine}>
               <dt>{t(`storeBalances.breakdown.${key}`)}</dt>
-              <dd>{formatMoney(cents, store.currency, language)}</dd>
+              <dd>{formatMoney(cents, store.currency, locale)}</dd>
             </div>
           ))}
         </dl>
@@ -133,7 +133,7 @@ export default function StoreBalancesPanel() {
   const t = useT();
   const tLoose = useTLoose();
   const tPlural = useTPlural();
-  const language = useLanguage();
+  const locale = useLocale();
   const moneyLine = useMoneyLine();
 
   const query = useQuery({ queryKey: queryKeys.storeBalances.current, queryFn: ({ signal }) => getCurrentStoreBalances(signal) });
@@ -176,7 +176,7 @@ export default function StoreBalancesPanel() {
 
       {error !== null && (
         <div className={pageStyles.error} role="alert">
-          <p>{t('storeBalances.loadError', { reason: errorMessageFor(error, tLoose, language) })}</p>
+          <p>{t('storeBalances.loadError', { reason: errorMessageFor(error, tLoose, locale) })}</p>
           <button type="button" className={pageStyles.retry} onClick={reload}>{t('common.retry')}</button>
         </div>
       )}
@@ -195,7 +195,7 @@ export default function StoreBalancesPanel() {
                 {data.totals.nextReleaseAt
                   ? t('storeBalances.totalPendingDate', {
                     value: moneyLine({ cents: data.totals.pendingUsdCents, estimated: data.totals.pendingEstimated, approxCents: data.totals.approxBrl.pending }),
-                    date: formatDate(data.totals.nextReleaseAt, language),
+                    date: formatDate(data.totals.nextReleaseAt, locale),
                   })
                   : t('storeBalances.totalPending', { value: moneyLine({ cents: data.totals.pendingUsdCents, estimated: data.totals.pendingEstimated, approxCents: data.totals.approxBrl.pending }) })}
               </p>

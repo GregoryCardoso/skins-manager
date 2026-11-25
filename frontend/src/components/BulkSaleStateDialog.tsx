@@ -2,7 +2,7 @@
 
 import { useId, useState, type FormEvent } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
 import { parseBulkQuantity } from '@/lib/bulkSaleState';
 import { useInvalidate } from '@/lib/useInvalidate';
 import { bulkMarkForSale, bulkMarkOffSale } from '@/services/api';
@@ -24,7 +24,7 @@ interface Props {
 export default function BulkSaleStateDialog({ direction, name, target, onClose, onDone }: Props) {
   const t = useT();
   const tLoose = useTLoose();
-  const language = useLanguage();
+  const locale = useLocale();
   const invalidate = useInvalidate();
   const quantityId = useId();
   const byGroup = 'groupKey' in target;
@@ -48,7 +48,7 @@ export default function BulkSaleStateDialog({ direction, name, target, onClose, 
     (toHolding ? bulkMarkOffSale(body) : bulkMarkForSale(body))
       .then(() => invalidate(toHolding ? 'item.offSaleBulk' : 'item.backOnSaleBulk'))
       .then(() => onDone())
-      .catch((err: unknown) => setError(errorMessageFor(err, tLoose, language)))
+      .catch((err: unknown) => setError(errorMessageFor(err, tLoose, locale)))
       .finally(() => setBusy(false));
   };
 

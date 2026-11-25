@@ -1,7 +1,7 @@
 'use client';
 
 import { useId } from 'react';
-import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import { formatMoney } from '@/lib/format';
 import { rateToPercentText } from '@/lib/storeForm';
 import type { Store } from '@/types/api';
@@ -51,33 +51,33 @@ function Action({ label, disabledReason = null, disabled = false, danger = false
 
 function SaleFeeCell({ store }: { store: Store }) {
   const t = useT();
-  const language = useLanguage();
+  const locale = useLocale();
   if (store.saleFeeType === null || store.saleFeeRate === null) {
     return <span className={styles.warn}>{t('storesTable.feesNotConfigured')}</span>;
   }
-  const rate = rateToPercentText(store.saleFeeRate, language);
+  const rate = rateToPercentText(store.saleFeeRate, locale);
   return <>{store.saleFeeType === 'DEDUCTED' ? t('storesTable.feeDeducted', { rate }) : t('storesTable.feeAdded', { rate })}</>;
 }
 
 function MinFixedCell({ store }: { store: Store }) {
   const t = useT();
-  const language = useLanguage();
+  const locale = useLocale();
   const parts: string[] = [];
-  if (store.saleMinFeeCents !== null) parts.push(t('storesTable.minFee', { value: formatMoney(store.saleMinFeeCents, store.currency, language) }));
-  if (store.saleFixedFeeCents > 0) parts.push(t('storesTable.fixedFee', { value: formatMoney(store.saleFixedFeeCents, store.currency, language) }));
+  if (store.saleMinFeeCents !== null) parts.push(t('storesTable.minFee', { value: formatMoney(store.saleMinFeeCents, store.currency, locale) }));
+  if (store.saleFixedFeeCents > 0) parts.push(t('storesTable.fixedFee', { value: formatMoney(store.saleFixedFeeCents, store.currency, locale) }));
   return <>{parts.length > 0 ? parts.join(' · ') : t('common.none')}</>;
 }
 
 function WithdrawalCell({ store }: { store: Store }) {
   const t = useT();
-  const language = useLanguage();
+  const locale = useLocale();
   if (!store.allowsWithdrawal) return <>{t('storesTable.withdrawalNo')}</>;
   const parts: string[] = [];
   parts.push(store.withdrawalFeeRate === null
     ? t('storesTable.withdrawalRateUnknown')
-    : `${rateToPercentText(store.withdrawalFeeRate, language)}%`);
+    : `${rateToPercentText(store.withdrawalFeeRate, locale)}%`);
   if (store.withdrawalFixedFeeCents > 0) {
-    parts.push(t('storesTable.fixedFee', { value: formatMoney(store.withdrawalFixedFeeCents, store.currency, language) }));
+    parts.push(t('storesTable.fixedFee', { value: formatMoney(store.withdrawalFixedFeeCents, store.currency, locale) }));
   }
   return <>{t('storesTable.withdrawalYes', { detail: parts.join(' · ') })}</>;
 }

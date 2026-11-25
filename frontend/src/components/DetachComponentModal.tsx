@@ -3,7 +3,7 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
+import { useLanguage, useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
 import { dateToLocalInput, localInputToIso, nowLocalInput } from '@/lib/dateInput';
 import { formatDate, formatMoney } from '@/lib/format';
 import { formatCentsInput, normalizeNumberText } from '@/lib/numberInput';
@@ -28,8 +28,8 @@ interface Props {
 const FIELDS = ['detachedAt', 'hangingShareBp', 'tradeUnlockAt', 'note'] as const;
 
 // Porcentagem digitada ("33,33" / "33.33") -> pontos-base (0 a 10000). Inválido -> null.
-function parseShareText(text: string, language: string): number | null {
-  const normalized = normalizeNumberText(text, language);
+function parseShareText(text: string, locale: string): number | null {
+  const normalized = normalizeNumberText(text, locale);
   const match = /^(\d+)(?:\.(\d{1,2}))?$/.exec(normalized);
   if (!match) return null;
   const bp = Number(match[1]) * 100 + Number((match[2] ?? '').padEnd(2, '0') || '0');
@@ -43,11 +43,12 @@ export default function DetachComponentModal({ item, componentId, onClose, onDon
   const t = useT();
   const tLoose = useTLoose();
   const language = useLanguage();
+  const locale = useLocale();
   const invalidate = useInvalidate();
   const component = item.components.find((c) => c.detachable && (componentId === undefined || c.id === componentId)) ?? null;
 
   const [shareText, setShareText] = useState<string | null>(null);
-  const shareBp = shareText === null || shareText.trim() === '' ? null : parseShareText(shareText, language);
+  const shareBp = shareText === null || shareText.trim() === '' ? null : parseShareText(shareText, locale);
   const shareInvalid = shareText !== null && shareText.trim() !== '' && shareBp === null;
 
   const previewQuery = useQuery({
@@ -70,8 +71,8 @@ export default function DetachComponentModal({ item, componentId, onClose, onDon
   const suggestion = preview?.suggestion ?? null;
   const needsShare = split && suggestion === null;
   // Texto mostrado no campo: o digitado ou, sem digitar, a sugestão.
-  const shownShare = shareText ?? (suggestion ? formatCentsInput(suggestion.hangingShareBp, language) : '');
-  const usd = (cents: number | null) => (cents === null ? t('common.none') : formatMoney(cents, 'USD', language));
+  const shownShare = shareText ?? (suggestion ? formatCentsInput(suggestion.hangingShareBp, locale) : '');
+  const usd = (cents: number | null) => (cents === null ? t('common.none') : formatMoney(cents, 'USD', locale));
   const hangingName = component ? (language === 'pt-BR' ? component.namePtBr ?? component.name : component.name) : '';
 
   const showApiError = (err: unknown) => {
@@ -79,7 +80,7 @@ export default function DetachComponentModal({ item, componentId, onClose, onDon
       onGone();
       return;
     }
-    const message = errorMessageFor(err, tLoose, language);
+    const message = errorMessageFor(err, tLoose, locale);
     const field = err instanceof ApiRequestError && err.field ? err.field : null;
     if (field && (FIELDS as readonly string[]).includes(field)) {
       setErrors({ [field]: message });
@@ -149,7 +150,7 @@ export default function DetachComponentModal({ item, componentId, onClose, onDon
               {component.pattern !== null && <span className={styles.muted}>{t('detachForm.pattern', { n: component.pattern })}</span>}
             </div>
             {previewQuery.isPending && <p className={styles.muted}>{t('common.loading')}</p>}
-            {previewQuery.error && <div className={styles.topError} role="alert">{errorMessageFor(previewQuery.error, tLoose, language)}</div>}
+            {previewQuery.error && <div className={styles.topError} role="alert">{errorMessageFor(previewQuery.error, tLoose, locale)}</div>}
 
             {preview && preview.mode === 'RETURN' && (
               <div className={styles.note} role="status">
@@ -169,11 +170,11 @@ export default function DetachComponentModal({ item, componentId, onClose, onDon
                     <>
                       <p>
                         {t('detachForm.valued', {
-                          date: suggestion.pricedAt ? formatDate(suggestion.pricedAt, language) : '',
+                          date: suggestion.pricedAt ? formatDate(suggestion.pricedAt, locale) : '',
                           weapon: usd(suggestion.basePriceCents),
                           hanging: usd(suggestion.hangingPriceCents),
                           total: usd(preview.valuedTotalUsdCents),
-                          share: formatCentsInput(suggestion.hangingShareBp, language),
+                          share: formatCentsInput(suggestion.hangingShareBp, locale),
                         })}
                       </p>
                       {suggestion.isStale && <p>{t('detachForm.stale')}</p>}

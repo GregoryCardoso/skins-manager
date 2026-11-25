@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
 import { resolveErrorTarget } from '@/lib/formErrors';
 import {
   buildStoreCreateBody, buildStorePatchBody, initialStoreFormState, storeFormFromStore, storeFormRounds, validateStoreForm,
@@ -34,10 +34,10 @@ export default function StoreFormModal({ store, onClose, onSaved, onGone }: Prop
   const invalidate = useInvalidate();
   const t = useT();
   const tLoose = useTLoose();
-  const language = useLanguage();
+  const locale = useLocale();
   const editing = store !== undefined;
 
-  const [state, setState] = useState<StoreFormState>(() => (store ? storeFormFromStore(store, language) : initialStoreFormState()));
+  const [state, setState] = useState<StoreFormState>(() => (store ? storeFormFromStore(store, locale) : initialStoreFormState()));
   const [errors, setErrors] = useState<Partial<Record<string, string>>>({});
   const [topError, setTopError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -55,7 +55,7 @@ export default function StoreFormModal({ store, onClose, onSaved, onGone }: Prop
       onGone();
       return;
     }
-    const message = errorMessageFor(err, tLoose, language);
+    const message = errorMessageFor(err, tLoose, locale);
     const fields = editing ? BASE_FIELDS : [...BASE_FIELDS, 'isPrimary'];
     const { target, topLabelField } = resolveErrorTarget(err, fields);
     if (target) {
@@ -72,7 +72,7 @@ export default function StoreFormModal({ store, onClose, onSaved, onGone }: Prop
     event.preventDefault();
     if (saving) return;
     setTopError(null);
-    const local = validateStoreForm(state, language);
+    const local = validateStoreForm(state, locale);
     if (Object.keys(local).length > 0) {
       const translated: Partial<Record<string, string>> = {};
       for (const [field, key] of Object.entries(local)) translated[field] = tLoose(key);
@@ -81,7 +81,7 @@ export default function StoreFormModal({ store, onClose, onSaved, onGone }: Prop
     }
     setErrors({});
     if (store) {
-      const body = buildStorePatchBody(state, store, language);
+      const body = buildStorePatchBody(state, store, locale);
       if (Object.keys(body).length === 0) {
         onClose();
         return;
@@ -99,7 +99,7 @@ export default function StoreFormModal({ store, onClose, onSaved, onGone }: Prop
       return;
     }
     setSaving(true);
-    createStore(buildStoreCreateBody(state, language))
+    createStore(buildStoreCreateBody(state, locale))
       .then((saved) => {
         invalidate('store.create');
         onSaved(t('storeForm.created', { name: saved.name }));
@@ -115,7 +115,7 @@ export default function StoreFormModal({ store, onClose, onSaved, onGone }: Prop
       <form className={styles.form} onSubmit={submit} noValidate>
         {topError && <div className={styles.topError} role="alert">{topError}</div>}
         <div className={styles.note} role="note">{t('storeForm.feeChangeNote')}</div>
-        {storeFormRounds(state, language) && <div className={styles.note} role="status">{t('storeForm.roundedNote')}</div>}
+        {storeFormRounds(state, locale) && <div className={styles.note} role="status">{t('storeForm.roundedNote')}</div>}
 
         <div className={styles.grid}>
           <FormField label={t('storeForm.name')} error={errors.name}>

@@ -14,7 +14,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Skins Manager',
-  description: 'Inventário e giro de itens de CS2',
+  description: 'CS2 item inventory and turnover',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

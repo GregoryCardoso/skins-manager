@@ -10,7 +10,7 @@ import StoreBalancesPanel from '@/components/StoreBalancesPanel';
 import SummaryCards from '@/components/SummaryCards';
 import WithdrawalsSection from '@/components/WithdrawalsSection';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import { useMoneyLine } from '@/components/MoneyApprox';
 import { formatDate, formatMoney } from '@/lib/format';
 import { queryKeys } from '@/lib/queryKeys';
@@ -26,12 +26,12 @@ export default function ProfitPage() {
   const t = useT();
   const tLoose = useTLoose();
   const tPlural = useTPlural();
-  const language = useLanguage();
+  const locale = useLocale();
   const moneyLine = useMoneyLine();
   // Valor creditado do aporte para mensagens (US$); aporte legado: o R$ gravado. Só formata.
   const depositValueText = (deposit: Deposit) => {
-    if (deposit.amountStoreCents !== null) return formatMoney(deposit.amountStoreCents, 'USD', language);
-    return deposit.amountBrlCents === null ? '' : formatMoney(deposit.amountBrlCents, 'BRL', language);
+    if (deposit.amountStoreCents !== null) return formatMoney(deposit.amountStoreCents, 'USD', locale);
+    return deposit.amountBrlCents === null ? '' : formatMoney(deposit.amountBrlCents, 'BRL', locale);
   };
 
   const invalidate = useInvalidate();
@@ -85,7 +85,7 @@ export default function ProfitPage() {
           return;
         }
         setConfirmBusy(false);
-        setConfirmError(errorMessageFor(err, tLoose, language));
+        setConfirmError(errorMessageFor(err, tLoose, locale));
       });
   };
 
@@ -116,7 +116,7 @@ export default function ProfitPage() {
             {t('deposits.total', {
               value: moneyLine({ cents: data.totals.amountUsdCents, estimated: data.totals.estimated, approxCents: data.totals.approxBrlCents }),
             })}
-            {(data.totals.feeCents ?? 0) > 0 && ` ${t('deposits.totalFees', { value: formatMoney(data.totals.feeCents ?? 0, 'USD', language) })}`}
+            {(data.totals.feeCents ?? 0) > 0 && ` ${t('deposits.totalFees', { value: formatMoney(data.totals.feeCents ?? 0, 'USD', locale) })}`}
           </p>
         )}
 
@@ -129,7 +129,7 @@ export default function ProfitPage() {
 
         {error !== null && (
           <div className={styles.error} role="alert">
-            <p>{t('deposits.loadError', { reason: errorMessageFor(error, tLoose, language) })}</p>
+            <p>{t('deposits.loadError', { reason: errorMessageFor(error, tLoose, locale) })}</p>
             <button type="button" className={styles.retry} onClick={reload}>{t('common.retry')}</button>
           </div>
         )}
@@ -167,7 +167,7 @@ export default function ProfitPage() {
           title={t('deposits.deleteTitle')}
           message={t('deposits.deleteMessage', {
             value: depositValueText(dialog.deposit),
-            date: formatDate(dialog.deposit.depositedAt, language),
+            date: formatDate(dialog.deposit.depositedAt, locale),
           })}
           confirmLabel={t('deposits.confirmDelete')}
           danger

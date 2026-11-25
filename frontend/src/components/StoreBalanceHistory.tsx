@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
 import { formatDate, formatMoney } from '@/lib/format';
 import { queryKeys } from '@/lib/queryKeys';
 import { useInvalidate } from '@/lib/useInvalidate';
@@ -24,7 +24,7 @@ interface Props {
 export default function StoreBalanceHistory({ store, onClose }: Props) {
   const t = useT();
   const tLoose = useTLoose();
-  const language = useLanguage();
+  const locale = useLocale();
   const invalidate = useInvalidate();
 
   const query = useQuery({
@@ -33,7 +33,7 @@ export default function StoreBalanceHistory({ store, onClose }: Props) {
   });
   const entries: StoreBalanceEntry[] | null = query.data ? query.data.balances : null;
   const [deleteError, setDeleteError] = useState<string | null>(null);
-  const error = deleteError ?? (query.error ? errorMessageFor(query.error, tLoose, language) : null);
+  const error = deleteError ?? (query.error ? errorMessageFor(query.error, tLoose, locale) : null);
   const [confirming, setConfirming] = useState<StoreBalanceEntry | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -44,16 +44,16 @@ export default function StoreBalanceHistory({ store, onClose }: Props) {
       .catch((err: unknown) => {
         // Já excluído em outro lugar: só recarrega a lista.
         if (err instanceof ApiRequestError && err.code === 'STORE_BALANCE_NOT_FOUND') return;
-        setDeleteError(errorMessageFor(err, tLoose, language));
+        setDeleteError(errorMessageFor(err, tLoose, locale));
       })
       .finally(() => {
         setBusy(false);
         setConfirming(null);
         invalidate('balanceCheck.delete');
       });
-  }, [tLoose, language, invalidate]);
+  }, [tLoose, locale, invalidate]);
 
-  const money = (cents: number | null) => (cents === null ? '' : formatMoney(cents, store.currency, language));
+  const money = (cents: number | null) => (cents === null ? '' : formatMoney(cents, store.currency, locale));
   const kindLabel = (entry: StoreBalanceEntry) => t(entry.legacy ? 'storeBalances.kind.LEGACY' : 'storeBalances.kind.CHECK');
 
   return (
@@ -79,7 +79,7 @@ export default function StoreBalanceHistory({ store, onClose }: Props) {
             <tbody>
               {entries.map((entry) => (
                 <tr key={entry.id} className={tableStyles.row}>
-                  <td className={tableStyles.date}>{formatDate(entry.recordedAt, language)}</td>
+                  <td className={tableStyles.date}>{formatDate(entry.recordedAt, locale)}</td>
                   <td>{kindLabel(entry)}</td>
                   <td className={tableStyles.amount}>{money(entry.balanceCents)}</td>
                   <td className={tableStyles.amount}>{money(entry.computedCents)}</td>

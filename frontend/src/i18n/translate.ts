@@ -57,14 +57,14 @@ function pluralText(messages: unknown, key: string, count: number, locale: strin
   return lookup(messages, `${key}.${category}`) ?? lookup(messages, `${key}.other`);
 }
 
-// `baseMessages` (o inglês) é a reserva: chave ausente no idioma mostra o texto em inglês, e só no desenvolvimento avisa no console.
+// `baseMessages` (o inglês) é a reserva: chave ausente no idioma mostra o texto em inglês, e só quando nem o inglês tem a chave (desenvolvimento) avisa no console.
 export function translate(messages: unknown, key: string, params?: TranslateParams, baseMessages?: unknown): string {
   const own = lookup(messages, key);
   if (own !== undefined) return fill(own, params);
-  if (process.env.NODE_ENV === 'development') console.warn(`[i18n] chave ausente: ${key}`);
   if (baseMessages !== undefined) {
     const base = lookup(baseMessages, key);
     if (base !== undefined) return fill(base, params);
   }
+  if (process.env.NODE_ENV === 'development') console.warn(`[i18n] chave ausente: ${key}`);
   return key;
 }

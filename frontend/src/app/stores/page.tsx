@@ -6,7 +6,7 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 import StoreFormModal from '@/components/StoreFormModal';
 import StoresTable from '@/components/StoresTable';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import { queryKeys } from '@/lib/queryKeys';
 import { useInvalidate } from '@/lib/useInvalidate';
 import { ApiRequestError, deleteStore, listStores, setSteamStore, updateStore } from '@/services/api';
@@ -19,7 +19,7 @@ export default function StoresPage() {
   const t = useT();
   const tLoose = useTLoose();
   const tPlural = useTPlural();
-  const language = useLanguage();
+  const locale = useLocale();
 
   const invalidate = useInvalidate();
   const query = useQuery({ queryKey: queryKeys.stores.all, queryFn: ({ signal }) => listStores(signal) });
@@ -72,7 +72,7 @@ export default function StoresPage() {
           storeGone();
           return;
         }
-        setActionError(errorMessageFor(err, tLoose, language));
+        setActionError(errorMessageFor(err, tLoose, locale));
         invalidate('store.update');
       });
   };
@@ -102,7 +102,7 @@ export default function StoresPage() {
           storeGone();
           return;
         }
-        setActionError(errorMessageFor(err, tLoose, language));
+        setActionError(errorMessageFor(err, tLoose, locale));
         invalidate('settings.steamStore');
       });
   };
@@ -121,7 +121,7 @@ export default function StoresPage() {
           return;
         }
         setConfirmBusy(false);
-        setConfirmError(errorMessageFor(err, tLoose, language));
+        setConfirmError(errorMessageFor(err, tLoose, locale));
       });
   };
 
@@ -155,7 +155,7 @@ export default function StoresPage() {
 
       {error !== null && (
         <div className={styles.error} role="alert">
-          <p>{t('stores.loadError', { reason: errorMessageFor(error, tLoose, language) })}</p>
+          <p>{t('stores.loadError', { reason: errorMessageFor(error, tLoose, locale) })}</p>
           <button type="button" className={styles.retry} onClick={reload}>{t('common.retry')}</button>
         </div>
       )}

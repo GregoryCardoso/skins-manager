@@ -1,6 +1,6 @@
 'use client';
 
-import { useLanguage, useT } from '@/i18n/I18nProvider';
+import { useLanguage, useLocale, useT } from '@/i18n/I18nProvider';
 import {
   MAX_PATCHES, MAX_STICKERS, PATCH_SLOTS, STICKER_SLOTS, newPatchDraft, newStickerDraft,
   type ComponentCatalogChoice, type ComponentsState, type HangingKind, type PatchDraft, type StickerDraft,
@@ -37,6 +37,7 @@ const toChoice = (item: CatalogItem): ComponentCatalogChoice => ({
 function Chosen({ choice, kind, onClear, disabled }: { choice: ComponentCatalogChoice; kind: 'STICKER' | 'PINGENTE' | 'PATCH'; onClear: () => void; disabled: boolean }) {
   const t = useT();
   const language = useLanguage();
+  const locale = useLocale();
   return (
     <div className={sectionStyles.chosen}>
       <ItemImage category={kind} url={choice.imageUrl} size={32} />

@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
 import { resolveErrorTarget } from '@/lib/formErrors';
 import {
   buildComponentsBody, componentsAllowedFor, componentsBodyFromItem, componentsStateFromItem, emptyComponentsState, sameComponents,
@@ -53,19 +53,19 @@ const storeLabel = (store: Store, inactive: string) => (store.isActive ? store.n
 export default function ItemFormModal({ item, preset, stores, onClose, onSaved, onDetach, onGone }: Props) {
   const t = useT();
   const tLoose = useTLoose();
-  const language = useLanguage();
+  const locale = useLocale();
   const invalidate = useInvalidate();
   const { usdBrlRate } = usePreferences();
   const editing = item !== undefined;
-  const ctx: FormContext = { stores, usdBrlRate, language };
+  const ctx: FormContext = { stores, usdBrlRate, language: locale };
 
   const [state, setState] = useState<ItemFormState>(() => {
-    if (item) return stateFromItem(item, language);
+    if (item) return stateFromItem(item, locale);
     const base = initialCreateState(ctx);
     return preset ? { ...base, freeMode: true, category: 'OUTRO', name: preset.name } : base;
   });
   // Componentes aplicados (10.1): só SKIN; ficam fora do ItemFormState e entram no corpo no envio.
-  const [components, setComponents] = useState<ComponentsState>(() => (item ? componentsStateFromItem(item, language) : emptyComponentsState()));
+  const [components, setComponents] = useState<ComponentsState>(() => (item ? componentsStateFromItem(item, locale) : emptyComponentsState()));
   const [errors, setErrors] = useState<FormErrors>({});
   const [topError, setTopError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -107,7 +107,7 @@ export default function ItemFormModal({ item, preset, stores, onClose, onSaved, 
       onGone();
       return;
     }
-    const message = errorMessageFor(err, tLoose, language);
+    const message = errorMessageFor(err, tLoose, locale);
     let visible = visibleItemFields(ITEM_FORM_FIELDS, vis, { showSearch, freeMode: state.freeMode, hasCatalog: !!state.catalog });
     if (!allowComponents) visible = visible.filter((field) => field !== 'components');
     if (err instanceof ApiRequestError && (err.code === 'CATALOG_ITEM_REQUIRED' || err.code === 'CATALOG_ITEM_NOT_FOUND')) {
@@ -145,7 +145,7 @@ export default function ItemFormModal({ item, preset, stores, onClose, onSaved, 
     }
     const body: ItemPatchBody = { ...built.body };
     if (allowComponents) {
-      const comp = buildComponentsBody(components, language);
+      const comp = buildComponentsBody(components, locale);
       if (!comp.ok) {
         setErrors({ components: tLoose(comp.errorKey, comp.params) });
         return;
@@ -281,7 +281,7 @@ export default function ItemFormModal({ item, preset, stores, onClose, onSaved, 
             <FormField
               label={t('itemForm.fxRateAtPurchase')}
               error={errors.fxRateAtPurchase}
-              hint={usdBrlRate !== null ? t('itemForm.fxRateDefault', { rate: formatDecimalInput(usdBrlRate, language) }) : null}
+              hint={usdBrlRate !== null ? t('itemForm.fxRateDefault', { rate: formatDecimalInput(usdBrlRate, locale) }) : null}
             >
               {(c) => (
                 <input

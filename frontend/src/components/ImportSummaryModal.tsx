@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import { formatDateTime } from '@/lib/format';
 import { isNothingNew, summaryLines } from '@/lib/importSummary';
 import type { ImportBatchView } from '@/types/api';
@@ -21,7 +21,7 @@ export default function ImportSummaryModal({ batch, onClose }: Props) {
   const t = useT();
   const tLoose = useTLoose();
   const tPlural = useTPlural();
-  const language = useLanguage();
+  const locale = useLocale();
   const [undoOpen, setUndoOpen] = useState(false);
   const lines = summaryLines(batch.counts);
   const nothingNew = isNothingNew(batch.counts);
@@ -30,12 +30,12 @@ export default function ImportSummaryModal({ batch, onClose }: Props) {
     <>
       <Modal title={t('imports.summary.title')} onClose={onClose} wide>
         <div className={forms.form}>
-          <p className={forms.muted}>{formatDateTime(batch.finishedAt, language)}</p>
+          <p className={forms.muted}>{formatDateTime(batch.finishedAt, locale)}</p>
           {batch.cutoffChange && (
             <p role="status">
               {t('imports.cutoffChange.history', {
-                from: formatDateTime(batch.cutoffChange.from, language),
-                to: batch.cutoffChange.to ? formatDateTime(batch.cutoffChange.to, language) : '',
+                from: formatDateTime(batch.cutoffChange.from, locale),
+                to: batch.cutoffChange.to ? formatDateTime(batch.cutoffChange.to, locale) : '',
               })}
             </p>
           )}

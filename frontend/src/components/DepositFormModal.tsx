@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
 import {
   buildDepositCreateBody, buildDepositPatchBody, depositFormFromDeposit, depositStoreOptions, initialDepositState,
   legacyStoreIsNotUsd, validateDepositForm, type DepositFormState,
@@ -32,11 +32,11 @@ interface Props {
 export default function DepositFormModal({ deposit, stores, onClose, onSaved, onGone }: Props) {
   const t = useT();
   const tLoose = useTLoose();
-  const language = useLanguage();
+  const locale = useLocale();
   const editing = deposit !== undefined;
   const invalidate = useInvalidate();
 
-  const [state, setState] = useState<DepositFormState>(() => (deposit ? depositFormFromDeposit(deposit, language) : initialDepositState()));
+  const [state, setState] = useState<DepositFormState>(() => (deposit ? depositFormFromDeposit(deposit, locale) : initialDepositState()));
   const [errors, setErrors] = useState<Partial<Record<string, string>>>({});
   const [topError, setTopError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -49,7 +49,7 @@ export default function DepositFormModal({ deposit, stores, onClose, onSaved, on
       onGone();
       return;
     }
-    const message = errorMessageFor(err, tLoose, language);
+    const message = errorMessageFor(err, tLoose, locale);
     const { target, topLabelField } = resolveErrorTarget(err, FORM_FIELDS);
     if (target) {
       setErrors({ [target]: message });
@@ -65,7 +65,7 @@ export default function DepositFormModal({ deposit, stores, onClose, onSaved, on
     event.preventDefault();
     if (saving) return;
     setTopError(null);
-    const local = validateDepositForm(state, language);
+    const local = validateDepositForm(state, locale);
     if (Object.keys(local).length > 0) {
       const translated: Partial<Record<string, string>> = {};
       for (const [field, key] of Object.entries(local)) translated[field] = tLoose(key);
@@ -74,7 +74,7 @@ export default function DepositFormModal({ deposit, stores, onClose, onSaved, on
     }
     setErrors({});
     if (deposit) {
-      const body = buildDepositPatchBody(state, deposit, language);
+      const body = buildDepositPatchBody(state, deposit, locale);
       if (Object.keys(body).length === 0) {
         onClose();
         return;
@@ -92,10 +92,10 @@ export default function DepositFormModal({ deposit, stores, onClose, onSaved, on
       return;
     }
     setSaving(true);
-    createDeposit(buildDepositCreateBody(state, language))
+    createDeposit(buildDepositCreateBody(state, locale))
       .then((saved) => {
         invalidate('deposit.create');
-        onSaved(t('deposits.created', { value: saved.amountStoreCents === null ? '' : formatMoney(saved.amountStoreCents, 'USD', language) }));
+        onSaved(t('deposits.created', { value: saved.amountStoreCents === null ? '' : formatMoney(saved.amountStoreCents, 'USD', locale) }));
       })
       .catch((err: unknown) => {
         setSaving(false);

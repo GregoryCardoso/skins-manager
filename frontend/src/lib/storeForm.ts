@@ -1,6 +1,7 @@
 // Formulário de loja (D156): conversões puras entre o texto digitado e o corpo da API.
 // Percentuais são digitados em % ("2,5" = 0.025); centavos na moeda da loja ("0,30" = 30).
 import type { Currency, SaleFeeRounding, SaleFeeType, Store, StoreCreateBody, StorePatchBody } from '@/types/api';
+import { intlLocaleOf } from '@/i18n/languages';
 import { formatCentsInput, normalizeNumberText, parseIntegerInput, parseMoneyToCents } from './numberInput';
 
 // Faixa da retenção do saldo após a venda (D213); a API é quem decide, isto só evita uma ida ao servidor.
@@ -35,7 +36,7 @@ export function storeFormRounds(state: Pick<StoreFormState, 'saleFeeRateText' | 
 export function rateToPercentText(rate: number | null, language: string): string {
   if (rate === null) return '';
   const percent = Math.round(rate * 1e6) / 1e4;
-  return new Intl.NumberFormat(language, { maximumFractionDigits: 4, useGrouping: false }).format(percent);
+  return new Intl.NumberFormat(intlLocaleOf(language), { maximumFractionDigits: 4, useGrouping: false }).format(percent);
 }
 
 export interface StoreFormState {

@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useId, useState, type FormEvent } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
 import { formatDateTime, formatFloat, formatMoney } from '@/lib/format';
 import { buildLaunchBody, initialLaunchState, setLaunchAcquiredAt, type LaunchErrors, type LaunchFormState } from '@/lib/pendingActions';
 import { addDaysToLocalInput } from '@/lib/dateInput';
@@ -33,7 +33,7 @@ type Problem =
 export default function LaunchPurchaseModal({ entry, onClose, onDone }: Props) {
   const t = useT();
   const tLoose = useTLoose();
-  const language = useLanguage();
+  const locale = useLocale();
   const invalidate = useInvalidate();
   const ids = { store: useId(), price: useId(), fx: useId(), acquired: useId(), unlock: useId() };
   const storesQuery = useQuery({ queryKey: queryKeys.stores.all, queryFn: ({ signal }) => listStores(signal) });
@@ -52,7 +52,7 @@ export default function LaunchPurchaseModal({ entry, onClose, onDone }: Props) {
 
   const send = (options: { confirmWarnings?: boolean; purchaseOnly?: boolean } = {}) => {
     if (!form) return;
-    const built = buildLaunchBody(form, stores, language);
+    const built = buildLaunchBody(form, stores, locale);
     if (!built.ok) {
       setErrors(built.errors);
       return;
@@ -80,13 +80,13 @@ export default function LaunchPurchaseModal({ entry, onClose, onDone }: Props) {
             return;
           }
           if (err.code === 'PURCHASE_AFTER_SALE' || err.code === 'PURCHASE_UNLOCK_AFTER_SALE') {
-            const date = typeof params.soldAt === 'string' ? formatDateTime(params.soldAt, language) : '';
+            const date = typeof params.soldAt === 'string' ? formatDateTime(params.soldAt, locale) : '';
             const key = err.code === 'PURCHASE_AFTER_SALE' ? 'imports.launch.afterSale' : 'imports.launch.unlockAfterSale';
             setProblem({ kind: 'TEXT', text: t(key, { date }), field: err.code === 'PURCHASE_AFTER_SALE' ? 'acquiredAt' : 'tradeUnlockAt' });
             return;
           }
         }
-        setProblem({ kind: 'TEXT', text: errorMessageFor(err, tLoose, language) });
+        setProblem({ kind: 'TEXT', text: errorMessageFor(err, tLoose, locale) });
       })
       .finally(() => setBusy(false));
   };
@@ -98,7 +98,7 @@ export default function LaunchPurchaseModal({ entry, onClose, onDone }: Props) {
 
   const details: string[] = [];
   if (display.variant && display.variant !== 'NORMAL') details.push(tLoose(`enums.variant.${display.variant}`));
-  if (display.floatValue !== null) details.push(`float ${formatFloat(display.floatValue, language)}`);
+  if (display.floatValue !== null) details.push(`float ${formatFloat(display.floatValue, locale)}`);
   if (display.paintSeed !== null) details.push(`seed ${display.paintSeed}`);
   if (display.phase) details.push(display.phase);
   const fieldError = (field: keyof LaunchErrors) =>
@@ -112,8 +112,8 @@ export default function LaunchPurchaseModal({ entry, onClose, onDone }: Props) {
           {details.length > 0 && <p className={forms.hint}>{details.join(' · ')}</p>}
           <p className={forms.hint}>
             {t('imports.launch.saleInfo', {
-              price: display.priceCents !== null ? formatMoney(display.priceCents, display.currency, language) : '',
-              date: saleAt ? formatDateTime(saleAt, language) : '',
+              price: display.priceCents !== null ? formatMoney(display.priceCents, display.currency, locale) : '',
+              date: saleAt ? formatDateTime(saleAt, locale) : '',
             })}
           </p>
           <p className={forms.hint}>{t('imports.launch.identityLocked')}</p>
@@ -155,7 +155,7 @@ export default function LaunchPurchaseModal({ entry, onClose, onDone }: Props) {
                 disabled={busy}
               />
               <span className={forms.hint}>
-                {t('imports.launch.unlockHint', { date: saleAt ? formatDateTime(saleAt, language) : '' })}
+                {t('imports.launch.unlockHint', { date: saleAt ? formatDateTime(saleAt, locale) : '' })}
                 {' '}
                 <button
                   type="button"
@@ -174,7 +174,7 @@ export default function LaunchPurchaseModal({ entry, onClose, onDone }: Props) {
         {problem?.kind === 'TEXT' && !problem.field && <div className={forms.topError} role="alert">{problem.text}</div>}
         {problem?.kind === 'WARNING' && (
           <div className={forms.topError} role="alert">
-            <p>{t('imports.launch.warnBeforeCutoff', { date: problem.cutoffAt ? formatDateTime(problem.cutoffAt, language) : '' })}</p>
+            <p>{t('imports.launch.warnBeforeCutoff', { date: problem.cutoffAt ? formatDateTime(problem.cutoffAt, locale) : '' })}</p>
             <button type="button" className={forms.button} disabled={busy} onClick={() => send({ confirmWarnings: true })}>
               {t('imports.launch.confirmAnyway')}
             </button>

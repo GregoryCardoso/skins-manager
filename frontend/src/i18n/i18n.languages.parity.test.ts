@@ -51,6 +51,37 @@ function requiredPluralCategories(locale: string): string[] {
 
 const base = flatten(readDictionary(BASE_LANGUAGE));
 
+// Camada (a), texto sem traduzir: fora do inglês, nenhum texto pode ser idêntico ao inglês, salvo as exceções abaixo (comparadas
+// pelo TEXTO inglês, não pela chave). Textos sem letras (depois de tirar os {marcadores}), como "—", "≈ {value}" e "{role}: {name}",
+// são isentos automaticamente. Ao acrescentar um idioma, rode `npm run i18n:report` e só liste aqui o que é legítimo mesmo.
+// Exceções de qualquer idioma: marca, produto, siglas do jogo/da cotação e fórmula com moeda.
+const IDENTICAL_EVERYWHERE = new Set([
+  'Skins Manager', 'CSFloat', 'StatTrak™', 'PTAX',
+  'FN', 'MW', 'FT', 'WW', 'BS', // siglas dos desgastes (Factory New... Battle-Scarred), usadas assim em todo o jogo
+  'US$ 1 = {rate}',
+]);
+// Exceções por idioma: cognatos e termos do jogo que o idioma mantém em inglês.
+const IDENTICAL_BY_LANGUAGE: Record<string, readonly string[]> = {
+  'pt-BR': [
+    'Item', 'Item: {value}', '{count} item', 'Skin', 'Skins', 'Patch', 'Patches', 'Normal', 'Souvenir', 'Manual', 'Online', 'Offline', 'Individual',
+    'Backup', 'rollback', 'Trade lock', 'Float', 'Paint seed', 'Asset ID', 'Slot', 'slot', 'Pattern', 'pattern', 'pattern {n}', 'Sticker Slab',
+    'Holding', 'Holding ({count})', '{count} min', '{count} h', '{count} d', 'd', 'h', 'min',
+  ],
+};
+
+const hasLetters = (text: string) => /\p{L}/u.test(text.replace(/\{\w+\}/g, ''));
+
+function untranslated(code: string, dictionary: Flat): string[] {
+  const allowed = new Set([...IDENTICAL_EVERYWHERE, ...(IDENTICAL_BY_LANGUAGE[code] ?? [])]);
+  const same = (own: string, reference: string) => own === reference && hasLetters(own) && !allowed.has(own);
+  const found: string[] = [];
+  for (const [key, text] of Object.entries(dictionary.texts)) if (same(text, base.texts[key])) found.push(`${key}: ${text}`);
+  for (const [key, forms] of Object.entries(dictionary.plurals)) {
+    for (const [category, text] of Object.entries(forms)) if (same(text, base.plurals[key]?.[category])) found.push(`${key}.${category}: ${text}`);
+  }
+  return found;
+}
+
 describe('o inglês é o idioma base', () => {
   test('tem textos e nenhum vazio', () => {
     expect(Object.keys(base.texts).length).toBeGreaterThan(1000);
@@ -89,6 +120,20 @@ describe.each(LANGUAGE_REGISTRY.map((entry) => [entry.code, entry.intlLocale]))(
       const allowed = new Set(Object.values(base.plurals[key]).flatMap(markers));
       for (const text of Object.values(forms)) expect(markers(text).filter((marker) => !allowed.has(marker))).toEqual([]);
     }
+  });
+
+  test('nenhum texto idêntico ao inglês, fora da lista de exceções (texto sem traduzir)', () => {
+    // O inglês é a própria base: não se compara com ele mesmo.
+    expect(code === BASE_LANGUAGE ? [] : untranslated(code, dictionary)).toEqual([]);
+  });
+
+  test('toda exceção por idioma ainda é usada (lista sem sobras)', () => {
+    const identical = new Set<string>();
+    for (const [key, text] of Object.entries(dictionary.texts)) if (text === base.texts[key]) identical.add(text);
+    for (const [key, forms] of Object.entries(dictionary.plurals)) {
+      for (const [category, text] of Object.entries(forms)) if (text === base.plurals[key]?.[category]) identical.add(text);
+    }
+    expect((IDENTICAL_BY_LANGUAGE[code] ?? []).filter((text) => !identical.has(text))).toEqual([]);
   });
 
   test('todo código de erro e de aviso da API tem texto', () => {

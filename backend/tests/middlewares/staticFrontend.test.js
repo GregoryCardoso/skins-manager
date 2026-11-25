@@ -77,7 +77,7 @@ describe('staticFrontend', () => {
     const a = createApp({ staticDir: emptyDir });
     const res = await request(a).get('/');
     expect(res.status).toBe(503);
-    expect(res.text).toContain('Interface não encontrada');
+    expect(res.text).toContain('Interface not found');
     const health = await request(a).get('/api/health');
     expect(health.status).toBe(200);
   });

@@ -1,6 +1,6 @@
 'use client';
 
-import { useLanguage, useT } from '@/i18n/I18nProvider';
+import { useLocale, useT } from '@/i18n/I18nProvider';
 import { formatMoney } from '@/lib/format';
 import type { ItemView } from '@/types/api';
 import styles from './InventoryTable.module.css';
@@ -9,7 +9,7 @@ import styles from './InventoryTable.module.css';
 // mostra o custo efetivo em US$ (o próprio mais o dos componentes) e quanto veio dos componentes.
 export default function CostCell({ item }: { item: ItemView }) {
   const t = useT();
-  const locale = useLanguage();
+  const locale = useLocale();
   const inherited = item.cost.inheritedUsdCents;
   const differs = item.cost.hasOperationCost ?? inherited !== 0;
   if (!differs) return <>{formatMoney(item.purchasePriceCents, item.purchaseCurrency, locale)}</>;

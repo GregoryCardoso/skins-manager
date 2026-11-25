@@ -68,7 +68,10 @@ function languageFromLocale(locale) {
   const wanted = locale.trim().replace(/_/g, '-').toLowerCase();
   const exact = LANGUAGES.find((code) => code.toLowerCase() === wanted);
   if (exact) return exact;
-  const base = wanted.split('-')[0];
+  const parts = wanted.split('-');
+  const base = parts[0];
+  // Mesma regra do frontend (matchLanguage): o chinês tradicional nunca vira o simplificado.
+  if (base === 'zh' && parts.slice(1).some((part) => part === 'hant' || part === 'tw' || part === 'hk' || part === 'mo')) return DEFAULT_LANGUAGE;
   const sameBase = LANGUAGES.filter((code) => code.toLowerCase().split('-')[0] === base);
   if (sameBase.length === 0) return DEFAULT_LANGUAGE;
   return sameBase.find((code) => code.toLowerCase() === base) || sameBase[0];

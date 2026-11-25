@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import { formatDate, formatMoney } from '@/lib/format';
 import {
   groupMarketCell, groupUnrealizedCell, signOf, tabSummary, unitMarketCell, unitUnrealizedCell, type Sign,
@@ -14,9 +14,9 @@ import { useMarketSummary } from './useMarketSummary';
 // A dica (`title`) também vai num `srOnly`, porque o `title` não chega ao teclado nem ao leitor de tela.
 
 function useSignedMoney() {
-  const language = useLanguage();
+  const locale = useLocale();
   return (cents: number, sign: Sign = signOf(cents)) => {
-    const abs = formatMoney(Math.abs(cents), 'USD', language);
+    const abs = formatMoney(Math.abs(cents), 'USD', locale);
     return sign === 'POSITIVE' ? `+${abs}` : sign === 'NEGATIVE' ? `−${abs}` : abs;
   };
 }
@@ -34,18 +34,18 @@ function Hinted({ title, children }: { title: string | null; children: ReactNode
 
 function BrlLine({ cents }: { cents: number | null }) {
   const t = useT();
-  const language = useLanguage();
+  const locale = useLocale();
   if (cents === null) return null;
-  return <small className={styles.side}>{t('common.approx', { value: formatMoney(cents, 'BRL', language) })}</small>;
+  return <small className={styles.side}>{t('common.approx', { value: formatMoney(cents, 'BRL', locale) })}</small>;
 }
 
 export function UnitMarketCell({ marketValue }: { marketValue: MarketValue | null | undefined }) {
   const t = useT();
   const tLoose = useTLoose();
-  const language = useLanguage();
+  const locale = useLocale();
   const { summary } = useMarketSummary();
   const view = unitMarketCell(marketValue);
-  const usd = (cents: number) => formatMoney(cents, 'USD', language);
+  const usd = (cents: number) => formatMoney(cents, 'USD', locale);
 
   if (view.kind === 'NONE') return <span className={styles.muted}>{t('common.none')}</span>;
   if (view.kind === 'NO_PRICE') {
@@ -63,7 +63,7 @@ export function UnitMarketCell({ marketValue }: { marketValue: MarketValue | nul
       </Hinted>
     );
   }
-  const date = view.pricedAt ? formatDate(view.pricedAt, language) : null;
+  const date = view.pricedAt ? formatDate(view.pricedAt, locale) : null;
   const lines: string[] = [];
   if (view.parts.itemCents !== null) lines.push(t('inventory.marketValue.parts.item', { value: usd(view.parts.itemCents) }));
   if (view.parts.hangingCents !== null) lines.push(t('inventory.marketValue.parts.hanging', { value: usd(view.parts.hangingCents) }));
@@ -108,7 +108,7 @@ export function UnitUnrealizedCell({ marketValue }: { marketValue: MarketValue |
 export function GroupMarketCell({ totals }: { totals: MarketValueTotals | null | undefined }) {
   const t = useT();
   const tPlural = useTPlural();
-  const language = useLanguage();
+  const locale = useLocale();
   const view = groupMarketCell(totals);
   if (view.kind === 'NONE') return <span className={styles.muted}>{t('common.none')}</span>;
   if (view.kind === 'NO_PRICE' || view.kind === 'NOT_PRICEABLE') {
@@ -121,7 +121,7 @@ export function GroupMarketCell({ totals }: { totals: MarketValueTotals | null |
   }
   return (
     <Hinted title={t('inventory.marketValue.groupOnlyPriced')}>
-      <span className={styles.main}>{t('common.approx', { value: formatMoney(view.usdCents, 'USD', language) })}</span>
+      <span className={styles.main}>{t('common.approx', { value: formatMoney(view.usdCents, 'USD', locale) })}</span>
       <BrlLine cents={view.brlCents} />
       {view.partial && <small className={styles.side}>{t('inventory.marketValue.coverage', { priced: view.pricedUnits, total: view.unitCount })}</small>}
       {view.staleUnits > 0 && <small className={styles.mark}>{tPlural('inventory.marketValue.staleCount', view.staleUnits)}</small>}
@@ -154,11 +154,11 @@ export function GroupUnrealizedCell({ totals }: { totals: MarketValueTotals | nu
 // Linha de resumo da aba (T102): valor de mercado e PnL não realizado de todo o estoque da aba (não segue os filtros).
 export function MarketTabSummary({ totals, holding }: { totals: MarketValueTotals | null | undefined; holding: boolean }) {
   const t = useT();
-  const language = useLanguage();
+  const locale = useLocale();
   const signed = useSignedMoney();
   const view = tabSummary(totals);
   if (!view) return null;
-  const value = t('common.approx', { value: formatMoney(view.usdCents, 'USD', language) });
+  const value = t('common.approx', { value: formatMoney(view.usdCents, 'USD', locale) });
   const parts = [t(holding ? 'inventory.marketValue.tabSummary.holding' : 'inventory.marketValue.tabSummary.forSale', { value })];
   if (view.netCents !== null && view.netSign !== null) {
     parts.push(t('inventory.marketValue.tabSummary.unrealized', { value: t('common.approx', { value: signed(view.netCents, view.netSign) }) }));

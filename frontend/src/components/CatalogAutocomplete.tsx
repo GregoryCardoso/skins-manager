@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
+import { useLanguage, useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
 import { formatDate } from '@/lib/format';
 import { useInvalidate } from '@/lib/useInvalidate';
 import { ApiRequestError, MIN_CATALOG_QUERY_LENGTH, refreshCatalog, searchCatalog } from '@/services/api';
@@ -38,6 +38,7 @@ export default function CatalogAutocomplete({ label, fixedCategory, error, autoF
   const t = useT();
   const tLoose = useTLoose();
   const language = useLanguage();
+  const locale = useLocale();
   const invalidate = useInvalidate();
   const listId = useId();
   const [query, setQuery] = useState('');
@@ -87,7 +88,7 @@ export default function CatalogAutocomplete({ label, fixedCategory, error, autoF
         })
         .catch((err: unknown) => {
           if (controller.signal.aborted || (err instanceof ApiRequestError && err.code === 'ABORTED')) return;
-          setSearchError(errorMessageFor(err, tLoose, language));
+          setSearchError(errorMessageFor(err, tLoose, locale));
           setLoading(false);
         });
     }, DEBOUNCE_MS);
@@ -95,7 +96,7 @@ export default function CatalogAutocomplete({ label, fixedCategory, error, autoF
       clearTimeout(timer);
       controller.abort();
     };
-  }, [query, category, refreshToken, tLoose, language]);
+  }, [query, category, refreshToken, tLoose, locale]);
 
   const choose = (item: CatalogItem) => {
     setOpen(false);
@@ -131,12 +132,12 @@ export default function CatalogAutocomplete({ label, fixedCategory, error, autoF
       .then((res) => {
         invalidate('catalog.refresh');
         if (!mounted.current) return;
-        const date = formatDate(res.catalogUpdatedAt ?? new Date().toISOString(), language);
+        const date = formatDate(res.catalogUpdatedAt ?? new Date().toISOString(), locale);
         setRefreshNote(t('itemForm.catalogRefreshed', { date }));
         setRefreshToken((n) => n + 1);
       })
       .catch((err: unknown) => {
-        if (mounted.current) setSearchError(errorMessageFor(err, tLoose, language));
+        if (mounted.current) setSearchError(errorMessageFor(err, tLoose, locale));
       })
       .finally(() => {
         if (mounted.current) setRefreshing(false);

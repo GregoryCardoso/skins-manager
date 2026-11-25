@@ -198,7 +198,9 @@ export function bootstrapPreferences(env?: BootstrapEnv): void {
     root.setAttribute('data-theme', resolved);
     root.style.colorScheme = resolved;
     root.setAttribute('lang', language);
-    if (language !== base) {
+    // Sem idioma em cache, mantém a página oculta até as configurações responderem (mesmo com o idioma detectado = base), para
+    // quem tem o banco em outro idioma não ver a tela no idioma do sistema piscar. O timeout de 3 s vale nos dois casos.
+    if (language !== base || storedLanguage === null) {
       root.classList.add('i18n-pending');
       const schedule = e.setTimeoutFn || setTimeout;
       schedule(() => root.classList.remove('i18n-pending'), 3000);

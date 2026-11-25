@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useId, useState, type FormEvent } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLanguage, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import { isoToLocalInput, localInputToIso } from '@/lib/dateInput';
 import { formatDateTime, formatMoney } from '@/lib/format';
 import { queryKeys } from '@/lib/queryKeys';
@@ -26,7 +26,7 @@ export default function CutoffChangeModal({ currentCutoffAt, busy, error, onConf
   const t = useT();
   const tLoose = useTLoose();
   const tPlural = useTPlural();
-  const language = useLanguage();
+  const locale = useLocale();
   const dateId = useId();
   const [text, setText] = useState(currentCutoffAt ? isoToLocalInput(currentCutoffAt) : '');
   const iso = localInputToIso(text);
@@ -41,7 +41,7 @@ export default function CutoffChangeModal({ currentCutoffAt, busy, error, onConf
   });
   const preview = changed && !future ? previewQuery.data ?? null : null;
   const transfers = preview?.transfers ?? null;
-  const usd = (cents: number) => formatMoney(cents, 'USD', language);
+  const usd = (cents: number) => formatMoney(cents, 'USD', locale);
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -51,7 +51,7 @@ export default function CutoffChangeModal({ currentCutoffAt, busy, error, onConf
   return (
     <Modal title={t('imports.cutoffChange.title')} onClose={onCancel} busy={busy} wide>
       <form className={forms.form} onSubmit={submit} noValidate>
-        {currentCutoffAt && <p>{t('imports.cutoffChange.current', { date: formatDateTime(currentCutoffAt, language) })}</p>}
+        {currentCutoffAt && <p>{t('imports.cutoffChange.current', { date: formatDateTime(currentCutoffAt, locale) })}</p>}
         <p className={forms.muted}>{t('imports.cutoffChange.singleHint')}</p>
         <label className={forms.field} htmlFor={dateId}>
           <span>{t('imports.cutoffChange.newDate')}</span>
@@ -66,7 +66,7 @@ export default function CutoffChangeModal({ currentCutoffAt, busy, error, onConf
         </ul>
 
         {changed && !future && previewQuery.isFetching && <p className={forms.muted}>{t('common.loading')}</p>}
-        {previewQuery.error !== null && changed && <div className={forms.topError} role="alert">{errorMessageFor(previewQuery.error, tLoose, language)}</div>}
+        {previewQuery.error !== null && changed && <div className={forms.topError} role="alert">{errorMessageFor(previewQuery.error, tLoose, locale)}</div>}
         {preview?.backward && (
           <div className={forms.note} role="status" data-testid="cutoff-preview-backward">
             <p><strong>{t('imports.cutoffChange.previewTitle')}</strong></p>
@@ -87,7 +87,7 @@ export default function CutoffChangeModal({ currentCutoffAt, busy, error, onConf
                 <p>{tPlural('imports.cutoffChange.depositsWarning', preview.backward.deposits.length)}</p>
                 <ul>
                   {preview.backward.deposits.map((d) => (
-                    <li key={d.id}>{formatDateTime(d.depositedAt, language)}{d.amountStoreCents !== null ? ` — ${usd(d.amountStoreCents)}` : ''}</li>
+                    <li key={d.id}>{formatDateTime(d.depositedAt, locale)}{d.amountStoreCents !== null ? ` — ${usd(d.amountStoreCents)}` : ''}</li>
                   ))}
                 </ul>
               </div>

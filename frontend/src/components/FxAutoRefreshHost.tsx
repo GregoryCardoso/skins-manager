@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
 import { formatRate } from '@/lib/format';
 import { queryKeys } from '@/lib/queryKeys';
 import { useInvalidate } from '@/lib/useInvalidate';
@@ -23,7 +23,7 @@ let attemptedThisPage = false;
 export default function FxAutoRefreshHost() {
   const t = useT();
   const tLoose = useTLoose();
-  const language = useLanguage();
+  const locale = useLocale();
   const invalidate = useInvalidate();
   const settingsQuery = useQuery({ queryKey: queryKeys.settings.all, queryFn: ({ signal }) => getSettings(signal) });
   const settings = settingsQuery.data ?? null;
@@ -45,18 +45,18 @@ export default function FxAutoRefreshHost() {
         .catch((err: unknown) => {
           // Sem internet: o modal único "Sem conexão" avisa (junto com o CSFloat); outros erros, o aviso discreto.
           if (isOfflineFailure(err instanceof ApiRequestError ? err.code : null, browserOnline())) reportStartup('fx', 'OFFLINE');
-          else setError(errorMessageFor(err, tLoose, language));
+          else setError(errorMessageFor(err, tLoose, locale));
         });
     }, START_DELAY_MS);
     return () => clearTimeout(timer);
-  }, [settings, invalidate, tLoose, language]);
+  }, [settings, invalidate, tLoose, locale]);
 
   if (!error) return null;
   return (
     <div className={`${styles.notice} ${styles.error} ${styles.left}`} role="status" aria-live="polite">
       <span className={styles.text}>
         {settings && settings.usdBrlRate !== null
-          ? t('settings.fx.autoFailedWithRate', { reason: error, rate: formatRate(settings.usdBrlRate, language) })
+          ? t('settings.fx.autoFailedWithRate', { reason: error, rate: formatRate(settings.usdBrlRate, locale) })
           : t('settings.fx.autoFailed', { reason: error })}
       </span>
       <button type="button" className={styles.close} onClick={() => setError(null)} aria-label={t('common.close')}>×</button>

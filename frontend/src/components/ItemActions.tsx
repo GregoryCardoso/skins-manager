@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { useLanguage, useT } from '@/i18n/I18nProvider';
+import { useLocale, useT } from '@/i18n/I18nProvider';
 import { formatDate } from '@/lib/format';
 import type { ItemView } from '@/types/api';
 import styles from './ItemActions.module.css';
@@ -33,7 +33,7 @@ interface Props {
 // "Vender" fica desabilitado em trade lock (D74); o backend continua sendo a fonte da regra.
 export default function ItemActions({ item, onEdit, onSell, onUnsell, onDelete, onHistory, onOffSale, onForSale, onApply, onOpen, onRegisterKey, onDetach, forSaleBusy = false, children }: Props) {
   const t = useT();
-  const locale = useLanguage();
+  const locale = useLocale();
   const sold = item.status === 'VENDIDO';
   const locked = !sold && item.tradeLock.isLocked;
   const lockHint = locked && item.tradeLock.tradeUnlockAt

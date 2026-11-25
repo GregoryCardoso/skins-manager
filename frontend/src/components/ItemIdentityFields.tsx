@@ -1,6 +1,6 @@
 'use client';
 
-import { useLanguage, useT, useTLoose } from '@/i18n/I18nProvider';
+import { useLanguage, useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
 import {
   ALL_EXTERIORS, FREE_NAME_CATEGORIES, effectiveCategory, variantOptions, type FieldVisibility, type FormErrors, type ItemFormState,
 } from '@/lib/itemForm';
@@ -33,10 +33,11 @@ export default function ItemIdentityFields({ state, patch, errors, clearError, v
   const t = useT();
   const tLoose = useTLoose();
   const language = useLanguage();
+  const locale = useLocale();
   const category = effectiveCategory(state);
   const categoryText = (c: Category | '') => (c === '' ? '' : tLoose(`enums.category.${c}`));
   const floatHint = state.catalog && state.catalog.minFloat !== null && state.catalog.maxFloat !== null
-    ? t('itemForm.floatRange', { min: formatFloat(state.catalog.minFloat, language), max: formatFloat(state.catalog.maxFloat, language) })
+    ? t('itemForm.floatRange', { min: formatFloat(state.catalog.minFloat, locale), max: formatFloat(state.catalog.maxFloat, locale) })
     : null;
 
   return (

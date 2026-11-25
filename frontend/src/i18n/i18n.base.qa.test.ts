@@ -147,8 +147,8 @@ describe('bootstrap: prioridade entre cache e navegador', () => {
   });
   test('sem cache: navegador em português -> pt-BR com i18n-pending; null/undefined/[] -> en', () => {
     expect(run(null, ['pt-PT'])).toEqual({ lang: 'pt-BR', pending: true });
-    expect(run(null, null)).toEqual({ lang: 'en', pending: false });
-    expect(run(null, [])).toEqual({ lang: 'en', pending: false });
+    expect(run(null, null)).toEqual({ lang: 'en', pending: true });
+    expect(run(null, [])).toEqual({ lang: 'en', pending: true });
   });
   test('cache com idioma desconhecido (es, "pt-br") é ignorado e vale o navegador', () => {
     expect(run('es', ['pt-BR']).lang).toBe('pt-BR');

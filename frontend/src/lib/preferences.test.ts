@@ -134,12 +134,29 @@ describe('shouldAdoptDetectedLanguage (instalação nova, D369)', () => {
 });
 
 describe('bootstrapPreferences', () => {
-  test('tema escuro do sistema, sem idioma salvo e sem idioma do navegador: inglês (base), sem i18n-pending', () => {
+  test('tema escuro do sistema, sem idioma salvo e sem idioma do navegador: inglês (base), com i18n-pending até as configurações responderem', () => {
     const { attrs, classes, doc } = fakeDoc();
     bootstrapPreferences({ ...LANG_ENV, doc, storage: fakeStorage(), matchMedia: () => ({ matches: true }) });
     expect(attrs['data-theme']).toBe('dark');
     expect(attrs.lang).toBe('en');
     expect(doc.documentElement.style.colorScheme).toBe('dark');
+    expect(classes.has('i18n-pending')).toBe(true);
+  });
+
+  test('en em cache: sem i18n-pending (idioma já definitivo)', () => {
+    const { classes, doc } = fakeDoc();
+    bootstrapPreferences({ ...LANG_ENV, doc, storage: fakeStorage({ 'sm.language': 'en' }), matchMedia: () => ({ matches: false }) });
+    expect(classes.has('i18n-pending')).toBe(false);
+  });
+
+  test('sem cache e idioma detectado = en: i18n-pending e remoção agendada em 3 s', () => {
+    const { attrs, classes, doc } = fakeDoc();
+    const setTimeoutFn = vi.fn();
+    bootstrapPreferences({ ...LANG_ENV, doc, storage: fakeStorage(), matchMedia: () => ({ matches: false }), navigatorLocales: ['en-US'], setTimeoutFn });
+    expect(attrs.lang).toBe('en');
+    expect(classes.has('i18n-pending')).toBe(true);
+    expect(setTimeoutFn).toHaveBeenCalledWith(expect.any(Function), 3000);
+    setTimeoutFn.mock.calls[0][0]();
     expect(classes.has('i18n-pending')).toBe(false);
   });
 
@@ -190,7 +207,7 @@ describe('bootstrapPreferences', () => {
     });
     expect(attrs['data-theme']).toBe('dark');
     expect(attrs.lang).toBe('en');
-    expect(classes.has('i18n-pending')).toBe(false);
+    expect(classes.has('i18n-pending')).toBe(true);
   });
 
   test('sem matchMedia (null) e storage null: tema claro, sem lançar', () => {

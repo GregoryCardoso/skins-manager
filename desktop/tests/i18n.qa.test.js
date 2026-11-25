@@ -7,7 +7,7 @@ describe('languageFromLocale (QA 11.1)', () => {
   test.each([
     ['pt', 'pt-BR'], ['pt-PT', 'pt-BR'], ['pt-BR', 'pt-BR'], ['PT-br', 'pt-BR'], ['pt_BR.UTF-8', 'pt-BR'], [' pt-BR ', 'pt-BR'],
     ['en-GB', 'en'], ['en-US', 'en'], ['EN', 'en'],
-    ['es-ES', 'en'], ['zh-CN', 'en'], ['C', 'en'], ['POSIX', 'en'], ['', 'en'], ['   ', 'en'], ['---', 'en'],
+    ['es-ES', 'en'], ['zh-CN', 'en'], ['zh-TW', 'en'], ['zh-HK', 'en'], ['zh-Hant', 'en'], ['zh_Hant_TW', 'en'], ['C', 'en'], ['POSIX', 'en'], ['', 'en'], ['   ', 'en'], ['---', 'en'],
   ])('%j -> %s', (locale, expected) => {
     expect(languageFromLocale(locale)).toBe(expected);
   });
