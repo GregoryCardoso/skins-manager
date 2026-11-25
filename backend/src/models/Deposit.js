@@ -1,7 +1,7 @@
 const { getDb } = require('../config/database');
 const { mapRow, insertRow, updateRow } = require('./modelHelpers');
 
-const FIELDS = ['storeId', 'amountStoreCents', 'feeCents', 'amountBrlCents', 'depositedAt', 'note'];
+const FIELDS = ['storeId', 'amountStoreCents', 'feeCents', 'amountBrlCents', 'amountBrlCurrency', 'depositedAt', 'note'];
 
 function findById(id) {
   return mapRow(getDb().prepare('SELECT * FROM deposits WHERE id = ?').get(id));

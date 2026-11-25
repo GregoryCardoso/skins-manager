@@ -14,7 +14,7 @@ const { ValidationError, NotFoundError } = require('../errors/AppError');
 const { MAX_AMOUNT_CENTS, MAX_NOTE_LENGTH } = require('../config/constants');
 const { parseDate } = require('./dateUtils');
 const { assertNotFutureDay } = require('./inventoryAgingService');
-const { isValidFxRate, toUsdBase, approxOf, fxFromSettings, displayCurrencyOf } = require('./currencyService');
+const { isValidFxRate, toUsdBase, approxOf, fxFromSettings, displayCurrencyOf, rateOf, assertAmountPrecision } = require('./currencyService');
 const { splitStoreSales } = require('./saleHoldService');
 const { WARNINGS } = require('./warnings');
 
@@ -116,6 +116,7 @@ function validateCommon(input, store, now) {
       { field: 'balanceCents', params: { maxCents: MAX_AMOUNT_CENTS } }
     );
   }
+  assertAmountPrecision(input.balanceCents, store.currency, 'balanceCents');
   const date = parseDate(input.recordedAt, 'Data do saldo', { field: 'recordedAt' });
   assertNotFutureDay(date, now, {
     code: 'RECORDED_AT_IN_FUTURE', message: 'A data do saldo não pode ser futura.', field: 'recordedAt',
@@ -123,10 +124,10 @@ function validateCommon(input, store, now) {
   return date;
 }
 
-// `fxRate` (E8-Q7): loja em BRL grava a cotação das configurações (nula se não houver); loja USD, nulo.
+// `fxRate` (E8-Q7): loja fora de USD grava a cotação das configurações da moeda dela (nula se não houver); loja USD, nulo.
 const fxRateFor = (store, settings) => {
-  const rate = settings ? settings.usdBrlRate : null;
-  return store.currency === 'BRL' && typeof rate === 'number' && rate > 0 ? rate : null;
+  if (store.currency === 'USD' || !settings) return null;
+  return rateOf(fxFromSettings(settings), store.currency);
 };
 
 // Registro da conferência (D242). `computedCents` é o disponível calculado em `recordedAt` (sem a própria conferência).

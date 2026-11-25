@@ -35,7 +35,7 @@ export function depositFormFromDeposit(deposit: Deposit, language: string): Depo
   return {
     storeId: deposit.storeId !== null && storeIsUsd ? deposit.storeId : null,
     amountText: deposit.amountStoreCents === null ? '' : formatCentsInput(deposit.amountStoreCents, language),
-    paidText: deposit.amountBrlCents === null ? '' : formatCentsInput(deposit.amountBrlCents, language),
+    paidText: deposit.amountBrlCents === null ? '' : formatCentsInput(deposit.amountBrlCents, language, deposit.amountBrlCurrency ?? 'BRL'),
     feeText: deposit.feeCents === null || deposit.feeCents === undefined ? '' : formatCentsInput(deposit.feeCents, language),
     depositedAt: isoToLocalInput(deposit.depositedAt),
     note: deposit.note ?? '',
@@ -54,7 +54,8 @@ export function legacyStoreIsNotUsd(deposit: Deposit): boolean {
   return deposit.legacy && deposit.storeId !== null && deposit.currency !== 'USD';
 }
 
-export function validateDepositForm(state: DepositFormState, language: string): DepositFormErrors {
+// `paidCurrency`: a moeda do valor pago informativo (11.4); JPY, KRW e CLP só aceitam inteiros.
+export function validateDepositForm(state: DepositFormState, language: string, paidCurrency?: string): DepositFormErrors {
   const errors: DepositFormErrors = {};
   if (state.storeId === null) errors.storeId = 'deposits.form.storeRequired';
   if (state.amountText.trim() === '') errors.amountStoreCents = 'deposits.form.amountRequired';
@@ -63,7 +64,7 @@ export function validateDepositForm(state: DepositFormState, language: string): 
     if (cents === null || cents <= 0) errors.amountStoreCents = 'deposits.form.invalidMoney';
   }
   if (state.paidText.trim() !== '') {
-    const cents = parseMoneyToCents(state.paidText, language);
+    const cents = parseMoneyToCents(state.paidText, language, paidCurrency);
     if (cents === null || cents <= 0) errors.amountBrlCents = 'deposits.form.invalidMoney';
   }
   if (state.feeText.trim() !== '') {
@@ -77,13 +78,13 @@ export function validateDepositForm(state: DepositFormState, language: string): 
 }
 
 // Corpo completo (vírgula -> centavos; valor pago e nota vazios são omitidos). Só use depois de `validateDepositForm` sem erros.
-export function buildDepositCreateBody(state: DepositFormState, language: string): DepositCreateBody {
+export function buildDepositCreateBody(state: DepositFormState, language: string, paidCurrency?: string): DepositCreateBody {
   const body: DepositCreateBody = {
     storeId: state.storeId ?? 0,
     amountStoreCents: parseMoneyToCents(state.amountText, language) ?? 0,
     depositedAt: localInputToIso(state.depositedAt) ?? '',
   };
-  if (state.paidText.trim() !== '') body.amountBrlCents = parseMoneyToCents(state.paidText, language) ?? 0;
+  if (state.paidText.trim() !== '') body.amountBrlCents = parseMoneyToCents(state.paidText, language, paidCurrency) ?? 0;
   if (state.feeText.trim() !== '') body.feeCents = parseMoneyToCents(state.feeText, language) ?? 0;
   const note = state.note.trim();
   if (note !== '') body.note = note;
@@ -92,7 +93,7 @@ export function buildDepositCreateBody(state: DepositFormState, language: string
 
 // Só os campos que mudaram em relação ao aporte original (o PATCH é parcial); valor pago e nota esvaziados viram `null`.
 // Aporte legado: qualquer edição exige loja e valor creditado no registro mesclado (D224), então os dois sempre vão.
-export function buildDepositPatchBody(state: DepositFormState, original: Deposit, language: string): DepositPatchBody {
+export function buildDepositPatchBody(state: DepositFormState, original: Deposit, language: string, paidCurrency?: string): DepositPatchBody {
   const patch: DepositPatchBody = {};
   const legacy = original.legacy;
   if (state.storeId !== null && (legacy || state.storeId !== original.storeId)) patch.storeId = state.storeId;
@@ -101,7 +102,7 @@ export function buildDepositPatchBody(state: DepositFormState, original: Deposit
   if (state.paidText.trim() === '') {
     if (original.amountBrlCents !== null) patch.amountBrlCents = null;
   } else {
-    const paid = parseMoneyToCents(state.paidText, language);
+    const paid = parseMoneyToCents(state.paidText, language, paidCurrency);
     if (paid !== null && paid !== original.amountBrlCents) patch.amountBrlCents = paid;
   }
   if (state.feeText.trim() === '') {

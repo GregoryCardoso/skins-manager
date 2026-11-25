@@ -52,7 +52,7 @@ describe('PATCH /api/settings com displayCurrency', () => {
     const res = await patch(app, { displayCurrency: currency });
     expect(res.status).toBe(200);
     expect(res.body.data.settings.displayCurrency).toBe(currency);
-    expect(res.body.data.steamStore).toEqual({ id: expect.any(Number), currency: 'BRL', created: false });
+    expect(res.body.data.steamStore).toEqual({ id: expect.any(Number), currency: 'USD', created: false }); // instalação nova: Steam em USD, sem escolha = KEEP
     expect((await settings(app)).displayCurrency).toBe(currency);
   });
 
@@ -63,9 +63,9 @@ describe('PATCH /api/settings com displayCurrency', () => {
     expect((await settings(app)).displayCurrency).toBe('USD');
   });
 
-  test('steamStore: só KEEP (ou ausente) até a 11.4; FOLLOW e NEW_STORE e valores soltos são recusados', async () => {
+  test('steamStore: KEEP aceito; NEW_STORE sem lançamentos e valores soltos são recusados; FOLLOW é aceito (11.4)', async () => {
     expect((await patch(app, { displayCurrency: 'EUR', steamStore: 'KEEP' })).status).toBe(200);
-    for (const choice of ['FOLLOW', 'NEW_STORE', 'x']) {
+    for (const choice of ['NEW_STORE', 'x']) {
       expectError(await patch(app, { displayCurrency: 'GBP', steamStore: choice }), 400, 'INVALID_FIELD', { field: 'steamStore' });
     }
     expectError(await patch(app, { steamStore: 'KEEP' }), 400, 'INVALID_FIELD', { field: 'steamStore' });
@@ -91,7 +91,7 @@ describe('PATCH /api/settings com displayCurrency', () => {
 
 describe('GET /api/settings/currency-change-preview', () => {
   let app;
-  beforeEach(() => { freshDb({ displayCurrency: null }); app = makeCatalogApp(NOW); });
+  beforeEach(() => { freshDb({ displayCurrency: null, steamCurrency: 'BRL' }); app = makeCatalogApp(NOW); });
   const preview = (q) => get(app, `/api/settings/currency-change-preview${q}`);
 
   test('traz a loja Steam sem lançamentos, sem cotação e com atualização automática', async () => {
@@ -99,7 +99,7 @@ describe('GET /api/settings/currency-change-preview', () => {
     expect(res.status).toBe(200);
     expect(res.body.data).toEqual({
       currency: 'EUR',
-      steamStore: { id: expect.any(Number), name: 'Steam', currency: 'BRL', hasEntries: false },
+      steamStore: { id: expect.any(Number), name: 'Steam', currency: 'BRL', hasEntries: false, hasFixedFees: false },
       fxRateAvailable: false,
       automaticSource: true,
     });
@@ -177,7 +177,7 @@ describe('PUT /api/settings/fx-rate por moeda', () => {
   });
 
   test('requiredFxCurrencies: moeda de conversão + moedas das lojas + BRL com aporte legado', async () => {
-    freshDb({ displayCurrency: null });
+    freshDb({ displayCurrency: null, steamCurrency: 'BRL' });
     app = makeCatalogApp(NOW);
     expect((await settings(app)).requiredFxCurrencies).toEqual(['BRL']); // a Steam do seed está em BRL
     await patch(app, { displayCurrency: 'EUR' });
@@ -298,7 +298,7 @@ describe('o "≈" segue a moeda de conversão nas respostas com dinheiro', () =>
   const dep = (app, body) => request(app).post('/api/deposits').set('Content-Type', JSON_TYPE).send(body);
 
   async function withDeposit(displayCurrency) {
-    freshDb({ displayCurrency });
+    freshDb({ displayCurrency, steamCurrency: 'BRL' });
     const app = makeCatalogApp(NOW);
     await putRate(app, { usdBrlRate: 5.4321 });
     await putRate(app, { currency: 'EUR', rate: 0.914 });

@@ -45,10 +45,12 @@ interface PreferencesContextValue {
   // Cotações gravadas por moeda e as moedas que precisam de cotação (a de conversão, as das lojas e, com legado, o BRL).
   fxRates: FxRateEntry[];
   requiredFxCurrencies: string[];
-  // Troca a moeda de conversão (o modal já confirmou). Na 11.3 a loja Steam sempre fica como está ('KEEP'). Invalida as telas com dinheiro.
+  // Troca a moeda de conversão (o modal já confirmou) e a escolha da loja Steam (11.4: 'KEEP', 'FOLLOW' ou 'NEW_STORE'). Invalida as telas com dinheiro.
   changeDisplayCurrency: (currency: string, steamStore?: SteamStoreChoice) => Promise<DisplayCurrencyChangeResult>;
-  // Cotação do BRL (D107), usada como padrão nos formulários de compra e venda em R$: null = não definida (ou ainda não carregada).
+  // Cotação do BRL (D107): null = não definida (ou ainda não carregada). Os formulários usam `rateFor` (a cotação da moeda da loja).
   usdBrlRate: number | null;
+  // Cotação "unidades da moeda por 1 US$" gravada para a moeda (11.4); USD e moeda sem cotação = null.
+  rateFor: (currency: string) => number | null;
   // Grava a cotação de uma moeda no servidor; rejeita com o erro da API (para o chamador mostrar a mensagem).
   saveFxRate: (currency: string, rate: number) => Promise<void>;
   // Salva a fonte do botão "atualizar cotação" do BRL (AwesomeAPI ou PTAX) na hora; rejeita com o erro da API.
@@ -86,6 +88,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const fxRates = useMemo(() => settingsData?.fxRates ?? [], [settingsData]);
   const requiredFxCurrencies = useMemo(() => settingsData?.requiredFxCurrencies ?? [], [settingsData]);
   const usdBrlRate = useMemo(() => fxRates.find((entry) => entry.currency === 'BRL')?.rate ?? null, [fxRates]);
+  const rateFor = useCallback((currency: string) => (currency === 'USD' ? null : fxRates.find((entry) => entry.currency === currency)?.rate ?? null), [fxRates]);
 
   useEffect(() => {
     // Tema do sistema lido uma vez, só como valor inicial; o app não acompanha mudanças do Windows (D112).
@@ -252,6 +255,8 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const changeCurrency = useCallback(async (currency: string, steamStore: SteamStoreChoice = 'KEEP') => {
     const result = await changeDisplayCurrency(currency, steamStore);
     await invalidate('settings.fx');
+    // A loja Steam mudou de moeda ou foi criada outra (11.4): lojas, itens e saldos releem o que mudou.
+    if (steamStore !== 'KEEP') await invalidate('settings.steamStore');
     return result;
   }, [invalidate]);
 
@@ -263,10 +268,10 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const value = useMemo(
     () => ({
       theme, language, ready, languageSettled, saveError, setTheme, setLanguage, inventoryView, setInventoryView, displayCurrency, fxRates,
-      requiredFxCurrencies, changeDisplayCurrency: changeCurrency, usdBrlRate, saveFxRate, saveFxRefreshSource, refreshFxRate: refreshFx, reloadFxRate,
+      requiredFxCurrencies, changeDisplayCurrency: changeCurrency, usdBrlRate, rateFor, saveFxRate, saveFxRefreshSource, refreshFxRate: refreshFx, reloadFxRate,
     }),
     [theme, language, ready, languageSettled, saveError, setTheme, setLanguage, inventoryView, setInventoryView, displayCurrency, fxRates,
-      requiredFxCurrencies, changeCurrency, usdBrlRate, saveFxRate, saveFxRefreshSource, refreshFx, reloadFxRate],
+      requiredFxCurrencies, changeCurrency, usdBrlRate, rateFor, saveFxRate, saveFxRefreshSource, refreshFx, reloadFxRate],
   );
 
   return <PreferencesContext.Provider value={value}>{children}</PreferencesContext.Provider>;

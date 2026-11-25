@@ -8,7 +8,7 @@ import { errorMessageFor } from '@/i18n/errorMessage';
 import { translate } from '@/i18n/translate';
 import { moneyTexts, storeCounterpart } from './baseMoney';
 import { CURRENCIES, ZERO_DECIMAL_CURRENCIES, currencyOptions, hasNoDecimals } from './currencies';
-import { currencyChangeView } from './currencyChange';
+import { currencyChangeView, steamChoiceFor } from './currencyChange';
 import { formatApprox, formatMoney, formatRate } from './format';
 import { FX_STALE_AFTER_DAYS, buildFxRows, currenciesToAutoRefresh, fxRateAgeDays, isFxRateStale } from './fxRates';
 import { ApiRequestError } from '@/services/api';
@@ -158,7 +158,8 @@ describe('currencyChangeView: carregando, erro e sem cotação', () => {
   test('prévia carregando ou com erro (null): nenhum aviso e nenhuma busca, para todas as moedas', () => {
     for (const currency of CURRENCIES) {
       const view = currencyChangeView(null, currency);
-      expect(view).toMatchObject({ noRate: 'NONE', fetchRateAfter: false, steamStore: 'KEEP', steamLines: [] });
+      expect(view).toMatchObject({ noRate: 'NONE', fetchRateAfter: false, steamLines: [] });
+      expect(steamChoiceFor(view, {})).toBe('KEEP');
       expect(view.toBase).toBe(currency === 'USD');
     }
   });
@@ -168,9 +169,9 @@ describe('currencyChangeView: carregando, erro e sem cotação', () => {
     expect(currencyChangeView(preview({ fxRateAvailable: false, automaticSource: false }), 'JPY')).toMatchObject({ noRate: 'MANUAL', fetchRateAfter: false });
   });
 
-  test('USD ignora a prévia mesmo sem cotação; steamStore é KEEP sempre', () => {
+  test('USD ignora a prévia mesmo sem cotação; sem loja Steam na prévia a escolha é KEEP', () => {
     for (const p of [null, preview({ currency: 'USD', fxRateAvailable: false }), preview({ fxRateAvailable: false, automaticSource: false })]) {
-      for (const currency of ['USD', 'EUR']) expect(currencyChangeView(p, currency).steamStore).toBe('KEEP');
+      for (const currency of ['USD', 'EUR']) expect(steamChoiceFor(currencyChangeView(p, currency), { FOLLOW: true, NEW_STORE: true })).toBe('KEEP');
     }
     expect(currencyChangeView(preview({ currency: 'USD', fxRateAvailable: false }), 'USD')).toMatchObject({ toBase: true, noRate: 'NONE', fetchRateAfter: false });
   });
@@ -195,7 +196,7 @@ describe('modal e seletor: ligação do fluxo (ambiente node, sem DOM)', () => {
   test('cancelar chama só onClose; o único changeDisplayCurrency está em confirm', () => {
     expect(modal.match(/changeDisplayCurrency\(/g)).toHaveLength(1);
     expect(modal).toMatch(/onClick=\{onClose\} disabled=\{busy\}/);
-    expect(confirmBody).toMatch(/changeDisplayCurrency\(currency, view\.steamStore\)/);
+    expect(confirmBody).toMatch(/changeDisplayCurrency\(currency, steamChoiceFor\(view, checks\)\)/);
   });
 
   test('falha do PATCH: erro traduzido, modal continua aberto e o botão é liberado', () => {

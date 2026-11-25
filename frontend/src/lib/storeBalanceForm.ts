@@ -27,11 +27,11 @@ export function initialStoreBalanceState(now: Date = new Date()): StoreBalanceFo
 export function validateStoreBalanceForm(
   state: StoreBalanceFormState,
   language: string,
-  { adjust = false }: { adjust?: boolean } = {},
+  { adjust = false, currency }: { adjust?: boolean; currency?: string } = {},
 ): StoreBalanceFormErrors {
   const errors: StoreBalanceFormErrors = {};
   if (state.amountText.trim() === '') errors.balanceCents = 'storeBalances.form.amountRequired';
-  else if (parseMoneyToCents(state.amountText, language) === null) errors.balanceCents = 'storeBalances.form.invalidMoney';
+  else if (parseMoneyToCents(state.amountText, language, currency) === null) errors.balanceCents = 'storeBalances.form.invalidMoney';
   if (state.recordedAt.trim() === '' || localInputToIso(state.recordedAt) === null) errors.recordedAt = 'storeBalances.form.invalidDate';
   if (adjust && state.noteText.trim() === '') errors.note = 'errors.ADJUSTMENT_NOTE_REQUIRED';
   return errors;
@@ -39,9 +39,9 @@ export function validateStoreBalanceForm(
 
 // Consulta da prévia (valor e data válidos); `null` enquanto o formulário estiver incompleto ou inválido.
 export function buildCheckPreviewQuery(
-  state: StoreBalanceFormState, storeId: number, language: string,
+  state: StoreBalanceFormState, storeId: number, language: string, currency?: string,
 ): { storeId: number; balanceCents: number; recordedAt: string } | null {
-  const balanceCents = parseMoneyToCents(state.amountText, language);
+  const balanceCents = parseMoneyToCents(state.amountText, language, currency);
   const recordedAt = localInputToIso(state.recordedAt);
   if (state.amountText.trim() === '' || balanceCents === null || recordedAt === null) return null;
   return { storeId, balanceCents, recordedAt };
@@ -49,12 +49,12 @@ export function buildCheckPreviewQuery(
 
 // Corpo da requisição. Só use depois de `validateStoreBalanceForm` sem erros.
 export function buildStoreBalanceBody(
-  state: StoreBalanceFormState, storeId: number, language: string, adjust = false,
+  state: StoreBalanceFormState, storeId: number, language: string, adjust = false, currency?: string,
 ): StoreBalanceCheckBody {
   const note = state.noteText.trim();
   return {
     storeId,
-    balanceCents: parseMoneyToCents(state.amountText, language) ?? 0,
+    balanceCents: parseMoneyToCents(state.amountText, language, currency) ?? 0,
     recordedAt: localInputToIso(state.recordedAt) ?? '',
     adjust,
     ...(note !== '' ? { note } : {}),

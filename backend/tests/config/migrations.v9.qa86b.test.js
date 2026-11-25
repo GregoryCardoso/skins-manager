@@ -57,7 +57,7 @@ describe('migração v9 com dados variados da v8', () => {
     const { snapshot } = seedV8(dbPath);
     const db = openDatabase(dbPath, { now: NOW });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(24);
+      expect(db.pragma('user_version', { simple: true })).toBe(25);
       expect(db.pragma('foreign_key_check')).toEqual([]);
       expect(db.pragma('integrity_check', { simple: true })).toBe('ok');
       const rows = db.prepare('SELECT * FROM store_balances ORDER BY id').all();
@@ -76,7 +76,7 @@ describe('migração v9 com dados variados da v8', () => {
         }
       });
       for (const t of ['items', 'deposits', 'withdrawals', 'stores', 'settings']) {
-        expect(db.prepare(`SELECT * FROM ${t} ORDER BY 1`).all().map(({ steam_store_id: _steam, price_refresh_started_at: _p1, price_refresh_last_at: _p2, price_refresh_last_status: _p3, price_refresh_last_error_code: _p4, display_currency: _dc, ...r }) => r).map((r) => (t === 'deposits' ? (({ fee_cents: feeCents, ...rest }) => rest)(r) : r))).toEqual(t === 'settings' ? snapshot.others[t].map((r) => ({ ...r, inventory_view: 'GROUPED' })) : snapshot.others[t]); // v11: coluna nova com o padrão
+        expect(db.prepare(`SELECT * FROM ${t} ORDER BY 1`).all().map(({ steam_store_id: _steam, price_refresh_started_at: _p1, price_refresh_last_at: _p2, price_refresh_last_status: _p3, price_refresh_last_error_code: _p4, display_currency: _dc, amount_brl_currency: _abc, ...r }) => r).map((r) => (t === 'deposits' ? (({ fee_cents: feeCents, ...rest }) => rest)(r) : r))).toEqual(t === 'settings' ? snapshot.others[t].map((r) => ({ ...r, inventory_view: 'GROUPED' })) : snapshot.others[t]); // v11: coluna nova com o padrão
       }
       expect(db.prepare("SELECT name FROM sqlite_master WHERE name = 'ux_store_balances_initial'").all()).toEqual([]);
       expect(db.prepare("SELECT name FROM sqlite_master WHERE name = 'idx_store_balances_store_date'").all()).toHaveLength(1);
@@ -125,7 +125,7 @@ describe('migração v9 com dados variados da v8', () => {
   test('banco novo chega à v9 com a tabela vazia e sem índice de saldo inicial', () => {
     const db = openDatabase(dbIn('novo'), { now: NOW });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(24);
+      expect(db.pragma('user_version', { simple: true })).toBe(25);
       expect(db.prepare('SELECT COUNT(*) AS n FROM store_balances').get().n).toBe(0);
       expect(db.prepare("SELECT name FROM sqlite_master WHERE name = 'ux_store_balances_initial'").all()).toEqual([]);
     } finally {
@@ -197,7 +197,7 @@ describe('migração v9: rollback em pontos extras', () => {
     expect(backups(dbPath)).toHaveLength(1);
     const again = openDatabase(dbPath, { now: new Date('2026-11-22T12:00:01.000Z') });
     try {
-      expect(again.pragma('user_version', { simple: true })).toBe(24);
+      expect(again.pragma('user_version', { simple: true })).toBe(25);
       expect(again.prepare('SELECT COUNT(*) AS n FROM store_balances').get().n).toBe(snapshot.balances.length);
       expect(again.prepare("SELECT COUNT(*) AS n FROM store_balances WHERE kind <> 'CHECK'").get().n).toBe(0);
     } finally {

@@ -13,7 +13,7 @@ const { AppError, NotFoundError, ConflictError } = require('../../errors/AppErro
 const catalogService = require('../catalogService');
 const settingsService = require('../settingsService');
 const itemService = require('../itemService');
-const { isValidFxRate } = require('../currencyService');
+const { isValidFxRate, fxFromSettings, rateOf } = require('../currencyService');
 const { parseDate } = require('../dateUtils');
 const { isInTradeLock, isOffSale } = require('../inventoryAgingService');
 const { assertDate, invalidDate } = require('./operationDates');
@@ -68,6 +68,13 @@ function steamStoreView() {
   return store ? { id: store.id, name: store.name, currency: store.currency } : null;
 }
 
+function steamDefaultFxRate(settings) {
+  const store = settingsService.getSteamStore();
+  if (!store || store.currency === 'USD') return null;
+  const rate = rateOf(fxFromSettings(settings), store.currency);
+  return isValidFxRate(rate) ? rate : null;
+}
+
 // Prévia da abertura: chaves compatíveis, loja Steam e cotação padrão (D363 item 9). Só leitura.
 function getOpenOptions(containerId, { now = new Date() } = {}) {
   const { container, kind } = loadOpenable(containerId);
@@ -79,7 +86,8 @@ function getOpenOptions(containerId, { now = new Date() } = {}) {
     keys: [],
     otherKeysInStock: 0,
     steamStore: steamStoreView(),
-    defaultFxRate: isValidFxRate(settings.usdBrlRate) ? settings.usdBrlRate : null,
+    // Cotação padrão da moeda da loja Steam (D369): a das configurações; nula se a Steam é em USD ou se falta a cotação.
+    defaultFxRate: steamDefaultFxRate(settings),
   };
   if (kind !== 'CASE') return base;
   const stockKeys = stockKeysFor(container);

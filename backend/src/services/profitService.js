@@ -36,8 +36,8 @@ function buildSaleInfo(item, fx = null, { inheritedUsdCents = 0 } = {}) {
   const ownCostUsdCents = toUsdCents(item.purchasePriceCents, item.purchaseCurrency, item.fxRateAtPurchase);
   const purchaseCostUsdCents = ownCostUsdCents + inheritedUsdCents; // custo efetivo (D362)
   const fxUsed = {
-    sale: item.saleCurrency === 'BRL' ? item.fxRateAtSale : null,
-    purchase: item.purchaseCurrency === 'BRL' ? item.fxRateAtPurchase : null,
+    sale: item.saleCurrency !== 'USD' ? item.fxRateAtSale : null,
+    purchase: item.purchaseCurrency !== 'USD' ? item.fxRateAtPurchase : null,
   };
   const approx = (cents) => {
     const r = approxCounterpart(cents, 'USD', fx);

@@ -31,7 +31,7 @@ export default function ProfitPage() {
   // Valor creditado do aporte para mensagens (US$); aporte legado: o R$ gravado. Só formata.
   const depositValueText = (deposit: Deposit) => {
     if (deposit.amountStoreCents !== null) return formatMoney(deposit.amountStoreCents, 'USD', locale);
-    return deposit.amountBrlCents === null ? '' : formatMoney(deposit.amountBrlCents, 'BRL', locale);
+    return deposit.amountBrlCents === null ? '' : formatMoney(deposit.amountBrlCents, deposit.amountBrlCurrency ?? 'BRL', locale);
   };
 
   const invalidate = useInvalidate();

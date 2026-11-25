@@ -9,10 +9,10 @@ const Deposit = require('../models/Deposit');
 const Store = require('../models/Store');
 const Setting = require('../models/Setting');
 const { ValidationError, NotFoundError } = require('../errors/AppError');
-const { MAX_AMOUNT_CENTS, MAX_NOTE_LENGTH } = require('../config/constants');
+const { MAX_AMOUNT_CENTS, MAX_NOTE_LENGTH, CURRENCIES } = require('../config/constants');
 const { parseDate } = require('./dateUtils');
 const { assertNotFutureDay } = require('./inventoryAgingService');
-const { toUsdBase, approxOf, fxFromSettings, displayCurrencyOf } = require('./currencyService');
+const { toUsdBase, approxOf, fxFromSettings, displayCurrencyOf, assertAmountPrecision } = require('./currencyService');
 const externalLinkService = require('./externalLinkService');
 const { runInTransaction } = require('../models/modelHelpers');
 
@@ -34,17 +34,18 @@ function assertAmount(value, field, label) {
 // valor pago em R$, data, nota. `store`: a loja já carregada de `storeId` (null se não encontrada).
 // Qualquer edição de um aporte legado exige loja e `amountStoreCents` no registro mesclado (D224).
 // Loja inativa é aceita (registro de aporte antigo); "permite saque" não importa.
-function buildDepositRecord(input, { existing = null, store = null, now = new Date() } = {}) {
+function buildDepositRecord(input, { existing = null, store = null, now = new Date(), displayCurrency = 'BRL' } = {}) {
   const base = existing
     ? {
       storeId: existing.storeId,
       amountStoreCents: existing.amountStoreCents,
       feeCents: existing.feeCents ?? null,
       amountBrlCents: existing.amountBrlCents,
+      amountBrlCurrency: existing.amountBrlCurrency ?? 'BRL',
       depositedAt: existing.depositedAt,
       note: existing.note,
     }
-    : { storeId: null, amountStoreCents: null, feeCents: null, amountBrlCents: null, depositedAt: undefined, note: null };
+    : { storeId: null, amountStoreCents: null, feeCents: null, amountBrlCents: null, amountBrlCurrency: null, depositedAt: undefined, note: null };
   const record = { ...base };
   for (const field of Object.keys(record)) if (input && input[field] !== undefined) record[field] = input[field];
 
@@ -74,8 +75,20 @@ function buildDepositRecord(input, { existing = null, store = null, now = new Da
   }
 
   // 4. valor pago em R$ (opcional, só informativo)
-  if (isNil(record.amountBrlCents)) record.amountBrlCents = null;
-  else assertAmount(record.amountBrlCents, 'amountBrlCents', 'O valor pago');
+  // Moeda do valor pago (E-P3-Q15): a informada; senão a já gravada (edição) ou a moeda de conversão de agora (registro novo).
+  if (isNil(record.amountBrlCents)) {
+    record.amountBrlCents = null;
+    record.amountBrlCurrency = existing && existing.amountBrlCurrency ? existing.amountBrlCurrency : 'BRL';
+  } else {
+    assertAmount(record.amountBrlCents, 'amountBrlCents', 'O valor pago');
+    if (isNil(input && input.amountBrlCurrency)) {
+      record.amountBrlCurrency = existing && !isNil(existing.amountBrlCents) && existing.amountBrlCurrency ? existing.amountBrlCurrency : displayCurrency;
+    } else record.amountBrlCurrency = input.amountBrlCurrency;
+    if (!CURRENCIES.includes(record.amountBrlCurrency)) {
+      throw new ValidationError(`Moeda inválida. Use ${CURRENCIES.join(', ')}.`, 'INVALID_CURRENCY', { field: 'amountBrlCurrency' });
+    }
+    assertAmountPrecision(record.amountBrlCents, record.amountBrlCurrency, 'amountBrlCents');
+  }
 
   // 5. data: normalizada para UTC; um aporte já gravado só é revalidado quando a data é alterada
   if (isNil(record.depositedAt)) throw required('depositedAt');
@@ -107,7 +120,7 @@ function buildDepositRecord(input, { existing = null, store = null, now = new Da
 // Valor do aporte na moeda base (D225, D227, D311): o creditado na loja + a taxa (USD, exato; "total colocado") ou, no legado,
 // o valor em R$ convertido (≈, sem taxa).
 function depositBaseAmount(deposit, store, fx) {
-  if (isNil(deposit.amountStoreCents)) return toUsdBase(deposit.amountBrlCents, 'BRL', fx);
+  if (isNil(deposit.amountStoreCents)) return toUsdBase(deposit.amountBrlCents, deposit.amountBrlCurrency ?? 'BRL', fx);
   // Loja referenciada que não está no mapa: a moeda é desconhecida, então não se assume USD (o lucro fica nulo).
   if (!isNil(deposit.storeId) && !store) return { usdCents: null, approxCents: null, approxCurrency: displayCurrencyOf(fx), estimated: false };
   return toUsdBase(deposit.amountStoreCents + (deposit.feeCents ?? 0), store ? store.currency : 'USD', fx);
@@ -124,6 +137,7 @@ function toDepositView(row, storesById, fx = null) {
     amountStoreCents: row.amountStoreCents,
     feeCents: row.feeCents ?? null,
     amountBrlCents: row.amountBrlCents,
+    amountBrlCurrency: row.amountBrlCurrency ?? 'BRL',
     depositedAt: row.depositedAt,
     note: row.note,
     legacy: isNil(row.amountStoreCents),
@@ -171,7 +185,7 @@ function listDeposits() {
 }
 
 function createDeposit(input, { now = new Date() } = {}) {
-  const record = buildDepositRecord(input, { store: loadStore(input.storeId), now });
+  const record = buildDepositRecord(input, { store: loadStore(input.storeId), now, displayCurrency: Setting.get().displayCurrency });
   const created = Deposit.create(record, { now });
   return toDepositView(created, storesMap(), currentFx());
 }
@@ -179,7 +193,7 @@ function createDeposit(input, { now = new Date() } = {}) {
 function updateDeposit(id, partial, { now = new Date() } = {}) {
   const existing = findOrFail(id);
   const storeId = partial.storeId !== undefined ? partial.storeId : existing.storeId;
-  const record = buildDepositRecord(partial, { existing, store: loadStore(storeId), now });
+  const record = buildDepositRecord(partial, { existing, store: loadStore(storeId), now, displayCurrency: Setting.get().displayCurrency });
   const updated = Deposit.update(id, record, { now });
   return toDepositView(updated, storesMap(), currentFx());
 }

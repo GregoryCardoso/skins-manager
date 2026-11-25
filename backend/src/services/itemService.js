@@ -10,7 +10,7 @@ const ItemOperation = require('../models/ItemOperation');
 const { runInTransaction } = require('../models/modelHelpers');
 const { MAX_AMOUNT_CENTS, MAX_NAME_LENGTH } = require('../config/constants');
 const { AppError, ValidationError, NotFoundError, ConflictError } = require('../errors/AppError');
-const { isValidFxRate, fxFromSettings } = require('./currencyService');
+const { isValidFxRate, fxFromSettings, rateOf, assertAmountPrecision } = require('./currencyService');
 const { parseDate, toIso, formatDateTimeBr } = require('./dateUtils');
 const {
   CATEGORIES, CATALOG_CATEGORIES, isWeaponCategory, normalizeAttributes, assertFloatInCatalogRange,
@@ -63,22 +63,23 @@ function optionalText(value) {
   return trimmed === '' ? null : trimmed;
 }
 
-// Moeda da loja (ou USD sem loja) e cotação: BRL usa a informada ou a das configurações; USD recusa cotação.
+// Moeda da loja (ou USD sem loja) e cotação: moeda diferente de USD usa a informada ou a das configurações (a da moeda da loja,
+// D369); USD recusa cotação.
 function resolveCurrencyAndFx(store, informedFx, settings, field = 'fxRateAtPurchase') {
   const currency = store ? store.currency : 'USD';
   if (currency === 'USD') {
     if (!isNil(informedFx)) {
-      throw new ValidationError('Cotação só se aplica a operações em BRL.', 'FX_RATE_NOT_ALLOWED', { field });
+      throw new ValidationError('Cotação só se aplica a operações fora de USD.', 'FX_RATE_NOT_ALLOWED', { field });
     }
     return { currency, fxRate: null };
   }
   if (!isNil(informedFx)) {
-    if (!isValidFxRate(informedFx)) throw new ValidationError('Cotação USD→BRL inválida.', 'INVALID_FX_RATE', { field });
+    if (!isValidFxRate(informedFx)) throw new ValidationError(`Cotação USD→${currency} inválida.`, 'INVALID_FX_RATE', { field, params: { currency } });
     return { currency, fxRate: informedFx };
   }
-  const saved = settings ? settings.usdBrlRate : null;
+  const saved = settings ? rateOf(fxFromSettings(settings), currency) : null;
   if (!isValidFxRate(saved)) {
-    throw new ValidationError('Informe a cotação USD→BRL ou salve uma nas configurações.', 'FX_RATE_REQUIRED', { field });
+    throw new ValidationError(`Informe a cotação USD→${currency} ou salve uma nas configurações.`, 'FX_RATE_REQUIRED', { field, params: { currency } });
   }
   return { currency, fxRate: saved };
 }
@@ -253,6 +254,8 @@ function buildItemRecord(merged, { store = null, settings = null, now = new Date
         field: 'purchasePriceCents', params: { maxCents: MAX_AMOUNT_CENTS },
       });
     }
+    // Unidade mínima da moeda da loja (D369 A3): só confere o valor que entra (item legado continua editável em outros campos).
+    if (priceInformed) assertAmountPrecision(purchasePriceCents, store.currency, 'purchasePriceCents');
     // Moeda diferente da gravada: o preço antigo não vale na nova moeda (I1).
     if (existing && !priceInformed && store.currency !== existing.purchaseCurrency) {
       throw new ValidationError(
@@ -325,6 +328,8 @@ function buildSaleRecord(item, input, { store, settings = null, now = new Date()
       field: 'salePriceCents', params: { maxCents: MAX_AMOUNT_CENTS },
     });
   }
+  assertAmountPrecision(input.salePriceCents, store.currency, 'salePriceCents');
+  assertAmountPrecision(input.netReceivedCents, store.currency, 'netReceivedCents');
   const { netReceivedCents, feeCents, snapshot, netReceivedManual } = resolveSaleNet({
     salePriceCents: input.salePriceCents, store, netReceivedCents: input.netReceivedCents,
   });

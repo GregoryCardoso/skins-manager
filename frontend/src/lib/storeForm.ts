@@ -2,6 +2,7 @@
 // Percentuais são digitados em % ("2,5" = 0.025); centavos na moeda da loja ("0,30" = 30).
 import type { Currency, SaleFeeRounding, SaleFeeType, Store, StoreCreateBody, StorePatchBody } from '@/types/api';
 import { intlLocaleOf } from '@/i18n/languages';
+import { hasNoDecimals } from './currencies';
 import { formatCentsInput, normalizeNumberText, parseIntegerInput, parseMoneyToCents } from './numberInput';
 
 // Faixa da retenção do saldo após a venda (D213); a API é quem decide, isto só evita uma ida ao servidor.
@@ -71,11 +72,11 @@ export function storeFormFromStore(store: Store, language: string): StoreFormSta
     saleFeeType: store.saleFeeType ?? '',
     saleFeeRateText: rateToPercentText(store.saleFeeRate, language),
     saleFeeRounding: store.saleFeeRounding,
-    saleMinFeeText: store.saleMinFeeCents === null ? '' : formatCentsInput(store.saleMinFeeCents, language),
-    saleFixedFeeText: store.saleFixedFeeCents === 0 ? '' : formatCentsInput(store.saleFixedFeeCents, language),
+    saleMinFeeText: store.saleMinFeeCents === null ? '' : formatCentsInput(store.saleMinFeeCents, language, store.currency),
+    saleFixedFeeText: store.saleFixedFeeCents === 0 ? '' : formatCentsInput(store.saleFixedFeeCents, language, store.currency),
     allowsWithdrawal: store.allowsWithdrawal,
     withdrawalFeeRateText: rateToPercentText(store.withdrawalFeeRate, language),
-    withdrawalFixedFeeText: store.withdrawalFixedFeeCents === 0 ? '' : formatCentsInput(store.withdrawalFixedFeeCents, language),
+    withdrawalFixedFeeText: store.withdrawalFixedFeeCents === 0 ? '' : formatCentsInput(store.withdrawalFixedFeeCents, language, store.currency),
     saleHoldDaysText: String(store.saleHoldDays),
     isActive: store.isActive,
     isPrimary: store.isPrimary,
@@ -91,20 +92,23 @@ export type StoreFormErrors = Partial<Record<StoreFormField, string>>;
 
 const RATE_ERROR = 'storeForm.invalidRate';
 const MONEY_ERROR = 'storeForm.invalidMoney';
+// Moedas sem casas decimais (JPY, KRW e CLP): só números inteiros.
+const WHOLE_MONEY_ERROR = 'storeForm.invalidMoneyWhole';
 
 export function validateStoreForm(state: StoreFormState, language: string): StoreFormErrors {
   const errors: StoreFormErrors = {};
   if (state.name.trim() === '') errors.name = 'storeForm.nameRequired';
   if (!percentTextToRate(state.saleFeeRateText, language).ok) errors.saleFeeRate = RATE_ERROR;
   if (!percentTextToRate(state.withdrawalFeeRateText, language).ok) errors.withdrawalFeeRate = RATE_ERROR;
-  if (state.saleMinFeeText.trim() !== '' && parseMoneyToCents(state.saleMinFeeText, language) === null) {
-    errors.saleMinFeeCents = MONEY_ERROR;
+  const moneyError = hasNoDecimals(state.currency) ? WHOLE_MONEY_ERROR : MONEY_ERROR;
+  if (state.saleMinFeeText.trim() !== '' && parseMoneyToCents(state.saleMinFeeText, language, state.currency) === null) {
+    errors.saleMinFeeCents = moneyError;
   }
-  if (state.saleFixedFeeText.trim() !== '' && parseMoneyToCents(state.saleFixedFeeText, language) === null) {
-    errors.saleFixedFeeCents = MONEY_ERROR;
+  if (state.saleFixedFeeText.trim() !== '' && parseMoneyToCents(state.saleFixedFeeText, language, state.currency) === null) {
+    errors.saleFixedFeeCents = moneyError;
   }
-  if (state.withdrawalFixedFeeText.trim() !== '' && parseMoneyToCents(state.withdrawalFixedFeeText, language) === null) {
-    errors.withdrawalFixedFeeCents = MONEY_ERROR;
+  if (state.withdrawalFixedFeeText.trim() !== '' && parseMoneyToCents(state.withdrawalFixedFeeText, language, state.currency) === null) {
+    errors.withdrawalFixedFeeCents = moneyError;
   }
   const holdDays = parseIntegerInput(state.saleHoldDaysText);
   if (holdDays === null || holdDays > MAX_SALE_HOLD_DAYS) errors.saleHoldDays = 'storeForm.invalidSaleHoldDays';
@@ -117,9 +121,9 @@ const rateOf = (text: string, language: string): number | null => {
 };
 
 // Vazio = não configurado (null) no mínimo; vazio = 0 nas taxas fixas.
-const centsOrNull = (text: string, language: string): number | null =>
-  text.trim() === '' ? null : parseMoneyToCents(text, language);
-const centsOrZero = (text: string, language: string): number => centsOrNull(text, language) ?? 0;
+const centsOrNull = (text: string, language: string, currency: string): number | null =>
+  text.trim() === '' ? null : parseMoneyToCents(text, language, currency);
+const centsOrZero = (text: string, language: string, currency: string): number => centsOrNull(text, language, currency) ?? 0;
 
 // Corpo completo. Só use depois de `validateStoreForm` sem erros.
 export function buildStoreCreateBody(state: StoreFormState, language: string): StoreCreateBody {
@@ -129,11 +133,11 @@ export function buildStoreCreateBody(state: StoreFormState, language: string): S
     saleFeeType: state.saleFeeType === '' ? null : state.saleFeeType,
     saleFeeRate: rateOf(state.saleFeeRateText, language),
     saleFeeRounding: state.saleFeeRounding,
-    saleMinFeeCents: centsOrNull(state.saleMinFeeText, language),
-    saleFixedFeeCents: centsOrZero(state.saleFixedFeeText, language),
+    saleMinFeeCents: centsOrNull(state.saleMinFeeText, language, state.currency),
+    saleFixedFeeCents: centsOrZero(state.saleFixedFeeText, language, state.currency),
     allowsWithdrawal: state.allowsWithdrawal,
     withdrawalFeeRate: rateOf(state.withdrawalFeeRateText, language),
-    withdrawalFixedFeeCents: centsOrZero(state.withdrawalFixedFeeText, language),
+    withdrawalFixedFeeCents: centsOrZero(state.withdrawalFixedFeeText, language, state.currency),
     saleHoldDays: parseIntegerInput(state.saleHoldDaysText) ?? 0,
     isActive: state.isActive,
     isPrimary: state.isPrimary,

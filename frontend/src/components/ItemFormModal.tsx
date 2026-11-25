@@ -12,14 +12,17 @@ import {
 import {
   addSevenDays, applyCatalogChoice, applyPurchaseStore, buildCreateBody,
   setAcquiredAt, setAcquisitionType, setTradeUnlockAt,
-  buildPatchBody, effectiveCategory, fieldVisibility, findStore, initialCreateState, stateFromItem,
+  buildPatchBody, defaultRateFor, effectiveCategory, fieldVisibility, findStore, initialCreateState, stateFromItem,
   visibleItemFields,
   type CatalogChoice, type FormContext, type FormErrors, type ItemFormState,
 } from '@/lib/itemForm';
+import { moneyInputMode } from '@/lib/currencies';
+import { ratesRecord } from '@/lib/fxRates';
 import { formatDecimalInput } from '@/lib/numberInput';
 import { queryKeys } from '@/lib/queryKeys';
 import { useInvalidate } from '@/lib/useInvalidate';
 import { ApiRequestError, createItem, getCatalogStatus, updateItem } from '@/services/api';
+import { launchStoreOptions } from '@/lib/storeOptions';
 import type { AcquisitionType, CatalogItem, Currency, ItemPatchBody, ItemView, Store } from '@/types/api';
 import FormField from './FormField';
 import styles from './forms.module.css';
@@ -55,9 +58,10 @@ export default function ItemFormModal({ item, preset, stores, onClose, onSaved, 
   const tLoose = useTLoose();
   const locale = useLocale();
   const invalidate = useInvalidate();
-  const { usdBrlRate } = usePreferences();
+  const { usdBrlRate, fxRates } = usePreferences();
   const editing = item !== undefined;
-  const ctx: FormContext = { stores, usdBrlRate, language: locale };
+  const rates = ratesRecord(fxRates);
+  const ctx: FormContext = { stores, usdBrlRate, rates, language: locale };
 
   const [state, setState] = useState<ItemFormState>(() => {
     if (item) return stateFromItem(item, locale);
@@ -175,6 +179,7 @@ export default function ItemFormModal({ item, preset, stores, onClose, onSaved, 
   };
 
   const priceCurrency = store?.currency ?? 'USD';
+  const defaultFx = defaultRateFor(ctx, priceCurrency);
 
   return (
     <Modal title={editing ? t('itemForm.titleEdit') : t('itemForm.titleCreate')} onClose={onClose} busy={saving} wide>
@@ -246,7 +251,7 @@ export default function ItemFormModal({ item, preset, stores, onClose, onSaved, 
                 onChange={(e) => onStoreChange(e.target.value)}
               >
                 {(vis.informativeStore || state.purchaseStoreId === null) && <option value="">{t('common.select')}</option>}
-                {stores.map((s) => <option key={s.id} value={s.id}>{storeLabel(s, t('itemForm.storeInactive'))}</option>)}
+                {launchStoreOptions(stores, [item?.purchaseStoreId, state.purchaseStoreId]).map((s) => <option key={s.id} value={s.id}>{storeLabel(s, t('itemForm.storeInactive'))}</option>)}
               </select>
             )}
           </FormField>
@@ -261,7 +266,7 @@ export default function ItemFormModal({ item, preset, stores, onClose, onSaved, 
                 <input
                   {...c}
                   className={styles.input}
-                  inputMode="decimal"
+                  inputMode={moneyInputMode(priceCurrency)}
                   value={state.priceText}
                   onChange={(e) => {
                     patch({ priceText: e.target.value });
@@ -279,9 +284,9 @@ export default function ItemFormModal({ item, preset, stores, onClose, onSaved, 
 
           {vis.fx && (
             <FormField
-              label={t('itemForm.fxRateAtPurchase')}
+              label={t('itemForm.fxRateAtPurchase', { currency: priceCurrency })}
               error={errors.fxRateAtPurchase}
-              hint={usdBrlRate !== null ? t('itemForm.fxRateDefault', { rate: formatDecimalInput(usdBrlRate, locale) }) : null}
+              hint={defaultFx !== null ? t('itemForm.fxRateDefault', { rate: formatDecimalInput(defaultFx, locale) }) : null}
             >
               {(c) => (
                 <input

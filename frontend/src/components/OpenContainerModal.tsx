@@ -12,6 +12,7 @@ import {
   applyCatalogChoice, buildCreateBody, effectiveCategory, fieldVisibility, initialCreateState, setTradeUnlockAt, visibleItemFields,
   type CatalogChoice, type FormErrors, type ItemFormState,
 } from '@/lib/itemForm';
+import { moneyInputMode } from '@/lib/currencies';
 import { formatDecimalInput, parseDecimalInput, parseMoneyToCents } from '@/lib/numberInput';
 import { queryKeys } from '@/lib/queryKeys';
 import { useInvalidate } from '@/lib/useInvalidate';
@@ -99,9 +100,10 @@ export default function OpenContainerModal({ item, stores, onClose, onDone, onGo
   const catalogStatus = useQuery({ queryKey: queryKeys.catalog.status, queryFn: ({ signal }) => getCatalogStatus(signal) });
   const allowComponents = componentsAllowedFor(category, (catalogStatus.data?.countsBySource.PATCHES ?? 0) > 0);
 
-  const fxDefault = options?.defaultFxRate ?? usdBrlRate;
+  // Cotação padrão: a da moeda da loja Steam (calculada pelo backend, 11.4); nula se a Steam é em USD ou falta a cotação.
+  const fxDefault = options?.defaultFxRate ?? null;
   const fxText = fxTyped ?? (fxDefault !== null ? formatDecimalInput(fxDefault, locale) : '');
-  const fxVisible = buying && steamStore?.currency === 'BRL';
+  const fxVisible = buying && steamStore !== null && steamStore.currency !== 'USD';
 
   const containerCost = item.cost.effectiveUsdCents;
   const keyCost = isCase && options ? options.keys.find((k) => k.itemId === keyId)?.effectiveCostUsdCents ?? 0 : 0;
@@ -163,7 +165,7 @@ export default function OpenContainerModal({ item, stores, onClose, onDone, onGo
     }
     if (isTerminal) body.decision = decision;
     if (buying) {
-      const cents = parseMoneyToCents(priceText, locale);
+      const cents = parseMoneyToCents(priceText, locale, steamStore?.currency);
       if (cents === null) next.paidPriceCents = t('itemForm.invalidMoney');
       else body.paidPriceCents = cents;
       if (fxVisible) {
@@ -309,12 +311,12 @@ export default function OpenContainerModal({ item, stores, onClose, onDone, onGo
                 <div className={styles.grid}>
                   <FormField label={t('openForm.price', { currency: steamStore.currency })} error={errors.paidPriceCents}>
                     {(c) => (
-                      <input {...c} className={styles.input} inputMode="decimal" value={priceText} onChange={(e) => { setPriceText(e.target.value); clearError('paidPriceCents'); }} />
+                      <input {...c} className={styles.input} inputMode={moneyInputMode(steamStore?.currency)} value={priceText} onChange={(e) => { setPriceText(e.target.value); clearError('paidPriceCents'); }} />
                     )}
                   </FormField>
                   {fxVisible && (
                     <FormField
-                      label={t('openForm.fx')}
+                      label={t('openForm.fx', { currency: steamStore?.currency ?? '' })}
                       error={errors.fxRateAtPurchase}
                       hint={fxDefault !== null ? t('openForm.fxDefault', { rate: formatDecimalInput(fxDefault, locale) }) : null}
                     >

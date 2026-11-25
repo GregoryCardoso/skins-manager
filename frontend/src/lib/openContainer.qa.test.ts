@@ -105,9 +105,9 @@ describe('modal de abertura', () => {
     expect(modal).toMatch(/decision === 'BUY' && !steamStore/);
   });
 
-  test('a caixa exige a chave escolhida; a cotação só aparece em loja Steam BRL', () => {
+  test('a caixa exige a chave escolhida; a cotação só aparece em loja Steam fora de USD', () => {
     expect(modal).toMatch(/\(!isCase \|\| keyId !== null\)/);
-    expect(modal).toMatch(/steamStore\?\.currency === 'BRL'/);
+    expect(modal).toMatch(/steamStore\.currency !== 'USD'/);
   });
 
   test('o modal chama openContainer e invalida item.open; o seletor da loja Steam invalida settings.steamStore', () => {

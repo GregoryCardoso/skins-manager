@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
+import { currencyOptions, currencySymbol, isCurrencyCode, moneyInputMode } from '@/lib/currencies';
 import { resolveErrorTarget } from '@/lib/formErrors';
 import {
   buildStoreCreateBody, buildStorePatchBody, initialStoreFormState, storeFormFromStore, storeFormRounds, validateStoreForm,
@@ -48,7 +49,8 @@ export default function StoreFormModal({ store, onClose, onSaved, onGone }: Prop
   const currencyLocked = editing && store.inUse;
   const primaryLocked = editing && store.isPrimary;
   const withdrawalOff = !state.allowsWithdrawal;
-  const currencyLabel = state.currency === 'USD' ? 'US$' : 'R$';
+  // Símbolo da moeda da loja nos rótulos das taxas fixas (11.4): segue a moeda escolhida.
+  const currencyLabel = currencySymbol(state.currency, locale);
 
   const showApiError = (err: unknown) => {
     if (err instanceof ApiRequestError && err.code === 'STORE_NOT_FOUND' && editing) {
@@ -145,12 +147,14 @@ export default function StoreFormModal({ store, onClose, onSaved, onGone }: Prop
                 value={state.currency}
                 disabled={currencyLocked}
                 onChange={(e) => {
-                  patch({ currency: e.target.value === 'BRL' ? 'BRL' : 'USD' });
+                  if (isCurrencyCode(e.target.value)) patch({ currency: e.target.value });
                   clearError('currency');
+                  clearError('saleMinFeeCents');
+                  clearError('saleFixedFeeCents');
+                  clearError('withdrawalFixedFeeCents');
                 }}
               >
-                <option value="USD">USD (US$)</option>
-                <option value="BRL">BRL (R$)</option>
+                {currencyOptions(locale).map((option) => <option key={option.code} value={option.code}>{option.label}</option>)}
               </select>
             )}
           </FormField>
@@ -207,7 +211,7 @@ export default function StoreFormModal({ store, onClose, onSaved, onGone }: Prop
                 <input
                   {...c}
                   className={styles.input}
-                  inputMode="decimal"
+                  inputMode={moneyInputMode(state.currency)}
                   value={state.saleMinFeeText}
                   onChange={(e) => {
                     patch({ saleMinFeeText: e.target.value });
@@ -221,7 +225,7 @@ export default function StoreFormModal({ store, onClose, onSaved, onGone }: Prop
                 <input
                   {...c}
                   className={styles.input}
-                  inputMode="decimal"
+                  inputMode={moneyInputMode(state.currency)}
                   value={state.saleFixedFeeText}
                   onChange={(e) => {
                     patch({ saleFixedFeeText: e.target.value });
@@ -286,7 +290,7 @@ export default function StoreFormModal({ store, onClose, onSaved, onGone }: Prop
                 <input
                   {...c}
                   className={styles.input}
-                  inputMode="decimal"
+                  inputMode={moneyInputMode(state.currency)}
                   disabled={withdrawalOff}
                   value={state.withdrawalFixedFeeText}
                   onChange={(e) => {

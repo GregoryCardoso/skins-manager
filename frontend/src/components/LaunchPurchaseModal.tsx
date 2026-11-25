@@ -1,5 +1,6 @@
 'use client';
 
+import { moneyInputMode } from '@/lib/currencies';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useId, useState, type FormEvent } from 'react';
@@ -129,12 +130,12 @@ export default function LaunchPurchaseModal({ entry, onClose, onDone }: Props) {
             </label>
             <label className={forms.field} htmlFor={ids.price}>
               <span>{t('imports.launch.price', { currency: store?.currency ?? '' })}</span>
-              <input className={forms.input} id={ids.price} inputMode="decimal" value={form.price} onChange={(e) => update({ price: e.target.value })} disabled={busy} autoFocus />
+              <input className={forms.input} id={ids.price} inputMode={moneyInputMode(store?.currency)} value={form.price} onChange={(e) => update({ price: e.target.value })} disabled={busy} autoFocus />
               {fieldError('price') && <span className={forms.error}>{fieldError('price')}</span>}
             </label>
-            {store?.currency === 'BRL' && (
+            {store && store.currency !== 'USD' && (
               <label className={forms.field} htmlFor={ids.fx}>
-                <span>{t('imports.launch.fxRate')}</span>
+                <span>{t('imports.launch.fxRate', { currency: store.currency })}</span>
                 <input className={forms.input} id={ids.fx} inputMode="decimal" value={form.fxRate} onChange={(e) => update({ fxRate: e.target.value })} disabled={busy} />
                 {fieldError('fxRate') && <span className={forms.error}>{fieldError('fxRate')}</span>}
               </label>

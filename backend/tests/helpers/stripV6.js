@@ -13,6 +13,9 @@ const V14_COLUMNS = ['sale_release_at'];
 // A v17 acrescenta `components_imported_at` só em `items` (D343).
 const V17_COLUMNS = ['components_imported_at', 'consumed_at']; // + a v19 (D362): `consumed_at` só em items
 
+// A v25 (D369, 11.4) acrescenta `amount_brl_currency` em deposits e withdrawals.
+const V25_COLUMNS = ['amount_brl_currency'];
+
 const stripV6 = (row) => Object.fromEntries(
   Object.entries(row).filter(([key]) => !V6_COLUMNS.includes(key)
     && !(key === 'amount_store_cents' && 'deposited_at' in row)
@@ -21,7 +24,8 @@ const stripV6 = (row) => Object.fromEntries(
     && !(V8_COLUMNS.includes(key) && 'balance_cents' in row)
     && !V10_COLUMNS.includes(key)
     && !V14_COLUMNS.includes(key)
-    && !V17_COLUMNS.includes(key))
+    && !V17_COLUMNS.includes(key)
+    && !V25_COLUMNS.includes(key))
 );
 const stripV6Rows = (rows) => rows.map(stripV6);
 

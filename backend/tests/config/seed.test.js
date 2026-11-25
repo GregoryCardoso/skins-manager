@@ -44,8 +44,9 @@ describe('config/seed', () => {
   });
 
   test('valores da Steam conferem', () => {
+    // Instalação nova: a Steam nasce na moeda de conversão inicial (USD, D369 A4); bancos existentes continuam com a Steam em BRL.
     expect(storeRow('Steam')).toMatchObject({
-      currency: 'BRL', is_active: 1, is_primary: 0, sale_fee_type: 'ADDED', sale_fee_rate: 0.15,
+      currency: 'USD', is_active: 1, is_primary: 0, sale_fee_type: 'ADDED', sale_fee_rate: 0.15,
       sale_fee_rounding: 'CEIL', sale_min_fee_cents: null, sale_fixed_fee_cents: 0, allows_withdrawal: 0,
       withdrawal_fee_rate: null, withdrawal_fixed_fee_cents: 0,
     });

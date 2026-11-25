@@ -63,3 +63,10 @@ export function currenciesToAutoRefresh(required: readonly string[], rates: read
   const manual = new Set(rates.filter((entry) => entry.source === 'MANUAL').map((entry) => entry.currency));
   return [...new Set(required)].filter((currency) => currency !== 'USD' && !manual.has(currency)).sort();
 }
+
+// Cotações gravadas como mapa moeda -> cotação (só as que têm valor): o padrão dos formulários de compra e venda (11.4).
+export function ratesRecord(fxRates: ReadonlyArray<{ currency: string; rate: number | null }>): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const entry of fxRates) if (entry.rate !== null && entry.rate > 0) out[entry.currency] = entry.rate;
+  return out;
+}

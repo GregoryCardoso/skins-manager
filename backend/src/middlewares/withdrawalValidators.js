@@ -10,6 +10,7 @@ const BODY_FIELDS = Object.freeze({
   amountStoreCents: { type: 'number', nullable: false },
   feeCents: { type: 'number', nullable: true },
   amountBrlCents: { type: 'number', nullable: true },
+  amountBrlCurrency: { type: 'string', nullable: true }, // moeda do valor recebido informativo (11.4, E-P3-Q15)
   withdrawnAt: { type: 'string', nullable: false },
   note: { type: 'string', nullable: true },
 });

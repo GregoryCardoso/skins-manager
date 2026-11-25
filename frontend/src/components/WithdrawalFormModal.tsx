@@ -3,6 +3,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
+import { moneyInputMode } from '@/lib/currencies';
 import { resolveErrorTarget } from '@/lib/formErrors';
 import {
   applyFeeSuggestion, buildWithdrawalCreateBody, buildWithdrawalPatchBody, editFee, feeSuggestionRequest,
@@ -16,6 +17,7 @@ import type { Store, Withdrawal } from '@/types/api';
 import FormField from './FormField';
 import styles from './forms.module.css';
 import Modal from './Modal';
+import { usePreferences } from './PreferencesProvider';
 
 const FORM_FIELDS = ['storeId', 'amountStoreCents', 'feeCents', 'amountBrlCents', 'withdrawnAt', 'note'] as const;
 const SUGGESTION_DEBOUNCE_MS = 300;
@@ -35,6 +37,7 @@ export default function WithdrawalFormModal({ withdrawal, stores, onClose, onSav
   const tLoose = useTLoose();
   const locale = useLocale();
   const editing = withdrawal !== undefined;
+  const { displayCurrency } = usePreferences();
 
   const [state, setState] = useState<WithdrawalFormState>(() =>
     withdrawal ? withdrawalFormFromWithdrawal(withdrawal, locale) : initialWithdrawalState());
@@ -45,11 +48,17 @@ export default function WithdrawalFormModal({ withdrawal, stores, onClose, onSav
   const [feeWarning, setFeeWarning] = useState<string | null>(null);
   const [feeFromSuggestion, setFeeFromSuggestion] = useState(false);
 
+  // Moedas dos campos (11.4): valor sacado e taxa na moeda da loja; o "recebido" informativo na moeda do registro (a de conversão, no novo).
+  const selectedStore = stores.find((store) => store.id === state.storeId) ?? null;
+  const currency = selectedStore?.currency ?? 'USD';
+  const receivedCurrency = withdrawal && withdrawal.amountBrlCents !== null ? withdrawal.amountBrlCurrency ?? 'BRL' : displayCurrency;
+  const currencies = { store: selectedStore?.currency, received: receivedCurrency };
+
   const patch = (partial: Partial<WithdrawalFormState>) => setState((s) => ({ ...s, ...partial }));
   const clearError = (field: string) => setErrors((e) => (e[field] ? { ...e, [field]: undefined } : e));
 
   // Sugestão de taxa (E8-Q12): debounce de 300 ms; só enquanto a taxa não foi tocada.
-  const request = feeSuggestionRequest(state, locale);
+  const request = feeSuggestionRequest(state, locale, selectedStore?.currency);
   const requestKey = request ? `${request.storeId}:${request.amountStoreCents}` : null;
   const feeTouched = state.feeTouched;
   useEffect(() => {
@@ -59,7 +68,7 @@ export default function WithdrawalFormModal({ withdrawal, stores, onClose, onSav
       return undefined;
     }
     if (requestKey === null) {
-      setState((s) => applyFeeSuggestion(s, null, locale));
+      setState((s) => applyFeeSuggestion(s, null, locale, selectedStore?.currency));
       setFeeFromSuggestion(false);
       setFeeWarning(null);
       return undefined;
@@ -69,7 +78,7 @@ export default function WithdrawalFormModal({ withdrawal, stores, onClose, onSav
     const timer = setTimeout(() => {
       getWithdrawalFeeSuggestion(storeId, amountStoreCents, controller.signal)
         .then((suggestion) => {
-          setState((s) => applyFeeSuggestion(s, suggestion.suggestedFeeCents, locale));
+          setState((s) => applyFeeSuggestion(s, suggestion.suggestedFeeCents, locale, selectedStore?.currency));
           setFeeFromSuggestion(suggestion.suggestedFeeCents !== null);
           setFeeWarning(suggestion.warningCode);
         })
@@ -81,7 +90,7 @@ export default function WithdrawalFormModal({ withdrawal, stores, onClose, onSav
       clearTimeout(timer);
       controller.abort();
     };
-  }, [requestKey, feeTouched, locale]);
+  }, [requestKey, feeTouched, locale, selectedStore?.currency]);
 
   const showApiError = (err: unknown) => {
     if (err instanceof ApiRequestError && err.code === 'WITHDRAWAL_NOT_FOUND') {
@@ -104,7 +113,7 @@ export default function WithdrawalFormModal({ withdrawal, stores, onClose, onSav
     event.preventDefault();
     if (saving) return;
     setTopError(null);
-    const local = validateWithdrawalForm(state, locale);
+    const local = validateWithdrawalForm(state, locale, currencies);
     if (Object.keys(local).length > 0) {
       const translated: Partial<Record<string, string>> = {};
       for (const [field, key] of Object.entries(local)) translated[field] = tLoose(key);
@@ -113,7 +122,7 @@ export default function WithdrawalFormModal({ withdrawal, stores, onClose, onSav
     }
     setErrors({});
     if (withdrawal) {
-      const body = buildWithdrawalPatchBody(state, withdrawal, locale);
+      const body = buildWithdrawalPatchBody(state, withdrawal, locale, currencies);
       if (Object.keys(body).length === 0) {
         onClose();
         return;
@@ -131,7 +140,7 @@ export default function WithdrawalFormModal({ withdrawal, stores, onClose, onSav
       return;
     }
     setSaving(true);
-    createWithdrawal(buildWithdrawalCreateBody(state, locale))
+    createWithdrawal(buildWithdrawalCreateBody(state, locale, currencies))
       .then((saved) => {
         invalidate('withdrawal.create');
         onSaved(t('withdrawals.created', { value: withdrawalAmountText(saved, locale) }));
@@ -143,8 +152,6 @@ export default function WithdrawalFormModal({ withdrawal, stores, onClose, onSav
   };
 
   const storeOptions = withdrawalStoreOptions(stores, withdrawal?.storeId ?? null);
-  const selectedStore = stores.find((store) => store.id === state.storeId) ?? null;
-  const currency = selectedStore?.currency ?? 'USD';
   const legacy = withdrawal?.legacyWithoutStore === true;
 
   let feeHint = t('withdrawals.form.feeHint');
@@ -185,7 +192,7 @@ export default function WithdrawalFormModal({ withdrawal, stores, onClose, onSav
               <input
                 {...c}
                 className={styles.input}
-                inputMode="decimal"
+                inputMode={moneyInputMode(currency)}
                 value={state.amountText}
                 onChange={(e) => {
                   patch({ amountText: e.target.value });
@@ -199,7 +206,7 @@ export default function WithdrawalFormModal({ withdrawal, stores, onClose, onSav
               <input
                 {...c}
                 className={styles.input}
-                inputMode="decimal"
+                inputMode={moneyInputMode(currency)}
                 value={state.feeText}
                 onChange={(e) => {
                   setState((s) => editFee(s, e.target.value));
@@ -208,12 +215,12 @@ export default function WithdrawalFormModal({ withdrawal, stores, onClose, onSav
               />
             )}
           </FormField>
-          <FormField label={t('withdrawals.amountBrlOptional')} error={errors.amountBrlCents}>
+          <FormField label={t('withdrawals.amountBrlOptional', { currency: receivedCurrency })} error={errors.amountBrlCents}>
             {(c) => (
               <input
                 {...c}
                 className={styles.input}
-                inputMode="decimal"
+                inputMode={moneyInputMode(receivedCurrency)}
                 value={state.receivedText}
                 onChange={(e) => {
                   patch({ receivedText: e.target.value });

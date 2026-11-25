@@ -9,9 +9,9 @@ const { runInTransaction } = require('../models/modelHelpers');
 const Store = require('../models/Store');
 const Setting = require('../models/Setting');
 const { ValidationError, NotFoundError } = require('../errors/AppError');
-const { MAX_AMOUNT_CENTS, MAX_NOTE_LENGTH } = require('../config/constants');
+const { MAX_AMOUNT_CENTS, MAX_NOTE_LENGTH, CURRENCIES, ZERO_DECIMAL_CURRENCIES } = require('../config/constants');
 const { applyRateRounding } = require('./fees/rounding');
-const { toUsdBase, approxOf, fxFromSettings, displayCurrencyOf } = require('./currencyService');
+const { toUsdBase, approxOf, fxFromSettings, displayCurrencyOf, assertAmountPrecision } = require('./currencyService');
 const { parseDate } = require('./dateUtils');
 const { assertNotFutureDay } = require('./inventoryAgingService');
 const { WARNINGS } = require('./warnings');
@@ -35,17 +35,18 @@ function assertAmount(value, field, label) {
 // e loja inativa também.
 // D221: ao trocar de loja com moeda diferente (ou saque antigo sem loja, moeda anterior desconhecida), o valor sacado
 // precisa vir no corpo (`previousStore`: a loja gravada, nula se não havia); a taxa continua validada no registro mesclado.
-function buildWithdrawalRecord(input, { existing = null, store = null, previousStore = null, now = new Date() } = {}) {
+function buildWithdrawalRecord(input, { existing = null, store = null, previousStore = null, now = new Date(), displayCurrency = 'BRL' } = {}) {
   const base = existing
     ? {
       storeId: existing.storeId,
       amountStoreCents: existing.amountStoreCents,
       feeCents: existing.feeCents,
       amountBrlCents: existing.amountBrlCents,
+      amountBrlCurrency: existing.amountBrlCurrency ?? 'BRL',
       withdrawnAt: existing.withdrawnAt,
       note: existing.note,
     }
-    : { storeId: null, amountStoreCents: null, feeCents: null, amountBrlCents: null, withdrawnAt: undefined, note: null };
+    : { storeId: null, amountStoreCents: null, feeCents: null, amountBrlCents: null, amountBrlCurrency: null, withdrawnAt: undefined, note: null };
   const record = { ...base };
   for (const field of Object.keys(record)) if (input && input[field] !== undefined) record[field] = input[field];
 
@@ -67,6 +68,7 @@ function buildWithdrawalRecord(input, { existing = null, store = null, previousS
   // 2. valor sacado (moeda da loja)
   if (isNil(record.amountStoreCents)) throw required('amountStoreCents');
   assertAmount(record.amountStoreCents, 'amountStoreCents', 'O valor sacado');
+  assertAmountPrecision(record.amountStoreCents, store.currency, 'amountStoreCents');
 
   // 3. taxa paga: nula = não informada; 0 = paga zero
   if (isNil(record.feeCents)) record.feeCents = null;
@@ -74,14 +76,27 @@ function buildWithdrawalRecord(input, { existing = null, store = null, previousS
     if (!Number.isSafeInteger(record.feeCents) || record.feeCents < 0) {
       throw new ValidationError('A taxa paga deve ser um inteiro de centavos maior ou igual a 0.', 'INVALID_AMOUNT', { field: 'feeCents' });
     }
+    assertAmountPrecision(record.feeCents, store.currency, 'feeCents');
     if (record.feeCents > record.amountStoreCents) {
       throw new ValidationError('A taxa paga não pode ser maior que o valor sacado.', 'WITHDRAWAL_FEE_ABOVE_AMOUNT', { field: 'feeCents' });
     }
   }
 
   // 4. valor recebido em BRL: opcional, só informativo
-  if (isNil(record.amountBrlCents)) record.amountBrlCents = null;
-  else assertAmount(record.amountBrlCents, 'amountBrlCents', 'O valor recebido');
+  // Moeda do valor recebido (E-P3-Q15): a informada; senão a já gravada (edição) ou a moeda de conversão de agora (registro novo).
+  if (isNil(record.amountBrlCents)) {
+    record.amountBrlCents = null;
+    record.amountBrlCurrency = existing && existing.amountBrlCurrency ? existing.amountBrlCurrency : 'BRL';
+  } else {
+    assertAmount(record.amountBrlCents, 'amountBrlCents', 'O valor recebido');
+    if (isNil(input && input.amountBrlCurrency)) {
+      record.amountBrlCurrency = existing && !isNil(existing.amountBrlCents) && existing.amountBrlCurrency ? existing.amountBrlCurrency : displayCurrency;
+    } else record.amountBrlCurrency = input.amountBrlCurrency;
+    if (!CURRENCIES.includes(record.amountBrlCurrency)) {
+      throw new ValidationError(`Moeda inválida. Use ${CURRENCIES.join(', ')}.`, 'INVALID_CURRENCY', { field: 'amountBrlCurrency' });
+    }
+    assertAmountPrecision(record.amountBrlCents, record.amountBrlCurrency, 'amountBrlCents');
+  }
 
   // 5. data: normalizada para UTC; um saque já gravado só é revalidado quando a data é alterada
   if (isNil(record.withdrawnAt)) throw required('withdrawnAt');
@@ -121,7 +136,8 @@ function suggestWithdrawalFeeCents(amountStoreCents, store) {
   const rate = store ? store.withdrawalFeeRate : null;
   if (isNil(rate)) return { suggestedFeeCents: null, warningCode: WARNINGS.FEES_NOT_CONFIGURED.code };
   const fixed = store.withdrawalFixedFeeCents || 0;
-  const suggested = Math.min(applyRateRounding(amountStoreCents, rate, 'CEIL') + fixed, amountStoreCents);
+  const unit = ZERO_DECIMAL_CURRENCIES.includes(store.currency) ? 100 : 1;
+  const suggested = Math.min(applyRateRounding(amountStoreCents, rate, 'CEIL', unit) + fixed, amountStoreCents);
   return { suggestedFeeCents: suggested, warningCode: null };
 }
 
@@ -134,7 +150,7 @@ function withdrawalNetStoreCents(withdrawal) {
 // Líquido na moeda base (D225, D228): saque com loja pelo líquido na moeda da loja; sem loja, o valor em R$ (estimado).
 function withdrawalBaseAmount(withdrawal, store, fx) {
   const net = withdrawalNetStoreCents(withdrawal);
-  if (net === null) return toUsdBase(withdrawal.amountBrlCents, 'BRL', fx);
+  if (net === null) return toUsdBase(withdrawal.amountBrlCents, withdrawal.amountBrlCurrency ?? 'BRL', fx);
   // Loja referenciada que não está no mapa: a moeda é desconhecida, então não se assume USD (o lucro fica nulo).
   if (!store) return { usdCents: null, approxCents: null, approxCurrency: displayCurrencyOf(fx), estimated: false };
   return toUsdBase(net, store.currency, fx);
@@ -152,6 +168,7 @@ function toWithdrawalView(row, storesById, fx = null) {
     feeCents: row.feeCents,
     netStoreCents: withdrawalNetStoreCents(row),
     amountBrlCents: row.amountBrlCents,
+    amountBrlCurrency: row.amountBrlCurrency ?? 'BRL',
     withdrawnAt: row.withdrawnAt,
     note: row.note,
     legacyWithoutStore: isNil(row.storeId),
@@ -194,14 +211,14 @@ function listWithdrawals() {
 }
 
 function createWithdrawal(input, { now = new Date() } = {}) {
-  const record = buildWithdrawalRecord(input, { store: loadStore(input.storeId), now });
+  const record = buildWithdrawalRecord(input, { store: loadStore(input.storeId), now, displayCurrency: Setting.get().displayCurrency });
   return toWithdrawalView(Withdrawal.create(record, { now }), storesMap(), fxFromSettings(Setting.get()));
 }
 
 function updateWithdrawal(id, partial, { now = new Date() } = {}) {
   const existing = findOrFail(id);
   const storeId = partial.storeId !== undefined ? partial.storeId : existing.storeId;
-  const record = buildWithdrawalRecord(partial, { existing, store: loadStore(storeId), previousStore: loadStore(existing.storeId), now });
+  const record = buildWithdrawalRecord(partial, { existing, store: loadStore(storeId), previousStore: loadStore(existing.storeId), now, displayCurrency: Setting.get().displayCurrency });
   return toWithdrawalView(Withdrawal.update(id, record, { now }), storesMap(), fxFromSettings(Setting.get()));
 }
 

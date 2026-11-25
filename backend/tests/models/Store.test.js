@@ -77,8 +77,10 @@ describe('models/Store', () => {
       expect(() => Store.create(base({ name: '   ' }))).toThrow(/CHECK/);
     });
 
-    test('recusa moeda EUR', () => {
-      expect(() => Store.create(base({ currency: 'EUR' }))).toThrow(/CHECK/);
+    test('aceita qualquer moeda no formato (11.4: a lista das 17 fica no service) e recusa formato inválido', () => {
+      expect(Store.create(base({ name: 'Loja EUR', currency: 'EUR' })).currency).toBe('EUR');
+      expect(() => Store.create(base({ name: 'Loja eur', currency: 'eur' }))).toThrow(/CHECK/);
+      expect(() => Store.create(base({ name: 'Loja EURO', currency: 'EURO' }))).toThrow(/CHECK/);
     });
 
     test.each([1, -0.01])('recusa sale_fee_rate = %p', (rate) => {

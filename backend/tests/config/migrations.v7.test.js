@@ -81,17 +81,17 @@ describe('migração v7', () => {
     const { snapshot } = seedV6(dbPath);
     const db = openDatabase(dbPath, { now: new Date('2026-11-21T12:00:00.000Z') });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(24);
+      expect(db.pragma('user_version', { simple: true })).toBe(25);
       const deposits = db.prepare('SELECT * FROM deposits ORDER BY id').all();
       expect(deposits).toHaveLength(3);
       expect(deposits.map((d) => d.id)).toEqual(snapshot.deposits.map((d) => d.id));
       deposits.forEach((row, i) => {
-        const { amount_store_cents: stored, fee_cents: feeCents, ...rest } = row; // fee_cents: v16 (nula)
+        const { amount_store_cents: stored, fee_cents: feeCents, amount_brl_currency: _abc, ...rest } = row; // fee_cents: v16 (nula)
         expect(stored).toBeNull(); // todo aporte antigo vira legado
         expect(rest).toEqual(snapshot.deposits[i]); // valor em R$, loja informativa, nota e carimbos intactos
       });
       // saques: iguais, com e sem loja, com taxa nula e preenchida
-      expect(db.prepare('SELECT * FROM withdrawals ORDER BY id').all()).toEqual(snapshot.withdrawals);
+      expect(db.prepare('SELECT * FROM withdrawals ORDER BY id').all().map(({ amount_brl_currency: _abc, ...r }) => r)).toEqual(snapshot.withdrawals);
       const withdrawals = db.prepare('SELECT * FROM withdrawals ORDER BY id').all();
       expect(withdrawals.map((w) => [w.store_id === null, w.fee_cents])).toEqual([[false, 250], [false, null], [true, null]]);
       expect(db.pragma('foreign_key_check')).toEqual([]);
@@ -152,7 +152,7 @@ describe('migração v7', () => {
     const first = backups(dbPath).length;
     const db = openDatabase(dbPath);
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(24);
+      expect(db.pragma('user_version', { simple: true })).toBe(25);
       expect(backups(dbPath).length).toBe(first);
       expect(db.prepare('SELECT COUNT(*) AS n FROM deposits').get().n).toBe(3);
     } finally {
@@ -227,7 +227,7 @@ describe('migração v7: rollback', () => {
       expect(db.pragma('user_version', { simple: true })).toBe(6);
       expect(db.pragma('foreign_keys', { simple: true })).toBe(1);
       expect(db.prepare('SELECT * FROM deposits ORDER BY id').all()).toEqual(snapshot.deposits);
-      expect(db.prepare('SELECT * FROM withdrawals ORDER BY id').all()).toEqual(snapshot.withdrawals);
+      expect(db.prepare('SELECT * FROM withdrawals ORDER BY id').all().map(({ amount_brl_currency: _abc, ...r }) => r)).toEqual(snapshot.withdrawals);
       const columns = db.prepare("SELECT name FROM pragma_table_info('deposits')").all().map((c) => c.name);
       expect(columns).not.toContain('amount_store_cents');
       const tables = db.prepare("SELECT name FROM sqlite_master WHERE name IN ('deposits_new', 'withdrawals_new')").all();

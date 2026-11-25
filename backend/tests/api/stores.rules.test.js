@@ -31,7 +31,7 @@ describe('D156 regras 1 a 3', () => {
 
   test('regras 2 e 3: moeda e listas inválidas', async () => {
     expectError(await post({ name: 'A' }), 400, 'REQUIRED_FIELD', { field: 'currency' });
-    expectError(await post({ name: 'A', currency: 'EUR' }), 400, 'INVALID_CURRENCY', { field: 'currency' });
+    expectError(await post({ name: 'A', currency: 'XXX' }), 400, 'INVALID_CURRENCY', { field: 'currency' });
     expectError(await post({ name: 'A', currency: 'usd' }), 400, 'INVALID_CURRENCY', { field: 'currency' });
     expectError(await patch(storeId('Steam'), { saleFeeType: 'X' }), 400, 'INVALID_FEE_TYPE', { field: 'saleFeeType' });
     expectError(await patch(storeId('Steam'), { saleFeeRounding: 'UP' }), 400, 'INVALID_ROUNDING', { field: 'saleFeeRounding' });

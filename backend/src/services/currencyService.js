@@ -20,6 +20,20 @@ function minorUnitCents(currency) {
   return ZERO_DECIMAL_CURRENCIES.includes(currency) ? 100 : 1;
 }
 
+// Valor digitado na unidade mínima da moeda (D369 A3): nas moedas sem casas (JPY, KRW e CLP) todo valor gravado é múltiplo de 100
+// "centavos". Valor fora da unidade -> AMOUNT_PRECISION_INVALID. Valores nulos/indefinidos e não inteiros ficam para a validação
+// de cada campo (INVALID_AMOUNT); aqui só se confere a unidade.
+function assertAmountPrecision(cents, currency, field) {
+  if (typeof cents !== 'number' || !Number.isSafeInteger(cents)) return;
+  const unit = minorUnitCents(currency);
+  if (cents % unit !== 0) {
+    throw new ValidationError(
+      `O valor em ${currency} deve ser um número inteiro, sem casas decimais.`, 'AMOUNT_PRECISION_INVALID',
+      { ...(field ? { field } : {}), params: { currency, unitCents: unit } }
+    );
+  }
+}
+
 // Cotação válida: número finito > 0 ("unidades da moeda por 1 US$").
 function isValidFxRate(fxRate) {
   return typeof fxRate === 'number' && Number.isFinite(fxRate) && fxRate > 0;
@@ -139,6 +153,7 @@ module.exports = {
   CURRENCIES,
   assertCurrency,
   minorUnitCents,
+  assertAmountPrecision,
   normalizeFx,
   fxFromSettings,
   rateOf,

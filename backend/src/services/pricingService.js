@@ -4,17 +4,19 @@
 // Usa SOMENTE a taxa de venda: taxa de saque e cotação efetiva não entram aqui (2.8).
 const { ValidationError } = require('../errors/AppError');
 const { getSaleFeeStrategy, saleFeeParamsFromStore, assertSaleFeeParams, MAX_PRICE_SEARCH_ITERATIONS } = require('./fees');
-const { convertCents, isValidFxRate, approxCounterpart, fxFromSettings } = require('./currencyService');
+const { convertCents, isValidFxRate, approxCounterpart, fxFromSettings, rateOf } = require('./currencyService');
 const { WARNINGS } = require('./warnings');
 
-// Menor preço (centavos) cujo líquido >= custo; parte da estimativa e ajusta centavo a centavo. Mínimo 1.
+// Menor preço (centavos) cujo líquido >= custo; parte da estimativa e ajusta de unidade mínima em unidade mínima (1 centavo; 100 em
+// JPY, KRW e CLP, D369 A3). Mínimo: uma unidade.
 function findMinSalePriceCents(costCents, params) {
   if (!Number.isSafeInteger(costCents) || costCents < 0) {
     throw new ValidationError('Custo deve ser um inteiro de centavos maior ou igual a 0.', 'INVALID_AMOUNT');
   }
   assertSaleFeeParams(params);
   const strategy = getSaleFeeStrategy(params.feeType);
-  let gross = Math.max(1, strategy.estimateGross(costCents, params));
+  const unit = params.unitCents ?? 1;
+  let gross = Math.max(unit, Math.ceil(strategy.estimateGross(costCents, params) / unit) * unit);
   let steps = 0;
   const step = () => {
     steps += 1;
@@ -22,8 +24,8 @@ function findMinSalePriceCents(costCents, params) {
       throw new ValidationError('Limite de iterações excedido ao calcular o preço mínimo.', 'PRICE_SEARCH_LIMIT');
     }
   };
-  while (gross > 1 && strategy.net(gross - 1, params) >= costCents) { step(); gross -= 1; }
-  while (strategy.net(gross, params) < costCents) { step(); gross += 1; }
+  while (gross > unit && strategy.net(gross - unit, params) >= costCents) { step(); gross -= unit; }
+  while (strategy.net(gross, params) < costCents) { step(); gross += unit; }
   return gross;
 }
 
@@ -42,16 +44,18 @@ function minPriceForStore({ costCents, costCurrency, costFxRate, costParts, stor
   // Leitura nunca falha por causa de um item: valor fora do suportado vira minPriceCents null + aviso.
   try {
     let costInStoreCurrency = 0;
-    const usdBrlRate = settings ? settings.usdBrlRate : null;
+    const fx = fxFromSettings(settings);
+    // Cotação das configurações da moeda da loja (D369): serve ao destino da conversão; a de origem é a gravada no custo.
+    const storeRate = store.currency === 'USD' ? 1 : rateOf(fx, store.currency);
     for (const part of parts) {
       if (part.currency === store.currency) {
         costInStoreCurrency += part.cents;
         continue;
       }
-      const needed = part.currency === 'BRL' ? part.fxRate : usdBrlRate;
-      if (!isValidFxRate(needed)) return noPrice(base, WARNINGS.FX_NOT_CONFIGURED);
+      const fromRate = part.currency === 'USD' ? 1 : part.fxRate;
+      if (!isValidFxRate(fromRate) || !isValidFxRate(storeRate)) return noPrice(base, WARNINGS.FX_NOT_CONFIGURED);
       costInStoreCurrency += convertCents(
-        part.cents, part.currency, store.currency, { fromFxRate: part.fxRate, toFxRate: usdBrlRate }, 'CEIL'
+        part.cents, part.currency, store.currency, { fromFxRate: part.fxRate, toFxRate: storeRate }, 'CEIL'
       );
     }
     const minPriceCents = findMinSalePriceCents(costInStoreCurrency, params);

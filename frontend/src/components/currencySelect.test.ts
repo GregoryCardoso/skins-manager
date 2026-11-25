@@ -47,15 +47,18 @@ describe('modal da troca', () => {
   test('usa o Modal padrão (acessível: Esc, foco e botão fechar), a prévia do backend e só grava ao confirmar', () => {
     expect(modal).toMatch(/import Modal from '\.\/Modal'/);
     expect(modal).toMatch(/getCurrencyChangePreview\(currency, signal\)/);
-    expect(modal).toMatch(/changeDisplayCurrency\(currency, view\.steamStore\)/);
+    expect(modal).toMatch(/changeDisplayCurrency\(currency, steamChoiceFor\(view, checks\)\)/);
     // o botão "Cancelar" ganha o foco (a troca é opcional) e durante o envio nada fecha
     expect(modal).toMatch(/autoFocus/);
     expect(modal).toMatch(/busy=\{busy\}/);
   });
 
-  test('na 11.3 a loja Steam não é mostrada nem alterada: sempre KEEP', () => {
-    expect(modal).not.toMatch(/FOLLOW|NEW_STORE/);
-    expect(modal).not.toMatch(/steamStore\??\.(id|name)/);
+  test('11.4: as linhas da loja Steam vêm de view.steamLines; a opção de nova loja nasce desmarcada e só marcada envia NEW_STORE', () => {
+    expect(modal).toMatch(/view\.steamLines\.map/);
+    expect(modal).toMatch(/currency\.modal\.steamFollow/);
+    expect(modal).toMatch(/currency\.modal\.steamNewStore/);
+    expect(modal).toMatch(/currency\.modal\.steamLocked/);
+    expect(modal).toMatch(/initialSteamChecks\(view\)/);
   });
 
   test('busca a cotação na hora só quando falta e há fonte automática; falha não desfaz a troca', () => {

@@ -7,6 +7,7 @@ import {
   buildDepositCreateBody, buildDepositPatchBody, depositFormFromDeposit, depositStoreOptions, initialDepositState,
   legacyStoreIsNotUsd, validateDepositForm, type DepositFormState,
 } from '@/lib/depositForm';
+import { moneyInputMode } from '@/lib/currencies';
 import { resolveErrorTarget } from '@/lib/formErrors';
 import { formatMoney } from '@/lib/format';
 import { MAX_NOTE_LENGTH } from '@/lib/limits';
@@ -17,6 +18,7 @@ import Link from 'next/link';
 import FormField from './FormField';
 import styles from './forms.module.css';
 import Modal from './Modal';
+import { usePreferences } from './PreferencesProvider';
 
 const FORM_FIELDS = ['storeId', 'amountStoreCents', 'feeCents', 'amountBrlCents', 'depositedAt', 'note'] as const;
 
@@ -35,6 +37,9 @@ export default function DepositFormModal({ deposit, stores, onClose, onSaved, on
   const locale = useLocale();
   const editing = deposit !== undefined;
   const invalidate = useInvalidate();
+  const { displayCurrency } = usePreferences();
+  // Moeda do valor pago informativo (11.4): a do registro, quando ele já tem valor; senão a moeda de conversão de agora.
+  const paidCurrency = deposit && deposit.amountBrlCents !== null ? deposit.amountBrlCurrency ?? 'BRL' : displayCurrency;
 
   const [state, setState] = useState<DepositFormState>(() => (deposit ? depositFormFromDeposit(deposit, locale) : initialDepositState()));
   const [errors, setErrors] = useState<Partial<Record<string, string>>>({});
@@ -65,7 +70,7 @@ export default function DepositFormModal({ deposit, stores, onClose, onSaved, on
     event.preventDefault();
     if (saving) return;
     setTopError(null);
-    const local = validateDepositForm(state, locale);
+    const local = validateDepositForm(state, locale, paidCurrency);
     if (Object.keys(local).length > 0) {
       const translated: Partial<Record<string, string>> = {};
       for (const [field, key] of Object.entries(local)) translated[field] = tLoose(key);
@@ -74,7 +79,7 @@ export default function DepositFormModal({ deposit, stores, onClose, onSaved, on
     }
     setErrors({});
     if (deposit) {
-      const body = buildDepositPatchBody(state, deposit, locale);
+      const body = buildDepositPatchBody(state, deposit, locale, paidCurrency);
       if (Object.keys(body).length === 0) {
         onClose();
         return;
@@ -92,7 +97,7 @@ export default function DepositFormModal({ deposit, stores, onClose, onSaved, on
       return;
     }
     setSaving(true);
-    createDeposit(buildDepositCreateBody(state, locale))
+    createDeposit(buildDepositCreateBody(state, locale, paidCurrency))
       .then((saved) => {
         invalidate('deposit.create');
         onSaved(t('deposits.created', { value: saved.amountStoreCents === null ? '' : formatMoney(saved.amountStoreCents, 'USD', locale) }));
@@ -174,12 +179,12 @@ export default function DepositFormModal({ deposit, stores, onClose, onSaved, on
               />
             )}
           </FormField>
-          <FormField label={t('deposits.amountBrlOptional')} error={errors.amountBrlCents}>
+          <FormField label={t('deposits.amountBrlOptional', { currency: paidCurrency })} error={errors.amountBrlCents}>
             {(c) => (
               <input
                 {...c}
                 className={styles.input}
-                inputMode="decimal"
+                inputMode={moneyInputMode(paidCurrency)}
                 value={state.paidText}
                 onChange={(e) => {
                   patch({ paidText: e.target.value });

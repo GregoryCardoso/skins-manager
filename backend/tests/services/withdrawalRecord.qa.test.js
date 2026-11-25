@@ -85,7 +85,7 @@ describe('edição: casos do registro mesclado', () => {
 
   test('campos fora da lista (id, createdAt) na entrada são ignorados no registro devolvido', () => {
     const rec = build({ ...valid, id: 99, createdAt: 'x', extra: 1 });
-    expect(Object.keys(rec).sort()).toEqual(['amountBrlCents', 'amountStoreCents', 'feeCents', 'note', 'storeId', 'withdrawnAt']);
+    expect(Object.keys(rec).sort()).toEqual(['amountBrlCents', 'amountBrlCurrency', 'amountStoreCents', 'feeCents', 'note', 'storeId', 'withdrawnAt']);
   });
 });
 

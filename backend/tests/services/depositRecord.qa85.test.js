@@ -145,7 +145,7 @@ describe('aporte legado (amountStoreCents nulo)', () => {
 
   test('legado sem loja: loja USD + valor -> deixa de ser legado e mantém o valor pago antigo em R$', () => {
     const r = run({ storeId: 1, amountStoreCents: 5523 }, { existing: legacy(), store: CSFLOAT });
-    expect(r).toEqual({ storeId: 1, amountStoreCents: 5523, feeCents: null, amountBrlCents: 30000, depositedAt: DATE, note: null });
+    expect(r).toEqual({ storeId: 1, amountStoreCents: 5523, feeCents: null, amountBrlCents: 30000, amountBrlCurrency: 'BRL', depositedAt: DATE, note: null });
   });
 
   test('legado com loja informativa USD: só a nota -> REQUIRED_FIELD; com valor -> aceito', () => {

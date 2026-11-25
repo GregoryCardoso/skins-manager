@@ -29,7 +29,7 @@ const fxRows = (db) => db.prepare('SELECT * FROM fx_rates').all();
 describe('cotação do BRL em cada estado de origem', () => {
   test('cotação nula (nunca configurada): linha do BRL com rate nulo, sem origem e fonte padrão', () => {
     const { dbPath } = makeV23('null');
-    const db = openDatabase(dbPath, { now: NOW });
+    const db = openDatabase(dbPath, { migrations: upTo(24), now: NOW });
     try {
       const rows = fxRows(db);
       expect(rows).toHaveLength(1);
@@ -42,7 +42,7 @@ describe('cotação do BRL em cada estado de origem', () => {
   test('MANUAL: rate, origem e data da gravação copiados, sem data de cotação', () => {
     const { dbPath } = makeV23('manual',
       "UPDATE settings SET usd_brl_rate = 5.5, usd_brl_rate_source = 'MANUAL', usd_brl_rate_updated_at = '2026-10-01T00:00:00.000Z'");
-    const db = openDatabase(dbPath, { now: NOW });
+    const db = openDatabase(dbPath, { migrations: upTo(24), now: NOW });
     try {
       expect(fxRows(db)).toEqual([
         { currency: 'BRL', rate: 5.5, source: 'MANUAL', refresh_source: 'AWESOMEAPI', quoted_at: null, updated_at: '2026-10-01T00:00:00.000Z' },
@@ -54,7 +54,7 @@ describe('cotação do BRL em cada estado de origem', () => {
     const { dbPath } = makeV23('ptax',
       `UPDATE settings SET usd_brl_rate = 5.3, usd_brl_rate_source = 'PTAX', usd_brl_rate_updated_at = '2026-10-02T00:00:00.000Z',
          rate_quoted_at = '2026-10-01T13:00:00.000Z', fx_refresh_source = 'PTAX'`);
-    const db = openDatabase(dbPath, { now: NOW });
+    const db = openDatabase(dbPath, { migrations: upTo(24), now: NOW });
     try {
       expect(fxRows(db)).toEqual([
         { currency: 'BRL', rate: 5.3, source: 'PTAX', refresh_source: 'PTAX', quoted_at: '2026-10-01T13:00:00.000Z', updated_at: '2026-10-02T00:00:00.000Z' },
@@ -64,7 +64,7 @@ describe('cotação do BRL em cada estado de origem', () => {
 
   test('fonte PTAX sem cotação gravada: a fonte do botão é preservada com rate nulo', () => {
     const { dbPath } = makeV23('ptaxnull', "UPDATE settings SET fx_refresh_source = 'PTAX'");
-    const db = openDatabase(dbPath, { now: NOW });
+    const db = openDatabase(dbPath, { migrations: upTo(24), now: NOW });
     try {
       expect(fxRows(db)[0]).toMatchObject({ rate: null, refresh_source: 'PTAX' });
     } finally { db.close(); }
@@ -78,7 +78,7 @@ describe('esquema de settings sem mudança além de display_currency', () => {
     const colsBefore = old.prepare('PRAGMA table_info(settings)').all();
     const sqlBefore = old.prepare("SELECT sql FROM sqlite_master WHERE name = 'settings'").get().sql;
     old.close();
-    const db = openDatabase(dbPath, { now: NOW });
+    const db = openDatabase(dbPath, { migrations: upTo(24), now: NOW });
     try {
       const colsAfter = db.prepare('PRAGMA table_info(settings)').all();
       expect(colsAfter.slice(0, colsBefore.length)).toEqual(colsBefore);
@@ -94,7 +94,7 @@ describe('esquema de settings sem mudança além de display_currency', () => {
 
 describe('CHECKs de fx_rates', () => {
   let db;
-  beforeAll(() => { db = openDatabase(dbPathOf('checks2'), { now: NOW }); });
+  beforeAll(() => { db = openDatabase(dbPathOf('checks2'), { migrations: upTo(24), now: NOW }); });
   afterAll(() => db.close());
   const ins = (currency, rate) => db
     .prepare("INSERT INTO fx_rates (currency, rate, source, refresh_source, quoted_at, updated_at) VALUES (?, ?, 'MANUAL', 'AWESOMEAPI', NULL, 'x')")
@@ -116,7 +116,7 @@ describe('banco criado em versão antiga e migrado direto até a 24 fica em BRL'
     const dbPath = dbPathOf(`direct${version}`);
     const old = openDatabase(dbPath, { migrations: upTo(version) });
     old.close();
-    const db = openDatabase(dbPath, { now: NOW });
+    const db = openDatabase(dbPath, { migrations: upTo(24), now: NOW });
     try {
       expect(db.pragma('user_version', { simple: true })).toBe(24);
       expect(db.prepare('SELECT display_currency AS d FROM settings').get().d).toBe('BRL');
@@ -126,7 +126,7 @@ describe('banco criado em versão antiga e migrado direto até a 24 fica em BRL'
   });
 
   test('banco novo (v0) direto até a 24 fica em USD, sem linhas em fx_rates', () => {
-    const db = openDatabase(dbPathOf('fresh'), { now: NOW });
+    const db = openDatabase(dbPathOf('fresh'), { migrations: upTo(24), now: NOW });
     try {
       expect(db.prepare('SELECT display_currency AS d FROM settings').get().d).toBe('USD');
       expect(fxRows(db)).toEqual([]);

@@ -23,7 +23,7 @@ const hash = (file) => crypto.createHash('sha256').update(fs.readFileSync(file))
 
 const snapshot = (d) => ({
   items: d.prepare('SELECT * FROM items ORDER BY id').all(),
-  deposits: d.prepare('SELECT * FROM deposits ORDER BY id').all(),
+  deposits: d.prepare('SELECT * FROM deposits ORDER BY id').all().map(({ amount_brl_currency: _abc, ...r }) => r),
   stores: d.prepare('SELECT * FROM stores ORDER BY id').all(),
   settings: d.prepare('SELECT * FROM settings').all().map(({ steam_store_id: _steam, price_refresh_started_at: _p1, price_refresh_last_at: _p2, price_refresh_last_status: _p3, price_refresh_last_error_code: _p4, display_currency: _dc, ...r }) => r),
 });
@@ -69,7 +69,7 @@ test('v17 sobre v16 com dados variados: itens, aportes, lojas e configurações 
   const before = seedV16(dbPath);
   const db = openDatabase(dbPath, { now: new Date('2026-11-23T12:00:00.000Z') });
   try {
-    expect(db.pragma('user_version', { simple: true })).toBe(24);
+    expect(db.pragma('user_version', { simple: true })).toBe(25);
     const after = snapshot(db);
     expect(withoutNewColumn(after.items)).toEqual(before.items);
     expect(after.deposits).toEqual(before.deposits);
@@ -95,7 +95,7 @@ test('reabrir um banco já na v17 não reaplica a migração nem cria outro back
   const first = count();
   const reopened = openDatabase(dbPath);
   try {
-    expect(reopened.pragma('user_version', { simple: true })).toBe(24);
+    expect(reopened.pragma('user_version', { simple: true })).toBe(25);
   } finally {
     reopened.close();
   }
@@ -126,7 +126,7 @@ test('v17 falha no meio: rollback total (sem tabelas nem coluna), versão 16 e d
   }
   const ok = openDatabase(dbPath);
   try {
-    expect(ok.pragma('user_version', { simple: true })).toBe(24);
+    expect(ok.pragma('user_version', { simple: true })).toBe(25);
     expect(ok.prepare('SELECT COUNT(*) n FROM items').get().n).toBe(before.items.length);
   } finally {
     ok.close();

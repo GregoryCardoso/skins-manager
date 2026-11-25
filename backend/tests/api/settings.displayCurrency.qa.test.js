@@ -417,7 +417,7 @@ function stripApprox(value) {
 
 describe('a moeda de conversão só mexe nos campos de "≈"', () => {
   async function snapshot(display) {
-    freshDb({ displayCurrency: display });
+    freshDb({ displayCurrency: display, steamCurrency: 'BRL' });
     const app = makeCatalogApp(NOW);
     await putRate(app, { usdBrlRate: 5.4321 });
     await putRate(app, { currency: 'EUR', rate: 0.914 });

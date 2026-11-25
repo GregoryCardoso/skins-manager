@@ -31,6 +31,10 @@ export function errorDetailParams(
       return typeof p.maxCents === 'number'
         ? { max: formatMoney(p.maxCents, 'USD', locale).replace(/[^\d.,\s]/g, '').trim() }
         : null;
+    case 'AMOUNT_PRECISION_INVALID':
+    case 'FX_RATE_REQUIRED':
+      // Moeda sem casas decimais (JPY, KRW e CLP) e cotação da moeda da loja (11.4): a moeda vai na mensagem.
+      return typeof p.currency === 'string' ? { currency: p.currency } : null;
     case 'AGING_THRESHOLDS_ORDER':
       return typeof p.fastTurnoverDays === 'number' && typeof p.slowItemDays === 'number'
         ? { fast: p.fastTurnoverDays, slow: p.slowItemDays }

@@ -18,7 +18,7 @@ describe('fees/index', () => {
 
   test('saleFeeParamsFromStore da CSFloat', () => {
     expect(saleFeeParamsFromStore(csfloat())).toEqual({
-      feeType: 'DEDUCTED', rate: 0.02, rounding: 'CEIL', minFeeCents: null, fixedFeeCents: 0,
+      feeType: 'DEDUCTED', rate: 0.02, rounding: 'CEIL', minFeeCents: null, fixedFeeCents: 0, unitCents: 1,
     });
   });
 

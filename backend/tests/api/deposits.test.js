@@ -72,7 +72,7 @@ describe('POST /api/deposits', () => {
       currency: 'USD',
       amountStoreCents: 10000,
       feeCents: null,
-      amountBrlCents: 50000,
+      amountBrlCents: 50000, amountBrlCurrency: 'BRL',
       depositedAt: '2026-11-10T12:00:00.000Z',
       note: 'pix',
       legacy: false,

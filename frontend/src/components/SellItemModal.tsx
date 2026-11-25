@@ -6,6 +6,8 @@ import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
 import { nowLocalInput } from '@/lib/dateInput';
 import { resolveErrorTarget } from '@/lib/formErrors';
 import { formatApprox, formatMoney } from '@/lib/format';
+import { moneyInputMode } from '@/lib/currencies';
+import { ratesRecord } from '@/lib/fxRates';
 import { formatCentsInput, parseMoneyToCents } from '@/lib/numberInput';
 import {
   applySaleStore, buildSellBody, feesConfigured, initialSellState, needsFx, netTextFromQuote, priceLabelKey,
@@ -13,6 +15,7 @@ import {
 } from '@/lib/sellForm';
 import { useInvalidate } from '@/lib/useInvalidate';
 import { ApiRequestError, getSaleQuote, sellItem } from '@/services/api';
+import { launchStoreOptions } from '@/lib/storeOptions';
 import type { ItemView, Store } from '@/types/api';
 import { Badge } from './badges';
 import FormField from './FormField';
@@ -37,8 +40,9 @@ export default function SellItemModal({ item, stores, onClose, onSold, onGone }:
   const tLoose = useTLoose();
   const locale = useLocale();
   const invalidate = useInvalidate();
-  const { usdBrlRate } = usePreferences();
-  const ctx: SellContext = useMemo(() => ({ stores, usdBrlRate, language: locale }), [stores, usdBrlRate, locale]);
+  const { usdBrlRate, fxRates } = usePreferences();
+  const rates = useMemo(() => ratesRecord(fxRates), [fxRates]);
+  const ctx: SellContext = useMemo(() => ({ stores, usdBrlRate, rates, language: locale }), [stores, usdBrlRate, rates, locale]);
 
   const [state, setState] = useState<SellFormState>(() => initialSellState(ctx, nowLocalInput()));
   const [quoteNet, setQuoteNet] = useState<number | null>(null);
@@ -53,9 +57,10 @@ export default function SellItemModal({ item, stores, onClose, onSold, onGone }:
 
   // Prévia do líquido pelo backend (D122): debounce de 300 ms e cancelamento a cada digitação.
   const storeId = state.storeId;
+  const storeCurrency = store?.currency;
   const priceText = state.priceText;
   useEffect(() => {
-    const cents = priceText.trim() === '' ? null : parseMoneyToCents(priceText, locale);
+    const cents = priceText.trim() === '' ? null : parseMoneyToCents(priceText, locale, storeCurrency);
     if (storeId === null || !configured || cents === null || cents <= 0) {
       setQuoteNet(null);
       setState((s) => (s.netTouched || !configured ? s : { ...s, netText: '' }));
@@ -66,7 +71,7 @@ export default function SellItemModal({ item, stores, onClose, onSold, onGone }:
       getSaleQuote(storeId, cents, controller.signal)
         .then((quote) => {
           setQuoteNet(quote.netReceivedCents);
-          setState((s) => (s.netTouched ? s : { ...s, netText: netTextFromQuote(quote.netReceivedCents, locale) }));
+          setState((s) => (s.netTouched ? s : { ...s, netText: netTextFromQuote(quote.netReceivedCents, locale, storeCurrency) }));
         })
         .catch((err: unknown) => {
           if (controller.signal.aborted || (err instanceof ApiRequestError && err.code === 'ABORTED')) return;
@@ -79,7 +84,7 @@ export default function SellItemModal({ item, stores, onClose, onSold, onGone }:
       clearTimeout(timer);
       controller.abort();
     };
-  }, [storeId, priceText, configured, locale]);
+  }, [storeId, priceText, configured, locale, storeCurrency]);
 
   const reference = referenceFor(item, store);
 
@@ -156,7 +161,7 @@ export default function SellItemModal({ item, stores, onClose, onSold, onGone }:
               }}
             >
               {state.storeId === null && <option value="">{t('common.select')}</option>}
-              {stores.map((s) => <option key={s.id} value={s.id}>{storeOptionLabel(s)}</option>)}
+              {launchStoreOptions(stores, [item.saleStoreId, state.storeId]).map((s) => <option key={s.id} value={s.id}>{storeOptionLabel(s)}</option>)}
             </select>
           )}
         </FormField>
@@ -167,7 +172,7 @@ export default function SellItemModal({ item, stores, onClose, onSold, onGone }:
             <input
               {...c}
               className={styles.input}
-              inputMode="decimal"
+              inputMode={moneyInputMode(currency)}
               autoFocus
               value={state.priceText}
               onChange={(e) => {
@@ -193,7 +198,7 @@ export default function SellItemModal({ item, stores, onClose, onSold, onGone }:
                 type="button"
                 className={`${styles.button} ${styles.small}`}
                 onClick={() => patch({
-                  priceText: formatCentsInput(reference.entry.minPriceCents ?? 0, locale),
+                  priceText: formatCentsInput(reference.entry.minPriceCents ?? 0, locale, reference.entry.currency),
                   netTouched: false,
                 })}
               >
@@ -222,7 +227,7 @@ export default function SellItemModal({ item, stores, onClose, onSold, onGone }:
               <input
                 {...c}
                 className={styles.input}
-                inputMode="decimal"
+                inputMode={moneyInputMode(currency)}
                 value={state.netText}
                 onChange={(e) => {
                   patch({ netText: e.target.value, netTouched: true });
@@ -233,7 +238,7 @@ export default function SellItemModal({ item, stores, onClose, onSold, onGone }:
                 <button
                   type="button"
                   className={`${styles.button} ${styles.small}`}
-                  onClick={() => setState((s) => recalculate(s, quoteNet, locale))}
+                  onClick={() => setState((s) => recalculate(s, quoteNet, locale, store?.currency))}
                 >
                   {t('sellForm.recalculate')}
                 </button>
@@ -258,7 +263,7 @@ export default function SellItemModal({ item, stores, onClose, onSold, onGone }:
             )}
           </FormField>
           {needsFx(store) && (
-            <FormField label={t('sellForm.fxRateAtSale')} error={errors.fxRateAtSale}>
+            <FormField label={t('sellForm.fxRateAtSale', { currency })} error={errors.fxRateAtSale}>
               {(c) => (
                 <input
                   {...c}

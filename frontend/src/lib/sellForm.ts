@@ -1,6 +1,7 @@
 // Lógica pura do formulário de venda (D117 + revisão D122). O cálculo do líquido é do backend
 // (`GET /stores/:id/sale-quote`); aqui só se decide visibilidade, rótulos e o corpo enviado.
 import { localInputToIso } from '@/lib/dateInput';
+import { defaultRateFor } from '@/lib/itemForm';
 import { formatCentsInput, formatDecimalInput, parseDecimalInput, parseMoneyToCents } from '@/lib/numberInput';
 import type { ItemView, MinPrice, SellBody, Store } from '@/types/api';
 
@@ -23,8 +24,8 @@ export function priceLabelKey(store: Store | undefined): 'sellForm.salePriceAdde
   return store?.saleFeeType === 'ADDED' ? 'sellForm.salePriceAdded' : 'sellForm.salePriceDeducted';
 }
 
-// Cotação só em loja BRL (2.9).
-export const needsFx = (store: Store | undefined): boolean => store?.currency === 'BRL';
+// Cotação em loja de qualquer moeda diferente de USD (2.9, D369).
+export const needsFx = (store: Store | undefined): boolean => store !== undefined && store.currency !== 'USD';
 
 export const feesConfigured = (store: Store | undefined): boolean => store?.saleFeesConfigured === true;
 
@@ -46,39 +47,47 @@ export function referenceFor(item: ItemView, store: Store | undefined): PriceRef
 
 export interface SellContext {
   stores: Store[];
+  // Cotação do BRL (legado); desde a 11.4 o padrão de cada moeda vem de `rates`.
   usdBrlRate: number | null;
+  rates?: Readonly<Record<string, number>>;
   language: string;
 }
 
-export function initialSellState({ stores, usdBrlRate, language }: SellContext, nowLocal: string): SellFormState {
+export function initialSellState(ctx: SellContext, nowLocal: string): SellFormState {
+  const { stores, language } = ctx;
   const primary = stores.find((s) => s.isPrimary) ?? stores[0] ?? null;
   return {
     storeId: primary ? primary.id : null,
     priceText: '',
     soldAt: nowLocal,
-    fxText: primary?.currency === 'BRL' && usdBrlRate !== null ? formatDecimalInput(usdBrlRate, language) : '',
+    fxText: rateText(ctx, primary ?? undefined),
     netText: '',
     netTouched: false,
   };
 }
 
-// Trocar de loja: pré-preenche a cotação (loja BRL) e devolve o líquido ao modo "acompanha o cálculo".
+const rateText = (ctx: SellContext, store: Store | undefined): string => {
+  const rate = defaultRateFor(ctx, store?.currency);
+  return rate !== null ? formatDecimalInput(rate, ctx.language) : '';
+};
+
+// Trocar de loja: pré-preenche a cotação (loja fora de USD) e devolve o líquido ao modo "acompanha o cálculo".
 export function applySaleStore(state: SellFormState, storeId: number | null, ctx: SellContext): SellFormState {
   const store = ctx.stores.find((s) => s.id === storeId);
   const fxText = needsFx(store)
-    ? (state.fxText.trim() !== '' ? state.fxText : ctx.usdBrlRate !== null ? formatDecimalInput(ctx.usdBrlRate, ctx.language) : '')
+    ? (state.fxText.trim() !== '' ? state.fxText : rateText(ctx, store))
     : '';
   return { ...state, storeId, fxText, netText: '', netTouched: false };
 }
 
 // Texto do líquido calculado pela prévia (centavos na moeda da loja); sem prévia -> vazio.
-export function netTextFromQuote(netReceivedCents: number | null, language: string): string {
-  return netReceivedCents === null ? '' : formatCentsInput(netReceivedCents, language);
+export function netTextFromQuote(netReceivedCents: number | null, language: string, currency?: string): string {
+  return netReceivedCents === null ? '' : formatCentsInput(netReceivedCents, language, currency);
 }
 
 // "Recalcular": volta a acompanhar o valor calculado.
-export function recalculate(state: SellFormState, quoteNetCents: number | null, language: string): SellFormState {
-  return { ...state, netTouched: false, netText: netTextFromQuote(quoteNetCents, language) };
+export function recalculate(state: SellFormState, quoteNetCents: number | null, language: string, currency?: string): SellFormState {
+  return { ...state, netTouched: false, netText: netTextFromQuote(quoteNetCents, language, currency) };
 }
 
 // Corpo da venda. `quoteNetCents`: último líquido calculado pela prévia (null se não há).
@@ -96,7 +105,7 @@ export function buildSellBody(
   let priceCents: number | null = null;
   if (state.priceText.trim() === '') errors.salePriceCents = 'sellForm.priceRequired';
   else {
-    priceCents = parseMoneyToCents(state.priceText, ctx.language);
+    priceCents = parseMoneyToCents(state.priceText, ctx.language, store?.currency);
     if (priceCents === null || priceCents <= 0) errors.salePriceCents = 'itemForm.invalidMoney';
   }
 
@@ -111,7 +120,7 @@ export function buildSellBody(
 
   let netCents: number | null = null;
   if (state.netText.trim() !== '') {
-    netCents = parseMoneyToCents(state.netText, ctx.language);
+    netCents = parseMoneyToCents(state.netText, ctx.language, store?.currency);
     if (netCents === null || netCents <= 0) errors.netReceivedCents = 'itemForm.invalidMoney';
   }
 

@@ -51,13 +51,13 @@ export default function DepositsTable({ deposits, onEdit, onDelete }: Props) {
                   <>
                     <br />
                     <small className={styles.badge} title={t('deposits.legacyEditHint')}>{t('deposits.legacyBadge')}</small>
-                    {deposit.amountBrlCents !== null && <small className={styles.muted}> {formatMoney(deposit.amountBrlCents, 'BRL', locale)}</small>}
+                    {deposit.amountBrlCents !== null && <small className={styles.muted}> {formatMoney(deposit.amountBrlCents, deposit.amountBrlCurrency ?? 'BRL', locale)}</small>}
                   </>
                 )}
               </td>
               <td className={styles.numeric}>
                 {!deposit.legacy && deposit.amountBrlCents !== null
-                  ? formatMoney(deposit.amountBrlCents, 'BRL', locale)
+                  ? formatMoney(deposit.amountBrlCents, deposit.amountBrlCurrency ?? 'BRL', locale)
                   : <span className={styles.muted}>{t('common.none')}</span>}
               </td>
               <td>{deposit.storeName ?? <span className={styles.muted}>{t('common.none')}</span>}</td>

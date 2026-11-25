@@ -9,6 +9,7 @@ const BODY_FIELDS = Object.freeze({
   amountStoreCents: { type: 'number', nullable: false },
   feeCents: { type: 'number', nullable: true }, // taxa do aporte (D311, 9.6)
   amountBrlCents: { type: 'number', nullable: true },
+  amountBrlCurrency: { type: 'string', nullable: true }, // moeda do valor pago informativo (11.4, E-P3-Q15)
   depositedAt: { type: 'string', nullable: false },
   note: { type: 'string', nullable: true },
 });

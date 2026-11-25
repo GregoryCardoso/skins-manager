@@ -1,4 +1,5 @@
 import type { Language } from '@/i18n/languages';
+import type { CurrencyCode } from '@/lib/currencies';
 
 // Valor gravado no banco. 'SYSTEM' (padrão da migração v2) = "sem preferência": vale o tema do sistema
 // operacional como valor inicial. A interface só oferece Claro/Escuro e nunca envia 'SYSTEM' (D112).
@@ -107,7 +108,7 @@ export interface DisplayCurrencyChangeResult {
 // Prévia da troca da moeda de conversão (A5): só leitura; o modal monta as linhas com ela.
 export interface CurrencyChangePreview {
   currency: string;
-  steamStore: { id: number; name: string; currency: string; hasEntries: boolean } | null;
+  steamStore: { id: number; name: string; currency: string; hasEntries: boolean; hasFixedFees?: boolean } | null;
   // Há cotação gravada para a moeda nova (USD sempre tem: é a base).
   fxRateAvailable: boolean;
   // A moeda tem atualização automática (AwesomeAPI).
@@ -126,7 +127,8 @@ export interface FxRefreshResult {
 
 // --- Itens, lojas e cotação (4B.2; espelham D49/D72 do backend) ---
 
-export type Currency = 'USD' | 'BRL';
+// Moeda de uma loja ou de uma operação: qualquer das 17 moedas do app (D369, 11.4).
+export type Currency = CurrencyCode;
 export type Category =
   | 'SKIN' | 'FACA' | 'LUVA' | 'CAIXA' | 'CAPSULA' | 'STICKER' | 'PINGENTE' | 'PERSONAGEM' | 'PASSE_BATALHA' | 'OUTRO' | 'PATCH';
 export type Variant = 'NORMAL' | 'STATTRAK' | 'SOUVENIR';
@@ -746,6 +748,8 @@ export interface Deposit {
   feeCents?: number | null;
   // Valor pago em R$: informativo; nulo quando não informado.
   amountBrlCents: number | null;
+  // Moeda do valor informativo ("pago"/"recebido"): a moeda de conversão do registro; os antigos ficam em BRL (11.4).
+  amountBrlCurrency?: string;
   depositedAt: string;
   note: string | null;
   legacy: boolean;
@@ -773,6 +777,7 @@ export interface DepositCreateBody {
   amountStoreCents: number;
   feeCents?: number | null;
   amountBrlCents?: number | null;
+  amountBrlCurrency?: string;
   depositedAt: string;
   note?: string | null;
 }
@@ -794,6 +799,8 @@ export interface Withdrawal {
   netStoreCents: number | null;
   // Valor recebido em R$: informativo; nulo quando não informado.
   amountBrlCents: number | null;
+  // Moeda do valor informativo ("pago"/"recebido"): a moeda de conversão do registro; os antigos ficam em BRL (11.4).
+  amountBrlCurrency?: string;
   withdrawnAt: string;
   note: string | null;
   legacyWithoutStore: boolean;
@@ -824,6 +831,7 @@ export interface WithdrawalCreateBody {
   amountStoreCents: number;
   feeCents?: number | null;
   amountBrlCents?: number | null;
+  amountBrlCurrency?: string;
   withdrawnAt: string;
   note?: string | null;
 }

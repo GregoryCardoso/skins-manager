@@ -83,7 +83,7 @@ export function fieldVisibility(state: ItemFormState, stores: Store[]): FieldVis
     exteriorDerived: weapon && hasFloat,
     phaseLocked: !!state.catalog?.phase,
     price: isCompra,
-    fx: isCompra && store?.currency === 'BRL',
+    fx: isCompra && store !== undefined && store.currency !== 'USD',
     informativeStore: !isCompra,
   };
 }
@@ -123,9 +123,18 @@ export function variantOptions(category: Category | '', catalog: CatalogChoice |
 
 export interface FormContext {
   stores: Store[];
+  // Cotação do BRL (legado dos formulários). Desde a 11.4 o padrão de cada moeda vem de `rates` (D369); `usdBrlRate` vale só para o BRL.
   usdBrlRate: number | null;
+  // Cotações gravadas por moeda ("unidades da moeda por 1 US$").
+  rates?: Readonly<Record<string, number>>;
   language: string;
   now?: Date;
+}
+
+// Cotação padrão do formulário para a moeda da loja (a das configurações), ou nulo sem cotação ou em USD.
+export function defaultRateFor(ctx: Pick<FormContext, 'usdBrlRate' | 'rates'>, currency: string | undefined): number | null {
+  if (currency === undefined || currency === 'USD') return null;
+  return ctx.rates?.[currency] ?? (currency === 'BRL' ? ctx.usdBrlRate : null);
 }
 
 // Sugestão do fim do trade lock (D161): COMPRA = data da compra + 7 dias; GANHEI (já liberado) = vazio.
@@ -134,7 +143,13 @@ export function suggestedTradeUnlock(type: AcquisitionType, acquiredAt: string):
   return addDaysToLocalInput(acquiredAt, 7);
 }
 
-export function initialCreateState({ stores, usdBrlRate, language, now = new Date() }: FormContext): ItemFormState {
+function primaryRateText(ctx: FormContext, store: Store | null | undefined): string {
+  const rate = defaultRateFor(ctx, store?.currency);
+  return rate !== null ? formatDecimalInput(rate, ctx.language) : '';
+}
+
+export function initialCreateState(ctx: FormContext): ItemFormState {
+  const { stores, language, now = new Date() } = ctx;
   const primary = stores.find((s) => s.isPrimary) ?? null;
   const acquiredAt = dateToLocalInput(now);
   return {
@@ -150,7 +165,7 @@ export function initialCreateState({ stores, usdBrlRate, language, now = new Dat
     acquisitionType: 'COMPRA',
     purchaseStoreId: primary ? primary.id : null,
     priceText: '',
-    fxText: primary?.currency === 'BRL' && usdBrlRate !== null ? formatDecimalInput(usdBrlRate, language) : '',
+    fxText: primaryRateText(ctx, primary),
     acquiredAt,
     tradeUnlockAt: suggestedTradeUnlock('COMPRA', acquiredAt),
     tradeUnlockAuto: true,
@@ -173,7 +188,7 @@ export function stateFromItem(item: ItemView, language: string): ItemFormState {
     phase: item.phase ?? '',
     acquisitionType: item.acquisitionType,
     purchaseStoreId: item.purchaseStoreId,
-    priceText: item.acquisitionType === 'COMPRA' ? formatCentsInput(item.purchasePriceCents, language) : '',
+    priceText: item.acquisitionType === 'COMPRA' ? formatCentsInput(item.purchasePriceCents, language, item.purchaseCurrency) : '',
     fxText: item.fxRateAtPurchase !== null ? formatDecimalInput(item.fxRateAtPurchase, language) : '',
     acquiredAt: isoToLocalInput(item.acquiredAt),
     tradeUnlockAt: isoToLocalInput(item.tradeUnlockAt),
@@ -206,13 +221,15 @@ export function applyCatalogChoice(state: ItemFormState, choice: CatalogChoice):
 export function applyPurchaseStore(
   state: ItemFormState,
   storeId: number | null,
-  { stores, usdBrlRate, language }: FormContext,
+  ctx: FormContext,
 ): ItemFormState {
+  const { stores, language } = ctx;
   const previous = findStore(stores, state.purchaseStoreId);
   const next = findStore(stores, storeId);
   const currencyChanged = !!previous && !!next && previous.currency !== next.currency;
-  const fxText = next?.currency === 'BRL'
-    ? (state.fxText.trim() !== '' && !currencyChanged ? state.fxText : usdBrlRate !== null ? formatDecimalInput(usdBrlRate, language) : '')
+  const rate = defaultRateFor(ctx, next?.currency);
+  const fxText = next !== undefined && next.currency !== 'USD'
+    ? (state.fxText.trim() !== '' && !currencyChanged ? state.fxText : rate !== null ? formatDecimalInput(rate, language) : '')
     : '';
   return { ...state, purchaseStoreId: storeId, priceText: currencyChanged ? '' : state.priceText, fxText };
 }
@@ -252,7 +269,7 @@ interface ParsedNumbers {
 }
 
 // Converte os textos numéricos e de data; erros de formato viram chaves de tradução por campo.
-function parseNumbers(state: ItemFormState, vis: FieldVisibility, language: string): ParsedNumbers {
+function parseNumbers(state: ItemFormState, vis: FieldVisibility, language: string, currency?: string): ParsedNumbers {
   const errors: FormErrors = {};
   let floatValue: number | null = null;
   let paintSeed: number | null = null;
@@ -268,7 +285,7 @@ function parseNumbers(state: ItemFormState, vis: FieldVisibility, language: stri
     if (paintSeed === null) errors.paintSeed = 'itemForm.invalidNumber';
   }
   if (vis.price && state.priceText.trim() !== '') {
-    priceCents = parseMoneyToCents(state.priceText, language);
+    priceCents = parseMoneyToCents(state.priceText, language, currency);
     if (priceCents === null) errors.purchasePriceCents = 'itemForm.invalidMoney';
   }
   if (vis.fx && state.fxText.trim() !== '') {
@@ -291,7 +308,7 @@ function parseNumbers(state: ItemFormState, vis: FieldVisibility, language: stri
 // Cadastro: só os campos preenchidos (o backend distingue ausente de null).
 export function buildCreateBody(state: ItemFormState, ctx: FormContext): BuildResult<ItemCreateBody> {
   const vis = fieldVisibility(state, ctx.stores);
-  const parsed = parseNumbers(state, vis, ctx.language);
+  const parsed = parseNumbers(state, vis, ctx.language, findStore(ctx.stores, state.purchaseStoreId)?.currency);
   if (Object.keys(parsed.errors).length > 0) return { ok: false, errors: parsed.errors };
 
   const body: ItemCreateBody = { acquisitionType: state.acquisitionType };
@@ -332,7 +349,7 @@ export function buildCreateBody(state: ItemFormState, ctx: FormContext): BuildRe
 // Edição: PATCH só com o que mudou em relação ao item gravado.
 export function buildPatchBody(state: ItemFormState, item: ItemView, ctx: FormContext): BuildResult<ItemPatchBody> {
   const vis = fieldVisibility(state, ctx.stores);
-  const parsed = parseNumbers(state, vis, ctx.language);
+  const parsed = parseNumbers(state, vis, ctx.language, findStore(ctx.stores, state.purchaseStoreId)?.currency);
   if (Object.keys(parsed.errors).length > 0) return { ok: false, errors: parsed.errors };
 
   const body: ItemPatchBody = {};

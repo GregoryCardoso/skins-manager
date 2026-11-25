@@ -58,7 +58,7 @@ export default function WithdrawalsTable({ withdrawals, onEdit, onDelete }: Prop
                     ? <span className={styles.muted}>{t('common.none')}</span>
                     : (
                       <>
-                        {formatMoney(w.amountBrlCents, 'BRL', locale)}
+                        {formatMoney(w.amountBrlCents, w.amountBrlCurrency ?? 'BRL', locale)}
                         {w.legacyWithoutStore && <small className={styles.muted}> {t('withdrawals.legacyRecordedBrl')}</small>}
                       </>
                     )}

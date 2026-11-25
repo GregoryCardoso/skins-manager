@@ -64,7 +64,7 @@ describe('migração v21', () => {
     const before = makeV20(file);
     const db = database.openDatabase(file, { now: NOW });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(24);
+      expect(db.pragma('user_version', { simple: true })).toBe(25);
       expect(db.prepare('SELECT * FROM items ORDER BY id').all()).toEqual(before.items);
       expect(db.prepare('SELECT * FROM stores ORDER BY id').all()).toEqual(before.stores);
       const { price_refresh_started_at: a, price_refresh_last_at: b, price_refresh_last_status: c, price_refresh_last_error_code: d, display_currency: _dc, ...rest } = db.prepare('SELECT * FROM settings').get();
@@ -114,7 +114,7 @@ describe('backup', () => {
     const before = makeV20(v20);
     const res = await octet(fs.readFileSync(v20));
     expect(res.status).toBe(200);
-    expect(res.body.data).toMatchObject({ fileVersion: 20, schemaVersion: 24, migrationsApplied: [21, 22, 23, 24] });
+    expect(res.body.data).toMatchObject({ fileVersion: 20, schemaVersion: 25, migrationsApplied: [21, 22, 23, 24, 25] });
     const db = database.getDb();
     expect(db.prepare('SELECT COUNT(*) AS n FROM market_prices').get().n).toBe(0);
     expect(db.prepare('SELECT * FROM items ORDER BY id').all().map(({ updated_at: _u, catalog_id: _c, ...r }) => r)).toEqual(before.items.map(({ updated_at: _u, catalog_id: _c, ...r }) => r));

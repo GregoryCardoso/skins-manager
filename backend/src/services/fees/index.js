@@ -5,6 +5,7 @@ const deducted = require('./deductedSaleFee');
 const added = require('./addedSaleFee');
 const { computeSaleFee: computeSaleFeeFormula, MAX_PRICE_SEARCH_ITERATIONS } = require('./saleFeeFormula');
 const { assertSaleFeeParams } = require('./saleFeeParams');
+const { ZERO_DECIMAL_CURRENCIES } = require('../../config/constants');
 
 const STRATEGIES = { DEDUCTED: deducted, ADDED: added };
 
@@ -25,6 +26,8 @@ function saleFeeParamsFromStore(store) {
     rounding: store.saleFeeRounding ?? 'CEIL',
     minFeeCents: store.saleMinFeeCents ?? null,
     fixedFeeCents: store.saleFixedFeeCents ?? 0,
+    // Unidade mínima da moeda da loja (D369 A3): 100 em JPY, KRW e CLP; 1 nas demais.
+    unitCents: ZERO_DECIMAL_CURRENCIES.includes(store.currency) ? 100 : 1,
   };
   assertSaleFeeParams(params);
   return params;

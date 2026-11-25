@@ -8,6 +8,8 @@ const { openDatabase } = require('../../src/config/database');
 const { MIGRATIONS } = require('../../src/config/migrations');
 
 const UP_TO_23 = MIGRATIONS.filter((m) => m.version <= 23);
+// A v25 (11.4) é posterior: estes testes cobrem a v24 e param nela.
+const UP_TO_24 = MIGRATIONS.filter((m) => m.version <= 24);
 const NOW = new Date('2026-11-25T12:00:00.000Z');
 let tmpRoot;
 beforeAll(() => { tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'skins-mig-v24-')); });
@@ -49,7 +51,7 @@ function makeV23(name, { rate = 5.3012 } = {}) {
 describe('v24 sobre um banco v23 (banco existente)', () => {
   test('display_currency vira BRL, a cotação do BRL é copiada para fx_rates e nada mais muda; há backup da v23', () => {
     const { dbPath, before } = makeV23('existing');
-    const db = openDatabase(dbPath, { now: NOW });
+    const db = openDatabase(dbPath, { migrations: UP_TO_24, now: NOW });
     try {
       expect(db.pragma('user_version', { simple: true })).toBe(24);
       expect(db.pragma('foreign_key_check')).toEqual([]);
@@ -73,7 +75,7 @@ describe('v24 sobre um banco v23 (banco existente)', () => {
     const old = openDatabase(dbPath, { migrations: UP_TO_23 });
     old.prepare("UPDATE settings SET fx_refresh_source = 'PTAX', updated_at = '2026-11-01T00:00:00.000Z'").run();
     old.close();
-    const db = openDatabase(dbPath, { now: NOW });
+    const db = openDatabase(dbPath, { migrations: UP_TO_24, now: NOW });
     try {
       expect(db.prepare('SELECT * FROM fx_rates').all()).toEqual([
         { currency: 'BRL', rate: null, source: null, refresh_source: 'PTAX', quoted_at: null, updated_at: '2026-11-01T00:00:00.000Z' },
@@ -86,9 +88,9 @@ describe('v24 sobre um banco v23 (banco existente)', () => {
 
   test('é idempotente: abrir de novo não refaz nada nem cria outro backup', () => {
     const { dbPath } = makeV23('idem');
-    openDatabase(dbPath, { now: NOW }).close();
+    openDatabase(dbPath, { migrations: UP_TO_24, now: NOW }).close();
     const first = backupsOf(dbPath, 'inventory-v23-');
-    const db = openDatabase(dbPath, { now: new Date('2026-11-25T13:00:00.000Z') });
+    const db = openDatabase(dbPath, { migrations: UP_TO_24, now: new Date('2026-11-25T13:00:00.000Z') });
     try {
       expect(db.prepare('SELECT COUNT(*) AS n FROM fx_rates').get().n).toBe(1);
       expect(db.prepare('SELECT display_currency FROM settings').get().display_currency).toBe('BRL');
@@ -100,10 +102,10 @@ describe('v24 sobre um banco v23 (banco existente)', () => {
 
   test('a moeda de conversão escolhida depois da migração é preservada ao reabrir', () => {
     const { dbPath } = makeV23('keep-choice');
-    const db = openDatabase(dbPath, { now: NOW });
+    const db = openDatabase(dbPath, { migrations: UP_TO_24, now: NOW });
     db.prepare("UPDATE settings SET display_currency = 'EUR'").run();
     db.close();
-    const again = openDatabase(dbPath, { now: NOW });
+    const again = openDatabase(dbPath, { migrations: UP_TO_24, now: NOW });
     try {
       expect(again.prepare('SELECT display_currency FROM settings').get().display_currency).toBe('EUR');
     } finally {
@@ -136,7 +138,7 @@ describe('v24 sobre um banco v23 (banco existente)', () => {
     expect(backupsOf(dbPath, 'inventory-v23-').length).toBeGreaterThanOrEqual(1);
 
     // depois da falha, a migração real roda normalmente
-    const ok = openDatabase(dbPath, { skipBackup: true });
+    const ok = openDatabase(dbPath, { migrations: UP_TO_24, skipBackup: true });
     try {
       expect(ok.pragma('user_version', { simple: true })).toBe(24);
       expect(ok.prepare('SELECT display_currency FROM settings').get().display_currency).toBe('BRL');
@@ -149,7 +151,7 @@ describe('v24 sobre um banco v23 (banco existente)', () => {
 describe('v24 em banco novo', () => {
   test('instalação nova termina na v24 com USD, sem linhas em fx_rates e sem backup de migração', () => {
     const dbPath = dbPathOf('fresh');
-    const db = openDatabase(dbPath, { now: NOW });
+    const db = openDatabase(dbPath, { migrations: UP_TO_24, now: NOW });
     try {
       expect(db.pragma('user_version', { simple: true })).toBe(24);
       expect(db.prepare('SELECT display_currency FROM settings').get().display_currency).toBe('USD');
@@ -161,7 +163,7 @@ describe('v24 em banco novo', () => {
   });
 
   test('banco em memória (testes) também nasce em USD', () => {
-    const db = openDatabase(':memory:', { now: NOW });
+    const db = openDatabase(':memory:', { migrations: UP_TO_24, now: NOW });
     try {
       expect(db.prepare('SELECT display_currency FROM settings').get().display_currency).toBe('USD');
     } finally {
@@ -172,7 +174,7 @@ describe('v24 em banco novo', () => {
 
 describe('restrições do esquema', () => {
   let db;
-  beforeAll(() => { db = openDatabase(dbPathOf('checks'), { now: NOW }); });
+  beforeAll(() => { db = openDatabase(dbPathOf('checks'), { migrations: UP_TO_24, now: NOW }); });
   afterAll(() => db.close());
   const insert = (currency, rate = 5, source = 'MANUAL', refresh = 'AWESOMEAPI') => db
     .prepare('INSERT INTO fx_rates (currency, rate, source, refresh_source, quoted_at, updated_at) VALUES (?, ?, ?, ?, NULL, ?)')

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { currencyChangeView } from './currencyChange';
+import { currencyChangeView, initialSteamChecks, steamChoiceFor } from './currencyChange';
 import {
   FX_STALE_AFTER_DAYS, buildFxRows, currenciesToAutoRefresh, fxRateAgeDays, fxSourcesFor, isFxRateStale,
 } from './fxRates';
@@ -131,12 +131,39 @@ describe('modal da troca de moeda (currencyChangeView)', () => {
     expect(currencyChangeView(null, 'EUR')).toMatchObject({ noRate: 'NONE', fetchRateAfter: false });
   });
 
-  test('na 11.3 a loja Steam sempre fica como está: KEEP e nenhuma linha, mesmo com loja Steam na prévia', () => {
-    const steam = { id: 2, name: 'Steam', currency: 'BRL', hasEntries: true };
-    for (const hasEntries of [true, false]) {
-      const view = currencyChangeView(preview({ steamStore: { ...steam, hasEntries } }), 'EUR');
-      expect(view.steamStore).toBe('KEEP');
-      expect(view.steamLines).toEqual([]);
-    }
+  describe('loja Steam (11.4, D369 A4)', () => {
+    const steam = { id: 2, name: 'Steam', currency: 'BRL', hasEntries: false };
+
+    test('sem loja Steam, ou já na moeda nova: nenhuma linha', () => {
+      expect(currencyChangeView(preview(), 'EUR').steamLines).toEqual([]);
+      expect(currencyChangeView(preview({ steamStore: { ...steam, currency: 'EUR' } }), 'EUR').steamLines).toEqual([]);
+      expect(steamChoiceFor(currencyChangeView(preview(), 'EUR'), { FOLLOW: true })).toBe('KEEP');
+    });
+
+    test('Steam sem lançamentos: linha FOLLOW, marcada por padrão; desmarcar volta a KEEP', () => {
+      const view = currencyChangeView(preview({ steamStore: steam }), 'EUR');
+      expect(view.steamLines).toEqual([{ kind: 'FOLLOW', checkable: true, defaultChecked: true }]);
+      expect(view.steamCurrency).toBe('BRL');
+      expect(initialSteamChecks(view)).toEqual({ FOLLOW: true });
+      expect(steamChoiceFor(view, initialSteamChecks(view))).toBe('FOLLOW');
+      expect(steamChoiceFor(view, { FOLLOW: false })).toBe('KEEP');
+    });
+
+    test('Steam com lançamentos: texto de aviso e NEW_STORE desmarcada por padrão; marcar envia NEW_STORE', () => {
+      const view = currencyChangeView(preview({ steamStore: { ...steam, hasEntries: true } }), 'EUR');
+      expect(view.steamLines).toEqual([
+        { kind: 'LOCKED_INFO', checkable: false, defaultChecked: false },
+        { kind: 'NEW_STORE', checkable: true, defaultChecked: false },
+      ]);
+      expect(initialSteamChecks(view)).toEqual({ NEW_STORE: false });
+      expect(steamChoiceFor(view, initialSteamChecks(view))).toBe('KEEP');
+      expect(steamChoiceFor(view, { NEW_STORE: true })).toBe('NEW_STORE');
+      // FOLLOW nunca é enviado quando a Steam tem lançamentos
+      expect(steamChoiceFor(view, { FOLLOW: true })).toBe('KEEP');
+    });
+
+    test('para USD (volta à moeda base) a Steam sem lançamentos também ganha a linha FOLLOW', () => {
+      expect(currencyChangeView(preview({ currency: 'USD', steamStore: steam }), 'USD').steamLines).toHaveLength(1);
+    });
   });
 });

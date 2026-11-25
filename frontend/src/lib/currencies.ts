@@ -56,3 +56,6 @@ export interface CurrencyOption {
 export function currencyOptions(locale: string): CurrencyOption[] {
   return CURRENCIES.map((code) => ({ code, label: currencyLabel(code, locale) }));
 }
+
+// Teclado do campo de valor: só números inteiros nas moedas sem casas decimais (JPY, KRW e CLP); decimal nas demais.
+export const moneyInputMode = (currency: string | undefined): 'numeric' | 'decimal' => (currency !== undefined && hasNoDecimals(currency) ? 'numeric' : 'decimal');

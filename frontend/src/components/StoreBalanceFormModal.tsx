@@ -3,6 +3,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
+import { currencySymbol, moneyInputMode } from '@/lib/currencies';
 import { resolveErrorTarget } from '@/lib/formErrors';
 import { formatMoney } from '@/lib/format';
 import { formatCentsInput } from '@/lib/numberInput';
@@ -44,7 +45,7 @@ export default function StoreBalanceFormModal({ store, onClose, onSaved, initial
 
   const [state, setState] = useState<StoreBalanceFormState>(() => {
     const initial = initialStoreBalanceState();
-    return initialAmountCents === null ? initial : { ...initial, amountText: formatCentsInput(initialAmountCents, locale) };
+    return initialAmountCents === null ? initial : { ...initial, amountText: formatCentsInput(initialAmountCents, locale, store.currency) };
   });
   const [errors, setErrors] = useState<Partial<Record<string, string>>>({});
   const [topError, setTopError] = useState<string | null>(null);
@@ -56,7 +57,7 @@ export default function StoreBalanceFormModal({ store, onClose, onSaved, initial
 
   // Prévia: espera 300 ms depois da última digitação e cancela a chamada anterior.
   useEffect(() => {
-    const query = buildCheckPreviewQuery({ amountText: state.amountText, recordedAt: state.recordedAt, noteText: '' }, store.storeId, locale);
+    const query = buildCheckPreviewQuery({ amountText: state.amountText, recordedAt: state.recordedAt, noteText: '' }, store.storeId, locale, store.currency);
     if (query === null) {
       setPreview({ status: 'idle' });
       return undefined;
@@ -93,7 +94,7 @@ export default function StoreBalanceFormModal({ store, onClose, onSaved, initial
   const submit = (adjust: boolean) => {
     if (saving) return;
     setTopError(null);
-    const local = validateStoreBalanceForm(state, locale, { adjust });
+    const local = validateStoreBalanceForm(state, locale, { adjust, currency: store.currency });
     if (Object.keys(local).length > 0) {
       const translated: Partial<Record<string, string>> = {};
       for (const [field, key] of Object.entries(local)) translated[field] = tLoose(key);
@@ -102,7 +103,7 @@ export default function StoreBalanceFormModal({ store, onClose, onSaved, initial
     }
     setErrors({});
     setSaving(true);
-    createStoreBalanceCheck(buildStoreBalanceBody(state, store.storeId, locale, adjust))
+    createStoreBalanceCheck(buildStoreBalanceBody(state, store.storeId, locale, adjust, store.currency))
       .then((saved) => {
         invalidate('balanceCheck.create');
         onSaved(
@@ -122,7 +123,7 @@ export default function StoreBalanceFormModal({ store, onClose, onSaved, initial
     submit(false);
   };
 
-  const currencyLabel = store.currency === 'USD' ? 'US$' : 'R$';
+  const currencyLabel = currencySymbol(store.currency, locale);
   const difference = preview.status === 'ok' ? preview.data.differenceCents : null;
   const hasDifference = difference !== null && difference !== 0;
 
@@ -138,7 +139,7 @@ export default function StoreBalanceFormModal({ store, onClose, onSaved, initial
               <input
                 {...c}
                 className={styles.input}
-                inputMode="decimal"
+                inputMode={moneyInputMode(store.currency)}
                 autoFocus
                 value={state.amountText}
                 onChange={(e) => {

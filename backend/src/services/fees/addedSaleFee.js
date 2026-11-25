@@ -17,7 +17,9 @@ function net(grossCents, params) {
   // Estimativa inicial: pelo percentual ou, se a taxa mínima domina, por g - minFee - fixa (T19).
   const byRate = Math.floor(((grossCents - params.fixedFeeCents) * 1e6) / (1e6 + ppm));
   const byMin = grossCents - (params.minFeeCents ?? 0) - params.fixedFeeCents;
+  const unit = params.unitCents ?? 1;
   let r = Math.max(0, Math.min(byRate, byMin));
+  r -= r % unit; // o valor recebido anda de unidade mínima em unidade mínima (D369 A3)
   let steps = 0;
   const step = () => {
     steps += 1;
@@ -25,8 +27,8 @@ function net(grossCents, params) {
       throw new ValidationError('Limite de iterações excedido ao calcular o valor líquido.', 'PRICE_SEARCH_LIMIT');
     }
   };
-  while (buyerPays(r + 1, params) <= grossCents) { step(); r += 1; }
-  while (r > 0 && buyerPays(r, params) > grossCents) { step(); r -= 1; }
+  while (buyerPays(r + unit, params) <= grossCents) { step(); r += unit; }
+  while (r > 0 && buyerPays(r, params) > grossCents) { step(); r -= unit; }
   return r;
 }
 

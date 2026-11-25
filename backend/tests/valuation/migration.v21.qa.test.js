@@ -45,7 +45,7 @@ const octet = (buf) => request(app).post('/api/backup/import').set('Content-Type
 const dumpAll = (db, skip = []) => Object.fromEntries(
   db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all()
     .filter((t) => !skip.includes(t.name))
-    .map((t) => [t.name, db.prepare(`SELECT * FROM "${t.name}" ORDER BY 1`).all()])
+    .map((t) => [t.name, db.prepare(`SELECT * FROM "${t.name}" ORDER BY 1`).all().map(({ amount_brl_currency: _abc, ...r }) => r)])
 );
 
 describe('v21 sobre um banco v20 mais completo', () => {
@@ -65,7 +65,7 @@ describe('v21 sobre um banco v20 mais completo', () => {
 
     const db = database.openDatabase(file, { now: NOW });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(24);
+      expect(db.pragma('user_version', { simple: true })).toBe(25);
       const after = dumpAll(db, ['market_prices', 'fx_rates']);
       const { settings: settingsBefore, ...restBefore } = before;
       const { settings: settingsAfter, ...restAfter } = after;

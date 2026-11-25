@@ -71,7 +71,7 @@ describe('backup e a retenção do saldo', () => {
     makeV5Backup(v5);
     const res = await octet(fs.readFileSync(v5));
     expect(res.status).toBe(200);
-    expect(res.body.data).toMatchObject({ fileVersion: 5, schemaVersion: 24, migrationsApplied: [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24] });
+    expect(res.body.data).toMatchObject({ fileVersion: 5, schemaVersion: 25, migrationsApplied: [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25] });
 
     const db = database.getDb();
     expect(holds()).toEqual({ CSFloat: 7, csmoney: 7, Steam: 0 });
@@ -110,7 +110,7 @@ describe('backup e a retenção do saldo', () => {
     makeV6Backup(v6);
     const res = await octet(fs.readFileSync(v6));
     expect(res.status).toBe(200);
-    expect(res.body.data).toMatchObject({ fileVersion: 6, schemaVersion: 24, migrationsApplied: [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24] });
+    expect(res.body.data).toMatchObject({ fileVersion: 6, schemaVersion: 25, migrationsApplied: [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25] });
 
     const deposits = (await request(app).get('/api/deposits')).body.data;
     expect(deposits.totals).toMatchObject({ count: 2, legacyCount: 2 });

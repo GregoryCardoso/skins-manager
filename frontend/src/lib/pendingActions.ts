@@ -44,10 +44,10 @@ export function buildLaunchBody(
   const errors: LaunchErrors = {};
   const store = stores.find((s) => s.id === state.storeId) ?? null;
   if (!store) errors.store = 'imports.launch.storeRequired';
-  const priceCents = parseMoneyToCents(state.price, language);
+  const priceCents = parseMoneyToCents(state.price, language, store?.currency);
   if (priceCents === null || priceCents < 0) errors.price = 'imports.launch.priceRequired';
   let fxRate: number | null = null;
-  if (store && store.currency === 'BRL' && state.fxRate.trim() !== '') {
+  if (store && store.currency !== 'USD' && state.fxRate.trim() !== '') {
     fxRate = parseDecimalInput(state.fxRate, language);
     if (fxRate === null || fxRate <= 0) errors.fxRate = 'imports.launch.fxInvalid';
   }

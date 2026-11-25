@@ -44,7 +44,7 @@ describe('GET /api/withdrawals', () => {
     });
     expect(res.body.data.withdrawals[3]).toEqual({
       id: old.id, storeId: null, storeName: null, currency: null, amountStoreCents: null, feeCents: null, netStoreCents: null,
-      amountBrlCents: 30000, withdrawnAt: '2026-01-05T12:00:00.000Z', note: 'antigo', legacyWithoutStore: true,
+      amountBrlCents: 30000, amountBrlCurrency: 'BRL', withdrawnAt: '2026-01-05T12:00:00.000Z', note: 'antigo', legacyWithoutStore: true,
       amountUsdCents: null, approxCents: 30000, approxCurrency: 'BRL', estimated: true,
       createdAt: NOW.toISOString(), updatedAt: NOW.toISOString(),
     });
@@ -76,7 +76,7 @@ describe('POST /api/withdrawals', () => {
       amountStoreCents: 10000,
       feeCents: 250,
       netStoreCents: 9750,
-      amountBrlCents: 52000,
+      amountBrlCents: 52000, amountBrlCurrency: 'BRL',
       withdrawnAt: '2026-11-10T12:00:00.000Z',
       note: 'pix',
       legacyWithoutStore: false,

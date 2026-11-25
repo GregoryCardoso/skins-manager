@@ -3,7 +3,8 @@
 const env = require('../config/env');
 const Setting = require('../models/Setting');
 const Store = require('../models/Store');
-const { ValidationError } = require('../errors/AppError');
+const { ValidationError, ConflictError } = require('../errors/AppError');
+const { runInTransaction } = require('../models/modelHelpers');
 const fxRateService = require('./fxRateService');
 const storeService = require('./storeService');
 const { resolveAgingThresholds } = require('./inventoryAgingService');
@@ -163,12 +164,15 @@ function updatePreferences(partial, { now = new Date() } = {}) {
   for (const key of ['theme', 'language', 'inventoryView', 'fxRefreshSource', 'fastTurnoverDays', 'slowItemDays', 'displayCurrency']) {
     if (partial[key] !== undefined) changes[key] = partial[key];
   }
-  Setting.update(changes, { now });
-  if (partial.displayCurrency !== undefined) {
-    // Com `displayCurrency` a resposta é `{ settings, steamStore }` (D369 A5). Até a 11.4 a loja Steam nunca muda (só 'KEEP').
-    const steam = getSteamStore();
-    return { settings: getSettings(), steamStore: steam ? { id: steam.id, currency: steam.currency, created: false } : null };
-  }
+  // Tudo na mesma transação (D369 A5): a moeda de conversão e a decisão da loja Steam são gravadas juntas ou nada é gravado.
+  let steamStore = null;
+  runInTransaction(() => {
+    Setting.update(changes, { now });
+    if (partial.displayCurrency !== undefined) steamStore = applySteamStoreChoice(partial.displayCurrency, partial.steamStore ?? 'KEEP', { now });
+  });
+  // Com `displayCurrency` a resposta é `{ settings, steamStore }`: `steamStore` = `{ id, currency, created, previousStoreId? }` ou `null`
+  // quando não há loja Steam configurada.
+  if (partial.displayCurrency !== undefined) return { settings: getSettings(), steamStore };
   return getSettings();
 }
 
@@ -179,12 +183,44 @@ function assertDisplayCurrency(currency) {
   }
 }
 
-// `steamStore` (A5): só 'KEEP' (ou ausente) até a 11.4; 'FOLLOW' e 'NEW_STORE' ainda não existem. Exige `displayCurrency` junto.
+// `steamStore` (A5): 'KEEP', 'FOLLOW' ou 'NEW_STORE'. Exige `displayCurrency` junto. A coerência com os lançamentos da loja é conferida
+// em `applySteamStoreChoice` (dentro da transação).
 function assertSteamStoreChoice(choice, displayCurrency) {
   const invalid = (message) => new ValidationError(message, 'INVALID_FIELD', { field: 'steamStore' });
   if (!['KEEP', 'FOLLOW', 'NEW_STORE'].includes(choice)) throw invalid('steamStore deve ser KEEP, FOLLOW ou NEW_STORE.');
   if (displayCurrency === undefined) throw invalid('steamStore só vale junto com displayCurrency.');
-  if (choice !== 'KEEP') throw invalid('A opção da loja Steam ainda não está disponível: use KEEP.');
+}
+
+// Decisão da loja Steam ao trocar a moeda de conversão (D369 A4 e A5). Regra de ouro: nenhum valor gravado muda de moeda.
+// - 'KEEP' (ou ausente): não mexe na Steam.
+// - 'FOLLOW': só com a Steam sem lançamentos (senão STORE_CURRENCY_LOCKED); ela passa para a moeda nova.
+// - 'NEW_STORE': só com a Steam com lançamentos e em outra moeda (senão INVALID_FIELD); cria a nova loja Steam na moeda nova, desativa e
+//   renomeia a antiga, e `steam_store_id` passa a apontar para a nova.
+// Devolve `{ id, currency, created, previousStoreId? }`, ou `null` sem loja Steam configurada (e 'KEEP'/'FOLLOW' sem loja).
+function applySteamStoreChoice(currency, choice, { now = new Date() } = {}) {
+  const steam = getSteamStore();
+  const invalid = (message) => new ValidationError(message, 'INVALID_FIELD', { field: 'steamStore' });
+  if (!steam) {
+    if (choice === 'KEEP') return null;
+    throw invalid('Não há loja Steam configurada.');
+  }
+  if (choice === 'KEEP') return { id: steam.id, currency: steam.currency, created: false };
+  const hasEntries = storeService.storeHasEntries(steam.id);
+  if (choice === 'FOLLOW') {
+    if (hasEntries) {
+      throw new ConflictError(
+        'A loja Steam já tem lançamentos e não pode mudar de moeda. Crie uma nova loja Steam.', 'STORE_CURRENCY_LOCKED', { field: 'steamStore' }
+      );
+    }
+    const updated = steam.currency === currency ? steam : storeService.changeStoreCurrency(steam.id, currency, { now });
+    return { id: updated.id, currency: updated.currency, created: false };
+  }
+  // NEW_STORE
+  if (!hasEntries) throw invalid('A loja Steam ainda não tem lançamentos: use FOLLOW para ela acompanhar a moeda.');
+  if (steam.currency === currency) throw invalid('A loja Steam já usa esta moeda.');
+  const { store, previousStoreId } = storeService.cloneSteamStoreInCurrency(steam.id, currency, { now });
+  Setting.update({ steamStoreId: store.id }, { now });
+  return { id: store.id, currency: store.currency, created: true, previousStoreId };
 }
 
 // Prévia da troca da moeda de conversão (D369 A5): só leitura, nada é gravado. O modal usa isto para montar as linhas.
@@ -194,7 +230,10 @@ function getCurrencyChangePreview(currency) {
   const rate = currency === 'USD' ? null : fxRateService.getRate(currency);
   return {
     currency,
-    steamStore: steam ? { id: steam.id, name: steam.name, currency: steam.currency, hasEntries: storeService.storeHasEntries(steam.id) } : null,
+    steamStore: steam ? { id: steam.id, name: steam.name, currency: steam.currency, hasEntries: storeService.storeHasEntries(steam.id),
+      // Taxa fixa ou mínima diferente de zero: sem cotação da moeda nova elas ficam zeradas (o modal avisa).
+      hasFixedFees: [steam.saleFixedFeeCents, steam.saleMinFeeCents, steam.withdrawalFixedFeeCents].some((value) => Number(value) > 0),
+    } : null,
     // USD não tem cotação (é a base): o "≈" simplesmente some.
     fxRateAvailable: currency === 'USD' ? true : rate !== null && rate.rate !== null,
     automaticSource: currency !== 'USD' && AWESOMEAPI_PAIRS.includes(currency),

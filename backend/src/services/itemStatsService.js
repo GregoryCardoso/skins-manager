@@ -18,7 +18,8 @@ function buildStatsKey({ name, category, variant, exterior, phase }) {
   return `${normalizeName(name)}|${category}|${variant ?? ''}|${exterior ?? ''}|${normalizeName(phase)}`;
 }
 
-const usesRecordedFx = (item) => item.saleCurrency === 'BRL' || item.purchaseCurrency === 'BRL';
+const notUsd = (currency) => currency !== null && currency !== undefined && currency !== 'USD';
+const usesRecordedFx = (item) => notUsd(item.saleCurrency) || notUsd(item.purchaseCurrency);
 
 const mean = (values) => values.reduce((acc, v) => acc + v, 0) / values.length;
 

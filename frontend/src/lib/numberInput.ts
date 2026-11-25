@@ -1,4 +1,5 @@
 import { LANGUAGE_REGISTRY, intlLocaleOf } from '@/i18n/languages';
+import { hasNoDecimals } from './currencies';
 
 // O idioma usa vírgula como separador decimal? Vem do `Intl` do locale do registro (D369), e não de uma lista de idiomas:
 // de, fr, es, ru, pl, uk, tr, it, pt-BR... usam vírgula; en, ja, ko e zh-CN usam ponto.
@@ -52,7 +53,14 @@ export function normalizeNumberText(text: string, language: string): string {
 
 // Dinheiro digitado -> centavos inteiros ("1,25" / "1.25" -> 125; "1.234,56" em pt-BR -> 123456).
 // Zero é aceito (custo 0). Mais de 2 casas decimais, negativo ou texto -> null (nunca arredonda em silêncio).
-export function parseMoneyToCents(text: string, language: string): number | null {
+// Moeda sem casas decimais (`currency` JPY, KRW ou CLP, D369 A3): só inteiros ("1500" -> 150000), sem decimais nem separadores.
+export function parseMoneyToCents(text: string, language: string, currency?: string): number | null {
+  if (currency !== undefined && hasNoDecimals(currency)) {
+    const whole = /^(\d+)$/.exec(text.trim().replace(/\s+/g, ''));
+    if (!whole) return null;
+    const value = Number(whole[1]) * 100;
+    return Number.isSafeInteger(value) ? value : null;
+  }
   const normalized = normalizeNumberText(text, language);
   const match = /^(\d+)(?:\.(\d{1,2}))?$/.exec(normalized);
   if (!match) return null;
@@ -60,9 +68,10 @@ export function parseMoneyToCents(text: string, language: string): number | null
   return Number.isSafeInteger(cents) ? cents : null;
 }
 
-// Centavos -> texto de edição no formato do idioma, sempre com 2 casas ("1,25" / "1.25").
-export function formatCentsInput(cents: number, language: string): string {
-  return new Intl.NumberFormat(intlLocaleOf(language), { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: false }).format(cents / 100);
+// Centavos -> texto de edição no formato do idioma, sempre com 2 casas ("1,25" / "1.25"); sem casas nas moedas sem casas decimais.
+export function formatCentsInput(cents: number, language: string, currency?: string): string {
+  const digits = currency !== undefined && hasNoDecimals(currency) ? 0 : 2;
+  return new Intl.NumberFormat(intlLocaleOf(language), { minimumFractionDigits: digits, maximumFractionDigits: digits, useGrouping: false }).format(cents / 100);
 }
 
 // Float digitado (>= 0, qualquer quantidade de casas). A faixa é validada pelo backend. Inválido -> null.

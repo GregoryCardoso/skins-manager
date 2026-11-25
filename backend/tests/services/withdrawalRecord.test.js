@@ -28,7 +28,7 @@ const LEGACY = { ...OLD, storeId: null, amountStoreCents: null, feeCents: null }
 describe('buildWithdrawalRecord: criação', () => {
   test('registro mínimo: taxa e nota nulas', () => {
     expect(build(input())).toEqual({
-      storeId: 1, amountStoreCents: 10000, feeCents: null, amountBrlCents: 50000, withdrawnAt: '2026-11-10T12:00:00.000Z', note: null,
+      storeId: 1, amountStoreCents: 10000, feeCents: null, amountBrlCents: 50000, amountBrlCurrency: 'BRL', withdrawnAt: '2026-11-10T12:00:00.000Z', note: null,
     });
   });
 
@@ -103,7 +103,7 @@ describe('buildWithdrawalRecord: edição (registro mesclado)', () => {
   test('parcial mantém o resto; manter a loja é aceito mesmo que ela não permita mais saque', () => {
     const rec = build({ note: 'b' }, { existing: OLD, store: csfloat({ allowsWithdrawal: false }) });
     expect(rec).toEqual({
-      storeId: 1, amountStoreCents: 10000, feeCents: 250, amountBrlCents: 50000, withdrawnAt: '2026-11-01T12:00:00.000Z', note: 'b',
+      storeId: 1, amountStoreCents: 10000, feeCents: 250, amountBrlCents: 50000, amountBrlCurrency: 'BRL', withdrawnAt: '2026-11-01T12:00:00.000Z', note: 'b',
     });
   });
 

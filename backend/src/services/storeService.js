@@ -6,12 +6,12 @@ const Setting = require('../models/Setting');
 const { runInTransaction } = require('../models/modelHelpers');
 const { ValidationError, NotFoundError, ConflictError } = require('../errors/AppError');
 const {
-  MAX_AMOUNT_CENTS, MAX_STORE_NAME_LENGTH, RATE_MAX_DECIMALS, MAX_SALE_HOLD_DAYS,
+  MAX_AMOUNT_CENTS, MAX_STORE_NAME_LENGTH, RATE_MAX_DECIMALS, MAX_SALE_HOLD_DAYS, CURRENCIES,
 } = require('../config/constants');
+const { assertAmountPrecision, fxFromSettings, rateOf, convertCents } = require('./currencyService');
 const { saleFeeParamsFromStore } = require('./fees');
 const { computeSale } = require('./pricingService');
 
-const CURRENCIES = ['USD', 'BRL'];
 const FEE_TYPES = ['DEDUCTED', 'ADDED'];
 const ROUNDINGS = ['CEIL', 'ROUND', 'FLOOR'];
 
@@ -66,6 +66,7 @@ function getStoreOrFail(id, { field } = {}) {
 function quoteSale(id, salePriceCents) {
   const store = Store.findById(id);
   if (!store) throw new NotFoundError('Loja não encontrada.', 'STORE_NOT_FOUND');
+  assertAmountPrecision(salePriceCents, store.currency, 'salePriceCents');
   const { netReceivedCents, feeCents } = computeSale({ salePriceCents, store });
   return { storeId: store.id, currency: store.currency, salePriceCents, feeCents, netReceivedCents };
 }
@@ -113,7 +114,7 @@ function buildStoreRecord(input, { existing = null, inUse = false, nameTaken = f
 
   // 2. moeda
   if (!CURRENCIES.includes(record.currency)) {
-    throw new ValidationError('Moeda inválida. Use USD ou BRL.', 'INVALID_CURRENCY', { field: 'currency' });
+    throw new ValidationError(`Moeda inválida. Use ${CURRENCIES.join(', ')}.`, 'INVALID_CURRENCY', { field: 'currency' });
   }
   if (existing && inUse && record.currency !== existing.currency) {
     throw new ConflictError(
@@ -137,6 +138,10 @@ function buildStoreRecord(input, { existing = null, inUse = false, nameTaken = f
   if (!isNil(record.saleMinFeeCents)) assertCents(record.saleMinFeeCents, 'saleMinFeeCents');
   assertCents(record.saleFixedFeeCents, 'saleFixedFeeCents');
   assertCents(record.withdrawalFixedFeeCents, 'withdrawalFixedFeeCents');
+  // 5a. unidade mínima da moeda da loja (D369 A3): JPY, KRW e CLP só aceitam múltiplos de 100 centavos
+  if (!isNil(record.saleMinFeeCents)) assertAmountPrecision(record.saleMinFeeCents, record.currency, 'saleMinFeeCents');
+  assertAmountPrecision(record.saleFixedFeeCents, record.currency, 'saleFixedFeeCents');
+  assertAmountPrecision(record.withdrawalFixedFeeCents, record.currency, 'withdrawalFixedFeeCents');
 
   // 5b. retenção do saldo após a venda (D213): inteiro de 0 a 30
   if (!Number.isSafeInteger(record.saleHoldDays) || record.saleHoldDays < 0 || record.saleHoldDays > MAX_SALE_HOLD_DAYS) {
@@ -203,6 +208,85 @@ function updateStore(id, partial, { now = new Date() } = {}) {
   return getStore(id);
 }
 
+// Nome livre para a loja Steam antiga ("Steam (BRL)"; se já existir, "Steam (BRL) 2" e assim por diante), dentro do limite de tamanho.
+function freeStoreName(base, selfId) {
+  const fit = (text) => text.slice(0, MAX_STORE_NAME_LENGTH);
+  let candidate = fit(base);
+  for (let n = 2; nameTakenBy(candidate, selfId) && n < 1000; n += 1) {
+    const suffix = ` ${n}`;
+    candidate = `${base.slice(0, MAX_STORE_NAME_LENGTH - suffix.length)}${suffix}`;
+  }
+  return candidate;
+}
+
+// Valor de configuração (taxa mínima/fixa) da loja antiga levado para a loja nova: convertido pela cotação das configurações e arredondado
+// na unidade da moeda nova. Sem cotação, o campo não é levado (a pessoa preenche em Lojas). Só configuração: nenhum valor gravado
+// de lançamentos muda de moeda (D369 A4).
+function carryFeeAmount(cents, fromCurrency, toCurrency, fx) {
+  if (isNil(cents) || cents === 0) return cents ?? null;
+  const fromRate = fromCurrency === 'USD' ? 1 : rateOf(fx, fromCurrency);
+  const toRate = toCurrency === 'USD' ? 1 : rateOf(fx, toCurrency);
+  if (fromRate === null || toRate === null) return null;
+  return convertCents(cents, fromCurrency, toCurrency, { fromFxRate: fromRate, toFxRate: toRate }, 'CEIL');
+}
+
+// Troca a moeda de uma loja SEM lançamentos (a loja Steam acompanhando a moeda do usuário, D369 A4). As taxas mínima e fixa, que estão
+// na moeda antiga, são convertidas pela cotação das configurações (ou ficam vazias sem cotação). Com lançamentos: STORE_CURRENCY_LOCKED.
+function changeStoreCurrency(id, currency, { now = new Date() } = {}) {
+  const existing = Store.findById(id);
+  if (!existing) throw new NotFoundError('Loja não encontrada.', 'STORE_NOT_FOUND');
+  const fx = fxFromSettings(Setting.get());
+  const partial = {
+    currency,
+    saleMinFeeCents: carryFeeAmount(existing.saleMinFeeCents, existing.currency, currency, fx),
+    saleFixedFeeCents: carryFeeAmount(existing.saleFixedFeeCents, existing.currency, currency, fx) ?? 0,
+    withdrawalFixedFeeCents: carryFeeAmount(existing.withdrawalFixedFeeCents, existing.currency, currency, fx) ?? 0,
+  };
+  const record = buildStoreRecord(partial, { existing, inUse: Store.isInUse(id) });
+  Store.update(id, record, { now });
+  return getStore(id);
+}
+
+// Cria a nova loja Steam na moeda nova (D369 A4, "NEW_STORE"): a antiga é desativada e renomeada "<nome> (<moeda antiga>)", sem mudar
+// nenhum valor gravado; a nova leva as mesmas taxas (percentuais e regras; valores fixos convertidos), a mesma retenção e as mesmas
+// permissões, e o nome original. Se a antiga era a principal, a nova assume a marca. Não troca `steam_store_id` (é do
+// settingsService, na mesma transação). Devolve `{ store, previousStoreId }`.
+function cloneSteamStoreInCurrency(storeId, currency, { now = new Date() } = {}) {
+  const old = Store.findById(storeId);
+  if (!old) throw new NotFoundError('Loja não encontrada.', 'STORE_NOT_FOUND');
+  if (!CURRENCIES.includes(currency)) {
+    throw new ValidationError(`Moeda inválida. Use ${CURRENCIES.join(', ')}.`, 'INVALID_CURRENCY', { field: 'currency' });
+  }
+  if (old.currency === currency) {
+    throw new ValidationError('A loja Steam já usa esta moeda.', 'INVALID_FIELD', { field: 'steamStore' });
+  }
+  const fx = fxFromSettings(Setting.get());
+  const originalName = old.name;
+  return runInTransaction(() => {
+    const wasPrimary = old.isPrimary;
+    if (wasPrimary) Store.clearPrimary({ now });
+    // O nome antigo precisa ser liberado antes de a loja nova nascer com ele (o nome é único).
+    Store.update(storeId, { name: freeStoreName(`${originalName} (${old.currency})`, storeId), isActive: false, isPrimary: false }, { now });
+    const record = buildStoreRecord({
+      name: originalName,
+      currency,
+      isActive: true,
+      isPrimary: wasPrimary,
+      saleFeeType: old.saleFeeType,
+      saleFeeRate: old.saleFeeRate,
+      saleFeeRounding: old.saleFeeRounding,
+      saleMinFeeCents: carryFeeAmount(old.saleMinFeeCents, old.currency, currency, fx),
+      saleFixedFeeCents: carryFeeAmount(old.saleFixedFeeCents, old.currency, currency, fx) ?? 0,
+      allowsWithdrawal: old.allowsWithdrawal,
+      withdrawalFeeRate: old.withdrawalFeeRate,
+      withdrawalFixedFeeCents: carryFeeAmount(old.withdrawalFixedFeeCents, old.currency, currency, fx) ?? 0,
+      saleHoldDays: old.saleHoldDays,
+    });
+    const created = Store.create(record, { now });
+    return { store: created, previousStoreId: storeId };
+  });
+}
+
 function deleteStore(id) {
   const store = Store.findById(id);
   if (!store) throw new NotFoundError('Loja não encontrada.', 'STORE_NOT_FOUND');
@@ -218,4 +302,5 @@ function deleteStore(id) {
 
 module.exports = {
   listStores, getStore, getStoreOrFail, storeHasEntries, quoteSale, createStore, updateStore, deleteStore, buildStoreRecord,
+  cloneSteamStoreInCurrency, changeStoreCurrency,
 };

@@ -31,16 +31,22 @@ function runSeed(db, now = new Date()) {
     if (seeded === 0) {
       const withHold = db.prepare("SELECT 1 FROM pragma_table_info('stores') WHERE name = 'sale_hold_days'").get() !== undefined;
       const insert = db.prepare(insertStoreSql(withHold));
+      // A Steam nasce na moeda de conversão inicial da instalação (D369 A4): USD num banco novo. Esquemas anteriores à v024 (só em
+      // testes, com listas de migração truncadas) não têm a coluna e mantêm a Steam em BRL, como antes.
+      const hasDisplayCurrency = db.prepare("SELECT 1 FROM pragma_table_info('settings') WHERE name = 'display_currency'").get() !== undefined;
+      const steamCurrency = hasDisplayCurrency ? db.prepare('SELECT display_currency FROM settings WHERE id = 1').get().display_currency : 'BRL';
       for (const { saleHoldDays, ...store } of DEFAULT_STORES) {
-        insert.run({ ...store, ...(withHold ? { saleHoldDays } : {}), now: nowIso });
+        const currency = store.name === 'Steam' ? steamCurrency : store.currency;
+        insert.run({ ...store, currency, ...(withHold ? { saleHoldDays } : {}), now: nowIso });
       }
       if (hasFlag) db.prepare('UPDATE settings SET stores_seeded = 1 WHERE id = 1').run();
-      // Banco novo: a v020 rodou antes das lojas existirem; aplica aqui a mesma regra dela (exatamente uma loja "steam" em BRL).
+      // Banco novo: a v020 rodou antes das lojas existirem; aplica aqui a mesma regra dela (exatamente uma loja "steam"; a moeda é a da
+      // instalação, D369 A4).
       const hasSteamColumn = db.prepare("SELECT 1 FROM pragma_table_info('settings') WHERE name = 'steam_store_id'").get() !== undefined;
       if (hasSteamColumn) {
         const current = db.prepare('SELECT steam_store_id FROM settings WHERE id = 1').get();
         if (current && current.steam_store_id === null) {
-          const candidates = db.prepare("SELECT id FROM stores WHERE lower(trim(name)) = 'steam' AND currency = 'BRL' ORDER BY id ASC").all();
+          const candidates = db.prepare("SELECT id FROM stores WHERE lower(trim(name)) = 'steam' ORDER BY id ASC").all();
           if (candidates.length === 1) db.prepare('UPDATE settings SET steam_store_id = ? WHERE id = 1').run(candidates[0].id);
         }
       }
