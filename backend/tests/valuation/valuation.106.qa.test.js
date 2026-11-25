@@ -176,6 +176,12 @@ describe('B3: netUnits', () => {
     expect(unit(1, { price: 0 })).toMatchObject({ status: 'OK', marketValueUsdCents: 0, netUnavailableReason: 'NET_NOT_COMPUTABLE', unrealizedNetUsdCents: null });
   });
 
+  test('B7: loja da integração em BRL (valor de mercado é em US$): sem líquido, NET_NOT_COMPUTABLE', () => {
+    const v = unit(1, { saleStore: { ...store, currency: 'BRL' } });
+    expect(v).toMatchObject({ status: 'OK', unrealizedNetUsdCents: null, netUnavailableReason: 'NET_NOT_COMPUTABLE' });
+    expect(summarize([v]).netUnits).toBe(0);
+  });
+
   test('cobertura mista: custo desconhecido e valor 0 ficam fora do netUnits, e o total soma só as com líquido', () => {
     const units = [unit(1), unit(2, { cost: 200 }), unit(3, { cost: null }), unit(4, { price: 0 })];
     const totals = summarize(units);

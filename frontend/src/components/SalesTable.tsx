@@ -112,7 +112,7 @@ function SaleRow({ item, stores, onEdit, onUnsell, onDelete, onHistory, highligh
       <td><PurchaseStoreCell item={item} stores={stores} /></td>
       <td>{saleStore ?? t('common.none')}</td>
       <td>
-        {info && info.inheritedCostUsdCents > 0 ? (
+        {info && info.inheritedCostUsdCents !== 0 ? (
           <CostCell item={item} />
         ) : info ? (
           <MoneyWithApprox

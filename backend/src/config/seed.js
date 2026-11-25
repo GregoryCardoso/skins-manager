@@ -35,6 +35,15 @@ function runSeed(db, now = new Date()) {
         insert.run({ ...store, ...(withHold ? { saleHoldDays } : {}), now: nowIso });
       }
       if (hasFlag) db.prepare('UPDATE settings SET stores_seeded = 1 WHERE id = 1').run();
+      // Banco novo: a v020 rodou antes das lojas existirem; aplica aqui a mesma regra dela (exatamente uma loja "steam" em BRL).
+      const hasSteamColumn = db.prepare("SELECT 1 FROM pragma_table_info('settings') WHERE name = 'steam_store_id'").get() !== undefined;
+      if (hasSteamColumn) {
+        const current = db.prepare('SELECT steam_store_id FROM settings WHERE id = 1').get();
+        if (current && current.steam_store_id === null) {
+          const candidates = db.prepare("SELECT id FROM stores WHERE lower(trim(name)) = 'steam' AND currency = 'BRL' ORDER BY id ASC").all();
+          if (candidates.length === 1) db.prepare('UPDATE settings SET steam_store_id = ? WHERE id = 1').run(candidates[0].id);
+        }
+      }
     }
     // Integração CSFloat (D316): a linha nasce aqui (a migração v12 só cria a tabela). Só existe com o esquema >= v12.
     const hasIntegrations = db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'integrations'").get() !== undefined;

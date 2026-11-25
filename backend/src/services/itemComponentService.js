@@ -180,10 +180,10 @@ function toView(rows = [], { catalogById = new Map(), undoableOf = null, canDeta
   });
 }
 
-// Resumo da API: `charms` conta o pendurado (chaveiro ou slab).
+// Resumo da API: `charms` conta o pendurado (chaveiro ou slab) e `patches` os patches dos agentes (B5).
 function toSummary(rows = []) {
-  const { stickers, hanging } = summarize(rows);
-  return { stickers, charms: hanging };
+  const { stickers, hanging, patches } = summarize(rows);
+  return { stickers, charms: hanging, patches };
 }
 
 module.exports = {

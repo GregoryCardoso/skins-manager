@@ -74,6 +74,18 @@ function findByNameKey(nameKey, category) {
     .map(mapItem);
 }
 
+// Várias chaves de nome de uma categoria de uma vez (S1, sem uma consulta por item): as linhas por id.
+function findByNameKeys(nameKeys, category) {
+  const unique = [...new Set(nameKeys)];
+  const out = [];
+  for (let i = 0; i < unique.length; i += IDS_CHUNK) {
+    const chunk = unique.slice(i, i + IDS_CHUNK);
+    const sql = `SELECT * FROM catalog_items WHERE category = ? AND name_key IN (${chunk.map(() => '?').join(',')}) ORDER BY id`;
+    for (const row of getDb().prepare(sql).all(category, ...chunk)) out.push(mapItem(row));
+  }
+  return out.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+}
+
 // Todas as entradas de um nome normalizado, de qualquer categoria (importação: o tipo do trade não diz a categoria do app).
 function findByNameKeyAnyCategory(nameKey) {
   return getDb().prepare('SELECT * FROM catalog_items WHERE name_key = ? ORDER BY id').all(nameKey).map(mapItem);
@@ -127,4 +139,4 @@ function countBySource() {
   return counts;
 }
 
-module.exports = { upsertMany, findById, findByIds, findByNameKey, findByNameKeyAnyCategory, search, countBySource };
+module.exports = { upsertMany, findById, findByIds, findByNameKey, findByNameKeys, findByNameKeyAnyCategory, search, countBySource };

@@ -21,6 +21,15 @@ describe('config/seed', () => {
     expect(countSettings()).toBe(1);
   });
 
+  test('M4: banco novo já nasce com a loja Steam do app (a única "steam" em BRL), sem sobrescrever uma escolha existente', () => {
+    const steamId = storeRow('Steam').id;
+    expect(getDb().prepare('SELECT steam_store_id AS id FROM settings WHERE id = 1').get().id).toBe(steamId);
+    // rodar de novo (ou com a escolha mudada) não altera: a regra só vale na semeadura inicial
+    getDb().prepare('UPDATE settings SET steam_store_id = NULL WHERE id = 1').run();
+    runSeed(getDb(), NOW);
+    expect(getDb().prepare('SELECT steam_store_id AS id FROM settings WHERE id = 1').get().id).toBeNull();
+  });
+
   test('seed insere na ordem CSFloat, Steam, CSMoney', () => {
     const names = getDb().prepare('SELECT name FROM stores ORDER BY id').all().map((r) => r.name);
     expect(names).toEqual(['CSFloat', 'Steam', 'CSMoney']);
@@ -94,7 +103,7 @@ describe('config/seed', () => {
     expect(db.prepare('SELECT * FROM settings').get()).toEqual({
       id: 1, usd_brl_rate: 5.25, usd_brl_rate_updated_at: 'a', updated_at: 'b',
       catalog_updated_at: null, theme: 'SYSTEM', language: 'pt-BR', inventory_view: 'GROUPED',
-      usd_brl_rate_source: null, rate_quoted_at: null, slow_item_days: null, fast_turnover_days: null, stores_seeded: 1, fx_refresh_source: 'AWESOMEAPI', steam_store_id: null, price_refresh_started_at: null, price_refresh_last_at: null, price_refresh_last_status: null, price_refresh_last_error_code: null,
+      usd_brl_rate_source: null, rate_quoted_at: null, slow_item_days: null, fast_turnover_days: null, stores_seeded: 1, fx_refresh_source: 'AWESOMEAPI', steam_store_id: expect.any(Number), price_refresh_started_at: null, price_refresh_last_at: null, price_refresh_last_status: null, price_refresh_last_error_code: null,
     });
   });
 });

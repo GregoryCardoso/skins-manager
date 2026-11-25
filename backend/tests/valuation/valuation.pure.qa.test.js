@@ -78,9 +78,12 @@ describe('mapListingReference: complementos', () => {
     expect(mapListingReference(json, { marketHashName: NAME }).basePriceCents).toBe(10);
   });
 
-  test('o nome tem de ser idêntico (maiúsculas e espaços contam)', () => {
-    expect(() => mapListingReference({ data: [fakeListing({ marketHashName: NAME.toLowerCase() })] }, { marketHashName: NAME })).toThrow(expect.objectContaining({ code: 'IMPORT_SOURCE_FORMAT_CHANGED' }));
-    expect(() => mapListingReference({ data: [fakeListing({ marketHashName: `${NAME} ` })] }, { marketHashName: NAME })).toThrow(expect.objectContaining({ code: 'IMPORT_SOURCE_FORMAT_CHANGED' }));
+  test('o nome tem de ser idêntico (maiúsculas e espaços contam); diferente = anúncio de outro item = NOT_FOUND (M2)', () => {
+    const notFound = { status: 'NOT_FOUND', basePriceCents: null, referenceQuantity: null, sourceUpdatedAt: null };
+    expect(mapListingReference({ data: [fakeListing({ marketHashName: NAME.toLowerCase() })] }, { marketHashName: NAME })).toEqual(notFound);
+    expect(mapListingReference({ data: [fakeListing({ marketHashName: `${NAME} ` })] }, { marketHashName: NAME })).toEqual(notFound);
+    expect(mapListingReference({ data: [fakeListing({ marketHashName: NAME, paintIndex: 7 })] }, { marketHashName: NAME, paintIndex: 8 })).toEqual(notFound);
+    expect(() => mapListingReference({ data: [fakeListing({ marketHashName: 123 })] }, { marketHashName: NAME })).toThrow(expect.objectContaining({ code: 'IMPORT_SOURCE_FORMAT_CHANGED' }));
   });
 
   test('paint_index pedido e anúncio sem paint_index -> FORMAT_CHANGED; pedido nulo ignora o do anúncio', () => {
@@ -93,7 +96,9 @@ describe('mapListingReference: complementos', () => {
   test('o erro de formato não carrega o conteúdo do anúncio (nome, vendedor, ids)', () => {
     let error;
     try {
-      mapListingReference({ data: [fakeListing({ marketHashName: 'Item de Outro Vendedor' })] }, { marketHashName: NAME });
+      const bad = fakeListing({ marketHashName: 'Item de Outro Vendedor' });
+      bad.item.market_hash_name = 42;
+      mapListingReference({ data: [bad] }, { marketHashName: NAME });
     } catch (err) {
       error = err;
     }

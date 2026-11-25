@@ -21,7 +21,7 @@ describe('models/Setting', () => {
       const s = Setting.update({ usdBrlRate: 5.3 });
       expect(s).toEqual({
         usdBrlRate: 5.3, usdBrlRateUpdatedAt: '2026-06-01T00:00:00.000Z', catalogUpdatedAt: null, theme: 'SYSTEM', language: 'pt-BR', inventoryView: 'GROUPED',
-        usdBrlRateSource: null, rateQuotedAt: null, fxRefreshSource: 'AWESOMEAPI', fastTurnoverDays: null, slowItemDays: null, steamStoreId: null,
+        usdBrlRateSource: null, rateQuotedAt: null, fxRefreshSource: 'AWESOMEAPI', fastTurnoverDays: null, slowItemDays: null, steamStoreId: expect.any(Number),
         updatedAt: '2026-06-02T00:00:00.000Z',
       });
     } finally {

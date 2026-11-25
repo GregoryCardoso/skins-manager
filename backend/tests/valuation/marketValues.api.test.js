@@ -252,11 +252,71 @@ describe('falhas silenciosas', () => {
     expect(cachedKeys()).toEqual([]);
   });
 
-  test('a fonte ignorou o filtro (nome ou paint_index diferente): IMPORT_SOURCE_FORMAT_CHANGED e nunca grava preço de outro item', async () => {
+  test('M2: anúncio de OUTRO item (nome ou paint_index diferente) vira NOT_FOUND só dessa chave, não grava preço e não para a rodada', async () => {
     await knife();
     currentFetch = jest.fn(async () => fakeResponse(200, { data: [{ reference: { base_price: 5 }, item: { market_hash_name: KNIFE_NAME, paint_index: 419 } }] }));
+    const res = (await refresh()).body.data;
+    expect(res.failed).toBeNull();
+    expect(res.result).toMatchObject({ fetched: 1, updated: 0, notFound: 1, stoppedBy: null });
+    const row = getDb().prepare('SELECT status, base_price_cents, priced_at, fetched_at FROM market_prices').get();
+    expect(row).toMatchObject({ status: 'NOT_FOUND', base_price_cents: null, priced_at: null });
+    expect(row.fetched_at).toBe(NOW.toISOString());
+  });
+
+  test('M2: chave divergente no nível 1 não bloqueia as seguintes e não volta a ser a 1.ª na rodada seguinte (24 h)', async () => {
+    await ak();
+    await knife();
+    const normal = routedListings(PRICES);
+    currentFetch = jest.fn(async (url, init) => {
+      const query = Object.fromEntries(new URL(url).searchParams.entries());
+      if (query.market_hash_name === AK_NAME) return fakeResponse(200, { data: [{ reference: { base_price: 7 }, item: { market_hash_name: 'Outro Item (Field-Tested)', paint_index: null } }] });
+      return normal(url, init);
+    });
+    const first = (await refresh()).body.data;
+    expect(first.failed).toBeNull();
+    expect(first.result).toMatchObject({ requested: 2, fetched: 2, updated: 1, notFound: 1, stoppedBy: null });
+    const rows = getDb().prepare('SELECT price_key, status, base_price_cents FROM market_prices ORDER BY id').all();
+    expect(rows.find((r) => r.price_key.startsWith('AK-47'))).toMatchObject({ status: 'NOT_FOUND', base_price_cents: null });
+    expect(rows.find((r) => r.price_key.startsWith('★'))).toMatchObject({ status: 'OK', base_price_cents: 89000 });
+    // próxima rodada (reiniciou o app, dentro de 24 h): nenhuma das duas está desatualizada
+    marketValueService.resetAttemptForTests();
+    clock = new Date(NOW.getTime() + 20 * MIN);
+    currentFetch.mockClear();
+    const second = (await refresh()).body.data;
+    expect(second.result).toMatchObject({ requested: 0, fetched: 0 });
+    expect(currentFetch).not.toHaveBeenCalled();
+  });
+
+  test('M2: formato estrutural inválido (anúncio sem item, nome com tipo errado) continua parando a rodada com IMPORT_SOURCE_FORMAT_CHANGED', async () => {
+    await knife();
+    currentFetch = jest.fn(async () => fakeResponse(200, { data: [{ reference: { base_price: 5 }, item: { market_hash_name: 42, paint_index: 418 } }] }));
     expect((await refresh()).body.data.failed).toEqual({ code: 'IMPORT_SOURCE_FORMAT_CHANGED' });
     expect(cachedKeys()).toEqual([]);
+    marketValueService.resetAttemptForTests();
+    clock = new Date(NOW.getTime() + 20 * MIN);
+    currentFetch = jest.fn(async () => fakeResponse(200, { oops: true }));
+    expect((await refresh()).body.data.failed).toEqual({ code: 'IMPORT_SOURCE_FORMAT_CHANGED' });
+  });
+
+  test('M3: erro interno na rodada responde 200 com INTERNAL_ERROR, grava FAILED, libera a trava e não vaza o conteúdo', async () => {
+    await ak();
+    const MarketPrice = require('../../src/models/MarketPrice');
+    const spy = jest.spyOn(MarketPrice, 'upsertResult').mockImplementation(() => { throw new Error('falha-interna-qa'); });
+    const errSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const res = await refresh();
+      expect(res.status).toBe(200);
+      expect(res.body.data).toEqual({ skipped: null, result: null, failed: { code: 'INTERNAL_ERROR' } });
+      expect(valuationLock.isValuationInProgress()).toBe(false);
+      expect(errSpy).toHaveBeenCalledTimes(1);
+      expect(String(errSpy.mock.calls[0][0])).toContain('falha-interna-qa');
+      expect(errSpy.mock.calls[0]).toHaveLength(1);
+      const last = (await summary()).lastRun;
+      expect(last).toMatchObject({ status: 'FAILED', errorCode: 'INTERNAL_ERROR' });
+    } finally {
+      spy.mockRestore();
+      errSpy.mockRestore();
+    }
   });
 });
 

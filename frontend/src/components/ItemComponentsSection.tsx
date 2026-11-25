@@ -19,6 +19,9 @@ interface Props {
   // Arma (stickers e pendurado) ou agente (patches).
   category: Category | '';
   onItemChanged?: (message: string) => void;
+  // "Separar" o pendurado (M7): abre o modal de separação com o id do componente. `cameWithHangingId`: o pendurado que veio junto, separável.
+  onDetach?: (componentId: number) => void;
+  cameWithHangingId?: number | null;
   state: ComponentsState;
   onChange: (next: ComponentsState) => void;
   // Erro do campo `components` (local ou do backend).
@@ -46,7 +49,7 @@ function Chosen({ choice, kind, onClear, disabled }: { choice: ComponentCatalogC
 }
 
 // Seção "Stickers e chaveiro" do formulário de item (só SKIN, 10.1). Não muda o custo.
-export default function ItemComponentsSection({ itemId, category, onItemChanged, state, onChange, error = null, disabled = false }: Props) {
+export default function ItemComponentsSection({ itemId, category, onItemChanged, onDetach, cameWithHangingId = null, state, onChange, error = null, disabled = false }: Props) {
   const t = useT();
   const { stickers, hanging, patches } = state;
   const isAgent = category === 'PERSONAGEM';
@@ -214,12 +217,17 @@ export default function ItemComponentsSection({ itemId, category, onItemChanged,
               />
             )}
           </FormField>
+          {onDetach && cameWithHangingId !== null && (
+            <button type="button" className={`${styles.button} ${styles.small}`} onClick={() => onDetach(cameWithHangingId)} disabled={disabled}>
+              {t('inventory.actions.detach')}
+            </button>
+          )}
         </div>
       )}
       </>
       )}
       {itemId !== undefined && onItemChanged && (
-        <AppliedComponentsEditor itemId={itemId} state={state} onChange={onChange} onItemChanged={onItemChanged} disabled={disabled} />
+        <AppliedComponentsEditor itemId={itemId} state={state} onChange={onChange} onItemChanged={onItemChanged} onDetach={onDetach} disabled={disabled} />
       )}
     </fieldset>
   );

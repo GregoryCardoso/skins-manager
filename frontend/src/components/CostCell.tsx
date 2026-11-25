@@ -11,8 +11,12 @@ export default function CostCell({ item }: { item: ItemView }) {
   const t = useT();
   const locale = useLanguage();
   const inherited = item.cost.inheritedUsdCents;
-  if (inherited <= 0) return <>{formatMoney(item.purchasePriceCents, item.purchaseCurrency, locale)}</>;
-  const note = t('operations.costIncludes', { value: formatMoney(inherited, 'USD', locale) });
+  const differs = item.cost.hasOperationCost ?? inherited !== 0;
+  if (!differs) return <>{formatMoney(item.purchasePriceCents, item.purchaseCurrency, locale)}</>;
+  // Positivo: recebeu custo de componentes. Negativo: parte do custo foi separada para outra unidade (D366).
+  const note = inherited >= 0
+    ? t('operations.costIncludes', { value: formatMoney(inherited, 'USD', locale) })
+    : t('operations.costSeparated', { value: formatMoney(Math.abs(inherited), 'USD', locale) });
   return (
     <span className={styles.stack} title={note}>
       <span>{item.cost.estimated ? '≈ ' : ''}{formatMoney(item.cost.effectiveUsdCents, 'USD', locale)}</span>

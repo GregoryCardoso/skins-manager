@@ -169,4 +169,6 @@ module.exports = Object.freeze({
   THEMES,
   LANGUAGES,
   INVENTORY_VIEWS,
+  // Campos de aquisição que o item obtido numa abertura nunca aceita: ele herda tudo da operação (D363 item 4). Fonte única (S2).
+  GENERATED_FORBIDDEN_FIELDS: Object.freeze(['acquisitionType', 'purchaseStoreId', 'purchasePriceCents', 'fxRateAtPurchase', 'acquiredAt']),
 });

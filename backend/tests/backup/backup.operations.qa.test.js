@@ -99,7 +99,7 @@ test('backup v18 (com vendidos USD/BRL, holding, componentes) importado migra pa
   // depois da migração a aplicação funciona sobre o banco migrado
   const item = (await json('/api/items?status=EM_ESTOQUE')).items.find((i) => i.name === 'AK-47 | Redline');
   expect(item.components).toHaveLength(1);
-  expect(item.cost).toEqual({ ownUsdCents: 1000, inheritedUsdCents: 0, effectiveUsdCents: 1000, estimated: false });
+  expect(item.cost).toEqual({ ownUsdCents: 1000, inheritedUsdCents: 0, effectiveUsdCents: 1000, estimated: false , hasOperationCost: false });
 });
 
 test('exportar e importar leva operações ativas e desfeitas, componentes aplicados e a unidade consumida', async () => {

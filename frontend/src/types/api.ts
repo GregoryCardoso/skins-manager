@@ -215,10 +215,11 @@ export interface ItemComponent {
   // Pendurado (chaveiro ou slab) de uma arma em estoque: pode ser separado da arma (10.7, D366).
   detachable: boolean;
 }
-// `charms` conta o pendurado (chaveiro ou Sticker Slab).
+// `charms` conta o pendurado (chaveiro ou Sticker Slab); `patches`, os patches do agente.
 export interface ComponentSummary {
   stickers: number;
   charms: number;
+  patches: number;
 }
 // Corpo enviado em `components` (substitui a lista inteira; `[]` limpa; ausente não muda).
 export interface ItemComponentInput {
@@ -387,6 +388,8 @@ export interface ItemCost {
   inheritedUsdCents: number;
   effectiveUsdCents: number;
   estimated: boolean;
+  // O efetivo difere do próprio (recebeu custo de componentes ou cedeu parte numa separação).
+  hasOperationCost: boolean;
 }
 export interface ItemConsumedIn {
   operationId: number;
@@ -419,6 +422,9 @@ export interface ItemDetachedFrom {
 export interface ItemOpenable {
   kind: OpeningKind;
   compatibleKeys: number;
+  // Chaves em estoque que não servem para esta caixa (contagem e até 5 nomes).
+  otherKeysInStock: number;
+  otherKeyNames: string[];
   requiredKeyName: string | null;
 }
 export type OpenDecision = 'BUY' | 'DECLINE';
@@ -487,7 +493,7 @@ export interface ApplyComponentBody {
 }
 export type OperationKind = 'APPLY_COMPONENT' | 'DETACH_COMPONENT' | 'SCRAPE_OFF' | 'OPEN_CASE' | 'OPEN_TERMINAL' | 'TRADE_UP';
 export type OperationRole = 'CONSUMED' | 'TARGET' | 'CREATED';
-export type OperationBlockReason = 'ALREADY_UNDONE' | 'DETACHED' | 'HANGING_OCCUPIED' | 'NOT_LATEST' | 'TARGET_SOLD' | 'TARGET_NOT_IN_STOCK';
+export type OperationBlockReason = 'ALREADY_UNDONE' | 'DETACHED' | 'HANGING_OCCUPIED' | 'NOT_LATEST' | 'TARGET_SOLD' | 'TARGET_NOT_IN_STOCK' | 'COMPONENT_LIMIT' | 'COMPONENTS_NOT_ALLOWED';
 export interface OperationSummary {
   id: number;
   kind: OperationKind;

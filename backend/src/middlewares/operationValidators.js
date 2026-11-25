@@ -4,7 +4,7 @@
 const { AppError, ValidationError } = require('../errors/AppError');
 const { isPlainObject, rejectUnknownFields } = require('./validationHelpers');
 const { checkBody, ACQUISITION_FIELDS } = require('./itemValidators');
-const { MAX_AMOUNT_CENTS } = require('../config/constants');
+const { MAX_AMOUNT_CENTS, GENERATED_FORBIDDEN_FIELDS } = require('../config/constants');
 
 const fail = (message, code, field) => new ValidationError(message, code, { field });
 
@@ -23,7 +23,8 @@ const isInt = (v) => typeof v === 'number' && Number.isSafeInteger(v);
 
 // Campos de uma aplicação do estoque: `sourceItemId` obrigatório; `slot`, `wear`, `pattern` e `appliedAt` opcionais (nulo = ausente).
 function checkApplyFields(body) {
-  if (!isInt(body.sourceItemId) || body.sourceItemId < 1) throw fail('Informe a unidade a aplicar (sourceItemId).', 'REQUIRED_FIELD', 'sourceItemId');
+  if (body.sourceItemId === undefined || body.sourceItemId === null) throw fail('Informe a unidade a aplicar (sourceItemId).', 'REQUIRED_FIELD', 'sourceItemId');
+  if (!isInt(body.sourceItemId) || body.sourceItemId < 1) throw fail('A unidade a aplicar deve ser um identificador inteiro.', 'INVALID_FIELD', 'sourceItemId');
   if (body.slot !== undefined && body.slot !== null && !isInt(body.slot)) throw fail('O slot deve ser um número inteiro.', 'INVALID_FIELD', 'slot');
   if (body.pattern !== undefined && body.pattern !== null && !isInt(body.pattern)) throw fail('O pattern deve ser um número inteiro.', 'INVALID_FIELD', 'pattern');
   if (body.wear !== undefined && body.wear !== null && (typeof body.wear !== 'number' || !Number.isFinite(body.wear))) {
@@ -67,7 +68,6 @@ function validateComponentIdParam(req, res, next) {
 
 // Campos do item obtido na abertura (D363 item 4): os do cadastro, menos os de aquisição (que a operação define). Os de aquisição enviados
 // são recusados com `INVALID_OPERATION_INPUT`, antes da validação de forma do resto.
-const GENERATED_FORBIDDEN_FIELDS = ['acquisitionType', 'purchaseStoreId', 'purchasePriceCents', 'fxRateAtPurchase', 'acquiredAt'];
 const GENERATED_FIELDS = Object.fromEntries(Object.entries(ACQUISITION_FIELDS).filter(([key]) => !GENERATED_FORBIDDEN_FIELDS.includes(key)));
 const MAX_NOTE_SHAPE = 2000; // o limite real (500) é do service; aqui só se evita texto gigante
 

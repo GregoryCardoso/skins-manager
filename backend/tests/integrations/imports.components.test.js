@@ -65,7 +65,7 @@ describe('compra criada pela importação', () => {
     const res = await firstRun();
     expect(res.body.data.batch.counts).toMatchObject({ purchasesCreated: 1, failed: 0, componentsFilled: 0, componentsSkipped: 0 });
     const [item] = await getItems();
-    expect(item).toMatchObject({ catalogId: CAT_EXTRA.DEAGLE_TRIGGER, componentSummary: { stickers: 4, charms: 0 } });
+    expect(item).toMatchObject({ catalogId: CAT_EXTRA.DEAGLE_TRIGGER, componentSummary: { stickers: 4, charms: 0, patches: 0 } });
     expect(item.components.map((c) => [c.kind, c.catalogId, c.slot, c.wear, c.source, c.origin])).toEqual([
       ['STICKER', 'sticker-big-rmr', 0, 0, 'CSFLOAT', 'CAME_WITH'],
       ['STICKER', 'sticker-heroic-rmr', 1, 0, 'CSFLOAT', 'CAME_WITH'],
@@ -107,7 +107,7 @@ describe('compra criada pela importação', () => {
     state.trades = [buyTrade('1005', GLOCK_ST_CHARM)];
     await firstRun();
     const [item] = await getItems();
-    expect(item).toMatchObject({ variant: 'STATTRAK', componentSummary: { stickers: 4, charms: 1 } });
+    expect(item).toMatchObject({ variant: 'STATTRAK', componentSummary: { stickers: 4, charms: 1, patches: 0 } });
     expect(item.components.at(-1)).toMatchObject({ kind: 'CHARM', catalogId: CAT_EXTRA.LIL_TEACUP, slot: 0, pattern: 84492, wear: null, name: "Charm | Lil' Teacup" });
   });
 

@@ -82,7 +82,7 @@ describe('números idênticos com compra em BRL', () => {
     expect(await snap()).toEqual(before);
     const comp = (await itemOf(ak.id)).components[0];
     // 777 / 5,43 = 143,09 -> 143 (ROUND); a parte entra uma vez só no custo efetivo
-    expect((await itemOf(ak.id)).cost).toEqual({ ownUsdCents: 100, inheritedUsdCents: 143, effectiveUsdCents: 243, estimated: true });
+    expect((await itemOf(ak.id)).cost).toEqual({ ownUsdCents: 100, inheritedUsdCents: 143, effectiveUsdCents: 243, estimated: true , hasOperationCost: true });
     const scrape = await post(`/api/items/${ak.id}/components/${comp.id}/scrape-off`, { occurredAt: '2026-11-17T12:00:00.000Z' });
     expect(scrape.status).toBe(200);
     expect(await snap()).toEqual(before);

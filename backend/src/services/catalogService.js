@@ -109,6 +109,14 @@ function findExactMatch({ name, category }) {
   return first ? toCatalogView(first) : null;
 }
 
+// Várias entradas exatas de uma vez (S1): Map nome normalizado -> entrada (a de menor id, como `findExactMatch`).
+function findExactMatches(names, category) {
+  const keys = names.map((name) => normalizeSearchText(name));
+  const out = new Map();
+  for (const row of CatalogItem.findByNameKeys(keys, category)) if (!out.has(row.nameKey)) out.set(row.nameKey, toCatalogView(row));
+  return out;
+}
+
 function getCatalogStatus() {
   const countsBySource = CatalogItem.countBySource();
   const total = Object.values(countsBySource).reduce((sum, n) => sum + n, 0);
@@ -428,6 +436,7 @@ module.exports = {
   getCatalogItemOrFail,
   getCatalogItemsByIds,
   findExactMatch,
+  findExactMatches,
   getCatalogStatus,
   downloadCatalog,
   validateDownloadedCatalog,

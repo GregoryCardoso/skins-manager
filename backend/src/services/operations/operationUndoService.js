@@ -9,15 +9,16 @@ const ItemOperation = require('../../models/ItemOperation');
 const { runInTransaction } = require('../../models/modelHelpers');
 const { NotFoundError, ConflictError } = require('../../errors/AppError');
 const externalLinkService = require('../externalLinkService');
-const itemComponentService = require('../itemComponentService');
 const operationContext = require('./operationContext');
+
+const componentRowsOf = (itemId) => ItemComponent.listByItemIds([itemId]).get(itemId) ?? [];
 
 function undoOperation(operationId, { now = new Date() } = {}) {
   return runInTransaction(() => {
     const operation = ItemOperation.findById(operationId);
     if (!operation) throw new NotFoundError('Operação não encontrada.', 'OPERATION_NOT_FOUND');
     const context = operationContext.loadOperationContext([]);
-    const verdict = operationContext.assessUndo(operation, context);
+    const verdict = operationContext.assessUndo(operation, { ...context, componentRowsOf });
     if (!verdict.undoable) {
       if (verdict.reason === 'ALREADY_UNDONE') throw new ConflictError('Esta operação já foi desfeita.', 'OPERATION_ALREADY_UNDONE');
       throw new ConflictError('Esta operação não pode ser desfeita agora.', 'OPERATION_UNDO_BLOCKED', { params: { reason: verdict.reason, ...verdict.params } });
@@ -62,13 +63,7 @@ function undoOperation(operationId, { now = new Date() } = {}) {
     } else if (operation.kind === 'DETACH_COMPONENT') {
       // Separação (D366 item 6): o pendurado volta para a arma, que não pode ter outro (colocado à mão depois).
       const detail = operation.detailJson ? JSON.parse(operation.detailJson) : {};
-      const target = links.find((link) => link.role === 'TARGET' && link.itemId === detail.weaponItemId) ?? links.find((link) => link.role === 'TARGET');
-      const weaponRows = ItemComponent.listByItemIds([target.itemId]).get(target.itemId) ?? [];
-      if (weaponRows.some((row) => itemComponentService.isDetachable(row.kind))) {
-        throw new ConflictError('A arma já tem outro pendurado: remova-o antes de desfazer a separação.', 'OPERATION_UNDO_BLOCKED', {
-          params: { reason: 'HANGING_OCCUPIED', itemId: target.itemId },
-        });
-      }
+      const target = operationContext.weaponLinkOf(links, detail); // a conferência HANGING_OCCUPIED já passou em `assessUndo`
       if (detail.mode === 'RETURN') {
         const returnedId = detail.returnedItemId;
         const previous = detail.previous ?? {};

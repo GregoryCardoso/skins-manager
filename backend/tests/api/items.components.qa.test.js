@@ -29,7 +29,7 @@ describe('limites e slots', () => {
   test('5 stickers + 1 chaveiro e 5 stickers + 1 slab valem', async () => {
     const a = await post(purchaseBody({ components: [...stickers(5), charm] }));
     expect(a.status).toBe(201);
-    expect(a.body.data.componentSummary).toEqual({ stickers: 5, charms: 1 });
+    expect(a.body.data.componentSummary).toEqual({ stickers: 5, charms: 1, patches: 0 });
     const b = await post(purchaseBody({ components: [...stickers(5), slab] }));
     expect(b.status).toBe(201);
     expect(b.body.data.components.map((c) => c.kind)).toEqual(['STICKER', 'STICKER', 'STICKER', 'STICKER', 'STICKER', 'STICKER_SLAB']);
@@ -113,7 +113,7 @@ describe('categorias do item', () => {
     const item = await createItemViaApi(app);
     const added = await patch(item.id, { components: [sticker(0), charm] });
     expect(added.status).toBe(200);
-    expect(added.body.data.componentSummary).toEqual({ stickers: 1, charms: 1 });
+    expect(added.body.data.componentSummary).toEqual({ stickers: 1, charms: 1, patches: 0 });
     expect((await patch(item.id, { components: [sticker(2, CAT.STICKER_CROWN)] })).body.data.components.map((c) => c.slot)).toEqual([2]);
   });
 
@@ -155,7 +155,7 @@ describe('categorias do item', () => {
     expect(rowCount()).toBe(2);
     const ok = await patch(item.id, { catalogId: CAT.SPORT_GLOVES_PANDORA, components: [] });
     expect(ok.status).toBe(200);
-    expect(ok.body.data).toMatchObject({ category: 'LUVA', components: [], componentSummary: { stickers: 0, charms: 0 } });
+    expect(ok.body.data).toMatchObject({ category: 'LUVA', components: [], componentSummary: { stickers: 0, charms: 0, patches: 0 } });
     expect(rowCount()).toBe(0);
   });
 

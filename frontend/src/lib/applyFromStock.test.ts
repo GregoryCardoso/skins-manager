@@ -124,7 +124,7 @@ describe('mensagens por motivo', () => {
     expect(date).toContain('depois da venda');
     expect(date).toContain('20/11/2026');
     expect(errorMessageFor(error('OPERATION_DATE_INVALID', { reason: 'FUTURE' }), t(en), 'en')).toBe('The date cannot be in the future.');
-    expect(errorMessageFor(error('OPERATION_UNDO_BLOCKED', { reason: 'TARGET_SOLD' }), t(ptBR), 'pt-BR')).toContain('vendida');
+    expect(errorMessageFor(error('OPERATION_UNDO_BLOCKED', { reason: 'TARGET_SOLD' }), t(ptBR), 'pt-BR')).toContain('vendido');
     // motivo desconhecido: texto geral do código
     expect(errorMessageFor(error('OPERATION_UNDO_BLOCKED', { reason: 'OUTRO' }), t(ptBR), 'pt-BR')).toBe(ptBR.errors.OPERATION_UNDO_BLOCKED);
     expect(errorMessageFor(error('ITEM_CONSUMED', {}), t(en), 'en')).toBe(en.errors.ITEM_CONSUMED);

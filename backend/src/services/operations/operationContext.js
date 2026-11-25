@@ -5,6 +5,24 @@
 const Item = require('../../models/Item');
 const ItemOperation = require('../../models/ItemOperation');
 const { buildCostIndex, EMPTY_COST_INDEX } = require('./costService');
+const itemComponentService = require('../itemComponentService');
+
+const parseDetail = (operation) => {
+  try {
+    return operation.detailJson ? JSON.parse(operation.detailJson) : {};
+  } catch (err) {
+    return {};
+  }
+};
+
+// Vínculo TARGET que guarda a arma de uma separação: o `weaponItemId` do detalhe, ou o primeiro TARGET (registros sem o detalhe).
+function weaponLinkOf(links, detail) {
+  const targets = links.filter((link) => link.role === 'TARGET');
+  return targets.find((link) => link.itemId === detail.weaponItemId) ?? targets[0] ?? null;
+}
+
+// Regra única de HANGING_OCCUPIED (B4): a arma já tem outro pendurado (colocado à mão depois)? Pura: `rows` são os componentes atuais da arma.
+const isHangingOccupied = (rows) => rows.some((row) => itemComponentService.isDetachable(row.kind));
 
 // Operações ativas, vínculos agrupados por operação e a operação ativa mais recente (maior id) de cada unidade.
 function loadActiveOperations() {
@@ -67,8 +85,10 @@ function loadOperationContext(items, { excludeOperationId = null } = {}) {
   return { ...active, itemsById, costIndex };
 }
 
-// Função pura: a operação pode ser desfeita? `ctx`: { linksByOperation, latestOpIdByItem, itemsById }.
-// Devolve { undoable, reason, params }; `reason`: ALREADY_UNDONE | DETACHED | NOT_LATEST | TARGET_SOLD | TARGET_NOT_IN_STOCK.
+// Função pura: a operação pode ser desfeita? `ctx`: { linksByOperation, latestOpIdByItem, itemsById, componentRowsOf? }.
+// `componentRowsOf(itemId)`: os componentes atuais da unidade; sem ele, as conferências que dependem deles (separação e raspagem) não rodam.
+// Devolve { undoable, reason, params }; `reason`: ALREADY_UNDONE | DETACHED | NOT_LATEST | TARGET_SOLD | TARGET_NOT_IN_STOCK |
+// HANGING_OCCUPIED (separação) | COMPONENTS_NOT_ALLOWED | COMPONENT_LIMIT (raspagem: o componente não volta à arma).
 function assessUndo(operation, ctx) {
   if (operation.undoneAt) return { undoable: false, reason: 'ALREADY_UNDONE', params: {} };
   // Aplicação encerrada por uma separação (D366): desfaz-se a separação antes.
@@ -86,6 +106,28 @@ function assessUndo(operation, ctx) {
     if (!item || item.status === 'EM_ESTOQUE') continue;
     return { undoable: false, reason: item.status === 'VENDIDO' ? 'TARGET_SOLD' : 'TARGET_NOT_IN_STOCK', params: { itemId: item.id } };
   }
+  if (typeof ctx.componentRowsOf === 'function') {
+    if (operation.kind === 'DETACH_COMPONENT') {
+      // Separação (D366 item 6): o pendurado precisa de lugar na arma para voltar.
+      const weapon = weaponLinkOf(links, parseDetail(operation));
+      if (weapon && isHangingOccupied(ctx.componentRowsOf(weapon.itemId))) return { undoable: false, reason: 'HANGING_OCCUPIED', params: { itemId: weapon.itemId } };
+    } else if (operation.kind === 'SCRAPE_OFF') {
+      // Raspagem: o componente volta para a arma, que precisa ainda aceitá-lo e ter lugar (M5).
+      const { component } = parseDetail(operation);
+      const target = links.find((link) => link.role === 'TARGET');
+      const item = target ? ctx.itemsById.get(target.itemId) : null;
+      if (component && target && item) {
+        if (!itemComponentService.allowedKindsFor(item.category).includes(component.kind)) {
+          return { undoable: false, reason: 'COMPONENTS_NOT_ALLOWED', params: { itemId: item.id, category: item.category } };
+        }
+        try {
+          itemComponentService.assertLimits([...ctx.componentRowsOf(target.itemId), { kind: component.kind }]);
+        } catch (err) {
+          return { undoable: false, reason: 'COMPONENT_LIMIT', params: { itemId: item.id, kind: component.kind } };
+        }
+      }
+    }
+  }
   return { undoable: true, reason: null, params: {} };
 }
 
@@ -95,4 +137,4 @@ const EMPTY_OPERATION_CONTEXT = Object.freeze({
   itemsById: new Map(), costIndex: EMPTY_COST_INDEX,
 });
 
-module.exports = { EMPTY_OPERATION_CONTEXT, loadActiveOperations, loadCostIndex, loadOperationContext, assessUndo };
+module.exports = { weaponLinkOf, isHangingOccupied, EMPTY_OPERATION_CONTEXT, loadActiveOperations, loadCostIndex, loadOperationContext, assessUndo };

@@ -42,7 +42,7 @@ describe('aplicar sticker numa arma', () => {
     expect(res.status).toBe(201);
     expect(res.body.data.operation).toMatchObject({ kind: 'APPLY_COMPONENT', outcome: 'TRANSFERRED', occurredAt: APPLIED_AT, undoneAt: null });
     const target = res.body.data.item;
-    expect(target.cost).toEqual({ ownUsdCents: 100, inheritedUsdCents: 50, effectiveUsdCents: 150, estimated: false });
+    expect(target.cost).toEqual({ ownUsdCents: 100, inheritedUsdCents: 50, effectiveUsdCents: 150, estimated: false , hasOperationCost: true });
     expect(target.purchasePriceCents).toBe(100); // nunca muda
     expect(target.components).toHaveLength(1);
     expect(target.components[0]).toMatchObject({
@@ -135,6 +135,9 @@ describe('aplicar sticker numa arma', () => {
     const fresh = await createItemViaApi(app, stickerBody());
     expectError(await apply(ak.id, fresh.id, { appliedAt: 'x' }), 400, 'INVALID_DATE');
     expectError(await post(`/api/items/${ak.id}/apply-component`, { slot: 1 }), 400, 'REQUIRED_FIELD');
+    expectError(await post(`/api/items/${ak.id}/apply-component`, { sourceItemId: null }), 400, 'REQUIRED_FIELD', { field: 'sourceItemId' });
+    // B2: presente e inválido é INVALID_FIELD (não REQUIRED_FIELD)
+    for (const bad of ['x', 0, -3, 1.5]) expectError(await post(`/api/items/${ak.id}/apply-component`, { sourceItemId: bad }), 400, 'INVALID_FIELD', { field: 'sourceItemId' });
     expectError(await post(`/api/items/${ak.id}/apply-component`, { sourceItemId: 1, allowSoldTarget: true }), 400, 'UNKNOWN_FIELD');
   });
 
@@ -145,6 +148,35 @@ describe('aplicar sticker numa arma', () => {
     expectError(await apply(ak.id, sticker.id), 409, 'ITEM_NOT_IN_STOCK');
     expectError(await post(`/api/items/${ak.id}/apply-component`, { sourceItemId: sticker.id, allowSoldTarget: true }), 400, 'UNKNOWN_FIELD');
     expect((await get(`/api/items/${ak.id}/apply-candidates`)).body.data).toMatchObject({ allowedKinds: [], candidates: [] });
+  });
+
+  test('S1: apply-candidates resolve as candidatas em lote (sem consulta de catálogo por unidade), inclusive o Sticker Slab', async () => {
+    const ak = await createItemViaApi(app);
+    await createItemViaApi(app, stickerBody());
+    await createItemViaApi(app, stickerBody({ catalogId: CAT.STICKER_CROWN }));
+    await createItemViaApi(app, purchaseBody({ catalogId: CAT.CHARM_LIL_AVA, purchasePriceCents: 30 }));
+    const slab = await createItemViaApi(app, purchaseBody({ catalogId: undefined, category: 'OUTRO', name: 'Sticker Slab | Titan | Katowice 2014', purchasePriceCents: 70 }));
+    const spyById = jest.spyOn(CatalogItem, 'findById');
+    const spyByName = jest.spyOn(CatalogItem, 'findByNameKey');
+    try {
+      const data = (await get(`/api/items/${ak.id}/apply-candidates`)).body.data;
+      expect(data.candidates.map((c) => c.kind).sort()).toEqual(['CHARM', 'STICKER', 'STICKER', 'STICKER_SLAB']);
+      expect(data.candidates.find((c) => c.itemId === slab.id)).toMatchObject({ kind: 'STICKER_SLAB', catalogId: CAT.STICKER_TITAN });
+      expect(spyById).not.toHaveBeenCalled();
+      expect(spyByName).not.toHaveBeenCalled();
+    } finally {
+      spyById.mockRestore();
+      spyByName.mockRestore();
+    }
+  });
+
+  test('B1: apply-candidates zera em remaining os tipos que o item não aceita (arma sem patch, agente sem sticker/pendurado)', async () => {
+    const ak = await createItemViaApi(app);
+    expect((await get(`/api/items/${ak.id}/apply-candidates`)).body.data.remaining).toEqual({ stickers: 5, hanging: 1, patches: 0 });
+    const agent = await createItemViaApi(app, { catalogId: CAT.AGENT_DARRYL, acquisitionType: 'GANHEI', acquiredAt: '2026-11-10T12:00:00.000Z' });
+    expect((await get(`/api/items/${agent.id}/apply-candidates`)).body.data.remaining).toEqual({ stickers: 0, hanging: 0, patches: 3 });
+    const knife = await createItemViaApi(app, purchaseBody({ catalogId: CAT.KARAMBIT_DOPPLER_P1, exterior: 'FN' }));
+    expect((await get(`/api/items/${knife.id}/apply-candidates`)).body.data.remaining).toEqual({ stickers: 0, hanging: 0, patches: 0 });
   });
 
   test('datas: anterior à aquisição de cada uma, futura; igual à aquisição vale; unidade em trade lock e no holding valem', async () => {
@@ -169,7 +201,7 @@ describe('aplicar sticker numa arma', () => {
     const sticker = await createItemViaApi(app, stickerBody({ purchaseStoreId: storeId('Steam'), purchasePriceCents: 540, fxRateAtPurchase: 5.4 }));
     const res = await apply(ak.id, sticker.id);
     const target = res.body.data.item;
-    expect(target.cost).toEqual({ ownUsdCents: 100, inheritedUsdCents: 100, effectiveUsdCents: 200, estimated: true });
+    expect(target.cost).toEqual({ ownUsdCents: 100, inheritedUsdCents: 100, effectiveUsdCents: 200, estimated: true , hasOperationCost: true });
     const steam = target.minPrices.find((m) => m.storeName === 'Steam');
     const steamBefore = before.find((m) => m.storeName === 'Steam');
     expect(steam.minPriceCents).toBeGreaterThan(steamBefore.minPriceCents);
@@ -218,7 +250,7 @@ describe('candidatas', () => {
     await createItemViaApi(app, purchaseBody({ catalogId: 'patch-1', purchasePriceCents: 10 })); // patch não serve numa arma
     const data = (await get(`/api/items/${ak.id}/apply-candidates`)).body.data;
     expect(data.allowedKinds).toEqual(['STICKER', 'CHARM', 'STICKER_SLAB']);
-    expect(data.remaining).toEqual({ stickers: 5, hanging: 1, patches: 3 });
+    expect(data.remaining).toEqual({ stickers: 5, hanging: 1, patches: 0 });
     expect(data.candidates.filter((c) => c.kind === 'STICKER').map((c) => c.itemId)).toEqual([old.id, recent.id]);
     expect(data.candidates.map((c) => c.itemId)).toEqual(data.candidates.slice().sort((a, b) => Date.parse(a.acquiredAt) - Date.parse(b.acquiredAt) || a.itemId - b.itemId).map((c) => c.itemId));
     expect(data.candidates.every((c) => c.kind !== 'PATCH')).toBe(true);
@@ -266,10 +298,48 @@ describe('remover para sempre', () => {
     const sticker = await createItemViaApi(app, stickerBody());
     await apply(ak.id, sticker.id);
     const comp = (await itemOf(ak.id)).components[0];
-    expectError(await post(`/api/items/${ak.id}/components/${comp.id}/scrape-off`, { occurredAt: '2026-11-14T12:00:00.000Z' }), 422, 'OPERATION_DATE_INVALID', { params: { reason: 'BEFORE_APPLICATION', acquiredAt: expect.any(String) } });
+    expectError(await post(`/api/items/${ak.id}/components/${comp.id}/scrape-off`, { occurredAt: '2026-11-14T12:00:00.000Z' }), 422, 'OPERATION_DATE_INVALID', { field: 'occurredAt', params: { reason: 'BEFORE_APPLICATION', acquiredAt: expect.any(String) } });
+    expectError(await post(`/api/items/${ak.id}/components/${comp.id}/scrape-off`, { occurredAt: '2027-12-01T12:00:00.000Z' }), 422, 'OPERATION_DATE_INVALID', { field: 'occurredAt', params: { reason: 'FUTURE' } });
     expectError(await post(`/api/items/${sticker.id}/components/${comp.id}/scrape-off`), 409, 'ITEM_CONSUMED');
     await post(`/api/items/${ak.id}/sell`, { saleStoreId: storeId('CSFloat'), salePriceCents: 500, soldAt: '2026-11-16T12:00:00.000Z' });
     expectError(await post(`/api/items/${ak.id}/components/${comp.id}/scrape-off`), 409, 'ITEM_NOT_IN_STOCK');
+  });
+
+  test('M5: desfazer a remoção confere limites e categoria; bloqueado vira undoable false com o motivo no histórico', async () => {
+    const four = [0, 1, 2, 3].map((slot) => ({ kind: 'STICKER', catalogId: CAT.STICKER_CROWN, slot }));
+    const ak = await createItemViaApi(app, purchaseBody({ components: four }));
+    const sticker = await createItemViaApi(app, stickerBody());
+    await apply(ak.id, sticker.id, { slot: 4 });
+    const comp = (await itemOf(ak.id)).components.find((c) => c.origin === 'APPLIED_FROM_STOCK');
+    expect((await post(`/api/items/${ak.id}/components/${comp.id}/scrape-off`, { occurredAt: '2026-11-17T12:00:00.000Z' })).status).toBe(200);
+    const scrapeOf = async () => (await get(`/api/items/${ak.id}/operations`)).body.data.find((o) => o.kind === 'SCRAPE_OFF');
+    expect(await scrapeOf()).toMatchObject({ undoable: true, undoBlockedReason: null });
+
+    // o usuário encheu os 5 slots à mão: não há lugar para o sticker raspado voltar
+    const five = [...four, { kind: 'STICKER', catalogId: CAT.STICKER_CROWN, slot: 4 }];
+    expect((await request(app).patch(`/api/items/${ak.id}`).send({ components: five })).status).toBe(200);
+    expect(await scrapeOf()).toMatchObject({ undoable: false, undoBlockedReason: 'COMPONENT_LIMIT' });
+    const op = await scrapeOf();
+    expectError(await post(`/api/operations/${op.id}/undo`), 409, 'OPERATION_UNDO_BLOCKED', { params: { reason: 'COMPONENT_LIMIT', itemId: ak.id, kind: 'STICKER' } });
+    expect((await itemOf(ak.id)).components).toHaveLength(5); // nada mudou
+
+    // com lugar de novo, volta a ser desfazível e o desfazer funciona
+    expect((await request(app).patch(`/api/items/${ak.id}`).send({ components: four })).status).toBe(200);
+    expect(await scrapeOf()).toMatchObject({ undoable: true });
+    expect((await post(`/api/operations/${op.id}/undo`)).status).toBe(200);
+    expect((await itemOf(ak.id)).components).toHaveLength(5);
+  });
+
+  test('M5: a categoria da arma deixou de aceitar o tipo: COMPONENTS_NOT_ALLOWED', async () => {
+    const ak = await createItemViaApi(app, purchaseBody({ components: [] }));
+    const sticker = await createItemViaApi(app, stickerBody());
+    await apply(ak.id, sticker.id, { slot: 0 });
+    const comp = (await itemOf(ak.id)).components[0];
+    expect((await post(`/api/items/${ak.id}/components/${comp.id}/scrape-off`)).status).toBe(200);
+    getDb().prepare("UPDATE items SET category = 'FACA' WHERE id = ?").run(ak.id); // simula a troca de categoria
+    const op = (await get(`/api/items/${ak.id}/operations`)).body.data.find((o) => o.kind === 'SCRAPE_OFF');
+    expect(op).toMatchObject({ undoable: false, undoBlockedReason: 'COMPONENTS_NOT_ALLOWED' });
+    expectError(await post(`/api/operations/${op.id}/undo`), 409, 'OPERATION_UNDO_BLOCKED', { params: { reason: 'COMPONENTS_NOT_ALLOWED', itemId: ak.id, category: 'FACA' } });
   });
 });
 
@@ -285,7 +355,7 @@ describe('desfazer', () => {
     expect(res.body.data.operation).toMatchObject({ id: opId, undoneAt: expect.any(String) });
     expect(res.body.data.items.map((i) => i.id).sort()).toEqual([ak.id, sticker.id].sort());
     const target = await itemOf(ak.id);
-    expect(target.cost).toEqual({ ownUsdCents: 100, inheritedUsdCents: 0, effectiveUsdCents: 100, estimated: false });
+    expect(target.cost).toEqual({ ownUsdCents: 100, inheritedUsdCents: 0, effectiveUsdCents: 100, estimated: false , hasOperationCost: false });
     expect(target.components).toEqual([]);
     expect(await itemOf(sticker.id)).toMatchObject({ status: 'EM_ESTOQUE', consumedAt: null });
     expect(numbers(await profit())).toEqual(before);
@@ -395,7 +465,7 @@ describe('sem nenhuma operação os números são os de sempre', () => {
   test('lista, grupo, lucro real e preço mínimo seguem o custo de compra', async () => {
     const ak = await createItemViaApi(app);
     const view = await itemOf(ak.id);
-    expect(view.cost).toEqual({ ownUsdCents: 100, inheritedUsdCents: 0, effectiveUsdCents: 100, estimated: false });
+    expect(view.cost).toEqual({ ownUsdCents: 100, inheritedUsdCents: 0, effectiveUsdCents: 100, estimated: false , hasOperationCost: false });
     expect(view.consumedIn).toBeNull();
     expect(view.canReceiveComponents).toBe(true);
     expect((await profit()).stockUsdCents).toBe(100);

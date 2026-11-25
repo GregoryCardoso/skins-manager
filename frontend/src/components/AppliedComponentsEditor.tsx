@@ -20,6 +20,8 @@ interface Props {
   onChange: (next: ComponentsState) => void;
   // Depois de desfazer ou remover, o item mudou: o formulário fecha com a mensagem (as edições não salvas se perdem).
   onItemChanged: (message: string) => void;
+  // "Separar" o pendurado aplicado (M7), com o id do componente.
+  onDetach?: (componentId: number) => void;
   disabled?: boolean;
 }
 
@@ -27,7 +29,7 @@ type Pending = { kind: 'undo' | 'scrape'; component: ItemComponent };
 
 // Componentes aplicados do estoque (10.3, D362): só leitura, menos posição, desgaste e pattern. "Desfazer aplicação" corrige um
 // lançamento errado (a unidade volta ao estoque); "Remover para sempre" tira sticker ou patch da arma e o custo continua no item.
-export default function AppliedComponentsEditor({ itemId, state, onChange, onItemChanged, disabled = false }: Props) {
+export default function AppliedComponentsEditor({ itemId, state, onChange, onItemChanged, onDetach, disabled = false }: Props) {
   const t = useT();
   const tLoose = useTLoose();
   const language = useLanguage();
@@ -108,6 +110,11 @@ export default function AppliedComponentsEditor({ itemId, state, onChange, onIte
               >
                 {t('operations.undo')}
               </button>
+              {onDetach && component.detachable && (
+                <button type="button" className={`${styles.button} ${styles.small}`} onClick={() => onDetach(component.id)}>
+                  {t('inventory.actions.detach')}
+                </button>
+              )}
               {component.scrapeable && (
                 <button type="button" className={`${styles.button} ${styles.small} ${styles.danger}`} onClick={() => { setError(null); setPending({ kind: 'scrape', component }); }}>
                   {t('operations.scrape')}

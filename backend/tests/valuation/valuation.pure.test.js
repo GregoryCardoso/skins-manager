@@ -115,8 +115,9 @@ describe('mapListingReference (exemplo real anonimizado)', () => {
   test.each([
     ['pedido 418 e anúncio 419', { marketHashName: KARAMBIT, paintIndex: 419 }, { marketHashName: KARAMBIT, paintIndex: 418 }],
     ['nome diferente do pedido', { marketHashName: 'Outro Item (Field-Tested)', paintIndex: 1050 }, { marketHashName: DEAGLE, paintIndex: null }],
-  ])('%s -> IMPORT_SOURCE_FORMAT_CHANGED', (_label, listing, request) => {
-    expect(() => mapListingReference({ data: [fakeListing({ ...listing, basePrice: 100 })] }, request)).toThrow(expect.objectContaining({ code: 'IMPORT_SOURCE_FORMAT_CHANGED' }));
+  ])('%s -> NOT_FOUND (anúncio de outro item, M2; nunca devolve o preço dele)', (_label, listing, request) => {
+    expect(mapListingReference({ data: [fakeListing({ ...listing, basePrice: 100 })] }, request))
+      .toEqual({ status: 'NOT_FOUND', basePriceCents: null, referenceQuantity: null, sourceUpdatedAt: null });
   });
 
   test.each([['objeto qualquer', { foo: 1 }], ['texto', 'x'], ['nulo', null], ['data não é lista', { data: {} }], ['anúncio não é objeto', { data: [1] }], ['sem item', { data: [{ reference: { base_price: 5 } }] }]])(

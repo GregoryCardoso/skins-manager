@@ -97,7 +97,7 @@ describe('auxiliares', () => {
 
   test('summarize e toSummary contam o pendurado (chaveiro ou slab)', () => {
     const rows = [{ kind: 'STICKER' }, { kind: 'STICKER' }, { kind: 'STICKER_SLAB' }];
-    expect(svc.toSummary(rows)).toEqual({ stickers: 2, charms: 1 });
+    expect(svc.toSummary(rows)).toEqual({ stickers: 2, charms: 1, patches: 0 });
     expect(svc.summarize(rows).kinds).toEqual(['STICKER', 'STICKER_SLAB']);
   });
 

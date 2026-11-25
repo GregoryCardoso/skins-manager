@@ -26,7 +26,7 @@ describe('POST/PATCH /api/items com components', () => {
     expect(item.components[0]).toMatchObject({ kind: 'STICKER', catalogId: CAT.STICKER_TITAN, slot: 0, wear: 0.1, source: 'MANUAL' });
     expect(item.components[0]).toHaveProperty('imageUrl');
     expect(item.components[2]).toMatchObject({ kind: 'CHARM', pattern: 42 });
-    expect(item.componentSummary).toEqual({ stickers: 2, charms: 1 });
+    expect(item.componentSummary).toEqual({ stickers: 2, charms: 1, patches: 0 });
     const again = (await get(`/api/items/${item.id}`)).body.data;
     expect(again.components.map((c) => c.id)).toEqual(item.components.map((c) => c.id));
   });
@@ -35,7 +35,7 @@ describe('POST/PATCH /api/items com components', () => {
     const item = await createItemViaApi(app, purchaseBody({ components: two }));
     const plain = await createItemViaApi(app);
     expect(plain.components).toEqual([]);
-    expect(plain.componentSummary).toEqual({ stickers: 0, charms: 0 });
+    expect(plain.componentSummary).toEqual({ stickers: 0, charms: 0, patches: 0 });
     const untouched = (await patch(item.id, { originDetail: 'x' })).body.data;
     expect(untouched.components).toHaveLength(2);
     const swapped = (await patch(item.id, { components: [charm] })).body.data;
@@ -49,7 +49,7 @@ describe('POST/PATCH /api/items com components', () => {
     const res = await patch(item.id, { components: [{ kind: 'STICKER_SLAB', catalogId: CAT.STICKER_CROWN, pattern: 5 }] });
     expect(res.status).toBe(200);
     expect(res.body.data.components[0]).toMatchObject({ kind: 'STICKER_SLAB', name: expect.stringMatching(/^Sticker Slab \| /), wear: null, pattern: 5 });
-    expect(res.body.data.componentSummary).toEqual({ stickers: 0, charms: 1 });
+    expect(res.body.data.componentSummary).toEqual({ stickers: 0, charms: 1, patches: 0 });
   });
 
   test('erros: faca, luva e caixa recusam; limite; catálogo; campos (slot repetido vale, D361)', async () => {

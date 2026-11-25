@@ -63,7 +63,7 @@ describe('separar o chaveiro que veio junto (SPLIT)', () => {
     const { operation, item: weapon, detachedItem } = res.body.data;
     expect(operation).toMatchObject({ kind: 'DETACH_COMPONENT', outcome: 'TRANSFERRED', occurredAt: DETACH_AT });
     expect(weapon.components).toEqual([]);
-    expect(weapon.cost).toMatchObject({ ownUsdCents: 1001, effectiveUsdCents: 901, inheritedUsdCents: -100 });
+    expect(weapon.cost).toMatchObject({ ownUsdCents: 1001, effectiveUsdCents: 901, inheritedUsdCents: -100, hasOperationCost: true });
     expect(weapon.purchasePriceCents).toBe(1001); // nunca muda
     expect(detachedItem).toMatchObject({
       category: 'PINGENTE', name: "Charm | Lil' Ava", catalogId: CAT.CHARM_LIL_AVA, status: 'EM_ESTOQUE', acquisitionType: 'GERADO',
@@ -157,6 +157,25 @@ describe('separar o chaveiro que veio junto (SPLIT)', () => {
     const sold = await post(`/api/items/${gen.id}/sell`, { saleStoreId: storeId('CSFloat'), salePriceCents: 200, soldAt: '2026-11-18T12:00:00.000Z' });
     expect(sold.status).toBe(200);
     expect(sold.body.data.item.saleProfitUsdCents).toBe(sold.body.data.item.netReceivedCents - 50);
+  });
+
+  test('M1: arma separada em estoque e vendida mostra o custo efetivo (hasOperationCost) coerente com o lucro', async () => {
+    const ak = await createItemViaApi(app, akBody({ purchasePriceCents: 1000 }));
+    expect(ak.cost.hasOperationCost).toBe(false);
+    const res = await detach(ak.id, hangingOf(ak).id, { hangingShareBp: 2000 });
+    expect(res.status).toBe(201);
+    expect(res.body.data.item.cost).toMatchObject({ ownUsdCents: 1000, effectiveUsdCents: 800, inheritedUsdCents: -200, hasOperationCost: true });
+    expect((await itemOf(ak.id)).cost.hasOperationCost).toBe(true);
+    // a separada nasce sem custo próprio e com o herdado positivo
+    expect(res.body.data.detachedItem.cost).toMatchObject({ ownUsdCents: 0, effectiveUsdCents: 200, hasOperationCost: true });
+    const sold = await post(`/api/items/${ak.id}/sell`, { saleStoreId: storeId('CSFloat'), salePriceCents: 2000, soldAt: '2026-11-18T12:00:00.000Z' });
+    expect(sold.status).toBe(200);
+    const item = sold.body.data.item;
+    expect(item.cost).toMatchObject({ effectiveUsdCents: 800, inheritedUsdCents: -200, hasOperationCost: true });
+    expect(item.saleInfo).toMatchObject({ ownCostUsdCents: 1000, inheritedCostUsdCents: -200, purchaseCostUsdCents: 800 });
+    expect(item.saleProfitUsdCents).toBe(item.saleInfo.netReceivedUsdCents - 800);
+    const listed = ((await get('/api/items?status=VENDIDO')).body.data.items || (await get('/api/items?status=VENDIDO')).body.data).find((i) => i.id === ak.id);
+    expect(listed.saleInfo.purchaseCostUsdCents).toBe(800);
   });
 
   test('trade lock opcional da separada: o giro conta dele; data antes da aquisição, futura e trade lock antes da separação são recusados', async () => {

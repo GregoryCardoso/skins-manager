@@ -262,7 +262,9 @@ function mapTransactionsPage(json) {
 // anúncio só `reference.base_price`, `reference.quantity`, `reference.last_updated`, `item.market_hash_name` e `item.paint_index`.
 // Nunca `price` (o mais barato pode ser um leilão abaixo da referência), `type`, `state`, `phase`, `sticker_overpay`, `cursor`, `id`,
 // `seller`, `asset_id`, `inspect_link`, `float_value`, `predicted_price` nem `float_factor` (D309).
-// Salvaguarda: o nome (e o `paint_index`, só quando foi pedido um) do anúncio precisam bater com o pedido; senão a fonte ignorou o filtro.
+// Salvaguarda: o nome (e o `paint_index`, só quando foi pedido um) do anúncio precisam bater com o pedido; senão a fonte ignorou o filtro
+// e o anúncio é de OUTRO item: problema só desta chave (NOT_FOUND, nunca grava o preço do outro item) e a rodada segue. Formato
+// estrutural inválido (sem `item`, nome ou `paint_index` de tipo errado) continua sendo FORMAT_CHANGED.
 function mapListingReference(json, { marketHashName, paintIndex = null } = {}) {
   const list = Array.isArray(json) ? json : isPlainObject(json) && Array.isArray(json.data) ? json.data : null;
   if (list === null) throw formatChanged();
@@ -270,8 +272,13 @@ function mapListingReference(json, { marketHashName, paintIndex = null } = {}) {
   const listing = list[0];
   if (!isPlainObject(listing)) throw formatChanged();
   const item = isPlainObject(listing.item) ? listing.item : null;
-  if (!item || item.market_hash_name !== marketHashName) throw formatChanged();
-  if (paintIndex !== null && paintIndex !== undefined && item.paint_index !== paintIndex) throw formatChanged();
+  if (!item || typeof item.market_hash_name !== 'string') throw formatChanged();
+  const notFound = { status: 'NOT_FOUND', basePriceCents: null, referenceQuantity: null, sourceUpdatedAt: null };
+  if (item.market_hash_name !== marketHashName) return notFound;
+  if (paintIndex !== null && paintIndex !== undefined) {
+    if (!Number.isInteger(item.paint_index)) throw formatChanged();
+    if (item.paint_index !== paintIndex) return notFound;
+  }
   const reference = isPlainObject(listing.reference) ? listing.reference : null;
   const basePriceCents = reference ? parseCentsString(reference.base_price) : null;
   if (basePriceCents === null) return { status: 'NOT_FOUND', basePriceCents: null, referenceQuantity: null, sourceUpdatedAt: null };

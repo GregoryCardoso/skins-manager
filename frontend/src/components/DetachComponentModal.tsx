@@ -18,6 +18,8 @@ import Modal from './Modal';
 
 interface Props {
   item: ItemView;
+  // Pendurado a separar (M7: vindo da seção de componentes). Ausente: o primeiro separável da arma.
+  componentId?: number;
   onClose: () => void;
   onDone: (message: string) => void;
   onGone: () => void;
@@ -37,12 +39,12 @@ function parseShareText(text: string, language: string): number | null {
 // "Separar" o chaveiro ou o Sticker Slab da arma (10.7, D366). Dois modos, definidos pelo backend: devolver a unidade do estoque que
 // foi aplicada (RETURN) ou criar uma unidade nova dividindo o custo da arma pelos valores avaliados (SPLIT). Todos os números vêm da
 // prévia do backend; aqui não se calcula nada. Não muda o lucro real nem o saldo das lojas.
-export default function DetachComponentModal({ item, onClose, onDone, onGone }: Props) {
+export default function DetachComponentModal({ item, componentId, onClose, onDone, onGone }: Props) {
   const t = useT();
   const tLoose = useTLoose();
   const language = useLanguage();
   const invalidate = useInvalidate();
-  const component = item.components.find((c) => c.detachable) ?? null;
+  const component = item.components.find((c) => c.detachable && (componentId === undefined || c.id === componentId)) ?? null;
 
   const [shareText, setShareText] = useState<string | null>(null);
   const shareBp = shareText === null || shareText.trim() === '' ? null : parseShareText(shareText, language);

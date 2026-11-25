@@ -10,6 +10,7 @@ const ItemOperation = require('../../models/ItemOperation');
 const { runInTransaction } = require('../../models/modelHelpers');
 const { AppError, ValidationError, NotFoundError, ConflictError } = require('../../errors/AppError');
 const catalogService = require('../catalogService');
+const { normalizeSearchText } = require('../catalog/csgoApiAdapter');
 const itemComponentService = require('../itemComponentService');
 const { parseDate } = require('../dateUtils');
 const { isInTradeLock, isOffSale } = require('../inventoryAgingService');
@@ -36,6 +37,23 @@ function resolveSourceKind(item, { getCatalogItem = (id) => catalogService.getCa
     return entry ? { kind: 'STICKER_SLAB', entry } : null;
   }
   return null;
+}
+
+// Em lote (S1): Map id da unidade -> { kind, entry } só das que servem como componente; uma consulta de catálogo por id e uma por nome de
+// Sticker Slab, em vez de uma por unidade. Mesma regra de `resolveSourceKind`.
+function resolveSourceKinds(units) {
+  const entries = new Map(catalogService.getCatalogItemsByIds(units.map((u) => u.catalogId).filter((id) => !isNil(id))).map((c) => [c.id, c]));
+  const slabs = units.filter((u) => !KIND_BY_CATEGORY[u.category] && u.category === 'OUTRO' && typeof u.name === 'string' && u.name.startsWith(SLAB_PREFIX));
+  const stickerByName = slabs.length ? catalogService.findExactMatches(slabs.map((u) => `Sticker | ${u.name.slice(SLAB_PREFIX.length)}`), 'STICKER') : new Map();
+  const out = new Map();
+  for (const unit of units) {
+    const resolved = resolveSourceKind(unit, {
+      getCatalogItem: (id) => entries.get(id) ?? null,
+      findExactMatch: ({ name }) => stickerByName.get(normalizeSearchText(name)) ?? null,
+    });
+    if (resolved) out.set(unit.id, resolved);
+  }
+  return out;
 }
 
 function findOrFail(id, role) {
@@ -125,7 +143,7 @@ function scrapeOff({ targetId, componentId, occurredAt = null }, ctx = {}) {
     }
     const applyOp = ItemOperation.findById(component.operationId);
     const date = isNil(occurredAt) ? now : parseDate(occurredAt, 'Data da remoção', { field: 'occurredAt' });
-    assertDate(date, { now, lowerBounds: [{ reason: 'BEFORE_APPLICATION', at: applyOp.occurredAt }], field: 'occurredAt' });
+    assertDate(date, { now, lowerBounds: [{ reason: 'BEFORE_APPLICATION', at: applyOp.occurredAt }], field: 'occurredAt', errorField: 'occurredAt' });
     const stamp = date.toISOString();
     const detail = {
       component: {
@@ -151,14 +169,17 @@ function listCandidates(targetId, { now = new Date() } = {}) {
   const target = findOrFail(targetId, 'TARGET');
   const allowedKinds = target.status === 'EM_ESTOQUE' ? itemComponentService.allowedKindsFor(target.category) : [];
   const rows = ItemComponent.listByItemIds([target.id]).get(target.id) ?? [];
-  const remaining = itemComponentService.remainingFor(rows);
+  // Tipos que o item não aceita não têm vaga (B1): zera o que não cabe na categoria.
+  const remainingAll = itemComponentService.remainingFor(rows);
+  const remaining = {
+    stickers: allowedKinds.includes('STICKER') ? remainingAll.stickers : 0,
+    hanging: allowedKinds.some((kind) => itemComponentService.isDetachable(kind)) ? remainingAll.hanging : 0,
+    patches: allowedKinds.includes('PATCH') ? remainingAll.patches : 0,
+  };
   if (allowedKinds.length === 0) return { allowedKinds, remaining, candidates: [] };
   const units = Item.findInStockByCategories(SOURCE_CATEGORIES).filter((unit) => unit.id !== target.id);
   const resolvedBy = new Map();
-  for (const unit of units) {
-    const resolved = resolveSourceKind(unit);
-    if (resolved && allowedKinds.includes(resolved.kind)) resolvedBy.set(unit.id, resolved);
-  }
+  for (const [unitId, resolved] of resolveSourceKinds(units)) if (allowedKinds.includes(resolved.kind)) resolvedBy.set(unitId, resolved);
   const chosen = units.filter((unit) => resolvedBy.has(unit.id));
   const { costIndex } = operationContext.loadOperationContext(chosen);
   const candidates = chosen.map((unit) => {
@@ -183,4 +204,4 @@ function listCandidates(targetId, { now = new Date() } = {}) {
   return { allowedKinds, remaining, candidates };
 }
 
-module.exports = { SOURCE_CATEGORIES, resolveSourceKind, applyFromStock, scrapeOff, listCandidates };
+module.exports = { SOURCE_CATEGORIES, resolveSourceKind, resolveSourceKinds, applyFromStock, scrapeOff, listCandidates };

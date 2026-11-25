@@ -72,7 +72,7 @@ describe('abrir caixa com a chave', () => {
       acquisitionType: 'GERADO', purchaseStoreId: null, purchasePriceCents: 0, purchaseCurrency: 'USD', fxRateAtPurchase: null, status: 'EM_ESTOQUE',
       acquiredAt: OPENED_AT, floatValue: 0.15, name: 'AK-47 | Redline',
     });
-    expect(generatedItem.cost).toEqual({ ownUsdCents: 0, inheritedUsdCents: 500, effectiveUsdCents: 500, estimated: false });
+    expect(generatedItem.cost).toEqual({ ownUsdCents: 0, inheritedUsdCents: 500, effectiveUsdCents: 500, estimated: false , hasOperationCost: true });
     expect(generatedItem.generatedFrom).toMatchObject({ kind: 'OPEN_CASE', container: 'CASE', decision: null, containerName: 'Kilowatt Case', keyName: 'Kilowatt Case Key', occurredAt: OPENED_AT });
     expect(generatedItem.openable).toBeNull();
     for (const id of [box.id, key.id]) {
@@ -99,7 +99,7 @@ describe('abrir caixa com a chave', () => {
     const box = await createItemViaApi(app, caseBody(X.KILOWATT, { purchaseStoreId: storeId('Steam'), purchasePriceCents: 540, fxRateAtPurchase: 5.4 }));
     const key = await createItemViaApi(app, { category: 'OUTRO', name: 'Kilowatt Case Key', acquisitionType: 'GANHEI', acquiredAt: '2026-11-10T12:00:00.000Z' });
     const res = await open(box.id, { keyItemId: key.id, generated: generatedAk() });
-    expect(res.body.data.generatedItem.cost).toEqual({ ownUsdCents: 0, inheritedUsdCents: 100, effectiveUsdCents: 100, estimated: true });
+    expect(res.body.data.generatedItem.cost).toEqual({ ownUsdCents: 0, inheritedUsdCents: 100, effectiveUsdCents: 100, estimated: true , hasOperationCost: true });
   });
 
   test('vender o gerado: o lucro da venda é o líquido menos o custo efetivo', async () => {
@@ -116,7 +116,7 @@ describe('abrir caixa com a chave', () => {
     expect((await get(`/api/items/${box.id}/open-options`)).body.data).toMatchObject({
       kind: 'CASE', containerName: 'Kilowatt Case', requiredKeyName: 'Kilowatt Case Key', keys: [], otherKeysInStock: 0, steamStore: expect.objectContaining({ name: 'Steam', currency: 'BRL' }),
     });
-    expect((await itemOf(box.id)).openable).toEqual({ kind: 'CASE', compatibleKeys: 0, requiredKeyName: 'Kilowatt Case Key' });
+    expect((await itemOf(box.id)).openable).toEqual({ kind: 'CASE', compatibleKeys: 0, otherKeysInStock: 0, otherKeyNames: [], requiredKeyName: 'Kilowatt Case Key' });
     const newer = await createItemViaApi(app, keyBody('Kilowatt Case Key', { acquiredAt: '2026-11-12T12:00:00.000Z', tradeUnlockAt: '2026-11-30T12:00:00.000Z' }));
     const older = await createItemViaApi(app, keyBody('Kilowatt Case Key', { acquiredAt: '2026-11-05T12:00:00.000Z' }));
     await createItemViaApi(app, keyBody('Chroma Case Key'));
@@ -144,8 +144,8 @@ describe('abrir caixa com a chave', () => {
     const esports = await createItemViaApi(app, caseBody(X.ESPORTS14));
     const chroma = await createItemViaApi(app, caseBody(X.CHROMA));
     const csgoKey = await createItemViaApi(app, keyBody('CS:GO Case Key'));
-    expect((await itemOf(csgo2.id)).openable).toEqual({ kind: 'CASE', compatibleKeys: 1, requiredKeyName: 'CS:GO Case Key' });
-    expect((await itemOf(esports.id)).openable).toEqual({ kind: 'CASE', compatibleKeys: 0, requiredKeyName: 'eSports Key' });
+    expect((await itemOf(csgo2.id)).openable).toEqual({ kind: 'CASE', compatibleKeys: 1, otherKeysInStock: 0, otherKeyNames: [], requiredKeyName: 'CS:GO Case Key' });
+    expect((await itemOf(esports.id)).openable).toEqual({ kind: 'CASE', compatibleKeys: 0, otherKeysInStock: 1, otherKeyNames: ['CS:GO Case Key'], requiredKeyName: 'eSports Key' });
     expectError(await open(chroma.id, { keyItemId: csgoKey.id, generated: generatedAk() }), 422, 'CASE_KEY_INCOMPATIBLE', { params: { keyName: 'CS:GO Case Key', caseName: 'Chroma Case' } });
     expectError(await open(esports.id, { keyItemId: csgoKey.id, generated: generatedAk() }), 422, 'CASE_KEY_INCOMPATIBLE');
     // a caixa da tabela recusa a chave de nome livre "<nome> Key"
@@ -242,7 +242,7 @@ describe('abrir caixa com a chave', () => {
 describe('cápsula e pacote (sem chave)', () => {
   test('cápsula e pacote Souvenir (com stickers que vieram junto) consomem só a unidade', async () => {
     const capsule = await createItemViaApi(app, purchaseBody({ catalogId: CAT.CAPSULE_KATO14, purchasePriceCents: 120 }));
-    expect((await itemOf(capsule.id)).openable).toEqual({ kind: 'NO_KEY', compatibleKeys: 0, requiredKeyName: null });
+    expect((await itemOf(capsule.id)).openable).toEqual({ kind: 'NO_KEY', compatibleKeys: 0, otherKeysInStock: 0, otherKeyNames: [], requiredKeyName: null });
     const before = numbers(await profit());
     const res = await open(capsule.id, { generated: { catalogId: CAT.STICKER_TITAN } });
     expect(res.status).toBe(201);
@@ -278,7 +278,7 @@ describe('terminal', () => {
     expect(generated).toMatchObject({
       acquisitionType: 'COMPRA', purchaseStoreId: storeId('Steam'), purchasePriceCents: 1100, purchaseCurrency: 'BRL', fxRateAtPurchase: 5.5, acquiredAt: OPENED_AT,
     });
-    expect(generated.cost).toEqual({ ownUsdCents: 200, inheritedUsdCents: 400, effectiveUsdCents: 600, estimated: true });
+    expect(generated.cost).toEqual({ ownUsdCents: 200, inheritedUsdCents: 400, effectiveUsdCents: 600, estimated: true , hasOperationCost: true });
     expect(generated.generatedFrom).toMatchObject({ kind: 'OPEN_TERMINAL', container: 'TERMINAL', decision: 'BUY', containerName: 'Sealed Genesis Terminal' });
     const after = await profit();
     expect(balanceOf(after, 'Steam')).toBe(balanceOf(before, 'Steam') - 1100); // desconta o preço na loja Steam

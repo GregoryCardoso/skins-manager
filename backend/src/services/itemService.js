@@ -426,13 +426,19 @@ function detachedFromOf(item, opCtx) {
   };
 }
 
-// Abertura possível da unidade em estoque: { kind, compatibleKeys, requiredKeyName } ou null (D363 item 9). `stockKeys`: chaves em estoque.
+// Abertura possível da unidade em estoque: { kind, compatibleKeys, otherKeysInStock, otherKeyNames, requiredKeyName } ou null (D363 item 9).
+// `stockKeys`: chaves em estoque. `otherKeysInStock`/`otherKeyNames`: as chaves em estoque que NÃO servem para esta caixa (M6; até 5 nomes).
 function openableOf(item, entry, stockKeys) {
   const kind = openingRules.openingKindOf(item, entry);
   if (!kind) return null;
-  if (kind !== 'CASE') return { kind, compatibleKeys: 0, requiredKeyName: null };
-  const compatibleKeys = stockKeys.filter((key) => key.id !== item.id && openingRules.keyMatchesCase(key.name, item.name)).length;
-  return { kind, compatibleKeys, requiredKeyName: openingRules.caseKeyName(item.name) };
+  if (kind !== 'CASE') return { kind, compatibleKeys: 0, otherKeysInStock: 0, otherKeyNames: [], requiredKeyName: null };
+  const others = stockKeys.filter((key) => key.id !== item.id);
+  const compatible = others.filter((key) => openingRules.keyMatchesCase(key.name, item.name));
+  const incompatible = others.filter((key) => !openingRules.keyMatchesCase(key.name, item.name));
+  return {
+    kind, compatibleKeys: compatible.length, otherKeysInStock: incompatible.length,
+    otherKeyNames: [...new Set(incompatible.map((key) => key.name))].sort().slice(0, 5), requiredKeyName: openingRules.caseKeyName(item.name),
+  };
 }
 
 function toItemView(
@@ -457,7 +463,11 @@ function toItemView(
     components: itemComponentService.toView(componentRows, { catalogById, undoableOf, canDetach: inStock }),
     componentSummary: itemComponentService.toSummary(componentRows),
     // Custo efetivo (D362): o próprio mais o dos componentes aplicados do estoque; o `purchasePrice` nunca muda.
-    cost: { ownUsdCents: cost.ownUsdCents, inheritedUsdCents, effectiveUsdCents: cost.effectiveUsdCents, estimated: cost.estimated },
+    // `hasOperationCost`: o efetivo difere do próprio (recebeu custo de componentes ou cedeu parte numa separação; nesse caso o herdado é negativo).
+    cost: {
+      ownUsdCents: cost.ownUsdCents, inheritedUsdCents, effectiveUsdCents: cost.effectiveUsdCents, estimated: cost.estimated,
+      hasOperationCost: cost.ownUsdCents !== cost.effectiveUsdCents,
+    },
     consumedIn: consumedInOf(item, opCtx),
     generatedFrom: generatedFromOf(item, opCtx),
     detachedFrom: detachedFromOf(item, opCtx),
@@ -588,7 +598,7 @@ function assertGeneratedFieldsUnlocked(existing, partial) {
   };
   for (const field of ['acquisitionType', 'purchaseStoreId', 'acquiredAt']) {
     if (changed(field)) {
-      throw new ConflictError('Esta unidade veio de uma abertura: desfaça a abertura para mudar este campo.', 'GENERATED_FIELD_LOCKED', { field, params: { field } });
+      throw new ConflictError('Esta unidade foi gerada por uma operação (abertura ou separação): desfaça a operação para mudar este campo.', 'GENERATED_FIELD_LOCKED', { field, params: { field } });
     }
   }
 }

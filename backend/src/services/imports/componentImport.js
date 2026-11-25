@@ -10,7 +10,7 @@ const Item = require('../../models/Item');
 const ItemComponent = require('../../models/ItemComponent');
 const catalogService = require('../catalogService');
 const itemComponentService = require('../itemComponentService');
-const { resolveSourceKind, SOURCE_CATEGORIES } = require('../operations/componentApplicationService');
+const { resolveSourceKinds, SOURCE_CATEGORIES } = require('../operations/componentApplicationService');
 const externalItemMapper = require('./externalItemMapper');
 const { MAYBE_APPLIED_WARNING } = require('./entryActions');
 
@@ -78,8 +78,9 @@ function maybeAppliedFromStock(rawComponents, item) {
   const soldMs = item.soldAt ? Date.parse(item.soldAt) : Infinity;
   const pool = Item.findInStockByCategories(SOURCE_CATEGORIES).filter((unit) => unit.id !== item.id && Date.parse(unit.acquiredAt) <= soldMs);
   const byKey = new Map();
+  const resolvedUnits = resolveSourceKinds(pool); // em lote, sem uma consulta de catálogo por unidade (S1)
   for (const unit of pool) {
-    const resolved = resolveSourceKind(unit);
+    const resolved = resolvedUnits.get(unit.id);
     if (!resolved) continue;
     const key = `${resolved.kind}|${resolved.entry.id}`;
     if (!byKey.has(key)) byKey.set(key, []);

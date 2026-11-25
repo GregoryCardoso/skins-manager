@@ -29,6 +29,8 @@ function priceOfSubject(subject, { priceOf, catalogById }) {
 
 function netOf(valueCents, saleStore) {
   if (!saleStore) return { cents: null, reason: 'NO_INTEGRATION_STORE' };
+  // O valor de mercado é em USD: com a loja da integração em outra moeda a taxa fixa não se aplica (B7).
+  if (saleStore.currency !== 'USD') return { cents: null, reason: 'NET_NOT_COMPUTABLE' };
   if (!Number.isSafeInteger(valueCents) || valueCents <= 0) return { cents: null, reason: 'NET_NOT_COMPUTABLE' };
   try {
     return { cents: computeSale({ salePriceCents: valueCents, store: saleStore }).netReceivedCents, reason: null };

@@ -26,7 +26,7 @@ type Dialog =
   | { kind: 'offSale'; item: ItemView }
   | { kind: 'apply'; item: ItemView }
   | { kind: 'open'; item: ItemView }
-  | { kind: 'detach'; item: ItemView }
+  | { kind: 'detach'; item: ItemView; componentId?: number }
   | { kind: 'registerKey'; keyName: string }
   | { kind: 'history'; item: ItemView };
 
@@ -43,7 +43,7 @@ export interface ItemDialogsApi {
   // Abrir caixa, cápsula, pacote ou terminal (10.4, D363) e o atalho "Cadastrar chave" (cadastro em OUTRO com o nome sugerido).
   openOpen: (item: ItemView) => void;
   // "Separar chaveiro/slab" da arma (10.7, D366).
-  openDetach: (item: ItemView) => void;
+  openDetach: (item: ItemView, componentId?: number) => void;
   openRegisterKey: (keyName: string) => void;
   putForSale: (item: ItemView) => void;
   // Id do item cujo "Colocar à venda" está em andamento (o botão fica desabilitado).
@@ -145,7 +145,14 @@ export function useItemDialogs(stores: Store[]): ItemDialogsApi {
         <ItemFormModal stores={stores} onClose={closeDialog} onSaved={finish} onGone={itemGone} />
       )}
       {dialog?.kind === 'edit' && (
-        <ItemFormModal item={dialog.item} stores={stores} onClose={closeDialog} onSaved={finish} onGone={itemGone} />
+        <ItemFormModal
+          item={dialog.item}
+          stores={stores}
+          onClose={closeDialog}
+          onSaved={finish}
+          onGone={itemGone}
+          onDetach={(item, componentId) => setDialog({ kind: 'detach', item, componentId })}
+        />
       )}
       {dialog?.kind === 'sell' && (
         <SellItemModal item={dialog.item} stores={stores} onClose={closeDialog} onSold={finish} onGone={itemGone} />
@@ -171,7 +178,7 @@ export function useItemDialogs(stores: Store[]): ItemDialogsApi {
         />
       )}
       {dialog?.kind === 'detach' && (
-        <DetachComponentModal item={dialog.item} onClose={closeDialog} onDone={finish} onGone={itemGone} />
+        <DetachComponentModal item={dialog.item} componentId={dialog.componentId} onClose={closeDialog} onDone={finish} onGone={itemGone} />
       )}
       {dialog?.kind === 'apply' && (
         <ApplyComponentModal
@@ -228,7 +235,7 @@ export function useItemDialogs(stores: Store[]): ItemDialogsApi {
     openOffSale: (item) => setDialog({ kind: 'offSale', item }),
     openApply: (item) => setDialog({ kind: 'apply', item }),
     openOpen: (item) => setDialog({ kind: 'open', item }),
-    openDetach: (item) => setDialog({ kind: 'detach', item }),
+    openDetach: (item, componentId) => setDialog({ kind: 'detach', item, componentId }),
     openRegisterKey: (keyName) => setDialog({ kind: 'registerKey', keyName }),
     putForSale,
     forSalePendingId,

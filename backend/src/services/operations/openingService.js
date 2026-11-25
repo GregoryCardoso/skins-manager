@@ -25,7 +25,7 @@ const hasKey = (obj, key) => Object.prototype.hasOwnProperty.call(obj, key);
 const DECISIONS = Object.freeze(['BUY', 'DECLINE']);
 const MAX_NOTE_LENGTH = 500;
 // Campos de aquisição que o item obtido nunca aceita: ele herda tudo da operação (D363 item 4).
-const GENERATED_FORBIDDEN_FIELDS = Object.freeze(['acquisitionType', 'purchaseStoreId', 'purchasePriceCents', 'fxRateAtPurchase', 'acquiredAt']);
+const { GENERATED_FORBIDDEN_FIELDS } = require('../../config/constants');
 
 const unprocessable = (code, message, extra) => new AppError(422, code, message, extra);
 const invalidInput = (reason, message, field, params = {}) => unprocessable('INVALID_OPERATION_INPUT', message, { field, params: { reason, ...params } });

@@ -89,7 +89,7 @@ describe('mensagens de erro da abertura', () => {
 
   test('campo travado do item gerado cita o rótulo do campo', () => {
     const error = err('GENERATED_FIELD_LOCKED', { field: 'acquisitionType', params: { field: 'acquisitionType' } });
-    expect(errorMessageFor(error, tPt, 'pt-BR')).toBe('Este item veio de uma abertura: desfaça a abertura para mudar "Aquisição".');
+    expect(errorMessageFor(error, tPt, 'pt-BR')).toBe('Este item foi gerado por uma operação (abertura ou separação): desfaça a operação para mudar "Aquisição".');
   });
 });
 

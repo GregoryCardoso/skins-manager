@@ -65,14 +65,16 @@ export default function ItemActions({ item, onEdit, onSell, onUnsell, onDelete, 
         <button type="button" className={styles.button} onClick={() => onDetach(item)}>{t('inventory.actions.detach')}</button>
       )}
       {item.openable && onOpen && (() => {
-        const { kind, compatibleKeys, requiredKeyName } = item.openable;
+        const { kind, compatibleKeys, requiredKeyName, otherKeysInStock } = item.openable;
         const label = kind === 'CASE'
           ? t('inventory.actions.openCase')
           : kind === 'TERMINAL'
             ? t('inventory.actions.openTerminal')
             : item.category === 'CAPSULA' ? t('inventory.actions.openCapsule') : t('inventory.actions.openPackage');
         const needsKey = kind === 'CASE' && compatibleKeys === 0;
-        const reason = needsKey ? t('inventory.actions.openNeedsKey', { keyName: requiredKeyName ?? '' }) : undefined;
+        const reason = needsKey
+          ? t(otherKeysInStock > 0 ? 'inventory.actions.openNeedsKeyOther' : 'inventory.actions.openNeedsKey', { keyName: requiredKeyName ?? '' })
+          : undefined;
         return (
           <>
             <button type="button" className={styles.button} onClick={() => onOpen(item)} disabled={needsKey} title={reason}>{label}</button>

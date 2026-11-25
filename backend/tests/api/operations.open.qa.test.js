@@ -76,7 +76,7 @@ describe('classificação pela API: o que abre e o que não abre', () => {
     const key = await createItemViaApi(app, keyBody());
     const skin = await createItemViaApi(app);
     expect((await itemOf(highlight.id)).openable.kind).toBe('NO_KEY');
-    expect((await itemOf(xray.id)).openable).toEqual({ kind: 'NO_KEY', compatibleKeys: 0, requiredKeyName: null });
+    expect((await itemOf(xray.id)).openable).toEqual({ kind: 'NO_KEY', compatibleKeys: 0, otherKeysInStock: 0, otherKeyNames: [], requiredKeyName: null });
     expect((await itemOf(capsule.id)).openable.kind).toBe('NO_KEY');
     expect((await itemOf(terminal2.id)).openable.kind).toBe('TERMINAL');
     expect((await itemOf(key.id)).openable).toBeNull();
@@ -126,7 +126,7 @@ describe('caixa: casos de borda adicionais', () => {
     const key = await createItemViaApi(app, { category: 'OUTRO', name: 'Kilowatt Case Key', acquisitionType: 'GANHEI', acquiredAt: '2026-11-10T12:00:00.000Z' });
     const res = await open(box.id, { keyItemId: key.id, generated: generatedAk() });
     expect(res.status).toBe(201);
-    expect(res.body.data.generatedItem.cost).toEqual({ ownUsdCents: 0, inheritedUsdCents: 0, effectiveUsdCents: 0, estimated: false });
+    expect(res.body.data.generatedItem.cost).toEqual({ ownUsdCents: 0, inheritedUsdCents: 0, effectiveUsdCents: 0, estimated: false , hasOperationCost: false });
   });
 
   test('desfazer a abertura cuja gerada foi consumida por uma aplicação já desfeita (vínculos RESTRICT da operação desfeita)', async () => {
@@ -152,7 +152,7 @@ describe('caixa: casos de borda adicionais', () => {
     expect(capsule.cost.effectiveUsdCents).toBe(500);
     const second = await open(capsule.id, { generated: { catalogId: CAT.STICKER_TITAN }, openedAt: '2026-11-16T12:00:00.000Z' });
     expect(second.status).toBe(201);
-    expect(second.body.data.generatedItem.cost).toEqual({ ownUsdCents: 0, inheritedUsdCents: 500, effectiveUsdCents: 500, estimated: false });
+    expect(second.body.data.generatedItem.cost).toEqual({ ownUsdCents: 0, inheritedUsdCents: 500, effectiveUsdCents: 500, estimated: false , hasOperationCost: true });
     // a primeira abertura deixa de ser a mais recente (a gerada foi consumida)
     const blocked = await undo(first.body.data.operation.id);
     expectError(blocked, 409, 'OPERATION_UNDO_BLOCKED');
@@ -214,7 +214,7 @@ describe('terminal', () => {
     const res = await open(terminal.id, { decision: 'BUY', paidPriceCents: 1000, fxRateAtPurchase: 5, generated: generatedAk() });
     expect(res.status).toBe(201);
     expect(res.body.data.generatedItem).toMatchObject({ fxRateAtPurchase: 5, purchasePriceCents: 1000, purchaseCurrency: 'BRL' });
-    expect(res.body.data.generatedItem.cost).toEqual({ ownUsdCents: 200, inheritedUsdCents: 400, effectiveUsdCents: 600, estimated: true });
+    expect(res.body.data.generatedItem.cost).toEqual({ ownUsdCents: 200, inheritedUsdCents: 400, effectiveUsdCents: 600, estimated: true , hasOperationCost: true });
   });
 
   test('comprar sem informar cotação usa a das configurações (BRL)', async () => {
@@ -258,7 +258,7 @@ describe('terminal', () => {
     expect(balanceOf(after, 'Steam USD')).toBe(balanceOf(before, 'Steam USD') - 700);
     expect(after.consumptionLosses.count).toBe(0);
     const id = res.body.data.generatedItem.id;
-    expect(res.body.data.generatedItem.cost).toEqual({ ownUsdCents: 700, inheritedUsdCents: 400, effectiveUsdCents: 1100, estimated: false });
+    expect(res.body.data.generatedItem.cost).toEqual({ ownUsdCents: 700, inheritedUsdCents: 400, effectiveUsdCents: 1100, estimated: false , hasOperationCost: true });
     const sold = await post(`/api/items/${id}/sell`, { saleStoreId: storeId('CSFloat'), salePriceCents: 2000, soldAt: '2026-11-16T12:00:00.000Z' });
     expect(sold.body.data.item.saleProfitUsdCents).toBe(sold.body.data.item.netReceivedCents - 1100);
   });

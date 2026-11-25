@@ -11,7 +11,6 @@ const { UpstreamError } = require('../../errors/AppError');
 const Item = require('../../models/Item');
 const ItemComponent = require('../../models/ItemComponent');
 const MarketPrice = require('../../models/MarketPrice');
-const Integration = require('../../models/Integration');
 const Setting = require('../../models/Setting');
 const integrationService = require('../integrationService');
 const catalogService = require('../catalogService');
@@ -109,13 +108,28 @@ const skip = (reason) => ({ skipped: reason, result: null, failed: null });
 async function refreshPrices({ now = new Date(), fetchFn, nowFn = Date.now, sleepFn = defaultSleep, source = ACTIVE_VALUATION_SOURCE } = {}) {
   const valuationSource = getSource(source);
   if (attempted) return skip('ALREADY_RAN');
-  const apiKey = Integration.getApiKey(valuationSource.adapterSource);
+  const apiKey = integrationService.getApiKeyForCall(valuationSource.adapterSource);
   if (!apiKey) return skip('NOT_CONFIGURED');
   if (valuationLock.isValuationInProgress() || importLock.isImportInProgress() || backupService.isExportInProgress()) return skip('BUSY');
   const state = Setting.getPriceRefresh();
   if (cooldownUntil(state.priceRefreshStartedAt, now)) return skip('COOLDOWN');
   attempted = true;
+  // Rodada inteira protegida (M3): qualquer erro que não seja do CSFloat vira FAILED/INTERNAL_ERROR e a resposta continua 200. A trava
+  // é liberada no `finally` da própria rodada.
+  try {
+    return await runRound({ now, fetchFn, nowFn, sleepFn, source, valuationSource, apiKey });
+  } catch (err) {
+    console.error(`Falha interna na atualização dos preços de mercado: ${err && err.message ? err.message : 'erro desconhecido'}`);
+    try {
+      Setting.updatePriceRefresh({ priceRefreshLastAt: now.toISOString(), priceRefreshLastStatus: 'FAILED', priceRefreshLastErrorCode: 'INTERNAL_ERROR' });
+    } catch (inner) {
+      console.error('Não foi possível gravar o estado da atualização dos preços.');
+    }
+    return { skipped: null, result: null, failed: { code: 'INTERNAL_ERROR' } };
+  }
+}
 
+async function runRound({ now, fetchFn, nowFn, sleepFn, source, valuationSource, apiKey }) {
   const stock = loadStock();
   const { targets, notPriceableUnits } = collectTargets(stock);
   const rowsByKey = MarketPrice.findByKeys(source, targets.map((t) => t.priceKey));
@@ -210,7 +224,7 @@ function getSummary({ now = new Date(), source = ACTIVE_VALUATION_SOURCE } = {})
   const rowsByKey = new Map(rows.map((r) => [r.priceKey, r]));
   const state = Setting.getPriceRefresh();
   return {
-    configured: Boolean(Integration.getApiKey(valuationSource.adapterSource)),
+    configured: Boolean(integrationService.getApiKeyForCall(valuationSource.adapterSource)),
     inProgress: valuationLock.isValuationInProgress(),
     source,
     staleHours: MARKET_PRICE_STALE_HOURS,

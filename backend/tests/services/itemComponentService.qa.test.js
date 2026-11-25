@@ -113,7 +113,7 @@ describe('visões', () => {
   });
 
   test('toSummary e summarize aceitam lista vazia e ausente', () => {
-    expect(svc.toSummary()).toEqual({ stickers: 0, charms: 0 });
+    expect(svc.toSummary()).toEqual({ stickers: 0, charms: 0, patches: 0 });
     expect(svc.summarize([])).toEqual({ stickers: 0, hanging: 0, patches: 0, kinds: [] });
     expect(svc.summarize([{ kind: 'PATCH' }, { kind: 'PATCH' }])).toMatchObject({ patches: 2, kinds: ['PATCH'] });
   });

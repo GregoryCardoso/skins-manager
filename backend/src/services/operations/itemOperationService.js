@@ -4,7 +4,6 @@
 // fica em `componentApplicationService` e `operationUndoService`; aqui só se monta a resposta (as visões de item vêm do itemService).
 const Item = require('../../models/Item');
 const ItemComponent = require('../../models/ItemComponent');
-const itemComponentService = require('../itemComponentService');
 const ItemOperation = require('../../models/ItemOperation');
 const { NotFoundError } = require('../../errors/AppError');
 const itemService = require('../itemService');
@@ -13,6 +12,8 @@ const undoService = require('./operationUndoService');
 const operationContext = require('./operationContext');
 const openingService = require('./openingService');
 const detachService = require('./detachService');
+
+const componentRowsOf = (itemId) => ItemComponent.listByItemIds([itemId]).get(itemId) ?? [];
 
 function operationView(operation) {
   return {
@@ -102,15 +103,7 @@ function listForItem(itemId) {
   const context = operationContext.loadOperationContext([...itemsById.values()]);
   return operations.map((operation) => {
     const own = (linksByOperation.get(operation.id) ?? []).find((link) => link.itemId === itemId);
-    let verdict = operationContext.assessUndo(operation, context);
-    // Separação: a arma não pode ter outro pendurado (colocado à mão depois), senão o pendurado não tem onde voltar (D366 item 6).
-    if (verdict.undoable && operation.kind === 'DETACH_COMPONENT') {
-      const weaponLink = (linksByOperation.get(operation.id) ?? []).find((link) => link.role === 'TARGET');
-      const weaponRows = weaponLink ? ItemComponent.listByItemIds([weaponLink.itemId]).get(weaponLink.itemId) ?? [] : [];
-      if (weaponRows.some((row) => itemComponentService.isDetachable(row.kind))) {
-        verdict = { undoable: false, reason: 'HANGING_OCCUPIED', params: { itemId: weaponLink.itemId } };
-      }
-    }
+    const verdict = operationContext.assessUndo(operation, { ...context, componentRowsOf });
     let detail = {};
     try {
       detail = operation.detailJson ? JSON.parse(operation.detailJson) : {};

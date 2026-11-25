@@ -42,13 +42,15 @@ interface Props {
   stores: Store[];
   onClose: () => void;
   onSaved: (message: string) => void;
+  // "Separar" o pendurado pela seção de componentes (M7): o host abre o modal de separação com o id do componente.
+  onDetach?: (item: ItemView, componentId: number) => void;
   // Item excluído em outra aba (ITEM_NOT_FOUND na edição).
   onGone: () => void;
 }
 
 const storeLabel = (store: Store, inactive: string) => (store.isActive ? store.name : `${store.name} (${inactive})`);
 
-export default function ItemFormModal({ item, preset, stores, onClose, onSaved, onGone }: Props) {
+export default function ItemFormModal({ item, preset, stores, onClose, onSaved, onDetach, onGone }: Props) {
   const t = useT();
   const tLoose = useTLoose();
   const language = useLanguage();
@@ -200,6 +202,8 @@ export default function ItemFormModal({ item, preset, stores, onClose, onSaved, 
             itemId={editing ? item.id : undefined}
             category={category}
             onItemChanged={onSaved}
+            onDetach={editing && item && onDetach ? (componentId) => onDetach(item, componentId) : undefined}
+            cameWithHangingId={editing && item ? item.components.find((c) => c.detachable && c.origin === 'CAME_WITH')?.id ?? null : null}
             state={components}
             onChange={(next) => {
               setComponents(next);
