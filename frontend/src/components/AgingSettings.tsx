@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useState, type FormEvent } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import {
   agingStateFromSettings, buildAgingPatch, hasAgingChanges, restoreDefaultPatch,
   type AgingErrors, type AgingField, type AgingFormState,
@@ -20,6 +20,7 @@ interface Props {
 export default function AgingSettings({ settings }: Props) {
   const t = useT();
   const tLoose = useTLoose();
+  const tPlural = useTPlural();
   const locale = useLocale();
   const invalidate = useInvalidate();
   const fastId = useId();
@@ -101,7 +102,7 @@ export default function AgingSettings({ settings }: Props) {
           {t('settings.aging.restore')}
         </button>
       </div>
-      <span className={styles.sub}>{t('settings.aging.defaultValue', { days: def })}</span>
+      <span className={styles.sub}>{t('settings.aging.defaultValue', { days: tPlural('common.dayCount', def) })}</span>
       {errors[name] && <span className={styles.error} role="alert">{errors[name]}</span>}
     </div>
   );
@@ -116,7 +117,7 @@ export default function AgingSettings({ settings }: Props) {
       <p className={styles.muted}>{t('settings.aging.intro')}</p>
       {settings.agingThresholdsAdjusted && (
         <p className={styles.warning} role="status">
-          {t('settings.aging.adjusted', { fast: settings.fastTurnoverDays })}
+          {t('settings.aging.adjusted', { fast: tPlural('common.dayCount', settings.fastTurnoverDays) })}
         </p>
       )}
       <form className={styles.form} onSubmit={onSubmit} noValidate>
@@ -126,7 +127,7 @@ export default function AgingSettings({ settings }: Props) {
           {busy ? t('common.saving') : t('settings.aging.save')}
         </button>
       </form>
-      {showMiddle && <p className={styles.muted}>{t('settings.aging.middle', { from: fast + 1, to: slow })}</p>}
+      {showMiddle && <p className={styles.muted}>{t('settings.aging.middle', { from: fast + 1, to: tPlural('common.dayCount', slow) })}</p>}
       {ok && <p className={styles.ok} role="status">{ok}</p>}
     </section>
   );

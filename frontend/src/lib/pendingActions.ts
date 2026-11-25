@@ -1,5 +1,6 @@
 // Pendências da importação (9.5.1b, D327 a D331): o formulário de "Lançar compra" e as ações em lote. Funções puras.
 import type { ImportEntryAction, ImportEntryView, Store } from '@/types/api';
+import { hasNoDecimals } from '@/lib/currencies';
 import { addDaysToLocalInput, localInputToDate, localInputToIso } from './dateInput';
 import { parseDecimalInput, parseMoneyToCents } from './numberInput';
 
@@ -45,7 +46,11 @@ export function buildLaunchBody(
   const store = stores.find((s) => s.id === state.storeId) ?? null;
   if (!store) errors.store = 'imports.launch.storeRequired';
   const priceCents = parseMoneyToCents(state.price, language, store?.currency);
-  if (priceCents === null || priceCents < 0) errors.price = 'imports.launch.priceRequired';
+  if (priceCents === null || priceCents < 0) {
+    // Moeda sem centavos (JPY, KRW e CLP) com valor digitado: mensagem própria; vazio ou negativo segue o texto geral.
+    const wholeOnly = priceCents === null && state.price.trim() !== '' && store !== null && hasNoDecimals(store.currency);
+    errors.price = wholeOnly ? 'imports.launch.priceInvalidWhole' : 'imports.launch.priceRequired';
+  }
   let fxRate: number | null = null;
   if (store && store.currency !== 'USD' && state.fxRate.trim() !== '') {
     fxRate = parseDecimalInput(state.fxRate, language);

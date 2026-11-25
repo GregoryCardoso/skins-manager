@@ -70,17 +70,20 @@ export default function CutoffChangeModal({ currentCutoffAt, busy, error, onConf
         {preview?.backward && (
           <div className={forms.note} role="status" data-testid="cutoff-preview-backward">
             <p><strong>{t('imports.cutoffChange.previewTitle')}</strong></p>
-            <p>{t('imports.cutoffChange.upToPurchases', { count: preview.backward.purchases.count, value: usd(preview.backward.purchases.amountCents) })}</p>
-            <p>{t('imports.cutoffChange.upToSales', { count: preview.backward.sales.count, value: usd(preview.backward.sales.amountCents) })}</p>
+            <p>{tPlural('imports.cutoffChange.upToPurchases', preview.backward.purchases.count, { value: usd(preview.backward.purchases.amountCents) })}</p>
+            <p>{tPlural('imports.cutoffChange.upToSales', preview.backward.sales.count, { value: usd(preview.backward.sales.amountCents) })}</p>
             {transfers && (
               <>
-                <p>{t('imports.transferCutoff.upToDeposits', { count: transfers.deposits.count, value: usd(transfers.deposits.amountCents) })}</p>
-                <p>{t('imports.transferCutoff.upToWithdrawals', { count: transfers.withdrawals.count, value: usd(transfers.withdrawals.amountCents) })}</p>
+                <p>{tPlural('imports.transferCutoff.upToDeposits', transfers.deposits.count, { value: usd(transfers.deposits.amountCents) })}</p>
+                <p>{tPlural('imports.transferCutoff.upToWithdrawals', transfers.withdrawals.count, { value: usd(transfers.withdrawals.amountCents) })}</p>
               </>
             )}
             {preview.backward.mayHaveUnseen && <p>{t('imports.cutoffChange.mayHaveUnseen')}</p>}
             {(preview.backward.manualLaunches.purchases + preview.backward.manualLaunches.sales) > 0 && (
-              <p>{t('imports.cutoffChange.manualLaunches', { purchases: preview.backward.manualLaunches.purchases, sales: preview.backward.manualLaunches.sales })}</p>
+              <p>{t('imports.cutoffChange.manualLaunches', {
+              purchases: tPlural('imports.cutoffChange.purchasesCount', preview.backward.manualLaunches.purchases),
+              sales: tPlural('imports.cutoffChange.salesCount', preview.backward.manualLaunches.sales),
+            })}</p>
             )}
             {preview.backward.deposits.length > 0 && (
               <div className={forms.topError} role="alert">
@@ -97,9 +100,9 @@ export default function CutoffChangeModal({ currentCutoffAt, busy, error, onConf
         {preview?.forward && (
           <div className={forms.note} role="status" data-testid="cutoff-preview-forward">
             <p><strong>{t('imports.cutoffChange.previewTitle')}</strong></p>
-            <p>{t('imports.cutoffChange.importedKept', { count: preview.forward.importedKept })}</p>
-            <p>{t('imports.cutoffChange.openToClose', { count: preview.forward.openToClose })}</p>
-            {transfers && transfers.openToClose > 0 && <p>{t('imports.transferCutoff.openToClose', { count: transfers.openToClose })}</p>}
+            <p>{tPlural('imports.cutoffChange.importedKept', preview.forward.importedKept)}</p>
+            <p>{tPlural('imports.cutoffChange.openToClose', preview.forward.openToClose)}</p>
+            {transfers && transfers.openToClose > 0 && <p>{tPlural('imports.transferCutoff.openToClose', transfers.openToClose)}</p>}
           </div>
         )}
 

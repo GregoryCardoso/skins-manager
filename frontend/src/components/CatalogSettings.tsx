@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import { formatDateTime, formatInteger } from '@/lib/format';
 import { queryKeys } from '@/lib/queryKeys';
 import { useInvalidate } from '@/lib/useInvalidate';
@@ -40,6 +40,7 @@ export function CatalogSummary({ status }: { status: CatalogStatus }) {
 export default function CatalogSettings() {
   const t = useT();
   const tLoose = useTLoose();
+  const tPlural = useTPlural();
   const locale = useLocale();
   const invalidate = useInvalidate();
   const statusQuery = useQuery({ queryKey: queryKeys.catalog.status, queryFn: ({ signal }) => getCatalogStatus(signal) });
@@ -81,7 +82,7 @@ export default function CatalogSettings() {
       {info && (
         <p className={styles.ok} role="status">
           {t('catalog.refreshDone', {
-            total: formatInteger(info.total, locale),
+            total: tPlural('catalog.itemsCount', info.total, { count: formatInteger(info.total, locale) }),
             skipped: formatInteger(info.skipped, locale),
             linked: formatInteger(info.linked, locale),
           })}

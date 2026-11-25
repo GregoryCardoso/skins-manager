@@ -58,7 +58,7 @@ export default function MarkWonDialog({ count, busy, error, onConfirm, onCancel 
             {dateError && <span className={forms.error}>{dateError}</span>}
           </label>
         )}
-        <p className={forms.hint}>{t('imports.won.turnoverHint')}</p>
+        <p className={forms.hint}>{t('imports.won.turnoverHint', { days: tPlural('common.dayCount', 0) })}</p>
         {error && <div className={forms.topError} role="alert">{error}</div>}
         <div className={forms.actions}>
           <button type="button" className={forms.button} onClick={onCancel} disabled={busy}>{t('common.cancel')}</button>

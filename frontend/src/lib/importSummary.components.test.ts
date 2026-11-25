@@ -81,10 +81,10 @@ describe('avisos de componentes por entrada', () => {
 });
 
 describe('confirmação da "Varredura completa"', () => {
-  test('a frase a mais explica que a varredura preenche stickers e chaveiro uma única vez, sem mexer nos manuais', () => {
+  test('a frase a mais explica que a varredura preenche stickers e chaveiro uma única vez, sem alterar o que você registrou', () => {
     expect(ptBR.imports.fullScanConfirm.componentsNote).toMatch(/uma única vez/);
-    expect(ptBR.imports.fullScanConfirm.componentsNote).toMatch(/sem mexer/);
+    expect(ptBR.imports.fullScanConfirm.componentsNote).toMatch(/não são alterados/);
     expect(en.imports.fullScanConfirm.componentsNote).toMatch(/once/);
-    expect(en.imports.fullScanConfirm.componentsNote).toMatch(/without touching/);
+    expect(en.imports.fullScanConfirm.componentsNote).toMatch(/are not changed/);
   });
 });

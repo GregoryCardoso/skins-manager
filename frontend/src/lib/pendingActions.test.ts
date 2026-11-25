@@ -58,5 +58,5 @@ test('textos da 9.5.1b nos dois idiomas', () => {
     expect(lang.imports.groups.IGNORED).toBeTruthy();
     expect(lang.imports.actions.conflict.UNIT_IN_STOCK).toBeTruthy();
   }
-  expect(ptBR.imports.actions.MARK_WON).toBe('Foi drop (ganhei)');
+  expect(ptBR.imports.actions.MARK_WON).toBe('Ganhei este item (drop)');
 });

@@ -1,6 +1,6 @@
 'use client';
 
-import { moneyInputMode } from '@/lib/currencies';
+import { moneyErrorParams, moneyInputMode } from '@/lib/currencies';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useId, useState, type FormEvent } from 'react';
@@ -104,7 +104,7 @@ export default function LaunchPurchaseModal({ entry, onClose, onDone }: Props) {
   if (display.paintSeed !== null) details.push(`seed ${display.paintSeed}`);
   if (display.phase) details.push(display.phase);
   const fieldError = (field: keyof LaunchErrors) =>
-    errors[field] ? t(errors[field] as 'imports.launch.dateInvalid') : problem?.kind === 'TEXT' && problem.field === field ? problem.text : null;
+    errors[field] ? tLoose(errors[field] as string, moneyErrorParams(locale, field === 'price' ? store?.currency : undefined)) : problem?.kind === 'TEXT' && problem.field === field ? problem.text : null;
 
   return (
     <Modal title={t('imports.launch.title')} onClose={onClose} busy={busy}>

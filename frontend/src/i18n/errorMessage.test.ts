@@ -24,9 +24,9 @@ describe('errorMessageFor com params', () => {
 
   test('AGING_THRESHOLDS_ORDER usa os limites efetivos de params (D159)', () => {
     const e = err('AGING_THRESHOLDS_ORDER', { field: 'slowItemDays', params: { fastTurnoverDays: 25, slowItemDays: 21 } });
-    expect(errorMessageFor(e, tPt)).toBe('O giro rápido (25 dias) deve ser menor que o limite de agarrado (21 dias).');
-    expect(errorMessageFor(e, tEn)).toBe('Fast turnover (25 days) must be lower than the stagnant limit (21 days).');
-    expect(errorMessageFor(err('AGING_THRESHOLDS_ORDER'), tPt)).toBe('O giro rápido deve ser menor que o limite de agarrado.');
+    expect(errorMessageFor(e, tPt)).toBe('O giro rápido (25 dias) deve ser menor que o limite de encalhado (21 dias).');
+    expect(errorMessageFor(e, tEn)).toBe('Fast turnover (25 days) must be lower than the stuck limit (21 days).');
+    expect(errorMessageFor(err('AGING_THRESHOLDS_ORDER'), tPt)).toBe('O giro rápido deve ser menor que o limite de encalhado. Corrija os valores.');
   });
 
   test('FIELD_TOO_LONG, INVALID_AMOUNT e UNKNOWN_FIELD', () => {

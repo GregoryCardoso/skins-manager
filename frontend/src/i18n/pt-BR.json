@@ -37,7 +37,7 @@
     "profit": "Lucro real"
   },
   "header": {
-    "preferenceNotSaved": "Preferência não salva no servidor: {reason}",
+    "preferenceNotSaved": "Não foi possível salvar a sua preferência ({reason}). Tente de novo.",
     "controls": "Preferências"
   },
   "theme": {
@@ -88,18 +88,23 @@
     "title": "Catálogo",
     "total": "Total de itens: {total}",
     "updatedAt": "Atualizado em {date}",
-    "neverUpdated": "Sem data de atualização (catálogo embutido).",
+    "neverUpdated": "Ainda não atualizado: você está usando o catálogo que vem com o app.",
     "refresh": "Atualizar catálogo",
     "refreshing": "Atualizando (pode levar até 2 minutos)...",
-    "refreshDone": "Catálogo atualizado: {total} itens ({skipped} ignorados, {linked} itens vinculados).",
+    "refreshDone": "Catálogo atualizado: {total}. Seus itens ligados ao catálogo: {linked}. Registros ignorados: {skipped}.",
     "refreshSkippedLanguages": "Não foi possível atualizar os nomes dos itens em: {languages}. Os nomes já salvos foram mantidos.",
     "source": {
       "SKINS": "Skins",
-      "STICKERS": "Adesivos",
+      "STICKERS": "Stickers",
       "CRATES": "Caixas",
       "KEYCHAINS": "Chaveiros",
       "AGENTS": "Agentes",
       "PATCHES": "Patches"
+    },
+    "itemsCount": {
+      "zero": "nenhum item",
+      "one": "{count} item",
+      "other": "{count} itens"
     }
   },
   "errors": {
@@ -132,8 +137,8 @@
     "PRICE_SEARCH_LIMIT": "Não foi possível encontrar o preço mínimo dentro do limite de busca.",
     "INVALID_FEE_TYPE": "Tipo de taxa inválido.",
     "INVALID_ROUNDING": "Modo de arredondamento inválido.",
-    "INVALID_RATE": "Taxa inválida.",
-    "INVALID_FEE_PARAMS": "Parâmetros de taxa inválidos.",
+    "INVALID_RATE": "Taxa inválida. Use um percentual de 0 a menos de 100.",
+    "INVALID_FEE_PARAMS": "Os dados da taxa estão inválidos. Confira o tipo, o percentual e o arredondamento.",
     "FEES_NOT_CONFIGURED": "As taxas da loja não estão configuradas: informe o líquido recebido.",
     "NET_RECEIVED_NEGATIVE": "O valor líquido recebido não pode ser negativo.",
     "ACQUIRED_AT_IN_FUTURE": "A data de aquisição não pode estar no futuro.",
@@ -161,10 +166,10 @@
     "CATALOG_DERIVED_FIELD": "Este campo é derivado do catálogo e não pode ser informado.",
     "CATALOG_ITEM_NOT_FOUND": "Item do catálogo não encontrado.",
     "CATALOG_REFRESH_IN_PROGRESS": "Já existe uma atualização do catálogo em andamento.",
-    "CATALOG_FETCH_FAILED": "Falha ao baixar o catálogo. Verifique sua conexão com a internet.",
-    "CATALOG_INVALID_FORMAT": "O catálogo baixado tem um formato inesperado.",
-    "INVALID_THEME": "Tema inválido.",
-    "INVALID_LANGUAGE": "Idioma inválido.",
+    "CATALOG_FETCH_FAILED": "Não foi possível baixar o catálogo. Verifique sua conexão com a internet e tente de novo.",
+    "CATALOG_INVALID_FORMAT": "O catálogo baixado veio em um formato que o app não entende. Seus dados não mudaram. Tente mais tarde.",
+    "INVALID_THEME": "Tema inválido. Escolha Claro ou Escuro.",
+    "INVALID_LANGUAGE": "Idioma inválido. Escolha um idioma da lista.",
     "INVALID_INVENTORY_VIEW": "Visão do inventário inválida.",
     "NETWORK_ERROR": "Não foi possível conectar ao servidor. Verifique se o backend está rodando.",
     "TIMEOUT": "O servidor demorou demais para responder.",
@@ -173,24 +178,24 @@
     "UNKNOWN": "Erro desconhecido.",
     "NET_RECEIVED_ABOVE_PRICE": "O líquido recebido não pode ser maior que o preço de venda.",
     "STORE_NAME_TAKEN": "Já existe uma loja com este nome.",
-    "STORE_CURRENCY_LOCKED": "A moeda não pode mudar: a loja já foi usada em itens ou movimentações.",
+    "STORE_CURRENCY_LOCKED": "A moeda não pode mudar, porque a loja já tem itens, aportes ou saques.",
     "STORE_IN_USE": "A loja já foi usada e só pode ser desativada.",
     "PRIMARY_STORE_REQUIRED": "Sempre deve haver uma loja principal. Escolha outra loja como principal antes.",
     "PRIMARY_STORE_INACTIVE": "A loja principal não pode ficar inativa. Escolha outra loja principal antes.",
-    "SALE_FEE_INCOMPLETE": "Informe o tipo e a taxa de venda juntos, ou deixe os dois vazios.",
+    "SALE_FEE_INCOMPLETE": "Informe o tipo e o percentual da taxa de venda, ou deixe os dois vazios.",
     "PTAX_NOT_FOUND": "O Banco Central não publicou a PTAX nos últimos dias. Tente mais tarde, use a cotação comercial ou digite a cotação.",
     "INVALID_FAST_TURNOVER_DAYS": "O giro rápido deve ser um número inteiro de 1 a 364 dias.",
-    "INVALID_SLOW_ITEM_DAYS": "O limite de agarrado deve ser um número inteiro de 2 a 365 dias.",
-    "AGING_THRESHOLDS_ORDER": "O giro rápido deve ser menor que o limite de agarrado.",
-    "BACKUP_BUSY": "Há uma operação em andamento (catálogo, cotação, importação do CSFloat ou exportação). Aguarde terminar e tente de novo.",
-    "BACKUP_UNAVAILABLE": "O backup não está disponível: o banco está em memória.",
+    "INVALID_SLOW_ITEM_DAYS": "O limite de encalhado deve ser um número inteiro de 2 a 365 dias.",
+    "AGING_THRESHOLDS_ORDER": "O giro rápido deve ser menor que o limite de encalhado. Corrija os valores.",
+    "BACKUP_BUSY": "O app está ocupado com outra tarefa (catálogo, cotação, importação do CSFloat ou exportação). Espere terminar e tente de novo.",
+    "BACKUP_UNAVAILABLE": "Não é possível fazer backup neste modo, porque os dados não são salvos em arquivo.",
     "BACKUP_INVALID_FILE": "Este arquivo não é um backup do Skins Manager.",
-    "BACKUP_CORRUPTED": "O arquivo de backup está corrompido e não foi importado.",
+    "BACKUP_CORRUPTED": "O arquivo de backup está corrompido e não foi importado. Seus dados não mudaram. Escolha outro arquivo.",
     "BACKUP_NEWER_VERSION": "Este backup foi criado por uma versão mais nova do Skins Manager. Atualize o app.",
     "BACKUP_IMPORT_FAILED": "Não foi possível importar o backup. Seus dados anteriores foram preservados.",
     "DATA_DIR_LOCKED": "O Skins Manager já está aberto em outra janela ou instância.",
-    "FOLDER_OPEN_UNSUPPORTED": "Abrir a pasta só é possível no Windows. Copie o caminho e abra manualmente.",
-    "FOLDER_OPEN_FAILED": "Não foi possível abrir a pasta de backups. Copie o caminho e abra manualmente.",
+    "FOLDER_OPEN_UNSUPPORTED": "O app só abre a pasta no Windows. Copie o caminho e abra a pasta você mesmo.",
+    "FOLDER_OPEN_FAILED": "Não foi possível abrir a pasta de backups. Copie o caminho e abra a pasta você mesmo.",
     "FX_FETCH_FAILED": "Não foi possível consultar a cotação. Verifique sua conexão com a internet.",
     "FX_RATE_LIMITED": "O limite de consultas da fonte foi atingido. Tente mais tarde ou digite a cotação.",
     "FX_INVALID_RESPONSE": "A fonte da cotação enviou uma resposta inválida. Digite a cotação.",
@@ -237,17 +242,17 @@
     "ITEM_SOLD_IN_APP": "Item vendido no app depois da importação.",
     "ITEM_EDITED": "Item editado depois da importação.",
     "ITEM_IN_HOLDING": "Item movido para o holding depois da importação.",
-    "IMPORT_ENTRY_NOT_FOUND": "Pendência não encontrada.",
-    "IMPORT_ENTRY_ALREADY_RESOLVED": "Esta pendência já foi resolvida.",
-    "IMPORT_ENTRY_ACTION_NOT_ALLOWED": "Esta ação não vale para esta pendência.",
-    "IMPORT_ENTRY_CONFLICT": "Não foi possível resolver esta pendência agora.",
-    "ENTRY_RESOLVED": "Pendência da importação já resolvida.",
+    "IMPORT_ENTRY_NOT_FOUND": "Este trade não foi encontrado. Atualize a lista.",
+    "IMPORT_ENTRY_ALREADY_RESOLVED": "Este trade já foi resolvido.",
+    "IMPORT_ENTRY_ACTION_NOT_ALLOWED": "Esta ação não vale para este trade.",
+    "IMPORT_ENTRY_CONFLICT": "Não foi possível resolver este trade agora. Tente de novo.",
+    "ENTRY_RESOLVED": "Este trade da importação já foi resolvido.",
     "BULK_QUANTITY_EXCEEDS_AVAILABLE": "A quantidade é maior que as unidades disponíveis. Recarregue a lista e tente de novo.",
     "PURCHASE_AFTER_SALE": "A data da compra não pode ser depois da venda.",
     "PURCHASE_UNLOCK_AFTER_SALE": "Com esta data, o trade lock terminaria depois da venda.",
     "IMPORT_ENTRY_WARNINGS_NOT_CONFIRMED": "Confirme o aviso para continuar.",
-    "IMPORT_ENTRY_NOT_REOPENABLE": "Esta pendência não pode voltar para a lista.",
-    "IMPORT_BULK_CONFLICT": "Algumas pendências não puderam ser resolvidas; nada foi gravado.",
+    "IMPORT_ENTRY_NOT_REOPENABLE": "Este trade não pode voltar para conferir.",
+    "IMPORT_BULK_CONFLICT": "Não foi possível resolver alguns trades. Nada foi salvo.",
     "PURCHASE_IN_INTEGRATION_STORE_BEFORE_CUTOFF": "Compra na loja CSFloat anterior à data de corte.",
     "IMPORT_CUTOFF_UNCHANGED": "A data de corte nova é igual à atual.",
     "IMPORT_CUTOFF_NOT_SET": "Faça a primeira importação antes de mudar a data de corte.",
@@ -894,7 +899,7 @@
     "generated": "Item obtido"
   },
   "errorDetails": {
-    "INVALID_RATE": "A taxa deve ser maior ou igual a 0% e menor que 100%, com no máximo {maxDecimals} casas decimais no percentual.",
+    "INVALID_RATE": "A taxa deve ficar entre 0% e menos de 100%, com no máximo {maxDecimals} casas decimais.",
     "PAYLOAD_TOO_LARGE": "O arquivo excede o limite de {maxMb} MB.",
     "ITEM_TRADE_LOCKED": "Item em trade lock até {date}.",
     "FLOAT_OUT_OF_RANGE": "O float deste item deve estar entre {min} e {max}.",
@@ -903,7 +908,7 @@
     "INVALID_AMOUNT": "O valor máximo permitido é {max}.",
     "AMOUNT_PRECISION_INVALID": "{currency} não tem casas decimais: informe um valor inteiro, por exemplo 1500.",
     "FX_RATE_REQUIRED": "Informe a cotação de US$ 1 em {currency} ou salve uma em Configurações.",
-    "AGING_THRESHOLDS_ORDER": "O giro rápido ({fast} dias) deve ser menor que o limite de agarrado ({slow} dias).",
+    "AGING_THRESHOLDS_ORDER": "O giro rápido ({fast}) deve ser menor que o limite de encalhado ({slow}).",
     "BACKUP_NEWER_VERSION": "Este backup é da versão de dados {fileVersion}, mas este app só conhece até a {appVersion}. Atualize o app.",
     "FX_FETCH_FAILED": "Não foi possível consultar a cotação ({source}). Verifique sua conexão com a internet.",
     "FX_RATE_LIMITED": "O limite de consultas da fonte ({source}) foi atingido. Tente mais tarde ou digite a cotação.",
@@ -1034,26 +1039,27 @@
     "title": "Lojas",
     "count": {
       "one": "{count} loja",
-      "other": "{count} lojas"
+      "other": "{count} lojas",
+      "zero": "Nenhuma loja"
     },
     "new": "Nova loja",
-    "feeChangeNote": "Mudanças de taxa valem para as próximas vendas; vendas já registradas não mudam.",
-    "empty": "Nenhuma loja cadastrada.",
-    "loadError": "Não foi possível carregar as lojas: {reason}",
+    "feeChangeNote": "Mudanças nas taxas valem para as próximas vendas. As vendas já registradas não mudam.",
+    "empty": "Você ainda não tem lojas. Use \"Nova loja\" para criar a primeira.",
+    "loadError": "Não foi possível carregar as lojas ({reason}). Tente de novo.",
     "storeGone": "A loja não existe mais. A lista foi atualizada.",
     "activated": "Loja \"{name}\" ativada.",
     "deactivated": "Loja \"{name}\" desativada.",
     "madePrimary": "\"{name}\" agora é a loja principal.",
     "deleted": "Loja \"{name}\" excluída.",
-    "deleteTitle": "Excluir loja",
+    "deleteTitle": "Excluir esta loja?",
     "deleteMessage": "Excluir a loja \"{name}\"? Esta ação não pode ser desfeita.",
-    "confirmDelete": "Excluir",
+    "confirmDelete": "Excluir loja",
     "saleHoldDays": "Retenção do saldo após a venda (dias)",
-    "saleHoldDaysHint": "0 = disponível na hora. Vale para as próximas vendas; vendas já registradas não mudam.",
-    "steamBadge": "Steam do app",
-    "steamSet": "Esta é a minha loja Steam",
-    "steamClear": "Não é a minha loja Steam",
-    "steamHint": "A loja Steam do app é onde o preço pago no terminal é registrado.",
+    "saleHoldDaysHint": "Digite 0 se o saldo fica disponível na hora. Vale para as próximas vendas. As vendas já registradas não mudam.",
+    "steamBadge": "Sua Steam",
+    "steamSet": "Usar como minha loja Steam",
+    "steamClear": "Deixar de usar como minha loja Steam",
+    "steamHint": "Sua loja Steam é onde o app registra o preço pago no terminal.",
     "steamSaved": "\"{name}\" agora é a sua loja Steam.",
     "steamCleared": "Nenhuma loja Steam escolhida."
   },
@@ -1064,22 +1070,22 @@
       "status": "Situação",
       "saleFee": "Taxa de venda",
       "rounding": "Arredondamento",
-      "minFixed": "Mínima / fixa",
-      "withdrawal": "Saque",
+      "minFixed": "Taxa mínima e fixa",
+      "withdrawal": "Permite saque",
       "actions": "Ações",
       "saleHold": "Retenção do saldo"
     },
     "primary": "Principal",
     "active": "Ativa",
     "inactive": "Inativa",
-    "feesNotConfigured": "taxas não configuradas",
+    "feesNotConfigured": "sem taxa de venda cadastrada",
     "feeDeducted": "{rate}% descontada",
     "feeAdded": "{rate}% somada",
-    "minFee": "mín. {value}",
+    "minFee": "mínima {value}",
     "fixedFee": "fixa {value}",
     "withdrawalNo": "Não",
     "withdrawalYes": "Sim, {detail}",
-    "withdrawalRateUnknown": "taxa não configurada",
+    "withdrawalRateUnknown": "taxa não cadastrada",
     "actions": {
       "edit": "Editar",
       "activate": "Ativar",
@@ -1089,14 +1095,15 @@
     },
     "reasons": {
       "primaryNeeded": "Escolha outra loja principal antes.",
-      "inUse": "Loja em uso, só pode ser desativada.",
+      "inUse": "A loja já foi usada. Ela só pode ser desativada.",
       "alreadyPrimary": "Já é a loja principal.",
       "activateFirst": "Ative a loja antes."
     },
     "saleHoldNone": "Na hora",
     "saleHoldDays": {
       "one": "{count} dia",
-      "other": "{count} dias"
+      "other": "{count} dias",
+      "zero": "{count} dias"
     }
   },
   "storeForm": {
@@ -1105,38 +1112,38 @@
     "name": "Nome",
     "currency": "Moeda",
     "currencyLocked": "A moeda não pode mudar: a loja já foi usada.",
-    "feeChangeNote": "Mudanças de taxa valem para as próximas vendas; vendas já registradas não mudam.",
+    "feeChangeNote": "Mudanças nas taxas valem para as próximas vendas. As vendas já registradas não mudam.",
     "saleFeeSection": "Taxa de venda",
     "saleFeeType": "Tipo da taxa",
-    "notConfigured": "Não configurada",
+    "notConfigured": "Sem taxa cadastrada",
     "feeType": {
       "DEDUCTED": "Descontada do preço",
       "ADDED": "Somada ao preço"
     },
     "saleFeeRate": "Taxa (%)",
-    "percentHint": "Em %, por exemplo 2,5. Vazio = não configurada.",
+    "percentHint": "Em %, por exemplo 2,5. Deixe vazio se não quiser cadastrar a taxa.",
     "saleFeeRounding": "Arredondamento",
     "rounding": {
       "CEIL": "Para cima",
-      "ROUND": "Mais próximo",
+      "ROUND": "Para o mais próximo",
       "FLOOR": "Para baixo"
     },
     "saleMinFee": "Taxa mínima ({currency})",
     "saleFixedFee": "Taxa fixa de venda ({currency})",
-    "emptyIsNone": "Vazio = sem mínimo.",
-    "emptyIsZero": "Vazio = 0.",
+    "emptyIsNone": "Deixe vazio se não há taxa mínima.",
+    "emptyIsZero": "Deixe vazio se não há taxa fixa.",
     "withdrawalSection": "Saque",
     "allowsWithdrawal": "Permite saque",
-    "withdrawalOffHint": "Sem saque, as taxas de saque ficam guardadas, mas não são usadas.",
+    "withdrawalOffHint": "Se a loja não permite saque, as taxas de saque ficam salvas, mas não são usadas.",
     "withdrawalFeeRate": "Taxa de saque (%)",
     "withdrawalFixedFee": "Taxa fixa de saque ({currency})",
     "isActive": "Loja ativa",
     "primaryCannotDeactivate": "A loja principal não pode ser desativada. Escolha outra principal antes.",
     "isPrimary": "Definir como loja principal",
-    "roundedNote": "O percentual tem mais casas decimais do que o aceito (4) e será arredondado ao salvar.",
-    "invalidRate": "Informe um percentual de 0 até menos de 100 (por exemplo 2,5).",
-    "invalidMoney": "Informe um valor com no máximo 2 casas decimais (por exemplo 0,30).",
-    "invalidMoneyWhole": "Esta moeda não tem casas decimais: informe um número inteiro (por exemplo 150).",
+    "roundedNote": "O percentual aceita até 4 casas decimais. Ao salvar, ele será arredondado.",
+    "invalidRate": "Informe um percentual de 0 a menos de 100, como 2,5.",
+    "invalidMoney": "Informe um valor com até duas casas decimais, como {example}.",
+    "invalidMoneyWhole": "{currency} não tem centavos. Informe um número inteiro, como {example}.",
     "nameRequired": "Informe o nome da loja.",
     "created": "Loja \"{name}\" criada.",
     "updated": "Loja \"{name}\" atualizada.",
@@ -1179,26 +1186,26 @@
     },
     "aging": {
       "title": "Limites de giro",
-      "intro": "Os dias contam a partir da liberação do trade lock (ou da compra, se não houver lock). Mudar os limites reclassifica os itens sem alterar nenhum dado.",
+      "intro": "Os dias contam a partir do fim do trade lock (ou da compra, se o item não teve trade lock). Ao mudar os limites, os itens são reclassificados, mas nenhum dado seu muda.",
       "fast": "Giro rápido até",
-      "slow": "Agarrado acima de",
+      "slow": "Encalhado acima de",
       "days": "dias",
-      "defaultValue": "Padrão: {days} dias",
+      "defaultValue": "Padrão: {days}",
       "restore": "Restaurar padrão",
       "save": "Salvar limites",
       "saved": "Limites salvos.",
       "restored": "Padrão restaurado.",
       "noChanges": "Nenhuma alteração para salvar.",
-      "middle": "Em giro: de {from} a {to} dias.",
-      "adjusted": "Os limites salvos não combinam com o padrão atual do sistema; o giro rápido está sendo calculado como {fast} dias. Salve novos limites para corrigir.",
-      "invalidNumber": "Digite um número inteiro (ex.: 7)."
+      "middle": "Em giro: de {from} até {to}.",
+      "adjusted": "Os limites salvos não combinam com o padrão atual. O giro rápido está sendo calculado com {fast}. Salve novos limites para corrigir.",
+      "invalidNumber": "Digite um número inteiro, como 7."
     },
     "catalog": {
       "title": "Catálogo de itens"
     },
     "backup": {
       "title": "Backup",
-      "intro": "Exporte uma cópia de todos os seus dados ou restaure uma cópia feita antes.",
+      "intro": "Exporte uma cópia de todos os seus dados ou importe uma cópia feita antes.",
       "exportWarning": "O arquivo exportado contém todos os seus dados pessoais (itens, valores, lojas e configurações). Guarde-o em um lugar seguro e não o compartilhe.",
       "export": "Exportar backup",
       "exporting": "Gerando o backup...",
@@ -1208,9 +1215,9 @@
       "chooseFile": "Escolher arquivo de backup",
       "selectedFile": "Arquivo escolhido: {file}",
       "confirmTitle": "Importar backup?",
-      "confirmMessage": "Isto substitui TODOS os dados atuais pelos do arquivo \"{file}\". Uma cópia dos dados atuais será salva antes, na pasta de backups.",
+      "confirmMessage": "Isto substitui TODOS os seus dados atuais pelos do arquivo \"{file}\". Antes, o app salva uma cópia dos dados atuais na pasta de backups.",
       "confirmButton": "Substituir meus dados",
-      "importDone": "Backup importado: {items} itens e {stores} lojas. Cópia dos dados anteriores: {backup}.",
+      "importDone": "Backup importado: {items} e {stores}. Cópia dos dados anteriores: {backup}.",
       "migrated": "Os dados foram atualizados da versão {from} para a {to}.",
       "reloading": "A página será recarregada em instantes...",
       "reloadNow": "Recarregar agora",
@@ -1219,7 +1226,7 @@
       "copyPath": "Copiar caminho",
       "pathCopied": "Caminho copiado.",
       "copyFailed": "Não foi possível copiar. Selecione o caminho e copie manualmente.",
-      "retention": "Os backups automáticos ficam na pasta de backups, dentro da pasta de dados do app. São mantidos os 10 mais recentes de cada tipo (antes de importar e antes de atualizar o app)."
+      "retention": "O app salva backups automáticos na pasta de backups, dentro da pasta de dados. Ele guarda os 10 mais recentes de cada tipo: os feitos antes de importar um backup e os feitos antes de atualizar o app."
     },
     "about": {
       "title": "Sobre",
@@ -1243,7 +1250,7 @@
     },
     "integrations": {
       "title": "Integrações",
-      "description": "Importe compras, vendas, aportes e saques direto das lojas. A chave fica só neste computador.",
+      "description": "Importe compras, vendas, aportes e saques direto do CSFloat. A chave fica só neste computador.",
       "csfloat": {
         "title": "CSFloat",
         "apiKeyLabel": "Chave da API",
@@ -1264,42 +1271,42 @@
         "testing": "Testando...",
         "connectedAs": "Conectado como {username}",
         "connectedNoName": "Conexão funcionando.",
-        "accountMismatch": "Esta chave é de outra conta CSFloat. As importações ficam bloqueadas até você trocar de conta.",
+        "accountMismatch": "Esta chave é de outra conta do CSFloat. As importações ficam bloqueadas até você usar \"Trocar de conta\".",
         "switchAccount": "Trocar de conta",
         "switchConfirmTitle": "Trocar a conta do CSFloat?",
-        "switchConfirmBody": "A próxima importação vai perguntar de novo a data de corte, e a importação ao abrir o app fica pausada até lá. Tudo o que já foi lançado continua no app.",
+        "switchConfirmBody": "A próxima importação vai perguntar a data de corte de novo. A importação ao abrir o app fica pausada até essa importação. Tudo o que já foi lançado continua no app.",
         "switched": "Conta trocada. Conectado como {username}.",
         "switchedNoName": "Conta trocada.",
         "help": "Como gerar a chave?",
         "privacy": "A chave nunca é mostrada de novo, não vai para os backups e não aparece nos registros do app.",
-        "saleFeeMismatch": "Sua taxa de venda no CSFloat é {account}; a loja {store} no app usa {configured}.",
-        "withdrawalFeeMismatch": "Sua taxa de saque no CSFloat é {account}; a loja {store} usa {configured} (só serve de sugestão no saque).",
-        "updateStore": "Atualizar a loja",
+        "saleFeeMismatch": "Sua taxa de venda no CSFloat é {account}. A loja {store} no app usa {configured}.",
+        "withdrawalFeeMismatch": "Sua taxa de saque no CSFloat é {account}. A loja {store} usa {configured}. A taxa da loja só serve de sugestão ao registrar um saque.",
+        "updateStore": "Atualizar as taxas da loja",
         "updateStoreConfirm": "Atualizar as taxas da loja {store} para as da sua conta? As vendas já registradas não mudam.",
         "storeUpdated": "Taxas da loja atualizadas.",
-        "linkedStore": "Lançamentos vão para a loja: {store}",
-        "noStore": "A loja CSFloat não foi encontrada. Crie (ou recrie), em Lojas, uma loja em US$ chamada \"CSFloat\" para ela ser ligada automaticamente.",
+        "linkedStore": "Os lançamentos importados vão para a loja {store}.",
+        "noStore": "Não encontramos a loja do CSFloat. Em Lojas, crie uma loja em US$ chamada \"CSFloat\". O app a liga sozinho.",
         "importNow": "Importar agora",
         "fullScan": "Varredura completa",
-        "fullScanHint": "Relê todo o histórico do CSFloat (mais lento). Use se achar que algo ficou de fora.",
+        "fullScanHint": "Lê todo o histórico do CSFloat de novo. Demora mais. Use se achar que algo ficou de fora.",
         "lastImport": "Última importação: {date}",
         "lastImportFailed": "A última importação falhou: {reason}",
         "neverImported": "Ainda não importado.",
         "openEntries": {
-          "one": "{count} pendência",
-          "other": "{count} pendências"
+          "one": "{count} para conferir",
+          "other": "{count} para conferir"
         },
         "cutoffInfo": "Data de corte: {date}",
         "autoImport": "Importar ao abrir o app",
-        "autoImportHint": "Ao abrir, o app busca só o que é novo no CSFloat, em segundo plano, sem travar a tela. Se não houver nada novo, aparece um aviso curto dizendo isso.",
-        "autoImportNeedsFirst": "Faça a primeira importação pelo botão (ela define a data de corte); depois a importação ao abrir passa a valer.",
-        "autoPausedUndo": "A importação ao abrir está pausada porque você desfez uma importação em {date}, para o que foi desfeito não voltar sozinho. Reative quando quiser.",
-        "autoPausedSwitch": "A importação ao abrir está pausada porque a conta do CSFloat foi trocada. Faça a primeira importação da conta nova e reative.",
-        "autoResume": "Reativar importação ao abrir",
-        "reviewImports": "Verificar meus importes e pendências"
+        "autoImportHint": "Ao abrir o app, ele busca só o que é novo no CSFloat, em segundo plano. A tela não trava. Se não houver nada novo, aparece um aviso curto.",
+        "autoImportNeedsFirst": "Faça a primeira importação com o botão \"Importar agora\". Ela define a data de corte. Depois disso, a importação ao abrir o app passa a funcionar.",
+        "autoPausedUndo": "A importação ao abrir o app está pausada porque você desfez uma importação em {date}. Assim, o que foi desfeito não volta sozinho. Reative quando quiser.",
+        "autoPausedSwitch": "A importação ao abrir o app está pausada porque a conta do CSFloat foi trocada. Faça a primeira importação da conta nova e reative.",
+        "autoResume": "Reativar a importação ao abrir o app",
+        "reviewImports": "Ver importações e itens para conferir"
       }
     },
-    "loadError": "Não foi possível carregar as configurações: {reason}"
+    "loadError": "Não foi possível carregar as configurações ({reason}). Tente de novo."
   },
   "desktopUpdate": {
     "availableTitle": "Atualização disponível",
@@ -1614,15 +1621,15 @@
     "unknownItem": "Item sem nome",
     "disabled": {
       "noKey": "Salve a chave do CSFloat em Configurações para importar.",
-      "noStore": "Crie, em Lojas, uma loja em US$ chamada \"CSFloat\".",
+      "noStore": "Em Lojas, crie uma loja em US$ chamada \"CSFloat\".",
       "running": "Já há uma importação em andamento."
     },
     "cutoff": {
       "title": "Primeira importação do CSFloat",
-      "question": "Já lancei à mão tudo até qual data?",
-      "help": "Compras, vendas, aportes e saques do CSFloat antes desta data serão ignorados. A sugestão é o seu último lançamento manual ou aporte no CSFloat; você pode mudar.",
-      "baseDepositHint": "Se você começou com um aporte do saldo atual, use uma data a partir dele, para não contar o dinheiro duas vezes.",
-      "noSuggestion": "Sem lançamentos na loja do CSFloat: informe a data.",
+      "question": "Até qual data você já lançou tudo no app?",
+      "help": "Compras, vendas, aportes e saques do CSFloat de antes desta data não serão importados. A data sugerida é a do seu último lançamento ou aporte na loja CSFloat. Você pode mudar.",
+      "baseDepositHint": "Se você começou com um aporte do saldo atual, use a data desse aporte ou uma depois dela, para não contar o dinheiro duas vezes.",
+      "noSuggestion": "Ainda não há lançamentos na loja do CSFloat. Informe a data.",
       "confirm": "Importar"
     },
     "summary": {
@@ -1652,8 +1659,8 @@
         "other": "{count} trades revertidos"
       },
       "withoutPurchase": {
-        "one": "{count} venda sem compra no app (lance a compra à mão)",
-        "other": "{count} vendas sem compra no app (lance as compras à mão)"
+        "one": "{count} venda sem compra no app. Lance a compra.",
+        "other": "{count} vendas sem compra no app. Lance as compras."
       },
       "failed": {
         "one": "{count} não importada (veja o motivo)",
@@ -1668,12 +1675,12 @@
         "other": "{count} revertidos antes de importar (não importados)"
       },
       "deferredSales": {
-        "one": "{count} venda encontrada e deixada para a versão seguinte",
-        "other": "{count} vendas encontradas e deixadas para a versão seguinte"
+        "one": "{count} venda encontrada que esta versão do app ainda não importa",
+        "other": "{count} vendas encontradas que esta versão do app ainda não importa"
       },
       "known": {
-        "one": "{count} já importada (ignorada)",
-        "other": "{count} já importadas (ignoradas)"
+        "one": "{count} já importada antes",
+        "other": "{count} já importadas antes"
       },
       "notTransferred": {
         "one": "{count} ainda não transferida (será verificada de novo)",
@@ -1692,8 +1699,8 @@
         "other": "{count} saques importados"
       },
       "componentsFilled": {
-        "one": "{count} compra ganhou stickers/chaveiro",
-        "other": "{count} compras ganharam stickers/chaveiro"
+        "one": "{count} compra com stickers e chaveiro preenchidos",
+        "other": "{count} compras com stickers e chaveiro preenchidos"
       },
       "componentsSkipped": {
         "one": "{count} componente não registrado",
@@ -1709,20 +1716,20 @@
       }
     },
     "componentWarningsTitle": "Não registrados",
-    "componentWarningsHint": "Você pode cadastrá-los à mão, editando o item.",
+    "componentWarningsHint": "Você pode cadastrá-los editando o item.",
     "applyFromStockHint": "Há no estoque uma unidade igual. Se foi ela que estava na arma, aplique-a com a data certa.",
     "componentUnnamed": "componente sem nome",
     "componentWarnings": {
       "COMPONENT_CATALOG_NOT_FOUND": "{name} (não encontrado no catálogo)",
       "COMPONENT_FULLY_SCRAPED": "{name} (raspado até o fim)",
-      "COMPONENT_LIMIT_EXCEEDED": "{name} (acima do limite de 5 stickers e 1 pendurado)",
+      "COMPONENT_LIMIT_EXCEEDED": "{name} (acima do limite de 5 stickers e 1 chaveiro ou slab)",
       "COMPONENTS_NOT_ALLOWED": "stickers e chaveiro (este item não aceita componentes)",
       "COMPONENT_MAYBE_APPLIED_FROM_STOCK": "{name} (possivelmente aplicado do estoque)"
     },
     "warnings": {
       "SCAN_LIMIT_REACHED": "A leitura parou no limite de páginas. O restante fica para a próxima importação.",
-      "ORDER_NOT_GUARANTEED": "O CSFloat devolveu os trades fora de ordem; o app leu todo o histórico para não perder nada.",
-      "ACCOUNT_SALE_FEE_DIFFERS": "Sua taxa de venda no CSFloat é diferente da cadastrada na loja do app. Confira em Configurações → CSFloat → Testar conexão (a loja não muda sozinha).",
+      "ORDER_NOT_GUARANTEED": "O CSFloat enviou os trades fora de ordem. O app leu todo o histórico para não perder nada.",
+      "ACCOUNT_SALE_FEE_DIFFERS": "Sua taxa de venda no CSFloat é diferente da cadastrada na loja do app. Confira em Configurações, no card do CSFloat, com \"Testar conexão\". A loja não muda sozinha.",
       "ACCOUNT_WITHDRAWAL_FEE_DIFFERS": "Sua taxa de saque no CSFloat é diferente da cadastrada na loja do app (só informativo)."
     },
     "undo": {
@@ -1733,8 +1740,8 @@
       "ITEM_EDITED": "editado depois da importação",
       "ITEM_IN_HOLDING": "no holding",
       "ITEM_SOLD_IN_APP": "vendido no app",
-      "ITEM_IN_OPERATION": "participa de uma aplicação do estoque (desfaça antes)",
-      "ENTRY_RESOLVED": "pendência já resolvida (a decisão se perde)",
+      "ITEM_IN_OPERATION": "foi usado em uma aplicação do estoque (desfaça a aplicação antes)",
+      "ENTRY_RESOLVED": "trade para conferir já resolvido (a sua decisão se perde)",
       "done": "Importação desfeita. A importação ao abrir o app fica pausada até a próxima importação manual.",
       "reasons": {
         "NOT_LATEST": "Só a última importação que mudou algo pode ser desfeita.",
@@ -1747,8 +1754,8 @@
         "other": "{count} itens criados serão excluídos."
       },
       "bodyLinks": {
-        "one": "{count} lançamento seu será só desligado (não é apagado).",
-        "other": "{count} lançamentos seus serão só desligados (não são apagados)."
+        "one": "{count} lançamento seu só deixa de estar ligado ao trade. Ele não é apagado.",
+        "other": "{count} lançamentos seus só deixam de estar ligados aos trades. Eles não são apagados."
       },
       "bodySales": {
         "one": "{count} venda importada será desfeita (o item volta ao estoque).",
@@ -1761,8 +1768,8 @@
     },
     "page": {
       "title": "Importações",
-      "open": "Pendências",
-      "noOpen": "Nenhuma pendência.",
+      "open": "Para conferir",
+      "noOpen": "Nada para conferir.",
       "batches": "Histórico de importações",
       "noBatches": "Nenhuma importação ainda.",
       "undone": "Desfeita",
@@ -1775,40 +1782,44 @@
       "hideDetails": "Esconder detalhes",
       "noEntries": "Esta importação não gerou itens para mostrar.",
       "pendingCount": {
-        "one": "{count} pendência",
-        "other": "{count} pendências"
+        "one": "{count} para conferir",
+        "other": "{count} para conferir"
       },
-      "ignored": "Ignoradas ({count})",
-      "ignoredHint": "Pendências que você ignorou. Elas não voltam sozinhas; use \"Voltar para pendências\" para tratá-las de novo."
+      "ignored": {
+        "zero": "Nenhum ignorado",
+        "one": "{count} ignorado",
+        "other": "{count} ignorados"
+      },
+      "ignoredHint": "Trades que você ignorou. Eles não voltam sozinhos. Use \"Voltar para conferir\" para tratá-los de novo."
     },
     "groups": {
-      "CREATED": "Importadas",
-      "MATCHED": "Ligadas a lançamentos seus",
+      "CREATED": "Importados",
+      "MATCHED": "Ligados a lançamentos seus",
       "POSSIBLE_DUPLICATE": "Possível duplicado",
       "REVERTED": "Trade revertido",
       "WITHOUT_PURCHASE": "Venda sem compra no app",
-      "FAILED": "Não importadas",
-      "IGNORED": "Ignoradas"
+      "FAILED": "Não importados",
+      "IGNORED": "Ignorados"
     },
     "reasons": {
       "CATALOG_NOT_FOUND": "Item não encontrado no catálogo. Atualize o catálogo; a próxima importação tenta de novo.",
-      "CATALOG_AMBIGUOUS": "Mais de um item do catálogo serve (ex.: fase da Doppler). Tentaremos de novo.",
+      "CATALOG_AMBIGUOUS": "Mais de um item do catálogo combina com este (por exemplo, fases da Doppler). A próxima importação tenta de novo.",
       "DIRECTION_UNKNOWN": "Não foi possível saber se é compra ou venda.",
       "TRADE_SENT_TO_OTHER_USER": "O item foi enviado para outra pessoa. Confira no CSFloat.",
       "SOURCE_RECORD_INVALID": "Dados incompletos vindos do CSFloat.",
       "PRICE_MISMATCH": "O valor debitado no extrato é diferente do preço do anúncio.",
       "REVERTED_PENDING_ACTION": "O CSFloat indica que este trade foi desfeito. Confira e escolha \"Remover lançamento\" ou \"Manter\".",
-      "UNKNOWN_STATE": "Estado novo do CSFloat ({state}). Ignorado por segurança.",
-      "PURCHASE_NOT_FOUND": "Lance a compra deste item à mão; a próxima importação registra a venda.",
+      "UNKNOWN_STATE": "O CSFloat enviou um estado que o app não conhece ({state}). Por segurança, este trade não foi importado.",
+      "PURCHASE_NOT_FOUND": "Lance a compra deste item. A próxima importação registra a venda.",
       "SALE_TX_NOT_FOUND": "O extrato do CSFloat ainda não trouxe o crédito desta venda. A próxima importação tenta de novo.",
-      "FEE_MISMATCH": "CSFloat cobrou {fee}; pela loja seriam {expected}. Foi registrado o valor real.",
+      "FEE_MISMATCH": "O CSFloat cobrou {fee}, mas pela taxa da loja seriam {expected}. O app registrou o valor cobrado.",
       "FEE_INCONSISTENT": "O crédito da venda no extrato não bate com o preço menos a taxa. Confira no CSFloat; a próxima importação tenta de novo.",
-      "ITEM_TRADE_LOCKED": "No app, este item ainda estava em trade lock na data da venda. Confira a data de liberação do item; a próxima importação tenta de novo.",
+      "ITEM_TRADE_LOCKED": "No app, este item ainda estava em trade lock na data da venda. Confira a data de liberação do item. A próxima importação tenta de novo.",
       "REVERTED_STATE_FAILED": "O CSFloat marcou este trade como falho ou cancelado ({state}) depois da importação. Confira e escolha \"Remover lançamento\" ou \"Manter\".",
-      "REVERTED_OFFER_CHANGED": "A oferta da Steam deste trade deixou de constar como aceita. Pode ter sido revertida: confira e escolha \"Remover lançamento\" ou \"Manter\".",
+      "REVERTED_OFFER_CHANGED": "A oferta da Steam deste trade deixou de constar como aceita. Ela pode ter sido revertida. Confira e escolha \"Remover lançamento\" ou \"Manter\".",
       "REVERTED_REFUND": "O extrato do CSFloat mostra um estorno deste trade. Confira e escolha \"Remover lançamento\" ou \"Manter\".",
       "WITHDRAWAL_FEE_ABOVE_AMOUNT": "A taxa deste saque é maior que o valor sacado. Confira no CSFloat.",
-      "WITHDRAWAL_FEE_MISMATCH": "A taxa cobrada neste saque é diferente da sugerida pelas taxas de saque da loja (só um aviso)."
+      "WITHDRAWAL_FEE_MISMATCH": "A taxa cobrada neste saque é diferente da taxa de saque cadastrada na loja. É só um aviso."
     },
     "actions": {
       "REMOVE": "Remover lançamento",
@@ -1818,21 +1829,21 @@
       "IGNORE": "Ignorar",
       "linkTo": "Ligar ao lançamento #{id}",
       "removeTitle": "Remover lançamento?",
-      "manualLaunch": "Atenção: este é um lançamento que você fez à mão e que foi ligado ao trade.",
+      "manualLaunch": "Atenção: este lançamento foi feito por você e foi ligado ao trade.",
       "removeConfirm": {
         "purchase": "A compra será excluída do inventário. O saldo da loja deixa de descontar essa compra e o item sai do estoque no lucro real.",
-        "purchaseManual": "Esta compra foi lançada por você à mão. Ela será excluída do inventário: o saldo da loja deixa de descontá-la e o item sai do estoque.",
-        "sale": "A venda será desfeita: o item volta ao estoque (ou ao holding) e o líquido sai do saldo e do pendente da loja.",
-        "saleManual": "Esta venda foi lançada por você à mão. Ela será desfeita: o item volta ao estoque e o líquido sai do saldo da loja."
+        "purchaseManual": "Você lançou esta compra. Ela será excluída do inventário. O saldo da loja deixa de descontá-la e o item sai do estoque.",
+        "sale": "A venda será desfeita. O item volta ao estoque (ou ao holding) e o valor líquido sai do saldo da loja, disponível ou pendente.",
+        "saleManual": "Você lançou esta venda. Ela será desfeita. O item volta ao estoque e o valor líquido sai do saldo da loja."
       },
       "resolved": {
         "REMOVED": "Lançamento removido.",
-        "KEPT": "Mantido. O app não acusa mais este trade.",
+        "KEPT": "Mantido. O app não vai mais avisar sobre este trade.",
         "CREATED": "Lançamento criado.",
         "LINKED": "Ligado ao lançamento.",
         "IGNORED": "Ignorado.",
         "PURCHASE_ONLY": "Compra salva. A venda entra na próxima importação, quando o extrato trouxer o crédito.",
-        "REOPENED": "De volta às pendências.",
+        "REOPENED": "De volta para conferir.",
         "APPLIED": "Aplicado do estoque. O custo da unidade passou para a arma."
       },
       "conflict": {
@@ -1843,16 +1854,16 @@
         "CHOOSE_UNIT": "Há mais de uma unidade igual em estoque: use \"Ligar ao lançamento\" para escolher.",
         "TARGET_ALREADY_LINKED": "Esse lançamento já está ligado a outro trade do CSFloat.",
         "ALREADY_LINKED": "Este trade já está ligado a um lançamento.",
-        "RECORD_NOT_FOUND": "O registro do CSFloat desta pendência não existe mais. Importe de novo.",
+        "RECORD_NOT_FOUND": "O registro do CSFloat deste trade não existe mais. Importe de novo.",
         "CATALOG_NOT_FOUND": "O item não está mais no catálogo. Atualize o catálogo e tente de novo.",
         "UNIT_IN_STOCK": "Esta unidade já está no estoque. Importe de novo para registrar a venda nela.",
-        "NOT_IGNORED": "Esta pendência não está entre as ignoradas.",
-        "OTHER_ACCOUNT": "Esta pendência é de outra conta do CSFloat e não pode voltar."
+        "NOT_IGNORED": "Este trade não está entre os ignorados.",
+        "OTHER_ACCOUNT": "Este trade é de outra conta do CSFloat e não pode voltar para conferir."
       },
       "CREATE_PURCHASE": "Lançar compra",
-      "MARK_WON": "Foi drop (ganhei)",
+      "MARK_WON": "Ganhei este item (drop)",
       "APPLY_FROM_STOCK": "Aplicar e registrar",
-      "REOPEN": "Voltar para pendências"
+      "REOPEN": "Voltar para conferir"
     },
     "auto": {
       "created": {
@@ -1863,8 +1874,8 @@
         "one": "{count} trade do CSFloat ligado a um lançamento seu",
         "other": "{count} trades do CSFloat ligados a lançamentos seus"
       },
-      "attention": "A importação do CSFloat trouxe pendências para conferir.",
-      "failed": "Importação automática do CSFloat não concluída: {reason}",
+      "attention": "A importação do CSFloat trouxe trades para conferir.",
+      "failed": "A importação automática do CSFloat não terminou ({reason}).",
       "seeSummary": "Ver resumo",
       "transfers": {
         "one": "{count} aporte ou saque importado do CSFloat",
@@ -1878,85 +1889,113 @@
       "identityLocked": "Os dados do item vêm da venda e não podem ser trocados. Informe a loja, o preço e a data da compra.",
       "store": "Loja da compra",
       "price": "Preço pago ({currency})",
-      "fxRate": "Cotação USD→{currency} da compra (opcional; vazio = a das configurações)",
+      "fxRate": "Cotação de US$ 1 em {currency} na compra (opcional). Se deixar vazio, vale a das Configurações.",
       "acquiredAt": "Data da compra",
       "acquiredHint": "Não pode ser depois da venda.",
       "tradeUnlockAt": "Fim do trade lock",
-      "unlockHint": "Precisa terminar até a venda ({date}). Vazio = sem trade lock.",
+      "unlockHint": "Precisa terminar até a venda ({date}). Deixe vazio se não houve trade lock.",
       "plusSeven": "Compra + 7 dias",
       "submit": "Lançar compra e registrar a venda",
       "storeRequired": "Escolha a loja.",
-      "priceRequired": "Informe o preço pago.",
-      "fxInvalid": "Cotação inválida.",
+      "priceRequired": "Informe o preço pago, como {example}.",
+      "fxInvalid": "Cotação inválida. Digite um número maior que zero, como {example}.",
       "dateRequired": "Informe a data.",
       "dateInvalid": "Data inválida.",
       "afterSale": "A data da compra não pode ser depois da venda ({date}).",
-      "unlockAfterSale": "Com esta data, o trade lock terminaria depois da venda ({date}). A Steam não teria deixado vender: confira a data da compra ou o fim do trade lock.",
-      "warnBeforeCutoff": "Esta compra é na loja CSFloat e é anterior à data de corte ({date}). Se o saldo dessa época já está num aporte seu, o saldo calculado vai descontar este valor de novo; nesse caso, registre uma conferência depois.",
+      "unlockAfterSale": "Com esta data, o trade lock terminaria depois da venda ({date}). A Steam não teria permitido a venda. Confira a data da compra e o fim do trade lock.",
+      "warnBeforeCutoff": "Esta compra é na loja CSFloat e é de antes da data de corte ({date}). Se o saldo dessa época já está em um aporte seu, o saldo calculado vai descontar este valor de novo. Nesse caso, registre uma conferência depois.",
       "confirmAnyway": "Entendi, lançar mesmo assim",
-      "noCredit": "O extrato do CSFloat ainda não trouxe o crédito desta venda, então ela não pode ser registrada agora. Você pode salvar só a compra: a próxima importação registra a venda nela.",
+      "noCredit": "O extrato do CSFloat ainda não trouxe o crédito desta venda, então ela não pode ser registrada agora. Você pode salvar só a compra. A próxima importação registra a venda nela.",
       "purchaseOnly": "Salvar só a compra",
-      "unitInStock": "Esta unidade já está no estoque (veja abaixo). Importe de novo para registrar a venda nela, em vez de lançar outra compra."
+      "unitInStock": "Esta unidade já está no estoque (veja abaixo). Importe de novo para registrar a venda nela, em vez de lançar outra compra.",
+      "priceInvalidWhole": "{currency} não tem centavos. Informe o preço pago como um número inteiro, como {example}."
     },
     "won": {
-      "title": "Foi drop (ganhei)",
+      "title": "Ganhei este item (drop)",
       "body": {
-        "one": "O item será lançado como ganho (custo 0, sem trade lock) e a venda será registrada na hora.",
-        "other": "{count} itens serão lançados como ganhos (custo 0, sem trade lock) e as vendas serão registradas na hora. O lucro real ganha o líquido dessas vendas."
+        "one": "O item será lançado como \"Ganhei\", com custo 0 e sem trade lock. A venda será registrada na hora.",
+        "other": "{count} itens serão lançados como \"Ganhei\", com custo 0 e sem trade lock. As vendas serão registradas na hora. O lucro real passa a incluir o valor líquido dessas vendas."
       },
-      "saleDate": "Data de aquisição = a data da venda",
-      "customDate": "Informar a data de aquisição",
-      "acquiredAt": "Data de aquisição",
-      "turnoverHint": "Com a data da venda, o giro dessa venda fica em 0 dia.",
-      "confirm": "Confirmar"
+      "saleDate": "Usar a data da venda",
+      "customDate": "Escolher outra data",
+      "acquiredAt": "Data em que recebeu",
+      "turnoverHint": "Com a data da venda, o tempo até vender fica em {days}.",
+      "confirm": "Lançar como ganho"
     },
     "bulk": {
-      "bar": "Pendências selecionadas",
+      "bar": "Trades selecionados",
       "selected": {
-        "one": "{count} selecionada",
-        "other": "{count} selecionadas"
+        "one": "{count} selecionado",
+        "other": "{count} selecionados",
+        "zero": "Nenhum selecionado"
       },
       "clear": "Limpar seleção",
       "selectEntry": "Selecionar {name}",
-      "selectGroup": "Selecionar todas de {group}",
+      "selectGroup": "Selecionar todos em {group}",
       "failed": {
-        "one": "{count} pendência não pôde ser resolvida (marcada abaixo). Nada foi gravado: desmarque-a e repita.",
-        "other": "{count} pendências não puderam ser resolvidas (marcadas abaixo). Nada foi gravado: desmarque-as e repita."
+        "one": "Não foi possível resolver {count} trade (marcado abaixo). Nada foi salvo. Desmarque-o e tente de novo.",
+        "other": "Não foi possível resolver {count} trades (marcados abaixo). Nada foi salvo. Desmarque-os e tente de novo."
       }
     },
     "fullScanConfirm": {
-      "title": "Varredura completa",
-      "body": "O app vai ler de novo todo o histórico de trades e do extrato do CSFloat, sem parar onde a última importação parou. Isso usa mais requisições e pode levar até 2 minutos. Nada é duplicado: trades já importados são reconhecidos pelo ID, e os seus lançamentos feitos à mão continuam sendo ligados pelo float (ou por item, preço e dia). Os trades anteriores à data de corte ({date}) continuam de fora, para o dinheiro que já está nos seus lançamentos e aportes não ser contado duas vezes. Para importar trades mais antigos, altere a data de corte na página Importações.",
-      "componentsNote": "A varredura também preenche, uma única vez, os stickers e o chaveiro das compras já importadas, sem mexer nos que você registrou à mão.",
+      "title": "Fazer varredura completa?",
+      "body": "O app vai ler de novo todo o histórico de trades e o extrato do CSFloat, sem parar onde a última importação parou. Isso faz mais consultas e pode levar até 2 minutos. Nada é duplicado: os trades já importados são reconhecidos pelo ID, e os lançamentos que você fez continuam sendo ligados pelo float (ou por item, preço e dia). Trades de antes da data de corte ({date}) continuam de fora, para não contar duas vezes o dinheiro que já está nos seus lançamentos e aportes. Para importar trades mais antigos, altere a data de corte na página Importações.",
+      "componentsNote": "A varredura também preenche, uma única vez, os stickers e o chaveiro das compras já importadas. Os que você registrou não são alterados.",
       "confirm": "Fazer varredura completa"
     },
     "cutoffChange": {
       "title": "Alterar data de corte",
       "blockTitle": "Data de corte: {date}",
-      "blockBody": "Até esta data, você já lançou tudo à mão ou o saldo dessa época está num aporte. Trades anteriores a ela não são importados.",
-      "backwardHelp": "Data mais antiga: importa os trades entre a nova data e a atual. Compras novas descontam do saldo da loja CSFloat, e vendas novas creditam. Se um aporte seu já incluía esse período, o dinheiro será contado duas vezes.",
-      "forwardHelp": "Data mais recente: nada do que já foi importado é apagado. Os trades ainda não importados antes da nova data deixam de ser importados, e as pendências deles são fechadas.",
-      "undoHelp": "A mudança roda uma varredura completa e pode ser desfeita em \"Desfazer importação\", enquanto for a última importação que mudou algo.",
+      "blockBody": "Até esta data, você já lançou tudo no app, ou o saldo dessa época está em um aporte. Trades de antes dela não são importados.",
+      "backwardHelp": "Data mais antiga: o app importa os trades entre a nova data e a atual. As compras importadas saem do saldo da loja CSFloat e as vendas entram. Se um aporte seu já incluía esse período, o dinheiro será contado duas vezes.",
+      "forwardHelp": "Data mais recente: nada do que já foi importado é apagado. Trades de antes da nova data que ainda não foram importados deixam de ser importados, e os que estavam para conferir são fechados.",
+      "undoHelp": "A mudança faz uma varredura completa. Você pode desfazê-la com \"Desfazer importação\", enquanto ela for a última importação que mudou algo.",
       "open": "Alterar data de corte",
       "current": "Data de corte atual: {date}",
       "newDate": "Nova data de corte",
       "previewTitle": "Efeito previsto",
-      "upToPurchases": "Até {count} compra(s) já vistas podem entrar ({value}). Parte delas pode ser ligada aos seus lançamentos.",
-      "upToSales": "Até {count} venda(s) já vistas podem entrar ({value}).",
+      "upToPurchases": {
+        "zero": "Nenhuma compra já vista pode entrar.",
+        "one": "Até {count} compra já vista pode entrar ({value}). Ela pode ser ligada a um lançamento seu.",
+        "other": "Até {count} compras já vistas podem entrar ({value}). Parte delas pode ser ligada aos seus lançamentos."
+      },
+      "upToSales": {
+        "zero": "Nenhuma venda já vista pode entrar.",
+        "one": "Até {count} venda já vista pode entrar ({value}).",
+        "other": "Até {count} vendas já vistas podem entrar ({value})."
+      },
       "mayHaveUnseen": "Há trades nesse período que o app ainda nunca leu: a varredura completa também vai trazê-los.",
-      "manualLaunches": "Lançamentos seus na loja CSFloat nesse período: {purchases} compra(s) e {sales} venda(s). Eles serão ligados quando baterem, sem duplicar.",
+      "manualLaunches": "Lançamentos seus na loja CSFloat nesse período: {purchases} e {sales}. Eles serão ligados quando baterem, sem duplicar.",
       "depositsWarning": {
         "one": "Atenção: há um aporte seu na loja CSFloat nesse período. Se ele já incluía o saldo dessa época, as compras e vendas importadas vão contar o dinheiro duas vezes.",
         "other": "Atenção: há {count} aportes seus na loja CSFloat nesse período. Se eles já incluíam o saldo dessa época, as compras e vendas importadas vão contar o dinheiro duas vezes."
       },
-      "importedKept": "{count} lançamento(s) já importado(s) nesse período continuam no app.",
-      "openToClose": "{count} trade(s) ainda não importado(s) ou pendência(s) antes da nova data serão fechados.",
+      "importedKept": {
+        "zero": "Nenhum lançamento foi importado nesse período.",
+        "one": "{count} lançamento já importado nesse período continua no app.",
+        "other": "{count} lançamentos já importados nesse período continuam no app."
+      },
+      "openToClose": {
+        "zero": "Nenhum trade de antes da nova data será fechado.",
+        "one": "{count} trade de antes da nova data, ainda não importado ou para conferir, será fechado.",
+        "other": "{count} trades de antes da nova data, ainda não importados ou para conferir, serão fechados."
+      },
       "confirm": "Alterar e importar",
       "history": "Data de corte alterada de {from} para {to}.",
       "badge": "Data de corte alterada",
       "olderHint": "Trades antes da data de corte não são importados.",
       "singleHint": "É uma só data de corte para tudo do CSFloat: compras, vendas, aportes e saques. Cada importação traz tudo junto, a partir dela.",
-      "link": "Ver a data de corte"
+      "link": "Ver a data de corte",
+      "purchasesCount": {
+        "zero": "nenhuma compra",
+        "one": "{count} compra",
+        "other": "{count} compras"
+      },
+      "salesCount": {
+        "zero": "nenhuma venda",
+        "one": "{count} venda",
+        "other": "{count} vendas"
+      }
     },
     "seeInProfit": "Ver no lucro real",
     "txFee": "taxa {value}",
@@ -1965,10 +2004,21 @@
       "WITHDRAWAL": "Saque do CSFloat"
     },
     "transferCutoff": {
-      "upToDeposits": "Até {count} aporte(s) já vistos no extrato ({value}).",
-      "upToWithdrawals": "Até {count} saque(s) já vistos no extrato ({value}).",
+      "upToDeposits": {
+        "zero": "Nenhum aporte já visto no extrato.",
+        "one": "Até {count} aporte já visto no extrato ({value}).",
+        "other": "Até {count} aportes já vistos no extrato ({value})."
+      },
+      "upToWithdrawals": {
+        "zero": "Nenhum saque já visto no extrato.",
+        "one": "Até {count} saque já visto no extrato ({value}).",
+        "other": "Até {count} saques já vistos no extrato ({value})."
+      },
       "mayHaveUnseen": "A definição relê o extrato inteiro: aportes e saques que o app ainda não leu também entram.",
-      "openToClose": "{count} aporte(s) ou saque(s) ainda não importados antes da nova data deixam de ser importados. Os já importados continuam.",
+      "openToClose": {
+        "one": "{count} aporte ou saque de antes da nova data, ainda não importado, deixa de ser importado. Os já importados continuam.",
+        "other": "{count} aportes ou saques de antes da nova data, ainda não importados, deixam de ser importados. Os já importados continuam."
+      },
       "history": "Esta importação definiu ou alterou a data de corte dos aportes e saques."
     }
   },
@@ -2036,15 +2086,15 @@
     "button": "Importar automaticamente",
     "modalTitle": "Importar automaticamente do CSFloat",
     "modalBody": "Em vez de digitar, você pode importar suas compras, vendas, aportes e saques direto do CSFloat.",
-    "modalHint": "Para isso, ligue o CSFloat em Configurações: o passo a passo está lá e leva um minuto.",
-    "configure": "Configurar o CSFloat",
+    "modalHint": "Para isso, conecte o CSFloat em Configurações. O passo a passo está lá e leva cerca de um minuto.",
+    "configure": "Conectar o CSFloat",
     "later": "Agora não",
-    "title": "Como ligar o CSFloat",
+    "title": "Como conectar o CSFloat",
     "step1": "Entre no CSFloat com a sua conta Steam.",
     "step2": "Abra o seu perfil e vá na aba \"Developers\".",
     "step3": "Clique em \"New Key\" e copie a chave.",
     "step4": "Cole a chave aqui embaixo, clique em \"Salvar chave\" e depois em \"Testar conexão\".",
-    "step5": "Clique em \"Importar agora\" (aqui embaixo) ou em \"Importar do CSFloat\" no Inventário e escolha a data de corte: até quando você já lançou tudo à mão.",
+    "step5": "Clique em \"Importar agora\" (aqui embaixo) ou em \"Importar do CSFloat\" no Inventário. Escolha a data de corte: até quando você já lançou tudo no app.",
     "open": "Abrir o CSFloat",
     "safety": "A chave dá acesso à sua conta do CSFloat: não compartilhe com ninguém. Se ela vazar, apague-a no CSFloat e gere outra."
   },

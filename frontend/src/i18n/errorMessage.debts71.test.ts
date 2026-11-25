@@ -16,7 +16,7 @@ describe('T85: INVALID_RATE', () => {
   });
   test('sem params cai na mensagem genérica, sem placeholder', () => {
     const e = new ApiRequestError('INVALID_RATE', 'm', 400);
-    expect(errorMessageFor(e, tPt, 'pt-BR')).toBe('Taxa inválida.');
+    expect(errorMessageFor(e, tPt, 'pt-BR')).toBe('Taxa inválida. Use um percentual de 0 a menos de 100.');
     expect(errorMessageFor(e, tEn, 'en')).not.toMatch(/[{}]/);
   });
   test('maxDecimals menor que 2 não gera número negativo', () => {

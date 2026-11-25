@@ -9,6 +9,22 @@ const sourceDisplayName = (source: string) => (source === 'CSFLOAT' ? 'CSFloat' 
 // Limite da faixa de cotação: inteiro ou até 4 casas, sem agrupar milhar em excesso (ex.: 0,5 e 100.000).
 const formatRateBound = (value: number, locale: string) => new Intl.NumberFormat(locale, { maximumFractionDigits: 4 }).format(value);
 
+// Dias com o plural do idioma (`common.dayCount`), para os textos de erro que só recebem o tradutor simples (sem "1 dias").
+function dayCountText(days: number, t: LooseT, locale: string): string {
+  let category = 'other';
+  try {
+    category = days === 0 ? 'zero' : new Intl.PluralRules(locale).select(days);
+  } catch {
+    category = 'other';
+  }
+  for (const form of [category, 'other']) {
+    const key = `common.dayCount.${form}`;
+    const text = t(key, { count: days });
+    if (text !== key) return text;
+  }
+  return String(days);
+}
+
 // Valores do backend (`error.params`) já formatados para interpolar na mensagem, por código (D120).
 // Devolve null quando o código não tem texto detalhado ou faltam os valores necessários.
 export function errorDetailParams(
@@ -37,7 +53,7 @@ export function errorDetailParams(
       return typeof p.currency === 'string' ? { currency: p.currency } : null;
     case 'AGING_THRESHOLDS_ORDER':
       return typeof p.fastTurnoverDays === 'number' && typeof p.slowItemDays === 'number'
-        ? { fast: p.fastTurnoverDays, slow: p.slowItemDays }
+        ? { fast: dayCountText(p.fastTurnoverDays, t, locale), slow: dayCountText(p.slowItemDays, t, locale) }
         : null;
     case 'INVALID_RATE':
       // O backend envia as casas da fração (6); no formulário o percentual tem 2 a menos (4).

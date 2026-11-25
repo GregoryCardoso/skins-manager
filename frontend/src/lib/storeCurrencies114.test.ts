@@ -154,7 +154,7 @@ describe('compra e venda em lojas de qualquer moeda', () => {
   test('"Lançar compra" em loja EUR aceita a cotação; em JPY o preço é inteiro', () => {
     const state = { storeId: 5, price: '10,00', fxRate: '0,92', acquiredAt: '2026-11-10T10:00', tradeUnlockAt: '', unlockEdited: false };
     expect(buildLaunchBody(state as never, stores, 'pt-BR')).toMatchObject({ ok: true, purchase: { purchasePriceCents: 1000, fxRateAtPurchase: 0.92 } });
-    expect(buildLaunchBody({ ...state, storeId: 6, price: '10,5' } as never, stores, 'pt-BR')).toMatchObject({ ok: false, errors: { price: 'imports.launch.priceRequired' } });
+    expect(buildLaunchBody({ ...state, storeId: 6, price: '10,5' } as never, stores, 'pt-BR')).toMatchObject({ ok: false, errors: { price: 'imports.launch.priceInvalidWhole' } });
   });
 
   test('os modais usam a cotação da moeda da loja, e não só o BRL', () => {

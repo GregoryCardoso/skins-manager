@@ -83,16 +83,16 @@ describe('estados do card (renderização)', () => {
     expect(html).not.toContain('<option');
     expect(html).not.toContain('Steam');
     expect(html).not.toContain('CSMoney');
-    expect(html).toContain('Lançamentos vão para a loja: CSFloat');
+    expect(html).toContain('Os lançamentos importados vão para a loja CSFloat.');
   });
 
   test('loja renomeada: mostra o nome atual da loja vinculada', () => {
-    expect(render({ ...baseView, storeName: 'Minha CSFloat' })).toContain('Lançamentos vão para a loja: Minha CSFloat');
+    expect(render({ ...baseView, storeName: 'Minha CSFloat' })).toContain('Os lançamentos importados vão para a loja Minha CSFloat.');
   });
 
   test('sem loja vinculada: aviso curto traduzido pedindo para criar a loja "CSFloat" em US$', () => {
     const html = render({ ...baseView, storeId: null, storeName: null, storeCurrency: null });
-    expect(html).toContain('A loja CSFloat não foi encontrada');
+    expect(html).toContain('Não encontramos a loja do CSFloat');
     expect(html).toContain('chamada &quot;CSFloat&quot;');
     expect(html).not.toContain('Lançamentos vão para a loja');
     expect(render({ ...baseView, storeId: null, storeName: null, storeCurrency: null }, 'en')).toContain('The CSFloat store was not found');

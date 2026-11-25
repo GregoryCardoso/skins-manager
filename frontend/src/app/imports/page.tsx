@@ -81,6 +81,7 @@ function BatchItem({ batch, onUndo }: { batch: ImportBatchSummary; onUndo: (id: 
 export default function ImportsPage() {
   const t = useT();
   const tLoose = useTLoose();
+  const tPlural = useTPlural();
   const locale = useLocale();
   const [undoId, setUndoId] = useState<number | null>(null);
   // Data de corte e varredura completa (9.5.1c): o mesmo fluxo do card (trava "importando…", resumo e erro).
@@ -150,7 +151,7 @@ export default function ImportsPage() {
         <section className={styles.section} aria-labelledby="imports-ignored-title">
           <h2 id="imports-ignored-title" className={styles.sectionTitle}>
             <button type="button" className={styles.button} onClick={() => setShowIgnored((v) => !v)} aria-expanded={showIgnored}>
-              {showIgnored ? '▾' : '▸'} {t('imports.page.ignored', { count: ignored.length })}
+              {showIgnored ? '▾' : '▸'} {tPlural('imports.page.ignored', ignored.length)}
             </button>
           </h2>
           {showIgnored && (

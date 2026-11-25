@@ -64,7 +64,7 @@ const IDENTICAL_EVERYWHERE = new Set([
 const IDENTICAL_BY_LANGUAGE: Record<string, readonly string[]> = {
   'pt-BR': [
     'Item', 'Item: {value}', '{count} item', 'Skin', 'Skins', 'Patch', 'Patches', 'Normal', 'Souvenir', 'Manual', 'Online', 'Offline', 'Individual',
-    'Backup', 'Trade lock', 'Float', 'Paint seed', 'Asset ID', 'Sticker', 'Pattern', 'pattern', 'pattern {n}', 'Sticker Slab',
+    'Backup', 'Trade lock', 'Float', 'Paint seed', 'Asset ID', 'Sticker', 'Stickers', 'Pattern', 'pattern', 'pattern {n}', 'Sticker Slab',
     'Holding', 'Holding ({count})', '{count} min', '{count} h', '{count} d', 'd', 'h', 'min',
   ],
 };

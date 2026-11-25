@@ -67,6 +67,6 @@ test('fonte da cotação fora do ar não é "sem conexão"; uma só data de cort
     expect(lang.imports.cutoffChange.singleHint).toBeTruthy();
     expect(lang.errors.FX_SOURCE_UNAVAILABLE).toBeTruthy();
   }
-  expect(ptBR.settings.integrations.csfloat.reviewImports).toBe('Verificar meus importes e pendências');
+  expect(ptBR.settings.integrations.csfloat.reviewImports).toBe('Ver importações e itens para conferir');
   expect(ptBR.csfloatSetup.step5).toMatch(/Importar agora/);
 });

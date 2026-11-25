@@ -3,7 +3,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import { formatInteger } from '@/lib/format';
 import { saveBlobAs } from '@/lib/download';
 import { BACKUP_MAX_BYTES, isBackupTooLarge } from '@/lib/backupFile';
@@ -20,6 +20,7 @@ const RELOAD_DELAY_MS = 4000;
 export default function BackupSettings() {
   const t = useT();
   const tLoose = useTLoose();
+  const tPlural = useTPlural();
   const locale = useLocale();
   const fileInput = useRef<HTMLInputElement>(null);
   const [exporting, setExporting] = useState(false);
@@ -142,8 +143,8 @@ export default function BackupSettings() {
         <div role="status">
           <p className={styles.ok}>
             {t('settings.backup.importDone', {
-              items: formatInteger(result.counts.items, locale),
-              stores: formatInteger(result.counts.stores, locale),
+              items: tPlural('inventory.itemCount', result.counts.items, { count: formatInteger(result.counts.items, locale) }),
+              stores: tPlural('stores.count', result.counts.stores, { count: formatInteger(result.counts.stores, locale) }),
               backup: result.preImportBackupFile,
             })}
           </p>

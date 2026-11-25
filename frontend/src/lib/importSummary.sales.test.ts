@@ -62,7 +62,7 @@ describe('grupo "Venda sem compra no app"', () => {
       expect((ptBR.imports.reasons as Record<string, string>)[code]).toBeTruthy();
       expect((en.imports.reasons as Record<string, string>)[code]).toBeTruthy();
     }
-    expect(ptBR.imports.reasons.PURCHASE_NOT_FOUND).toBe('Lance a compra deste item à mão; a próxima importação registra a venda.');
+    expect(ptBR.imports.reasons.PURCHASE_NOT_FOUND).toBe('Lance a compra deste item. A próxima importação registra a venda.');
     for (const text of [ptBR.imports.reasons.FEE_MISMATCH, en.imports.reasons.FEE_MISMATCH]) {
       expect(text).toContain('{fee}');
       expect(text).toContain('{expected}');
