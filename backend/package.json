@@ -17,6 +17,8 @@
   },
   "jest": {
     "testEnvironment": "node",
+    "testTimeout": 15000,
+    "maxWorkers": "50%",
     "setupFiles": [
       "<rootDir>/tests/setup.js"
     ]

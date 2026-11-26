@@ -44,7 +44,17 @@ const binary = (res, cb) => {
   res.on('data', (c) => chunks.push(c));
   res.on('end', () => cb(null, Buffer.concat(chunks)));
 };
-const exportRes = () => request(app).get('/api/backup/export').buffer(true).parse(binary);
+// A trava da exportação só é liberada no 'close' do stream, que pode vir depois de o cliente receber o fim da resposta: quem usa o
+// arquivo exportado em seguida (importar) esperava 409 BACKUP_BUSY com a máquina carregada. Espera a trava soltar (etapa 11.10).
+const settleExport = async () => {
+  const backupService = require('../../src/services/backupService');
+  for (let i = 0; i < 400 && backupService.isExportInProgress(); i += 1) await new Promise((resolve) => setTimeout(resolve, 25));
+};
+const exportRes = async () => {
+  const res = await request(app).get('/api/backup/export').buffer(true).parse(binary);
+  await settleExport();
+  return res;
+};
 const exportBuffer = async () => (await exportRes()).body;
 const sub = (name) => path.join(dir, name);
 const listDir = (name) => (fs.existsSync(sub(name)) ? fs.readdirSync(sub(name)) : []);

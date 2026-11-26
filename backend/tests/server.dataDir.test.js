@@ -14,7 +14,7 @@ const SERVER = path.join(BACKEND_DIR, 'server.js');
 const REDIRECT = path.join(__dirname, 'helpers', 'redirectLegacyDir.js');
 const SPY_LOCK = path.join(__dirname, 'helpers', 'spyInstanceLock.js');
 
-jest.setTimeout(40000);
+jest.setTimeout(90000); // idem: server.js de verdade, com folga para a máquina carregada (etapa 11.10)
 
 let tmp;
 let appData;
@@ -91,7 +91,7 @@ function health(port) {
 }
 
 async function waitUp(port, proc) {
-  for (let i = 0; i < 100; i += 1) {
+  for (let i = 0; i < 400; i += 1) {
     if (proc.child.exitCode !== null) throw new Error(`servidor saiu (${proc.child.exitCode}): ${proc.stderr}`);
     const h = await health(port);
     if (h) return h;

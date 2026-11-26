@@ -146,6 +146,8 @@ function createExport({ now = new Date() } = {}) {
       fileName: buildExportFileName(DatabaseFile.getSchemaVersion(), now),
       contentType: EXPORT_CONTENT_TYPE,
       sizeBytes: fs.statSync(filePath).size,
+      // Solta a trava da exportação sem apagar o arquivo (o controller chama no 'finish' da resposta).
+      release,
       cleanup: () => {
         try {
           removeQuietly(filePath);

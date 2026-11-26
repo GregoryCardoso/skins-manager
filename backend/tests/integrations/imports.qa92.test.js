@@ -71,6 +71,10 @@ function gatedApp() {
   return release;
 }
 const tick = (ms = 30) => new Promise((resolve) => setTimeout(resolve, ms));
+// Espera a importação (travada por gatedApp) chegar à rede: com a máquina carregada, 30 ms fixos não bastam (etapa 11.10).
+const untilFetched = async () => {
+  for (let i = 0; i < 500 && fetchFn.mock.calls.length === 0; i += 1) await tick(20);
+};
 
 async function saveKey() {
   const res = await request(app).put('/api/integrations/csfloat/api-key').set('Content-Type', JSON_TYPE).send({ apiKey: KEY });
@@ -877,7 +881,7 @@ describe('desfazer importação', () => {
     const batch = (await firstRun()).body.data.batch;
     const release = gatedApp();
     const running = run({});
-    await tick();
+    await untilFetched();
     try {
       expectError(await undo(batch.id), 409, 'IMPORT_IN_PROGRESS');
     } finally {
@@ -961,7 +965,8 @@ describe('concorrência e recuperação', () => {
     state.trades = [fakeTrade({ id: '1001' })];
     const release = gatedApp();
     const all = Array.from({ length: 5 }, () => firstRun());
-    await tick(60);
+    await untilFetched();
+    await tick(150); // as outras quatro chamadas já chegaram e foram recusadas
     release();
     const results = await Promise.all(all);
     const statuses = results.map((r) => r.status).sort();
@@ -975,7 +980,7 @@ describe('concorrência e recuperação', () => {
     state.trades = [fakeTrade({ id: '1001' })];
     const release = gatedApp();
     const running = firstRun();
-    await tick();
+    await untilFetched();
     const during = (await call(request(app).get('/api/integrations/csfloat'))).body.data;
     expect(during.importInProgress).toBe(true);
     release();

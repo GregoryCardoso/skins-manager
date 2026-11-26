@@ -14,6 +14,9 @@ const { buildStatsKey } = require('../src/services/itemStatsService');
 const { freshDb, wonSkin } = require('./helpers/fixtures');
 const { makeCatalogApp, expectError, NOW } = require('./helpers/apiFixtures');
 
+// O teste do teto de 50 MB do catálogo monta e mede um texto de 50 MB: com a máquina carregada passa dos 5 s padrão (etapa 11.10).
+jest.setTimeout(30000);
+
 afterAll(() => closeDb());
 
 describe('backupRetention: módulo puro, sem ciclo com config/database', () => {

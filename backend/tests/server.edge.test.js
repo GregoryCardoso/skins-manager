@@ -9,7 +9,7 @@ const { spawn } = require('child_process');
 const BACKEND_DIR = path.resolve(__dirname, '..');
 const SERVER = path.join(BACKEND_DIR, 'server.js');
 
-jest.setTimeout(25000);
+jest.setTimeout(90000); // cada teste sobe um server.js de verdade; com a máquina carregada a subida passa de 10 s (etapa 11.10)
 
 function runToExit(env) {
   return new Promise((resolve) => {
@@ -23,7 +23,7 @@ function runToExit(env) {
     let stderr = '';
     child.stdout.on('data', (c) => { stdout += c; });
     child.stderr.on('data', (c) => { stderr += c; });
-    const killer = setTimeout(() => child.kill('SIGKILL'), 10000);
+    const killer = setTimeout(() => child.kill('SIGKILL'), 45000);
     child.on('exit', (code, signal) => {
       clearTimeout(killer);
       resolve({ code, signal, stdout, stderr });
@@ -129,7 +129,7 @@ describe('server.js - escuta só em loopback (D135)', () => {
     });
     try {
       await new Promise((resolve, reject) => {
-        const t = setTimeout(() => reject(new Error('servidor não subiu')), 10000);
+        const t = setTimeout(() => reject(new Error('servidor não subiu')), 45000);
         child.stdout.on('data', (c) => { if (/rodando/.test(String(c))) { clearTimeout(t); resolve(); } });
         child.on('exit', () => reject(new Error('servidor saiu')));
       });

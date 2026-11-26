@@ -118,7 +118,7 @@ describe('BACKUP_BUSY pela API (exportação)', () => {
   // Abre uma exportação e a mantém pausada (o stream não termina). Devolve { req, res }.
   function holdExport(port) {
     return new Promise((resolve, reject) => {
-      const timer = setTimeout(() => reject(new Error('sem resposta')), 10000);
+      const timer = setTimeout(() => reject(new Error('sem resposta')), 30000);
       const req = http.get({ port, path: '/api/backup/export' }, (res) => {
         clearTimeout(timer);
         res.pause();
@@ -158,7 +158,7 @@ describe('BACKUP_BUSY pela API (exportação)', () => {
       held.req.destroy();
       held.res.destroy();
       let freed = false;
-      for (let i = 0; i < 50 && !freed; i += 1) {
+      for (let i = 0; i < 300 && !freed; i += 1) {
         await wait(100);
         const probe = await new Promise((resolve) => {
           const req = http.get({ port, path: '/api/backup/export' }, (res) => {
@@ -185,7 +185,9 @@ describe('BACKUP_BUSY pela API (exportação)', () => {
       res.on('end', () => cb(null, Buffer.concat(c)));
     };
     expect((await request(app).get('/api/backup/export').buffer(true).parse(parse)).status).toBe(200);
-    await wait(150);
+    // a trava é solta no 'close' do stream, depois do fim da resposta: espera soltar em vez de um tempo fixo (etapa 11.10)
+    const backupService = require('../../src/services/backupService');
+    for (let i = 0; i < 400 && backupService.isExportInProgress(); i += 1) await wait(25);
     expect((await request(app).get('/api/backup/export').buffer(true).parse(parse)).status).toBe(200);
   });
 });

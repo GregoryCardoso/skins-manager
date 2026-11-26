@@ -8,7 +8,7 @@ const BACKEND_DIR = path.resolve(__dirname, '..');
 const SERVER = path.join(BACKEND_DIR, 'server.js');
 const SPY = path.join(__dirname, 'helpers', 'spyCloseDb.js');
 
-jest.setTimeout(20000);
+jest.setTimeout(90000); // idem (etapa 11.10)
 
 function listen(server, port) {
   return new Promise((resolve, reject) => {
@@ -33,7 +33,7 @@ function runServer(port, extraArgs = []) {
     let stderr = '';
     child.stdout.on('data', (c) => { stdout += c; });
     child.stderr.on('data', (c) => { stderr += c; });
-    const killer = setTimeout(() => child.kill('SIGKILL'), 10000);
+    const killer = setTimeout(() => child.kill('SIGKILL'), 45000);
     child.on('exit', (code, signal) => {
       clearTimeout(killer);
       resolve({ code, signal, stdout, stderr, child });
