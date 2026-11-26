@@ -1,6 +1,7 @@
 {
   "common": {
     "appName": "Skins Manager",
+    "logoAlt": "Skins Manager logosu",
     "loading": "Yükleniyor...",
     "retry": "Tekrar deneyin",
     "none": "—",

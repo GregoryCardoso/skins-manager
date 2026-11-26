@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 import { useT } from '@/i18n/I18nProvider';
 import styles from './AppHeader.module.css';
 import HeaderControls from './HeaderControls';
+import Logo from './Logo';
 
 export default function AppHeader() {
   const t = useT();
@@ -25,7 +26,10 @@ export default function AppHeader() {
 
   return (
     <header className={styles.header}>
-      <span className={styles.brand}>{appName}</span>
+      <span className={styles.brand}>
+        <Logo size={28} />
+        {appName}
+      </span>
       <nav className={styles.nav} aria-label={t('nav.main')}>
         <Link href="/" className={isInventory ? styles.active : styles.link} aria-current={isInventory ? 'page' : undefined}>
           {t('nav.inventory')}

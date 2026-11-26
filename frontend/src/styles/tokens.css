@@ -1,0 +1,159 @@
+/* Design tokens (Etapa 12.2, D370 / Revisão 36). Valores do protótipo aprovado (docs/prototipo-12.1), em hex/rgba.
+   Mecanismo de tema igual ao anterior: :root = claro; [data-theme='dark'] = escuro; sem data-theme (sem JS) segue o sistema.
+   O teste src/styles/contrast.test.ts lê este arquivo e confere o contraste AA dos pares principais nos dois temas.
+   Os blocos claro e escuro precisam ter as mesmas chaves; o terceiro bloco (media) repete o escuro. */
+:root {
+  color-scheme: light;
+  --bg: #eef4f3;
+  --surface: #ffffff;
+  --surface-2: #e4eeec;
+  --line: #cadbd8;
+  --text: #10282b;
+  --muted: #52706c;
+  --brand: #0f7c6e;
+  --brand-ink: #ffffff;
+  --brand-soft: rgba(15, 124, 110, 0.1);
+  --profit: #3b7a1c;
+  --loss: #c2412a;
+  --loss-ink: #ffffff;
+  --stuck: #9a6200;
+  --lock: #5f48cf;
+  --profit-soft: rgba(59, 122, 28, 0.08);
+  --loss-soft: rgba(194, 65, 42, 0.09);
+  --stuck-soft: rgba(154, 98, 0, 0.09);
+  --lock-soft: rgba(95, 72, 207, 0.1);
+  --focus: #0f7c6e;
+  --shadow-1: 0 1px 2px rgba(16, 40, 43, 0.06);
+  --shadow-2: 0 1px 2px rgba(16, 40, 43, 0.06), 0 6px 18px rgba(16, 40, 43, 0.06);
+  --shadow-3: 0 2px 6px rgba(16, 40, 43, 0.1), 0 16px 40px rgba(16, 40, 43, 0.16);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #0e1f22;
+  --surface: #142a2e;
+  --surface-2: #1a353a;
+  --line: #24444a;
+  --text: #e3eeec;
+  --muted: #8fa9a6;
+  --brand: #45c4b0;
+  --brand-ink: #062a26;
+  --brand-soft: rgba(69, 196, 176, 0.14);
+  --profit: #9bd86a;
+  --loss: #f07a63;
+  --loss-ink: #2a0c06;
+  --stuck: #e7b14c;
+  --lock: #a898f2;
+  --profit-soft: rgba(155, 216, 106, 0.14);
+  --loss-soft: rgba(240, 122, 99, 0.12);
+  --stuck-soft: rgba(231, 177, 76, 0.16);
+  --lock-soft: rgba(168, 152, 242, 0.16);
+  --focus: #7fe3d3;
+  --shadow-1: 0 1px 0 rgba(255, 255, 255, 0.03) inset;
+  --shadow-2: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 8px 24px rgba(0, 0, 0, 0.25);
+  --shadow-3: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 16px 48px rgba(0, 0, 0, 0.45);
+}
+
+/* Sem JavaScript: segue o tema do sistema. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+    --bg: #0e1f22;
+    --surface: #142a2e;
+    --surface-2: #1a353a;
+    --line: #24444a;
+    --text: #e3eeec;
+    --muted: #8fa9a6;
+    --brand: #45c4b0;
+    --brand-ink: #062a26;
+    --brand-soft: rgba(69, 196, 176, 0.14);
+    --profit: #9bd86a;
+    --loss: #f07a63;
+    --loss-ink: #2a0c06;
+    --stuck: #e7b14c;
+    --lock: #a898f2;
+    --profit-soft: rgba(155, 216, 106, 0.14);
+    --loss-soft: rgba(240, 122, 99, 0.12);
+    --stuck-soft: rgba(231, 177, 76, 0.16);
+    --lock-soft: rgba(168, 152, 242, 0.16);
+    --focus: #7fe3d3;
+    --shadow-1: 0 1px 0 rgba(255, 255, 255, 0.03) inset;
+    --shadow-2: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 8px 24px rgba(0, 0, 0, 0.25);
+    --shadow-3: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 16px 48px rgba(0, 0, 0, 0.45);
+  }
+}
+
+/* Tokens que não dependem do tema. */
+:root {
+  /* Tipografia: escala de 6 tamanhos, 2 pesos. */
+  --font-sans: 'Manrope Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --fs-xs: 0.75rem;
+  --fs-sm: 0.8125rem;
+  --fs-md: 0.875rem;
+  --fs-base: 1rem;
+  --fs-lg: 1.1875rem;
+  --fs-xl: 1.625rem;
+  --fw-regular: 500;
+  --fw-bold: 700;
+  --lh-tight: 1.2;
+  --lh-base: 1.5;
+  --lh-loose: 1.65;
+
+  /* Espaçamento em base 4 px. */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+
+  /* Raios. */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-pill: 999px;
+
+  /* Movimento (zerado em prefers-reduced-motion, abaixo). */
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Camadas. */
+  --z-base: 0;
+  --z-sticky: 10;
+  --z-dropdown: 100;
+  --z-modal: 200;
+  --z-toast: 300;
+  --z-tooltip: 400;
+
+  /* Densidade das linhas de tabela (a opção "confortável" chega na 12.5). */
+  --row-height: 2.25rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0ms;
+    --dur-base: 0ms;
+  }
+}
+
+/* Apelidos dos nomes antigos (até a última tela migrar): o app inteiro já usa a paleta nova. Nenhum componente define cor própria. */
+:root {
+  --border: var(--line);
+  --surface-alt: var(--surface-2);
+  --text-muted: var(--muted);
+  --accent: var(--brand);
+  --accent-text: var(--brand-ink);
+  --success: var(--profit);
+  --danger: var(--loss);
+  --danger-text: var(--loss-ink);
+  --warning: var(--stuck);
+  --info: var(--brand);
+  --warning-bg: var(--stuck-soft);
+  --danger-bg: var(--loss-soft);
+  --row-stagnant: var(--stuck-soft);
+  --row-locked: var(--lock-soft);
+}

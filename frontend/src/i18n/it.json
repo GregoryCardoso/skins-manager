@@ -1,6 +1,7 @@
 {
   "common": {
     "appName": "Skins Manager",
+    "logoAlt": "Logo di Skins Manager",
     "loading": "Caricamento...",
     "retry": "Riprova",
     "none": "—",
