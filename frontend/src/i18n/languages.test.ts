@@ -5,8 +5,8 @@ import { BASE_LANGUAGE, LANGUAGES, LANGUAGE_REGISTRY, detectLanguage, intlLocale
 const PLANNED = ['en', 'pt-BR', 'es', 'ru', 'tr', 'fr', 'it', 'zh-CN', 'de', 'pl', 'uk', 'ja', 'ko'];
 
 describe('registro de idiomas (D369, 11.1)', () => {
-  test('na 11.7 estão disponíveis en, pt-BR, es, fr, it e de (nesta ordem, a do backend), com o inglês como base e primeiro da lista', () => {
-    expect([...LANGUAGES]).toEqual(['en', 'pt-BR', 'es', 'fr', 'it', 'de']);
+  test('na 11.9 estão disponíveis os 13 idiomas (nesta ordem, a do backend), com o inglês como base e primeiro da lista', () => {
+    expect([...LANGUAGES]).toEqual(PLANNED);
     expect(BASE_LANGUAGE).toBe('en');
     expect(LANGUAGE_REGISTRY[0].code).toBe(BASE_LANGUAGE);
   });
@@ -29,13 +29,21 @@ describe('registro de idiomas (D369, 11.1)', () => {
     expect(languageInfo('fr').nativeName).toBe('Français');
     expect(languageInfo('it').nativeName).toBe('Italiano');
     expect(languageInfo('de').nativeName).toBe('Deutsch');
+    expect(languageInfo('ru').nativeName).toBe('Русский');
+    expect(languageInfo('uk').nativeName).toBe('Українська');
+    expect(languageInfo('pl').nativeName).toBe('Polski');
+    expect(languageInfo('tr').nativeName).toBe('Türkçe');
+    expect(languageInfo('zh-CN').nativeName).toBe('简体中文');
+    expect(languageInfo('ja').nativeName).toBe('日本語');
+    expect(languageInfo('ko').nativeName).toBe('한국어');
+    for (const code of ['ru', 'uk', 'pl', 'tr', 'zh-CN', 'ja', 'ko']) expect(languageInfo(code).catalogFolder).toBe(code);
     expect(languageInfo('es').catalogFolder).toBe('es-MX');
   });
 
   test('isLanguage e intlLocaleOf', () => {
     expect(isLanguage('en')).toBe(true);
     expect(isLanguage('pt-BR')).toBe(true);
-    for (const code of ['es', 'fr', 'it', 'de']) expect(isLanguage(code)).toBe(true);
+    for (const code of ['es', 'fr', 'it', 'de', 'ru', 'uk', 'pl', 'tr', 'zh-CN', 'ja', 'ko']) expect(isLanguage(code)).toBe(true);
     for (const bad of ['sv', 'ES', 'es-MX', 'pt-br', '', null, undefined, 5]) expect(isLanguage(bad)).toBe(false);
     expect(intlLocaleOf('pt-BR')).toBe('pt-BR');
     expect(intlLocaleOf('xx')).toBe('en');
@@ -54,11 +62,12 @@ describe('matchLanguage / detectLanguage (idioma inicial de uma instalação nov
     expect(detectLanguage(['en-GB'])).toBe('en');
   });
   test('respeita a ordem de preferência e ignora idioma indisponível', () => {
-    expect(detectLanguage(['ru-RU', 'pt-BR', 'en'])).toBe('pt-BR');
-    expect(detectLanguage(['ru-RU', 'en-US', 'pt-BR'])).toBe('en');
+    expect(detectLanguage(['sv-SE', 'pt-BR', 'en'])).toBe('pt-BR');
+    expect(detectLanguage(['ru-RU', 'pt-BR', 'en'])).toBe('ru');
+    expect(detectLanguage(['sv-SE', 'en-US', 'pt-BR'])).toBe('en');
   });
   test('sem correspondência ou lista vazia: inglês', () => {
-    expect(detectLanguage(['ru-RU'])).toBe('en');
+    expect(detectLanguage(['sv-SE'])).toBe('en');
     expect(detectLanguage([])).toBe('en');
     expect(detectLanguage(['', '  ', 'xx'])).toBe('en');
   });

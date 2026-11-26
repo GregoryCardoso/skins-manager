@@ -14,7 +14,7 @@ export interface LanguageInfo {
   // Pasta do idioma na CSGO-API (nomes dos itens; usado a partir da 11.5).
   readonly catalogFolder: string;
   // Traduzido pelo Claude (D369, E-P3-Q4): a interface mostra o aviso discreto "a tradução pode ter erros" em Configurações. Ausente = false.
-  // Os lotes de tradução (11.8, 11.9) só acrescentam `machineTranslated: true` na entrada nova.
+  // Todos os idiomas, menos en e pt-BR, levam `machineTranslated: true` (o lote 11.9 fechou os 13).
   readonly machineTranslated?: boolean;
 }
 
@@ -22,9 +22,16 @@ export const LANGUAGE_REGISTRY = [
   { code: 'en', nativeName: 'English', intlLocale: 'en', catalogFolder: 'en' },
   { code: 'pt-BR', nativeName: 'Português (Brasil)', intlLocale: 'pt-BR', catalogFolder: 'pt-BR' },
   { code: 'es', nativeName: 'Español', intlLocale: 'es', catalogFolder: 'es-MX', machineTranslated: true },
+  { code: 'ru', nativeName: 'Русский', intlLocale: 'ru', catalogFolder: 'ru', machineTranslated: true },
+  { code: 'tr', nativeName: 'Türkçe', intlLocale: 'tr', catalogFolder: 'tr', machineTranslated: true },
   { code: 'fr', nativeName: 'Français', intlLocale: 'fr', catalogFolder: 'fr', machineTranslated: true },
   { code: 'it', nativeName: 'Italiano', intlLocale: 'it', catalogFolder: 'it', machineTranslated: true },
+  { code: 'zh-CN', nativeName: '简体中文', intlLocale: 'zh-CN', catalogFolder: 'zh-CN', machineTranslated: true },
   { code: 'de', nativeName: 'Deutsch', intlLocale: 'de', catalogFolder: 'de', machineTranslated: true },
+  { code: 'pl', nativeName: 'Polski', intlLocale: 'pl', catalogFolder: 'pl', machineTranslated: true },
+  { code: 'uk', nativeName: 'Українська', intlLocale: 'uk', catalogFolder: 'uk', machineTranslated: true },
+  { code: 'ja', nativeName: '日本語', intlLocale: 'ja', catalogFolder: 'ja', machineTranslated: true },
+  { code: 'ko', nativeName: '한국어', intlLocale: 'ko', catalogFolder: 'ko', machineTranslated: true },
 ] as const satisfies readonly LanguageInfo[];
 
 export type Language = (typeof LANGUAGE_REGISTRY)[number]['code'];

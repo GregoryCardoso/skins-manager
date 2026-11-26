@@ -104,8 +104,9 @@ describe('detecção do idioma inicial: casos de borda', () => {
     expect(detectLanguage(['PT_br'])).toBe('pt-BR');
     expect(detectLanguage(['pt-Latn-BR'])).toBe('pt-BR');
   });
-  test('chinês: nenhum vira zh-CN enquanto ele não está no registro; com ele disponível, o tradicional nunca vira simplificado', () => {
-    expect(detectLanguage(['zh-Hans-CN'])).toBe('en');
+  test('chinês: o simplificado está no registro (11.9) e o tradicional nunca vira simplificado', () => {
+    expect(detectLanguage(['zh-Hans-CN'])).toBe('zh-CN');
+    expect(detectLanguage(['zh-TW'])).toBe('en');
     const available = ['en', 'zh-CN'];
     expect(matchLanguage(['zh-Hans-CN'], available, 'en')).toBe('zh-CN');
     expect(matchLanguage(['zh'], available, 'en')).toBe('zh-CN');

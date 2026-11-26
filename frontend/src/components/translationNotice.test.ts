@@ -8,12 +8,19 @@ import en from '@/i18n/en.json';
 import es from '@/i18n/es.json';
 import fr from '@/i18n/fr.json';
 import it from '@/i18n/it.json';
+import pl from '@/i18n/pl.json';
 import ptBR from '@/i18n/pt-BR.json';
+import ru from '@/i18n/ru.json';
+import tr from '@/i18n/tr.json';
+import uk from '@/i18n/uk.json';
+import ja from '@/i18n/ja.json';
+import ko from '@/i18n/ko.json';
+import zhCN from '@/i18n/zh-CN.json';
 import { LANGUAGE_REGISTRY, isMachineTranslated } from '@/i18n/languages';
 import { translate } from '@/i18n/translate';
 
 // 11.7 (E-P3-Q4): aviso "a tradução pode ter erros" só nos idiomas traduzidos pelo Claude (campo `machineTranslated` do registro).
-const DICTS = { en, 'pt-BR': ptBR, es, fr, it, de } as const;
+const DICTS = { en, 'pt-BR': ptBR, es, fr, it, de, ru, uk, pl, tr, 'zh-CN': zhCN, ja, ko } as const;
 const LANG = { current: 'es' as keyof typeof DICTS };
 vi.mock('@/i18n/I18nProvider', () => {
   const t = (key: string, params?: Record<string, string | number>) => translate(DICTS[LANG.current], key, params);
@@ -28,9 +35,9 @@ const render = (language: keyof typeof DICTS) => {
 };
 
 describe('aviso de tradução', () => {
-  test('o registro marca exatamente es, fr, it e de; en, pt-BR e desconhecido não', () => {
+  test('o registro marca exatamente es, ru, tr, fr, it, zh-CN, de, pl, uk, ja e ko; en, pt-BR e desconhecido não', () => {
     const marked = LANGUAGE_REGISTRY.filter((entry) => isMachineTranslated(entry.code)).map((entry) => entry.code as string);
-    expect(marked).toEqual(['es', 'fr', 'it', 'de']);
+    expect(marked).toEqual(['es', 'ru', 'tr', 'fr', 'it', 'zh-CN', 'de', 'pl', 'uk', 'ja', 'ko']);
     expect(isMachineTranslated('en')).toBe(false);
     expect(isMachineTranslated('pt-BR')).toBe(false);
     expect(isMachineTranslated('xx')).toBe(false);
@@ -40,7 +47,7 @@ describe('aviso de tradução', () => {
     expect(render(language)).toBe('');
   });
 
-  test.each(['es', 'fr', 'it', 'de'] as const)('%s: aparece, no idioma, com o link das Issues em nova aba', (language) => {
+  test.each(['es', 'fr', 'it', 'de', 'ru', 'uk', 'pl', 'tr', 'zh-CN', 'ja', 'ko'] as const)('%s: aparece, no idioma, com o link das Issues em nova aba', (language) => {
     const html = render(language);
     expect(html).toContain('data-testid="translation-notice"');
     expect(html).toContain(`href="${ISSUES_URL}"`);

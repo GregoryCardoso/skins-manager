@@ -75,6 +75,11 @@ body {
   line-height: 1.5;
 }
 
+/* Escritas CJK (D369, 11.9): o idioma da interface (atributo lang do <html>) escolhe a fonte do sistema Windows da escrita, para o japones nao usar glifos chineses e vice-versa. Ajuste fino na Etapa 12. */
+body:lang(zh-CN) { font-family: system-ui, -apple-system, 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', 'Noto Sans CJK SC', Roboto, sans-serif; }
+body:lang(ja) { font-family: system-ui, -apple-system, 'Segoe UI', 'Yu Gothic UI', 'Yu Gothic', Meiryo, 'Hiragino Sans', 'Noto Sans CJK JP', Roboto, sans-serif; }
+body:lang(ko) { font-family: system-ui, -apple-system, 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans CJK KR', Roboto, sans-serif; }
+
 main { padding: 1.5rem; max-width: 80rem; margin: 0 auto; }
 /* Páginas com tabelas largas (inventário, vendas) usam a largura da janela; as demais seguem em 80rem. */
 main:has([data-wide-table]) { max-width: 120rem; }

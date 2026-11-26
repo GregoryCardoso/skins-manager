@@ -7,9 +7,9 @@ const { translate, normalizeLanguage, languageFromLocale, MESSAGES, LANGUAGES, D
 const placeholders = (text) => [...text.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();
 
 describe('i18n dos diálogos (D369: inglês é a base)', () => {
-  test('o idioma base é o inglês e os idiomas disponíveis hoje são en, pt-BR, es, fr, it e de', () => {
+  test('o idioma base é o inglês e os idiomas disponíveis hoje são os 13 (en, pt-BR, es, ru, tr, fr, it, zh-CN, de, pl, uk, ja e ko)', () => {
     expect(DEFAULT_LANGUAGE).toBe('en');
-    expect([...LANGUAGES].sort()).toEqual(['de', 'en', 'es', 'fr', 'it', 'pt-BR']);
+    expect([...LANGUAGES].sort()).toEqual(['de', 'en', 'es', 'fr', 'it', 'ja', 'ko', 'pl', 'pt-BR', 'ru', 'tr', 'uk', 'zh-CN']);
   });
 
   test.each(LANGUAGES.filter((code) => code !== 'en'))('%s tem as mesmas chaves, os mesmos marcadores e nenhum texto vazio do inglês', (code) => {
@@ -47,9 +47,26 @@ describe('i18n dos diálogos (D369: inglês é a base)', () => {
     }
   });
 
+  test('ru, uk, pl e tr traduzem e interpolam (11.8)', () => {
+    expect(translate('ru', 'common.close')).toBe('Закрыть');
+    for (const code of ['ru', 'uk', 'pl', 'tr']) {
+      expect(translate(code, 'alreadyOpen.message', { port: 3001 })).toContain('http://localhost:3001');
+      expect(translate(code, 'crashLoop.detail', { dataDir: 'C:\dados' })).toContain('C:\dados');
+      expect(translate(code, 'startFailure.title')).not.toBe(MESSAGES.en['startFailure.title']);
+    }
+  });
+
+  test('zh-CN, ja e ko traduzem e interpolam (11.9)', () => {
+    for (const code of ['zh-CN', 'ja', 'ko']) {
+      expect(translate(code, 'alreadyOpen.message', { port: 3001 })).toContain('http://localhost:3001');
+      expect(translate(code, 'crashLoop.detail', { dataDir: 'C:/dados' })).toContain('C:/dados');
+      expect(translate(code, 'startFailure.title')).not.toBe(MESSAGES.en['startFailure.title']);
+    }
+  });
+
   test('idioma desconhecido ou ausente cai no inglês; chave desconhecida devolve a chave', () => {
     expect(normalizeLanguage('sv')).toBe('en');
-    for (const code of ['es', 'fr', 'it', 'de']) expect(normalizeLanguage(code)).toBe(code);
+    for (const code of ['es', 'fr', 'it', 'de', 'ru', 'uk', 'pl', 'tr', 'zh-CN', 'ja', 'ko']) expect(normalizeLanguage(code)).toBe(code);
     expect(normalizeLanguage(undefined)).toBe('en');
     expect(translate('xx', 'common.close')).toBe('Close');
     expect(translate(undefined, 'common.close')).toBe('Close');
@@ -68,6 +85,14 @@ describe('i18n dos diálogos (D369: inglês é a base)', () => {
     expect(languageFromLocale('fr-CA')).toBe('fr');
     expect(languageFromLocale('it-IT')).toBe('it');
     expect(languageFromLocale('de-AT')).toBe('de');
+    expect(languageFromLocale('ru-RU')).toBe('ru');
+    expect(languageFromLocale('uk-UA')).toBe('uk');
+    expect(languageFromLocale('pl-PL')).toBe('pl');
+    expect(languageFromLocale('tr-TR')).toBe('tr');
+    expect(languageFromLocale('zh-CN')).toBe('zh-CN');
+    expect(languageFromLocale('ja-JP')).toBe('ja');
+    expect(languageFromLocale('ko-KR')).toBe('ko');
+    expect(languageFromLocale('zh-TW')).toBe('en');
     expect(languageFromLocale('')).toBe('en');
     expect(languageFromLocale(undefined)).toBe('en');
   });
@@ -82,14 +107,14 @@ describe('textos da parada D (11.6)', () => {
     }
   });
 
-  test('a porta só aparece em noPort.message, entre parênteses, em todos os idiomas', () => {
+  test('a porta só aparece em noPort.message, entre parênteses, em todos os idiomas (nos idiomas CJK, parênteses de largura total são aceitos)', () => {
     for (const code of LANGUAGES) {
-      expect(MESSAGES[code]['noPort.message']).toMatch(/\([^()]*3001[^()]*3010\)/);
+      expect(MESSAGES[code]['noPort.message']).toMatch(/[(（][^()（）]*3001[^()（）]*3010[)）]/);
       expect(MESSAGES[code]['noPort.title']).not.toMatch(/porta|port|puerto|porte/i);
     }
   });
 
-  test('crashLoop.detail mantém o marcador {dataDir} em todos os idiomas', () => {
+  test('crashLoop.detail mantém o marcador {dataDir} em todos os idiomas (parênteses de largura total valem no CJK)', () => {
     expect(translate('pt-BR', 'crashLoop.detail', { dataDir: 'D:/dados' })).toBe('Seus dados continuam salvos em D:/dados.');
     expect(translate('en', 'crashLoop.detail', { dataDir: 'D:/dados' })).toBe('Your data is still saved in D:/dados.');
   });

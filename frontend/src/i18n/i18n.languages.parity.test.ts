@@ -88,6 +88,34 @@ const IDENTICAL_BY_LANGUAGE: Record<string, readonly string[]> = {
     'Sticker', 'Agent', 'Patch', 'Normal', 'Souvenir', 'Holding', 'Name', 'Float', 'Phase', 'Position', 'Sticker Slab', 'Pattern', 'Backup',
     'Details',
   ],
+  ru: [
+    'Skins', 'Skin', 'Stickers', 'Sticker', 'Sticker Slab', 'Souvenir', 'Trade lock', 'Holding', 'Holding ({count})', 'Float', 'Paint seed',
+    'Asset ID', 'Pattern', 'pattern', 'pattern {n}', 'GitHub Issues',
+  ],
+  uk: [
+    'Trade lock', 'Holding', 'Holding ({count})', 'Sticker', 'Stickers', 'Sticker Slab', 'Souvenir', 'Float', 'Paint seed', 'Asset ID',
+    'Pattern', 'pattern', 'pattern {n}',
+  ],
+  pl: [
+    'Skin', 'Sticker', 'Souvenir', 'Agent', 'Status', 'Trade lock', 'Holding', 'Holding ({count})', 'Float', 'Paint seed', 'Asset ID',
+    'Sticker Slab', 'Pattern', 'pattern', 'pattern {n}', 'min', '{count} min', 'GitHub Issues',
+  ],
+  tr: [
+    'Trade lock', 'Holding', 'Holding ({count})', 'Float', 'Paint seed', 'Pattern', 'pattern', 'pattern {n}', 'Asset ID', 'Sticker Slab',
+    'Sticker', 'Souvenir', 'Skin', 'Normal', 'Net', 'CSFloat', 'GitHub Issues',
+  ],
+  'zh-CN': [
+    'Trade lock', 'Sticker', 'Sticker Slab', 'Souvenir', 'Holding', 'Float', 'Paint seed', 'Phase', 'Asset ID', 'Pattern', 'pattern',
+    'pattern {n}', 'GitHub Issues',
+  ],
+  ja: [
+    'Trade lock', 'Holding', 'Sticker', 'Sticker Slab', 'Souvenir', 'Float', 'Paint seed', 'Pattern', 'pattern', 'pattern {n}', 'Asset ID',
+    'GitHub Issues',
+  ],
+  ko: [
+    'Trade lock', 'Holding', 'Holding ({count})', 'Sticker', 'Sticker Slab', 'Souvenir', 'Float', 'Paint seed', 'Asset ID', 'Pattern',
+    'pattern', 'pattern {n}', 'GitHub Issues',
+  ],
 };
 
 const hasLetters = (text: string) => /\p{L}/u.test(text.replace(/\{\w+\}/g, ''));

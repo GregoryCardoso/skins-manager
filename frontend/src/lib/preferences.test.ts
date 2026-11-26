@@ -225,7 +225,7 @@ describe('bootstrapPreferences', () => {
   });
 
   test('instalação nova (sem idioma salvo): usa o idioma do navegador se for um dos disponíveis; senão, o inglês', () => {
-    for (const [locales, expected] of [[['pt-BR', 'en'], 'pt-BR'], [['pt-PT'], 'pt-BR'], [['ru-RU', 'pt-BR'], 'pt-BR'], [['en-US'], 'en'], [['ru-RU'], 'en'], [[], 'en']] as const) {
+    for (const [locales, expected] of [[['pt-BR', 'en'], 'pt-BR'], [['pt-PT'], 'pt-BR'], [['sv-SE', 'pt-BR'], 'pt-BR'], [['ru-RU', 'pt-BR'], 'ru'], [['uk-UA'], 'uk'], [['zh-CN'], 'zh-CN'], [['ja-JP'], 'ja'], [['ko-KR'], 'ko'], [['zh-TW'], 'en'], [['en-US'], 'en'], [['sv-SE'], 'en'], [[], 'en']] as const) {
       const { attrs, doc } = fakeDoc();
       bootstrapPreferences({ ...LANG_ENV, navigatorLocales: [...locales], doc, storage: fakeStorage(), matchMedia: () => ({ matches: false }) });
       expect(attrs.lang).toBe(expected);
@@ -282,7 +282,7 @@ describe('bootstrapPreferences', () => {
       return attrs.lang;
     };
     expect(run(fakeStorage(), ['pt-BR', 'en'])).toBe('pt-BR');
-    expect(run(fakeStorage(), ['ja-JP'])).toBe('en');
+    expect(run(fakeStorage(), ['sv-SE'])).toBe('en');
     expect(run(fakeStorage({ 'sm.language': 'en' }), ['pt-BR'])).toBe('en');
   });
 });

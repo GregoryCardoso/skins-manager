@@ -11,6 +11,13 @@ const LOADERS: Partial<Record<string, () => Promise<Dictionary>>> = {
   fr: () => import('./fr.json').then((module) => module.default as Dictionary),
   it: () => import('./it.json').then((module) => module.default as Dictionary),
   de: () => import('./de.json').then((module) => module.default as Dictionary),
+  ru: () => import('./ru.json').then((module) => module.default as Dictionary),
+  tr: () => import('./tr.json').then((module) => module.default as Dictionary),
+  pl: () => import('./pl.json').then((module) => module.default as Dictionary),
+  uk: () => import('./uk.json').then((module) => module.default as Dictionary),
+  'zh-CN': () => import('./zh-CN.json').then((module) => module.default as Dictionary),
+  ja: () => import('./ja.json').then((module) => module.default as Dictionary),
+  ko: () => import('./ko.json').then((module) => module.default as Dictionary),
 };
 
 export const BASE_DICTIONARY: Dictionary = en;
