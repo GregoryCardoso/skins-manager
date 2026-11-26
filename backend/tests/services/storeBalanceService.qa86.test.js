@@ -4,7 +4,8 @@
 const {
   computeStoreBalance, daysSince, buildCheckRecord, buildCurrentBalances,
 } = require('../../src/services/storeBalanceService');
-const { MAX_AMOUNT_CENTS, MAX_NOTE_LENGTH } = require('../../src/config/constants');
+const { maxAmountCents, MAX_NOTE_LENGTH } = require('../../src/config/constants');
+const MAX_AMOUNT_CENTS = maxAmountCents('USD'); // teto do USD (1e10); o teto por moeda tem testes próprios
 const { csfloat, steam, csmoney } = require('../helpers/storeFixtures');
 
 const NOW = new Date('2026-11-22T12:00:00.000Z');

@@ -1,7 +1,7 @@
 const { ValidationError } = require('../errors/AppError');
 const { isPlainObject } = require('./validationHelpers');
 const {
-  MAX_AMOUNT_CENTS, MAX_NAME_LENGTH, MAX_ORIGIN_DETAIL_LENGTH, CATALOG_ID_MAX_LENGTH,
+  MAX_ANY_AMOUNT_CENTS, MAX_NAME_LENGTH, MAX_ORIGIN_DETAIL_LENGTH, CATALOG_ID_MAX_LENGTH,
   MAX_INSPECT_LINK_LENGTH, MAX_ASSET_ID_LENGTH, MAX_PHASE_LENGTH,
 } = require('../config/constants');
 const {
@@ -99,8 +99,9 @@ function checkBody(body, spec, mode) {
       const expected = { [STRING]: 'texto', [NUMBER]: 'número', [INTEGER]: 'número inteiro' }[rule.type];
       throw fail(`O campo ${key} deve ser ${expected}.`, 'INVALID_FIELD', { field: key });
     }
-    if (rule.cents && value > MAX_AMOUNT_CENTS) {
-      throw fail(`O campo ${key} excede o valor máximo permitido (${MAX_AMOUNT_CENTS} centavos).`, 'INVALID_AMOUNT', { field: key, params: { maxCents: MAX_AMOUNT_CENTS } });
+    // Forma: o teto de verdade é o da moeda da loja (maxAmountCents), aplicado no service; aqui só o maior teto de todas as moedas.
+    if (rule.cents && value > MAX_ANY_AMOUNT_CENTS) {
+      throw fail(`O campo ${key} excede o valor máximo permitido (${MAX_ANY_AMOUNT_CENTS} centavos).`, 'INVALID_AMOUNT', { field: key, params: { maxCents: MAX_ANY_AMOUNT_CENTS } });
     }
     if (rule.catalogId) {
       if (value.length > CATALOG_ID_MAX_LENGTH) {

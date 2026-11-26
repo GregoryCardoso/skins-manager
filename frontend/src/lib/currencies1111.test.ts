@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 import { describe, expect, test } from 'vitest';
 import { errorMessageFor } from '@/i18n/errorMessage';
@@ -11,6 +12,7 @@ import {
 } from './currencies';
 import { formatCentsInput, isAmbiguousDecimal, parseDecimalInput, parseMoneyToCents } from './numberInput';
 import { formatMoney } from './format';
+import { MAX_AMOUNT_CENTS_BY_CURRENCY, maxAmountCents } from './limits';
 
 // 11.11: as 25 moedas novas (42 no total), a ordem fixa das listas, os erros "inteiro" nas moedas novas sem centavos, o exemplo dos erros
 // formatado pelo idioma (B7), a cotação ambígua (B6) e o atributo `lang` (B5).
@@ -178,5 +180,34 @@ describe('B5: o lang do <html> segue o idioma do dicionário carregado', () => {
     expect(provider).toMatch(/setAttribute\('lang', lang\)/);
     const preferences = fs.readFileSync(path.join(__dirname, '..', 'components', 'PreferencesProvider.tsx'), 'utf8');
     expect(preferences).not.toMatch(/setAttribute\('lang'/);
+  });
+});
+
+describe('S4: teto de valor por moeda igual no backend e no frontend (11.11, complemento)', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const backend = createRequire(import.meta.url)(path.join(root, 'backend', 'src', 'config', 'constants.js')) as {
+    MAX_AMOUNT_CENTS_BY_CURRENCY: Record<string, number>;
+    maxAmountCents: (currency: string) => number;
+  };
+
+  test('a tabela do frontend é idêntica à do backend (mesmas moedas, mesmos valores)', () => {
+    expect({ ...MAX_AMOUNT_CENTS_BY_CURRENCY }).toEqual({ ...backend.MAX_AMOUNT_CENTS_BY_CURRENCY });
+    expect(Object.keys(MAX_AMOUNT_CENTS_BY_CURRENCY)).toEqual([...CURRENCIES]);
+  });
+
+  test('maxAmountCents: o teto da moeda; moeda desconhecida usa o maior, como no backend', () => {
+    for (const code of [...CURRENCIES, 'XXX', 'constructor']) expect(maxAmountCents(code)).toBe(backend.maxAmountCents(code));
+    expect(maxAmountCents('USD')).toBe(1e10);
+    expect(maxAmountCents('VND')).toBe(5e13);
+  });
+
+  test('o texto do erro INVALID_AMOUNT mostra o teto da moeda do campo, com as casas dela', () => {
+    const dictionary = JSON.parse(fs.readFileSync(path.join(root, 'frontend', 'src', 'i18n', 'pt-BR.json'), 'utf8'));
+    const t = (key: string, params?: Record<string, string | number>) => translate(dictionary, key, params);
+    const vnd = errorMessageFor(new ApiRequestError('INVALID_AMOUNT', 'x', 400, { params: { maxCents: 5e13, currency: 'VND' } }), t, 'pt-BR');
+    expect(vnd).toContain('500.000.000.000');
+    expect(vnd).not.toContain('500.000.000.000,00');
+    const usd = errorMessageFor(new ApiRequestError('INVALID_AMOUNT', 'x', 400, { params: { maxCents: 1e10, currency: 'USD' } }), t, 'pt-BR');
+    expect(usd).toContain('100.000.000,00');
   });
 });

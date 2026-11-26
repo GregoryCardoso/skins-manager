@@ -9,7 +9,7 @@ const { runInTransaction } = require('../models/modelHelpers');
 const Store = require('../models/Store');
 const Setting = require('../models/Setting');
 const { ValidationError, NotFoundError } = require('../errors/AppError');
-const { MAX_AMOUNT_CENTS, MAX_NOTE_LENGTH, CURRENCIES, ZERO_DECIMAL_CURRENCIES } = require('../config/constants');
+const { maxAmountCents, MAX_NOTE_LENGTH, CURRENCIES, ZERO_DECIMAL_CURRENCIES } = require('../config/constants');
 const { applyRateRounding } = require('./fees/rounding');
 const { toUsdBase, approxOf, fxFromSettings, displayCurrencyOf, assertAmountPrecision } = require('./currencyService');
 const { parseDate } = require('./dateUtils');
@@ -19,11 +19,13 @@ const { WARNINGS } = require('./warnings');
 const isNil = (value) => value === null || value === undefined;
 const required = (field) => new ValidationError(`O campo ${field} é obrigatório.`, 'REQUIRED_FIELD', { field });
 
-function assertAmount(value, field, label) {
-  if (!Number.isSafeInteger(value) || value < 1 || value > MAX_AMOUNT_CENTS) {
+// `currency`: a moeda do valor; cada moeda tem o seu teto (11.11, complemento). Moeda desconhecida usa o maior teto (a moeda é validada à parte).
+function assertAmount(value, field, label, currency) {
+  const maxCents = maxAmountCents(currency);
+  if (!Number.isSafeInteger(value) || value < 1 || value > maxCents) {
     throw new ValidationError(
       `${label} deve ser um inteiro de centavos maior que 0 e dentro do limite permitido.`, 'INVALID_AMOUNT',
-      { field, params: { maxCents: MAX_AMOUNT_CENTS } }
+      { field, params: { maxCents, currency } }
     );
   }
 }
@@ -67,7 +69,7 @@ function buildWithdrawalRecord(input, { existing = null, store = null, previousS
 
   // 2. valor sacado (moeda da loja)
   if (isNil(record.amountStoreCents)) throw required('amountStoreCents');
-  assertAmount(record.amountStoreCents, 'amountStoreCents', 'O valor sacado');
+  assertAmount(record.amountStoreCents, 'amountStoreCents', 'O valor sacado', store.currency);
   assertAmountPrecision(record.amountStoreCents, store.currency, 'amountStoreCents');
 
   // 3. taxa paga: nula = não informada; 0 = paga zero
@@ -88,10 +90,10 @@ function buildWithdrawalRecord(input, { existing = null, store = null, previousS
     record.amountBrlCents = null;
     record.amountBrlCurrency = existing && existing.amountBrlCurrency ? existing.amountBrlCurrency : 'BRL';
   } else {
-    assertAmount(record.amountBrlCents, 'amountBrlCents', 'O valor recebido');
     if (isNil(input && input.amountBrlCurrency)) {
       record.amountBrlCurrency = existing && !isNil(existing.amountBrlCents) && existing.amountBrlCurrency ? existing.amountBrlCurrency : displayCurrency;
     } else record.amountBrlCurrency = input.amountBrlCurrency;
+    assertAmount(record.amountBrlCents, 'amountBrlCents', 'O valor recebido', record.amountBrlCurrency);
     if (!CURRENCIES.includes(record.amountBrlCurrency)) {
       throw new ValidationError(`Moeda inválida. Use ${CURRENCIES.join(', ')}.`, 'INVALID_CURRENCY', { field: 'amountBrlCurrency' });
     }
@@ -128,7 +130,7 @@ function buildWithdrawalRecord(input, { existing = null, store = null, previousS
 // Sugestão de taxa paga (D166 a, E8-Q12), só para pré-preencher o formulário; não entra em nenhum cálculo.
 // min(arredondar para cima(valor × taxa da loja) + taxa fixa, valor). Sem taxa configurada: nulo + aviso.
 function suggestWithdrawalFeeCents(amountStoreCents, store) {
-  if (!Number.isSafeInteger(amountStoreCents) || amountStoreCents < 1 || amountStoreCents > MAX_AMOUNT_CENTS) {
+  if (!Number.isSafeInteger(amountStoreCents) || amountStoreCents < 1 || amountStoreCents > maxAmountCents(store ? store.currency : undefined)) {
     throw new ValidationError(
       'O valor sacado deve ser um inteiro de centavos maior que 0.', 'INVALID_AMOUNT', { field: 'amountStoreCents' }
     );

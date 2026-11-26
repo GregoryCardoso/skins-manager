@@ -11,7 +11,7 @@ const Deposit = require('../models/Deposit');
 const Withdrawal = require('../models/Withdrawal');
 const Setting = require('../models/Setting');
 const { ValidationError, NotFoundError } = require('../errors/AppError');
-const { MAX_AMOUNT_CENTS, MAX_NOTE_LENGTH } = require('../config/constants');
+const { maxAmountCents, MAX_NOTE_LENGTH } = require('../config/constants');
 const { parseDate } = require('./dateUtils');
 const { assertNotFutureDay } = require('./inventoryAgingService');
 const { isValidFxRate, toUsdBase, approxOf, fxFromSettings, displayCurrencyOf, rateOf, assertAmountPrecision } = require('./currencyService');
@@ -110,10 +110,10 @@ function validateCommon(input, store, now) {
   if (isNil(input.balanceCents)) throw required('balanceCents');
   if (isNil(input.recordedAt)) throw required('recordedAt');
   if (!store) throw new ValidationError('Loja não encontrada.', 'STORE_NOT_FOUND', { field: 'storeId' });
-  if (!Number.isSafeInteger(input.balanceCents) || input.balanceCents < 0 || input.balanceCents > MAX_AMOUNT_CENTS) {
+  if (!Number.isSafeInteger(input.balanceCents) || input.balanceCents < 0 || input.balanceCents > maxAmountCents(store.currency)) {
     throw new ValidationError(
       'O saldo deve ser um inteiro de centavos maior ou igual a 0 e dentro do limite permitido.', 'INVALID_AMOUNT',
-      { field: 'balanceCents', params: { maxCents: MAX_AMOUNT_CENTS } }
+      { field: 'balanceCents', params: { maxCents: maxAmountCents(store.currency), currency: store.currency } }
     );
   }
   assertAmountPrecision(input.balanceCents, store.currency, 'balanceCents');

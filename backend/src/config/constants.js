@@ -7,8 +7,6 @@ const MIN_FAST_TURNOVER_DAYS = 1;
 const MAX_FAST_TURNOVER_DAYS = 364;
 const MIN_SLOW_ITEM_DAYS = 2;
 const MAX_SLOW_ITEM_DAYS = 365;
-// Teto de qualquer valor em centavos recebido pela API (R$/US$ 100 milhões).
-const MAX_AMOUNT_CENTS = 1e10;
 // Limites de texto (após trim).
 const MAX_NAME_LENGTH = 200;
 const MAX_ORIGIN_DETAIL_LENGTH = 200;
@@ -203,6 +201,30 @@ const FX_MANUAL_RATE_BOUNDS = Object.freeze({
   QAR: Object.freeze({ min: 0.4, max: 38 }),
 });
 
+// Teto de valor por moeda (11.11, complemento): o mesmo valor em dólar para todas as moedas, em vez de 1e10 centavos (100 milhões de unidades)
+// em qualquer uma. Fórmula: USD = 1e10 centavos (US$ 100 milhões). Demais moedas = o MAIOR entre 1e10 e o primeiro número redondo (1, 2 ou 5
+// vezes uma potência de 10) que não fica abaixo de 1,1e9 x a cotação de referência da moeda, onde a cotação de referência é a média geométrica
+// da faixa manual (FX_MANUAL_RATE_BOUNDS; a faixa é cerca de 10x para cada lado do valor de hoje). 1,1e9 = US$ 11 milhões em centavos: o teto
+// equivale a pelo menos US$ 11 milhões na cotação de referência (US$ 10 milhões com folga de 10% na cotação). As moedas fortes (EUR, GBP, CHF,
+// etc.) ficam em 1e10, nunca abaixo do teto antigo. A tabela é calculada uma vez ao carregar e é fixa (o teste confere os valores literais e a
+// paridade com o frontend). Mais altos: VND 5e13 (5e11 dong, cerca de US$ 19 milhões) e IDR 2e13. Análise numérica: docs/decisoes.md (11.11).
+const MAX_AMOUNT_USD_EQUIVALENT_CENTS = 1e10;
+const MAX_AMOUNT_USD_MARGIN_CENTS = 1.1e9;
+function niceCeil(value) {
+  const exponent = Math.floor(Math.log10(value));
+  const mantissa = Math.round((value / 10 ** exponent) * 1e9) / 1e9;
+  return [1, 2, 5, 10].find((step) => step >= mantissa) * 10 ** exponent;
+}
+const MAX_AMOUNT_CENTS_BY_CURRENCY = Object.freeze(Object.fromEntries(CURRENCIES.map((code) => {
+  if (code === 'USD') return [code, MAX_AMOUNT_USD_EQUIVALENT_CENTS];
+  const { min, max } = FX_MANUAL_RATE_BOUNDS[code];
+  return [code, Math.max(MAX_AMOUNT_USD_EQUIVALENT_CENTS, niceCeil(MAX_AMOUNT_USD_MARGIN_CENTS * Math.sqrt(min * max)))];
+})));
+// Maior teto da tabela: usado só na forma (validadores sem a moeda à mão) e para moeda desconhecida; o service aplica o teto da moeda.
+const MAX_ANY_AMOUNT_CENTS = Math.max(...Object.values(MAX_AMOUNT_CENTS_BY_CURRENCY));
+// Teto, em centavos, de qualquer valor recebido pela API na moeda dada (moeda desconhecida: o maior teto, a validação da moeda vem à parte).
+const maxAmountCents = (currency) => (Object.prototype.hasOwnProperty.call(MAX_AMOUNT_CENTS_BY_CURRENCY, currency) ? MAX_AMOUNT_CENTS_BY_CURRENCY[currency] : MAX_ANY_AMOUNT_CENTS);
+
 // Backup (D150, D151).
 const BACKUP_MAX_BYTES = 100 * 1024 * 1024;
 const { AUTO_BACKUP_KEEP } = require('./backupRetention'); // retenção dos backups automáticos (D151)
@@ -287,7 +309,9 @@ module.exports = Object.freeze({
   FX_MANUAL_RATE_BOUNDS,
   FX_REFRESH_SOURCES,
   FX_RATE_SOURCES,
-  MAX_AMOUNT_CENTS,
+  MAX_AMOUNT_CENTS_BY_CURRENCY,
+  MAX_ANY_AMOUNT_CENTS,
+  maxAmountCents,
   MAX_NAME_LENGTH,
   MAX_ORIGIN_DETAIL_LENGTH,
   MAX_INSPECT_LINK_LENGTH,

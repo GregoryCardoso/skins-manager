@@ -28,19 +28,22 @@ function applyRateRounding(baseCents, rate, mode, unitCents = 1) {
   if (!Number.isSafeInteger(unitCents) || unitCents < 1) {
     throw new ValidationError('Unidade mínima inválida para arredondamento.', 'INVALID_AMOUNT');
   }
-  const ppm = Math.round(rate * PPM);
-  const product = baseCents * ppm;
-  if (!Number.isSafeInteger(product)) {
-    throw new ValidationError('Valor grande demais para calcular a taxa.', 'INVALID_AMOUNT');
-  }
-  const divisor = PPM * unitCents;
+  // BigInt: base × ppm chega a 5e13 × 1e6 com o teto de VND (11.11); em Number passaria do inteiro seguro. O resultado final nunca
+  // passa de base + unidade, então volta a Number sem perda.
+  const ppm = BigInt(Math.round(rate * PPM));
+  const product = BigInt(baseCents) * ppm;
+  const divisor = BigInt(PPM) * BigInt(unitCents);
   const remainder = product % divisor;
-  const quotient = (product - remainder) / divisor;
+  const quotient = product / divisor;
   let units;
   if (mode === 'FLOOR') units = quotient;
-  else if (mode === 'CEIL') units = quotient + (remainder > 0 ? 1 : 0);
-  else units = quotient + (2 * remainder >= divisor ? 1 : 0);
-  return units * unitCents;
+  else if (mode === 'CEIL') units = quotient + (remainder > 0n ? 1n : 0n);
+  else units = quotient + (2n * remainder >= divisor ? 1n : 0n);
+  const result = units * BigInt(unitCents);
+  if (result > BigInt(Number.MAX_SAFE_INTEGER)) {
+    throw new ValidationError('Valor grande demais para calcular a taxa.', 'INVALID_AMOUNT');
+  }
+  return Number(result);
 }
 
 // Arredonda resultados REAL (ex.: valor × cotação). ROUND = meio afastando de zero.

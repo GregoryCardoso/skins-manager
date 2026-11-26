@@ -1,7 +1,8 @@
 // QA da 8.2: GET /api/withdrawals/fee-suggestion (E8-Q12, D203). Aritmética inteira, limites, query inválida e loja.
 const request = require('supertest');
 const { closeDb } = require('../../src/config/database');
-const { MAX_AMOUNT_CENTS } = require('../../src/config/constants');
+const { maxAmountCents } = require('../../src/config/constants');
+const MAX_AMOUNT_CENTS = maxAmountCents('USD'); // teto do USD (1e10); o teto por moeda tem testes próprios
 const { freshDb } = require('../helpers/fixtures');
 const { makeApp, storeId, expectError } = require('../helpers/apiFixtures');
 

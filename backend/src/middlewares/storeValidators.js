@@ -1,5 +1,5 @@
 const { ValidationError } = require('../errors/AppError');
-const { MAX_AMOUNT_CENTS } = require('../config/constants');
+const { MAX_ANY_AMOUNT_CENTS } = require('../config/constants');
 const { isPlainObject, rejectUnknownFields } = require('./validationHelpers');
 
 function validateStoreQuery(req, res, next) {
@@ -15,7 +15,7 @@ function validateStoreQuery(req, res, next) {
 function validateSaleQuoteQuery(req, res, next) {
   const raw = req.query.salePriceCents;
   const value = typeof raw === 'string' && /^\d{1,16}$/.test(raw) ? Number(raw) : NaN;
-  if (!Number.isSafeInteger(value) || value <= 0 || value > MAX_AMOUNT_CENTS) {
+  if (!Number.isSafeInteger(value) || value <= 0 || value > MAX_ANY_AMOUNT_CENTS) {
     return next(new ValidationError(
       'salePriceCents deve ser um inteiro de centavos maior que 0.', 'INVALID_QUERY', { field: 'salePriceCents' }
     ));

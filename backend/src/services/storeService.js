@@ -6,7 +6,7 @@ const Setting = require('../models/Setting');
 const { runInTransaction } = require('../models/modelHelpers');
 const { ValidationError, NotFoundError, ConflictError } = require('../errors/AppError');
 const {
-  MAX_AMOUNT_CENTS, MAX_STORE_NAME_LENGTH, RATE_MAX_DECIMALS, MAX_SALE_HOLD_DAYS, CURRENCIES,
+  maxAmountCents, MAX_STORE_NAME_LENGTH, RATE_MAX_DECIMALS, MAX_SALE_HOLD_DAYS, CURRENCIES,
 } = require('../config/constants');
 const { assertAmountPrecision, fxFromSettings, rateOf, convertCents } = require('./currencyService');
 const { saleFeeParamsFromStore } = require('./fees');
@@ -66,6 +66,11 @@ function getStoreOrFail(id, { field } = {}) {
 function quoteSale(id, salePriceCents) {
   const store = Store.findById(id);
   if (!store) throw new NotFoundError('Loja não encontrada.', 'STORE_NOT_FOUND');
+  if (salePriceCents > maxAmountCents(store.currency)) {
+    throw new ValidationError('salePriceCents deve ser um inteiro de centavos maior que 0.', 'INVALID_QUERY', {
+      field: 'salePriceCents', params: { maxCents: maxAmountCents(store.currency), currency: store.currency },
+    });
+  }
   assertAmountPrecision(salePriceCents, store.currency, 'salePriceCents');
   const { netReceivedCents, feeCents } = computeSale({ salePriceCents, store });
   return { storeId: store.id, currency: store.currency, salePriceCents, feeCents, netReceivedCents };
@@ -83,11 +88,13 @@ function assertRate(value, field) {
   }
 }
 
-function assertCents(value, field) {
-  if (!Number.isSafeInteger(value) || value < 0 || value > MAX_AMOUNT_CENTS) {
+// `currency`: a moeda da loja (taxa fixa e mínima são nela); cada moeda tem o seu teto (11.11, complemento).
+function assertCents(value, field, currency) {
+  const maxCents = maxAmountCents(currency);
+  if (!Number.isSafeInteger(value) || value < 0 || value > maxCents) {
     throw new ValidationError(
       'O valor deve ser um inteiro de centavos entre 0 e o limite permitido.', 'INVALID_AMOUNT',
-      { field, params: { maxCents: MAX_AMOUNT_CENTS } }
+      { field, params: { maxCents, currency } }
     );
   }
 }
@@ -135,9 +142,9 @@ function buildStoreRecord(input, { existing = null, inUse = false, nameTaken = f
   if (!isNil(record.withdrawalFeeRate)) assertRate(record.withdrawalFeeRate, 'withdrawalFeeRate');
 
   // 5. centavos
-  if (!isNil(record.saleMinFeeCents)) assertCents(record.saleMinFeeCents, 'saleMinFeeCents');
-  assertCents(record.saleFixedFeeCents, 'saleFixedFeeCents');
-  assertCents(record.withdrawalFixedFeeCents, 'withdrawalFixedFeeCents');
+  if (!isNil(record.saleMinFeeCents)) assertCents(record.saleMinFeeCents, 'saleMinFeeCents', record.currency);
+  assertCents(record.saleFixedFeeCents, 'saleFixedFeeCents', record.currency);
+  assertCents(record.withdrawalFixedFeeCents, 'withdrawalFixedFeeCents', record.currency);
   // 5a. unidade mínima da moeda da loja (D369 A3): JPY, KRW e CLP só aceitam múltiplos de 100 centavos
   if (!isNil(record.saleMinFeeCents)) assertAmountPrecision(record.saleMinFeeCents, record.currency, 'saleMinFeeCents');
   assertAmountPrecision(record.saleFixedFeeCents, record.currency, 'saleFixedFeeCents');

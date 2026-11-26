@@ -4,7 +4,7 @@
 const { AppError, ValidationError } = require('../errors/AppError');
 const { isPlainObject, rejectUnknownFields } = require('./validationHelpers');
 const { checkBody, ACQUISITION_FIELDS } = require('./itemValidators');
-const { MAX_AMOUNT_CENTS, GENERATED_FORBIDDEN_FIELDS } = require('../config/constants');
+const { MAX_ANY_AMOUNT_CENTS, GENERATED_FORBIDDEN_FIELDS } = require('../config/constants');
 
 const fail = (message, code, field) => new ValidationError(message, code, { field });
 
@@ -83,8 +83,8 @@ const validateOpenBody = wrap((req) => {
   if (body.decision !== undefined && body.decision !== null && typeof body.decision !== 'string') throw fail('Decisão inválida.', 'INVALID_FIELD', 'decision');
   if (body.paidPriceCents !== undefined && body.paidPriceCents !== null) {
     if (!isInt(body.paidPriceCents)) throw fail('O preço deve ser um número inteiro de centavos.', 'INVALID_FIELD', 'paidPriceCents');
-    if (body.paidPriceCents > MAX_AMOUNT_CENTS) {
-      throw new ValidationError('O valor excede o máximo permitido.', 'INVALID_AMOUNT', { field: 'paidPriceCents', params: { maxCents: MAX_AMOUNT_CENTS } });
+    if (body.paidPriceCents > MAX_ANY_AMOUNT_CENTS) {
+      throw new ValidationError('O valor excede o máximo permitido.', 'INVALID_AMOUNT', { field: 'paidPriceCents', params: { maxCents: MAX_ANY_AMOUNT_CENTS } });
     }
   }
   if (body.fxRateAtPurchase !== undefined && body.fxRateAtPurchase !== null && (typeof body.fxRateAtPurchase !== 'number' || !Number.isFinite(body.fxRateAtPurchase))) {

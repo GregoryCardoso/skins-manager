@@ -8,7 +8,7 @@ const Setting = require('../models/Setting');
 const ItemComponent = require('../models/ItemComponent');
 const ItemOperation = require('../models/ItemOperation');
 const { runInTransaction } = require('../models/modelHelpers');
-const { MAX_AMOUNT_CENTS, MAX_NAME_LENGTH } = require('../config/constants');
+const { maxAmountCents, MAX_NAME_LENGTH } = require('../config/constants');
 const { AppError, ValidationError, NotFoundError, ConflictError } = require('../errors/AppError');
 const { isValidFxRate, fxFromSettings, rateOf, assertAmountPrecision } = require('./currencyService');
 const { parseDate, toIso, formatDateTimeBr } = require('./dateUtils');
@@ -249,9 +249,10 @@ function buildItemRecord(merged, { store = null, settings = null, now = new Date
       throw new ValidationError('O preço deve ser um inteiro de centavos maior ou igual a 0.', 'INVALID_AMOUNT', { field: 'purchasePriceCents' });
     }
     // O teto vale só para o valor que entra (D63); item legado acima do teto continua editável em outros campos.
-    if (priceInformed && purchasePriceCents > MAX_AMOUNT_CENTS) {
+    // Teto da moeda da loja (11.11, complemento).
+    if (priceInformed && purchasePriceCents > maxAmountCents(store.currency)) {
       throw new ValidationError('O valor excede o máximo permitido.', 'INVALID_AMOUNT', {
-        field: 'purchasePriceCents', params: { maxCents: MAX_AMOUNT_CENTS },
+        field: 'purchasePriceCents', params: { maxCents: maxAmountCents(store.currency), currency: store.currency },
       });
     }
     // Unidade mínima da moeda da loja (D369 A3): só confere o valor que entra (item legado continua editável em outros campos).
@@ -323,10 +324,14 @@ function buildSaleRecord(item, input, { store, settings = null, now = new Date()
     );
   }
 
-  if (Number.isSafeInteger(input.salePriceCents) && input.salePriceCents > MAX_AMOUNT_CENTS) {
-    throw new ValidationError('O valor excede o máximo permitido.', 'INVALID_AMOUNT', {
-      field: 'salePriceCents', params: { maxCents: MAX_AMOUNT_CENTS },
-    });
+  // Teto da moeda da loja de venda (11.11, complemento); o líquido informado tem o mesmo teto (antes valia só o da forma).
+  const saleCap = maxAmountCents(store.currency);
+  for (const field of ['salePriceCents', 'netReceivedCents']) {
+    if (Number.isSafeInteger(input[field]) && input[field] > saleCap) {
+      throw new ValidationError('O valor excede o máximo permitido.', 'INVALID_AMOUNT', {
+        field, params: { maxCents: saleCap, currency: store.currency },
+      });
+    }
   }
   assertAmountPrecision(input.salePriceCents, store.currency, 'salePriceCents');
   assertAmountPrecision(input.netReceivedCents, store.currency, 'netReceivedCents');

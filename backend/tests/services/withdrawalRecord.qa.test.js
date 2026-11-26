@@ -2,7 +2,8 @@
 
 // QA da 8.2: ordem das validações de buildWithdrawalRecord e bordas de suggestWithdrawalFeeCents. Puros: sem banco.
 const { buildWithdrawalRecord, suggestWithdrawalFeeCents } = require('../../src/services/withdrawalService');
-const { MAX_AMOUNT_CENTS } = require('../../src/config/constants');
+const { maxAmountCents } = require('../../src/config/constants');
+const MAX_AMOUNT_CENTS = maxAmountCents('USD'); // teto do USD (1e10); o teto por moeda tem testes próprios
 const { csfloat, steam } = require('../helpers/storeFixtures');
 
 const NOW = new Date('2026-11-19T15:00:00.000Z');

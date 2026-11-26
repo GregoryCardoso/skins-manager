@@ -2,7 +2,8 @@
 
 // buildWithdrawalRecord e suggestWithdrawalFeeCents (D201, D203, D211). Puros: sem banco.
 const { buildWithdrawalRecord, suggestWithdrawalFeeCents } = require('../../src/services/withdrawalService');
-const { MAX_AMOUNT_CENTS } = require('../../src/config/constants');
+const { maxAmountCents } = require('../../src/config/constants');
+const MAX_AMOUNT_CENTS = maxAmountCents('USD'); // teto do USD (1e10); o teto por moeda tem testes próprios
 const { csfloat, steam, csmoney } = require('../helpers/storeFixtures');
 
 // 2026-11-19 12:00 em Brasília

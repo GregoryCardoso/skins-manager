@@ -23,7 +23,7 @@ describe('error.field e error.params (D113)', () => {
     );
     expectError(
       await post(purchaseBody({ purchasePriceCents: 1e10 + 1 })), 400, 'INVALID_AMOUNT',
-      { field: 'purchasePriceCents', params: { maxCents: 1e10 } }
+      { field: 'purchasePriceCents', params: { maxCents: 1e10, currency: 'USD' } }
     );
   });
 

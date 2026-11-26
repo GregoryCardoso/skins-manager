@@ -21,7 +21,7 @@ describe('valor', () => {
   test('limites: 1 e 1e10 aceitos; 1e10+1, 0 e negativos recusados', async () => {
     expect((await post(body({ amountStoreCents: 1 }))).status).toBe(201);
     expect((await post(body({ amountStoreCents: 1e10 }))).status).toBe(201);
-    expectError(await post(body({ amountStoreCents: 1e10 + 1 })), 400, 'INVALID_AMOUNT', { field: 'amountStoreCents', params: { maxCents: 1e10 } });
+    expectError(await post(body({ amountStoreCents: 1e10 + 1 })), 400, 'INVALID_AMOUNT', { field: 'amountStoreCents', params: { maxCents: 1e10, currency: 'USD' } });
     expectError(await post(body({ amountStoreCents: 0 })), 400, 'INVALID_AMOUNT');
     expectError(await post(body({ amountStoreCents: -100 })), 400, 'INVALID_AMOUNT');
     expect(rowCount()).toBe(2);

@@ -61,7 +61,7 @@ describe('POST /sell com netReceivedCents (D122)', () => {
     }
     expectError(
       await sell(item.id, { netReceivedCents: 1e10 + 1 }), 400, 'INVALID_AMOUNT',
-      { field: 'netReceivedCents', params: { maxCents: 1e10 } }
+      { field: 'netReceivedCents', params: { maxCents: 1e10, currency: 'USD' } }
     );
     expect((await sell(item.id, { netReceivedCents: null })).body.data.sale.netReceivedManual).toBe(false);
   });

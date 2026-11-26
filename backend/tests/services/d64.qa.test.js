@@ -8,7 +8,8 @@ const { buildSaleRecord } = itemService;
 const buildItemRecord = (merged, ctx = {}) => itemService.buildItemRecord(merged, { body: {}, ...ctx });
 const { assertNotFutureDay, assertAcquiredAtNotFuture, daysBetween } = require('../../src/services/inventoryAgingService');
 const { parseDate, toIso } = require('../../src/services/dateUtils');
-const { MAX_AMOUNT_CENTS } = require('../../src/config/constants');
+const { maxAmountCents } = require('../../src/config/constants');
+const MAX_AMOUNT_CENTS = maxAmountCents('USD'); // teto do USD (1e10); o teto por moeda tem testes próprios
 const { csfloat, csmoney } = require('../helpers/storeFixtures');
 
 const NOW = new Date('2026-11-19T15:00:00.000Z'); // 12:00 BRT

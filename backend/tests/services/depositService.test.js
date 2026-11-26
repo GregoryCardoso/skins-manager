@@ -2,7 +2,8 @@
 
 // buildDepositRecord (D201, D227, D232): puro, com `now`. Aporte na moeda da loja (só USD); R$ pago é informativo.
 const { buildDepositRecord, depositBaseAmount } = require('../../src/services/depositService');
-const { MAX_AMOUNT_CENTS, MAX_NOTE_LENGTH } = require('../../src/config/constants');
+const { maxAmountCents, MAX_NOTE_LENGTH } = require('../../src/config/constants');
+const MAX_AMOUNT_CENTS = maxAmountCents('USD'); // teto do USD (1e10); o teto por moeda tem testes próprios
 
 const NOW = new Date('2026-11-19T15:00:00.000Z'); // 12:00 em Brasília
 const CSFLOAT = { id: 1, name: 'CSFloat', currency: 'USD', isActive: 1, allowsWithdrawal: 1 };
@@ -56,7 +57,7 @@ describe('buildDepositRecord: criação', () => {
 
   test('INVALID_AMOUNT informa o teto em params', () => {
     expect(() => build(valid({ amountStoreCents: 0 }))).toThrow(
-      expect.objectContaining({ params: { maxCents: MAX_AMOUNT_CENTS } })
+      expect.objectContaining({ params: { maxCents: MAX_AMOUNT_CENTS, currency: 'USD' } })
     );
   });
 

@@ -15,7 +15,9 @@ function net(grossCents, params) {
 function estimateGross(targetNetCents, params) {
   assertSaleFeeParams(params);
   const ppm = Math.round(params.rate * 1e6);
-  const byRate = Math.ceil(((targetNetCents + params.fixedFeeCents) * 1e6) / (1e6 - ppm));
+  // BigInt: (valor × 1e6) passa do inteiro seguro com os tetos altos (VND, 11.11); divisão inteira para cima, sem ruído de ponto flutuante.
+  const divisor = BigInt(1e6 - ppm);
+  const byRate = Number((BigInt(targetNetCents + params.fixedFeeCents) * 1000000n + divisor - 1n) / divisor);
   const byMin = targetNetCents + (params.minFeeCents ?? 0) + params.fixedFeeCents;
   return Math.max(byRate, byMin);
 }

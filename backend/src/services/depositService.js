@@ -9,7 +9,7 @@ const Deposit = require('../models/Deposit');
 const Store = require('../models/Store');
 const Setting = require('../models/Setting');
 const { ValidationError, NotFoundError } = require('../errors/AppError');
-const { MAX_AMOUNT_CENTS, MAX_NOTE_LENGTH, CURRENCIES } = require('../config/constants');
+const { maxAmountCents, MAX_NOTE_LENGTH, CURRENCIES } = require('../config/constants');
 const { parseDate } = require('./dateUtils');
 const { assertNotFutureDay } = require('./inventoryAgingService');
 const { toUsdBase, approxOf, fxFromSettings, displayCurrencyOf, assertAmountPrecision } = require('./currencyService');
@@ -21,11 +21,13 @@ const addNullable = (a, b) => (a === null || b === null ? null : a + b);
 
 const required = (field) => new ValidationError(`O campo ${field} é obrigatório.`, 'REQUIRED_FIELD', { field });
 
-function assertAmount(value, field, label) {
-  if (!Number.isSafeInteger(value) || value < 1 || value > MAX_AMOUNT_CENTS) {
+// `currency`: a moeda do valor; cada moeda tem o seu teto (11.11, complemento). Moeda desconhecida usa o maior teto (a moeda é validada à parte).
+function assertAmount(value, field, label, currency) {
+  const maxCents = maxAmountCents(currency);
+  if (!Number.isSafeInteger(value) || value < 1 || value > maxCents) {
     throw new ValidationError(
       `${label} deve ser um inteiro de centavos maior que 0 e dentro do limite permitido.`, 'INVALID_AMOUNT',
-      { field, params: { maxCents: MAX_AMOUNT_CENTS } }
+      { field, params: { maxCents, currency } }
     );
   }
 }
@@ -64,13 +66,13 @@ function buildDepositRecord(input, { existing = null, store = null, now = new Da
 
   // 3. valor creditado na loja
   if (isNil(record.amountStoreCents)) throw required('amountStoreCents');
-  assertAmount(record.amountStoreCents, 'amountStoreCents', 'O valor creditado');
+  assertAmount(record.amountStoreCents, 'amountStoreCents', 'O valor creditado', store.currency);
 
   // 3b. taxa do aporte (D311): nula = não informada; 0 = paga zero
   if (isNil(record.feeCents)) record.feeCents = null;
-  else if (!Number.isSafeInteger(record.feeCents) || record.feeCents < 0 || record.feeCents > MAX_AMOUNT_CENTS) {
+  else if (!Number.isSafeInteger(record.feeCents) || record.feeCents < 0 || record.feeCents > maxAmountCents(store.currency)) {
     throw new ValidationError('A taxa do aporte deve ser um inteiro de centavos maior ou igual a 0.', 'INVALID_FEE', {
-      field: 'feeCents', params: { maxCents: MAX_AMOUNT_CENTS },
+      field: 'feeCents', params: { maxCents: maxAmountCents(store.currency), currency: store.currency },
     });
   }
 
@@ -80,10 +82,10 @@ function buildDepositRecord(input, { existing = null, store = null, now = new Da
     record.amountBrlCents = null;
     record.amountBrlCurrency = existing && existing.amountBrlCurrency ? existing.amountBrlCurrency : 'BRL';
   } else {
-    assertAmount(record.amountBrlCents, 'amountBrlCents', 'O valor pago');
     if (isNil(input && input.amountBrlCurrency)) {
       record.amountBrlCurrency = existing && !isNil(existing.amountBrlCents) && existing.amountBrlCurrency ? existing.amountBrlCurrency : displayCurrency;
     } else record.amountBrlCurrency = input.amountBrlCurrency;
+    assertAmount(record.amountBrlCents, 'amountBrlCents', 'O valor pago', record.amountBrlCurrency);
     if (!CURRENCIES.includes(record.amountBrlCurrency)) {
       throw new ValidationError(`Moeda inválida. Use ${CURRENCIES.join(', ')}.`, 'INVALID_CURRENCY', { field: 'amountBrlCurrency' });
     }

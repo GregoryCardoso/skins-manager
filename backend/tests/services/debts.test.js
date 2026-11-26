@@ -172,7 +172,8 @@ describe('T20 / T21 - ordenação', () => {
 describe('T22 - inteiros seguros', () => {
   test('base e produto fora do limite seguro -> INVALID_AMOUNT', () => {
     expect(codeOf(() => applyRateRounding(2 ** 53, 0.02, 'CEIL'))).toBe('INVALID_AMOUNT');
-    expect(codeOf(() => applyRateRounding(1e12, 0.02, 'CEIL'))).toBe('INVALID_AMOUNT');
+    // 11.11: o produto base x ppm é calculado em BigInt; 1e12 x 2% é válido (antes estourava o inteiro seguro).
+    expect(applyRateRounding(1e12, 0.02, 'CEIL')).toBe(2e10);
     expect(applyRateRounding(1e10, 0.02, 'CEIL')).toBe(2e8);
   });
 });

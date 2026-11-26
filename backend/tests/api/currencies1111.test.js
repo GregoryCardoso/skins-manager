@@ -6,9 +6,8 @@ const request = require('supertest');
 const { closeDb } = require('../../src/config/database');
 const { freshDb } = require('../helpers/fixtures');
 const { makeCatalogApp, expectError, NOW, storeId } = require('../helpers/apiFixtures');
-const {
-  CURRENCIES, ZERO_DECIMAL_CURRENCIES, AWESOMEAPI_PAIRS, FX_RATE_BOUNDS, FX_MANUAL_RATE_BOUNDS, LANGUAGES, MAX_AMOUNT_CENTS,
-} = require('../../src/config/constants');
+const { CURRENCIES, ZERO_DECIMAL_CURRENCIES, AWESOMEAPI_PAIRS, FX_RATE_BOUNDS, FX_MANUAL_RATE_BOUNDS, LANGUAGES, maxAmountCents } = require('../../src/config/constants');
+const MAX_AMOUNT_CENTS = maxAmountCents('USD'); // teto do USD (1e10); o teto por moeda tem testes próprios
 const { minorUnitCents } = require('../../src/services/currencyService');
 const settingsService = require('../../src/services/settingsService');
 const FxRate = require('../../src/models/FxRate');
@@ -134,10 +133,14 @@ describe('lojas nas moedas novas', () => {
     expect(Number.isSafeInteger(res.body.data.feeCents)).toBe(true);
   });
 
-  test('o preço acima do teto de 1e10 centavos é recusado também nas moedas novas', async () => {
+  test('o preço acima do teto da moeda (IDR: 2e13 centavos) é recusado e o teto de IDR é aceito', async () => {
     const created = (await post(app, '/api/stores', body('IDR'))).body.data;
-    const res = await request(app).get(`/api/stores/${created.id}/sale-quote?salePriceCents=${MAX_AMOUNT_CENTS + 100}`);
+    const res = await request(app).get(`/api/stores/${created.id}/sale-quote?salePriceCents=${maxAmountCents('IDR') + 100}`);
     expect(res.status).toBe(400);
+    expect((await request(app).get(`/api/stores/${created.id}/sale-quote?salePriceCents=${MAX_AMOUNT_CENTS + 100}`)).status).toBe(200);
+    const atCap = await request(app).get(`/api/stores/${created.id}/sale-quote?salePriceCents=${maxAmountCents('IDR')}`);
+    expect(atCap.status).toBe(200);
+    expect(atCap.body.data.feeCents + atCap.body.data.netReceivedCents).toBe(maxAmountCents('IDR'));
   });
 });
 

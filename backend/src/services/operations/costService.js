@@ -30,11 +30,18 @@ function ownCostUsd(item) {
 
 // Divide `poolCents` entre as saídas por frações em pontos-base que somam 10000 (E-P2-Q32): cada uma recebe o piso da sua parte, e o
 // que sobrar vai para a maior fração (empate: a de menor id). `shares`: [{ id, bp }]. Devolve Map id -> centavos.
+// cents x bp / 10000 em BigInt: com o teto de VND (5e13 centavos, 11.11) o produto passa do inteiro seguro. `round`: meio para cima (valores >= 0).
+const scaleByBp = (cents, bp, round) => {
+  const product = BigInt(cents) * BigInt(bp);
+  const total = BigInt(BP_TOTAL);
+  return Number(round ? (product * 2n + total) / (2n * total) : product / total);
+};
+
 function splitPool(poolCents, shares) {
   const out = new Map();
   let given = 0;
   for (const { id, bp } of shares) {
-    const part = Math.floor((poolCents * bp) / BP_TOTAL);
+    const part = scaleByBp(poolCents, bp, false);
     out.set(id, part);
     given += part;
   }
@@ -97,7 +104,7 @@ function buildCostIndex({ itemsById = new Map(), operations = [], links = [] } =
   }
 
   // Parte de `parts` (partes nativas) escalada por `bp` pontos-base, como as partes de pool já são escaladas.
-  const scaleParts = (parts, bp) => (bp === BP_TOTAL ? parts : parts.map((part) => ({ ...part, cents: Math.round((part.cents * bp) / BP_TOTAL) })));
+  const scaleParts = (parts, bp) => (bp === BP_TOTAL ? parts : parts.map((part) => ({ ...part, cents: scaleByBp(part.cents, bp, true) })));
 
   // Separação do pendurado (`DETACH_COMPONENT` com vínculo CREATED, D366): { weaponId, generatedId, weaponBp, generatedBp } ou null
   // (modo RETURN, que não divide custo; o efeito dele vem do encerramento da aplicação).

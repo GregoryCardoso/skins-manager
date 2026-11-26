@@ -3,7 +3,8 @@
 // QA 8.5: bordas de buildDepositRecord (D227, D224, D232): ordem dos erros, loja BRL no POST e no PATCH, legado com loja
 // informativa BRL, PATCH de legado, loja inativa USD e o valor pago em R$ (ausente, nulo, 0).
 const { buildDepositRecord } = require('../../src/services/depositService');
-const { MAX_AMOUNT_CENTS } = require('../../src/config/constants');
+const { maxAmountCents } = require('../../src/config/constants');
+const MAX_AMOUNT_CENTS = maxAmountCents('USD'); // teto do USD (1e10); o teto por moeda tem testes próprios
 
 const NOW = new Date('2026-11-19T15:00:00.000Z');
 const CSFLOAT = { id: 1, name: 'CSFloat', currency: 'USD', isActive: 1, allowsWithdrawal: 1 };

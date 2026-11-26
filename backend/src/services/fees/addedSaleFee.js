@@ -15,7 +15,8 @@ function net(grossCents, params) {
   if (buyerPays(0, params) > grossCents) return grossCents - fee(0, params);
   const ppm = Math.round(params.rate * 1e6);
   // Estimativa inicial: pelo percentual ou, se a taxa mínima domina, por g - minFee - fixa (T19).
-  const byRate = Math.floor(((grossCents - params.fixedFeeCents) * 1e6) / (1e6 + ppm));
+  // BigInt: (preço × 1e6) passa do inteiro seguro com os tetos altos (VND, 11.11). Numerador negativo vira 0 logo abaixo (max com 0).
+  const byRate = Number((BigInt(grossCents - params.fixedFeeCents) * 1000000n) / BigInt(1e6 + ppm));
   const byMin = grossCents - (params.minFeeCents ?? 0) - params.fixedFeeCents;
   const unit = params.unitCents ?? 1;
   let r = Math.max(0, Math.min(byRate, byMin));

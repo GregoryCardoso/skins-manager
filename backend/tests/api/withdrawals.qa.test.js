@@ -3,7 +3,8 @@
 const request = require('supertest');
 const { closeDb, getDb } = require('../../src/config/database');
 const Withdrawal = require('../../src/models/Withdrawal');
-const { MAX_AMOUNT_CENTS } = require('../../src/config/constants');
+const { maxAmountCents } = require('../../src/config/constants');
+const MAX_AMOUNT_CENTS = maxAmountCents('USD'); // teto do USD (1e10); o teto por moeda tem testes próprios
 const { freshDb } = require('../helpers/fixtures');
 const { makeApp, storeId, expectError, NOW } = require('../helpers/apiFixtures');
 

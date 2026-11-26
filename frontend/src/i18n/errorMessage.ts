@@ -44,9 +44,9 @@ export function errorDetailParams(
     case 'FIELD_TOO_LONG':
       return typeof p.maxLength === 'number' ? { max: p.maxLength } : null;
     case 'INVALID_AMOUNT':
-      // Só o teto tem texto detalhado; a moeda é desconhecida aqui, então o valor sai sem símbolo.
+      // Só o teto tem texto detalhado; o valor sai sem símbolo, com as casas da moeda do campo (`params.currency`, 11.11; sem ela, USD).
       return typeof p.maxCents === 'number'
-        ? { max: formatMoney(p.maxCents, 'USD', locale).replace(/[^\d.,\s]/g, '').trim() }
+        ? { max: formatMoney(p.maxCents, typeof p.currency === 'string' ? p.currency : 'USD', locale).replace(/[^\d.,\s]/g, '').trim() }
         : null;
     case 'AMOUNT_PRECISION_INVALID':
       // Moeda sem casas decimais (11.4): a moeda e o exemplo de número inteiro formatado pelo idioma (B7, sem agrupar milhar). O backend
