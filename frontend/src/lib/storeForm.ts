@@ -92,7 +92,7 @@ export type StoreFormErrors = Partial<Record<StoreFormField, string>>;
 
 const RATE_ERROR = 'storeForm.invalidRate';
 const MONEY_ERROR = 'storeForm.invalidMoney';
-// Moedas sem casas decimais (JPY, KRW e CLP): só números inteiros.
+// Moedas sem casas decimais (moedas sem casas decimais): só números inteiros.
 const WHOLE_MONEY_ERROR = 'storeForm.invalidMoneyWhole';
 
 export function validateStoreForm(state: StoreFormState, language: string): StoreFormErrors {

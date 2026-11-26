@@ -13,7 +13,7 @@ import {
   type CatalogChoice, type FormErrors, type ItemFormState,
 } from '@/lib/itemForm';
 import { invalidMoneyKey, moneyErrorParams, moneyInputMode } from '@/lib/currencies';
-import { formatDecimalInput, parseDecimalInput, parseMoneyToCents } from '@/lib/numberInput';
+import { formatDecimalInput, isAmbiguousDecimal, parseDecimalInput, parseMoneyToCents } from '@/lib/numberInput';
 import { queryKeys } from '@/lib/queryKeys';
 import { useInvalidate } from '@/lib/useInvalidate';
 import { ApiRequestError, getCatalogStatus, getOpenOptions, openContainer } from '@/services/api';
@@ -171,7 +171,7 @@ export default function OpenContainerModal({ item, stores, onClose, onDone, onGo
       else body.paidPriceCents = cents;
       if (fxVisible) {
         const rate = parseDecimalInput(fxText, locale);
-        if (fxText.trim() !== '' && rate === null) next.fxRateAtPurchase = t('itemForm.invalidNumber');
+        if (fxText.trim() !== '' && rate === null) next.fxRateAtPurchase = isAmbiguousDecimal(fxText, locale) ? tLoose('fx.ambiguousInput', moneyErrorParams(locale, undefined)) : t('itemForm.invalidNumber');
         else if (rate !== null) body.fxRateAtPurchase = rate;
       }
     }

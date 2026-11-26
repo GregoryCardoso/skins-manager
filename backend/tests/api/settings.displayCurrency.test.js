@@ -99,7 +99,8 @@ describe('GET /api/settings/currency-change-preview', () => {
     expect(res.status).toBe(200);
     expect(res.body.data).toEqual({
       currency: 'EUR',
-      steamStore: { id: expect.any(Number), name: 'Steam', currency: 'BRL', hasEntries: false, hasFixedFees: false },
+      steamStore: { id: expect.any(Number), name: 'Steam', currency: 'BRL', hasEntries: false, hasFixedFees: false,
+        feesWillReset: false, missingRateCurrency: null },
       fxRateAvailable: false,
       automaticSource: true,
     });
@@ -195,6 +196,11 @@ describe('POST /api/settings/fx-rate/refresh por moeda (fetch falso)', () => {
   const ASK = {
     BRL: '5.1254', EUR: '0.9142', RUB: '82.6', TRY: '50.6', CNY: '6.66', PLN: '4.09', UAH: '41.5', JPY: '159.17', KRW: '1349.2',
     GBP: '0.7654', KZT: '473.3', CAD: '1.4242', AUD: '1.52', MXN: '19.7', ARS: '1610.28', CLP: '1043.37',
+    // As 25 moedas da 11.11 (cotações de referência de 2026-11-26, as mesmas da D369, registro 11.11).
+    INR: '92.4751', IDR: '18386', PHP: '63.781', THB: '34.06', VND: '25840', MYR: '4.1178', SGD: '1.29069', CHF: '0.8342',
+    NOK: '9.7667', SEK: '10.22164', DKK: '6.81267', CZK: '22.3298', HUF: '339.105', COP: '3541.29', PEN: '3.57305',
+    UYU: '41.790854', CRC: '458.37986', HKD: '7.83683', TWD: '32.9759', NZD: '1.82765', ZAR: '17.543', ILS: '3.3147',
+    SAR: '3.872328', AED: '3.6735', QAR: '3.781503',
   };
 
   test.each(AWESOMEAPI_PAIRS)('%s: consulta USD-%s, grava ask, origem AWESOMEAPI e a data da cotação', async (currency) => {

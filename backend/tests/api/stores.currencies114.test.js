@@ -316,7 +316,8 @@ describe('steamStore no PATCH /api/settings (A4 e A5)', () => {
   test('o preview mostra hasEntries e a moeda da Steam para o modal montar as linhas', async () => {
     addEntry(storeId('Steam'));
     const res = await request(app).get('/api/settings/currency-change-preview?currency=EUR');
-    expect(res.body.data.steamStore).toEqual({ id: storeId('Steam'), name: 'Steam', currency: 'USD', hasEntries: true, hasFixedFees: false });
+    expect(res.body.data.steamStore).toEqual({ id: storeId('Steam'), name: 'Steam', currency: 'USD', hasEntries: true, hasFixedFees: false,
+      feesWillReset: false, missingRateCurrency: null });
   });
 
   test('o preview traz hasFixedFees: true quando a Steam tem taxa fixa, mínima ou de saque fixa', async () => {

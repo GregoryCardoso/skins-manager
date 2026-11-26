@@ -12,9 +12,9 @@ const LOCALES = ['en', 'pt-BR', 'de', 'fr', 'es', 'ru', 'ja', 'ko', 'zh-CN'];
 const TWO_DECIMALS = CURRENCIES.filter((code) => !hasNoDecimals(code));
 
 describe('parseMoneyToCents e formatCentsInput por moeda e idioma', () => {
-  test('as moedas sem casas são exatamente JPY, KRW e CLP', () => {
-    expect([...ZERO_DECIMAL_CURRENCIES].sort()).toEqual(['CLP', 'JPY', 'KRW']);
-    expect(CURRENCIES).toHaveLength(17);
+  test('as moedas sem casas são exatamente as 9 da lista (11.11)', () => {
+    expect([...ZERO_DECIMAL_CURRENCIES].sort()).toEqual(['CLP', 'COP', 'CRC', 'HUF', 'IDR', 'JPY', 'KRW', 'TWD', 'VND']);
+    expect(CURRENCIES).toHaveLength(42);
   });
 
   test.each(ZERO_DECIMAL_CURRENCIES.flatMap((currency) => LOCALES.map((locale) => [currency, locale] as const)))(
@@ -103,20 +103,27 @@ describe('currencyChangeView (modal da troca da moeda de conversão)', () => {
     expect(steamChoiceFor(view, { FOLLOW: true })).toBe('KEEP'); // FOLLOW não existe nesta visão
   });
 
-  test('aviso das taxas da Steam: só com FOLLOW, sem cotação da moeda nova e com taxa fixa/mínima', () => {
-    const withFees = { ...steam('USD', false), hasFixedFees: true };
-    expect(currencyChangeView(preview(withFees, { fxRateAvailable: false }), 'EUR').steamFeesZeroed).toBe(true);
-    // com cotação: converte, sem aviso
-    expect(currencyChangeView(preview(withFees, { fxRateAvailable: true }), 'EUR').steamFeesZeroed).toBe(false);
-    // sem taxas
-    expect(currencyChangeView(preview({ ...withFees, hasFixedFees: false }, { fxRateAvailable: false }), 'EUR').steamFeesZeroed).toBe(false);
-    // Steam com lançamentos (sem FOLLOW)
-    expect(currencyChangeView(preview({ ...withFees, hasEntries: true, currency: 'BRL' }, { fxRateAvailable: false }), 'EUR').steamFeesZeroed).toBe(false);
-    // Steam já na moeda nova
-    expect(currencyChangeView(preview({ ...withFees, currency: 'EUR' }, { fxRateAvailable: false }), 'EUR').steamFeesZeroed).toBe(false);
-    // sem preview ou sem loja Steam
+  test('aviso das taxas da Steam (M1/M2): vem pronto do backend (feesWillReset) e vale para FOLLOW e para NEW_STORE', () => {
+    const reset = (extra: object = {}) => ({ ...steam('USD', false), hasFixedFees: true, feesWillReset: true, missingRateCurrency: 'EUR', ...extra });
+    // FOLLOW (Steam sem lançamentos)
+    const follow = currencyChangeView(preview(reset()), 'EUR');
+    expect(follow.steamFeesZeroed).toBe(true);
+    expect(follow.steamFeesMissingCurrency).toBe('EUR');
+    // NEW_STORE (Steam com lançamentos) também zera as taxas da loja nova
+    const newStore = currencyChangeView(preview(reset({ hasEntries: true, currency: 'BRL' })), 'EUR');
+    expect(newStore.steamLines.map((l) => l.kind)).toEqual(['LOCKED_INFO', 'NEW_STORE']);
+    expect(newStore.steamFeesZeroed).toBe(true);
+    // a moeda sem cotação pode ser a de origem (a atual da Steam)
+    expect(currencyChangeView(preview(reset({ missingRateCurrency: 'USD' })), 'EUR').steamFeesMissingCurrency).toBe('USD');
+    // o backend decidiu que converte: sem aviso
+    expect(currencyChangeView(preview({ ...reset(), feesWillReset: false, missingRateCurrency: null }), 'EUR').steamFeesZeroed).toBe(false);
+    // campo ausente (backend antigo) = sem aviso
+    expect(currencyChangeView(preview({ ...steam('USD', false), hasFixedFees: true }), 'EUR').steamFeesZeroed).toBe(false);
+    // Steam já na moeda nova (sem linhas), sem preview ou sem loja Steam
+    expect(currencyChangeView(preview(reset({ currency: 'EUR' })), 'EUR').steamFeesZeroed).toBe(false);
     expect(currencyChangeView(null, 'EUR').steamFeesZeroed).toBe(false);
     expect(currencyChangeView(preview(null, { fxRateAvailable: false }), 'EUR').steamFeesZeroed).toBe(false);
+    expect(currencyChangeView(preview(null), 'EUR').steamFeesMissingCurrency).toBeNull();
   });
 
   test('Steam inativa (o preview não distingue): segue a mesma regra de lançamentos', () => {

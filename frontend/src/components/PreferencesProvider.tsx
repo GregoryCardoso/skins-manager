@@ -163,8 +163,8 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     const root = document.documentElement;
     root.setAttribute('data-theme', resolved);
     root.style.colorScheme = resolved;
-    root.setAttribute('lang', language);
-  }, [ready, theme, language]);
+    // O atributo `lang` do <html> é do I18nProvider: segue o idioma do dicionário realmente carregado (B5, 11.11).
+  }, [ready, theme]);
 
   const save = useCallback((patch: { theme?: ThemeChoice; language?: Language }) => {
     writeCachedPreferences(patch);

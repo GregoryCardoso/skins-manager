@@ -55,7 +55,7 @@ export function legacyStoreIsNotUsd(deposit: Deposit): boolean {
   return deposit.legacy && deposit.storeId !== null && deposit.currency !== 'USD';
 }
 
-// `paidCurrency`: a moeda do valor pago informativo (11.4); JPY, KRW e CLP só aceitam inteiros.
+// `paidCurrency`: a moeda do valor pago informativo (11.4); moedas sem casas decimais só aceitam inteiros.
 export function validateDepositForm(state: DepositFormState, language: string, paidCurrency?: string): DepositFormErrors {
   const errors: DepositFormErrors = {};
   if (state.storeId === null) errors.storeId = 'deposits.form.storeRequired';

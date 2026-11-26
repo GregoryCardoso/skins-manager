@@ -8,27 +8,41 @@ const {
 } = require('../../src/services/currencyService');
 const { roundToUnit } = require('../../src/services/fees/rounding');
 
-const ALL = ['USD', 'BRL', 'EUR', 'RUB', 'TRY', 'CNY', 'PLN', 'UAH', 'JPY', 'KRW', 'GBP', 'KZT', 'CAD', 'AUD', 'MXN', 'ARS', 'CLP'];
+// As 42 moedas (17 da D369 + 25 da 11.11), na ordem de exibição: USD primeiro e as outras em ordem alfabética.
+const ALL = [
+  'USD', 'AED', 'ARS', 'AUD', 'BRL', 'CAD', 'CHF', 'CLP', 'CNY', 'COP', 'CRC', 'CZK', 'DKK', 'EUR', 'GBP', 'HKD', 'HUF', 'IDR', 'ILS',
+  'INR', 'JPY', 'KRW', 'KZT', 'MXN', 'MYR', 'NOK', 'NZD', 'PEN', 'PHP', 'PLN', 'QAR', 'RUB', 'SAR', 'SEK', 'SGD', 'THB', 'TRY',
+  'TWD', 'UAH', 'UYU', 'VND', 'ZAR',
+];
+const ZERO = ['CLP', 'COP', 'CRC', 'HUF', 'IDR', 'JPY', 'KRW', 'TWD', 'VND'];
 const fx = (displayCurrency, rates) => ({ displayCurrency, rates });
 
-describe('as 17 moedas e a unidade mínima', () => {
-  test('CURRENCIES tem exatamente as 17 moedas da D369', () => {
-    expect([...CURRENCIES].sort()).toEqual([...ALL].sort());
-    expect(CURRENCIES).toHaveLength(17);
+describe('as 42 moedas e a unidade mínima', () => {
+  test('CURRENCIES tem exatamente as 42 moedas, na ordem de exibição (USD primeiro, as outras 41 em ordem alfabética)', () => {
+    expect([...CURRENCIES]).toEqual(ALL);
+    expect(CURRENCIES).toHaveLength(42);
+    expect(CURRENCIES.slice(1)).toEqual([...CURRENCIES.slice(1)].sort());
   });
 
-  test.each(['JPY', 'KRW', 'CLP'])('%s não tem casas decimais: unidade mínima = 100 centavos', (currency) => {
+  test.each(ZERO)('%s não tem casas decimais: unidade mínima = 100 centavos', (currency) => {
     expect(minorUnitCents(currency)).toBe(100);
   });
 
-  test.each(ALL.filter((c) => !['JPY', 'KRW', 'CLP'].includes(c)))('%s tem 2 casas: unidade mínima = 1', (currency) => {
+  test.each(ALL.filter((c) => !ZERO.includes(c)))('%s tem 2 casas: unidade mínima = 1', (currency) => {
     expect(minorUnitCents(currency)).toBe(1);
   });
 
-  test('a lista fixa bate com o Intl (maximumFractionDigits) de cada moeda', () => {
+  test('a lista fixa bate com o Intl (maximumFractionDigits), salvo as moedas que a Steam e o uso comum mostram sem centavos', () => {
+    // O ICU de cada versão do Node/Electron difere em TWD, CRC (e, em versões antigas, IDR, VND, COP e HUF): a lista fixa manda (11.11).
+    const FORCED = ['IDR', 'VND', 'COP', 'CRC', 'HUF', 'TWD'];
     for (const currency of ALL) {
       const digits = new Intl.NumberFormat('en', { style: 'currency', currency }).resolvedOptions().maximumFractionDigits;
-      expect(minorUnitCents(currency)).toBe(digits === 0 ? 100 : 1);
+      if (FORCED.includes(currency)) expect(minorUnitCents(currency)).toBe(100);
+      else expect(minorUnitCents(currency)).toBe(digits === 0 ? 100 : 1);
+    }
+    // As 3 originais continuam sem casas também no Intl.
+    for (const currency of ['JPY', 'KRW', 'CLP']) {
+      expect(new Intl.NumberFormat('en', { style: 'currency', currency }).resolvedOptions().maximumFractionDigits).toBe(0);
     }
   });
 

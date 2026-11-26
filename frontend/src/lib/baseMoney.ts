@@ -2,7 +2,7 @@
 // converte (D74): todos os centavos, inclusive o "≈", chegam prontos do backend; aqui só se formata o que veio, na moeda que veio.
 import { formatMoney } from '@/lib/format';
 
-// Qualquer das 17 moedas (`lib/currencies.ts`).
+// Qualquer das 42 moedas (`lib/currencies.ts`).
 export type MoneyCurrency = string;
 
 export interface MoneyInput {

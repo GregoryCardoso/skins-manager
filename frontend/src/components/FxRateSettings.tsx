@@ -7,7 +7,7 @@ import { currencyLabel, moneyErrorParams } from '@/lib/currencies';
 import { formatRate } from '@/lib/format';
 import { describeFxRate } from '@/lib/fxDisplay';
 import { buildFxRows, type FxRow } from '@/lib/fxRates';
-import { formatDecimalInput, parseDecimalInput } from '@/lib/numberInput';
+import { formatDecimalInput, isAmbiguousDecimal, parseDecimalInput } from '@/lib/numberInput';
 import type { FxRefreshSource } from '@/types/api';
 import { usePreferences } from './PreferencesProvider';
 import styles from './settings.module.css';
@@ -39,7 +39,8 @@ function FxRateRow({ row }: { row: FxRow }) {
     event.preventDefault();
     const parsed = parseDecimalInput(shownText, locale);
     if (parsed === null) {
-      setError(t('fx.invalidInput', { example: moneyErrorParams(locale, undefined).example }));
+      const params = { example: moneyErrorParams(locale, undefined).example };
+      setError(isAmbiguousDecimal(shownText, locale) ? t('fx.ambiguousInput', params) : t('fx.invalidInput', params));
       setOk(null);
       return;
     }

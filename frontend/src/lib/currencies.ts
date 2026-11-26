@@ -1,13 +1,15 @@
-// Moedas do app (D369, Adendo 1, 11.3): a lista única das 17 moedas (a mesma do backend, `CURRENCIES`), as que não têm casas decimais e o
+// Moedas do app (D369, Adendo 1, 11.3): a lista única das 42 moedas (a mesma do backend, `CURRENCIES`, na mesma ordem: USD primeiro e as outras 41 em ordem alfabética pelo código), as que não têm casas decimais e o
 // texto de cada uma no seletor (código, símbolo e nome no idioma atual). A moeda base é sempre USD; a moeda de conversão é escolha do usuário.
 export const CURRENCIES = [
-  'USD', 'BRL', 'EUR', 'RUB', 'TRY', 'CNY', 'PLN', 'UAH', 'JPY', 'KRW', 'GBP', 'KZT', 'CAD', 'AUD', 'MXN', 'ARS', 'CLP',
+  'USD',
+  'AED', 'ARS', 'AUD', 'BRL', 'CAD', 'CHF', 'CLP', 'CNY', 'COP', 'CRC', 'CZK', 'DKK', 'EUR', 'GBP', 'HKD', 'HUF', 'IDR', 'ILS', 'INR', 'JPY', 'KRW', 'KZT', 'MXN', 'MYR', 'NOK', 'NZD', 'PEN', 'PHP', 'PLN', 'QAR', 'RUB', 'SAR', 'SEK', 'SGD', 'THB', 'TRY', 'TWD', 'UAH', 'UYU', 'VND', 'ZAR',
 ] as const;
 
 export type CurrencyCode = (typeof CURRENCIES)[number];
 
-// Sem casas decimais (o `Intl` já as trata assim; a lista fixa o comportamento, como no backend).
-export const ZERO_DECIMAL_CURRENCIES: readonly string[] = ['JPY', 'KRW', 'CLP'];
+// Sem casas decimais, a mesma lista do backend. A lista fixa o comportamento do app: o `Intl` de versões diferentes do ICU trata TWD, CRC
+// (e, em ICU antigo, IDR, VND, COP e HUF) com 2 casas, e `formatMoney` força 0 casas nelas.
+export const ZERO_DECIMAL_CURRENCIES: readonly string[] = ['CLP', 'COP', 'CRC', 'HUF', 'IDR', 'JPY', 'KRW', 'TWD', 'VND'];
 
 // Moeda base: nunca tem cotação nem "≈".
 export const BASE_CURRENCY: CurrencyCode = 'USD';
@@ -57,17 +59,17 @@ export function currencyOptions(locale: string): CurrencyOption[] {
   return CURRENCIES.map((code) => ({ code, label: currencyLabel(code, locale) }));
 }
 
-// Teclado do campo de valor: só números inteiros nas moedas sem casas decimais (JPY, KRW e CLP); decimal nas demais.
+// Teclado do campo de valor: só números inteiros nas moedas sem casas decimais (moedas sem casas decimais); decimal nas demais.
 export const moneyInputMode = (currency: string | undefined): 'numeric' | 'decimal' => (currency !== undefined && hasNoDecimals(currency) ? 'numeric' : 'decimal');
 
-// Chaves de erro de valor digitado (D369, revisão de textos 11.6, seção 14): moeda sem casas decimais (JPY, KRW e CLP) tem texto próprio.
+// Chaves de erro de valor digitado (D369, revisão de textos 11.6, seção 14): moeda sem casas decimais (`hasNoDecimals`) tem texto próprio.
 export function invalidMoneyKey(currency: string | undefined): 'itemForm.invalidMoney' | 'itemForm.invalidMoneyWhole' {
   return currency !== undefined && hasNoDecimals(currency) ? 'itemForm.invalidMoneyWhole' : 'itemForm.invalidMoney';
 }
 
 // Parâmetros dos textos de erro de valor: o exemplo vem do idioma (1,25 em pt-BR, 1.25 em en; 1500 nas moedas sem casas decimais).
-export function moneyErrorParams(locale: string, currency: string | undefined): { example: string; currency: string } {
-  const whole = currency !== undefined && hasNoDecimals(currency);
+export function moneyErrorParams(locale: string, currency: string | undefined, forceWhole = false): { example: string; currency: string } {
+  const whole = forceWhole || (currency !== undefined && hasNoDecimals(currency));
   let example: string;
   try {
     example = whole

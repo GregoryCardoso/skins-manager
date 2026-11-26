@@ -14,7 +14,7 @@ interface Props {
   title?: string;
 }
 
-// Seletor da "Moeda de conversão" (D369 R3): as 17 moedas com código, símbolo e nome no idioma atual. Escolher outra moeda não grava
+// Seletor da "Moeda de conversão" (D369 R3): as 42 moedas com código, símbolo e nome no idioma atual. Escolher outra moeda não grava
 // na hora: abre o modal de confirmação. Trocar o idioma nunca muda a moeda. Usado no cabeçalho e em Configurações.
 export default function CurrencySelect({ className, id, ariaLabel, title }: Props) {
   const t = useT();

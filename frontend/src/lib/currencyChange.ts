@@ -15,8 +15,11 @@ export interface CurrencyChangeView {
   steamLines: readonly SteamLine[];
   // Moeda atual da loja Steam (para o texto "continua em <moeda antiga>"); nulo sem linhas.
   steamCurrency: string | null;
-  // Steam acompanha a moeda nova (FOLLOW), sem cotação dela, e tem taxa fixa/mínima: elas ficam zeradas (aviso discreto).
+  // A Steam muda de moeda (FOLLOW ou NEW_STORE), tem taxa fixa/mínima e falta a cotação da moeda de origem ou da de destino: elas ficam
+  // zeradas (aviso discreto, M1/M2 da 11.11). A decisão vem pronta do backend (`feesWillReset`); o modal só exibe, com uma das caixas marcada.
   steamFeesZeroed: boolean;
+  // Moeda sem cotação citada no aviso (a nova, ou a atual da Steam); nulo sem aviso.
+  steamFeesMissingCurrency: string | null;
 }
 
 // Linhas da loja Steam no modal:
@@ -44,10 +47,10 @@ export function currencyChangeView(preview: CurrencyChangePreview | null, curren
       ]
       : [{ kind: 'FOLLOW', checkable: true, defaultChecked: true }];
   }
-  const follows = steamLines.some((line) => line.kind === 'FOLLOW');
-  const steamFeesZeroed = follows && !!preview && !toBase && !preview.fxRateAvailable && steam?.hasFixedFees === true;
+  const steamFeesZeroed = steamLines.length > 0 && steam?.feesWillReset === true;
   return {
     toBase, noRate, fetchRateAfter: noRate === 'AUTO', steamLines, steamCurrency: steamLines.length > 0 && steam ? steam.currency : null, steamFeesZeroed,
+    steamFeesMissingCurrency: steamFeesZeroed ? steam?.missingRateCurrency ?? currency : null,
   };
 }
 

@@ -3,7 +3,7 @@
 import { invalidMoneyKey } from '@/lib/currencies';
 import { localInputToIso } from '@/lib/dateInput';
 import { defaultRateFor } from '@/lib/itemForm';
-import { formatCentsInput, formatDecimalInput, parseDecimalInput, parseMoneyToCents } from '@/lib/numberInput';
+import { formatCentsInput, formatDecimalInput, isAmbiguousDecimal, parseDecimalInput, parseMoneyToCents } from '@/lib/numberInput';
 import type { ItemView, MinPrice, SellBody, Store } from '@/types/api';
 
 export interface SellFormState {
@@ -116,7 +116,7 @@ export function buildSellBody(
   let fxRate: number | null = null;
   if (needsFx(store) && state.fxText.trim() !== '') {
     fxRate = parseDecimalInput(state.fxText, ctx.language);
-    if (fxRate === null) errors.fxRateAtSale = 'itemForm.invalidNumber';
+    if (fxRate === null) errors.fxRateAtSale = isAmbiguousDecimal(state.fxText, ctx.language) ? 'fx.ambiguousInput' : 'itemForm.invalidNumber';
   }
 
   let netCents: number | null = null;

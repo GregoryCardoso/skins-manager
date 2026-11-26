@@ -573,6 +573,7 @@
   "fx": {
     "saving": "保存中...",
     "invalidInput": "0より大きい数値を入力してください（例：{example}）。",
+    "ambiguousInput": "この数値の区切り記号があいまいです。千の位の区切りなしで入力する（例：1250）か、お使いの言語の小数点を使って入力してください（例：{example}）。",
     "sourceShort": {
       "MANUAL": "手動",
       "PTAX": "PTAX",
@@ -897,7 +898,7 @@
     "FIELD_TOO_LONG": "最大{max}文字までにしてください。",
     "UNKNOWN_FIELD": "アプリは項目「{field}」を認識できません。",
     "INVALID_AMOUNT": "入力できる金額の上限は{max}です。",
-    "AMOUNT_PRECISION_INVALID": "{currency}には小数点以下がありません。1500のように整数で入力してください。",
+    "AMOUNT_PRECISION_INVALID": "{currency}には小数点以下がありません。{example}のように整数で入力してください。",
     "FX_RATE_REQUIRED": "US$ 1の{currency}での為替レートを入力するか、設定に保存してください。",
     "AGING_THRESHOLDS_ORDER": "高回転の日数（{fast}）は、滞留の上限（{slow}）より小さくしてください。",
     "BACKUP_NEWER_VERSION": "このバックアップは、より新しいバージョンのアプリのものです（形式{fileVersion}。お使いのアプリは{appVersion}まで対応）。アプリを更新して、もう一度お試しください。",

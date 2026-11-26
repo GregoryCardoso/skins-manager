@@ -4,7 +4,7 @@ import { invalidMoneyKey } from '@/lib/currencies';
 import { dateToLocalInput, isoToLocalInput, localInputToDate, localInputToIso, addDaysToLocalInput } from '@/lib/dateInput';
 import { formatFloat } from '@/lib/format';
 import {
-  formatCentsInput, formatDecimalInput, parseDecimalInput, parseFloatInput, parseIntegerInput, parseMoneyToCents,
+  formatCentsInput, formatDecimalInput, isAmbiguousDecimal, parseDecimalInput, parseFloatInput, parseIntegerInput, parseMoneyToCents,
 } from '@/lib/numberInput';
 import type {
   AcquisitionType, CatalogSummary, Category, Exterior, ItemCreateBody, ItemPatchBody, ItemView, Store, Variant,
@@ -291,7 +291,7 @@ function parseNumbers(state: ItemFormState, vis: FieldVisibility, language: stri
   }
   if (vis.fx && state.fxText.trim() !== '') {
     fxRate = parseDecimalInput(state.fxText, language);
-    if (fxRate === null) errors.fxRateAtPurchase = 'itemForm.invalidNumber';
+    if (fxRate === null) errors.fxRateAtPurchase = isAmbiguousDecimal(state.fxText, language) ? 'fx.ambiguousInput' : 'itemForm.invalidNumber';
   }
   let acquiredIso: string | null = null;
   if (state.acquiredAt.trim() !== '') {

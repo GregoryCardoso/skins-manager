@@ -76,9 +76,11 @@ describe('fonte por idioma (D369, 11.9)', () => {
     expect(css).toMatch(rule);
   });
 
-  test('o idioma da interface vai para o atributo lang do <html> (PreferencesProvider e script de abertura)', () => {
-    const provider = fs.readFileSync(path.join(__dirname, '..', 'components', 'PreferencesProvider.tsx'), 'utf8');
-    expect(provider).toMatch(/setAttribute\('lang', language\)/);
+  test('o idioma do dicionário carregado vai para o atributo lang do <html> (I18nProvider, B5) e o script de abertura põe o escolhido', () => {
+    const provider = fs.readFileSync(path.join(__dirname, '..', 'i18n', 'I18nProvider.tsx'), 'utf8');
+    expect(provider).toMatch(/setAttribute\('lang', lang\)/);
+    const preferencesProvider = fs.readFileSync(path.join(__dirname, '..', 'components', 'PreferencesProvider.tsx'), 'utf8');
+    expect(preferencesProvider).not.toMatch(/setAttribute\('lang'/);
     const preferences = fs.readFileSync(path.join(__dirname, '..', 'lib', 'preferences.ts'), 'utf8');
     expect(preferences).toMatch(/setAttribute\('lang', language\)/);
   });

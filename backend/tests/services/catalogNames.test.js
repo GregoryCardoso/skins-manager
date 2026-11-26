@@ -41,7 +41,7 @@ function makeFetch(extra = {}) {
 
 describe('mapa idioma -> pasta da CSGO-API', () => {
   test('os 13 idiomas do app; o espanhol usa es-MX', () => {
-    expect(Object.keys(CATALOG_LANGUAGE_FOLDERS)).toEqual(['en', 'pt-BR', 'es', 'ru', 'tr', 'fr', 'it', 'zh-CN', 'de', 'pl', 'uk', 'ja', 'ko']);
+    expect(Object.keys(CATALOG_LANGUAGE_FOLDERS)).toEqual(['de', 'en', 'es', 'fr', 'it', 'pl', 'pt-BR', 'tr', 'ru', 'uk', 'ja', 'zh-CN', 'ko']);
     expect(CATALOG_LANGUAGE_FOLDERS.es).toBe('es-MX');
   });
 });

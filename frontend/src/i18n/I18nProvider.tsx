@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { usePreferences } from '@/components/PreferencesProvider';
 import type { Language } from '@/types/api';
 import { BASE_DICTIONARY, loadDictionary, type Dictionary } from './dictionaries';
+import { htmlLangFor } from './htmlLang';
 import { BASE_LANGUAGE, intlLocaleOf } from './languages';
 import { translate, translatePlural, type MessageKey, type TranslateParams } from './translate';
 
@@ -68,6 +69,14 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   // Pronto = o dicionário do idioma escolhido está carregado, ou o carregamento falhou (segue em inglês, sem prender a tela).
   const dictionaryReady = loaded.language === language || failedFor === language;
+
+  // `lang` do <html> (B5, 11.11): o idioma do dicionário carregado, e não o escolhido. Se o dicionário falhar, a tela está em inglês e
+  // o atributo diz inglês (leitor de tela, hifenização e fonte por idioma). Enquanto carrega, vale o que o script de abertura pôs.
+  useEffect(() => {
+    if (!ready) return;
+    const lang = htmlLangFor(loaded.language, dictionaryReady);
+    if (lang !== null) document.documentElement.setAttribute('lang', lang);
+  }, [ready, dictionaryReady, loaded.language]);
 
   const value = useMemo<I18nContextValue>(() => {
     const messages = loaded.messages;

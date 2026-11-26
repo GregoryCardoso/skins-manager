@@ -582,6 +582,7 @@
   "fx": {
     "saving": "Saving...",
     "invalidInput": "Enter a number greater than zero, like {example}.",
+    "ambiguousInput": "The separator in this number is ambiguous. Type it without a thousands separator (like 1250) or with the decimal sign of your language, like {example}.",
     "sourceShort": {
       "MANUAL": "Manual",
       "PTAX": "PTAX",
@@ -906,7 +907,7 @@
     "FIELD_TOO_LONG": "Use at most {max} characters.",
     "UNKNOWN_FIELD": "The app does not recognize the field {field}.",
     "INVALID_AMOUNT": "The maximum allowed amount is {max}.",
-    "AMOUNT_PRECISION_INVALID": "{currency} has no decimal places. Enter a whole number, like 1500.",
+    "AMOUNT_PRECISION_INVALID": "{currency} has no decimal places. Enter a whole number, like {example}.",
     "FX_RATE_REQUIRED": "Enter the exchange rate for US$ 1 in {currency}, or save one in Settings.",
     "AGING_THRESHOLDS_ORDER": "Fast turnover ({fast}) must be lower than the stuck limit ({slow}).",
     "BACKUP_NEWER_VERSION": "This backup is from a newer version of the app (format {fileVersion}; your app understands up to {appVersion}). Update the app and try again.",

@@ -207,6 +207,8 @@ export const getHealth = (signal?: AbortSignal) => request<HealthStatus>('GET', 
 
 export const getSettings = (signal?: AbortSignal) => request<Settings>('GET', '/settings', { signal });
 
+// Contrato do `PATCH /settings` (B2, 11.11): sem `displayCurrency` a resposta é `Settings`; com `displayCurrency` é
+// `{ settings, steamStore }` (ver `changeDisplayCurrency`). `PreferencesPatch` nunca leva `displayCurrency`, então aqui vale `Settings`.
 export const updatePreferences = (patch: PreferencesPatch) =>
   request<Settings>('PATCH', '/settings', { body: patch });
 

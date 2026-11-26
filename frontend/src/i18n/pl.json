@@ -600,6 +600,7 @@
   "fx": {
     "saving": "Zapisywanie...",
     "invalidInput": "Wpisz liczbę większą od zera, np. {example}.",
+    "ambiguousInput": "Separator w tej liczbie jest niejednoznaczny. Wpisz ją bez separatora tysięcy (np. 1250) albo z separatorem dziesiętnym swojego języka, np. {example}.",
     "sourceShort": {
       "MANUAL": "Ręczny",
       "PTAX": "PTAX",
@@ -924,7 +925,7 @@
     "FIELD_TOO_LONG": "Użyj maksymalnie {max} znaków.",
     "UNKNOWN_FIELD": "Aplikacja nie rozpoznaje pola {field}.",
     "INVALID_AMOUNT": "Maksymalna dozwolona kwota to {max}.",
-    "AMOUNT_PRECISION_INVALID": "Waluta {currency} nie ma miejsc po przecinku. Wpisz liczbę całkowitą, np. 1500.",
+    "AMOUNT_PRECISION_INVALID": "Waluta {currency} nie ma miejsc po przecinku. Wpisz liczbę całkowitą, np. {example}.",
     "FX_RATE_REQUIRED": "Wpisz kurs dla US$ 1 w walucie {currency} albo zapisz go w Ustawieniach.",
     "AGING_THRESHOLDS_ORDER": "Szybka rotacja ({fast}) musi być niższa niż limit zalegania ({slow}).",
     "BACKUP_NEWER_VERSION": "Ta kopia zapasowa pochodzi z nowszej wersji aplikacji (format {fileVersion}; Twoja aplikacja rozumie do {appVersion}). Zaktualizuj aplikację i spróbuj ponownie.",

@@ -22,7 +22,7 @@ export interface WithdrawalFormState {
 }
 
 // Moedas dos campos (D369, 11.4): `store` = a da loja (valor sacado e taxa paga); `received` = a do valor recebido informativo.
-// JPY, KRW e CLP só aceitam inteiros. Ausente = duas casas decimais.
+// moedas sem casas decimais só aceitam inteiros. Ausente = duas casas decimais.
 export interface WithdrawalCurrencies {
   store?: string;
   received?: string;

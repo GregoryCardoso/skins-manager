@@ -10,10 +10,14 @@ import { rateToPercentText } from '@/lib/storeForm';
 const requireFromHere = createRequire(__filename);
 const root = path.join(__dirname, '..', '..', '..');
 
-// Os três registros de idiomas (D369) precisam ter o mesmo conjunto de códigos: backend (grava/valida), frontend (seletor) e
-// desktop (diálogos nativos). Lidos como texto/módulo, sem abrir banco.
-describe('os três registros de idiomas têm os mesmos códigos', () => {
-  const sorted = (codes: readonly string[]) => [...codes].sort();
+// Os três registros de idiomas (D369) precisam ter os mesmos códigos E a mesma ordem (B1, 11.11): backend (grava/valida), frontend
+// (seletor) e desktop (diálogos nativos). Ordem = alfabética pelo nome nativo, latinas, cirílico e CJK. Lidos como texto/módulo, sem abrir banco.
+const DISPLAY_ORDER = ['de', 'en', 'es', 'fr', 'it', 'pl', 'pt-BR', 'tr', 'ru', 'uk', 'ja', 'zh-CN', 'ko'];
+
+describe('os três registros de idiomas têm os mesmos códigos, na mesma ordem', () => {
+  test('a ordem de exibição é a esperada e o inglês segue como idioma base', () => {
+    expect([...LANGUAGES]).toEqual(DISPLAY_ORDER);
+  });
 
   test('backend LANGUAGES = frontend LANGUAGE_REGISTRY', () => {
     const text = fs.readFileSync(path.join(root, 'backend', 'src', 'config', 'constants.js'), 'utf8');
@@ -21,7 +25,7 @@ describe('os três registros de idiomas têm os mesmos códigos', () => {
     expect(match).not.toBeNull();
     const backend = [...(match as RegExpExecArray)[1].matchAll(/'([^']+)'/g)].map((m) => m[1]);
     expect(backend.length).toBeGreaterThan(0);
-    expect(sorted(backend)).toEqual(sorted(LANGUAGES));
+    expect(backend).toEqual([...LANGUAGES]);
   });
 
   test('desktop MESSAGES = frontend LANGUAGE_REGISTRY', () => {
@@ -30,7 +34,7 @@ describe('os três registros de idiomas têm os mesmos códigos', () => {
     const end = text.indexOf('\n};', start);
     const codes = [...text.slice(start, end).matchAll(/^ {2}'?([\w-]+)'?: \{/gm)].map((m) => m[1]);
     expect(codes.length).toBeGreaterThan(0);
-    expect(sorted(codes)).toEqual(sorted(LANGUAGES));
+    expect(codes).toEqual([...LANGUAGES]);
   });
 });
 

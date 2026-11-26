@@ -582,6 +582,7 @@
   "fx": {
     "saving": "Salvataggio...",
     "invalidInput": "Inserisci un numero maggiore di zero, come {example}.",
+    "ambiguousInput": "Il separatore di questo numero è ambiguo. Inseriscilo senza separatore delle migliaia (come 1250) o con il separatore decimale della tua lingua, come {example}.",
     "sourceShort": {
       "MANUAL": "Manuale",
       "PTAX": "PTAX",
@@ -906,7 +907,7 @@
     "FIELD_TOO_LONG": "Usa al massimo {max} caratteri.",
     "UNKNOWN_FIELD": "L'app non riconosce il campo {field}.",
     "INVALID_AMOUNT": "L'importo massimo consentito è {max}.",
-    "AMOUNT_PRECISION_INVALID": "{currency} non ha decimali. Inserisci un numero intero, come 1500.",
+    "AMOUNT_PRECISION_INVALID": "{currency} non ha decimali. Inserisci un numero intero, come {example}.",
     "FX_RATE_REQUIRED": "Inserisci il tasso di cambio per US$ 1 in {currency}, oppure salvane uno in Impostazioni.",
     "AGING_THRESHOLDS_ORDER": "La rotazione rapida ({fast}) deve essere inferiore al limite per \"fermo\" ({slow}).",
     "BACKUP_NEWER_VERSION": "Questo backup è di una versione più recente dell'app (formato {fileVersion}; la tua app capisce fino al {appVersion}). Aggiorna l'app e riprova.",

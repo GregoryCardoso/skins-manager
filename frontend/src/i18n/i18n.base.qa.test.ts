@@ -207,12 +207,14 @@ describe('numberInput: separador decimal pelo Intl e regressão do pt-BR', () =>
   test('entradas ambíguas em en e pt-BR (valores concretos)', () => {
     // en: ponto decimal, vírgula milhar
     expect(parseDecimalInput('1.234', 'en')).toBe(1.234);
-    expect(parseDecimalInput('1,234', 'en')).toBe(1.234 * 1000 / 1000 === 1.234 ? 1.234 : 1.234); // "1,234" sem ponto: a vírgula vira decimal (comportamento anterior)
+    expect(parseDecimalInput('1,234', 'en')).toBeNull(); // "1,234" sem ponto: ambíguo (1,234 ou 1234), recusado (B6, 11.11)
+    expect(parseDecimalInput('5,4', 'en')).toBe(5.4); // a vírgula decimal sem 3 dígitos continua aceita
     expect(parseDecimalInput('1,234.5', 'en')).toBe(1234.5);
     expect(parseDecimalInput('1 234.5', 'en')).toBe(1234.5);
     // pt-BR: vírgula decimal, ponto milhar
     expect(parseDecimalInput('1.234,5', 'pt-BR')).toBe(1234.5);
-    expect(parseDecimalInput('1.234', 'pt-BR')).toBe(1.234); // sem vírgula, o ponto continua decimal (anterior)
+    expect(parseDecimalInput('1.234', 'pt-BR')).toBeNull(); // sem vírgula, "1.234" é ambíguo (1,234 ou 1234), recusado (B6, 11.11)
+    expect(parseDecimalInput('5.4', 'pt-BR')).toBe(5.4);
     expect(parseDecimalInput('1,234', 'pt-BR')).toBe(1.234);
     expect(parseDecimalInput('1 234,5', 'pt-BR')).toBe(1234.5); // NBSP é espaço para \s
     expect(parseDecimalInput('1 234,5', 'pt-BR')).toBe(1234.5); // espaço fino estreito (Intl de pt-BR/fr)

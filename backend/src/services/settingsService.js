@@ -55,7 +55,8 @@ function toSettingsView(raw) {
   const { fastTurnoverDays: savedFast, slowItemDays: savedSlow, rates, ...rest } = raw;
   return {
     ...rest,
-    // Cotações por moeda (D369): `usdBrlRate*`, `rateQuotedAt` e `fxRefreshSource` continuam, derivados do BRL, até o fim da 11.3.
+    // Cotações por moeda (D369): `usdBrlRate*`, `rateQuotedAt` e `fxRefreshSource` continuam, derivados do BRL, como campos de compatibilidade da API antiga.
+    // DÉBITO (11.11, B3): remover esses campos quando nenhum cliente/teste os usar (hoje só o BRL em `fxRates` é a fonte da verdade).
     fxRates: fxRateService.listRates(),
     requiredFxCurrencies: fxRateService.requiredCurrencies(),
     fastTurnoverDaysCustom: savedFast,
@@ -170,13 +171,15 @@ function updatePreferences(partial, { now = new Date() } = {}) {
     Setting.update(changes, { now });
     if (partial.displayCurrency !== undefined) steamStore = applySteamStoreChoice(partial.displayCurrency, partial.steamStore ?? 'KEEP', { now });
   });
-  // Com `displayCurrency` a resposta é `{ settings, steamStore }`: `steamStore` = `{ id, currency, created, previousStoreId? }` ou `null`
-  // quando não há loja Steam configurada.
+  // Contrato (D159 + D369 A5; B2, 11.11): o PATCH devolve `Settings` (contrato antigo, de tema, idioma, limites e fonte da cotação) e,
+  // só quando o corpo traz `displayCurrency`, `{ settings, steamStore }`, com `steamStore` = `{ id, currency, created, previousStoreId? }`
+  // ou `null` sem loja Steam. Padronizar a forma quebraria o contrato documentado e dezenas de testes; por isso ele fica documentado no
+  // tipo do cliente (`frontend/src/services/api.ts`).
   if (partial.displayCurrency !== undefined) return { settings: getSettings(), steamStore };
   return getSettings();
 }
 
-// Moeda de conversão (D369 A1): uma das 17 moedas.
+// Moeda de conversão (D369 A1): uma das 42 moedas (17 da D369 e 25 da 11.11).
 function assertDisplayCurrency(currency) {
   if (typeof currency !== 'string' || !CURRENCIES.includes(currency)) {
     throw new ValidationError(`Moeda inválida. Use ${CURRENCIES.join(', ')}.`, 'INVALID_CURRENCY', { field: 'displayCurrency' });
@@ -224,18 +227,32 @@ function applySteamStoreChoice(currency, choice, { now = new Date() } = {}) {
 }
 
 // Prévia da troca da moeda de conversão (D369 A5): só leitura, nada é gravado. O modal usa isto para montar as linhas.
+// `feesWillReset` (M2, 11.11): a Steam mudaria de moeda (FOLLOW ou NEW_STORE) e tem taxa fixa/mínima, mas falta a cotação da moeda de
+// origem (a atual da Steam) ou da de destino, que `carryFeeAmount` precisa para converter: então as taxas ficam zeradas. `missingRateCurrency`
+// é a moeda sem cotação (a nova tem prioridade), para o aviso citá-la. USD é a base e nunca precisa de cotação.
 function getCurrencyChangePreview(currency) {
   assertDisplayCurrency(currency);
   const steam = getSteamStore();
-  const rate = currency === 'USD' ? null : fxRateService.getRate(currency);
+  const hasRate = (code) => code === 'USD' || fxRateService.getRate(code)?.rate != null;
+  const hasFixedFees = steam
+    ? [steam.saleFixedFeeCents, steam.saleMinFeeCents, steam.withdrawalFixedFeeCents].some((value) => Number(value) > 0)
+    : false;
+  let missingRateCurrency = null;
+  if (steam && hasFixedFees && steam.currency !== currency) {
+    if (!hasRate(currency)) missingRateCurrency = currency;
+    else if (!hasRate(steam.currency)) missingRateCurrency = steam.currency;
+  }
   return {
     currency,
-    steamStore: steam ? { id: steam.id, name: steam.name, currency: steam.currency, hasEntries: storeService.storeHasEntries(steam.id),
-      // Taxa fixa ou mínima diferente de zero: sem cotação da moeda nova elas ficam zeradas (o modal avisa).
-      hasFixedFees: [steam.saleFixedFeeCents, steam.saleMinFeeCents, steam.withdrawalFixedFeeCents].some((value) => Number(value) > 0),
+    steamStore: steam ? {
+      id: steam.id, name: steam.name, currency: steam.currency, hasEntries: storeService.storeHasEntries(steam.id),
+      // Taxa fixa ou mínima diferente de zero.
+      hasFixedFees,
+      feesWillReset: missingRateCurrency !== null,
+      missingRateCurrency,
     } : null,
     // USD não tem cotação (é a base): o "≈" simplesmente some.
-    fxRateAvailable: currency === 'USD' ? true : rate !== null && rate.rate !== null,
+    fxRateAvailable: hasRate(currency),
     automaticSource: currency !== 'USD' && AWESOMEAPI_PAIRS.includes(currency),
   };
 }

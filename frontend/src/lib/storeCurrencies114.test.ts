@@ -51,10 +51,10 @@ describe('dinheiro digitado nas moedas sem casas decimais (JPY, KRW e CLP)', () 
   });
 });
 
-describe('formulário de lojas nas 17 moedas', () => {
-  test('o seletor oferece as 17 moedas, nesta ordem', () => {
+describe('formulário de lojas nas 42 moedas', () => {
+  test('o seletor oferece as 42 moedas, nesta ordem', () => {
     expect(currencyOptions('en').map((option) => option.code)).toEqual([...CURRENCIES]);
-    expect(CURRENCIES).toHaveLength(17);
+    expect(CURRENCIES).toHaveLength(42);
   });
 
   test('loja em JPY: taxa mínima e fixa são inteiras (erro próprio) e viram múltiplos de 100 centavos', () => {
@@ -80,7 +80,7 @@ describe('formulário de lojas nas 17 moedas', () => {
     expect(buildStorePatchBody({ ...state, saleFixedFeeText: '600' }, store, 'en')).toEqual({ saleFixedFeeCents: 60000 });
   });
 
-  test('o modal usa a lista das 17 moedas, trava a moeda com lançamentos e segue a moeda da loja nos rótulos e no teclado', () => {
+  test('o modal usa a lista das 42 moedas, trava a moeda com lançamentos e segue a moeda da loja nos rótulos e no teclado', () => {
     const modal = read('components/StoreFormModal.tsx');
     expect(modal).toMatch(/currencyOptions\(locale\)\.map/);
     expect(modal).toMatch(/currencyLocked = editing && store\.inUse/);

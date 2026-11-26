@@ -582,6 +582,7 @@
   "fx": {
     "saving": "Kaydediliyor...",
     "invalidInput": "Sıfırdan büyük bir sayı girin, örneğin {example}.",
+    "ambiguousInput": "Bu sayıdaki ayırıcı belirsiz. Binlik ayırıcı olmadan (örneğin 1250) ya da dilinizin ondalık ayırıcısıyla girin, örneğin {example}.",
     "sourceShort": {
       "MANUAL": "Elle",
       "PTAX": "PTAX",
@@ -906,7 +907,7 @@
     "FIELD_TOO_LONG": "En fazla {max} karakter kullanın.",
     "UNKNOWN_FIELD": "Uygulama şu alanı tanımıyor: {field}.",
     "INVALID_AMOUNT": "İzin verilen en yüksek tutar: {max}.",
-    "AMOUNT_PRECISION_INVALID": "Para birimi {currency} ondalık basamak içermez. 1500 gibi bir tam sayı girin.",
+    "AMOUNT_PRECISION_INVALID": "Para birimi {currency} ondalık basamak içermez. {example} gibi bir tam sayı girin.",
     "FX_RATE_REQUIRED": "{currency} için 1 US$ kurunu girin veya Ayarlar'da bir kur kaydedin.",
     "AGING_THRESHOLDS_ORDER": "Hızlı devir ({fast}), takılı kalma sınırından ({slow}) küçük olmalıdır.",
     "BACKUP_NEWER_VERSION": "Bu yedek uygulamanın daha yeni bir sürümünden (biçim {fileVersion}; uygulamanız en fazla {appVersion} sürümünü anlar). Uygulamayı güncelleyip tekrar deneyin.",

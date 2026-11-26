@@ -19,7 +19,7 @@ const read = (rel: string) => fs.readFileSync(path.join(src, rel), 'utf8');
 const LOCALES = ['en', 'pt-BR'] as const;
 const BAD = /NaN|undefined|null|Infinity/;
 
-describe('formatMoney nas 17 moedas', () => {
+describe('formatMoney nas 42 moedas', () => {
   test.each(CURRENCIES.flatMap((c) => LOCALES.map((l) => [c, l] as const)))('%s em %s: zero, negativo e grande sem NaN/undefined', (currency, locale) => {
     for (const cents of [0, 1, 99, 12345, -12345, 9_999_999_999_999]) {
       const text = formatMoney(cents, currency, locale);
@@ -31,8 +31,8 @@ describe('formatMoney nas 17 moedas', () => {
     else expect(zero).toMatch(/[.,]00/);
   });
 
-  test('JPY, KRW e CLP: sem casas e centavos arredondados à unidade', () => {
-    expect(ZERO_DECIMAL_CURRENCIES).toEqual(['JPY', 'KRW', 'CLP']);
+  test('moedas sem casas (JPY, KRW, CLP, IDR, VND, COP, CRC, HUF e TWD): sem casas e centavos arredondados à unidade', () => {
+    expect(ZERO_DECIMAL_CURRENCIES).toEqual(['CLP', 'COP', 'CRC', 'HUF', 'IDR', 'JPY', 'KRW', 'TWD', 'VND']);
     expect(formatMoney(15123, 'JPY', 'en')).toBe('¥151');
     expect(formatMoney(15150, 'JPY', 'en')).toBe('¥152');
     expect(formatMoney(15149, 'JPY', 'en')).toBe('¥151');
@@ -50,7 +50,7 @@ describe('formatMoney nas 17 moedas', () => {
     expect(formatMoney(-500, 'BRL', 'pt-BR')).toContain('-');
   });
 
-  test('as 17 moedas nunca produzem "undefined"; código malformado lança RangeError', () => {
+  test('as 42 moedas nunca produzem "undefined"; código malformado lança RangeError', () => {
     for (const currency of CURRENCIES) expect(formatMoney(100, currency, 'en')).not.toMatch(/undefined/);
     expect(() => formatMoney(100, 'xx', 'en')).toThrow(RangeError);
   });
@@ -61,7 +61,7 @@ describe('formatMoney nas 17 moedas', () => {
   });
 });
 
-describe('formatRate nas 17 moedas', () => {
+describe('formatRate nas 42 moedas', () => {
   test.each(CURRENCIES.filter((c) => c !== 'USD').flatMap((c) => LOCALES.map((l) => [c, l] as const)))('%s em %s', (currency, locale) => {
     for (const rate of [0.5, 5.4, 5.4123, 151.23456, 1389.5, 40000]) {
       const text = formatRate(rate, locale, currency);
@@ -350,11 +350,11 @@ describe('paridade de textos e varredura do "≈"', () => {
     }
   });
 
-  test('seletor: 17 opções únicas com texto, nos dois idiomas', () => {
+  test('seletor: 42 opções únicas com texto, nos dois idiomas', () => {
     for (const locale of LOCALES) {
       const options = currencyOptions(locale);
-      expect(options).toHaveLength(17);
-      expect(new Set(options.map((o) => o.code)).size).toBe(17);
+      expect(options).toHaveLength(42);
+      expect(new Set(options.map((o) => o.code)).size).toBe(42);
       for (const o of options) expect(o.label).not.toMatch(BAD);
     }
   });
@@ -371,7 +371,7 @@ describe('paridade de textos e varredura do "≈"', () => {
     expect(withApprox).toEqual(expect.arrayContaining(['components/MinPriceCell.tsx', 'components/SellItemModal.tsx', 'components/MoneyApprox.tsx']));
   });
 
-  // Formulários de loja só conhecem US$ e R$ até a 11.4 (lojas nas 17 moedas): o "R$" fixo deles não é "≈" e fica fora desta varredura.
+  // Formulários de loja só conhecem US$ e R$ até a 11.4 (lojas nas 42 moedas): o "R$" fixo deles não é "≈" e fica fora desta varredura.
   const UNTIL_11_4 = ['components/StoreBalanceFormModal.tsx', 'components/StoreFormModal.tsx'];
 
   test.each(prod.filter((f) => !UNTIL_11_4.includes(f)))('%s: sem BRL fixo em linha com approx e sem "R$" literal em texto de tela', (file) => {

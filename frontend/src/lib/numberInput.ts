@@ -22,10 +22,22 @@ export function usesCommaDecimal(language: string): boolean {
   }
 }
 
-// Interpreta um número digitado ("5,40" em pt-BR, "5.40" em en). Devolve null se inválido ou <= 0.
+// Número ambíguo (B6, 11.11): só tem o separador "estrangeiro" ao idioma (vírgula em idioma de ponto; ponto em idioma de vírgula), uma
+// vez, seguido de exatamente 3 dígitos e com 1 a 3 dígitos antes ("1,250" em en pode ser 1,25 ou 1250; "1.250" em pt-BR também). Quem
+// tem o separador decimal próprio ("1.250,5") ou zero à frente ("0,250": nunca é milhar) não é ambíguo. A cotação digitada recusa o caso
+// com mensagem própria (`fx.ambiguousInput`) em vez de adivinhar.
+export function isAmbiguousDecimal(text: string, language: string): boolean {
+  const raw = text.trim().replace(/\s+/g, '');
+  const comma = usesCommaDecimal(language);
+  if (raw.includes(comma ? ',' : '.')) return false;
+  return (comma ? /^[1-9]\d{0,2}\.\d{3}$/ : /^[1-9]\d{0,2},\d{3}$/).test(raw);
+}
+
+// Interpreta um número digitado ("5,40" em pt-BR, "5.40" em en). Devolve null se inválido, ambíguo ou <= 0.
 export function parseDecimalInput(text: string, language: string): number | null {
   const raw = text.trim().replace(/\s+/g, '');
   if (raw === '') return null;
+  if (isAmbiguousDecimal(raw, language)) return null;
   let normalized: string;
   if (usesCommaDecimal(language)) {
     // "1.234,56" -> "1234.56"; aceita também "5.40" quando não há vírgula.
@@ -53,7 +65,7 @@ export function normalizeNumberText(text: string, language: string): string {
 
 // Dinheiro digitado -> centavos inteiros ("1,25" / "1.25" -> 125; "1.234,56" em pt-BR -> 123456).
 // Zero é aceito (custo 0). Mais de 2 casas decimais, negativo ou texto -> null (nunca arredonda em silêncio).
-// Moeda sem casas decimais (`currency` JPY, KRW ou CLP, D369 A3): só inteiros ("1500" -> 150000), sem decimais nem separadores.
+// Moeda sem casas decimais (moeda sem casas decimais, D369 A3): só inteiros ("1500" -> 150000), sem decimais nem separadores.
 export function parseMoneyToCents(text: string, language: string, currency?: string): number | null {
   if (currency !== undefined && hasNoDecimals(currency)) {
     const whole = /^(\d+)$/.exec(text.trim().replace(/\s+/g, ''));

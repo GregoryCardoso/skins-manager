@@ -582,6 +582,7 @@
   "fx": {
     "saving": "保存中…",
     "invalidInput": "请输入大于零的数字，例如 {example}。",
+    "ambiguousInput": "这个数字中的分隔符有歧义。请不要使用千位分隔符（例如 1250），或使用您所用语言的小数点，例如 {example}。",
     "sourceShort": {
       "MANUAL": "手动",
       "PTAX": "PTAX",
@@ -906,7 +907,7 @@
     "FIELD_TOO_LONG": "最多使用 {max} 个字符。",
     "UNKNOWN_FIELD": "应用无法识别字段 {field}。",
     "INVALID_AMOUNT": "允许的最大金额是 {max}。",
-    "AMOUNT_PRECISION_INVALID": "{currency} 没有小数位。请输入整数，例如 1500。",
+    "AMOUNT_PRECISION_INVALID": "{currency} 没有小数位。请输入整数，例如 {example}。",
     "FX_RATE_REQUIRED": "请输入 US$ 1 兑 {currency} 的汇率，或先在设置中保存一个。",
     "AGING_THRESHOLDS_ORDER": "快速周转（{fast}）必须小于滞销界限（{slow}）。",
     "BACKUP_NEWER_VERSION": "这个备份来自更新版本的应用（格式 {fileVersion}；你的应用最高支持 {appVersion}）。请更新应用后再试。",

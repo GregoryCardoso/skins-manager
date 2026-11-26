@@ -1,3 +1,4 @@
+import { moneyErrorParams } from '@/lib/currencies';
 import { formatDate, formatDateTime, formatFloat, formatMoney } from '@/lib/format';
 import { ApiRequestError } from '@/services/api';
 
@@ -48,8 +49,11 @@ export function errorDetailParams(
         ? { max: formatMoney(p.maxCents, 'USD', locale).replace(/[^\d.,\s]/g, '').trim() }
         : null;
     case 'AMOUNT_PRECISION_INVALID':
+      // Moeda sem casas decimais (11.4): a moeda e o exemplo de número inteiro formatado pelo idioma (B7, sem agrupar milhar). O backend
+      // só envia este código para moedas sem casas, então o exemplo é sempre o inteiro.
+      return typeof p.currency === 'string' ? { currency: p.currency, example: moneyErrorParams(locale, p.currency, true).example } : null;
     case 'FX_RATE_REQUIRED':
-      // Moeda sem casas decimais (JPY, KRW e CLP) e cotação da moeda da loja (11.4): a moeda vai na mensagem.
+      // Cotação da moeda da loja (11.4): a moeda vai na mensagem.
       return typeof p.currency === 'string' ? { currency: p.currency } : null;
     case 'AGING_THRESHOLDS_ORDER':
       return typeof p.fastTurnoverDays === 'number' && typeof p.slowItemDays === 'number'

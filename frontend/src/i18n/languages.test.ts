@@ -2,13 +2,15 @@ import { describe, expect, test } from 'vitest';
 import { BASE_LANGUAGE, LANGUAGES, LANGUAGE_REGISTRY, detectLanguage, intlLocaleOf, isLanguage, languageInfo, matchLanguage } from './languages';
 
 // Os 13 idiomas previstos (D369, R1): o registro só pode conter códigos desta lista.
-const PLANNED = ['en', 'pt-BR', 'es', 'ru', 'tr', 'fr', 'it', 'zh-CN', 'de', 'pl', 'uk', 'ja', 'ko'];
+// Ordem de exibição (11.11): alfabética pelo nome nativo; escritas latinas, depois cirílico, depois CJK.
+const PLANNED = ['de', 'en', 'es', 'fr', 'it', 'pl', 'pt-BR', 'tr', 'ru', 'uk', 'ja', 'zh-CN', 'ko'];
 
 describe('registro de idiomas (D369, 11.1)', () => {
-  test('na 11.9 estão disponíveis os 13 idiomas (nesta ordem, a do backend), com o inglês como base e primeiro da lista', () => {
+  test('na 11.9 estão disponíveis os 13 idiomas (nesta ordem, a do backend), com o inglês como base (e não mais o primeiro da lista)', () => {
     expect([...LANGUAGES]).toEqual(PLANNED);
     expect(BASE_LANGUAGE).toBe('en');
-    expect(LANGUAGE_REGISTRY[0].code).toBe(BASE_LANGUAGE);
+    expect(LANGUAGE_REGISTRY[0].code).not.toBe(BASE_LANGUAGE);
+    expect(languageInfo('xx').code).toBe(BASE_LANGUAGE);
   });
 
   test('cada entrada tem código único e previsto, nome nativo, locale válido do Intl e pasta do catálogo', () => {

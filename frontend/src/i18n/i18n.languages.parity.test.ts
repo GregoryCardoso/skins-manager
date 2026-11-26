@@ -149,6 +149,13 @@ describe.each(LANGUAGE_REGISTRY.map((entry) => [entry.code, entry.intlLocale]))(
     expect(Object.keys(dictionary.plurals).sort()).toEqual(Object.keys(base.plurals).sort());
   });
 
+  test('plural: se o inglês tem a categoria `zero` numa chave, todos os idiomas têm (S1, 11.11)', () => {
+    for (const [key, forms] of Object.entries(base.plurals)) {
+      if (!('zero' in forms)) continue;
+      expect([key, 'zero' in (dictionary.plurals[key] ?? {})]).toEqual([key, true]);
+    }
+  });
+
   test('mesmos marcadores {x} em cada chave', () => {
     for (const [key, text] of Object.entries(dictionary.texts)) expect([key, markers(text)]).toEqual([key, markers(base.texts[key])]);
   });

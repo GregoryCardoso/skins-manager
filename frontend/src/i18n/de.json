@@ -582,6 +582,7 @@
   "fx": {
     "saving": "Speichert ...",
     "invalidInput": "Gib eine Zahl größer als null ein, zum Beispiel {example}.",
+    "ambiguousInput": "Das Trennzeichen in dieser Zahl ist mehrdeutig. Gib sie ohne Tausendertrennzeichen ein (wie 1250) oder mit dem Dezimalzeichen deiner Sprache, zum Beispiel {example}.",
     "sourceShort": {
       "MANUAL": "Manuell",
       "PTAX": "PTAX",
@@ -906,7 +907,7 @@
     "FIELD_TOO_LONG": "Nutze höchstens {max} Zeichen.",
     "UNKNOWN_FIELD": "Die App kennt das Feld {field} nicht.",
     "INVALID_AMOUNT": "Der höchste erlaubte Betrag ist {max}.",
-    "AMOUNT_PRECISION_INVALID": "{currency} hat keine Nachkommastellen. Gib eine ganze Zahl ein, zum Beispiel 1500.",
+    "AMOUNT_PRECISION_INVALID": "{currency} hat keine Nachkommastellen. Gib eine ganze Zahl ein, zum Beispiel {example}.",
     "FX_RATE_REQUIRED": "Gib den Wechselkurs für US$ 1 in {currency} ein oder speichere einen in den Einstellungen.",
     "AGING_THRESHOLDS_ORDER": "Der schnelle Umschlag ({fast}) muss unter dem Limit für Ladenhüter ({slow}) liegen.",
     "BACKUP_NEWER_VERSION": "Dieses Backup stammt aus einer neueren Version der App (Format {fileVersion}; deine App versteht bis {appVersion}). Aktualisiere die App und versuch es nochmal.",

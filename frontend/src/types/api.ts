@@ -110,7 +110,13 @@ export interface DisplayCurrencyChangeResult {
 // Prévia da troca da moeda de conversão (A5): só leitura; o modal monta as linhas com ela.
 export interface CurrencyChangePreview {
   currency: string;
-  steamStore: { id: number; name: string; currency: string; hasEntries: boolean; hasFixedFees?: boolean } | null;
+  steamStore: {
+    id: number; name: string; currency: string; hasEntries: boolean; hasFixedFees?: boolean;
+    // Calculado no backend (M2, 11.11): a Steam mudaria de moeda (FOLLOW ou NEW_STORE), tem taxa fixa/mínima e falta a cotação da moeda de
+    // origem ou da de destino, então as taxas ficam zeradas. `missingRateCurrency` = a moeda sem cotação (a nova tem prioridade).
+    feesWillReset?: boolean;
+    missingRateCurrency?: string | null;
+  } | null;
   // Há cotação gravada para a moeda nova (USD sempre tem: é a base).
   fxRateAvailable: boolean;
   // A moeda tem atualização automática (AwesomeAPI).
@@ -129,7 +135,7 @@ export interface FxRefreshResult {
 
 // --- Itens, lojas e cotação (4B.2; espelham D49/D72 do backend) ---
 
-// Moeda de uma loja ou de uma operação: qualquer das 17 moedas do app (D369, 11.4).
+// Moeda de uma loja ou de uma operação: qualquer das 42 moedas do app (D369, 11.4).
 export type Currency = CurrencyCode;
 export type Category =
   | 'SKIN' | 'FACA' | 'LUVA' | 'CAIXA' | 'CAPSULA' | 'STICKER' | 'PINGENTE' | 'PERSONAGEM' | 'PASSE_BATALHA' | 'OUTRO' | 'PATCH';

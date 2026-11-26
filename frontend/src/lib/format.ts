@@ -10,7 +10,7 @@ export function formatInteger(value: number, locale: string): string {
   return new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(value);
 }
 
-// Valor em "centavos" (1/100 da unidade) de qualquer das 17 moedas. JPY, KRW e CLP saem sem casas decimais (o valor já vem do backend
+// Valor em "centavos" (1/100 da unidade) de qualquer das 42 moedas. As sem casas decimais (`hasNoDecimals`: JPY, KRW, CLP, IDR, VND, COP, CRC, HUF e TWD) saem sem casas (o valor já vem do backend
 // arredondado para a unidade); as demais, com 2.
 export function formatMoney(cents: number, currency: string, locale: string): string {
   const digits = hasNoDecimals(currency) ? { minimumFractionDigits: 0, maximumFractionDigits: 0 } : {};

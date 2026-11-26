@@ -573,6 +573,7 @@
   "fx": {
     "saving": "저장하는 중...",
     "invalidInput": "{example}처럼 0보다 큰 숫자를 입력해 주세요.",
+    "ambiguousInput": "이 숫자의 구분 기호가 모호해요. 천 단위 구분 기호 없이(예: 1250) 입력하거나, 사용 중인 언어의 소수점을 사용해 {example}처럼 입력해 주세요.",
     "sourceShort": {
       "MANUAL": "수동",
       "PTAX": "PTAX",
@@ -897,7 +898,7 @@
     "FIELD_TOO_LONG": "최대 {max}자까지 입력할 수 있어요.",
     "UNKNOWN_FIELD": "앱이 인식하지 못하는 입력란이에요: {field}",
     "INVALID_AMOUNT": "허용되는 최대 금액: {max}",
-    "AMOUNT_PRECISION_INVALID": "이 통화({currency})는 소수점 이하 자릿수가 없어요. 1500처럼 정수를 입력해 주세요.",
+    "AMOUNT_PRECISION_INVALID": "이 통화({currency})는 소수점 이하 자릿수가 없어요. {example}처럼 정수를 입력해 주세요.",
     "FX_RATE_REQUIRED": "US$ 1에 해당하는 {currency} 환율을 입력하거나 설정에 저장해 주세요.",
     "AGING_THRESHOLDS_ORDER": "빠른 회전({fast})은 정체 기준({slow})보다 작아야 해요.",
     "BACKUP_NEWER_VERSION": "이 백업은 더 최신 버전 앱에서 만들어졌어요(형식 {fileVersion}, 현재 앱은 {appVersion}까지 지원해요). 앱을 업데이트한 뒤 다시 시도해 주세요.",

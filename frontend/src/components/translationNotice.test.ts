@@ -37,7 +37,7 @@ const render = (language: keyof typeof DICTS) => {
 describe('aviso de tradução', () => {
   test('o registro marca exatamente es, ru, tr, fr, it, zh-CN, de, pl, uk, ja e ko; en, pt-BR e desconhecido não', () => {
     const marked = LANGUAGE_REGISTRY.filter((entry) => isMachineTranslated(entry.code)).map((entry) => entry.code as string);
-    expect(marked).toEqual(['es', 'ru', 'tr', 'fr', 'it', 'zh-CN', 'de', 'pl', 'uk', 'ja', 'ko']);
+    expect(marked).toEqual(['de', 'es', 'fr', 'it', 'pl', 'tr', 'ru', 'uk', 'ja', 'zh-CN', 'ko']);
     expect(isMachineTranslated('en')).toBe(false);
     expect(isMachineTranslated('pt-BR')).toBe(false);
     expect(isMachineTranslated('xx')).toBe(false);

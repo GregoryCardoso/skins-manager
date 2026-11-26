@@ -89,7 +89,9 @@ export default function CurrencyChangeModal({ currency, onClose }: Props) {
             </div>
           );
         })}
-        {view.steamFeesZeroed && checks.FOLLOW === true && <p className={forms.hint} role="status">{t('currency.modal.steamFeesZeroed', { currency: label })}</p>}
+        {view.steamFeesZeroed && (checks.FOLLOW === true || checks.NEW_STORE === true) && (
+          <p className={forms.hint} role="status">{t('currency.modal.steamFeesZeroed', { currency: currencyShortName(view.steamFeesMissingCurrency ?? currency, locale) })}</p>
+        )}
         {view.noRate === 'AUTO' && <p className={forms.hint} role="status">{t('currency.modal.noRateAuto', { currency: label })}</p>}
         {view.noRate === 'MANUAL' && <p className={forms.hint} role="status">{t('currency.modal.noRateManual', { currency: label })}</p>}
         {preview.isError && (

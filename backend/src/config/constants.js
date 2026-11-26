@@ -31,18 +31,18 @@ const CATALOG_BASE_URL = 'https://raw.githubusercontent.com/ByMykel/CSGO-API/mai
 // Pasta ausente (404) é tolerada: o nome fica em inglês (ou o já gravado é preservado) e, quando a pasta passar a existir, o próximo
 // refresh traz os nomes sem mudar o código. O espanhol usa `es-MX` (E-P3-Q7).
 const CATALOG_LANGUAGE_FOLDERS = Object.freeze({
+  de: 'de',
   en: 'en',
-  'pt-BR': 'pt-BR',
   es: 'es-MX',
-  ru: 'ru',
-  tr: 'tr',
   fr: 'fr',
   it: 'it',
-  'zh-CN': 'zh-CN',
-  de: 'de',
   pl: 'pl',
+  'pt-BR': 'pt-BR',
+  tr: 'tr',
+  ru: 'ru',
   uk: 'uk',
   ja: 'ja',
+  'zh-CN': 'zh-CN',
   ko: 'ko',
 });
 const CATALOG_LANGUAGES = Object.freeze(Object.keys(CATALOG_LANGUAGE_FOLDERS));
@@ -71,7 +71,9 @@ const CATALOG_SNAPSHOT_PATH = path.join(__dirname, '..', '..', 'data', 'seed', '
 const THEMES = Object.freeze(['SYSTEM', 'LIGHT', 'DARK']);
 // Idiomas aceitos (D369, 11.1): o inglês é o idioma base. O banco só confere o formato (v023); a lista fica aqui, e acrescentar
 // um idioma é uma entrada nesta lista (mais o registro do frontend e o desktop), sem migração.
-const LANGUAGES = Object.freeze(['en', 'pt-BR', 'es', 'ru', 'tr', 'fr', 'it', 'zh-CN', 'de', 'pl', 'uk', 'ja', 'ko']);
+// Ordem de exibição (11.11): alfabética pelo nome nativo (latinas, cirílico, CJK); a mesma no registro do frontend e no desktop. O idioma
+// base (en) não é o primeiro e nada deve depender de `LANGUAGES[0]`.
+const LANGUAGES = Object.freeze(['de', 'en', 'es', 'fr', 'it', 'pl', 'pt-BR', 'tr', 'ru', 'uk', 'ja', 'zh-CN', 'ko']);
 // Visão do inventário (D276): padrão 'GROUPED' (coluna NOT NULL com DEFAULT no banco).
 const INVENTORY_VIEWS = Object.freeze(['INDIVIDUAL', 'GROUPED']);
 
@@ -91,18 +93,24 @@ const AWESOMEAPI_TIMEOUT_MS = 25000;
 const FX_REFRESH_SOURCES = Object.freeze(['AWESOMEAPI', 'PTAX']); // fx_refresh_source
 const FX_RATE_SOURCES = Object.freeze(['MANUAL', 'PTAX', 'AWESOMEAPI']); // usd_brl_rate_source
 
-// Moedas (D369, Adendo 1, 11.2). Lista única das 17 moedas de conversão (e, a partir da 11.4, das lojas). A moeda base é sempre USD.
-const CURRENCIES = Object.freeze(['USD', 'BRL', 'EUR', 'RUB', 'TRY', 'CNY', 'PLN', 'UAH', 'JPY', 'KRW', 'GBP', 'KZT', 'CAD', 'AUD', 'MXN', 'ARS', 'CLP']);
+// Moedas (D369, Adendo 1, 11.2). Lista única das 42 moedas de conversão e de loja (17 da D369 mais 25 da 11.11). A moeda base é sempre USD.
+// Ordem fixa (pedido do usuário, 11.11): USD primeiro (é a base) e as outras 41 em ordem alfabética pelo código ISO; o seletor mostra nesta ordem.
+const CURRENCIES = Object.freeze(['USD',
+  'AED', 'ARS', 'AUD', 'BRL', 'CAD', 'CHF', 'CLP', 'CNY', 'COP', 'CRC', 'CZK', 'DKK', 'EUR', 'GBP', 'HKD', 'HUF', 'IDR', 'ILS', 'INR', 'JPY', 'KRW', 'KZT', 'MXN', 'MYR', 'NOK', 'NZD', 'PEN', 'PHP', 'PLN', 'QAR', 'RUB', 'SAR', 'SEK', 'SGD', 'THB', 'TRY', 'TWD', 'UAH', 'UYU', 'VND', 'ZAR']);
 // Moedas sem casas decimais (Intl.NumberFormat(...).resolvedOptions().maximumFractionDigits = 0), fixadas aqui. O valor continua
-// em "centavos" (1/100 da unidade); nelas a unidade mínima é 100 centavos.
-const ZERO_DECIMAL_CURRENCIES = Object.freeze(['JPY', 'KRW', 'CLP']);
+// em "centavos" (1/100 da unidade); nelas a unidade mínima é 100 centavos. IDR, VND, COP, CRC, HUF e TWD (11.11) entram porque a Steam e o
+// uso comum as mostram sem centavos, mesmo quando o ICU de alguma versão do Node/Electron ainda lhes dá 2 casas (TWD e CRC aqui): a lista fixa
+// o comportamento do app, e a formatação força 0 casas nelas.
+const ZERO_DECIMAL_CURRENCIES = Object.freeze(['CLP', 'COP', 'CRC', 'HUF', 'IDR', 'JPY', 'KRW', 'TWD', 'VND']);
 // Moeda de conversão padrão de uma instalação nova (A2). Os bancos existentes recebem BRL na migração v024.
 const DEFAULT_DISPLAY_CURRENCY = 'USD';
 // Pares USD-XXX da AwesomeAPI (economia.awesomeapi.com.br). VERIFICADO em 2026-11-25 com GET /json/available e GET /json/last/USD-XXX:
 // as 16 moedas não-USD existem e responderam com code USD, codein igual à moeda, `ask`, `bid` e `timestamp`. Observações: UAH e KZT
 // têm spread grande entre `bid` e `ask` (a venda, `ask`, é a usada, como no BRL); CNY pode ter a data do dia anterior. Moeda fora desta
-// lista não tem atualização automática (FX_SOURCE_NOT_SUPPORTED) e fica só manual (E-P3-Q16).
-const AWESOMEAPI_PAIRS = Object.freeze(['BRL', 'EUR', 'RUB', 'TRY', 'CNY', 'PLN', 'UAH', 'JPY', 'KRW', 'GBP', 'KZT', 'CAD', 'AUD', 'MXN', 'ARS', 'CLP']);
+// lista não tem atualização automática (FX_SOURCE_NOT_SUPPORTED) e fica só manual (E-P3-Q16). 11.11 (2026-11-26): as 25 moedas novas também
+// têm par confirmado (cotações de referência e faixas na D369, registro 11.11); as faixas seguem o mesmo critério (0,2x a 5x; manual 0,1x a 10x).
+const AWESOMEAPI_PAIRS = Object.freeze([
+  'AED', 'ARS', 'AUD', 'BRL', 'CAD', 'CHF', 'CLP', 'CNY', 'COP', 'CRC', 'CZK', 'DKK', 'EUR', 'GBP', 'HKD', 'HUF', 'IDR', 'ILS', 'INR', 'JPY', 'KRW', 'KZT', 'MXN', 'MYR', 'NOK', 'NZD', 'PEN', 'PHP', 'PLN', 'QAR', 'RUB', 'SAR', 'SEK', 'SGD', 'THB', 'TRY', 'TWD', 'UAH', 'UYU', 'VND', 'ZAR']);
 // Faixa de sanidade da cotação ("unidades da moeda por 1 US$") por moeda. O BRL mantém [1, 50] (FX_MIN_RATE/FX_MAX_RATE).
 const FX_RATE_BOUNDS = Object.freeze({
   BRL: Object.freeze({ min: 1, max: 50 }),
@@ -121,6 +129,31 @@ const FX_RATE_BOUNDS = Object.freeze({
   MXN: Object.freeze({ min: 3, max: 200 }),
   ARS: Object.freeze({ min: 10, max: 100000 }),
   CLP: Object.freeze({ min: 100, max: 10000 }),
+  INR: Object.freeze({ min: 20, max: 500 }),
+  IDR: Object.freeze({ min: 4000, max: 100000 }),
+  PHP: Object.freeze({ min: 13, max: 320 }),
+  THB: Object.freeze({ min: 7, max: 170 }),
+  VND: Object.freeze({ min: 5000, max: 130000 }),
+  MYR: Object.freeze({ min: 1, max: 20 }),
+  SGD: Object.freeze({ min: 0.3, max: 6.5 }),
+  CHF: Object.freeze({ min: 0.2, max: 4 }),
+  NOK: Object.freeze({ min: 2, max: 50 }),
+  SEK: Object.freeze({ min: 2, max: 50 }),
+  DKK: Object.freeze({ min: 1.5, max: 35 }),
+  CZK: Object.freeze({ min: 4.5, max: 110 }),
+  HUF: Object.freeze({ min: 70, max: 1700 }),
+  COP: Object.freeze({ min: 700, max: 18000 }),
+  PEN: Object.freeze({ min: 0.7, max: 18 }),
+  UYU: Object.freeze({ min: 8, max: 210 }),
+  CRC: Object.freeze({ min: 90, max: 2300 }),
+  HKD: Object.freeze({ min: 1.5, max: 40 }),
+  TWD: Object.freeze({ min: 6.5, max: 165 }),
+  NZD: Object.freeze({ min: 0.4, max: 9 }),
+  ZAR: Object.freeze({ min: 3.5, max: 90 }),
+  ILS: Object.freeze({ min: 0.7, max: 17 }),
+  SAR: Object.freeze({ min: 0.8, max: 19 }),
+  AED: Object.freeze({ min: 0.75, max: 18 }),
+  QAR: Object.freeze({ min: 0.75, max: 19 }),
 });
 
 // Faixa larga da cotação DIGITADA à mão (11.3), por moeda: só barra erro absurdo de digitação (vírgula no lugar errado, zero a mais).
@@ -143,6 +176,31 @@ const FX_MANUAL_RATE_BOUNDS = Object.freeze({
   MXN: Object.freeze({ min: 1.5, max: 300 }),
   ARS: Object.freeze({ min: 5, max: 500000 }),
   CLP: Object.freeze({ min: 50, max: 20000 }),
+  INR: Object.freeze({ min: 10, max: 1000 }),
+  IDR: Object.freeze({ min: 1500, max: 200000 }),
+  PHP: Object.freeze({ min: 6, max: 640 }),
+  THB: Object.freeze({ min: 3, max: 350 }),
+  VND: Object.freeze({ min: 2500, max: 260000 }),
+  MYR: Object.freeze({ min: 0.4, max: 40 }),
+  SGD: Object.freeze({ min: 0.1, max: 13 }),
+  CHF: Object.freeze({ min: 0.1, max: 8 }),
+  NOK: Object.freeze({ min: 1, max: 100 }),
+  SEK: Object.freeze({ min: 1, max: 100 }),
+  DKK: Object.freeze({ min: 0.7, max: 70 }),
+  CZK: Object.freeze({ min: 2, max: 220 }),
+  HUF: Object.freeze({ min: 35, max: 3400 }),
+  COP: Object.freeze({ min: 350, max: 36000 }),
+  PEN: Object.freeze({ min: 0.35, max: 36 }),
+  UYU: Object.freeze({ min: 4, max: 420 }),
+  CRC: Object.freeze({ min: 45, max: 4600 }),
+  HKD: Object.freeze({ min: 0.8, max: 80 }),
+  TWD: Object.freeze({ min: 3, max: 330 }),
+  NZD: Object.freeze({ min: 0.2, max: 18 }),
+  ZAR: Object.freeze({ min: 2, max: 175 }),
+  ILS: Object.freeze({ min: 0.3, max: 33 }),
+  SAR: Object.freeze({ min: 0.4, max: 39 }),
+  AED: Object.freeze({ min: 0.4, max: 37 }),
+  QAR: Object.freeze({ min: 0.4, max: 38 }),
 });
 
 // Backup (D150, D151).

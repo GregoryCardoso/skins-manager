@@ -2,7 +2,7 @@
 import type { ImportEntryAction, ImportEntryView, Store } from '@/types/api';
 import { hasNoDecimals } from '@/lib/currencies';
 import { addDaysToLocalInput, localInputToDate, localInputToIso } from './dateInput';
-import { parseDecimalInput, parseMoneyToCents } from './numberInput';
+import { isAmbiguousDecimal, parseDecimalInput, parseMoneyToCents } from './numberInput';
 
 export interface LaunchFormState {
   storeId: number | null;
@@ -47,14 +47,14 @@ export function buildLaunchBody(
   if (!store) errors.store = 'imports.launch.storeRequired';
   const priceCents = parseMoneyToCents(state.price, language, store?.currency);
   if (priceCents === null || priceCents < 0) {
-    // Moeda sem centavos (JPY, KRW e CLP) com valor digitado: mensagem própria; vazio ou negativo segue o texto geral.
+    // Moeda sem centavos (moedas sem casas decimais) com valor digitado: mensagem própria; vazio ou negativo segue o texto geral.
     const wholeOnly = priceCents === null && state.price.trim() !== '' && store !== null && hasNoDecimals(store.currency);
     errors.price = wholeOnly ? 'imports.launch.priceInvalidWhole' : 'imports.launch.priceRequired';
   }
   let fxRate: number | null = null;
   if (store && store.currency !== 'USD' && state.fxRate.trim() !== '') {
     fxRate = parseDecimalInput(state.fxRate, language);
-    if (fxRate === null || fxRate <= 0) errors.fxRate = 'imports.launch.fxInvalid';
+    if (fxRate === null || fxRate <= 0) errors.fxRate = isAmbiguousDecimal(state.fxRate, language) ? 'fx.ambiguousInput' : 'imports.launch.fxInvalid';
   }
   const acquiredIso = localInputToIso(state.acquiredAt);
   if (acquiredIso === null) errors.acquiredAt = 'imports.launch.dateRequired';

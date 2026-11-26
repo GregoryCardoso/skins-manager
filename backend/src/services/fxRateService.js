@@ -15,7 +15,7 @@ const { getProvider } = require('./fxRates');
 
 const isNil = (v) => v === null || v === undefined;
 
-// A moeda precisa ser uma das 17 e diferente de USD (a base não tem cotação).
+// A moeda precisa ser uma das 42 e diferente de USD (a base não tem cotação).
 function assertQuotableCurrency(currency) {
   if (typeof currency !== 'string' || !CURRENCIES.includes(currency) || currency === 'USD') {
     throw new ValidationError('Moeda inválida para cotação: informe uma das moedas disponíveis, exceto USD.', 'INVALID_CURRENCY', {

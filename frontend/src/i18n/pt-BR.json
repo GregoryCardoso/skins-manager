@@ -582,6 +582,7 @@
   "fx": {
     "saving": "Salvando...",
     "invalidInput": "Digite um número maior que zero, como {example}.",
+    "ambiguousInput": "O separador deste número é ambíguo. Digite sem separador de milhar (como 1250) ou com o separador decimal do seu idioma, como {example}.",
     "sourceShort": {
       "MANUAL": "Manual",
       "PTAX": "PTAX",
@@ -906,7 +907,7 @@
     "FIELD_TOO_LONG": "Use no máximo {max} caracteres.",
     "UNKNOWN_FIELD": "O app não reconhece o campo {field}.",
     "INVALID_AMOUNT": "O valor máximo permitido é {max}.",
-    "AMOUNT_PRECISION_INVALID": "{currency} não tem centavos. Informe um número inteiro, como 1500.",
+    "AMOUNT_PRECISION_INVALID": "{currency} não tem centavos. Informe um número inteiro, como {example}.",
     "FX_RATE_REQUIRED": "Informe a cotação de US$ 1 em {currency} ou salve uma em Configurações.",
     "AGING_THRESHOLDS_ORDER": "O giro rápido ({fast}) deve ser menor que o limite de encalhado ({slow}).",
     "BACKUP_NEWER_VERSION": "Este backup é de uma versão mais nova do app (formato {fileVersion}; o seu app entende até o {appVersion}). Atualize o app e tente de novo.",

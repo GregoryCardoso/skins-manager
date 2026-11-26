@@ -1,6 +1,6 @@
 // Registro único de idiomas do frontend (D369, 11.1). Acrescentar um idioma = um JSON em `src/i18n/`, uma entrada aqui, uma entrada
 // em `loadDictionary` (dictionaries.ts), uma entrada em `LANGUAGES` do backend (constants.js) e uma entrada em `MESSAGES` do desktop
-// (desktop/src/i18n.js), sem migração. Ordem do seletor = ordem deste registro (a mesma do backend). Um idioma só entra
+// (desktop/src/i18n.js), sem migração. Ordem do seletor = ordem deste registro (a mesma do backend e do desktop; pedido do usuário, 11.11): alfabética pelo nome nativo, escritas latinas primeiro, depois cirílico e CJK. A ordem de exibição não define o idioma base (`BASE_LANGUAGE`, o inglês). Um idioma só entra
 // neste registro (e, portanto, no seletor) quando o arquivo dele está completo: o teste `i18n.languages.parity.test.ts` roda sobre o registro.
 // O inglês é o idioma base: referência das chaves (tipo `MessageKey`) e reserva quando falta um texto.
 
@@ -19,18 +19,18 @@ export interface LanguageInfo {
 }
 
 export const LANGUAGE_REGISTRY = [
+  { code: 'de', nativeName: 'Deutsch', intlLocale: 'de', catalogFolder: 'de', machineTranslated: true },
   { code: 'en', nativeName: 'English', intlLocale: 'en', catalogFolder: 'en' },
-  { code: 'pt-BR', nativeName: 'Português (Brasil)', intlLocale: 'pt-BR', catalogFolder: 'pt-BR' },
   { code: 'es', nativeName: 'Español', intlLocale: 'es', catalogFolder: 'es-MX', machineTranslated: true },
-  { code: 'ru', nativeName: 'Русский', intlLocale: 'ru', catalogFolder: 'ru', machineTranslated: true },
-  { code: 'tr', nativeName: 'Türkçe', intlLocale: 'tr', catalogFolder: 'tr', machineTranslated: true },
   { code: 'fr', nativeName: 'Français', intlLocale: 'fr', catalogFolder: 'fr', machineTranslated: true },
   { code: 'it', nativeName: 'Italiano', intlLocale: 'it', catalogFolder: 'it', machineTranslated: true },
-  { code: 'zh-CN', nativeName: '简体中文', intlLocale: 'zh-CN', catalogFolder: 'zh-CN', machineTranslated: true },
-  { code: 'de', nativeName: 'Deutsch', intlLocale: 'de', catalogFolder: 'de', machineTranslated: true },
   { code: 'pl', nativeName: 'Polski', intlLocale: 'pl', catalogFolder: 'pl', machineTranslated: true },
+  { code: 'pt-BR', nativeName: 'Português (Brasil)', intlLocale: 'pt-BR', catalogFolder: 'pt-BR' },
+  { code: 'tr', nativeName: 'Türkçe', intlLocale: 'tr', catalogFolder: 'tr', machineTranslated: true },
+  { code: 'ru', nativeName: 'Русский', intlLocale: 'ru', catalogFolder: 'ru', machineTranslated: true },
   { code: 'uk', nativeName: 'Українська', intlLocale: 'uk', catalogFolder: 'uk', machineTranslated: true },
   { code: 'ja', nativeName: '日本語', intlLocale: 'ja', catalogFolder: 'ja', machineTranslated: true },
+  { code: 'zh-CN', nativeName: '简体中文', intlLocale: 'zh-CN', catalogFolder: 'zh-CN', machineTranslated: true },
   { code: 'ko', nativeName: '한국어', intlLocale: 'ko', catalogFolder: 'ko', machineTranslated: true },
 ] as const satisfies readonly LanguageInfo[];
 
@@ -55,8 +55,12 @@ export function isMachineTranslated(code: string): boolean {
   return (LANGUAGE_REGISTRY as readonly LanguageInfo[]).find((entry) => entry.code === code)?.machineTranslated === true;
 }
 
+function baseLanguageInfo(): LanguageInfo {
+  return LANGUAGE_REGISTRY.find((entry) => entry.code === BASE_LANGUAGE) ?? LANGUAGE_REGISTRY[0];
+}
+
 export function languageInfo(code: string): LanguageInfo {
-  return LANGUAGE_REGISTRY.find((entry) => entry.code === code) ?? LANGUAGE_REGISTRY[0];
+  return LANGUAGE_REGISTRY.find((entry) => entry.code === code) ?? baseLanguageInfo();
 }
 
 // Locale do `Intl` de um código (desconhecido -> o do inglês). Idempotente: um locale do próprio registro volta ele mesmo, então

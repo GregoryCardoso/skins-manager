@@ -9,23 +9,26 @@ import { moneyTexts, storeCounterpart } from './baseMoney';
 const norm = (s: string) => s.replace(/[  ]/g, ' ');
 
 describe('lista de moedas (11.3, D369)', () => {
-  test('são as 17 moedas, USD primeiro e sem repetição', () => {
-    expect(CURRENCIES).toHaveLength(17);
+  test('são as 42 moedas, USD primeiro, as outras 41 em ordem alfabética e sem repetição', () => {
+    expect(CURRENCIES).toHaveLength(42);
     expect(CURRENCIES[0]).toBe('USD');
-    expect(new Set(CURRENCIES).size).toBe(17);
-    expect([...CURRENCIES].sort()).toEqual(
-      ['USD', 'BRL', 'EUR', 'RUB', 'TRY', 'CNY', 'PLN', 'UAH', 'JPY', 'KRW', 'GBP', 'KZT', 'CAD', 'AUD', 'MXN', 'ARS', 'CLP'].sort(),
-    );
+    expect(new Set(CURRENCIES).size).toBe(42);
+    expect(CURRENCIES.slice(1)).toEqual([...CURRENCIES.slice(1)].sort());
+    // As 17 da D369 continuam todas na lista.
+    for (const code of ['USD', 'BRL', 'EUR', 'RUB', 'TRY', 'CNY', 'PLN', 'UAH', 'JPY', 'KRW', 'GBP', 'KZT', 'CAD', 'AUD', 'MXN', 'ARS', 'CLP']) {
+      expect(CURRENCIES).toContain(code);
+    }
   });
 
-  test('JPY, KRW e CLP não têm casas decimais; as outras 14 têm', () => {
-    expect([...ZERO_DECIMAL_CURRENCIES].sort()).toEqual(['CLP', 'JPY', 'KRW']);
-    for (const code of CURRENCIES) expect(hasNoDecimals(code)).toBe(['JPY', 'KRW', 'CLP'].includes(code));
+  test('9 moedas não têm casas decimais (JPY, KRW, CLP, IDR, VND, COP, CRC, HUF e TWD); as outras 33 têm', () => {
+    expect([...ZERO_DECIMAL_CURRENCIES]).toEqual(['CLP', 'COP', 'CRC', 'HUF', 'IDR', 'JPY', 'KRW', 'TWD', 'VND']);
+    for (const code of CURRENCIES) expect(hasNoDecimals(code)).toBe(['CLP', 'COP', 'CRC', 'HUF', 'IDR', 'JPY', 'KRW', 'TWD', 'VND'].includes(code));
   });
 
-  test('isCurrencyCode só aceita as 17', () => {
+  test('isCurrencyCode só aceita as 42', () => {
     expect(isCurrencyCode('EUR')).toBe(true);
-    expect(isCurrencyCode('CHF')).toBe(false);
+    expect(isCurrencyCode('CHF')).toBe(true);
+    expect(isCurrencyCode('KWD')).toBe(false);
     expect(isCurrencyCode('eur')).toBe(false);
     expect(isCurrencyCode(null)).toBe(false);
   });
@@ -46,7 +49,7 @@ describe('texto de cada moeda no seletor (código, símbolo e nome no idioma atu
   });
 
   test('símbolo igual ao código não se repete', () => {
-    // CHF não é uma das 17, mas o Intl o conhece e o símbolo estreito é o próprio código.
+    // O símbolo estreito do CHF é o próprio código.
     expect(currencyLabel('CHF', 'en').startsWith('CHF — ')).toBe(true);
   });
 
@@ -57,7 +60,7 @@ describe('texto de cada moeda no seletor (código, símbolo e nome no idioma atu
     expect(currencyName('EUR', 'xx-invalid-locale-')).toBe('EUR');
   });
 
-  test('as 17 opções saem na ordem da lista, cada uma com o código no começo do texto', () => {
+  test('as 42 opções saem na ordem da lista, cada uma com o código no começo do texto', () => {
     const options = currencyOptions('en');
     expect(options.map((o) => o.code)).toEqual([...CURRENCIES]);
     for (const option of options) {

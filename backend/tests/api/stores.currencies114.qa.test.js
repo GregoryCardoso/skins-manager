@@ -535,9 +535,9 @@ describe('entradas hostis', () => {
   });
 });
 
-describe('cobertura das 17 moedas', () => {
-  test('a lista tem 17 moedas e as de zero casas são JPY, KRW e CLP', () => {
-    expect(CURRENCIES).toHaveLength(17);
-    expect([...ZERO_DECIMAL_CURRENCIES].sort()).toEqual(['CLP', 'JPY', 'KRW']);
+describe('cobertura das 42 moedas', () => {
+  test('a lista tem 42 moedas e as de zero casas são as 9 sem centavos (JPY, KRW, CLP, IDR, VND, COP, CRC, HUF, TWD)', () => {
+    expect(CURRENCIES).toHaveLength(42);
+    expect([...ZERO_DECIMAL_CURRENCIES].sort()).toEqual(['CLP', 'COP', 'CRC', 'HUF', 'IDR', 'JPY', 'KRW', 'TWD', 'VND']);
   });
 });
