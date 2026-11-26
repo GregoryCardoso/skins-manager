@@ -68,6 +68,12 @@
       "steamNewStore": "Создать новый магазин Steam в {currency} для будущих записей",
       "steamNewStoreHint": "Текущий будет отключён и переименован (например, «Steam ({from})»). Ничего не пересчитывается и не удаляется, а его баланс по-прежнему учитывается в прибыли. Новый сохранит те же комиссии и правила.",
       "confirm": "Использовать {currency}"
+    },
+    "groups": {
+      "america": "Америка",
+      "europe": "Европа",
+      "asia": "Азия",
+      "other": "Другие"
     }
   },
   "pages": {
@@ -2292,6 +2298,39 @@
       "notConfigured": "Настройте ключ CSFloat, чтобы видеть цены",
       "configureLink": "Настроить",
       "never": "Цены ещё не загружались"
+    }
+  },
+  "ui": {
+    "menu": {
+      "moreActions": "Ещё действия"
+    },
+    "helpTip": {
+      "label": "Справка: {topic}"
+    },
+    "field": {
+      "wholeNumberHint": "У валюты {currency} нет копеек. Вводите целые числа, например {example}.",
+      "formatHint": "Пример: {example}",
+      "useValue": "Использовать {value}"
+    },
+    "formErrors": {
+      "title": {
+        "one": "Проверьте {count} поле",
+        "few": "Проверьте {count} поля",
+        "many": "Проверьте {count} полей",
+        "other": "Проверьте {count} поля"
+      }
+    },
+    "combobox": {
+      "noResults": "Ничего не найдено по запросу «{query}»",
+      "resultCount": {
+        "one": "{count} результат",
+        "few": "{count} результата",
+        "many": "{count} результатов",
+        "other": "{count} результата"
+      },
+      "clear": "Очистить",
+      "showOptions": "Показать варианты",
+      "pinned": "Часто используемые"
     }
   }
 }

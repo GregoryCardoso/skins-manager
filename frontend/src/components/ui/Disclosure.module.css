@@ -1,0 +1,24 @@
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--target-min);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+  cursor: pointer;
+}
+.trigger:hover { color: var(--text); }
+.trigger:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }
+.chevron { flex: none; transition: transform var(--dur-fast) var(--ease); }
+.trigger[data-state='open'] .chevron { transform: rotate(90deg); }
+.content { padding-top: var(--space-2); overflow: hidden; }
+.content[data-state='open'] { animation: reveal var(--dur-base) var(--ease); }
+@keyframes reveal { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .content[data-state='open'], .chevron { animation: none; transition: none; }
+}

@@ -1,0 +1,31 @@
+.group { display: inline-flex; flex-wrap: wrap; max-width: 100%; gap: 3px; padding: 3px; border-radius: var(--radius-md); background: var(--surface-2); }
+.item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  min-width: var(--target-min);
+  min-height: var(--target-min);
+  padding: var(--space-1) var(--space-3);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-weight: var(--fw-bold);
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+.sm .item { min-height: calc(var(--control-h-sm) - 6px); font-size: var(--fs-sm); }
+.md .item { min-height: calc(var(--control-h-md) - 6px); font-size: var(--fs-md); }
+.item:hover:not([data-state='on']) { color: var(--text); }
+.item[data-state='on'] { background: var(--surface); color: var(--text); box-shadow: var(--shadow-1); }
+.item:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.plain, .label { min-width: 0; overflow-wrap: anywhere; }
+
+@media (width < 1100px) {
+  .iconOnlyNarrow .label { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+}
+@media (width < 900px) {
+  .iconOnlyCompact .label { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+}

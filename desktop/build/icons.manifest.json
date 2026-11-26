@@ -1,0 +1,16 @@
+{
+  "generator": "@resvg/resvg-js",
+  "sources": {
+    "build/logo.svg": "90daa36f9abf75fe762571b1647f7584debfddcc1e1fcefe767a321eb85a245a",
+    "build/logo-small.svg": "d7c3ffd9fb6a44ce4b5c3b60d76dfb07740b1df74433885ff3c6f80581031ae3"
+  },
+  "outputs": {
+    "build/icon.png": "61e5ce2018bdc56945f0ede7d18f085a856d9ec8d29e4668459129cf4eca2d12",
+    "build/icon-512.png": "83d250366cbf0626bfd110f7398e160b6ef200adfb50a295ff321c6824a96ddc",
+    "build/icon-256.png": "b1b9358890b9d9bbf6b0f55e7dcd33de68554fcf3453aa380b2315f0859281bd",
+    "build/icon.ico": "2885f5408eff8b806c0d9f54d084e28a57398f53b1c50bcc5ef0263a61ec07e0",
+    "src/assets/icon.png": "b1b9358890b9d9bbf6b0f55e7dcd33de68554fcf3453aa380b2315f0859281bd",
+    "../frontend/public/favicon.ico": "ddbd31791a8bb078216b923287febf1d0cc09842c39a1100486a9c0a9f90d4a0",
+    "../frontend/public/icon.svg": "90daa36f9abf75fe762571b1647f7584debfddcc1e1fcefe767a321eb85a245a"
+  }
+}

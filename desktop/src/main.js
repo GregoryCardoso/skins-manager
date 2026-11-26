@@ -4,13 +4,14 @@
 // supervisionado em processo separado, janela com a interface servida pelo próprio backend.
 const fs = require('fs');
 const path = require('path');
-const { app, Menu, shell, utilityProcess } = require('electron');
+const { app, Menu, nativeTheme, screen, shell, utilityProcess } = require('electron');
 
 const paths = require('./lib/paths');
 const { createRotatingLog } = require('./lib/logRotation');
 const { pickPort, checkPortFree, probeSkinsManager } = require('./lib/portPicker');
 const { createBackendSupervisor } = require('./backendSupervisor');
 const windowSetup = require('./window');
+const { backgroundFor } = require('./lib/windowTheme');
 const dialogs = require('./dialogs');
 const { registerIpc, createStatePublisher } = require('./ipc');
 const { createUpdater } = require('./updater');
@@ -66,13 +67,22 @@ function knownLanguage() {
   }
 }
 
+// Cor de fundo da janela pelo tema escolhido nas configurações (12.10), antes de a página pintar.
+function applyWindowBackground(theme) {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  mainWindow.setBackgroundColor(backgroundFor({ theme, systemDark: nativeTheme.shouldUseDarkColors }));
+}
+
 // Idioma dos diálogos (E7-Q19): lido de GET /api/settings; se o backend não responde, usa o último conhecido.
 async function refreshLanguage(port) {
   if (!port) return knownLanguage();
   try {
     const response = await fetch(`http://localhost:${port}/api/settings`, { signal: AbortSignal.timeout(1000) });
     const json = await response.json();
-    if (json && json.data) currentLanguage = normalizeLanguage(json.data.language);
+    if (json && json.data) {
+      currentLanguage = normalizeLanguage(json.data.language);
+      applyWindowBackground(json.data.theme);
+    }
   } catch (err) {
     // mantém o último idioma conhecido (ou o do sistema)
   }
@@ -173,6 +183,8 @@ async function startup() {
 
   mainWindow = windowSetup.createMainWindow({
     logger,
+    workArea: screen.getPrimaryDisplay().workAreaSize,
+    systemDark: nativeTheme.shouldUseDarkColors,
     onRenderGoneTwice: async () => {
       await dialogs.showRenderGone({ parent: parentWindow(), language: await refreshLanguage(appPort) });
       quitApp();

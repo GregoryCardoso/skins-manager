@@ -1,0 +1,35 @@
+/* A lista rola na horizontal; as sombras nas bordas aparecem só quando há conteúdo escondido (truque do background-attachment). */
+.scroller {
+  overflow-x: auto;
+  border-bottom: 1px solid var(--line);
+  background:
+    linear-gradient(to right, var(--bg) 30%, transparent) left / 2rem 100% no-repeat local,
+    linear-gradient(to left, var(--bg) 30%, transparent) right / 2rem 100% no-repeat local,
+    linear-gradient(to right, var(--line), transparent) left / 0.75rem 100% no-repeat scroll,
+    linear-gradient(to left, var(--line), transparent) right / 0.75rem 100% no-repeat scroll;
+  scrollbar-width: thin;
+}
+.list { display: flex; gap: var(--space-1); width: max-content; min-width: 100%; }
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--control-h-md);
+  padding: var(--space-2) var(--space-4);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.tab:hover:not([data-state='active']) { color: var(--text); }
+.tab[data-state='active'] { color: var(--text); border-bottom-color: var(--brand); }
+.tab:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }
+.text { min-width: 0; }
+.count { padding: 0 var(--space-2); border-radius: var(--radius-pill); background: var(--surface-2); color: var(--muted); font-size: var(--fs-xs); }
+.panel { padding-top: var(--space-4); }
+.panel:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }

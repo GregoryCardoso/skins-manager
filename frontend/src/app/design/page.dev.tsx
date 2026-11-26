@@ -3,6 +3,7 @@ import path from 'node:path';
 import { DARK_SELECTOR, LIGHT_SELECTOR, readBlock } from '@/styles/parseTokens';
 import Icon, { ICONS } from '@/components/ui/Icon';
 import Logo from '@/components/Logo';
+import ComponentGallery from './ComponentGallery';
 import styles from './design.module.css';
 
 // Guia vivo do design system (12.2, D370). SÓ no `next dev`: o arquivo é `page.dev.tsx` e o next.config.ts só inclui a
@@ -97,6 +98,8 @@ export default function DesignGuide() {
           </div>
         ))}
       </div>
+
+      <ComponentGallery />
     </div>
   );
 }

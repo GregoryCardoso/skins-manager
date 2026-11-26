@@ -66,6 +66,12 @@
       "steamNewStore": "Criar uma nova loja Steam em {currency} para os próximos lançamentos",
       "steamNewStoreHint": "A atual é desativada e renomeada (por exemplo \"Steam ({from})\"). Nada é convertido nem apagado, e o saldo dela continua contando no seu lucro. A nova mantém as mesmas taxas e regras.",
       "confirm": "Usar {currency}"
+    },
+    "groups": {
+      "america": "Américas",
+      "europe": "Europa",
+      "asia": "Ásia",
+      "other": "Outras"
     }
   },
   "pages": {
@@ -2148,6 +2154,35 @@
       "notConfigured": "Configure a chave do CSFloat para ver os preços",
       "configureLink": "Configurar",
       "never": "Os preços ainda não foram buscados"
+    }
+  },
+  "ui": {
+    "menu": {
+      "moreActions": "Mais ações"
+    },
+    "helpTip": {
+      "label": "Ajuda: {topic}"
+    },
+    "field": {
+      "wholeNumberHint": "{currency} não tem centavos. Digite números inteiros, por exemplo {example}.",
+      "formatHint": "Exemplo: {example}",
+      "useValue": "Usar {value}"
+    },
+    "formErrors": {
+      "title": {
+        "one": "Confira {count} campo",
+        "other": "Confira {count} campos"
+      }
+    },
+    "combobox": {
+      "noResults": "Nenhum resultado para \"{query}\"",
+      "resultCount": {
+        "one": "{count} resultado",
+        "other": "{count} resultados"
+      },
+      "clear": "Limpar",
+      "showOptions": "Mostrar opções",
+      "pinned": "Mais usadas"
     }
   }
 }

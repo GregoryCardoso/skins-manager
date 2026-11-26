@@ -1,0 +1,8 @@
+.field { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+.full { grid-column: 1 / -1; }
+.label { font-size: var(--fs-sm); font-weight: var(--fw-bold); color: var(--text); overflow-wrap: anywhere; }
+.required { color: var(--loss); }
+.optional { font-weight: var(--fw-regular); color: var(--muted); }
+.hint { font-size: var(--fs-sm); color: var(--muted); overflow-wrap: anywhere; }
+.error { display: flex; align-items: flex-start; gap: var(--space-1); font-size: var(--fs-sm); color: var(--loss); overflow-wrap: anywhere; }
+.errorIcon { flex: none; margin-top: 0.15em; }

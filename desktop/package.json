@@ -11,6 +11,7 @@
     "dev": "node scripts/stageApp.js && electron .",
     "dist": "node scripts/stageApp.js && electron-builder --win --x64 --publish never",
     "test": "jest",
+    "icons": "node scripts/generateIcons.js",
     "postinstall": "node node_modules/electron/install.js",
     "release": "node scripts/release.js"
   },
@@ -22,6 +23,7 @@
   },
   "devDependencies": {
     "@electron/rebuild": "4.2.1",
+    "@resvg/resvg-js": "2.6.2",
     "electron": "44.11.5",
     "electron-builder": "26.18.0",
     "jest": "^30.5.2"

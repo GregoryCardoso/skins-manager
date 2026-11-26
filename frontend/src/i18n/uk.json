@@ -68,6 +68,12 @@
       "steamNewStore": "Створити новий магазин Steam у валюті {currency} для майбутніх записів",
       "steamNewStoreHint": "Поточний магазин буде вимкнено й перейменовано (наприклад, «Steam ({from})»). Нічого не конвертується й не видаляється, а його баланс і далі враховується у вашому прибутку. Новий магазин матиме ті самі комісії та правила.",
       "confirm": "Використовувати {currency}"
+    },
+    "groups": {
+      "america": "Америка",
+      "europe": "Європа",
+      "asia": "Азія",
+      "other": "Інші"
     }
   },
   "pages": {
@@ -2292,6 +2298,39 @@
       "notConfigured": "Налаштуйте ключ CSFloat, щоб бачити ціни",
       "configureLink": "Налаштувати",
       "never": "Ціни ще не отримано"
+    }
+  },
+  "ui": {
+    "menu": {
+      "moreActions": "Більше дій"
+    },
+    "helpTip": {
+      "label": "Довідка: {topic}"
+    },
+    "field": {
+      "wholeNumberHint": "У валюти {currency} немає копійок. Вводьте цілі числа, наприклад {example}.",
+      "formatHint": "Приклад: {example}",
+      "useValue": "Використати {value}"
+    },
+    "formErrors": {
+      "title": {
+        "one": "Перевірте {count} поле",
+        "few": "Перевірте {count} поля",
+        "many": "Перевірте {count} полів",
+        "other": "Перевірте {count} поля"
+      }
+    },
+    "combobox": {
+      "noResults": "Нічого не знайдено за запитом «{query}»",
+      "resultCount": {
+        "one": "{count} результат",
+        "few": "{count} результати",
+        "many": "{count} результатів",
+        "other": "{count} результату"
+      },
+      "clear": "Очистити",
+      "showOptions": "Показати варіанти",
+      "pinned": "Найуживаніші"
     }
   }
 }

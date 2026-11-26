@@ -6,7 +6,7 @@ copyright: Todos os direitos reservados
 
 directories:
   output: dist
-  buildResources: build # se existir build/icon.png, o electron-builder o usa sozinho (ver build/LEIA-ME.md)
+  buildResources: build # ícones gerados por `npm --prefix desktop run icons` (ver build/LEIA-ME.md)
 
 # No asar vai só o código do Electron (src/). O backend e o frontend ficam fora dele, em extraResources.
 asar: true
@@ -34,6 +34,7 @@ nodeGypRebuild: false
 buildDependenciesFromSource: false
 
 win:
+  icon: build/icon.ico
   target:
     - target: nsis
       arch: x64
@@ -49,6 +50,9 @@ nsis:
   createStartMenuShortcut: true
   shortcutName: Skins Manager
   language: "1046"
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  installerHeaderIcon: build/icon.ico
   # Desinstalar nunca apaga %APPDATA%\SkinsManager (dados, backups, logs).
   deleteAppDataOnUninstall: false
   artifactName: SkinsManager-Setup-${version}.${ext}

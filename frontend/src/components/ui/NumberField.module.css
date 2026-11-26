@@ -1,0 +1,4 @@
+.stack { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.full { grid-column: 1 / -1; }
+.line { display: block; }
+.suggestions { display: flex; flex-wrap: wrap; gap: var(--space-2); }

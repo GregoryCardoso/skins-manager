@@ -15,3 +15,23 @@
 .boxes { display: flex; flex-wrap: wrap; gap: var(--space-4); align-items: center; }
 .box { background: var(--surface); border: 1px solid var(--line); padding: var(--space-4); min-width: 9rem; }
 .icon { display: flex; flex-direction: column; align-items: center; gap: var(--space-1); color: var(--text); }
+
+/* Galeria de componentes (12.3a) */
+.gLangBar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); margin: var(--space-3) 0; }
+.gLang { display: inline-flex; align-items: center; gap: var(--space-1); }
+.gColumns { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 34rem), 1fr)); gap: var(--space-4); align-items: start; }
+.gColumn { min-width: 0; }
+.gColumnTitle { display: inline-block; margin-bottom: var(--space-2); padding: 0 var(--space-2); background: var(--surface-2); border-radius: var(--radius-sm); }
+.gSection { margin-bottom: var(--space-6); }
+.gSectionHead { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.gTitle { margin: 0; font-size: var(--fs-base); }
+.gWidths { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); }
+.gWidthBtn { min-height: var(--target-min); padding: 0 var(--space-2); border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); font: inherit; font-size: var(--fs-xs); cursor: pointer; }
+.gWidthBtn[aria-pressed='true'] { border-color: var(--brand); background: var(--brand-soft); }
+.gFrame { display: flex; flex-direction: column; gap: var(--space-3); max-width: 100%; min-width: 16rem; padding: var(--space-4); border: 1px dashed var(--line); border-radius: var(--radius-lg); background: var(--bg); resize: horizontal; overflow: auto; container-type: inline-size; }
+.gRow { display: flex; flex-direction: column; gap: var(--space-1); }
+.gCaption { color: var(--muted); font-size: var(--fs-xs); }
+.gItems { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.gGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: var(--space-3); }
+.gThumb { width: 2rem; height: 2rem; flex: none; border-radius: var(--radius-sm); background: var(--brand-soft); border: 1px solid var(--line); }
+.gOptionText { display: flex; flex-direction: column; min-width: 0; }

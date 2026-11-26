@@ -15,6 +15,7 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'Skins Manager',
   description: 'CS2 item inventory and turnover',
+  icons: { icon: [{ url: '/favicon.ico', sizes: '16x16 32x32 48x48' }, { url: '/icon.svg', type: 'image/svg+xml' }] },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

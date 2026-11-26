@@ -65,6 +65,12 @@
       "steamNewStore": "今後の記録用に、{currency}の新しいSteamストアを作成する",
       "steamNewStoreHint": "現在のストアは無効になり、名前が変更されます（例：「Steam（{from}）」）。換算や削除は行われず、その残高は引き続き利益に含まれます。新しいストアは同じ手数料とルールを引き継ぎます。",
       "confirm": "{currency}を使う"
+    },
+    "groups": {
+      "america": "アメリカ",
+      "europe": "ヨーロッパ",
+      "asia": "アジア",
+      "other": "その他"
     }
   },
   "pages": {
@@ -2076,6 +2082,33 @@
       "notConfigured": "価格を見るには、CSFloatのキーを設定してください",
       "configureLink": "設定する",
       "never": "価格はまだ取得されていません"
+    }
+  },
+  "ui": {
+    "menu": {
+      "moreActions": "その他の操作"
+    },
+    "helpTip": {
+      "label": "ヘルプ：{topic}"
+    },
+    "field": {
+      "wholeNumberHint": "{currency}には小数単位がありません。{example}のように整数で入力してください。",
+      "formatHint": "例: {example}",
+      "useValue": "{value}を使う"
+    },
+    "formErrors": {
+      "title": {
+        "other": "{count}件の項目を確認してください"
+      }
+    },
+    "combobox": {
+      "noResults": "「{query}」の結果はありません",
+      "resultCount": {
+        "other": "{count}件の結果"
+      },
+      "clear": "クリア",
+      "showOptions": "選択肢を表示",
+      "pinned": "よく使う"
     }
   }
 }

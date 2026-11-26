@@ -68,6 +68,12 @@
       "steamNewStore": "Utwórz nowy sklep Steam w walucie {currency} dla przyszłych wpisów",
       "steamNewStoreHint": "Obecny zostanie wyłączony i przemianowany (np. „Steam ({from})”). Nic nie jest przeliczane ani usuwane, a jego saldo nadal liczy się do zysku. Nowy zachowa te same prowizje i zasady.",
       "confirm": "Użyj: {currency}"
+    },
+    "groups": {
+      "america": "Ameryka",
+      "europe": "Europa",
+      "asia": "Azja",
+      "other": "Inne"
     }
   },
   "pages": {
@@ -2292,6 +2298,39 @@
       "notConfigured": "Ustaw klucz CSFloat, aby zobaczyć ceny",
       "configureLink": "Ustaw",
       "never": "Ceny nie zostały jeszcze pobrane"
+    }
+  },
+  "ui": {
+    "menu": {
+      "moreActions": "Więcej akcji"
+    },
+    "helpTip": {
+      "label": "Pomoc: {topic}"
+    },
+    "field": {
+      "wholeNumberHint": "{currency} nie ma groszy. Wpisz liczby całkowite, np. {example}.",
+      "formatHint": "Przykład: {example}",
+      "useValue": "Użyj {value}"
+    },
+    "formErrors": {
+      "title": {
+        "one": "Sprawdź {count} pole",
+        "few": "Sprawdź {count} pola",
+        "many": "Sprawdź {count} pól",
+        "other": "Sprawdź {count} pola"
+      }
+    },
+    "combobox": {
+      "noResults": "Brak wyników dla „{query}”",
+      "resultCount": {
+        "one": "{count} wynik",
+        "few": "{count} wyniki",
+        "many": "{count} wyników",
+        "other": "{count} wyniku"
+      },
+      "clear": "Wyczyść",
+      "showOptions": "Pokaż opcje",
+      "pinned": "Najczęściej używane"
     }
   }
 }

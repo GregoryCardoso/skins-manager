@@ -30,6 +30,22 @@ interface LoadedDictionary {
   messages: Dictionary;
 }
 
+// Contexto do StaticI18nProvider (o I18nProvider monta o dele inline, ao lado do carregamento sob demanda).
+function buildContextValue(language: Language, messages: Dictionary): I18nContextValue {
+  const locale = intlLocaleOf(language);
+  const tLoose: LooseTranslator = (key, params) => translate(messages, key, params, BASE_DICTIONARY);
+  const tPlural = (key: string, count: number, params?: TranslateParams) =>
+    translatePlural(messages, key, count, locale, params, BASE_DICTIONARY);
+  return { language, t: tLoose as Translator, tLoose, tPlural };
+}
+
+// Provedor sem usePreferences nem carregamento sob demanda (D370, 12.3a): o idioma e o dicionário vêm por props. Serve aos testes
+// de componente e ao guia /design (várias colunas em idiomas diferentes). Sem messages, usa o inglês; texto ausente cai no inglês.
+export function StaticI18nProvider({ language, messages, children }: { language: Language; messages?: Dictionary; children: ReactNode }) {
+  const value = useMemo<I18nContextValue>(() => buildContextValue(language, messages ?? BASE_DICTIONARY), [language, messages]);
+  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
+}
+
 export function I18nProvider({ children }: { children: ReactNode }) {
   const { language, ready, languageSettled } = usePreferences();
   // O inglês (base e reserva) já está carregado; os outros idiomas chegam sob demanda (`import()` dinâmico).
@@ -80,7 +96,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<I18nContextValue>(() => {
     const messages = loaded.messages;
-    // O idioma exposto é o do dicionário carregado: número/data e texto nunca ficam desencontrados durante o `import()`.
+    // O idioma exposto é o do dicionário carregado: número/data e texto nunca ficam desencontrados durante o import().
     const locale = intlLocaleOf(loaded.language);
     const tLoose: LooseTranslator = (key, params) => translate(messages, key, params, BASE_DICTIONARY);
     const tPlural = (key: string, count: number, params?: TranslateParams) =>

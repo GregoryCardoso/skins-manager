@@ -66,6 +66,12 @@
       "steamNewStore": "为之后的记录新建一个 {currency} 的 Steam 商店",
       "steamNewStoreHint": "当前的商店会被停用并改名（例如“Steam（{from}）”）。不会换算或删除任何内容，它的余额仍计入你的利润。新商店沿用相同的手续费和规则。",
       "confirm": "使用 {currency}"
+    },
+    "groups": {
+      "america": "美洲",
+      "europe": "欧洲",
+      "asia": "亚洲",
+      "other": "其他"
     }
   },
   "pages": {
@@ -2148,6 +2154,33 @@
       "notConfigured": "请先设置 CSFloat 密钥才能查看价格",
       "configureLink": "去设置",
       "never": "还没有获取过价格"
+    }
+  },
+  "ui": {
+    "menu": {
+      "moreActions": "更多操作"
+    },
+    "helpTip": {
+      "label": "帮助：{topic}"
+    },
+    "field": {
+      "wholeNumberHint": "{currency} 没有小数部分。请输入整数，例如 {example}。",
+      "formatHint": "示例：{example}",
+      "useValue": "使用 {value}"
+    },
+    "formErrors": {
+      "title": {
+        "other": "请检查 {count} 个字段"
+      }
+    },
+    "combobox": {
+      "noResults": "没有找到“{query}”的结果",
+      "resultCount": {
+        "other": "{count} 个结果"
+      },
+      "clear": "清除",
+      "showOptions": "显示选项",
+      "pinned": "常用"
     }
   }
 }

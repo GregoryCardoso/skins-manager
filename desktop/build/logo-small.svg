@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="512" height="512">
+  <title>Skins Manager (pequeno)</title>
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5AD6C2"/><stop offset="1" stop-color="#35AE9C"/>
+    </linearGradient>
+    <path id="s" d="M42 19c-2.5-2.6-6-4-10-4-6 0-10 3.2-10 8 0 10.5 20 6.5 20 17 0 5-4.4 8.5-10.5 8.5-4.6 0-8.4-1.8-11-4.8"/>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="15" fill="url(#tile)"/>
+  <use href="#s" fill="none" stroke="#062A26" stroke-width="9" stroke-linecap="round" transform="translate(0 2.5)"/>
+</svg>

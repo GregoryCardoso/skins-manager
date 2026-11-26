@@ -1,0 +1,15 @@
+.content {
+  z-index: var(--z-dropdown);
+  width: max-content;
+  max-width: min(20rem, calc(100vw - 2rem));
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-3);
+  font-size: var(--fs-sm);
+  line-height: var(--lh-base);
+  overflow-wrap: anywhere;
+}
+.content:focus-visible { outline: none; box-shadow: var(--shadow-3), var(--focus-ring); }

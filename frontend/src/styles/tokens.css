@@ -131,6 +131,28 @@
 
   /* Densidade das linhas de tabela (a opção "confortável" chega na 12.5). */
   --row-height: 2.25rem;
+  --row-height-comfortable: 2.75rem;
+
+  /* Altura dos controles (12.3a) e alvo mínimo de clique/toque (WCAG 2.5.8: 24 px). */
+  --control-h-sm: 1.75rem;
+  --control-h-md: 2.25rem;
+  --control-h-lg: 2.75rem;
+  --target-min: 1.5rem;
+
+  /* Foco visível dos componentes: anel duplo (fundo + cor de foco). */
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--focus);
+  --focus-offset: 2px;
+
+  /* Listras para o que está retido (trade lock) ou pendente (saldo ainda não liberado). */
+  --pattern-lock: repeating-linear-gradient(135deg, color-mix(in srgb, var(--lock) 40%, transparent) 0 5px, transparent 5px 9px);
+  --pattern-pending: repeating-linear-gradient(135deg, color-mix(in srgb, var(--brand) 60%, transparent) 0 5px, transparent 5px 9px);
+
+  /* Faixas de largura da janela (D370). Variável CSS não funciona em @media/@container: os mesmos valores ficam em
+     src/styles/breakpoints.ts, e o teste breakpoints.test.ts confere os dois lados. */
+  --bp-compact: 800px;
+  --bp-narrow: 900px;
+  --bp-medium: 1100px;
+  --bp-wide: 1280px;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -66,6 +66,12 @@
       "steamNewStore": "Neuen Steam-Shop in {currency} für künftige Einträge anlegen",
       "steamNewStoreHint": "Der aktuelle wird deaktiviert und umbenannt (zum Beispiel „Steam ({from})“). Nichts wird umgerechnet oder gelöscht, und sein Guthaben zählt weiter für deinen Gewinn. Der neue behält dieselben Gebühren und Regeln.",
       "confirm": "{currency} verwenden"
+    },
+    "groups": {
+      "america": "Amerika",
+      "europe": "Europa",
+      "asia": "Asien",
+      "other": "Andere"
     }
   },
   "pages": {
@@ -2148,6 +2154,35 @@
       "notConfigured": "Richte den CSFloat-Schlüssel ein, um Preise zu sehen",
       "configureLink": "Einrichten",
       "never": "Preise wurden noch nicht abgerufen"
+    }
+  },
+  "ui": {
+    "menu": {
+      "moreActions": "Weitere Aktionen"
+    },
+    "helpTip": {
+      "label": "Hilfe: {topic}"
+    },
+    "field": {
+      "wholeNumberHint": "{currency} hat keine Nachkommastellen. Geben Sie ganze Zahlen ein, z. B. {example}.",
+      "formatHint": "Beispiel: {example}",
+      "useValue": "{value} verwenden"
+    },
+    "formErrors": {
+      "title": {
+        "one": "Prüfen Sie {count} Feld",
+        "other": "Prüfen Sie {count} Felder"
+      }
+    },
+    "combobox": {
+      "noResults": "Keine Ergebnisse für „{query}“",
+      "resultCount": {
+        "one": "{count} Ergebnis",
+        "other": "{count} Ergebnisse"
+      },
+      "clear": "Löschen",
+      "showOptions": "Optionen anzeigen",
+      "pinned": "Am häufigsten verwendet"
     }
   }
 }

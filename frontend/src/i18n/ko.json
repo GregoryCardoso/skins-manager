@@ -65,6 +65,12 @@
       "steamNewStore": "앞으로의 내역을 위해 {currency} 기준 새 Steam 상점 만들기",
       "steamNewStoreHint": "기존 상점은 비활성화되고 이름이 바뀌어요(예: \"Steam ({from})\"). 아무것도 환산되거나 삭제되지 않으며, 기존 잔액도 계속 수익에 반영돼요. 새 상점은 같은 수수료와 규칙을 유지해요.",
       "confirm": "{currency} 사용"
+    },
+    "groups": {
+      "america": "아메리카",
+      "europe": "유럽",
+      "asia": "아시아",
+      "other": "기타"
     }
   },
   "pages": {
@@ -2076,6 +2082,33 @@
       "notConfigured": "가격을 보려면 CSFloat 키를 설정해 주세요",
       "configureLink": "설정",
       "never": "아직 가격을 가져오지 않았어요"
+    }
+  },
+  "ui": {
+    "menu": {
+      "moreActions": "더 많은 작업"
+    },
+    "helpTip": {
+      "label": "도움말: {topic}"
+    },
+    "field": {
+      "wholeNumberHint": "{currency}에는 소수 단위가 없습니다. {example}처럼 정수로 입력하세요.",
+      "formatHint": "예: {example}",
+      "useValue": "{value} 사용"
+    },
+    "formErrors": {
+      "title": {
+        "other": "{count}개 항목을 확인하세요"
+      }
+    },
+    "combobox": {
+      "noResults": "\"{query}\"에 대한 결과가 없습니다",
+      "resultCount": {
+        "other": "결과 {count}개"
+      },
+      "clear": "지우기",
+      "showOptions": "옵션 표시",
+      "pinned": "자주 사용"
     }
   }
 }

@@ -1,0 +1,24 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-tight);
+  white-space: nowrap;
+}
+.text { min-width: 0; overflow-wrap: anywhere; }
+@media (width < 900px) { .badge { white-space: normal; } }
+
+.neutral { color: var(--muted); background: var(--surface-2); }
+.lock { color: var(--lock); background: var(--lock-soft); }
+.holding { color: var(--brand); background: var(--brand-soft); }
+.stuck { color: var(--stuck); background: var(--stuck-soft); }
+.profit { color: var(--profit); background: var(--profit-soft); }
+.loss { color: var(--loss); background: var(--loss-soft); }
+.estimated { color: var(--stuck); background: transparent; border: 1px dashed var(--line); }
+.pending { color: var(--muted); background: var(--surface-2); border: 1px solid var(--line); background-image: var(--pattern-pending); }
+.info { color: var(--text); background: var(--surface-2); }

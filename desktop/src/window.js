@@ -5,7 +5,11 @@ const path = require('path');
 const { app, BrowserWindow, session, shell } = require('electron');
 const { classify } = require('./lib/navigationPolicy');
 
-const LOADING_PAGE = path.join(__dirname, 'loading.html');
+const { computeInitialBounds, MIN } = require('./lib/windowBounds');
+const { backgroundFor } = require('./lib/windowTheme');
+
+const WINDOW_ICON = path.join(__dirname, 'assets', 'icon.png');
+const LOADING_PAGE =path.join(__dirname, 'loading.html');
 const RENDER_GONE_WINDOW_MS = 60 * 1000;
 
 // Navegação (will-navigate, will-redirect, janelas novas) e recursos que a página não deve ter.
@@ -50,14 +54,19 @@ function installSessionSecurity() {
   defaultSession.setPermissionCheckHandler(() => false);
 }
 
-function createMainWindow({ logger, onRenderGoneTwice, now = () => Date.now() }) {
+// workArea e systemDark vêm do main (screen/nativeTheme só existem depois do app pronto); sem eles, usa os padrões.
+function createMainWindow({ logger, onRenderGoneTwice, now = () => Date.now(), workArea = null, theme = null, systemDark = false }) {
+  const { width, height } = computeInitialBounds({ workArea });
   const win = new BrowserWindow({
-    width: 1280,
-    height: 800,
-    minWidth: 1024,
-    minHeight: 640,
+    width,
+    height,
+    minWidth: MIN.width,
+    minHeight: MIN.height,
     show: false,
     title: 'Skins Manager',
+    icon: WINDOW_ICON,
+    backgroundColor: backgroundFor({ theme, systemDark }),
+    // Barra de título nativa do Windows (P4): encaixe, acessibilidade e nenhum risco de roubar cliques.
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),

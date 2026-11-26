@@ -80,3 +80,39 @@ export function moneyErrorParams(locale: string, currency: string | undefined, f
   }
   return { example, currency: currency ?? '' };
 }
+
+// Organização da lista de moedas no Combobox (D370, 12.3a): grupos por região e "mais usadas" no topo. É só a ordem de exibição;
+// nenhuma regra muda. Toda moeda de CURRENCIES está em exatamente um grupo (o teste confere).
+export const CURRENCY_GROUPS: Readonly<Record<'america' | 'europe' | 'asia' | 'other', readonly CurrencyCode[]>> = {
+  america: ['ARS', 'BRL', 'CAD', 'CLP', 'COP', 'CRC', 'MXN', 'PEN', 'USD', 'UYU'],
+  europe: ['CHF', 'CZK', 'DKK', 'EUR', 'GBP', 'HUF', 'NOK', 'PLN', 'RUB', 'SEK', 'TRY', 'UAH'],
+  asia: ['CNY', 'HKD', 'IDR', 'INR', 'JPY', 'KRW', 'KZT', 'MYR', 'PHP', 'SGD', 'THB', 'TWD', 'VND'],
+  other: ['AED', 'AUD', 'ILS', 'NZD', 'QAR', 'SAR', 'ZAR'],
+};
+
+export type CurrencyGroupId = keyof typeof CURRENCY_GROUPS;
+
+// Ordem dos grupos; o rótulo vem de `currency.groups.<id>`.
+export const CURRENCY_GROUP_IDS: readonly CurrencyGroupId[] = ['america', 'europe', 'asia', 'other'];
+
+// Fixadas no topo do Combobox ("Mais usadas").
+export const CURRENCY_PINNED: readonly CurrencyCode[] = ['USD', 'BRL', 'EUR'];
+
+export interface CurrencyComboboxOption {
+  value: CurrencyCode;
+  label: string;
+  keywords: string[];
+  group: CurrencyGroupId;
+}
+
+// Opções do Combobox de moedas: rótulo no idioma, busca também pelo código e pelo nome em inglês, grupo por região (dentro do grupo,
+// ordem pelo código, como na 11.11).
+export function currencyComboboxOptions(locale: string): CurrencyComboboxOption[] {
+  const out: CurrencyComboboxOption[] = [];
+  for (const group of CURRENCY_GROUP_IDS) {
+    for (const code of [...CURRENCY_GROUPS[group]].sort()) {
+      out.push({ value: code, label: currencyLabel(code, locale), keywords: [code, currencyName(code, 'en')], group });
+    }
+  }
+  return out;
+}

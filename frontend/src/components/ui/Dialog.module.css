@@ -1,0 +1,35 @@
+.overlay { position: fixed; inset: 0; z-index: var(--z-modal); background: color-mix(in srgb, var(--bg) 70%, transparent); }
+.content {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: var(--z-modal);
+  display: flex;
+  flex-direction: column;
+  width: min(var(--dialog-w, 36rem), calc(100vw - 2 * var(--space-4)));
+  max-height: calc(100dvh - 2 * var(--space-4));
+  transform: translate(-50%, -50%);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-3);
+}
+.content:focus-visible { outline: none; }
+.sm { --dialog-w: 26rem; }
+.md { --dialog-w: 36rem; }
+.lg { --dialog-w: 52rem; }
+
+.header { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); padding: var(--space-4) var(--space-5) var(--space-2); }
+.title { margin: 0; font-size: var(--fs-lg); line-height: var(--lh-tight); overflow-wrap: anywhere; }
+.description { margin: 0; padding: 0 var(--space-5); color: var(--muted); font-size: var(--fs-md); }
+.body { flex: 1; min-height: 0; overflow-y: auto; padding: var(--space-3) var(--space-5) var(--space-4); }
+.footer { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-2); padding: var(--space-3) var(--space-5) var(--space-4); border-top: 1px solid var(--line); }
+
+/* Faixa compacta (< 900) ou janela baixa (< 700): md e lg viram quase tela cheia. */
+@media (width < 900px) {
+  .md, .lg { --dialog-w: calc(100vw - 2 * var(--space-2)); max-height: calc(100dvh - 2 * var(--space-2)); }
+}
+@media (height < 700px) {
+  .md, .lg { --dialog-w: calc(100vw - 2 * var(--space-2)); max-height: calc(100dvh - 2 * var(--space-2)); }
+}

@@ -66,6 +66,12 @@
       "steamNewStore": "Sonraki kayıtlar için {currency} cinsinden yeni bir Steam mağazası oluştur",
       "steamNewStoreHint": "Mevcut mağaza kapatılır ve adı değiştirilir (örneğin \"Steam ({from})\"). Hiçbir şey dönüştürülmez veya silinmez; bakiyesi kârınıza yine dahildir. Yeni mağaza aynı ücretleri ve kuralları kullanır.",
       "confirm": "{currency} kullan"
+    },
+    "groups": {
+      "america": "Amerika",
+      "europe": "Avrupa",
+      "asia": "Asya",
+      "other": "Diğer"
     }
   },
   "pages": {
@@ -2148,6 +2154,35 @@
       "notConfigured": "Fiyatları görmek için CSFloat anahtarını ayarlayın",
       "configureLink": "Ayarla",
       "never": "Fiyatlar henüz alınmadı"
+    }
+  },
+  "ui": {
+    "menu": {
+      "moreActions": "Diğer işlemler"
+    },
+    "helpTip": {
+      "label": "Yardım: {topic}"
+    },
+    "field": {
+      "wholeNumberHint": "{currency} biriminde kuruş yoktur. Tam sayı girin, örneğin {example}.",
+      "formatHint": "Örnek: {example}",
+      "useValue": "{value} kullan"
+    },
+    "formErrors": {
+      "title": {
+        "one": "{count} alanı kontrol edin",
+        "other": "{count} alanı kontrol edin"
+      }
+    },
+    "combobox": {
+      "noResults": "\"{query}\" için sonuç yok",
+      "resultCount": {
+        "one": "{count} sonuç",
+        "other": "{count} sonuç"
+      },
+      "clear": "Temizle",
+      "showOptions": "Seçenekleri göster",
+      "pinned": "En çok kullanılanlar"
     }
   }
 }

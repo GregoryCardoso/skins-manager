@@ -1,0 +1,32 @@
+.root { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+.label { position: relative; display: inline-flex; align-items: center; gap: var(--space-2); min-height: var(--target-min); cursor: pointer; font-size: var(--fs-md); }
+.disabled { opacity: 0.6; cursor: not-allowed; }
+.text { min-width: 0; overflow-wrap: anywhere; }
+
+/* O próprio input fica visível e estilizado (appearance: none); a marca (ícone) é posta por cima. */
+.input {
+  flex: none;
+  margin: 0;
+  border: 1px solid var(--muted);
+  background: var(--surface);
+  appearance: none;
+  cursor: inherit;
+  transition: background-color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+}
+.box { width: 1.25rem; height: 1.25rem; border-radius: var(--radius-sm); }
+.box:checked, .box:indeterminate { background: var(--brand); border-color: var(--brand); }
+.input:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.input[aria-invalid='true'] { border-color: var(--loss); }
+
+.mark { position: absolute; inset-inline-start: 0; display: inline-flex; align-items: center; justify-content: center; width: 1.25rem; height: 1.25rem; color: var(--brand-ink); opacity: 0; pointer-events: none; }
+.input:checked ~ .mark, .input:indeterminate ~ .mark { opacity: 1; }
+
+.switch { width: 2.25rem; height: 1.25rem; border-radius: var(--radius-pill); }
+.switch:checked { background: var(--brand); border-color: var(--brand); }
+.thumb { position: absolute; inset-inline-start: 0.2rem; width: 0.85rem; height: 0.85rem; border-radius: 50%; background: var(--muted); pointer-events: none; transition: transform var(--dur-fast) var(--ease), background-color var(--dur-fast) var(--ease); }
+.input:checked ~ .thumb { background: var(--brand-ink); transform: translateX(1rem); }
+.switch:disabled { cursor: not-allowed; }
+:dir(rtl) .input:checked ~ .thumb { transform: translateX(-1rem); }
+
+.hint { padding-inline-start: 1.75rem; font-size: var(--fs-sm); color: var(--muted); }
+.error { display: flex; align-items: flex-start; gap: var(--space-1); padding-inline-start: 1.75rem; font-size: var(--fs-sm); color: var(--loss); }

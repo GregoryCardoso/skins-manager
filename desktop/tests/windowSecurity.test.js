@@ -115,8 +115,27 @@ describe('createMainWindow: webPreferences', () => {
     expect(prefs.allowRunningInsecureContent).toBeUndefined();
     expect(win.options.width).toBe(1280);
     expect(win.options.height).toBe(800);
-    expect(win.options.minWidth).toBe(1024);
-    expect(win.options.minHeight).toBe(640);
+    expect(win.options.minWidth).toBe(800);
+    expect(win.options.minHeight).toBe(600);
+  });
+
+  test('tamanho inicial limitado à área útil, ícone, fundo pelo tema e barra de título nativa', () => {
+    const small = windowSetup.createMainWindow({ logger, onRenderGoneTwice: jest.fn(), workArea: { width: 1024, height: 700 } });
+    expect(small.options.width).toBe(1024);
+    expect(small.options.height).toBe(700);
+    const tiny = windowSetup.createMainWindow({ logger, onRenderGoneTwice: jest.fn(), workArea: { width: 500, height: 400 } });
+    expect(tiny.options.width).toBe(800);
+    expect(tiny.options.height).toBe(600);
+    const dark = windowSetup.createMainWindow({ logger, onRenderGoneTwice: jest.fn(), theme: 'DARK' });
+    expect(dark.options.backgroundColor).toBe('#0e1f22');
+    const system = windowSetup.createMainWindow({ logger, onRenderGoneTwice: jest.fn(), theme: 'SYSTEM', systemDark: true });
+    expect(system.options.backgroundColor).toBe('#0e1f22');
+    expect(small.options.backgroundColor).toBe('#eef4f3');
+    expect(small.options.icon).toBe(path.join(__dirname, '..', 'src', 'assets', 'icon.png'));
+    expect(fs.existsSync(small.options.icon)).toBe(true);
+    expect(small.options.frame).toBeUndefined();
+    expect(small.options.titleBarStyle).toBeUndefined();
+    expect(small.options.titleBarOverlay).toBeUndefined();
   });
 
   test('render-process-gone: recarrega na 1a vez e avisa se repetir em 1 minuto (now injetado)', () => {
