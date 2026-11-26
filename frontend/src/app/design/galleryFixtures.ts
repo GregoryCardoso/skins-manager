@@ -8,7 +8,7 @@ export type GalleryLanguage = (typeof GALLERY_LANGUAGES)[number];
 export const FRAME_WIDTHS = [480, 720, 960] as const;
 
 export const FX = {
-  title: 'Componentes — interação e formulários (12.3a)',
+  title: 'Componentes — interação, formulários, dados e feedback (12.3a e 12.3b)',
   languages: 'Idiomas lado a lado',
   width: 'Largura do quadro',
   widthFree: 'livre',
@@ -25,6 +25,14 @@ export const FX = {
     dialogs: 'Dialog, ConfirmDialog',
     menu: 'Menu',
     tabs: 'Tabs e Disclosure',
+    banner: 'Banner',
+    toast: 'Toast',
+    states: 'EmptyState, ErrorState, Skeleton',
+    panel: 'Panel, PositionStrip, StatCard, Equation',
+    money: 'Money',
+    turnover: 'TurnoverRule, TurnoverLegend',
+    balance: 'BalanceBar',
+    table: 'DataTable',
   },
   // Rótulos de exemplo (texto fictício, em inglês, igual ao que o app teria).
   labels: {
@@ -128,4 +136,122 @@ export const CATALOG_OPTIONS: ComboboxOption[] = [
   { value: 'karambit-doppler', label: '★ Karambit | Doppler', description: 'Knife' },
   { value: 'usp-kill-confirmed', label: 'USP-S | Kill Confirmed', description: 'Pistol' },
   { value: 'sticker-slab', label: 'Sticker Slab | Katowice 2014', description: 'Sticker Slab', disabled: true },
+];
+
+// ---- 12.3b: dados e feedback ----
+export const L2 = {
+  bannerInfo: 'Prices were updated a few minutes ago.',
+  bannerSuccess: 'Sale registered. The balance of the store was updated.',
+  bannerWarning: 'Some prices could not be fetched, so the market value is incomplete for these items.',
+  bannerDanger: 'Could not reach the backend. Check that the app is running and try again.',
+  bannerTitle: 'Exchange rate not set',
+  bannerLong: 'The rate of this currency is older than seven days, and the estimated values with ≈ may differ a lot from what you would get today when converting at your bank or marketplace.',
+  bannerAction: 'Open settings',
+  bannerActionHref: 'Go to Settings',
+  toastSuccess: 'Show success toast',
+  toastInfo: 'Show info toast',
+  toastDanger: 'Show error toast (stays)',
+  toastAction: 'Show toast with action',
+  toastMsgSuccess: 'Item saved.',
+  toastMsgInfo: 'Prices refreshed in the background.',
+  toastMsgDanger: 'Could not save the item. The backend did not answer.',
+  toastMsgAction: 'Sale undone.',
+  toastUndo: 'Undo',
+  emptyTitle: 'No items for sale yet',
+  emptyText: 'Register your first item to see it here, with its break-even price and how long it has been on sale.',
+  emptyAction: 'Register item',
+  errorTitle: 'Could not load the inventory',
+  errorMessage: 'The backend did not answer in time.',
+  skeletonText: 'Text lines',
+  skeletonBlock: 'Block',
+  panelTitle: 'Balance of the stores',
+  panelHint: 'Calculated from deposits, sales, purchases and withdrawals.',
+  panelAction: 'Register deposit',
+  panelBody: 'Panel content goes here.',
+  stripLabel: 'Inventory position',
+  inStock: 'Stock for sale',
+  holding: 'In holding',
+  inLock: 'In trade lock',
+  stuck: 'Stuck',
+  unitsText: '3 units',
+  nextRelease: 'next one releases in 2 days',
+  stuckNote: 'on sale for more than 21 days',
+  helpStat: 'Items in stock that are not in the holding, at their purchase cost.',
+  eqPaid: 'Withdrawals received',
+  eqPaidNote: 'after the fee of each withdrawal',
+  eqBalance: 'Balance in the stores',
+  eqBalanceNote: 'available and pending',
+  eqStock: 'Stock, at cost',
+  eqStockNote: 'for sale US$ 1,842.30 · in the holding US$ 615.00',
+  eqDeposited: 'Total deposited',
+  eqDepositedNote: 'sum of the deposits',
+  eqResult: 'Real profit',
+  eqFee: 'of which withdrawal fees',
+  moneyUsd: 'US$ with conversion',
+  moneyEstimated: 'Estimated',
+  moneyJpy: 'Yen, no decimals',
+  moneyNegative: 'Signed values',
+  moneyUnavailable: 'Unavailable',
+  moneyStale: 'With the old-rate note',
+  moneyInline: 'Inline layout',
+  moneySizes: 'Sizes',
+  staleNote: 'The rate was fetched 9 days ago.',
+  ruleSm: 'Small (size sm)',
+  ruleNarrow: 'Narrow cell (150 px)',
+  ruleScale: 'Scale only (kind scale)',
+  ruleExtreme: 'Extreme limits',
+  balanceEmpty: 'Empty store',
+  availableText: 'US$ 842.10',
+  pendingText: 'US$ 190.00',
+  tableCaption: 'Inventory, grouped by item',
+  colItem: 'Item',
+  colQty: 'Qty.',
+  colCost: 'Average cost',
+  colMin: 'Break-even price',
+  colTurnover: 'Turnover',
+  colStore: 'Store',
+  colActions: 'Actions',
+  sellAction: 'Sell',
+  tableLoading: 'Loading state',
+  tableEmpty: 'Empty state',
+  tableEmptyText: 'No items match the filters.',
+  tableSelect: 'With selection',
+  tableComfortable: 'Comfortable density',
+  tableExpanded: 'Expandable rows (units)',
+  tableTone: 'Row tones',
+  unitFloat: 'Float 0.2371 · pattern 661 · 4 stickers',
+  unitFloat2: 'Float 0.1854 · pattern 102',
+  legendNote: 'Legend in the footer',
+  sortedBy: 'Sorted by',
+  lastSeen: 'Last check',
+} as const;
+
+// Moeda de conversão do guia (o "≈").
+export const CONVERSION = 'BRL';
+
+export const GALLERY_LIMITS = { fastTurnoverDays: 7, slowItemDays: 21 };
+export const GALLERY_LIMITS_WIDE = { fastTurnoverDays: 1, slowItemDays: 365 };
+export const GALLERY_LIMITS_TIGHT = { fastTurnoverDays: 20, slowItemDays: 21 };
+
+export type GalleryBucket = 'RECENTE' | 'EM_GIRO' | 'AGARRADO' | 'EM_TRADE_LOCK' | 'FORA_DE_VENDA' | 'CONSUMIDO';
+
+export interface GalleryRow {
+  id: string;
+  name: string;
+  meta: string;
+  qty: number;
+  costCents: number;
+  minCents: number;
+  approxMinCents: number;
+  bucket: GalleryBucket;
+  days: number | null;
+  store: string;
+}
+
+export const GALLERY_ROWS: GalleryRow[] = [
+  { id: 'ak', name: 'AK-47 | Redline', meta: 'Field-Tested · StatTrak™', qty: 3, costCents: 3840, minCents: 4415, approxMinCents: 23986, bucket: 'AGARRADO', days: 26, store: 'CSFloat' },
+  { id: 'kara', name: '★ Karambit | Doppler', meta: 'Factory New · Phase 2', qty: 1, costCents: 61200, minCents: 70380, approxMinCents: 382337, bucket: 'RECENTE', days: 4, store: 'Steam' },
+  { id: 'awp', name: 'AWP | Asiimov', meta: 'Field-Tested', qty: 2, costCents: 9610, minCents: 11052, approxMinCents: 60040, bucket: 'EM_GIRO', days: 13, store: 'CSFloat' },
+  { id: 'vice', name: '★ Sport Gloves | Vice', meta: 'Minimal Wear', qty: 1, costCents: 114000, minCents: 131100, approxMinCents: 712213, bucket: 'EM_TRADE_LOCK', days: null, store: 'CS.MONEY' },
+  { id: 'fade', name: 'Glock-18 | Fade', meta: 'Factory New', qty: 1, costCents: 61500, minCents: 70725, approxMinCents: 384210, bucket: 'FORA_DE_VENDA', days: null, store: 'Steam' },
 ];

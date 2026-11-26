@@ -2,28 +2,174 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'sha256-oY31eVRuk4MGysL1owGFfDFVp1uhq/NnVvuY+OAaDmg='">
   <title>Skins Manager</title>
   <style>
-    :root { color-scheme: light dark; }
+    /* Cores iguais às de frontend/src/styles/tokens.css (claro e escuro). Fonte do sistema, para não empacotar a Manrope. */
+    :root {
+      color-scheme: light;
+      --bg: #eef4f3; --surface: #ffffff; --line: #cadbd8; --text: #10282b; --muted: #52706c;
+      --brand: #0f7c6e; --brand-ink: #ffffff; --loss: #c2412a; --focus: #0f7c6e; --surface-2: #e4eeec;
+      --shadow: 0 2px 6px rgba(16, 40, 43, 0.1), 0 16px 40px rgba(16, 40, 43, 0.16);
+    }
+    :root[data-theme='dark'] {
+      color-scheme: dark;
+      --bg: #0e1f22; --surface: #142a2e; --line: #24444a; --text: #e3eeec; --muted: #8fa9a6;
+      --brand: #45c4b0; --brand-ink: #062a26; --loss: #f07a63; --focus: #7fe3d3; --surface-2: #1a353a;
+      --shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 16px 48px rgba(0, 0, 0, 0.45);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme]) {
+        color-scheme: dark;
+        --bg: #0e1f22; --surface: #142a2e; --line: #24444a; --text: #e3eeec; --muted: #8fa9a6;
+        --brand: #45c4b0; --brand-ink: #062a26; --loss: #f07a63; --focus: #7fe3d3; --surface-2: #1a353a;
+        --shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 16px 48px rgba(0, 0, 0, 0.45);
+      }
+    }
     html, body { height: 100%; margin: 0; }
     body {
-      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
-      font-family: "Segoe UI", system-ui, sans-serif; background: Canvas; color: CanvasText;
+      display: flex; align-items: center; justify-content: center; padding: 24px; box-sizing: border-box;
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text);
     }
-    h1 { font-size: 20px; font-weight: 600; margin: 0; }
-    p { margin: 0; opacity: 0.7; font-size: 14px; }
+    .sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+    [hidden] { display: none !important; }
+    .logo { width: 72px; height: 72px; display: block; }
+    .center { display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; }
+    h1 { font-size: 22px; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
+    p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
     .spinner {
-      width: 28px; height: 28px; border-radius: 50%;
-      border: 3px solid rgba(128, 128, 128, 0.35); border-top-color: currentColor;
+      width: 26px; height: 26px; border-radius: 50%; box-sizing: border-box;
+      border: 3px solid var(--line); border-top-color: var(--brand);
       animation: spin 0.9s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 3s; } }
+    .card {
+      width: 100%; max-width: 520px; box-sizing: border-box; padding: 28px; border-radius: 12px;
+      background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow);
+      display: flex; flex-direction: column; gap: 14px;
+    }
+    .head { display: flex; align-items: center; gap: 14px; }
+    .head .logo { width: 44px; height: 44px; flex: none; }
+    .card h2 { font-size: 18px; font-weight: 700; margin: 0; line-height: 1.3; overflow-wrap: anywhere; }
+    .card.error h2 { color: var(--loss); }
+    .message { color: var(--text); font-size: 15px; overflow-wrap: anywhere; }
+    .detail { overflow-wrap: anywhere; }
+    details { border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); }
+    summary { cursor: pointer; padding: 8px 12px; font-size: 13px; color: var(--muted); }
+    pre {
+      margin: 0; padding: 0 12px 12px; font: 12px/1.5 Consolas, "Cascadia Mono", monospace; color: var(--text);
+      white-space: pre-wrap; overflow-wrap: anywhere; max-height: 160px; overflow: auto;
+    }
+    .buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+    button {
+      font: inherit; font-size: 14px; font-weight: 600; padding: 9px 16px; border-radius: 8px; cursor: pointer;
+      border: 1px solid var(--line); background: var(--surface); color: var(--text);
+    }
+    button:hover { background: var(--surface-2); }
+    button.primary { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); }
+    button.primary:hover { filter: brightness(1.06); }
+    button:focus-visible, summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+    button:disabled { opacity: 0.6; cursor: default; }
   </style>
 </head>
 <body>
-  <div class="spinner" role="progressbar" aria-label="Carregando / Loading"></div>
-  <h1>Skins Manager</h1>
-  <p>Iniciando&hellip; / Starting&hellip;</p>
+  <svg class="sprite" aria-hidden="true" focusable="false">
+    <defs>
+      <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5AD6C2"/><stop offset="1" stop-color="#35AE9C"/></linearGradient>
+      <path id="s" d="M42 19c-2.5-2.6-6-4-10-4-6 0-10 3.2-10 8 0 10.5 20 6.5 20 17 0 5-4.4 8.5-10.5 8.5-4.6 0-8.4-1.8-11-4.8"/>
+      <symbol id="logo-mark" viewBox="0 0 64 64">
+        <rect x="2" y="2" width="60" height="60" rx="15" fill="url(#tile)"/>
+        <use href="#s" fill="none" stroke="#4AC9B5" stroke-width="10.5" stroke-linecap="round" transform="translate(0 2.5)"/>
+        <use href="#s" fill="none" stroke="#062A26" stroke-width="6" stroke-linecap="round" transform="translate(0 2.5)"/>
+      </symbol>
+    </defs>
+  </svg>
+  <div class="center" id="loading" role="status">
+    <svg class="logo" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><use href="#logo-mark"/></svg>
+    <h1>Skins Manager</h1>
+    <div class="spinner" aria-hidden="true"></div>
+    <p>Iniciando&hellip; / Starting&hellip;</p>
+  </div>
+
+  <section class="card" id="screen" hidden>
+    <div class="head">
+      <svg class="logo" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+        <use href="#logo-mark"/>
+      </svg>
+      <h2 id="screen-title" tabindex="-1"></h2>
+    </div>
+    <p class="message" id="screen-message"></p>
+    <p class="detail" id="screen-detail" hidden></p>
+    <details id="screen-technical" hidden>
+      <summary id="screen-technical-label"></summary>
+      <pre id="screen-technical-text"></pre>
+    </details>
+    <div class="buttons" id="screen-buttons"></div>
+  </section>
+
+  <script>
+(function () {
+  'use strict';
+  var api = window.skinsDesktop && window.skinsDesktop.screen;
+  if (!api) return;
+  var loading = document.getElementById('loading');
+  var screen = document.getElementById('screen');
+  var busy = false;
+
+  function setText(id, text) {
+    var node = document.getElementById(id);
+    node.textContent = text || '';
+    node.hidden = !text;
+  }
+
+  function render(state) {
+    if (!state || (state.kind !== 'error' && state.kind !== 'info')) {
+      screen.hidden = true;
+      loading.hidden = false;
+      return;
+    }
+    busy = false;
+    var root = document.documentElement;
+    if (state.lang) root.setAttribute('lang', String(state.lang));
+    if (state.theme === 'dark' || state.theme === 'light') root.setAttribute('data-theme', state.theme);
+    else root.removeAttribute('data-theme');
+    document.title = String(state.title || 'Skins Manager');
+    loading.hidden = true;
+    screen.hidden = false;
+    screen.className = 'card ' + (state.kind === 'error' ? 'error' : 'info');
+    screen.setAttribute('role', state.kind === 'error' ? 'alert' : 'status');
+    screen.setAttribute('aria-label', String(state.regionLabel || state.title || ''));
+    document.getElementById('screen-title').textContent = String(state.title || '');
+    setText('screen-message', state.message);
+    setText('screen-detail', state.detail);
+    var technical = document.getElementById('screen-technical');
+    technical.hidden = !state.technical;
+    technical.open = false;
+    document.getElementById('screen-technical-label').textContent = String(state.technicalLabel || '');
+    document.getElementById('screen-technical-text').textContent = String(state.technical || '');
+    var box = document.getElementById('screen-buttons');
+    while (box.firstChild) box.removeChild(box.firstChild);
+    var first = null;
+    (Array.isArray(state.buttons) ? state.buttons : []).forEach(function (item) {
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = String(item.label || '');
+      if (item.primary) button.className = 'primary';
+      button.addEventListener('click', function () {
+        if (busy) return;
+        busy = true;
+        Promise.resolve(api.choose(String(item.id))).then(function () { busy = false; }, function () { busy = false; });
+      });
+      box.appendChild(button);
+      if (!first) first = button;
+    });
+    if (first) first.focus();
+  }
+
+  api.onState(render);
+  api.getState().then(render, function () {});
+})();
+  </script>
 </body>
 </html>

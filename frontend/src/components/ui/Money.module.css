@@ -1,0 +1,21 @@
+.wrap { display: inline-flex; max-width: 100%; font-variant-numeric: tabular-nums; }
+.stack { flex-direction: column; align-items: flex-start; gap: 0.1rem; }
+.inline { flex-flow: row wrap; align-items: baseline; column-gap: var(--space-2); row-gap: 0; }
+.line { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2); }
+.main { font-weight: var(--fw-bold); white-space: nowrap; }
+.approxLine { display: inline-flex; align-items: center; gap: var(--space-1); }
+.approx { color: var(--muted); font-size: var(--fs-xs); font-weight: var(--fw-bold); white-space: nowrap; }
+.unavailable { display: inline-flex; align-items: center; gap: var(--space-1); color: var(--muted); font-style: italic; font-weight: var(--fw-regular); }
+.profit { color: var(--profit); }
+.loss { color: var(--loss); }
+
+.sm { font-size: var(--fs-md); }
+.md { font-size: var(--fs-base); }
+.lg { font-size: var(--fs-lg); }
+.xl { font-size: var(--fs-xl); letter-spacing: -0.02em; }
+.stack.alignEnd { align-items: flex-end; text-align: end; }
+.inline.alignEnd { justify-content: flex-end; }
+.alignEnd .line { justify-content: flex-end; }
+.alignEnd .approxLine { justify-content: flex-end; }
+.md .approx, .lg .approx { font-size: var(--fs-sm); }
+.xl .approx { font-size: var(--fs-md); }

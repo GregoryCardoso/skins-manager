@@ -1,0 +1,32 @@
+.root { container-type: inline-size; min-width: 0; }
+/* Os separadores são o próprio fundo (--line) aparecendo pelo gap de 1px: valem em linha, quebrada ou em colunas. */
+.strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1px;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--line);
+  box-shadow: var(--shadow-2);
+}
+.card { flex: 1 1 11rem; min-width: 0; padding: var(--space-3) var(--space-5); background: var(--surface); }
+.label { display: flex; align-items: center; gap: var(--space-1); margin: 0; color: var(--muted); font-size: var(--fs-sm); font-weight: var(--fw-bold); }
+.labelText { min-width: 0; overflow-wrap: anywhere; }
+.value { margin: var(--space-1) 0 0; font-size: var(--fs-lg); font-weight: var(--fw-bold); letter-spacing: -0.01em; line-height: var(--lh-tight); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.note { margin: var(--space-1) 0 0; color: var(--muted); font-size: var(--fs-xs); font-weight: var(--fw-bold); overflow-wrap: anywhere; }
+.neutral { color: var(--text); }
+.stuck { color: var(--stuck); }
+.lock { color: var(--lock); }
+.profit { color: var(--profit); }
+.loss { color: var(--loss); }
+
+@container (width < 960px) {
+  .strip { display: grid; grid-template-columns: 1fr 1fr; }
+  .card { flex: none; }
+  .card:last-child:nth-child(odd) { grid-column: 1 / -1; }
+}
+@container (width < 480px) {
+  .strip { grid-template-columns: 1fr; }
+}

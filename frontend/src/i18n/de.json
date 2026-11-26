@@ -2183,6 +2183,50 @@
       "clear": "Löschen",
       "showOptions": "Optionen anzeigen",
       "pinned": "Am häufigsten verwendet"
+    },
+    "toast": {
+      "region": "Benachrichtigungen",
+      "dismiss": "Benachrichtigung schließen"
+    },
+    "banner": {
+      "dismiss": "Ausblenden"
+    },
+    "money": {
+      "staleRate": "Der Wechselkurs ist möglicherweise veraltet",
+      "estimated": "geschätzt"
+    },
+    "turnover": {
+      "daysForSale": {
+        "one": "{count} Tag im Verkauf",
+        "other": "{count} Tage im Verkauf"
+      },
+      "daysShort": {
+        "one": "{count} T",
+        "other": "{count} T"
+      },
+      "tradeLock": "Trade lock · wird in {time} freigegeben",
+      "legend": {
+        "fast": {
+          "one": "Schneller Umschlag bis {count} Tag",
+          "other": "Schneller Umschlag bis {count} Tage"
+        },
+        "moving": "In Bewegung",
+        "stuck": {
+          "one": "Ladenhüter über {count} Tag",
+          "other": "Ladenhüter über {count} Tage"
+        },
+        "lock": "Trade lock"
+      }
+    },
+    "balance": {
+      "barLabel": "Verfügbar {available}, ausstehend {pending}"
+    },
+    "table": {
+      "expandRow": "Einheiten von {name} anzeigen",
+      "collapseRow": "Einheiten von {name} ausblenden",
+      "selectRow": "{name} auswählen",
+      "selectAll": "Alle Zeilen auswählen",
+      "scrollRegion": "{caption}, scrollbar"
     }
   }
 }

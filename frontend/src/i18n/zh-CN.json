@@ -2181,6 +2181,46 @@
       "clear": "清除",
       "showOptions": "显示选项",
       "pinned": "常用"
+    },
+    "toast": {
+      "region": "通知",
+      "dismiss": "关闭通知"
+    },
+    "banner": {
+      "dismiss": "忽略"
+    },
+    "money": {
+      "staleRate": "汇率可能已过期",
+      "estimated": "估算"
+    },
+    "turnover": {
+      "daysForSale": {
+        "other": "在售 {count} 天"
+      },
+      "daysShort": {
+        "other": "{count} 天"
+      },
+      "tradeLock": "Trade lock · {time}后解除",
+      "legend": {
+        "fast": {
+          "other": "快速周转，不超过 {count} 天"
+        },
+        "moving": "周转中",
+        "stuck": {
+          "other": "滞销，超过 {count} 天"
+        },
+        "lock": "Trade lock"
+      }
+    },
+    "balance": {
+      "barLabel": "可用 {available}，待结算 {pending}"
+    },
+    "table": {
+      "expandRow": "显示 {name} 的单件",
+      "collapseRow": "隐藏 {name} 的单件",
+      "selectRow": "选择 {name}",
+      "selectAll": "选择所有行",
+      "scrollRegion": "{caption}，可滚动"
     }
   }
 }

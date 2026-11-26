@@ -1,0 +1,87 @@
+.card { min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface); box-shadow: var(--shadow-2); }
+.scroller { overflow-x: auto; scrollbar-width: thin; }
+.scroller:focus-visible { outline: none; box-shadow: inset var(--focus-ring); }
+/* Cabeçalho fixo: o rolável passa a ter altura máxima (o fixar relativo à janela não funciona dentro de overflow). */
+.sticky { max-height: min(70dvh, 40rem); overflow-y: auto; }
+.sticky th { position: sticky; top: 0; z-index: var(--z-sticky); }
+.caption { padding: 0; }
+
+.table { --row-h: var(--row-height); width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.table[data-density='comfortable'] { --row-h: var(--row-height-comfortable); }
+
+.table th {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+  text-align: start;
+  white-space: nowrap;
+}
+.table td { padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--line); vertical-align: middle; overflow-wrap: break-word; }
+/* Botões e links na célula não encolhem letra por letra: a tabela rola antes de espremer o rótulo. */
+.table td button, .table td a { white-space: nowrap; }
+.table tbody > tr[data-row-id] > td { height: var(--row-h); }
+.table tbody:last-of-type > tr:last-child > td { border-bottom: 0; }
+.table th.end, .table td.end { text-align: end; }
+.table td.utility, .table th.utility { width: 2.5rem; padding-inline: var(--space-2); }
+
+/* Cabeçalho ordenável. */
+.sortButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--target-min);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.sortButton:hover { color: var(--text); }
+.sortButton:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.sortIcon { display: inline-flex; opacity: 0.3; }
+.sorted { color: var(--text); }
+.sorted .sortIcon { opacity: 1; color: var(--brand); }
+
+/* Expandir. */
+.expander {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--target-min);
+  min-height: var(--target-min);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+.expander:hover { color: var(--text); background: var(--surface-2); }
+.expander:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.expander svg { transition: transform var(--dur-fast) var(--ease); }
+.expander[aria-expanded='true'] svg { transform: rotate(90deg); }
+
+/* Linhas: hover e tom (o texto da linha continua sendo a fonte do significado). */
+.table tr[data-row-id]:hover > td { background: var(--surface-2); }
+.table tr[data-tone='stuck'] > td { background: var(--stuck-soft); }
+.table tr[data-tone='lock'] > td { background: var(--lock-soft); }
+.table tr[data-open] > td { border-bottom-color: transparent; }
+
+/* Linhas filhas (as que não têm data-row-id): fundo mais suave e a borda --brand à esquerda. */
+.table tbody[id] > tr:not([data-row-id]) > td { background: color-mix(in srgb, var(--surface-2) 55%, var(--surface)); font-size: var(--fs-sm); }
+.table tbody[id] > tr:not([data-row-id]) > td:first-child { box-shadow: inset 3px 0 0 var(--brand); }
+
+.table td.details { padding-block: var(--space-3); }
+.hiddenList { display: grid; grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); gap: var(--space-3) var(--space-4); margin: 0; }
+.hiddenItem { min-width: 0; }
+.hiddenItem dt { color: var(--muted); font-size: var(--fs-xs); font-weight: var(--fw-bold); }
+.hiddenItem dd { margin: var(--space-1) 0 0; }
+
+.skeletonRow > td { height: var(--row-h); }
+.table td.empty { padding: 0; border-bottom: 0; }
+.footer { border-top: 1px solid var(--line); }

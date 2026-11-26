@@ -1,0 +1,46 @@
+.root { container-type: inline-size; }
+.banner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--tone);
+  border-radius: var(--radius-md);
+  background: var(--tone-soft);
+  color: var(--text);
+  font-size: var(--fs-md);
+  line-height: var(--lh-base);
+}
+.info { --tone: var(--brand); --tone-soft: var(--brand-soft); }
+.success { --tone: var(--profit); --tone-soft: var(--profit-soft); }
+.warning { --tone: var(--stuck); --tone-soft: var(--stuck-soft); }
+.danger { --tone: var(--loss); --tone-soft: var(--loss-soft); }
+.icon { display: inline-flex; flex: none; padding-top: 0.15em; color: var(--tone); }
+.body { flex: 1; min-width: 0; }
+.title { margin: 0 0 var(--space-1); font-weight: var(--fw-bold); overflow-wrap: anywhere; }
+.text { min-width: 0; overflow-wrap: anywhere; }
+.actions { display: flex; flex: none; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--control-h-sm);
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+  text-decoration: none;
+}
+.link:hover { border-color: var(--brand); }
+.link:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.dismiss { flex: none; margin: calc(-1 * var(--space-1)) calc(-1 * var(--space-2)) 0 0; }
+
+/* Container estreito: a ação desce para baixo do texto (o dispensar fica na primeira linha). */
+@container (width < 480px) {
+  .banner { flex-wrap: wrap; }
+  .dismiss { order: 2; }
+  .actions { order: 3; flex-basis: 100%; padding-inline-start: calc(18px + var(--space-3)); }
+}

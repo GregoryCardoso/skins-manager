@@ -2109,6 +2109,46 @@
       "clear": "クリア",
       "showOptions": "選択肢を表示",
       "pinned": "よく使う"
+    },
+    "toast": {
+      "region": "通知",
+      "dismiss": "通知を閉じる"
+    },
+    "banner": {
+      "dismiss": "非表示"
+    },
+    "money": {
+      "staleRate": "為替レートが古い可能性があります",
+      "estimated": "推定"
+    },
+    "turnover": {
+      "daysForSale": {
+        "other": "販売中 {count}日"
+      },
+      "daysShort": {
+        "other": "{count}日"
+      },
+      "tradeLock": "trade lock · {time}後に解除",
+      "legend": {
+        "fast": {
+          "other": "高回転（{count}日まで）"
+        },
+        "moving": "回転中",
+        "stuck": {
+          "other": "滞留（{count}日超）"
+        },
+        "lock": "trade lock"
+      }
+    },
+    "balance": {
+      "barLabel": "利用可能 {available}、保留中 {pending}"
+    },
+    "table": {
+      "expandRow": "{name}の個別アイテムを表示",
+      "collapseRow": "{name}の個別アイテムを非表示",
+      "selectRow": "{name}を選択",
+      "selectAll": "すべての行を選択",
+      "scrollRegion": "{caption}（スクロール可能）"
     }
   }
 }

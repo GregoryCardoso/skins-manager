@@ -2331,6 +2331,58 @@
       "clear": "Очистить",
       "showOptions": "Показать варианты",
       "pinned": "Часто используемые"
+    },
+    "toast": {
+      "region": "Уведомления",
+      "dismiss": "Закрыть уведомление"
+    },
+    "banner": {
+      "dismiss": "Скрыть"
+    },
+    "money": {
+      "staleRate": "Курс может быть устаревшим",
+      "estimated": "оценка"
+    },
+    "turnover": {
+      "daysForSale": {
+        "one": "{count} день в продаже",
+        "few": "{count} дня в продаже",
+        "many": "{count} дней в продаже",
+        "other": "{count} дня в продаже"
+      },
+      "daysShort": {
+        "one": "{count} дн.",
+        "few": "{count} дн.",
+        "many": "{count} дн.",
+        "other": "{count} дн."
+      },
+      "tradeLock": "Trade lock · освободится через {time}",
+      "legend": {
+        "fast": {
+          "one": "Быстрый оборот до {count} дня",
+          "few": "Быстрый оборот до {count} дней",
+          "many": "Быстрый оборот до {count} дней",
+          "other": "Быстрый оборот до {count} дня"
+        },
+        "moving": "В обороте",
+        "stuck": {
+          "one": "Залежался более {count} дня",
+          "few": "Залежался более {count} дней",
+          "many": "Залежался более {count} дней",
+          "other": "Залежался более {count} дня"
+        },
+        "lock": "Trade lock"
+      }
+    },
+    "balance": {
+      "barLabel": "Доступно {available}, в ожидании {pending}"
+    },
+    "table": {
+      "expandRow": "Показать единицы: {name}",
+      "collapseRow": "Скрыть единицы: {name}",
+      "selectRow": "Выбрать {name}",
+      "selectAll": "Выбрать все строки",
+      "scrollRegion": "{caption}, с прокруткой"
     }
   }
 }

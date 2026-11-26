@@ -10,6 +10,17 @@ contextBridge.exposeInMainWorld('skinsDesktop', {
   // Atualização dentro do app (D188). O renderer só envia { action, seq }; nunca uma URL.
   getUpdateState: () => ipcRenderer.invoke('desktop:getUpdateState'),
   respondToUpdate: (action, seq) => ipcRenderer.invoke('desktop:updateRespond', { action, seq }),
+  // Telas de início/erro dentro da janela (12.10): o main só atende a página local de carregamento.
+  screen: {
+    getState: () => ipcRenderer.invoke('desktop:screenState'),
+    choose: (id) => ipcRenderer.invoke('desktop:screenChoice', { id }),
+    onState: (callback) => {
+      if (typeof callback !== 'function') return () => {};
+      const listener = (_event, state) => callback(state);
+      ipcRenderer.on('desktop:screenState', listener);
+      return () => ipcRenderer.removeListener('desktop:screenState', listener);
+    },
+  },
   // O callback recebe só o estado (nunca o `event` do ipcRenderer). Devolve a função que cancela a inscrição.
   onUpdateState: (callback) => {
     if (typeof callback !== 'function') return () => {};

@@ -175,17 +175,29 @@ describe('preload: superfície exposta e cancelamento', () => {
     const { api, name } = loadApi();
     expect(name).toBe('skinsDesktop');
     expect(Object.keys(api).sort()).toEqual(
-      ['checkForUpdates', 'getAppInfo', 'getUpdateState', 'isDesktop', 'onUpdateState', 'respondToUpdate'].sort(),
+      ['checkForUpdates', 'getAppInfo', 'getUpdateState', 'isDesktop', 'onUpdateState', 'respondToUpdate', 'screen'].sort(),
     );
     expect(api.isDesktop).toBe(true);
-    for (const key of Object.keys(api)) if (key !== 'isDesktop') expect(typeof api[key]).toBe('function');
+    for (const key of Object.keys(api)) if (key !== 'isDesktop' && key !== 'screen') expect(typeof api[key]).toBe('function');
+    expect(Object.keys(api.screen).sort()).toEqual(['choose', 'getState', 'onState']);
   });
 
   test('o preload só usa canais fixos (nenhum canal vem do renderer)', () => {
     const source = fs.readFileSync(path.join(SRC, 'preload.js'), 'utf8');
     const used = [...source.matchAll(/(?:invoke|on|removeListener)\(\s*(['"`])([^'"`]+)\1/g)].map((m) => m[2]);
     expect(used.sort()).toEqual(
-      ['desktop:checkForUpdates', 'desktop:getAppInfo', 'desktop:getUpdateState', 'desktop:updateRespond', 'desktop:updateState', 'desktop:updateState'].sort(),
+      [
+        'desktop:checkForUpdates',
+        'desktop:getAppInfo',
+        'desktop:getUpdateState',
+        'desktop:screenChoice',
+        'desktop:screenState',
+        'desktop:screenState',
+        'desktop:screenState',
+        'desktop:updateRespond',
+        'desktop:updateState',
+        'desktop:updateState',
+      ].sort(),
     );
     expect(source).not.toMatch(/ipcRenderer\.(send|sendSync|sendTo|postMessage)|\bremote\b|webFrame|require\((?!['"]electron['"])/);
   });

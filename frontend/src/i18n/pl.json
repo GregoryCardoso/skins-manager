@@ -2331,6 +2331,58 @@
       "clear": "Wyczyść",
       "showOptions": "Pokaż opcje",
       "pinned": "Najczęściej używane"
+    },
+    "toast": {
+      "region": "Powiadomienia",
+      "dismiss": "Zamknij powiadomienie"
+    },
+    "banner": {
+      "dismiss": "Odrzuć"
+    },
+    "money": {
+      "staleRate": "Kurs może być nieaktualny",
+      "estimated": "szacunek"
+    },
+    "turnover": {
+      "daysForSale": {
+        "one": "{count} dzień w sprzedaży",
+        "few": "{count} dni w sprzedaży",
+        "many": "{count} dni w sprzedaży",
+        "other": "{count} dnia w sprzedaży"
+      },
+      "daysShort": {
+        "one": "{count} dz.",
+        "few": "{count} dz.",
+        "many": "{count} dz.",
+        "other": "{count} dz."
+      },
+      "tradeLock": "Trade lock · zwolnienie za {time}",
+      "legend": {
+        "fast": {
+          "one": "Szybka rotacja do {count} dnia",
+          "few": "Szybka rotacja do {count} dni",
+          "many": "Szybka rotacja do {count} dni",
+          "other": "Szybka rotacja do {count} dnia"
+        },
+        "moving": "W obrocie",
+        "stuck": {
+          "one": "Zalegający powyżej {count} dnia",
+          "few": "Zalegający powyżej {count} dni",
+          "many": "Zalegający powyżej {count} dni",
+          "other": "Zalegający powyżej {count} dnia"
+        },
+        "lock": "Trade lock"
+      }
+    },
+    "balance": {
+      "barLabel": "Dostępne {available}, oczekujące {pending}"
+    },
+    "table": {
+      "expandRow": "Pokaż sztuki: {name}",
+      "collapseRow": "Ukryj sztuki: {name}",
+      "selectRow": "Zaznacz {name}",
+      "selectAll": "Zaznacz wszystkie wiersze",
+      "scrollRegion": "{caption}, z przewijaniem"
     }
   }
 }

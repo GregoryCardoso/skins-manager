@@ -2109,6 +2109,46 @@
       "clear": "지우기",
       "showOptions": "옵션 표시",
       "pinned": "자주 사용"
+    },
+    "toast": {
+      "region": "알림",
+      "dismiss": "알림 닫기"
+    },
+    "banner": {
+      "dismiss": "닫기"
+    },
+    "money": {
+      "staleRate": "환율이 최신이 아닐 수 있습니다",
+      "estimated": "추정"
+    },
+    "turnover": {
+      "daysForSale": {
+        "other": "판매 중 {count}일"
+      },
+      "daysShort": {
+        "other": "{count}일"
+      },
+      "tradeLock": "Trade lock · {time} 후 해제",
+      "legend": {
+        "fast": {
+          "other": "빠른 회전 {count}일 이내"
+        },
+        "moving": "회전 중",
+        "stuck": {
+          "other": "정체 {count}일 초과"
+        },
+        "lock": "Trade lock"
+      }
+    },
+    "balance": {
+      "barLabel": "사용 가능 {available}, 보류 {pending}"
+    },
+    "table": {
+      "expandRow": "{name}의 개별 항목 보기",
+      "collapseRow": "{name}의 개별 항목 숨기기",
+      "selectRow": "{name} 선택",
+      "selectAll": "모든 행 선택",
+      "scrollRegion": "{caption}, 스크롤 가능"
     }
   }
 }

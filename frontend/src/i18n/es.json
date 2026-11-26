@@ -2183,6 +2183,50 @@
       "clear": "Borrar",
       "showOptions": "Mostrar opciones",
       "pinned": "Más usadas"
+    },
+    "toast": {
+      "region": "Notificaciones",
+      "dismiss": "Cerrar notificación"
+    },
+    "banner": {
+      "dismiss": "Descartar"
+    },
+    "money": {
+      "staleRate": "El tipo de cambio puede estar desactualizado",
+      "estimated": "estimado"
+    },
+    "turnover": {
+      "daysForSale": {
+        "one": "{count} día a la venta",
+        "other": "{count} días a la venta"
+      },
+      "daysShort": {
+        "one": "{count} d",
+        "other": "{count} d"
+      },
+      "tradeLock": "Trade lock · se libera en {time}",
+      "legend": {
+        "fast": {
+          "one": "Rotación rápida hasta {count} día",
+          "other": "Rotación rápida hasta {count} días"
+        },
+        "moving": "En rotación",
+        "stuck": {
+          "one": "Estancado por encima de {count} día",
+          "other": "Estancado por encima de {count} días"
+        },
+        "lock": "Trade lock"
+      }
+    },
+    "balance": {
+      "barLabel": "Disponible {available}, pendiente {pending}"
+    },
+    "table": {
+      "expandRow": "Mostrar unidades de {name}",
+      "collapseRow": "Ocultar unidades de {name}",
+      "selectRow": "Seleccionar {name}",
+      "selectAll": "Seleccionar todas las filas",
+      "scrollRegion": "{caption}, desplazable"
     }
   }
 }

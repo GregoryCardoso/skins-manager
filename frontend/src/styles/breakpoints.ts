@@ -3,8 +3,8 @@
 // Larga >= 1280 · média 1100–1279 · estreita 900–1099 · compacta 800–899 (abaixo de 800 a página pode rolar na horizontal).
 export const BREAKPOINTS = { compact: 800, narrow: 900, medium: 1100, wide: 1280 } as const;
 
-// Largura do próprio componente (container queries): sm 480, md 720, lg 960.
-export const CONTAINER_BREAKPOINTS = { sm: 480, md: 720, lg: 960 } as const;
+// Largura do próprio componente (container queries): sm 480, md 720, lg 960; xs 160 só para a célula da régua de giro (12.3b).
+export const CONTAINER_BREAKPOINTS = { xs: 160, sm: 480, md: 720, lg: 960 } as const;
 
 // Alturas permitidas em @media (altura da janela): só estas.
 export const HEIGHT_BREAKPOINTS = [600, 700] as const;

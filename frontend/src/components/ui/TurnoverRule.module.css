@@ -1,0 +1,51 @@
+/* A régua de giro: trilho de 3 faixas + pino + rótulo. Cores só por token. */
+.rule { container-type: inline-size; width: 100%; min-width: 7.5rem; max-width: 12rem; font-variant-numeric: tabular-nums; }
+.track { position: relative; display: grid; gap: 2px; height: 8px; border-radius: 4px; }
+.track i { display: block; height: 100%; border-radius: 2px; }
+.fast { background: color-mix(in srgb, var(--brand) 38%, transparent); }
+.moving { background: color-mix(in srgb, var(--muted) 26%, transparent); }
+.stuck { background: color-mix(in srgb, var(--stuck) 34%, transparent); }
+.pin {
+  position: absolute;
+  top: -4px;
+  width: 4px;
+  height: 16px;
+  border-radius: 2px;
+  background: var(--text);
+  box-shadow: 0 0 0 2px var(--surface);
+  transform: translateX(-50%);
+}
+.lab { display: flex; justify-content: space-between; gap: var(--space-2); margin-top: 5px; color: var(--muted); font-size: var(--fs-xs); font-weight: var(--fw-bold); }
+.full { display: flex; flex: 1; flex-wrap: wrap; justify-content: space-between; column-gap: var(--space-2); min-width: 0; }
+.short { display: none; min-width: 0; }
+.strong { color: var(--text); font-weight: var(--fw-bold); }
+.name { overflow-wrap: anywhere; }
+.isStuck .strong { color: var(--stuck); }
+
+/* Trade lock: o trilho vira as listras de lavanda e não há pino. */
+.isLock .track { background: var(--pattern-lock); }
+.isLock .track i { opacity: 0.25; }
+.isLock .strong { color: var(--lock); }
+
+/* Só a escala (barra das faixas, 12.8): os limites aparecem sob as divisas. */
+.scale { max-width: none; }
+.ticks { position: relative; height: 1.25rem; margin-top: var(--space-1); }
+.tick { position: absolute; top: 0; transform: translateX(-50%); color: var(--muted); font-size: var(--fs-xs); font-weight: var(--fw-bold); white-space: nowrap; }
+
+/* Forma curta: com size="sm" ou numa célula com menos de 160 px o trilho afina e o rótulo vira uma linha só. O nome da faixa
+   continua aparecendo (é a leitura sem cor). */
+.small .track { height: 4px; }
+.small .pin { top: -3px; height: 10px; }
+.small .full { display: none; }
+.small .short { display: inline; }
+@container (width < 160px) {
+  .track { height: 4px; }
+  .pin { top: -3px; height: 10px; }
+  .full { display: none; }
+  .short { display: inline; }
+}
+
+.legend { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); margin: 0; padding: var(--space-2) var(--space-3); list-style: none; color: var(--muted); font-size: var(--fs-sm); }
+.legendItem { display: inline-flex; align-items: center; gap: var(--space-2); }
+.swatch { display: inline-block; flex: none; width: 18px; height: 6px; border-radius: 2px; }
+.lockSwatch { background: var(--pattern-lock); }

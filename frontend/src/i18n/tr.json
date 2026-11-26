@@ -2183,6 +2183,50 @@
       "clear": "Temizle",
       "showOptions": "Seçenekleri göster",
       "pinned": "En çok kullanılanlar"
+    },
+    "toast": {
+      "region": "Bildirimler",
+      "dismiss": "Bildirimi kapat"
+    },
+    "banner": {
+      "dismiss": "Kapat"
+    },
+    "money": {
+      "staleRate": "Kur güncel olmayabilir",
+      "estimated": "tahmini"
+    },
+    "turnover": {
+      "daysForSale": {
+        "one": "{count} gündür satışta",
+        "other": "{count} gündür satışta"
+      },
+      "daysShort": {
+        "one": "{count} g",
+        "other": "{count} g"
+      },
+      "tradeLock": "Trade lock · {time} sonra açılır",
+      "legend": {
+        "fast": {
+          "one": "Hızlı devir en fazla {count} gün",
+          "other": "Hızlı devir en fazla {count} gün"
+        },
+        "moving": "Hareketli",
+        "stuck": {
+          "one": "{count} günden uzun süre takılı",
+          "other": "{count} günden uzun süre takılı"
+        },
+        "lock": "Trade lock"
+      }
+    },
+    "balance": {
+      "barLabel": "Kullanılabilir {available}, bekleyen {pending}"
+    },
+    "table": {
+      "expandRow": "{name} birimlerini göster",
+      "collapseRow": "{name} birimlerini gizle",
+      "selectRow": "{name} seç",
+      "selectAll": "Tüm satırları seç",
+      "scrollRegion": "{caption}, kaydırılabilir"
     }
   }
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import Badge, { HoldingBadge, StuckBadge, TradeLockBadge, type BadgeTone } from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Checkbox from '@/components/ui/Checkbox';
@@ -26,7 +26,10 @@ import { StaticI18nProvider, useLocale, useT } from '@/i18n/I18nProvider';
 import { loadDictionary, type Dictionary } from '@/i18n/dictionaries';
 import type { Language } from '@/types/api';
 import styles from './design.module.css';
-import { CATALOG_OPTIONS, FRAME_WIDTHS, FX, GALLERY_LANGUAGES, STORE_OPTIONS, THEME_OPTIONS, type GalleryLanguage } from './galleryFixtures';
+import { ToastProvider } from '@/components/ui/Toast';
+import { BalanceSection, BannerSection, MoneySection, PanelSection, StatesSection, TableSection, ToastSection, TurnoverSection } from './GallerySectionsData';
+import { Row, Section } from './galleryParts';
+import { CATALOG_OPTIONS, FX, GALLERY_LANGUAGES, STORE_OPTIONS, THEME_OPTIONS, type GalleryLanguage } from './galleryFixtures';
 
 const L = FX.labels;
 const BADGE_TONES: { tone: BadgeTone; text: string }[] = [
@@ -37,41 +40,6 @@ const BADGE_TONES: { tone: BadgeTone; text: string }[] = [
   { tone: 'pending', text: L.badgePending },
   { tone: 'info', text: L.badgeInfo },
 ];
-
-// Quadro redimensionável: exercita as container queries (resize: horizontal + botões 480/720/960).
-function Section({ title, children }: { title: string; children: ReactNode }) {
-  const [width, setWidth] = useState<number | null>(null);
-  return (
-    <section className={styles.gSection}>
-      <div className={styles.gSectionHead}>
-        <h3 className={styles.gTitle}>{title}</h3>
-        <span className={styles.gWidths}>
-          <span className={styles.note}>{FX.width}</span>
-          {FRAME_WIDTHS.map((w) => (
-            <button key={w} type="button" className={styles.gWidthBtn} aria-pressed={width === w} onClick={() => setWidth(w)}>
-              {w}
-            </button>
-          ))}
-          <button type="button" className={styles.gWidthBtn} aria-pressed={width === null} onClick={() => setWidth(null)}>
-            {FX.widthFree}
-          </button>
-        </span>
-      </div>
-      <div className={styles.gFrame} style={width ? { width: `${width}px` } : undefined}>
-        {children}
-      </div>
-    </section>
-  );
-}
-
-function Row({ caption, children }: { caption?: string; children: ReactNode }) {
-  return (
-    <div className={styles.gRow}>
-      {caption && <span className={styles.gCaption}>{caption}</span>}
-      <div className={styles.gItems}>{children}</div>
-    </div>
-  );
-}
 
 function ButtonsSection() {
   const variants = ['primary', 'secondary', 'ghost', 'danger'] as const;
@@ -408,6 +376,14 @@ function Gallery() {
       <DialogsSection />
       <MenuSection />
       <TabsSection />
+      <BannerSection />
+      <ToastSection />
+      <StatesSection />
+      <PanelSection />
+      <MoneySection />
+      <TurnoverSection />
+      <BalanceSection />
+      <TableSection />
     </>
   );
 }
@@ -447,6 +423,7 @@ export default function ComponentGallery() {
           </label>
         ))}
       </div>
+      <ToastProvider>
       <div className={styles.gColumns}>
         {selected.map((language) => {
           const messages = dictionaries[language];
@@ -461,6 +438,7 @@ export default function ComponentGallery() {
           );
         })}
       </div>
+      </ToastProvider>
     </div>
   );
 }

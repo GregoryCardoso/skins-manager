@@ -247,6 +247,7 @@ describe('preload', () => {
       'isDesktop',
       'onUpdateState',
       'respondToUpdate',
+      'screen',
     ]);
     expect(api.isDesktop).toBe(true);
     expect(api.getAppInfo()).toBe('invoked');

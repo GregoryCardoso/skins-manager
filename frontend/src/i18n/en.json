@@ -2183,6 +2183,50 @@
       "clear": "Clear",
       "showOptions": "Show options",
       "pinned": "Most used"
+    },
+    "toast": {
+      "region": "Notifications",
+      "dismiss": "Dismiss notification"
+    },
+    "banner": {
+      "dismiss": "Dismiss"
+    },
+    "money": {
+      "staleRate": "The exchange rate may be outdated",
+      "estimated": "estimated"
+    },
+    "turnover": {
+      "daysForSale": {
+        "one": "{count} day for sale",
+        "other": "{count} days for sale"
+      },
+      "daysShort": {
+        "one": "{count} d",
+        "other": "{count} d"
+      },
+      "tradeLock": "Trade lock · releases in {time}",
+      "legend": {
+        "fast": {
+          "one": "Fast turnover up to {count} day",
+          "other": "Fast turnover up to {count} days"
+        },
+        "moving": "Moving",
+        "stuck": {
+          "one": "Stuck above {count} day",
+          "other": "Stuck above {count} days"
+        },
+        "lock": "Trade lock"
+      }
+    },
+    "balance": {
+      "barLabel": "Available {available}, pending {pending}"
+    },
+    "table": {
+      "expandRow": "Show units of {name}",
+      "collapseRow": "Hide units of {name}",
+      "selectRow": "Select {name}",
+      "selectAll": "Select all rows",
+      "scrollRegion": "{caption}, scrollable"
     }
   }
 }

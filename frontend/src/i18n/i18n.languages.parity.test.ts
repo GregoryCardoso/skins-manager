@@ -75,6 +75,7 @@ const IDENTICAL_BY_LANGUAGE: Record<string, readonly string[]> = {
   ],
   fr: [
     'Europe', // 12.3a: nome da região igual ao inglês
+    'Notifications', // 12.3b: ui.toast.region, a palavra francesa é a mesma
     '{count} min', '{count} h', 'Skins', 'Stickers', 'Agents', 'Image', 'Trade lock', 'Actions', 'Holding ({count})', 'h', 'min', 'Skin',
     'Capsule', 'Sticker', 'Agent', 'Normal', 'Souvenir', 'Holding', 'Commercial', 'Commercial (AwesomeAPI)', 'Float', 'Paint seed', 'Phase',
     'Asset ID', 'inactive', 'Position', 'Type', 'Sticker Slab', 'Pattern', 'position', 'pattern', 'pattern {n}', 'Active', 'Note',

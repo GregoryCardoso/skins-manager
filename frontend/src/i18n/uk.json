@@ -2331,6 +2331,58 @@
       "clear": "Очистити",
       "showOptions": "Показати варіанти",
       "pinned": "Найуживаніші"
+    },
+    "toast": {
+      "region": "Сповіщення",
+      "dismiss": "Закрити сповіщення"
+    },
+    "banner": {
+      "dismiss": "Приховати"
+    },
+    "money": {
+      "staleRate": "Курс може бути застарілим",
+      "estimated": "оцінка"
+    },
+    "turnover": {
+      "daysForSale": {
+        "one": "{count} день у продажу",
+        "few": "{count} дні у продажу",
+        "many": "{count} днів у продажу",
+        "other": "{count} дня у продажу"
+      },
+      "daysShort": {
+        "one": "{count} дн.",
+        "few": "{count} дн.",
+        "many": "{count} дн.",
+        "other": "{count} дн."
+      },
+      "tradeLock": "Trade lock · розблокується через {time}",
+      "legend": {
+        "fast": {
+          "one": "Швидка оборотність до {count} дня",
+          "few": "Швидка оборотність до {count} днів",
+          "many": "Швидка оборотність до {count} днів",
+          "other": "Швидка оборотність до {count} дня"
+        },
+        "moving": "В обігу",
+        "stuck": {
+          "one": "Залежалий понад {count} день",
+          "few": "Залежалий понад {count} дні",
+          "many": "Залежалий понад {count} днів",
+          "other": "Залежалий понад {count} дня"
+        },
+        "lock": "Trade lock"
+      }
+    },
+    "balance": {
+      "barLabel": "Доступно {available}, в очікуванні {pending}"
+    },
+    "table": {
+      "expandRow": "Показати одиниці: {name}",
+      "collapseRow": "Приховати одиниці: {name}",
+      "selectRow": "Вибрати {name}",
+      "selectAll": "Вибрати всі рядки",
+      "scrollRegion": "{caption}, з прокруткою"
     }
   }
 }

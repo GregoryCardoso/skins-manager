@@ -13,6 +13,7 @@ const { createBackendSupervisor } = require('./backendSupervisor');
 const windowSetup = require('./window');
 const { backgroundFor } = require('./lib/windowTheme');
 const dialogs = require('./dialogs');
+const { createScreens, LOADING_FILE } = require('./screens');
 const { registerIpc, createStatePublisher } = require('./ipc');
 const { createUpdater } = require('./updater');
 const { normalizeLanguage, languageFromLocale } = require('./i18n');
@@ -57,6 +58,9 @@ let currentLanguage = null; // último idioma lido das configurações; null = a
 
 const getAppOrigin = () => appOrigin;
 
+// Telas de início e de erro dentro da janela, com diálogo nativo de reserva (12.10).
+const screens = createScreens({ dialogs, loadingFile: LOADING_FILE, logger });
+
 // Sem idioma lido das configurações, usa o do sistema se for um dos disponíveis; senão, o inglês (D369).
 function knownLanguage() {
   if (currentLanguage) return currentLanguage;
@@ -69,6 +73,7 @@ function knownLanguage() {
 
 // Cor de fundo da janela pelo tema escolhido nas configurações (12.10), antes de a página pintar.
 function applyWindowBackground(theme) {
+  screens.setTheme(theme); // a tela de erro dentro da janela usa o mesmo tema
   if (!mainWindow || mainWindow.isDestroyed()) return;
   mainWindow.setBackgroundColor(backgroundFor({ theme, systemDark: nativeTheme.shouldUseDarkColors }));
 }
@@ -100,8 +105,9 @@ function readBrowserLockPort() {
   return null;
 }
 
-function parentWindow() {
-  return mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible() ? mainWindow : null;
+// Janela que mostra as telas dentro dela (mesmo antes de aparecer); sem janela, o diálogo nativo assume.
+function screenWindow() {
+  return mainWindow && !mainWindow.isDestroyed() ? mainWindow : null;
 }
 
 function getMainWebContents() {
@@ -135,15 +141,23 @@ async function onStartupFailure({ code, message }) {
   const language = await refreshLanguage(appPort);
   const lockPort = code === 'DATA_DIR_LOCKED' ? readBrowserLockPort() : null;
   for (;;) {
-    const choice = await dialogs.showStartFailure({
-      parent: parentWindow(),
+    const choice = await screens.showStartFailure({
+      parent: screenWindow(),
       language,
       code,
       message,
       browserUrl: lockPort ? `http://localhost:${lockPort}/` : null,
     });
+    if (choice === 'retry' && supervisor) {
+      pageLoaded = false;
+      screens.showLoading(mainWindow);
+      supervisor.retry(); // se falhar de novo, volta a esta tela
+      return;
+    }
     if (choice === 'open-data') {
       await shell.openPath(dataDir);
+    } else if (choice === 'open-logs') {
+      await shell.openPath(dataPaths.logsDir);
     } else if (choice === 'open-browser' && lockPort) {
       await openInBrowser(lockPort);
       break;
@@ -157,8 +171,10 @@ async function onStartupFailure({ code, message }) {
 async function onGaveUp() {
   const language = await refreshLanguage(appPort);
   for (;;) {
-    const choice = await dialogs.showCrashLoop({ parent: parentWindow(), language, dataDir });
+    const choice = await screens.showCrashLoop({ parent: screenWindow(), language, dataDir });
     if (choice === 'retry') {
+      pageLoaded = false; // a janela está na tela de erro; ao ficar pronto, carrega a interface de novo
+      screens.showLoading(mainWindow);
       supervisor.retry();
       return;
     }
@@ -186,7 +202,7 @@ async function startup() {
     workArea: screen.getPrimaryDisplay().workAreaSize,
     systemDark: nativeTheme.shouldUseDarkColors,
     onRenderGoneTwice: async () => {
-      await dialogs.showRenderGone({ parent: parentWindow(), language: await refreshLanguage(appPort) });
+      await screens.showRenderGone({ parent: screenWindow(), language: await refreshLanguage(appPort) });
       quitApp();
     },
   });
@@ -200,13 +216,13 @@ async function startup() {
 
   if (choice.kind === 'already-running') {
     const language = await refreshLanguage(choice.port);
-    const answer = await dialogs.showAlreadyOpen({ parent: parentWindow(), language, port: choice.port });
+    const answer = await screens.showAlreadyOpen({ parent: screenWindow(), language, port: choice.port });
     if (answer === 'open-browser') await openInBrowser(choice.port);
     quitApp();
     return;
   }
   if (choice.kind === 'none') {
-    await dialogs.showNoFreePort({ parent: parentWindow(), language: knownLanguage() });
+    await screens.showNoFreePort({ parent: screenWindow(), language: knownLanguage() });
     quitApp();
     return;
   }
@@ -273,6 +289,9 @@ if (!app.requestSingleInstanceLock()) {
       getUpdateState: () => updater.getState(),
       respondToUpdate: (payload) => updater.respond(payload),
       getMainWebContents,
+      loadingFile: LOADING_FILE,
+      getScreenState: () => screens.getState(),
+      chooseScreen: (id) => screens.choose(id),
     });
     updater.scheduleAutoCheck();
 

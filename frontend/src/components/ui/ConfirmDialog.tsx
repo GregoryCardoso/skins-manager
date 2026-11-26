@@ -2,9 +2,9 @@
 
 import { useId, useRef, type ReactNode } from 'react';
 import { useT } from '@/i18n/I18nProvider';
+import Banner from './Banner';
 import Button from './Button';
 import Dialog from './Dialog';
-import Icon from './Icon';
 import styles from './ConfirmDialog.module.css';
 
 export interface ConfirmDialogProps {
@@ -21,7 +21,7 @@ export interface ConfirmDialogProps {
   onCancel: () => void;
 }
 
-// Confirmação antes de uma ação destrutiva. role="alertdialog"; foco inicial em Cancelar no danger. O erro aparece dentro do diálogo.
+// Confirmação antes de uma ação destrutiva. role="alertdialog"; foco inicial em Cancelar no danger. O erro aparece dentro do diálogo, num Banner de perigo (role="alert").
 export default function ConfirmDialog({ title, message, confirmLabel, tone = 'primary', details, busy = false, error, onConfirm, onCancel }: ConfirmDialogProps) {
   const t = useT();
   const messageId = useId();
@@ -53,12 +53,7 @@ export default function ConfirmDialog({ title, message, confirmLabel, tone = 'pr
       <div className={styles.stack}>
         <div id={messageId}>{message}</div>
         {details && <div className={styles.details}>{details}</div>}
-        {error && (
-          <div role="alert" className={styles.error}>
-            <Icon name="alert" size={16} />
-            <span>{error}</span>
-          </div>
-        )}
+        {error && <Banner tone="danger">{error}</Banner>}
       </div>
     </Dialog>
   );

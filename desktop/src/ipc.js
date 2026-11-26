@@ -4,8 +4,10 @@
 const { ipcMain } = require('electron');
 const { isSameOrigin } = require('./lib/navigationPolicy');
 const { parseRespondPayload } = require('./lib/updateState');
+const { isScreenSender, parseChoicePayload } = require('./lib/screenPolicy');
 
 const UPDATE_STATE_CHANNEL = 'desktop:updateState';
+const SCREEN_STATE_CHANNEL = 'desktop:screenState';
 
 // Envio do estado da atualização ao renderer (main -> renderer). Só envia se a janela está numa página da origem do
 // app (não na tela de carregamento nem numa página de erro); nesse caso o renderer busca o estado ao montar.
@@ -26,6 +28,9 @@ function registerIpc({
   getUpdateState,
   respondToUpdate,
   getMainWebContents = () => null,
+  loadingFile = null,
+  getScreenState,
+  chooseScreen,
 }) {
   const guard = (event) => {
     const url = event.senderFrame && event.senderFrame.url;
@@ -40,6 +45,30 @@ function registerIpc({
     const main = getMainWebContents();
     if (!main || event.sender !== main) throw new Error('Remetente não autorizado.');
   };
+
+  // Canais das telas dentro da janela (12.10): só a página local de carregamento (arquivo), nunca a origem http do app.
+  const guardScreen = (event) => {
+    const url = event.senderFrame && event.senderFrame.url;
+    if (!loadingFile || !isScreenSender(url, loadingFile)) throw new Error('Origem não autorizada.');
+    const main = getMainWebContents();
+    if (!main || event.sender !== main) throw new Error('Remetente não autorizado.');
+  };
+
+  if (typeof getScreenState === 'function') {
+    ipcMain.handle(SCREEN_STATE_CHANNEL, (event) => {
+      guardScreen(event);
+      return getScreenState();
+    });
+  }
+
+  if (typeof chooseScreen === 'function') {
+    ipcMain.handle('desktop:screenChoice', (event, payload) => {
+      guardScreen(event);
+      const id = parseChoicePayload(payload); // só { id }; o main ainda confere contra os botões do estado atual
+      if (id === null) return { ok: false };
+      return chooseScreen(id);
+    });
+  }
 
   ipcMain.handle('desktop:getAppInfo', (event) => {
     guard(event);
