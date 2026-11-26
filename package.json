@@ -1,6 +1,6 @@
 {
   "name": "skins-manager",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "private": true,
   "description": "App local de inventário e giro de itens de CS2",
   "scripts": {
