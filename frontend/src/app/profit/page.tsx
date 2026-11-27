@@ -17,6 +17,7 @@ import { queryKeys } from '@/lib/queryKeys';
 import { useInvalidate } from '@/lib/useInvalidate';
 import { ApiRequestError, deleteDeposit, listDeposits, listStores } from '@/services/api';
 import type { Deposit } from '@/types/api';
+import PageHeader from '@/components/ui/PageHeader';
 import styles from './page.module.css';
 
 type Dialog = { kind: 'create' } | { kind: 'edit'; deposit: Deposit } | { kind: 'delete'; deposit: Deposit };
@@ -91,8 +92,7 @@ export default function ProfitPage() {
 
   return (
     <>
-      <h1>{t('profit.title')}</h1>
-      <p className={styles.subtitle}>{t('profit.subtitle')}</p>
+      <PageHeader title={t('profit.title')} subtitle={t('profit.subtitle')} />
 
       <SummaryCards />
 

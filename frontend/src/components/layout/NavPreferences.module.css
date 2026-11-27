@@ -1,0 +1,22 @@
+.prefs { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
+.prefs > * { min-width: 0; }
+.prefs label { font-size: var(--fs-xs); }
+.compact { display: flex; flex-direction: column; align-items: center; gap: var(--space-1); }
+.popover {
+  z-index: var(--z-dropdown);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: min(18rem, calc(100vw - 2 * var(--space-4)));
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-3);
+}
+.popover:focus-visible { outline: none; }
+/* Antes de o React trocar para os botões de ícone (menu recolhido pela preferência), a coluna estreita não mostra o formulário largo. */
+@container (width < 160px) {
+  .prefs { display: none; }
+}

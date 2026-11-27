@@ -34,7 +34,34 @@
     "main": "メインナビゲーション",
     "stores": "ストア",
     "settings": "設定",
-    "profit": "実利益"
+    "profit": "実利益",
+    "imports": "インポート",
+    "collapse": "メニューを折りたたむ",
+    "expand": "メニューを展開",
+    "reviewCount": {
+      "other": "要確認{count}件"
+    },
+    "countMax": "{count}+"
+  },
+  "layout": {
+    "skipToContent": "コンテンツへスキップ",
+    "documentTitle": "{page} · {app}"
+  },
+  "unavailable": {
+    "title": "アプリが応答していません",
+    "intro": "Skins Manager が自身のローカルサービスに接続できませんでした。何も失われていません。データはこのパソコンに保存されています。",
+    "steps": {
+      "reopen": "アプリを閉じて、もう一度開いてください。",
+      "bat": "start-app.bat で起動している場合は、黒いウィンドウを閉じて、start-app.bat をもう一度実行してください。",
+      "restart": "それでも直らない場合は、パソコンを再起動してアプリを開き直してください。"
+    },
+    "lastCheck": "最終確認：{time}",
+    "recovered": "接続が回復しました"
+  },
+  "notices": {
+    "region": "アプリからのお知らせ",
+    "goToSettings": "設定へ移動",
+    "noDisplayRate": "{currency}の為替レートがまだないため、≈ の付いた金額は表示されません。"
   },
   "header": {
     "preferenceNotSaved": "設定を保存できませんでした（{reason}）。もう一度お試しください。",
@@ -74,21 +101,17 @@
     }
   },
   "pages": {
-    "inventoryTitle": "インベントリ",
-    "salesTitle": "販売",
     "notFoundTitle": "ページが見つかりません",
     "notFoundText": "このページは存在しません。メニューから戻ってください。",
     "backHome": "インベントリに戻る"
   },
   "status": {
-    "title": "アプリの状態",
     "recheck": "もう一度確認",
     "checking": "確認中...",
     "server": "アプリとの接続",
     "online": "接続済み",
     "offline": "応答なし",
-    "lastResponse": "最後の応答：{time}",
-    "manageInSettings": "設定でカタログを更新する"
+    "lastResponse": "最後の応答：{time}"
   },
   "catalog": {
     "title": "カタログ",
@@ -2016,8 +2039,10 @@
       "intro": "アプリを開いたときにインターネットを使えなかったため、次のものが更新されませんでした：",
       "fx": "為替レート。アプリは、最後に保存したレートを使い続けます。",
       "csfloat": "CSFloatのインポート：新しい購入、販売、入金、出金。",
-      "hint": "何も変更されていません。インターネットに接続できたら、「レートを更新」と、CSFloatのカードの「今すぐインポート」を使ってください。どちらのボタンも設定にあります。",
-      "ok": "わかりました"
+      "hint": "何も変更されていません。インターネットに接続できたら、「もう一度試す」を押してください。",
+      "lastFx": "最後の為替レート：{date}",
+      "lastImport": "最後のCSFloatインポート：{date}",
+      "neverImported": "CSFloatのインポートはまだありません。"
     }
   },
   "csfloatSetup": {

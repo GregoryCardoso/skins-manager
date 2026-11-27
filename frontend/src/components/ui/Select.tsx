@@ -10,6 +10,8 @@ export interface SelectOption {
   value: string;
   label: string;
   disabled?: boolean;
+  // Idioma do texto da opção (nomes de idiomas escritos neles mesmos).
+  lang?: string;
 }
 
 export interface SelectProps {
@@ -44,7 +46,7 @@ export default function Select({ label, value, onChange, options, placeholder, h
               </option>
             )}
             {options.map((option) => (
-              <option key={option.value} value={option.value} disabled={option.disabled}>
+              <option key={option.value} value={option.value} disabled={option.disabled} lang={option.lang}>
                 {option.label}
               </option>
             ))}

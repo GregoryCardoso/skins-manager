@@ -26,7 +26,6 @@ import { StaticI18nProvider, useLocale, useT } from '@/i18n/I18nProvider';
 import { loadDictionary, type Dictionary } from '@/i18n/dictionaries';
 import type { Language } from '@/types/api';
 import styles from './design.module.css';
-import { ToastProvider } from '@/components/ui/Toast';
 import { BalanceSection, BannerSection, MoneySection, PanelSection, StatesSection, TableSection, ToastSection, TurnoverSection } from './GallerySectionsData';
 import { Row, Section } from './galleryParts';
 import { CATALOG_OPTIONS, FX, GALLERY_LANGUAGES, STORE_OPTIONS, THEME_OPTIONS, type GalleryLanguage } from './galleryFixtures';
@@ -423,7 +422,6 @@ export default function ComponentGallery() {
           </label>
         ))}
       </div>
-      <ToastProvider>
       <div className={styles.gColumns}>
         {selected.map((language) => {
           const messages = dictionaries[language];
@@ -438,7 +436,6 @@ export default function ComponentGallery() {
           );
         })}
       </div>
-      </ToastProvider>
     </div>
   );
 }

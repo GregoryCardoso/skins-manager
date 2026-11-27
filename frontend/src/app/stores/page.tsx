@@ -11,6 +11,7 @@ import { queryKeys } from '@/lib/queryKeys';
 import { useInvalidate } from '@/lib/useInvalidate';
 import { ApiRequestError, deleteStore, listStores, setSteamStore, updateStore } from '@/services/api';
 import type { Store } from '@/types/api';
+import PageHeader from '@/components/ui/PageHeader';
 import styles from './page.module.css';
 
 type Dialog = { kind: 'create' } | { kind: 'edit'; store: Store } | { kind: 'delete'; store: Store };
@@ -127,10 +128,7 @@ export default function StoresPage() {
 
   return (
     <>
-      <div className={styles.titleRow}>
-        <h1>{t('stores.title')}</h1>
-        {stores && <span className={styles.count} aria-live="polite">{tPlural('stores.count', stores.length)}</span>}
-      </div>
+      <PageHeader title={t('stores.title')} subtitle={stores ? tPlural('stores.count', stores.length) : undefined} liveSubtitle />
 
       <div className={styles.toolbar}>
         <p className={styles.note}>{t('stores.feeChangeNote')}</p>

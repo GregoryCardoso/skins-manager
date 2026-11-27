@@ -35,7 +35,35 @@
     "main": "Main navigation",
     "stores": "Stores",
     "settings": "Settings",
-    "profit": "Real profit"
+    "profit": "Real profit",
+    "imports": "Imports",
+    "collapse": "Collapse menu",
+    "expand": "Expand menu",
+    "reviewCount": {
+      "one": "{count} to review",
+      "other": "{count} to review"
+    },
+    "countMax": "{count}+"
+  },
+  "layout": {
+    "skipToContent": "Skip to content",
+    "documentTitle": "{page} · {app}"
+  },
+  "unavailable": {
+    "title": "The app is not responding",
+    "intro": "Skins Manager could not reach its own local service. Nothing was lost: your data is saved on this computer.",
+    "steps": {
+      "reopen": "Close the app and open it again.",
+      "bat": "If you open it with start-app.bat, close the black window and run start-app.bat again.",
+      "restart": "If it keeps happening, restart the computer and open the app again."
+    },
+    "lastCheck": "Last check: {time}",
+    "recovered": "Connection restored"
+  },
+  "notices": {
+    "region": "App notices",
+    "goToSettings": "Go to Settings",
+    "noDisplayRate": "There is no exchange rate for {currency} yet, so values with ≈ are not shown."
   },
   "header": {
     "preferenceNotSaved": "Could not save your preference ({reason}). Try again.",
@@ -75,21 +103,17 @@
     }
   },
   "pages": {
-    "inventoryTitle": "Inventory",
-    "salesTitle": "Sales",
     "notFoundTitle": "Page not found",
     "notFoundText": "This page does not exist. Use the menu to go back.",
     "backHome": "Back to inventory"
   },
   "status": {
-    "title": "App status",
     "recheck": "Check again",
     "checking": "Checking...",
     "server": "Connection to the app",
     "online": "Connected",
     "offline": "Not responding",
-    "lastResponse": "Last response: {time}",
-    "manageInSettings": "Update the catalog in Settings"
+    "lastResponse": "Last response: {time}"
   },
   "catalog": {
     "title": "Catalog",
@@ -2088,8 +2112,10 @@
       "intro": "When it opened, the app could not use the internet, so this was not updated:",
       "fx": "The exchange rates. The app keeps using the last saved rates.",
       "csfloat": "The CSFloat import: new purchases, sales, deposits and withdrawals.",
-      "hint": "Nothing was changed. When the internet is back, use \"Update rate\" and, on the CSFloat card, \"Import now\". Both buttons are in Settings.",
-      "ok": "Got it"
+      "hint": "Nothing was changed. When the internet is back, use \"Try again\".",
+      "lastFx": "Last exchange rate: {date}",
+      "lastImport": "Last CSFloat import: {date}",
+      "neverImported": "No CSFloat import yet."
     }
   },
   "csfloatSetup": {

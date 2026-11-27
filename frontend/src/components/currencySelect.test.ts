@@ -12,11 +12,12 @@ import { ApiRequestError, changeDisplayCurrency, getCurrencyChangePreview, refre
 const src = path.join(__dirname, '..');
 const read = (rel: string) => fs.readFileSync(path.join(src, rel), 'utf8');
 
-describe('seletor (cabeçalho e Configurações)', () => {
-  test('o cabeçalho e as preferências usam o mesmo componente, ao lado do idioma', () => {
-    const header = read('components/HeaderControls.tsx');
-    expect(header).toMatch(/<CurrencySelect /);
-    expect(header.indexOf('setLanguage(')).toBeLessThan(header.indexOf('<CurrencySelect'));
+describe('seletor (menu e Configurações)', () => {
+  test('o menu lateral (12.4) tem a moeda ao lado do idioma e as Configurações continuam com o CurrencySelect', () => {
+    // O comportamento do menu (a moeda abre o modal sem gravar) é coberto em layout/NavPreferences.test.tsx.
+    const prefsNav = read('components/layout/NavPreferences.tsx');
+    expect(prefsNav).toMatch(/<NavCurrencyPicker /);
+    expect(prefsNav.indexOf('setLanguage(')).toBeLessThan(prefsNav.indexOf('<NavCurrencyPicker'));
     const prefs = read('components/PreferencesSettings.tsx');
     expect(prefs).toMatch(/<CurrencySelect id=\{currencyId\}/);
     expect(prefs).toMatch(/currency\.label/);

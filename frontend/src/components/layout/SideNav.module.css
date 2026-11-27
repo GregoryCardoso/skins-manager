@@ -1,0 +1,101 @@
+/* Menu lateral (12.4). A aparência recolhida/expandida vem da LARGURA da coluna (container query), que o AppShell controla por
+   --nav-w; assim o primeiro desenho, antes de o React assumir, já sai certo. */
+.rail {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  height: 100vh;
+  height: 100dvh;
+  min-width: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  border-inline-end: 1px solid var(--line);
+  background: linear-gradient(180deg, var(--surface) 0%, var(--bg) 100%);
+  container-type: inline-size;
+}
+.panel {
+  position: fixed;
+  inset-block: 0;
+  inset-inline-start: 0;
+  z-index: var(--z-nav);
+  width: 14.5rem;
+  max-width: 100vw;
+  overflow-x: hidden;
+  overflow-y: auto;
+  border-inline-end: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow-3);
+  container-type: inline-size;
+}
+.panel:focus-visible { outline: none; }
+.scrim { position: fixed; inset: 0; z-index: var(--z-nav); background: color-mix(in srgb, var(--bg) 70%, transparent); }
+.srOnly { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+.nav { display: flex; flex-direction: column; gap: var(--space-5); min-height: 100%; padding: var(--space-5) var(--space-3) 0; }
+.brand { display: flex; align-items: center; gap: var(--space-3); padding: 0 var(--space-2); min-width: 0; }
+.brand > svg { flex: none; }
+.brandName { min-width: 0; font-size: var(--fs-base); font-weight: var(--fw-bold); letter-spacing: -0.01em; overflow-wrap: anywhere; }
+.brandName:lang(ja), .brandName:lang(ko), .brandName:lang(zh-CN) { letter-spacing: 0; }
+.list { display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 0; list-style: none; }
+
+.link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--control-h-md);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  color: var(--muted);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-tight);
+  text-decoration: none;
+  transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+.link:hover { background: var(--surface-2); color: var(--text); }
+.link:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.active, .active:hover { background: var(--brand-soft); color: var(--text); box-shadow: inset 3px 0 0 var(--brand); }
+.active:focus-visible { box-shadow: inset 3px 0 0 var(--brand), var(--focus-ring); }
+.icon { position: relative; display: inline-flex; flex: none; }
+.label { min-width: 0; flex: 1; overflow-wrap: anywhere; }
+.count {
+  flex: none;
+  align-self: flex-start;
+  min-width: 1.4rem;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--stuck-soft);
+  color: var(--stuck);
+  box-shadow: inset 0 0 0 1px var(--stuck);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  line-height: 1.4rem;
+  text-align: center;
+}
+.dot { display: none; position: absolute; top: -3px; right: -4px; width: 9px; height: 9px; border-radius: var(--radius-pill); background: var(--stuck); box-shadow: 0 0 0 2px var(--surface); }
+
+.foot {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: auto;
+  padding: var(--space-3) 0 var(--space-4);
+  border-top: 1px solid var(--line);
+  background: var(--bg);
+}
+.panel .foot { background: var(--surface); }
+.toggleRow { display: flex; justify-content: flex-end; }
+
+/* Coluna estreita (recolhida, 64 px): só ícones; o nome fica para o leitor de tela. */
+@container (width < 160px) {
+  .nav { padding-inline: var(--space-2); }
+  .brand { justify-content: center; padding: 0; }
+  .brandName, .count { display: none; }
+  .label { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; flex: none; }
+  .link { justify-content: center; padding-inline: var(--space-2); }
+  .dot { display: block; }
+  .toggleRow { justify-content: center; }
+}

@@ -35,7 +35,35 @@
     "main": "Ana gezinme",
     "stores": "Mağazalar",
     "settings": "Ayarlar",
-    "profit": "Gerçek kâr"
+    "profit": "Gerçek kâr",
+    "imports": "İçe aktarmalar",
+    "collapse": "Menüyü daralt",
+    "expand": "Menüyü genişlet",
+    "reviewCount": {
+      "one": "{count} incelenecek",
+      "other": "{count} incelenecek"
+    },
+    "countMax": "{count}+"
+  },
+  "layout": {
+    "skipToContent": "İçeriğe geç",
+    "documentTitle": "{page} · {app}"
+  },
+  "unavailable": {
+    "title": "Uygulama yanıt vermiyor",
+    "intro": "Skins Manager kendi yerel hizmetine ulaşamadı. Hiçbir şey kaybolmadı: verileriniz bu bilgisayarda kayıtlı.",
+    "steps": {
+      "reopen": "Uygulamayı kapatın ve yeniden açın.",
+      "bat": "Uygulamayı start-app.bat ile açıyorsanız siyah pencereyi kapatın ve start-app.bat dosyasını yeniden çalıştırın.",
+      "restart": "Sorun devam ederse bilgisayarı yeniden başlatın ve uygulamayı yeniden açın."
+    },
+    "lastCheck": "Son kontrol: {time}",
+    "recovered": "Bağlantı yeniden kuruldu"
+  },
+  "notices": {
+    "region": "Uygulama bildirimleri",
+    "goToSettings": "Ayarlar'a git",
+    "noDisplayRate": "{currency} için henüz kur yok, bu yüzden ≈ ile gösterilen değerler görünmüyor."
   },
   "header": {
     "preferenceNotSaved": "Tercihiniz kaydedilemedi ({reason}). Tekrar deneyin.",
@@ -75,21 +103,17 @@
     }
   },
   "pages": {
-    "inventoryTitle": "Envanter",
-    "salesTitle": "Satışlar",
     "notFoundTitle": "Sayfa bulunamadı",
     "notFoundText": "Bu sayfa yok. Geri dönmek için menüyü kullanın.",
     "backHome": "Envantere dön"
   },
   "status": {
-    "title": "Uygulama durumu",
     "recheck": "Tekrar kontrol et",
     "checking": "Kontrol ediliyor...",
     "server": "Uygulama bağlantısı",
     "online": "Bağlı",
     "offline": "Yanıt vermiyor",
-    "lastResponse": "Son yanıt: {time}",
-    "manageInSettings": "Kataloğu Ayarlar'dan güncelleyin"
+    "lastResponse": "Son yanıt: {time}"
   },
   "catalog": {
     "title": "Katalog",
@@ -2088,8 +2112,10 @@
       "intro": "Uygulama açılırken internet kullanılamadı, bu yüzden şunlar güncellenmedi:",
       "fx": "Döviz kurları. Uygulama son kayıtlı kurları kullanmaya devam eder.",
       "csfloat": "CSFloat içe aktarması: yeni alımlar, satışlar, para yatırmalar ve çekimler.",
-      "hint": "Hiçbir şey değişmedi. İnternet geri geldiğinde \"Kuru güncelle\"yi, CSFloat kartında ise \"Şimdi içe aktar\"ı kullanın. İki düğme de Ayarlar'da.",
-      "ok": "Anladım"
+      "hint": "Hiçbir şey değişmedi. İnternet geri geldiğinde \"Tekrar deneyin\" düğmesini kullanın.",
+      "lastFx": "Son kur: {date}",
+      "lastImport": "Son CSFloat içe aktarımı: {date}",
+      "neverImported": "Henüz CSFloat içe aktarımı yapılmadı."
     }
   },
   "csfloatSetup": {

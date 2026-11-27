@@ -35,7 +35,35 @@
     "main": "Navegación principal",
     "stores": "Tiendas",
     "settings": "Configuración",
-    "profit": "Ganancia real"
+    "profit": "Ganancia real",
+    "imports": "Importaciones",
+    "collapse": "Contraer menú",
+    "expand": "Expandir menú",
+    "reviewCount": {
+      "one": "{count} por revisar",
+      "other": "{count} por revisar"
+    },
+    "countMax": "{count}+"
+  },
+  "layout": {
+    "skipToContent": "Saltar al contenido",
+    "documentTitle": "{page} · {app}"
+  },
+  "unavailable": {
+    "title": "La app no responde",
+    "intro": "Skins Manager no pudo comunicarse con su propio servicio local. No se perdió nada: tus datos están guardados en este equipo.",
+    "steps": {
+      "reopen": "Cierra la app y ábrela de nuevo.",
+      "bat": "Si la abres con start-app.bat, cierra la ventana negra y ejecuta start-app.bat otra vez.",
+      "restart": "Si sigue pasando, reinicia el equipo y abre la app de nuevo."
+    },
+    "lastCheck": "Última comprobación: {time}",
+    "recovered": "Conexión restablecida"
+  },
+  "notices": {
+    "region": "Avisos de la app",
+    "goToSettings": "Ir a Configuración",
+    "noDisplayRate": "Todavía no hay tipo de cambio para {currency}, por eso no se muestran los valores con ≈."
   },
   "header": {
     "preferenceNotSaved": "No se pudo guardar tu preferencia ({reason}). Intenta de nuevo.",
@@ -75,21 +103,17 @@
     }
   },
   "pages": {
-    "inventoryTitle": "Inventario",
-    "salesTitle": "Ventas",
     "notFoundTitle": "Página no encontrada",
     "notFoundText": "Esta página no existe. Usa el menú para volver.",
     "backHome": "Volver al inventario"
   },
   "status": {
-    "title": "Estado de la app",
     "recheck": "Comprobar de nuevo",
     "checking": "Comprobando...",
     "server": "Conexión con la app",
     "online": "Conectada",
     "offline": "No responde",
-    "lastResponse": "Última respuesta: {time}",
-    "manageInSettings": "Actualiza el catálogo en Configuración"
+    "lastResponse": "Última respuesta: {time}"
   },
   "catalog": {
     "title": "Catálogo",
@@ -2088,8 +2112,10 @@
       "intro": "Al abrir, la app no pudo usar internet, así que esto no se actualizó:",
       "fx": "Los tipos de cambio. La app sigue usando los últimos tipos de cambio guardados.",
       "csfloat": "La importación de CSFloat: compras, ventas, aportes y retiros nuevos.",
-      "hint": "No se cambió nada. Cuando vuelva internet, usa \"Actualizar tipo de cambio\" y, en la tarjeta de CSFloat, \"Importar ahora\". Los dos botones están en Configuración.",
-      "ok": "Entendido"
+      "hint": "No se cambió nada. Cuando vuelva internet, usa \"Intentar de nuevo\".",
+      "lastFx": "Último tipo de cambio: {date}",
+      "lastImport": "Última importación de CSFloat: {date}",
+      "neverImported": "Todavía no hay ninguna importación de CSFloat."
     }
   },
   "csfloatSetup": {

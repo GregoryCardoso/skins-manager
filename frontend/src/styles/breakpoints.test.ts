@@ -5,9 +5,11 @@ import { BREAKPOINTS, CONTAINER_BREAKPOINTS, HEIGHT_BREAKPOINTS } from './breakp
 import { LIGHT_SELECTOR, readBlock } from './parseTokens';
 
 const UI_DIR = path.join(__dirname, '..', 'components', 'ui');
+// 12.4: os CSS do layout (menu, avisos, tela de indisponível) seguem as mesmas listas de larguras.
+const LAYOUT_DIR = path.join(__dirname, '..', 'components', 'layout');
 
 function cssFiles(): string[] {
-  return fs.readdirSync(UI_DIR).filter((name) => name.endsWith('.module.css')).map((name) => path.join(UI_DIR, name));
+  return [UI_DIR, LAYOUT_DIR].flatMap((dir) => fs.readdirSync(dir).filter((name) => name.endsWith('.module.css')).map((name) => path.join(dir, name)));
 }
 
 interface Query {

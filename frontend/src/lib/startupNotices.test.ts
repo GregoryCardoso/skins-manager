@@ -31,11 +31,12 @@ test('aviso da importação ao abrir: nada novo, aportes/saques e trades', () =>
   expect(autoImportNotice(batch({}))).toEqual({ kind: 'ATTENTION' });
 });
 
-test('as duas buscas correm juntas, e o modal "sem conexão" fica no layout', () => {
+test('as duas buscas correm juntas: o host da importação fica no layout e a faixa "sem conexão" nos avisos globais (12.4)', () => {
   const layout = read('app/layout.tsx');
   expect(layout).toMatch(/<CsfloatAutoImportHost \/>/);
-  expect(layout).toMatch(/<FxAutoRefreshHost \/>/);
-  expect(layout).toMatch(/<StartupOfflineModal \/>/);
+  expect(read('components/layout/GlobalNotices.tsx')).toMatch(/<FxAutoRefreshHost /);
+  expect(read('components/layout/GlobalNotices.tsx')).toMatch(/<StartupOfflineBanner \/>/);
+  expect(read('components/layout/AppShell.tsx')).toMatch(/<GlobalNotices \/>/);
   expect(read('components/CsfloatAutoImportHost.tsx')).toMatch(/reportStartup\('csfloat', 'OFFLINE'\)/);
   expect(read('components/FxAutoRefreshHost.tsx')).toMatch(/reportStartup\('fx', 'OFFLINE'\)/);
 });
@@ -48,7 +49,7 @@ test('"Importar automaticamente" nos lugares de lançar e o passo a passo nas co
   expect(read('components/CsfloatIntegrationCard.tsx')).toMatch(/!integration\.hasApiKey && <CsfloatSetupGuide \/>/);
   for (const lang of [ptBR, en]) {
     for (const key of ['button', 'modalTitle', 'configure', 'step1', 'step5', 'open', 'safety'] as const) expect(lang.csfloatSetup[key]).toBeTruthy();
-    for (const key of ['title', 'intro', 'fx', 'csfloat', 'hint', 'ok'] as const) expect(lang.startup.offline[key]).toBeTruthy();
+    for (const key of ['title', 'intro', 'fx', 'csfloat', 'hint', 'lastFx', 'lastImport', 'neverImported'] as const) expect(lang.startup.offline[key]).toBeTruthy();
     expect(lang.imports.auto.nothingNew).toBeTruthy();
   }
   expect(ptBR.csfloatSetup.step2).toMatch(/Developers/);

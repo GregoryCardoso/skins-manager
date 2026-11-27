@@ -143,6 +143,22 @@ describe('bootstrapPreferences', () => {
     expect(classes.has('i18n-pending')).toBe(true);
   });
 
+  test('menu recolhido (12.4): põe data-nav-collapsed antes da pintura só com sm.navCollapsed = 1, e nunca lança com o storage quebrado', () => {
+    const on = fakeDoc();
+    bootstrapPreferences({ ...LANG_ENV, doc: on.doc, storage: fakeStorage({ 'sm.navCollapsed': '1' }), matchMedia: () => ({ matches: false }) });
+    expect(on.attrs['data-nav-collapsed']).toBe('1');
+    for (const value of ['0', '', 'true']) {
+      const off = fakeDoc();
+      bootstrapPreferences({ ...LANG_ENV, doc: off.doc, storage: fakeStorage({ 'sm.navCollapsed': value }), matchMedia: () => ({ matches: false }) });
+      expect(off.attrs['data-nav-collapsed']).toBeUndefined();
+    }
+    const script = fakeDoc();
+    new Function('document', 'localStorage', 'window', 'setTimeout', 'navigator', bootstrapScript())(
+      script.doc, fakeStorage({ 'sm.navCollapsed': '1' }), { matchMedia: () => ({ matches: false }) }, () => 0, { languages: [], language: '' },
+    );
+    expect(script.attrs['data-nav-collapsed']).toBe('1');
+  });
+
   test('en em cache: sem i18n-pending (idioma já definitivo)', () => {
     const { classes, doc } = fakeDoc();
     bootstrapPreferences({ ...LANG_ENV, doc, storage: fakeStorage({ 'sm.language': 'en' }), matchMedia: () => ({ matches: false }) });

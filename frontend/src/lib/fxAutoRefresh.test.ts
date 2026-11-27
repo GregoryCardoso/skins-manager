@@ -7,11 +7,14 @@ import en from '@/i18n/en.json';
 
 const read = (rel: string) => fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
 
-test('o host fica no layout (desktop e start-app.bat), pede o modo AUTO e não chama nada com a cotação manual', () => {
-  expect(read('app/layout.tsx')).toMatch(/<FxAutoRefreshHost \/>/);
+test('o host fica nos avisos globais do layout (desktop e start-app.bat), pede o modo AUTO e não chama nada com a cotação manual', () => {
+  expect(read('components/layout/GlobalNotices.tsx')).toMatch(/<FxAutoRefreshHost onFailure=/);
   const host = read('components/FxAutoRefreshHost.tsx');
   // 11.3: percorre, em série, todas as moedas necessárias (sem as digitadas à mão, que `currenciesToAutoRefresh` tira da lista).
-  expect(host).toMatch(/refreshFxRate\(\{ currency, trigger: 'AUTO' \}\)/);
+  // 12.4: o mesmo laço serve à abertura (AUTO) e ao "Tentar de novo" da faixa sem internet (MANUAL).
+  expect(host).toMatch(/refreshFxRate\(\{ currency, trigger \}\)/);
+  expect(host).toMatch(/refreshAll\(currencies, 'AUTO'\)/);
+  expect(host).toMatch(/refreshAll\(currenciesRef\.current, 'MANUAL'\)/);
   expect(host).toMatch(/currenciesToAutoRefresh\(settings\.requiredFxCurrencies, settings\.fxRates\)/);
   expect(host).toMatch(/for \(const currency of currencies\)/);
   expect(host).toMatch(/invalidate\('settings\.fx'\)/);

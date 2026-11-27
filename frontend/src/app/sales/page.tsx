@@ -5,11 +5,11 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Suspense, useCallback, useEffect, useMemo, useRef } from 'react';
 import ImportButton from '@/components/ImportButton';
 import { useItemDialogs } from '@/components/ItemDialogs';
-import { usePreferences } from '@/components/PreferencesProvider';
 import SalesFilters from '@/components/SalesFilters';
 import SalesSummary from '@/components/SalesSummary';
 import SalesTable from '@/components/SalesTable';
-import SystemStatus from '@/components/SystemStatus';
+import PageSkeleton from '@/components/layout/PageSkeleton';
+import PageHeader from '@/components/ui/PageHeader';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLocale, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import {
@@ -18,10 +18,8 @@ import {
 } from '@/lib/salesQuery';
 import { parseItemParam } from '@/lib/importSummary';
 import { queryKeys } from '@/lib/queryKeys';
-import { ApiRequestError, listSales, listStores } from '@/services/api';
+import { listSales, listStores } from '@/services/api';
 import styles from './page.module.css';
-
-const CONNECTION_ERRORS = ['NETWORK_ERROR', 'TIMEOUT', 'INVALID_RESPONSE'];
 
 function SalesView() {
   const t = useT();
@@ -31,8 +29,7 @@ function SalesView() {
   const router = useRouter();
   const pathname = usePathname() ?? '/sales';
   const searchParams = useSearchParams();
-  const { reloadFxRate } = usePreferences();
-
+  
   const searchKey = searchParams.toString();
   const filters = useMemo(() => parseSalesFilters(new URLSearchParams(searchKey)), [searchKey]);
 
@@ -78,34 +75,16 @@ function SalesView() {
     [router, pathname],
   );
 
-  // Ao tentar de novo, relê também a cotação (que pode não ter carregado com o backend fora do ar).
-  const retryAfterOutage = () => {
-    reloadFxRate();
-    reload();
-  };
-
-  const connectionProblem = error instanceof ApiRequestError && CONNECTION_ERRORS.includes(error.code);
-  if (connectionProblem) {
-    return (
-      <>
-        <h1>{t('sales.title')}</h1>
-        <SystemStatus />
-        <button type="button" className={styles.retry} onClick={retryAfterOutage}>{t('common.retry')}</button>
-      </>
-    );
-  }
-
   const filtered = hasActiveSalesFilters(filters);
 
   return (
     <>
-      <div className={styles.titleRow}>
-        <h1>{t('sales.title')}</h1>
-        {data && <span className={styles.count} aria-live="polite">{tPlural('sales.count', data.meta.count)}</span>}
-        <div className={styles.titleActions}>
-          <ImportButton />
-        </div>
-      </div>
+      <PageHeader
+        title={t('sales.title')}
+        subtitle={data ? tPlural('sales.count', data.meta.count) : undefined}
+        liveSubtitle
+        actions={<ImportButton />}
+      />
 
       {notice && (
         <div className={styles.notice} role="status">
@@ -164,9 +143,8 @@ function SalesView() {
 }
 
 export default function SalesPage() {
-  const t = useT();
   return (
-    <Suspense fallback={<p>{t('common.loading')}</p>}>
+    <Suspense fallback={<PageSkeleton />}>
       <SalesView />
     </Suspense>
   );

@@ -183,7 +183,7 @@ describe('INVALIDATION_MAP (D259)', () => {
       'app/page.tsx', 'app/sales/page.tsx', 'app/profit/page.tsx', 'app/stores/page.tsx', 'app/settings/page.tsx',
       'components/ItemDialogs.tsx', 'components/SummaryCards.tsx', 'components/StoreBalancesPanel.tsx',
       'components/StoreBalanceHistory.tsx', 'components/WithdrawalsSection.tsx', 'components/PreferencesProvider.tsx',
-      'components/SystemStatus.tsx', 'components/CatalogSettings.tsx', 'components/AboutSettings.tsx', 'components/BackupSettings.tsx',
+      'components/CatalogSettings.tsx', 'components/AboutSettings.tsx', 'components/BackupSettings.tsx',
     ];
     for (const file of files) {
       const source = readFileSync(path.join(root, file), 'utf-8');

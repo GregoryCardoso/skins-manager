@@ -12,6 +12,7 @@ import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
 import { queryKeys } from '@/lib/queryKeys';
 import { getSettings } from '@/services/api';
+import PageHeader from '@/components/ui/PageHeader';
 import styles from './page.module.css';
 
 export default function SettingsPage() {
@@ -24,7 +25,7 @@ export default function SettingsPage() {
 
   return (
     <>
-      <h1>{t('settings.title')}</h1>
+      <PageHeader title={t('settings.title')} />
 
       {error !== null && (
         <div className={styles.error} role="alert">

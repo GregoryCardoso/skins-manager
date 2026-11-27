@@ -12,11 +12,16 @@ const NAMED_COLORS = [
   'gold', 'navy', 'teal', 'lime', 'maroon', 'olive', 'aqua', 'fuchsia', 'coral', 'crimson', 'indigo', 'violet', 'tomato', 'salmon', 'khaki',
 ];
 
+// 12.4: o CSS e o TSX de components/layout também usam só tokens de cor.
+const LAYOUT_DIR = path.join(__dirname, '..', 'layout');
+
 function files(ext: string): string[] {
-  return fs
-    .readdirSync(UI_DIR)
-    .filter((name) => name.endsWith(ext) && !name.endsWith('.test.tsx') && !name.endsWith('.test.ts'))
-    .map((name) => path.join(UI_DIR, name));
+  return [UI_DIR, LAYOUT_DIR].flatMap((dir) =>
+    fs
+      .readdirSync(dir)
+      .filter((name) => name.endsWith(ext) && !name.endsWith('.test.tsx') && !name.endsWith('.test.ts'))
+      .map((name) => path.join(dir, name)),
+  );
 }
 
 // Remove var(...) (com um nível de parênteses aninhado, como var(--a, var(--b))).

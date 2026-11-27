@@ -35,7 +35,35 @@
     "main": "Hauptmenü",
     "stores": "Shops",
     "settings": "Einstellungen",
-    "profit": "Echter Gewinn"
+    "profit": "Echter Gewinn",
+    "imports": "Importe",
+    "collapse": "Menü einklappen",
+    "expand": "Menü ausklappen",
+    "reviewCount": {
+      "one": "{count} zu prüfen",
+      "other": "{count} zu prüfen"
+    },
+    "countMax": "{count}+"
+  },
+  "layout": {
+    "skipToContent": "Zum Inhalt springen",
+    "documentTitle": "{page} · {app}"
+  },
+  "unavailable": {
+    "title": "Die App reagiert nicht",
+    "intro": "Skins Manager konnte seinen eigenen lokalen Dienst nicht erreichen. Es ist nichts verloren gegangen: Deine Daten sind auf diesem Computer gespeichert.",
+    "steps": {
+      "reopen": "Schließe die App und öffne sie erneut.",
+      "bat": "Wenn du sie mit start-app.bat startest, schließe das schwarze Fenster und führe start-app.bat erneut aus.",
+      "restart": "Wenn es weiter passiert, starte den Computer neu und öffne die App erneut."
+    },
+    "lastCheck": "Letzte Prüfung: {time}",
+    "recovered": "Verbindung wiederhergestellt"
+  },
+  "notices": {
+    "region": "Hinweise der App",
+    "goToSettings": "Zu den Einstellungen",
+    "noDisplayRate": "Für {currency} gibt es noch keinen Wechselkurs, deshalb werden Werte mit ≈ nicht angezeigt."
   },
   "header": {
     "preferenceNotSaved": "Deine Einstellung konnte nicht gespeichert werden ({reason}). Versuch es nochmal.",
@@ -75,21 +103,17 @@
     }
   },
   "pages": {
-    "inventoryTitle": "Inventar",
-    "salesTitle": "Verkäufe",
     "notFoundTitle": "Seite nicht gefunden",
     "notFoundText": "Diese Seite gibt es nicht. Nutze das Menü, um zurückzugehen.",
     "backHome": "Zurück zum Inventar"
   },
   "status": {
-    "title": "App-Status",
     "recheck": "Nochmal prüfen",
     "checking": "Prüft ...",
     "server": "Verbindung zur App",
     "online": "Verbunden",
     "offline": "Antwortet nicht",
-    "lastResponse": "Letzte Antwort: {time}",
-    "manageInSettings": "Katalog in den Einstellungen aktualisieren"
+    "lastResponse": "Letzte Antwort: {time}"
   },
   "catalog": {
     "title": "Katalog",
@@ -2088,8 +2112,10 @@
       "intro": "Beim Öffnen konnte die App das Internet nicht nutzen, deshalb wurde Folgendes nicht aktualisiert:",
       "fx": "Die Wechselkurse. Die App nutzt weiter die zuletzt gespeicherten Kurse.",
       "csfloat": "Der CSFloat-Import: neue Käufe, Verkäufe, Einzahlungen und Auszahlungen.",
-      "hint": "Nichts wurde geändert. Wenn das Internet wieder da ist, nutze „Kurs aktualisieren“ und auf der CSFloat-Karte „Jetzt importieren“. Beide Buttons findest du in den Einstellungen.",
-      "ok": "Verstanden"
+      "hint": "Nichts wurde geändert. Wenn das Internet wieder da ist, nutze „Nochmal versuchen“.",
+      "lastFx": "Letzter Wechselkurs: {date}",
+      "lastImport": "Letzter CSFloat-Import: {date}",
+      "neverImported": "Noch kein CSFloat-Import."
     }
   },
   "csfloatSetup": {

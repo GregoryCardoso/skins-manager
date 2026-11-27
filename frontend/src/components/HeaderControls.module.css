@@ -1,8 +1,0 @@
-.controls { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; justify-content: flex-end; }
-.button, .select {
-  font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border);
-  border-radius: 6px; padding: 0.35rem 0.7rem; cursor: pointer;
-}
-.button:hover, .select:hover { border-color: var(--accent); }
-.warning { color: var(--warning); font-size: 0.8rem; max-width: 22rem; }
-.currency { max-width: 13rem; text-overflow: ellipsis; }

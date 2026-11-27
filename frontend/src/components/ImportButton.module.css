@@ -6,3 +6,6 @@
 .button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .button:disabled { opacity: 0.6; cursor: not-allowed; }
 .button[aria-busy='true'] { cursor: progress; }
+.reviewLink { display: inline-flex; align-items: center; border-radius: var(--radius-pill); text-decoration: none; }
+.reviewLink:hover { filter: brightness(1.1); }
+.reviewLink:focus-visible { outline: none; box-shadow: var(--focus-ring); }

@@ -198,6 +198,12 @@ export function bootstrapPreferences(env?: BootstrapEnv): void {
     root.setAttribute('data-theme', resolved);
     root.style.colorScheme = resolved;
     root.setAttribute('lang', language);
+    // Menu lateral recolhido (12.4): o atributo vai antes da primeira pintura, para o menu não piscar aberto.
+    try {
+      if (storage && (storage as Pick<Storage, 'getItem'>).getItem('sm.navCollapsed') === '1') root.setAttribute('data-nav-collapsed', '1');
+    } catch {
+      // ignora
+    }
     // Sem idioma em cache, mantém a página oculta até as configurações responderem (mesmo com o idioma detectado = base), para
     // quem tem o banco em outro idioma não ver a tela no idioma do sistema piscar. O timeout de 3 s vale nos dois casos.
     if (language !== base || storedLanguage === null) {

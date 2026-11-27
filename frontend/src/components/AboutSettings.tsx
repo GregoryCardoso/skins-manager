@@ -2,7 +2,8 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { useT } from '@/i18n/I18nProvider';
+import { useLocale, useT } from '@/i18n/I18nProvider';
+import { formatDateTime } from '@/lib/format';
 import { getDesktopBridge, type DesktopAppInfo, type UpdateCheckResult } from '@/lib/desktop';
 import { queryKeys } from '@/lib/queryKeys';
 import { getHealth } from '@/services/api';
@@ -11,6 +12,7 @@ import styles from './settings.module.css';
 // Card "Sobre" (D181): versão do app e atualização. A verificação só existe no desktop (instalador/portátil).
 export default function AboutSettings() {
   const t = useT();
+  const locale = useLocale();
   const healthQuery = useQuery({ queryKey: queryKeys.health.all, queryFn: ({ signal }) => getHealth(signal) });
   const version = healthQuery.data?.version ?? null;
   const [info, setInfo] = useState<DesktopAppInfo | null>(null);
@@ -63,6 +65,20 @@ export default function AboutSettings() {
         {mode === 'installer' && ` · ${t('settings.about.modeInstaller')}`}
         {mode === 'portable' && ` · ${t('settings.about.modePortable')}`}
       </p>
+
+      <p data-testid="about-connection">
+        {t('status.server')}:{' '}
+        {healthQuery.data
+          ? `${t('status.online')} · ${t('status.lastResponse', { time: formatDateTime(healthQuery.data.timestamp, locale) })}`
+          : healthQuery.isError
+            ? t('status.offline')
+            : t('common.loading')}
+      </p>
+      <div className={styles.row}>
+        <button type="button" className={styles.button} onClick={() => void healthQuery.refetch()} disabled={healthQuery.isFetching}>
+          {healthQuery.isFetching ? t('status.checking') : t('status.recheck')}
+        </button>
+      </div>
 
       {canCheck ? (
         <>

@@ -1,0 +1,23 @@
+.root { container-type: inline-size; margin-bottom: var(--space-4); }
+.header { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-2) var(--space-4); }
+.titles { flex: 1 1 14rem; min-width: 0; }
+.title {
+  margin: 0;
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-tight);
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+.title:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }
+.subtitle { margin-top: var(--space-1); color: var(--muted); font-size: var(--fs-md); }
+.subtitle p { margin: 0; }
+.actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--space-2); margin-left: auto; }
+@container (width < 720px) {
+  .header { flex-direction: column; align-items: stretch; }
+  /* Em coluna, a base de 14rem viraria altura (vão grande sob o título). */
+  .titles { flex-basis: auto; }
+  .actions { margin-left: 0; justify-content: flex-start; }
+}
+/* Escritas CJK: sem espaçamento negativo entre letras. */
+.title:lang(ja), .title:lang(ko), .title:lang(zh-CN) { letter-spacing: 0; }

@@ -35,7 +35,35 @@
     "main": "主导航",
     "stores": "商店",
     "settings": "设置",
-    "profit": "实际利润"
+    "profit": "实际利润",
+    "imports": "导入",
+    "collapse": "收起菜单",
+    "expand": "展开菜单",
+    "reviewCount": {
+      "one": "{count} 笔待核对",
+      "other": "{count} 笔待核对"
+    },
+    "countMax": "{count}+"
+  },
+  "layout": {
+    "skipToContent": "跳到内容",
+    "documentTitle": "{page} · {app}"
+  },
+  "unavailable": {
+    "title": "应用没有响应",
+    "intro": "Skins Manager 无法连接到自己的本地服务。没有丢失任何数据：你的数据保存在这台电脑上。",
+    "steps": {
+      "reopen": "关闭应用，然后重新打开。",
+      "bat": "如果你是通过 start-app.bat 启动的，请关闭黑色窗口，再次运行 start-app.bat。",
+      "restart": "如果问题持续出现，请重启电脑并重新打开应用。"
+    },
+    "lastCheck": "上次检查：{time}",
+    "recovered": "连接已恢复"
+  },
+  "notices": {
+    "region": "应用通知",
+    "goToSettings": "前往设置",
+    "noDisplayRate": "还没有 {currency} 的汇率，因此带 ≈ 的数值不会显示。"
   },
   "header": {
     "preferenceNotSaved": "无法保存你的偏好设置（{reason}）。请重试。",
@@ -75,21 +103,17 @@
     }
   },
   "pages": {
-    "inventoryTitle": "库存",
-    "salesTitle": "销售",
     "notFoundTitle": "找不到页面",
     "notFoundText": "这个页面不存在。请使用菜单返回。",
     "backHome": "返回库存"
   },
   "status": {
-    "title": "应用状态",
     "recheck": "重新检查",
     "checking": "检查中…",
     "server": "与应用的连接",
     "online": "已连接",
     "offline": "没有响应",
-    "lastResponse": "上次响应：{time}",
-    "manageInSettings": "在设置中更新目录"
+    "lastResponse": "上次响应：{time}"
   },
   "catalog": {
     "title": "目录",
@@ -2088,8 +2112,10 @@
       "intro": "应用打开时无法使用网络，所以以下内容没有更新：",
       "fx": "汇率。应用会继续使用上次保存的汇率。",
       "csfloat": "CSFloat 导入：新的购买、销售、存入和提现。",
-      "hint": "没有任何内容被更改。网络恢复后，请使用“更新汇率”，并在 CSFloat 卡片上使用“立即导入”。这两个按钮都在设置中。",
-      "ok": "知道了"
+      "hint": "没有任何内容被更改。网络恢复后，请点击“重试”。",
+      "lastFx": "上次汇率：{date}",
+      "lastImport": "上次 CSFloat 导入：{date}",
+      "neverImported": "尚未进行过 CSFloat 导入。"
     }
   },
   "csfloatSetup": {

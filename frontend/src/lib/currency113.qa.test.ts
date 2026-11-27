@@ -284,7 +284,7 @@ describe('fxRates: bordas', () => {
 
 describe('FxAutoRefreshHost: laço (ligação pelo código-fonte)', () => {
   const host = read('components/FxAutoRefreshHost.tsx');
-  const loop = host.slice(host.indexOf('for (const currency of currencies)'), host.indexOf('if (refreshed)'));
+  const loop = host.slice(host.indexOf('for (const currency of currencies)'), host.indexOf('return { refreshed'));
 
   test('em série: await dentro do for, sem Promise.all', () => {
     expect(loop).toMatch(/await refreshFxRate\(/);
@@ -309,7 +309,7 @@ describe('FxAutoRefreshHost: laço (ligação pelo código-fonte)', () => {
   test('uma tentativa por carga e o aviso mostra só a primeira moeda com erro', () => {
     expect(host).toMatch(/let attemptedThisPage = false/);
     expect(host).toMatch(/if \(started\.current \|\| attemptedThisPage\)/);
-    expect(host).toMatch(/if \(firstFailure\) setFailure/);
+    expect(host).toMatch(/if \(firstFailure\) onFailureRef/);
   });
 
   test('sem nada a atualizar, nenhum timer é criado', () => {

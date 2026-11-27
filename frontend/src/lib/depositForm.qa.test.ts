@@ -136,7 +136,7 @@ describe('PATCH com só o que mudou', () => {
 
 describe('textos: chaves usadas nos componentes e erros dos aportes', () => {
   const root = path.join(__dirname, '..');
-  const files = ['components/DepositFormModal.tsx', 'components/DepositsTable.tsx', 'app/profit/page.tsx', 'components/AppHeader.tsx', 'lib/depositForm.ts'];
+  const files = ['components/DepositFormModal.tsx', 'components/DepositsTable.tsx', 'app/profit/page.tsx', 'components/layout/SideNav.tsx', 'lib/routes.ts', 'lib/depositForm.ts'];
   const keys = new Set<string>();
   for (const file of files) {
     const source = readFileSync(path.join(root, file), 'utf8');

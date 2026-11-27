@@ -14,6 +14,7 @@ import { summaryLines } from '@/lib/importSummary';
 import { queryKeys } from '@/lib/queryKeys';
 import { getImportBatch, listIgnoredImportEntries, listImportBatches, listOpenImportEntries } from '@/services/api';
 import type { ImportBatchSummary } from '@/types/api';
+import PageHeader from '@/components/ui/PageHeader';
 import styles from './page.module.css';
 
 const PAGE_SIZE = 20;
@@ -105,9 +106,7 @@ export default function ImportsPage() {
 
   return (
     <>
-      <div className={styles.titleRow}>
-        <h1>{t('imports.page.title')}</h1>
-      </div>
+      <PageHeader title={t('imports.page.title')} />
 
       {(importer.disabledReason === 'NO_KEY' || importer.disabledReason === 'NO_STORE') && (
         <section className={styles.section} data-testid="imports-setup">

@@ -1,0 +1,7 @@
+.root { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-3); max-width: 40rem; margin: var(--space-8) auto; padding: var(--space-6); border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface); box-shadow: var(--shadow-2); }
+.root > div { width: 100%; }
+.icon { display: inline-flex; color: var(--loss); }
+.intro { margin: 0; color: var(--text); }
+.steps { display: flex; flex-direction: column; gap: var(--space-2); margin: 0; padding-inline-start: var(--space-5); color: var(--text); }
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); margin-top: var(--space-2); }
+.last { color: var(--muted); font-size: var(--fs-md); }

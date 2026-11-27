@@ -274,9 +274,18 @@ describe('erros e estados das consultas', () => {
   });
 });
 
+// Arquivos do layout (12.4) que não são telas de dados: o porteiro da conexão confere o /api/health por conta própria (e ao voltar o
+// foco da janela, só para saber se o app voltou) e as consultas do selo/da faixa são secundárias e silenciosas no erro.
+const LAYOUT_EXEMPT: Record<string, string> = {
+  'components/layout/ConnectionGate.tsx': 'checagem da conexão (getHealth direto, foco da janela)',
+  'components/layout/StartupOfflineBanner.tsx': 'consultas secundárias da faixa, sem tratamento de erro',
+  'components/layout/useReviewCount.ts': 'selo do menu: some no erro, em silêncio',
+};
+const isExempt = (file: string) => rel(file) in LAYOUT_EXEMPT;
+
 describe('nada ficou com recarga manual', () => {
   test('nenhum token de recarga, onFocus manual ou callback onDataChanged sobra no código', () => {
-    for (const file of screens) {
+    for (const file of screens.filter((f) => !isExempt(f))) {
       const code = read(file).replace(/\/\/.*$/gm, '');
       expect(code, rel(file)).not.toMatch(/reloadToken|reloadKey|balancesToken|summaryToken|retryToken|onDataChanged|onChanged\b/);
       expect(code, rel(file)).not.toMatch(/addEventListener\(\s*'focus'/);
@@ -286,7 +295,7 @@ describe('nada ficou com recarga manual', () => {
   test('as funções GET de dados só são chamadas dentro de queryFn (as exceções são prévias efêmeras)', () => {
     const getters = ['listItems', 'listSales', 'listStores', 'listDeposits', 'listWithdrawals', 'listStoreBalances', 'getSettings',
       'getCurrentStoreBalances', 'getProfitSummary', 'getCatalogStatus', 'getHealth', 'getBackupInfo'];
-    for (const file of screens) {
+    for (const file of screens.filter((f) => !isExempt(f))) {
       const code = read(file);
       for (const g of getters) {
         for (const m of code.matchAll(new RegExp(`.*\\b${g}\\(.*`, 'g'))) {
@@ -297,7 +306,7 @@ describe('nada ficou com recarga manual', () => {
   });
 
   test('cada tela com consulta trata erro e carregamento', () => {
-    for (const file of screens.filter((f) => /useQuery\(/.test(read(f)))) {
+    for (const file of screens.filter((f) => /useQuery\(/.test(read(f)) && !isExempt(f))) {
       const code = read(file);
       expect(code, rel(file)).toMatch(/error/);
       expect(code, rel(file)).toMatch(/isFetching|isPending|isLoading|\.data/);

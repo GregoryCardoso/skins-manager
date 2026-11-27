@@ -35,7 +35,35 @@
     "main": "Navigation principale",
     "stores": "Boutiques",
     "settings": "Réglages",
-    "profit": "Bénéfice réel"
+    "profit": "Bénéfice réel",
+    "imports": "Importations",
+    "collapse": "Réduire le menu",
+    "expand": "Développer le menu",
+    "reviewCount": {
+      "one": "{count} à vérifier",
+      "other": "{count} à vérifier"
+    },
+    "countMax": "{count}+"
+  },
+  "layout": {
+    "skipToContent": "Aller au contenu",
+    "documentTitle": "{page} · {app}"
+  },
+  "unavailable": {
+    "title": "L'app ne répond pas",
+    "intro": "Skins Manager n'a pas pu joindre son propre service local. Rien n'est perdu : vos données sont enregistrées sur cet ordinateur.",
+    "steps": {
+      "reopen": "Fermez l'app puis rouvrez-la.",
+      "bat": "Si vous l'ouvrez avec start-app.bat, fermez la fenêtre noire puis relancez start-app.bat.",
+      "restart": "Si le problème persiste, redémarrez l'ordinateur puis rouvrez l'app."
+    },
+    "lastCheck": "Dernière vérification : {time}",
+    "recovered": "Connexion rétablie"
+  },
+  "notices": {
+    "region": "Avis de l'app",
+    "goToSettings": "Aller aux Réglages",
+    "noDisplayRate": "Il n'y a pas encore de taux de change pour {currency} ; les valeurs avec ≈ ne sont donc pas affichées."
   },
   "header": {
     "preferenceNotSaved": "Impossible d'enregistrer votre préférence ({reason}). Réessayez.",
@@ -75,21 +103,17 @@
     }
   },
   "pages": {
-    "inventoryTitle": "Inventaire",
-    "salesTitle": "Ventes",
     "notFoundTitle": "Page introuvable",
     "notFoundText": "Cette page n'existe pas. Utilisez le menu pour revenir en arrière.",
     "backHome": "Retour à l'inventaire"
   },
   "status": {
-    "title": "État de l'app",
     "recheck": "Vérifier à nouveau",
     "checking": "Vérification...",
     "server": "Connexion à l'app",
     "online": "Connecté",
     "offline": "Ne répond pas",
-    "lastResponse": "Dernière réponse : {time}",
-    "manageInSettings": "Mettre à jour le catalogue dans les Réglages"
+    "lastResponse": "Dernière réponse : {time}"
   },
   "catalog": {
     "title": "Catalogue",
@@ -2088,8 +2112,10 @@
       "intro": "À l'ouverture, l'app n'a pas pu utiliser internet. Cela n'a donc pas été mis à jour :",
       "fx": "Les taux de change. L'app continue d'utiliser les derniers taux enregistrés.",
       "csfloat": "L'importation CSFloat : nouveaux achats, ventes, dépôts et retraits.",
-      "hint": "Rien n'a été modifié. Quand internet sera revenu, utilisez « Actualiser le taux » et, sur la carte CSFloat, « Importer maintenant ». Les deux boutons sont dans les Réglages.",
-      "ok": "Compris"
+      "hint": "Rien n'a été modifié. Quand internet sera revenu, utilisez « Réessayer ».",
+      "lastFx": "Dernier taux de change : {date}",
+      "lastImport": "Dernière importation CSFloat : {date}",
+      "neverImported": "Aucune importation CSFloat pour le moment."
     }
   },
   "csfloatSetup": {

@@ -10,7 +10,7 @@ import { translate } from '@/i18n/translate';
 const hookState = vi.hoisted(() => ({ values: [] as unknown[], index: 0, version: null as string | null }));
 
 vi.mock('@tanstack/react-query', () => ({
-  useQuery: () => ({ data: hookState.version === null ? undefined : { version: hookState.version } }),
+  useQuery: () => ({ data: hookState.version === null ? undefined : { version: hookState.version, timestamp: '2026-11-26T12:00:00.000Z' }, isError: false, isFetching: false, refetch: () => Promise.resolve() }),
 }));
 
 vi.mock('react', async (importOriginal) => {
@@ -28,6 +28,7 @@ vi.mock('react', async (importOriginal) => {
 
 vi.mock('@/i18n/I18nProvider', () => ({
   useT: () => (key: string, params?: Record<string, string | number>) => translate(ptBR, key, params),
+  useLocale: () => 'pt-BR',
 }));
 
 vi.mock('@/services/api', () => ({ getHealth: vi.fn() }));
@@ -54,9 +55,15 @@ describe('AboutSettings', () => {
   test('navegador / código-fonte (sem ponte): versão do health, sem botão, instrução de Git', () => {
     const html = render({ version: '1.0.0' });
     expect(text(html)).toContain('Skins Manager versão 1.0.0');
-    expect(html).not.toContain('<button');
+    expect(text(html)).not.toContain('Verificar atualizações');
     expect(text(html)).toContain('Se você usa o Git, rode');
     expect(text(html)).not.toContain('instalador');
+  });
+
+  test('diagnóstico da conexão (movido do antigo painel de status, 12.4): conectada com a última resposta e o botão de verificar de novo', () => {
+    const html = render({ version: '1.0.0' });
+    expect(text(html)).toContain('Conexão com o app: Conectado · Última resposta:');
+    expect(text(html)).toContain('Verificar novamente');
   });
 
   test('sem versão do servidor', () => {
@@ -65,7 +72,7 @@ describe('AboutSettings', () => {
 
   test('dev: sem botão e mensagem de indisponível', () => {
     const html = render({ version: '1.0.0', info: { mode: 'dev' } });
-    expect(html).not.toContain('<button');
+    expect(text(html)).not.toContain('Verificar atualizações');
     expect(text(html)).toContain('não verifica atualizações');
   });
 

@@ -35,7 +35,35 @@
     "main": "Navegação principal",
     "stores": "Lojas",
     "settings": "Configurações",
-    "profit": "Lucro real"
+    "profit": "Lucro real",
+    "imports": "Importações",
+    "collapse": "Recolher menu",
+    "expand": "Expandir menu",
+    "reviewCount": {
+      "one": "{count} para conferir",
+      "other": "{count} para conferir"
+    },
+    "countMax": "{count}+"
+  },
+  "layout": {
+    "skipToContent": "Pular para o conteúdo",
+    "documentTitle": "{page} · {app}"
+  },
+  "unavailable": {
+    "title": "O app não está respondendo",
+    "intro": "O Skins Manager não conseguiu falar com o próprio serviço local. Nada foi perdido: seus dados ficam salvos neste computador.",
+    "steps": {
+      "reopen": "Feche o app e abra de novo.",
+      "bat": "Se você abre o app pelo start-app.bat, feche a janela preta e execute o start-app.bat outra vez.",
+      "restart": "Se continuar acontecendo, reinicie o computador e abra o app de novo."
+    },
+    "lastCheck": "Última verificação: {time}",
+    "recovered": "Conexão restabelecida"
+  },
+  "notices": {
+    "region": "Avisos do app",
+    "goToSettings": "Ir para Configurações",
+    "noDisplayRate": "Ainda não há cotação para {currency}, por isso os valores com ≈ não aparecem."
   },
   "header": {
     "preferenceNotSaved": "Não foi possível salvar a sua preferência ({reason}). Tente de novo.",
@@ -75,21 +103,17 @@
     }
   },
   "pages": {
-    "inventoryTitle": "Inventário",
-    "salesTitle": "Vendas",
     "notFoundTitle": "Página não encontrada",
     "notFoundText": "Esta página não existe. Use o menu para voltar.",
     "backHome": "Voltar ao inventário"
   },
   "status": {
-    "title": "Situação do app",
     "recheck": "Verificar novamente",
     "checking": "Verificando...",
     "server": "Conexão com o app",
     "online": "Conectado",
     "offline": "Sem resposta",
-    "lastResponse": "Última resposta: {time}",
-    "manageInSettings": "Atualizar o catálogo em Configurações"
+    "lastResponse": "Última resposta: {time}"
   },
   "catalog": {
     "title": "Catálogo",
@@ -2088,8 +2112,10 @@
       "intro": "Ao abrir, o app não conseguiu usar a internet. Por isso, isto não foi atualizado:",
       "fx": "As cotações das moedas. O app continua com as últimas cotações salvas.",
       "csfloat": "A importação do CSFloat: compras, vendas, aportes e saques novos.",
-      "hint": "Nada foi alterado. Quando a internet voltar, use \"Atualizar cotação\" e, no card do CSFloat, \"Importar agora\". Os dois botões ficam em Configurações.",
-      "ok": "Entendi"
+      "hint": "Nada foi alterado. Quando a internet voltar, use \"Tentar novamente\".",
+      "lastFx": "Última cotação: {date}",
+      "lastImport": "Última importação do CSFloat: {date}",
+      "neverImported": "Ainda não houve importação do CSFloat."
     }
   },
   "csfloatSetup": {

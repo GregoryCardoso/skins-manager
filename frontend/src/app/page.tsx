@@ -13,7 +13,8 @@ import { useMarketSummary } from '@/components/useMarketSummary';
 import InventoryViewToggle from '@/components/InventoryViewToggle';
 import { usePreferences } from '@/components/PreferencesProvider';
 import { useItemDialogs } from '@/components/ItemDialogs';
-import SystemStatus from '@/components/SystemStatus';
+import PageSkeleton from '@/components/layout/PageSkeleton';
+import PageHeader from '@/components/ui/PageHeader';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLocale, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import {
@@ -22,10 +23,8 @@ import {
 import { inventoryCountText } from '@/lib/inventoryCount';
 import { parseItemParam } from '@/lib/importSummary';
 import { queryKeys } from '@/lib/queryKeys';
-import { ApiRequestError, listItemGroups, listItems, listStores } from '@/services/api';
+import { listItemGroups, listItems, listStores } from '@/services/api';
 import styles from './page.module.css';
-
-const CONNECTION_ERRORS = ['NETWORK_ERROR', 'TIMEOUT', 'INVALID_RESPONSE'];
 
 function InventoryPageContent() {
   const t = useT();
@@ -35,7 +34,7 @@ function InventoryPageContent() {
   const router = useRouter();
   const pathname = usePathname() ?? '/';
   const searchParams = useSearchParams();
-  const { reloadFxRate, inventoryView, setInventoryView } = usePreferences();
+  const { inventoryView, setInventoryView } = usePreferences();
 
   const { summary: marketSummary } = useMarketSummary();
   const searchKey = searchParams.toString();
@@ -120,45 +119,31 @@ function InventoryPageContent() {
     [router, pathname],
   );
 
-  // Ao tentar de novo, relê também a cotação (que pode não ter carregado com o backend fora do ar).
-  const retryAfterOutage = () => {
-    reloadFxRate();
-    reload();
-  };
-
-  const connectionProblem = error instanceof ApiRequestError && CONNECTION_ERRORS.includes(error.code);
-  if (connectionProblem) {
-    return (
-      <>
-        <h1>{t('inventory.title')}</h1>
-        <SystemStatus />
-        <button type="button" className={styles.retry} onClick={retryAfterOutage}>{t('common.retry')}</button>
-      </>
-    );
-  }
-
   const slowItemDays = data?.meta.slowItemDays ?? 21;
   const filtered = hasActiveFilters(filters);
 
   return (
     <>
-      <div className={styles.titleRow}>
-        <h1>{t('inventory.title')}</h1>
-        {data && (
-          <span className={styles.count} aria-live="polite">
-            {grouped && groupsData
+      <PageHeader
+        title={t('inventory.title')}
+        subtitle={
+          data
+            ? grouped && groupsData
               ? inventoryCountText(groupsData.meta.count, groupsData.meta.groupCount, tLoose, tPlural)
-              : inventoryCountText(data.meta.count, null, tLoose, tPlural)}
-          </span>
-        )}
-        <div className={styles.titleActions}>
-          <PriceStatusIndicator />
-          <ImportButton />
-          <button type="button" className={styles.newItem} onClick={openCreate}>
-            {t('inventory.actions.newItem')}
-          </button>
-        </div>
-      </div>
+              : inventoryCountText(data.meta.count, null, tLoose, tPlural)
+            : undefined
+        }
+        liveSubtitle
+        actions={
+          <>
+            <PriceStatusIndicator />
+            <ImportButton />
+            <button type="button" className={styles.newItem} onClick={openCreate}>
+              {t('inventory.actions.newItem')}
+            </button>
+          </>
+        }
+      />
 
       {notice && (
         <div className={styles.notice} role="status">
@@ -287,9 +272,8 @@ function InventoryPageContent() {
 }
 
 export default function InventoryPage() {
-  const t = useT();
   return (
-    <Suspense fallback={<p>{t('common.loading')}</p>}>
+    <Suspense fallback={<PageSkeleton />}>
       <InventoryPageContent />
     </Suspense>
   );

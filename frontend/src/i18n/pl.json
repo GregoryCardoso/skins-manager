@@ -37,7 +37,37 @@
     "main": "Menu główne",
     "stores": "Sklepy",
     "settings": "Ustawienia",
-    "profit": "Rzeczywisty zysk"
+    "profit": "Rzeczywisty zysk",
+    "imports": "Importy",
+    "collapse": "Zwiń menu",
+    "expand": "Rozwiń menu",
+    "reviewCount": {
+      "one": "{count} do sprawdzenia",
+      "few": "{count} do sprawdzenia",
+      "many": "{count} do sprawdzenia",
+      "other": "{count} do sprawdzenia"
+    },
+    "countMax": "{count}+"
+  },
+  "layout": {
+    "skipToContent": "Przejdź do treści",
+    "documentTitle": "{page} · {app}"
+  },
+  "unavailable": {
+    "title": "Aplikacja nie odpowiada",
+    "intro": "Skins Manager nie mógł połączyć się z własną usługą lokalną. Nic nie przepadło: Twoje dane są zapisane na tym komputerze.",
+    "steps": {
+      "reopen": "Zamknij aplikację i otwórz ją ponownie.",
+      "bat": "Jeśli uruchamiasz ją przez start-app.bat, zamknij czarne okno i uruchom start-app.bat jeszcze raz.",
+      "restart": "Jeśli to się powtarza, uruchom komputer ponownie i otwórz aplikację jeszcze raz."
+    },
+    "lastCheck": "Ostatnie sprawdzenie: {time}",
+    "recovered": "Połączenie przywrócone"
+  },
+  "notices": {
+    "region": "Powiadomienia aplikacji",
+    "goToSettings": "Przejdź do Ustawień",
+    "noDisplayRate": "Dla {currency} nie ma jeszcze kursu, więc wartości z ≈ nie są pokazywane."
   },
   "header": {
     "preferenceNotSaved": "Nie udało się zapisać preferencji ({reason}). Spróbuj ponownie.",
@@ -77,21 +107,17 @@
     }
   },
   "pages": {
-    "inventoryTitle": "Ekwipunek",
-    "salesTitle": "Sprzedaże",
     "notFoundTitle": "Nie znaleziono strony",
     "notFoundText": "Ta strona nie istnieje. Wróć za pomocą menu.",
     "backHome": "Wróć do ekwipunku"
   },
   "status": {
-    "title": "Stan aplikacji",
     "recheck": "Sprawdź ponownie",
     "checking": "Sprawdzanie...",
     "server": "Połączenie z aplikacją",
     "online": "Połączono",
     "offline": "Brak odpowiedzi",
-    "lastResponse": "Ostatnia odpowiedź: {time}",
-    "manageInSettings": "Zaktualizuj katalog w Ustawieniach"
+    "lastResponse": "Ostatnia odpowiedź: {time}"
   },
   "catalog": {
     "title": "Katalog",
@@ -2232,8 +2258,10 @@
       "intro": "Przy otwarciu aplikacja nie mogła użyć internetu, więc nie zaktualizowano:",
       "fx": "Kursów walut. Aplikacja nadal używa ostatnich zapisanych kursów.",
       "csfloat": "Importu z CSFloat: nowych zakupów, sprzedaży, wpłat i wypłat.",
-      "hint": "Nic nie zostało zmienione. Gdy internet wróci, użyj „Aktualizuj kurs” oraz, na karcie CSFloat, „Importuj teraz”. Oba przyciski są w Ustawieniach.",
-      "ok": "Rozumiem"
+      "hint": "Nic nie zostało zmienione. Gdy internet wróci, użyj „Spróbuj ponownie”.",
+      "lastFx": "Ostatni kurs: {date}",
+      "lastImport": "Ostatni import z CSFloat: {date}",
+      "neverImported": "Nie było jeszcze importu z CSFloat."
     }
   },
   "csfloatSetup": {
