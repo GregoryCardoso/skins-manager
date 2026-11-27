@@ -70,7 +70,7 @@ describe('computeStoreBalance: sem corte por data', () => {
   test('a venda antiga já liberada conta; o pendente é soldAt <= at < liberação', () => {
     const r = run({ items: [sale(1, '2026-01-01T12:00:00.000Z', 400), sale(1, '2026-11-20T18:00:00.000Z', 1500), sale(1, '2026-11-23T00:00:00.000Z', 99)] });
     expect(r.breakdown.salesReleasedCents).toBe(400);
-    expect(r.pending).toEqual({ cents: 1500, count: 1, nextReleaseAt: '2026-11-27T18:00:00.000Z' });
+    expect(r.pending).toEqual({ cents: 1500, count: 1, nextReleaseAt: '2026-11-27T18:00:00.000Z', lastReleaseAt: '2026-11-27T18:00:00.000Z', releases: [{ releaseAt: '2026-11-27T18:00:00.000Z', cents: 1500, count: 1 }] });
   });
 
   test('compra de item vendido continua descontando; GANHEI com loja informativa não afeta', () => {
@@ -199,7 +199,7 @@ describe('buildCurrentBalances', () => {
     expect(byName.CSFloat).toMatchObject({
       availableCents: 4400, availableUsdCents: 4400, negative: false, warningCode: null, daysSinceLastCheck: 6,
       breakdown: { depositsCents: 5000, purchasesCents: 3000, withdrawalsCents: 0, salesReleasedCents: 2500, adjustmentsCents: -100 },
-      pending: { cents: 1500, count: 1, nextReleaseAt: '2026-11-27T18:00:00.000Z', usdCents: 1500, estimated: false },
+      pending: { cents: 1500, count: 1, nextReleaseAt: '2026-11-27T18:00:00.000Z', lastReleaseAt: '2026-11-27T18:00:00.000Z', releases: [{ releaseAt: '2026-11-27T18:00:00.000Z', cents: 1500, count: 1 }], usdCents: 1500, estimated: false },
       lastCheck: { id: 201, kind: 'CHECK', differenceCents: -100, legacy: false },
     });
     expect(byName.CSFloat).not.toHaveProperty('initialBalance');
@@ -213,7 +213,7 @@ describe('buildCurrentBalances', () => {
 
   test('totais: disponível, pendente e "não sacável" (disponível + pendente das lojas sem saque)', () => {
     expect(result.totals).toMatchObject({
-      availableUsdCents: 4400 + 845, pendingUsdCents: 1500, nonWithdrawableUsdCents: 845, nextReleaseAt: '2026-11-27T18:00:00.000Z', estimated: true,
+      availableUsdCents: 4400 + 845, pendingUsdCents: 1500, nonWithdrawableUsdCents: 845, nextReleaseAt: '2026-11-27T18:00:00.000Z', lastReleaseAt: '2026-11-27T18:00:00.000Z', estimated: true,
     });
     expect(result.totals).not.toHaveProperty('releasedAfterBalanceUsdCents');
     expect(result.stores.map((s) => s.storeName)).toEqual(['CSFloat', 'Steam', 'CSMoney']);

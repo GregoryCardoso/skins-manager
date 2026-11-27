@@ -17,3 +17,7 @@
 .breakdownLine { display: flex; justify-content: space-between; gap: var(--space-3); }
 .breakdownLine dt { color: var(--muted); }
 .breakdownLine dd { margin: 0; font-variant-numeric: tabular-nums; }
+
+/* Pendente: o valor e o "?" das datas de liberação lado a lado. */
+.pending { display: inline-flex; align-items: center; gap: var(--space-1); }
+.releases { margin: 0; padding-inline-start: var(--space-4); display: grid; gap: var(--space-1); }

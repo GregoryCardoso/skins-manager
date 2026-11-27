@@ -50,13 +50,17 @@ function releaseInstantOf(item) {
 // Vendas de uma loja separadas em liberadas e pendentes num instante `at` (D239, D252). Sem corte por data.
 // Considera só vendas com `soldAt <= at`:
 // - liberada: `liberação <= at`;
-// - pendente: `liberação > at`; `nextReleaseAt` é a menor liberação pendente.
+// - pendente: `liberação > at`; `nextReleaseAt` é a menor liberação pendente e `lastReleaseAt` a maior (quando tudo estará liberado;
+//   aditivo, 12.12: com várias vendas retidas, só a próxima data dava a entender que tudo liberava nela). `releases` lista o que
+//   libera em cada instante (líquido somado e quantas vendas), em ordem, para a tela mostrar "quanto libera quando".
 // Soma o líquido (`netReceivedCents`) na moeda da loja. O chamador filtra moedas divergentes.
 function splitStoreSales({ storeId, sales = [], at }) {
   const atMs = toMs(at);
   const released = { cents: 0, count: 0 };
-  const pending = { cents: 0, count: 0, nextReleaseAt: null };
+  const pending = { cents: 0, count: 0, nextReleaseAt: null, lastReleaseAt: null, releases: [] };
+  const byRelease = new Map();
   let nextMs = null;
+  let lastMs = null;
   for (const sale of sales) {
     if (sale.status !== 'VENDIDO' || sale.saleStoreId !== storeId) continue;
     const soldMs = Date.parse(sale.soldAt);
@@ -66,12 +70,21 @@ function splitStoreSales({ storeId, sales = [], at }) {
       pending.cents += sale.netReceivedCents;
       pending.count += 1;
       if (nextMs === null || releaseMs < nextMs) nextMs = releaseMs;
+      if (lastMs === null || releaseMs > lastMs) lastMs = releaseMs;
+      const slot = byRelease.get(releaseMs) ?? { cents: 0, count: 0 };
+      slot.cents += sale.netReceivedCents;
+      slot.count += 1;
+      byRelease.set(releaseMs, slot);
     } else {
       released.cents += sale.netReceivedCents;
       released.count += 1;
     }
   }
   pending.nextReleaseAt = nextMs === null ? null : new Date(nextMs).toISOString();
+  pending.lastReleaseAt = lastMs === null ? null : new Date(lastMs).toISOString();
+  pending.releases = [...byRelease.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([ms, slot]) => ({ releaseAt: new Date(ms).toISOString(), cents: slot.cents, count: slot.count }));
   return { released, pending };
 }
 

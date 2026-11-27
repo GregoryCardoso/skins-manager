@@ -40,7 +40,13 @@ export default function ProfitEquation({ data, depositFeeCents = 0 }: Props) {
 
   const pending = data.pendingBalanceUsdCents;
   const pendingNotes: string[] = [];
-  if (pending !== null && pending > 0 && data.nextReleaseAt) pendingNotes.push(t('profit.equation.pendingNote', { date: formatDate(data.nextReleaseAt, locale) }));
+  // Com liberações em datas diferentes, a nota diz quando TUDO estará liberado (a data mais próxima sozinha parecia valer para tudo).
+  if (pending !== null && pending > 0 && data.nextReleaseAt) {
+    const last = data.lastReleaseAt ?? null;
+    pendingNotes.push(last && last !== data.nextReleaseAt
+      ? t('profit.equation.pendingNoteAll', { date: formatDate(last, locale) })
+      : t('profit.equation.pendingNote', { date: formatDate(data.nextReleaseAt, locale) }));
+  }
   if (pending === null && data.counts.pendingSales > 0) pendingNotes.push(t('profit.summary.pendingUnavailable'));
 
   const withdrawalNotes = [t('profit.equation.withdrawalsNote')];

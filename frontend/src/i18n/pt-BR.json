@@ -109,11 +109,7 @@
   },
   "status": {
     "recheck": "Verificar novamente",
-    "checking": "Verificando...",
-    "server": "Conexão com o app",
-    "online": "Conectado",
-    "offline": "Sem resposta",
-    "lastResponse": "Última resposta: {time}"
+    "checking": "Verificando..."
   },
   "catalog": {
     "title": "Catálogo",
@@ -187,6 +183,7 @@
     "PURCHASE_STORE_REQUIRED": "Informe a loja da compra.",
     "PURCHASE_PRICE_REQUIRED": "Informe o preço pago.",
     "STORE_NOT_FOUND": "Loja não encontrada.",
+    "STORE_NOT_SELLING": "Esta loja está marcada como só compra. Ative \"Vendo nesta loja\" em Lojas para vender nela.",
     "ITEM_NOT_FOUND": "Item não encontrado.",
     "ITEM_ALREADY_SOLD": "Este item já foi vendido.",
     "ITEM_NOT_SOLD": "Este item ainda não foi vendido.",
@@ -906,7 +903,9 @@
     "unit": "Unidade",
     "minPriceLabel": "Preço mínimo (sem prejuízo)",
     "youReceive": "Você recebe",
-    "feesMissing": "Esta loja está sem taxa de venda, então o líquido não pode ser calculado. Digite o valor que você recebeu ou configure as taxas na página Lojas."
+    "feesMissing": "Esta loja está sem taxa de venda, então o líquido não pode ser calculado. Digite o valor que você recebeu ou configure as taxas na página Lojas.",
+    "buyOnlyBadge": "só compra",
+    "buyOnlyWarning": "Esta loja está marcada como só compra. Ative \"Vendo nesta loja\" em Lojas para vender nela."
   },
   "fields": {
     "catalogId": "Item do catálogo",
@@ -1551,7 +1550,8 @@
       "stock": "Estoque pelo custo",
       "deposited": "Total colocado",
       "depositedNote": "inclui {value} de taxas de aporte",
-      "result": "Lucro real"
+      "result": "Lucro real",
+      "pendingNoteAll": "tudo liberado até {date}"
     },
     "info": {
       "title": "Mais números",
@@ -1696,12 +1696,6 @@
     "nonWithdrawable": "não sacável",
     "available": "disponível",
     "difference": "Diferença",
-    "lastCheckDays": {
-      "one": "Última conferência há {count} dia",
-      "other": "Última conferência há {count} dias"
-    },
-    "lastCheckToday": "Última conferência hoje",
-    "neverChecked": "Saldo nunca conferido",
     "check": "Conferir saldo",
     "breakdown": {
       "title": "Como o saldo disponível é calculado",
@@ -1771,9 +1765,14 @@
       "withdraw": "Registrar saque",
       "more": "Mais ações de {store}",
       "currencyTag": "Moeda: {currency}",
-      "pendingFoot": "{value} pendente · libera em {date}",
       "noPending": "Nada pendente",
-      "detailsLabel": "Detalhes do cálculo"
+      "detailsLabel": "Detalhes do cálculo",
+      "pendingShort": "{value} pendente",
+      "releasesTopic": "Liberações do saldo pendente",
+      "releaseLine": {
+        "one": "{date}: {value} ({count} venda)",
+        "other": "{date}: {value} ({count} vendas)"
+      }
     },
     "checkDialog": {
       "explain": "Conferência: você informa o saldo que vê no site. Ajuste: corrige o saldo do app pela diferença.",

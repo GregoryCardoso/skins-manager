@@ -109,11 +109,7 @@
   },
   "status": {
     "recheck": "Comprobar de nuevo",
-    "checking": "Comprobando...",
-    "server": "Conexión con la app",
-    "online": "Conectada",
-    "offline": "No responde",
-    "lastResponse": "Última respuesta: {time}"
+    "checking": "Comprobando..."
   },
   "catalog": {
     "title": "Catálogo",
@@ -187,6 +183,7 @@
     "PURCHASE_STORE_REQUIRED": "Indica la tienda de la compra.",
     "PURCHASE_PRICE_REQUIRED": "Indica el precio pagado.",
     "STORE_NOT_FOUND": "Tienda no encontrada.",
+    "STORE_NOT_SELLING": "Esta tienda está marcada como solo compra. Activa \"Vendo en esta tienda\" en Tiendas para vender en ella.",
     "ITEM_NOT_FOUND": "Ítem no encontrado.",
     "ITEM_ALREADY_SOLD": "Este ítem ya se vendió.",
     "ITEM_NOT_SOLD": "Este ítem aún no se ha vendido.",
@@ -906,7 +903,9 @@
     "unit": "Unidad",
     "minPriceLabel": "Precio mínimo (sin pérdida)",
     "youReceive": "Recibes",
-    "feesMissing": "Esta tienda no tiene comisión de venta configurada, así que no se puede calcular el neto. Escribe el importe que recibiste o configura las comisiones en la página Tiendas."
+    "feesMissing": "Esta tienda no tiene comisión de venta configurada, así que no se puede calcular el neto. Escribe el importe que recibiste o configura las comisiones en la página Tiendas.",
+    "buyOnlyBadge": "solo compra",
+    "buyOnlyWarning": "Esta tienda está marcada como solo compra. Activa \"Vendo en esta tienda\" en Tiendas para vender en ella."
   },
   "fields": {
     "catalogId": "Ítem del catálogo",
@@ -1551,7 +1550,8 @@
       "stock": "Stock al costo",
       "deposited": "Total aportado",
       "depositedNote": "incluye {value} en comisiones de aportes",
-      "result": "Ganancia real"
+      "result": "Ganancia real",
+      "pendingNoteAll": "todo liberado el {date}"
     },
     "info": {
       "title": "Más números",
@@ -1696,12 +1696,6 @@
     "nonWithdrawable": "no retirable",
     "available": "disponible",
     "difference": "Diferencia",
-    "lastCheckDays": {
-      "one": "Última verificación hace {count} día",
-      "other": "Última verificación hace {count} días"
-    },
-    "lastCheckToday": "Última verificación hoy",
-    "neverChecked": "Saldo nunca verificado",
     "check": "Verificar saldo",
     "breakdown": {
       "title": "Cómo se calcula el saldo disponible",
@@ -1771,9 +1765,14 @@
       "withdraw": "Registrar retiro",
       "more": "Más acciones de {store}",
       "currencyTag": "Moneda: {currency}",
-      "pendingFoot": "{value} pendiente · se libera el {date}",
       "noPending": "Nada pendiente",
-      "detailsLabel": "Detalles del cálculo"
+      "detailsLabel": "Detalles del cálculo",
+      "pendingShort": "{value} pendiente",
+      "releasesTopic": "Liberaciones del saldo pendiente",
+      "releaseLine": {
+        "one": "{date}: {value} ({count} venta)",
+        "other": "{date}: {value} ({count} ventas)"
+      }
     },
     "checkDialog": {
       "explain": "Verificación: tú indicas el saldo que ves en el sitio. Ajuste: corrige el saldo de la app según la diferencia.",

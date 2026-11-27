@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import '@/test/setupDom';
-import { cleanup, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { makeBalance } from '@/test/profitFixtures';
@@ -46,7 +46,30 @@ describe('StoreBalanceRow (12.7b)', () => {
     expect(screen.getByRole('img', { name: 'Available $750.00, pending $25.00' })).toBeInTheDocument();
     expect(screen.getByText('$750.00')).toBeInTheDocument();
     expect(screen.getByText(/≈.*R\$.*3,750\.00|≈.*3,750\.00/)).toBeInTheDocument();
-    expect(screen.getByText(/\$25\.00 pending · releases on/)).toBeInTheDocument();
+    expect(screen.getByText(/\$25\.00 pending/)).toBeInTheDocument();
+    // 12.12: a data não fica mais solta na linha (parecia que tudo liberava nela); vai no balão das liberações.
+    expect(screen.queryByText(/releases on/)).toBeNull();
+  });
+
+  test('12.12: o balão das liberações lista cada data com o valor e abre ao passar o mouse', async () => {
+    renderRow({
+      store: makeBalance({
+        pending: {
+          cents: 1700, count: 3, nextReleaseAt: '2026-11-29T10:00:00.000Z', lastReleaseAt: '2026-12-04T16:00:00.000Z',
+          releases: [
+            { releaseAt: '2026-11-29T10:00:00.000Z', cents: 500, count: 1 },
+            { releaseAt: '2026-12-04T16:00:00.000Z', cents: 1200, count: 2 },
+          ],
+          usdCents: 1700, approxCents: 8500, estimated: false,
+        },
+      }),
+    });
+    const trigger = screen.getByRole('button', { name: /Pending balance releases/ });
+    fireEvent.pointerEnter(trigger, { pointerType: 'mouse' });
+    const items = await screen.findAllByRole('listitem');
+    const texts = items.map((li) => li.textContent ?? '');
+    expect(texts.some((tx) => /\$5\.00 \(1 sale\)/.test(tx))).toBe(true);
+    expect(texts.some((tx) => /\$12\.00 \(2 sales\)/.test(tx))).toBe(true);
   });
 
   test('o selo da moeda tem nome acessível; loja inativa e não sacável ganham selos com texto', () => {
@@ -81,11 +104,11 @@ describe('StoreBalanceRow (12.7b)', () => {
     expect(screen.getByRole('img', { name: /Available R\$100\.00/ })).toBeInTheDocument();
   });
 
-  test('"nunca conferido" e "última conferência" em texto discreto', () => {
+  test('12.12 (pedido do usuário): a linha não mostra mais "última conferência" nem "nunca conferido"', () => {
     renderRow();
-    expect(screen.getByText('Balance never checked')).toBeInTheDocument();
+    expect(screen.queryByText('Balance never checked')).toBeNull();
     cleanup();
     renderRow({ store: makeBalance({ daysSinceLastCheck: 3 }) });
-    expect(screen.getByText('Last checked 3 days ago')).toBeInTheDocument();
+    expect(screen.queryByText(/Last checked/)).toBeNull();
   });
 });

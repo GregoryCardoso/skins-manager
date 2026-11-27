@@ -107,11 +107,7 @@
   },
   "status": {
     "recheck": "もう一度確認",
-    "checking": "確認中...",
-    "server": "アプリとの接続",
-    "online": "接続済み",
-    "offline": "応答なし",
-    "lastResponse": "最後の応答：{time}"
+    "checking": "確認中..."
   },
   "catalog": {
     "title": "カタログ",
@@ -184,6 +180,7 @@
     "PURCHASE_STORE_REQUIRED": "購入ストアを入力してください。",
     "PURCHASE_PRICE_REQUIRED": "支払い価格を入力してください。",
     "STORE_NOT_FOUND": "ストアが見つかりません。",
+    "STORE_NOT_SELLING": "このストアは購入のみに設定されています。ここで販売するには、ストアで「このストアで販売する」をオンにしてください。",
     "ITEM_NOT_FOUND": "アイテムが見つかりません。",
     "ITEM_ALREADY_SOLD": "このアイテムはすでに販売済みです。",
     "ITEM_NOT_SOLD": "このアイテムはまだ販売されていません。",
@@ -896,7 +893,9 @@
     "unit": "個体",
     "minPriceLabel": "損益分岐価格",
     "youReceive": "受取額",
-    "feesMissing": "このストアには販売手数料が設定されていないため、純額を計算できません。受け取った金額を入力するか、「ストア」ページで手数料を設定してください。"
+    "feesMissing": "このストアには販売手数料が設定されていないため、純額を計算できません。受け取った金額を入力するか、「ストア」ページで手数料を設定してください。",
+    "buyOnlyBadge": "購入のみ",
+    "buyOnlyWarning": "このストアは購入のみに設定されています。ここで販売するには、ストアで「このストアで販売する」をオンにしてください。"
   },
   "fields": {
     "catalogId": "カタログのアイテム",
@@ -1518,7 +1517,8 @@
       "stock": "在庫（原価）",
       "deposited": "入金の合計",
       "depositedNote": "入金手数料{value}を含みます",
-      "result": "実利益"
+      "result": "実利益",
+      "pendingNoteAll": "{date}までにすべて解除"
     },
     "info": {
       "title": "その他の数値",
@@ -1660,11 +1660,6 @@
     "nonWithdrawable": "出金不可",
     "available": "利用可能",
     "difference": "差額",
-    "lastCheckDays": {
-      "other": "最終確認：{count}日前"
-    },
-    "lastCheckToday": "最終確認：今日",
-    "neverChecked": "残高を一度も確認していません",
     "check": "残高を確認",
     "breakdown": {
       "title": "利用可能な残高の計算方法",
@@ -1732,9 +1727,13 @@
       "withdraw": "出金を記録",
       "more": "{store}のその他の操作",
       "currencyTag": "通貨：{currency}",
-      "pendingFoot": "保留中 {value} ・{date}に解除",
       "noPending": "保留中はありません",
-      "detailsLabel": "計算の詳細"
+      "detailsLabel": "計算の詳細",
+      "pendingShort": "保留中 {value}",
+      "releasesTopic": "保留中の残高の解除日",
+      "releaseLine": {
+        "other": "{date}：{value}（販売{count}件）"
+      }
     },
     "checkDialog": {
       "explain": "確認：サイトに表示されている残高を入力します。調整：差額の分だけアプリの残高を修正します。",

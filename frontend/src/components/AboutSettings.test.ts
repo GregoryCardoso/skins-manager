@@ -60,10 +60,12 @@ describe('AboutSettings', () => {
     expect(text(html)).not.toContain('instalador');
   });
 
-  test('diagnóstico da conexão (movido do antigo painel de status, 12.4): conectada com a última resposta e o botão de verificar de novo', () => {
+  test('12.12: sem a linha de conexão com o app (soava como conexão externa) e sem botão de testar conexão', () => {
     const html = render({ version: '1.0.0' });
-    expect(text(html)).toContain('Conexão com o app: Conectado · Última resposta:');
-    expect(text(html)).toContain('Verificar novamente');
+    expect(text(html)).toContain('1.0.0');
+    expect(text(html)).not.toContain('Conexão com o app');
+    expect(text(html)).not.toContain('Testar conexão');
+    expect(text(html)).not.toContain('Verificar novamente');
   });
 
   test('sem versão do servidor', () => {

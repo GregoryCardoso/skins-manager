@@ -121,6 +121,7 @@ function computeRealProfit(input = {}) {
   const platformEstimated = balanceRows.some((row) => row.availableEstimated === true);
   const pendingEstimated = balanceRows.some((row) => row.pending.estimated === true);
   const nextReleases = balanceRows.map((row) => row.pending.nextReleaseAt).filter((value) => value !== null).sort();
+  const lastReleases = balanceRows.map((row) => row.pending.lastReleaseAt).filter((value) => value !== null && value !== undefined).sort();
 
   for (const row of balanceRows) {
     const missingFx = [row.availableUsdCents, row.pending.usdCents].some((value) => value === null);
@@ -163,6 +164,8 @@ function computeRealProfit(input = {}) {
     platformBalanceUsdCents,
     pendingBalanceUsdCents,
     nextReleaseAt: nextReleases.length ? nextReleases[0] : null,
+    // Quando todo o pendente estará liberado (aditivo, 12.12).
+    lastReleaseAt: lastReleases.length ? lastReleases[lastReleases.length - 1] : null,
     stockUsdCents,
     // Estoque à venda e em holding (8.9, D283); a soma dos dois é `stockUsdCents`.
     stockBreakdown: {

@@ -694,7 +694,7 @@ function importSales(entries, ctx) {
       itemService.sellItem(
         pick.itemId,
         { saleStoreId: store.id, salePriceCents: trade.priceCents, soldAt: saleMoment(trade), netReceivedCents: credit.netCents },
-        { now, saleReleaseAt: releaseAt }
+        { now, saleReleaseAt: releaseAt, allowBuyOnlyStore: true }
       );
     } catch (err) {
       if (!(err instanceof AppError)) throw err;

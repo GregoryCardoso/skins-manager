@@ -11,9 +11,9 @@ const insertStoreSql = (withHold) => `
   )`;
 
 const DEFAULT_STORES = [
-  { name: 'CSFloat', currency: 'USD', isPrimary: 1, saleFeeType: 'DEDUCTED', saleFeeRate: 0.02, saleFeeRounding: 'CEIL', saleFixedFeeCents: 0, allowsWithdrawal: 1, withdrawalFeeRate: 0.025, withdrawalFixedFeeCents: 0, saleHoldDays: 7 },
-  { name: 'Steam', currency: 'BRL', isPrimary: 0, saleFeeType: 'ADDED', saleFeeRate: 0.15, saleFeeRounding: 'CEIL', saleFixedFeeCents: 0, allowsWithdrawal: 0, withdrawalFeeRate: null, withdrawalFixedFeeCents: 0, saleHoldDays: 0 },
-  { name: 'CSMoney', currency: 'USD', isPrimary: 0, saleFeeType: null, saleFeeRate: null, saleFeeRounding: 'CEIL', saleFixedFeeCents: 0, allowsWithdrawal: 1, withdrawalFeeRate: null, withdrawalFixedFeeCents: 0, saleHoldDays: 7 },
+  { name: 'CSFloat', currency: 'USD', isPrimary: 1, saleFeeType: 'DEDUCTED', saleFeeRate: 0.02, saleFeeRounding: 'CEIL', saleFixedFeeCents: 0, allowsWithdrawal: 1, withdrawalFeeRate: 0.025, withdrawalFixedFeeCents: 0, saleHoldDays: 7, sellsHere: 1 },
+  { name: 'Steam', currency: 'BRL', isPrimary: 0, saleFeeType: 'ADDED', saleFeeRate: 0.15, saleFeeRounding: 'CEIL', saleFixedFeeCents: 0, allowsWithdrawal: 0, withdrawalFeeRate: null, withdrawalFixedFeeCents: 0, saleHoldDays: 0, sellsHere: 0 },
+  { name: 'CSMoney', currency: 'USD', isPrimary: 0, saleFeeType: null, saleFeeRate: null, saleFeeRounding: 'CEIL', saleFixedFeeCents: 0, allowsWithdrawal: 1, withdrawalFeeRate: null, withdrawalFixedFeeCents: 0, saleHoldDays: 7, sellsHere: 0 },
 ];
 
 // T5: as lojas iniciais só nascem uma vez (`stores_seeded`); excluir todas não as recria (D143).
@@ -35,9 +35,15 @@ function runSeed(db, now = new Date()) {
       // testes, com listas de migração truncadas) não têm a coluna e mantêm a Steam em BRL, como antes.
       const hasDisplayCurrency = db.prepare("SELECT 1 FROM pragma_table_info('settings') WHERE name = 'display_currency'").get() !== undefined;
       const steamCurrency = hasDisplayCurrency ? db.prepare('SELECT display_currency FROM settings WHERE id = 1').get().display_currency : 'BRL';
-      for (const { saleHoldDays, ...store } of DEFAULT_STORES) {
+      // "Vendo nesta loja" (v028): numa instalação nova só a CSFloat vem ligada; Steam e CSMoney vêm desligadas e quem vende nelas
+      // liga (decisão do usuário, 12.12). Instalações existentes não mudam (a v028 ligou todas). Esquemas antes da v028 (testes) não
+      // têm a coluna.
+      const hasSellsHere = db.prepare("SELECT 1 FROM pragma_table_info('stores') WHERE name = 'sells_here'").get() !== undefined;
+      const setSellsHere = hasSellsHere ? db.prepare('UPDATE stores SET sells_here = ? WHERE id = ?') : null;
+      for (const { saleHoldDays, sellsHere, ...store } of DEFAULT_STORES) {
         const currency = store.name === 'Steam' ? steamCurrency : store.currency;
-        insert.run({ ...store, currency, ...(withHold ? { saleHoldDays } : {}), now: nowIso });
+        const { lastInsertRowid } = insert.run({ ...store, currency, ...(withHold ? { saleHoldDays } : {}), now: nowIso });
+        if (setSellsHere) setSellsHere.run(sellsHere, lastInsertRowid);
       }
       if (hasFlag) db.prepare('UPDATE settings SET stores_seeded = 1 WHERE id = 1').run();
       // Banco novo: a v020 rodou antes das lojas existirem; aplica aqui a mesma regra dela (exatamente uma loja "steam"; a moeda é a da

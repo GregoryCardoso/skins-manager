@@ -226,6 +226,7 @@ function buildCurrentBalances({
 
   const sumOf = (pick, filter = () => true) => rows.filter(filter).reduce((acc, row) => addNullable(acc, pick(row)), 0);
   const nextReleases = rows.map((row) => row.pending.nextReleaseAt).filter((value) => value !== null).sort();
+  const lastReleases = rows.map((row) => row.pending.lastReleaseAt).filter((value) => value !== null && value !== undefined).sort();
   const availableUsd = sumOf((row) => row.availableUsdCents);
   const pendingUsd = sumOf((row) => row.pending.usdCents);
   // Só informativo (D212): disponível + pendente das lojas sem saque; não é somado de novo no lucro real.
@@ -244,6 +245,7 @@ function buildCurrentBalances({
       nonWithdrawable: approxOf(nonWithdrawableUsd, fx),
     },
     nextReleaseAt: nextReleases.length ? nextReleases[0] : null,
+    lastReleaseAt: lastReleases.length ? lastReleases[lastReleases.length - 1] : null,
     estimated: rows.some((row) => row.estimated),
   };
   return {

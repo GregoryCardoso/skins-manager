@@ -109,11 +109,7 @@
   },
   "status": {
     "recheck": "Tekrar kontrol et",
-    "checking": "Kontrol ediliyor...",
-    "server": "Uygulama bağlantısı",
-    "online": "Bağlı",
-    "offline": "Yanıt vermiyor",
-    "lastResponse": "Son yanıt: {time}"
+    "checking": "Kontrol ediliyor..."
   },
   "catalog": {
     "title": "Katalog",
@@ -187,6 +183,7 @@
     "PURCHASE_STORE_REQUIRED": "Satın alma mağazasını girin.",
     "PURCHASE_PRICE_REQUIRED": "Ödenen fiyatı girin.",
     "STORE_NOT_FOUND": "Mağaza bulunamadı.",
+    "STORE_NOT_SELLING": "Bu mağaza yalnızca alım olarak işaretli. Burada satış yapmak için Mağazalar bölümünde \"Bu mağazada satıyorum\" seçeneğini açın.",
     "ITEM_NOT_FOUND": "Eşya bulunamadı.",
     "ITEM_ALREADY_SOLD": "Bu eşya zaten satıldı.",
     "ITEM_NOT_SOLD": "Bu eşya henüz satılmadı.",
@@ -906,7 +903,9 @@
     "unit": "Birim",
     "minPriceLabel": "Başabaş fiyatı",
     "youReceive": "Eline geçen",
-    "feesMissing": "Bu mağaza için satış ücreti ayarlanmamış, bu yüzden net tutar hesaplanamıyor. Aldığın tutarı gir ya da ücretleri Mağazalar sayfasından ayarla."
+    "feesMissing": "Bu mağaza için satış ücreti ayarlanmamış, bu yüzden net tutar hesaplanamıyor. Aldığın tutarı gir ya da ücretleri Mağazalar sayfasından ayarla.",
+    "buyOnlyBadge": "yalnızca alım",
+    "buyOnlyWarning": "Bu mağaza yalnızca alım olarak işaretli. Burada satış yapmak için Mağazalar bölümünde \"Bu mağazada satıyorum\" seçeneğini açın."
   },
   "fields": {
     "catalogId": "Katalog eşyası",
@@ -1551,7 +1550,8 @@
       "stock": "Maliyetle stok",
       "deposited": "Toplam yatırılan",
       "depositedNote": "para yatırma ücretlerinden {value} dahil",
-      "result": "Gerçek kâr"
+      "result": "Gerçek kâr",
+      "pendingNoteAll": "tamamı {date} tarihine kadar serbest"
     },
     "info": {
       "title": "Diğer rakamlar",
@@ -1696,12 +1696,6 @@
     "nonWithdrawable": "çekilemez",
     "available": "kullanılabilir",
     "difference": "Fark",
-    "lastCheckDays": {
-      "one": "Son kontrol: {count} gün önce",
-      "other": "Son kontrol: {count} gün önce"
-    },
-    "lastCheckToday": "Son kontrol: bugün",
-    "neverChecked": "Bakiye hiç kontrol edilmedi",
     "check": "Bakiyeyi kontrol et",
     "breakdown": {
       "title": "Kullanılabilir bakiye nasıl hesaplanır",
@@ -1771,9 +1765,14 @@
       "withdraw": "Çekimi kaydet",
       "more": "{store} için diğer işlemler",
       "currencyTag": "Para birimi: {currency}",
-      "pendingFoot": "{value} bekleyen · serbest kalma: {date}",
       "noPending": "Bekleyen yok",
-      "detailsLabel": "Hesaplama ayrıntıları"
+      "detailsLabel": "Hesaplama ayrıntıları",
+      "pendingShort": "{value} beklemede",
+      "releasesTopic": "Bekleyen bakiyenin serbest kalma tarihleri",
+      "releaseLine": {
+        "one": "{date}: {value} ({count} satış)",
+        "other": "{date}: {value} ({count} satış)"
+      }
     },
     "checkDialog": {
       "explain": "Kontrol: sitede gördüğünüz bakiyeyi girersiniz. Düzeltme: uygulamadaki bakiyeyi farka göre düzeltir.",

@@ -10,6 +10,7 @@ import BalanceBar from './ui/BalanceBar';
 import Banner from './ui/Banner';
 import Button from './ui/Button';
 import Disclosure from './ui/Disclosure';
+import HelpTip from './ui/HelpTip';
 import Menu, { type MenuEntry } from './ui/Menu';
 import Money from './ui/Money';
 import { useBelow } from './ui/useMediaQuery';
@@ -40,11 +41,6 @@ export default function StoreBalanceRow({ store, scaleMaxCents, canDeposit, canW
   const compact = useBelow('compact');
   const { pending, breakdown, ignored } = store;
   const fxMissing = store.warningCode === 'FX_NOT_CONFIGURED';
-  const days = store.daysSinceLastCheck;
-  // Texto discreto, sem estilo de alerta: "nunca conferido" não é um problema (D243, D247).
-  const lastCheckText = days === null
-    ? t('storeBalances.neverChecked')
-    : days === 0 ? t('storeBalances.lastCheckToday') : tPlural('storeBalances.lastCheckDays', days);
   const counterpart = storeCounterpart({
     currency: store.currency, usdCents: store.availableUsdCents, approxCents: store.availableApproxCents, approxCurrency: store.approxCurrency,
   });
@@ -56,12 +52,26 @@ export default function StoreBalanceRow({ store, scaleMaxCents, canDeposit, canW
     ['adjustments', breakdown.adjustmentsCents],
   ] as const;
 
+  // "R$ X pendente" e, no "?" (abre também ao passar o mouse), quanto libera em cada data. Antes a linha trazia só a data mais
+  // próxima, e parecia que tudo liberava nela (relato do usuário, 12.12).
+  const releases = pending.releases ?? (pending.nextReleaseAt ? [{ releaseAt: pending.nextReleaseAt, cents: pending.cents, count: pending.count }] : []);
   const pendingText = pending.cents > 0
-    ? t('storeBalances.row.pendingFoot', {
-      value: formatMoney(pending.cents, store.currency, locale),
-      date: pending.nextReleaseAt ? formatDate(pending.nextReleaseAt, locale) : t('common.none'),
-    })
+    ? t('storeBalances.row.pendingShort', { value: formatMoney(pending.cents, store.currency, locale) })
     : t('storeBalances.row.noPending');
+  const pendingHelp = pending.cents > 0 && releases.length > 0 ? (
+    <HelpTip topic={t('storeBalances.row.releasesTopic')} icon="clock" openOnHover>
+      <ul className={styles.releases}>
+        {releases.map((release) => (
+          <li key={release.releaseAt}>
+            {tPlural('storeBalances.row.releaseLine', release.count, {
+              date: formatDate(release.releaseAt, locale),
+              value: formatMoney(release.cents, store.currency, locale),
+            })}
+          </li>
+        ))}
+      </ul>
+    </HelpTip>
+  ) : null;
 
   // Faixa compacta (< 900): só "Conferir" fica no cartão; o resto vai para o Menu ⋯.
   const menuItems: MenuEntry[] = [];
@@ -106,9 +116,10 @@ export default function StoreBalanceRow({ store, scaleMaxCents, canDeposit, canW
       />
 
       <p className={styles.foot}>
-        <span>{pendingText}</span>
-        <span aria-hidden="true">·</span>
-        <span>{lastCheckText}</span>
+        <span className={styles.pending}>
+          {pendingText}
+          {pendingHelp}
+        </span>
       </p>
 
       {fxMissing && (

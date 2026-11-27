@@ -113,11 +113,7 @@
   },
   "status": {
     "recheck": "Sprawdź ponownie",
-    "checking": "Sprawdzanie...",
-    "server": "Połączenie z aplikacją",
-    "online": "Połączono",
-    "offline": "Brak odpowiedzi",
-    "lastResponse": "Ostatnia odpowiedź: {time}"
+    "checking": "Sprawdzanie..."
   },
   "catalog": {
     "title": "Katalog",
@@ -193,6 +189,7 @@
     "PURCHASE_STORE_REQUIRED": "Wybierz sklep zakupu.",
     "PURCHASE_PRICE_REQUIRED": "Wpisz zapłaconą cenę.",
     "STORE_NOT_FOUND": "Nie znaleziono sklepu.",
+    "STORE_NOT_SELLING": "Ten sklep jest oznaczony jako tylko zakup. Włącz „Sprzedaję w tym sklepie” w sekcji Sklepy, aby w nim sprzedawać.",
     "ITEM_NOT_FOUND": "Nie znaleziono przedmiotu.",
     "ITEM_ALREADY_SOLD": "Ten przedmiot został już sprzedany.",
     "ITEM_NOT_SOLD": "Ten przedmiot nie został jeszcze sprzedany.",
@@ -926,7 +923,9 @@
     "unit": "Egzemplarz",
     "minPriceLabel": "Cena bez straty",
     "youReceive": "Otrzymasz",
-    "feesMissing": "Ten sklep nie ma ustawionych prowizji od sprzedaży, więc kwoty netto nie da się obliczyć. Wpisz otrzymaną kwotę albo ustaw prowizje na stronie Sklepy."
+    "feesMissing": "Ten sklep nie ma ustawionych prowizji od sprzedaży, więc kwoty netto nie da się obliczyć. Wpisz otrzymaną kwotę albo ustaw prowizje na stronie Sklepy.",
+    "buyOnlyBadge": "tylko zakup",
+    "buyOnlyWarning": "Ten sklep jest oznaczony jako tylko zakup. Włącz „Sprzedaję w tym sklepie” w sekcji Sklepy, aby w nim sprzedawać."
   },
   "fields": {
     "catalogId": "Przedmiot z katalogu",
@@ -1617,7 +1616,8 @@
       "stock": "Magazyn według kosztu",
       "deposited": "Łącznie wpłacono",
       "depositedNote": "zawiera {value} opłat za wpłaty",
-      "result": "Rzeczywisty zysk"
+      "result": "Rzeczywisty zysk",
+      "pendingNoteAll": "całość zwolniona do {date}"
     },
     "info": {
       "title": "Pozostałe liczby",
@@ -1768,14 +1768,6 @@
     "nonWithdrawable": "nie do wypłaty",
     "available": "dostępne",
     "difference": "Różnica",
-    "lastCheckDays": {
-      "one": "Ostatnia weryfikacja {count} dzień temu",
-      "few": "Ostatnia weryfikacja {count} dni temu",
-      "many": "Ostatnia weryfikacja {count} dni temu",
-      "other": "Ostatnia weryfikacja {count} dnia temu"
-    },
-    "lastCheckToday": "Ostatnia weryfikacja dzisiaj",
-    "neverChecked": "Saldo nigdy nie było weryfikowane",
     "check": "Zweryfikuj saldo",
     "breakdown": {
       "title": "Jak liczone jest saldo dostępne",
@@ -1849,9 +1841,16 @@
       "withdraw": "Zapisz wypłatę",
       "more": "Więcej działań dla {store}",
       "currencyTag": "Waluta: {currency}",
-      "pendingFoot": "{value} oczekujące · odblokowanie: {date}",
       "noPending": "Nic nie oczekuje",
-      "detailsLabel": "Szczegóły obliczenia"
+      "detailsLabel": "Szczegóły obliczenia",
+      "pendingShort": "{value} oczekuje",
+      "releasesTopic": "Zwolnienia oczekującego salda",
+      "releaseLine": {
+        "one": "{date}: {value} ({count} sprzedaż)",
+        "few": "{date}: {value} ({count} sprzedaże)",
+        "many": "{date}: {value} ({count} sprzedaży)",
+        "other": "{date}: {value} ({count} sprzedaży)"
+      }
     },
     "checkDialog": {
       "explain": "Weryfikacja: podajesz saldo widoczne na stronie. Korekta: poprawia saldo w aplikacji o różnicę.",

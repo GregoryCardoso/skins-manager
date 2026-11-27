@@ -8,9 +8,9 @@
     "build/icon.png": "61e5ce2018bdc56945f0ede7d18f085a856d9ec8d29e4668459129cf4eca2d12",
     "build/icon-512.png": "83d250366cbf0626bfd110f7398e160b6ef200adfb50a295ff321c6824a96ddc",
     "build/icon-256.png": "b1b9358890b9d9bbf6b0f55e7dcd33de68554fcf3453aa380b2315f0859281bd",
-    "build/icon.ico": "2885f5408eff8b806c0d9f54d084e28a57398f53b1c50bcc5ef0263a61ec07e0",
+    "build/icon.ico": "30b233d58a53ed25eaf319165be68da3e548b1d412344d4d38a774376280c24a",
     "src/assets/icon.png": "b1b9358890b9d9bbf6b0f55e7dcd33de68554fcf3453aa380b2315f0859281bd",
-    "../frontend/public/favicon.ico": "ddbd31791a8bb078216b923287febf1d0cc09842c39a1100486a9c0a9f90d4a0",
+    "../frontend/public/favicon.ico": "34d6313320b9368cfcd1baa398e7106ae999c03a87548587b25aae17e95249eb",
     "../frontend/public/icon.svg": "90daa36f9abf75fe762571b1647f7584debfddcc1e1fcefe767a321eb85a245a"
   }
 }

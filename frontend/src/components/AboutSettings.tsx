@@ -3,7 +3,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useLocale, useT } from '@/i18n/I18nProvider';
-import { formatDateTime } from '@/lib/format';
 import { getDesktopBridge, type DesktopAppInfo, type UpdateCheckResult } from '@/lib/desktop';
 import { queryKeys } from '@/lib/queryKeys';
 import { getHealth } from '@/services/api';
@@ -15,6 +14,8 @@ import Panel from './ui/Panel';
 export default function AboutSettings() {
   const t = useT();
   const locale = useLocale();
+  // Só para a versão do app (a linha "Conexão com o app" saiu na 12.12: soava como conexão externa; se o servidor interno parar,
+  // a tela "o app não está respondendo" já avisa).
   const healthQuery = useQuery({ queryKey: queryKeys.health.all, queryFn: ({ signal }) => getHealth(signal) });
   const version = healthQuery.data?.version ?? null;
   const [info, setInfo] = useState<DesktopAppInfo | null>(null);
@@ -68,24 +69,11 @@ export default function AboutSettings() {
           {mode === 'portable' && ` · ${t('settings.about.modePortable')}`}
         </p>
 
-        <p className={styles.line} data-testid="about-connection">
-          {t('status.server')}:{' '}
-          {healthQuery.data
-            ? `${t('status.online')} · ${t('status.lastResponse', { time: formatDateTime(healthQuery.data.timestamp, locale) })}`
-            : healthQuery.isError
-              ? t('status.offline')
-              : t('common.loading')}
-        </p>
-        <div className={styles.row}>
-          <Button icon="refresh" onClick={() => void healthQuery.refetch()} disabled={healthQuery.isFetching}>
-            {healthQuery.isFetching ? t('status.checking') : t('status.recheck')}
-          </Button>
-        </div>
 
         {canCheck ? (
           <>
             <div className={styles.row}>
-              <Button onClick={onCheck} disabled={checking}>
+              <Button icon="refresh" onClick={onCheck} disabled={checking}>
                 {checking ? t('settings.about.checking') : t('settings.about.check')}
               </Button>
             </div>

@@ -1048,6 +1048,9 @@ export interface PendingBalance {
   cents: number;
   count: number;
   nextReleaseAt: string | null;
+  // Aditivos (12.12): quando tudo estará liberado e quanto libera em cada instante (opcionais para respostas antigas).
+  lastReleaseAt?: string | null;
+  releases?: { releaseAt: string; cents: number; count: number }[];
   // Em US$ (nulo: loja em R$ sem cotação) e "≈ R$" (em loja BRL, o próprio valor nativo); tudo vem do backend (D229).
   usdCents: number | null;
   approxCents: number | null;
@@ -1103,6 +1106,7 @@ export interface CurrentStoreBalances {
       nonWithdrawable: number | null;
     };
     nextReleaseAt: string | null;
+    lastReleaseAt?: string | null;
     estimated: boolean;
   };
   usdBrlRate: number | null;
@@ -1133,6 +1137,8 @@ export interface ProfitSummary {
   platformBalanceUsdCents: number | null;
   pendingBalanceUsdCents: number | null;
   nextReleaseAt: string | null;
+  // Quando todo o pendente estará liberado (aditivo, 12.12).
+  lastReleaseAt?: string | null;
   stockUsdCents: number | null;
   // Estoque à venda e em holding (8.9, D283); a soma dos dois é `stockUsdCents`.
   stockBreakdown: {

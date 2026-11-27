@@ -109,11 +109,7 @@
   },
   "status": {
     "recheck": "重新检查",
-    "checking": "检查中…",
-    "server": "与应用的连接",
-    "online": "已连接",
-    "offline": "没有响应",
-    "lastResponse": "上次响应：{time}"
+    "checking": "检查中…"
   },
   "catalog": {
     "title": "目录",
@@ -187,6 +183,7 @@
     "PURCHASE_STORE_REQUIRED": "请输入买入商店。",
     "PURCHASE_PRICE_REQUIRED": "请输入支付的价格。",
     "STORE_NOT_FOUND": "找不到商店。",
+    "STORE_NOT_SELLING": "此商店已设为仅购买。请在“商店”中开启“在此商店出售”后再在这里出售。",
     "ITEM_NOT_FOUND": "找不到物品。",
     "ITEM_ALREADY_SOLD": "这件物品已经售出。",
     "ITEM_NOT_SOLD": "这件物品还没有售出。",
@@ -906,7 +903,9 @@
     "unit": "单件",
     "minPriceLabel": "保本价",
     "youReceive": "你将收到",
-    "feesMissing": "该商店未设置卖出手续费，无法计算净额。请输入实际收到的金额，或在“商店”页面设置手续费。"
+    "feesMissing": "该商店未设置卖出手续费，无法计算净额。请输入实际收到的金额，或在“商店”页面设置手续费。",
+    "buyOnlyBadge": "仅购买",
+    "buyOnlyWarning": "此商店已设为仅购买。请在“商店”中开启“在此商店出售”后再在这里出售。"
   },
   "fields": {
     "catalogId": "目录物品",
@@ -1543,7 +1542,8 @@
       "stock": "库存（按成本）",
       "deposited": "累计存入",
       "depositedNote": "包含存入手续费 {value}",
-      "result": "实际利润"
+      "result": "实际利润",
+      "pendingNoteAll": "将于 {date} 前全部释放"
     },
     "info": {
       "title": "更多数据",
@@ -1688,12 +1688,6 @@
     "nonWithdrawable": "不可提现",
     "available": "可用",
     "difference": "差额",
-    "lastCheckDays": {
-      "one": "上次核对在 {count} 天前",
-      "other": "上次核对在 {count} 天前"
-    },
-    "lastCheckToday": "今天已核对",
-    "neverChecked": "从未核对余额",
     "check": "核对余额",
     "breakdown": {
       "title": "可用余额的计算方式",
@@ -1763,9 +1757,13 @@
       "withdraw": "记录提现",
       "more": "{store} 的更多操作",
       "currencyTag": "币种：{currency}",
-      "pendingFoot": "待结算 {value} · {date}解冻",
       "noPending": "没有待结算金额",
-      "detailsLabel": "计算详情"
+      "detailsLabel": "计算详情",
+      "pendingShort": "{value} 待释放",
+      "releasesTopic": "待释放余额的释放时间",
+      "releaseLine": {
+        "other": "{date}：{value}（{count} 笔销售）"
+      }
     },
     "checkDialog": {
       "explain": "核对：由你填写网站上看到的余额。调整：按差额修正应用中的余额。",

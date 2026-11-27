@@ -70,7 +70,7 @@ describe('splitStoreSales', () => {
   const NOW = Date.parse('2026-11-21T12:00:00.000Z');
 
   test('sem vendas: tudo zerado e nextReleaseAt nulo', () => {
-    expect(run([], null, NOW)).toEqual({ released: { cents: 0, count: 0 }, pending: { cents: 0, count: 0, nextReleaseAt: null } });
+    expect(run([], null, NOW)).toEqual({ released: { cents: 0, count: 0 }, pending: { cents: 0, count: 0, nextReleaseAt: null, lastReleaseAt: null, releases: [] } });
   });
 
   test('retidas ficam pendentes e as já liberadas vão para liberadas', () => {
@@ -79,14 +79,14 @@ describe('splitStoreSales', () => {
       sold({ netReceivedCents: 40, soldAt: '2026-11-10T12:00:00.000Z' }), // libera 17/11 12:00
     ];
     const result = run(sales, null, NOW);
-    expect(result.pending).toEqual({ cents: 100, count: 1, nextReleaseAt: RELEASE_ISO });
+    expect(result.pending).toEqual({ cents: 100, count: 1, nextReleaseAt: RELEASE_ISO, lastReleaseAt: RELEASE_ISO, releases: [{ releaseAt: RELEASE_ISO, cents: 100, count: 1 }] });
     expect(result.released).toEqual({ cents: 40, count: 1 });
   });
 
   test('venda antiga já liberada conta; venda feita há tempo e ainda retida fica pendente e depois vira liberada (sem contar duas vezes)', () => {
     const sale = sold({ soldAt: '2026-11-18T09:00:00.000Z', netReceivedCents: 3000 }); // libera 25/11 09:00
     const before = run([sale], null, NOW);
-    expect(before.pending).toEqual({ cents: 3000, count: 1, nextReleaseAt: '2026-11-25T09:00:00.000Z' });
+    expect(before.pending).toEqual({ cents: 3000, count: 1, nextReleaseAt: '2026-11-25T09:00:00.000Z', lastReleaseAt: '2026-11-25T09:00:00.000Z', releases: [{ releaseAt: '2026-11-25T09:00:00.000Z', cents: 3000, count: 1 }] });
     expect(before.released.count).toBe(0);
     const after = run([sale], null, Date.parse('2026-11-26T00:00:00.000Z'));
     expect(after.pending.count).toBe(0);
@@ -101,7 +101,7 @@ describe('splitStoreSales', () => {
   });
 
   test('venda posterior a `at` não entra', () => {
-    expect(run([sold()], null, SOLD_MS - 1)).toEqual({ released: { cents: 0, count: 0 }, pending: { cents: 0, count: 0, nextReleaseAt: null } });
+    expect(run([sold()], null, SOLD_MS - 1)).toEqual({ released: { cents: 0, count: 0 }, pending: { cents: 0, count: 0, nextReleaseAt: null, lastReleaseAt: null, releases: [] } });
   });
 
   test('retenção 0 ou nula: liberada na hora da venda', () => {
@@ -122,8 +122,52 @@ describe('splitStoreSales', () => {
       sold({ soldAt: '2026-11-10T12:00:00.000Z', netReceivedCents: 600 }), // 17/11 12:00
     ];
     const result = run(sales, null, NOW);
-    expect(result.pending).toEqual({ cents: 7500, count: 3, nextReleaseAt: '2026-11-25T09:00:00.000Z' });
+    expect(result.pending).toEqual({
+      cents: 7500, count: 3, nextReleaseAt: '2026-11-25T09:00:00.000Z', lastReleaseAt: '2026-11-28T01:30:00.000Z',
+      releases: [
+        { releaseAt: '2026-11-25T09:00:00.000Z', cents: 3000, count: 1 },
+        { releaseAt: '2026-11-27T18:00:00.000Z', cents: 2500, count: 1 },
+        { releaseAt: '2026-11-28T01:30:00.000Z', cents: 2000, count: 1 },
+      ],
+    });
     expect(result.released).toEqual({ cents: 600, count: 1 });
+  });
+
+  test('releases agrupa o mesmo instante, ordena, soma centavos e conta; lastReleaseAt e nextReleaseAt vêm das pontas', () => {
+    const sales = [
+      sold({ soldAt: '2026-11-21T01:30:00.000Z', netReceivedCents: 2000 }), // 28/11 01:30
+      sold({ netReceivedCents: 100 }), // 27/11 18:00
+      sold({ netReceivedCents: 250 }), // 27/11 18:00 (mesmo instante)
+      sold({ soldAt: '2026-11-18T09:00:00.000Z', netReceivedCents: 3000 }), // 25/11 09:00
+    ];
+    const { pending } = run(sales, null, NOW);
+    expect(pending.releases).toEqual([
+      { releaseAt: '2026-11-25T09:00:00.000Z', cents: 3000, count: 1 },
+      { releaseAt: RELEASE_ISO, cents: 350, count: 2 },
+      { releaseAt: '2026-11-28T01:30:00.000Z', cents: 2000, count: 1 },
+    ]);
+    expect(pending.nextReleaseAt).toBe(pending.releases[0].releaseAt);
+    expect(pending.lastReleaseAt).toBe(pending.releases[pending.releases.length - 1].releaseAt);
+    expect(pending.releases.reduce((a, r) => a + r.cents, 0)).toBe(pending.cents);
+    expect(pending.releases.reduce((a, r) => a + r.count, 0)).toBe(pending.count);
+  });
+
+  test('releases: lojas diferentes não se misturam; liberada e soldAt depois de `at` ficam de fora', () => {
+    const sales = [
+      sold({ netReceivedCents: 100 }),
+      sold({ saleStoreId: 2, netReceivedCents: 999, soldAt: '2026-11-20T00:00:00.000Z' }),
+      sold({ soldAt: '2026-11-10T12:00:00.000Z', netReceivedCents: 40 }), // já liberada
+      sold({ soldAt: '2026-11-22T00:00:00.000Z', netReceivedCents: 77 }), // depois de `at`
+    ];
+    const { pending } = run(sales, null, NOW);
+    expect(pending.releases).toEqual([{ releaseAt: RELEASE_ISO, cents: 100, count: 1 }]);
+    expect(pending.lastReleaseAt).toBe(RELEASE_ISO);
+    expect(run(sales, null, NOW, 2).pending.releases).toEqual([{ releaseAt: '2026-11-27T00:00:00.000Z', cents: 999, count: 1 }]);
+  });
+
+  test('sem pendente: releases vazio e datas nulas', () => {
+    const { pending } = run([sold({ soldAt: '2026-11-10T12:00:00.000Z' })], null, NOW);
+    expect(pending).toEqual({ cents: 0, count: 0, nextReleaseAt: null, lastReleaseAt: null, releases: [] });
   });
 
   test('aceita datas ISO como `at` e âncora', () => {

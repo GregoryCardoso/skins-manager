@@ -85,7 +85,7 @@ describe('liberação da venda (D312)', () => {
     const sales = [sold({ saleReleaseAt: '2026-11-29T00:00:00.000Z' }), sold({ saleReleaseAt: '2026-11-21T00:00:00.000Z' })];
     const { released, pending } = splitStoreSales({ storeId: 1, sales, at: new Date('2026-11-22T00:00:00.000Z') });
     expect(released).toEqual({ cents: 100, count: 1 });
-    expect(pending).toEqual({ cents: 100, count: 1, nextReleaseAt: '2026-11-29T00:00:00.000Z' });
+    expect(pending).toEqual({ cents: 100, count: 1, nextReleaseAt: '2026-11-29T00:00:00.000Z', lastReleaseAt: '2026-11-29T00:00:00.000Z', releases: [{ releaseAt: '2026-11-29T00:00:00.000Z', cents: 100, count: 1 }] });
   });
 });
 

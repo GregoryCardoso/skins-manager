@@ -72,7 +72,7 @@ describe('chaves novas da 12.7b (Lucro real e dinheiro)', () => {
   test('as chaves dinâmicas usadas pela tela existem em todos os idiomas (aviso de saldo negativo e cotação nula)', () => {
     for (const code of codes) {
       const dict = read(code);
-      for (const key of ['warnings.COMPUTED_BALANCE_NEGATIVE', 'warnings.FX_NOT_CONFIGURED', 'storeBalances.lastCheckDays', 'storeBalances.neverChecked', 'deposits.title', 'withdrawals.title']) {
+      for (const key of ['warnings.COMPUTED_BALANCE_NEGATIVE', 'warnings.FX_NOT_CONFIGURED', 'deposits.title', 'withdrawals.title']) {
         expect(get(dict, key), `${code}:${key}`).toBeDefined();
       }
     }

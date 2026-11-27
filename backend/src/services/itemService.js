@@ -929,12 +929,17 @@ function deleteItem(id, ctx = {}) {
 
 // `ctx.saleReleaseAt` (ISO ou null): só a importação do CSFloat informa a liberação real (D312). Nunca vem do corpo da API
 // (o validador recusa o campo), então as vendas manuais continuam com a retenção da loja.
+// `ctx.allowBuyOnlyStore`: só a importação do CSFloat liga; ela registra vendas que já aconteceram, mesmo numa loja "só compra"
+// (`sellsHere = false`). A venda manual numa loja assim é recusada (STORE_NOT_SELLING).
 function sellItem(id, input, ctx = {}) {
-  const { now = new Date(), thresholds = getAgingThresholds(), saleReleaseAt = null } = ctx;
+  const { now = new Date(), thresholds = getAgingThresholds(), saleReleaseAt = null, allowBuyOnlyStore = false } = ctx;
   const item = findOrFail(id);
   assertNotConsumed(item);
   if (item.status !== 'EM_ESTOQUE') throw new ConflictError('Item já vendido.', 'ITEM_ALREADY_SOLD');
   const store = getStoreOrFail(input.saleStoreId, { field: 'saleStoreId' });
+  if (!allowBuyOnlyStore && store.sellsHere === false) {
+    throw new ConflictError('Esta loja está marcada como só compra. Ative "Vendo nesta loja" em Lojas para vender nela.', 'STORE_NOT_SELLING', { field: 'saleStoreId', params: { storeId: store.id } });
+  }
   const { record, sale } = buildSaleRecord(item, input, { store, settings: Setting.get(), now });
   if (saleReleaseAt !== null) record.saleReleaseAt = toIso(saleReleaseAt);
   const view = inTransaction(() => viewOf(Item.update(id, record, { now }), { now, thresholds }));

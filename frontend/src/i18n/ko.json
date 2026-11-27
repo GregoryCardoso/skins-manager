@@ -107,11 +107,7 @@
   },
   "status": {
     "recheck": "다시 확인",
-    "checking": "확인하는 중...",
-    "server": "앱 연결",
-    "online": "연결됨",
-    "offline": "응답 없음",
-    "lastResponse": "마지막 응답: {time}"
+    "checking": "확인하는 중..."
   },
   "catalog": {
     "title": "카탈로그",
@@ -184,6 +180,7 @@
     "PURCHASE_STORE_REQUIRED": "구매 상점을 입력해 주세요.",
     "PURCHASE_PRICE_REQUIRED": "지불한 가격을 입력해 주세요.",
     "STORE_NOT_FOUND": "상점을 찾을 수 없어요.",
+    "STORE_NOT_SELLING": "이 상점은 구매 전용으로 설정되어 있어요. 여기서 판매하려면 상점에서 \"이 상점에서 판매\"를 켜 주세요.",
     "ITEM_NOT_FOUND": "아이템을 찾을 수 없어요.",
     "ITEM_ALREADY_SOLD": "이미 판매된 아이템이에요.",
     "ITEM_NOT_SOLD": "아직 판매되지 않은 아이템이에요.",
@@ -896,7 +893,9 @@
     "unit": "개체",
     "minPriceLabel": "손익분기 가격",
     "youReceive": "받는 금액",
-    "feesMissing": "이 상점에는 판매 수수료가 설정되어 있지 않아 순액을 계산할 수 없어요. 받은 금액을 입력하거나 '상점' 페이지에서 수수료를 설정하세요."
+    "feesMissing": "이 상점에는 판매 수수료가 설정되어 있지 않아 순액을 계산할 수 없어요. 받은 금액을 입력하거나 '상점' 페이지에서 수수료를 설정하세요.",
+    "buyOnlyBadge": "구매 전용",
+    "buyOnlyWarning": "이 상점은 구매 전용으로 설정되어 있어요. 여기서 판매하려면 상점에서 \"이 상점에서 판매\"를 켜 주세요."
   },
   "fields": {
     "catalogId": "카탈로그 아이템",
@@ -1518,7 +1517,8 @@
       "stock": "재고(원가 기준)",
       "deposited": "총 입금",
       "depositedNote": "입금 수수료 {value} 포함",
-      "result": "실제 수익"
+      "result": "실제 수익",
+      "pendingNoteAll": "{date}까지 모두 해제"
     },
     "info": {
       "title": "기타 수치",
@@ -1660,11 +1660,6 @@
     "nonWithdrawable": "출금 불가",
     "available": "사용 가능",
     "difference": "차이",
-    "lastCheckDays": {
-      "other": "마지막 확인: {count}일 전"
-    },
-    "lastCheckToday": "마지막 확인: 오늘",
-    "neverChecked": "잔액을 확인한 적이 없어요",
     "check": "잔액 확인",
     "breakdown": {
       "title": "사용 가능 잔액 계산 방법",
@@ -1732,9 +1727,13 @@
       "withdraw": "출금 기록",
       "more": "{store} 추가 작업",
       "currencyTag": "통화: {currency}",
-      "pendingFoot": "보류 {value} · {date}에 반영",
       "noPending": "보류 없음",
-      "detailsLabel": "계산 상세"
+      "detailsLabel": "계산 상세",
+      "pendingShort": "{value} 보류 중",
+      "releasesTopic": "보류 중 잔액 해제 일정",
+      "releaseLine": {
+        "other": "{date}: {value} (판매 {count}건)"
+      }
     },
     "checkDialog": {
       "explain": "확인: 사이트에 표시된 잔액을 입력합니다. 조정: 차이만큼 앱의 잔액을 바로잡습니다.",

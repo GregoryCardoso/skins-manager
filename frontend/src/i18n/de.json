@@ -109,11 +109,7 @@
   },
   "status": {
     "recheck": "Nochmal prüfen",
-    "checking": "Prüft ...",
-    "server": "Verbindung zur App",
-    "online": "Verbunden",
-    "offline": "Antwortet nicht",
-    "lastResponse": "Letzte Antwort: {time}"
+    "checking": "Prüft ..."
   },
   "catalog": {
     "title": "Katalog",
@@ -187,6 +183,7 @@
     "PURCHASE_STORE_REQUIRED": "Gib den Kauf-Shop an.",
     "PURCHASE_PRICE_REQUIRED": "Gib den bezahlten Preis ein.",
     "STORE_NOT_FOUND": "Shop nicht gefunden.",
+    "STORE_NOT_SELLING": "Dieser Shop ist als „Nur Kauf“ markiert. Aktiviere unter Shops „Ich verkaufe in diesem Shop“, um dort zu verkaufen.",
     "ITEM_NOT_FOUND": "Item nicht gefunden.",
     "ITEM_ALREADY_SOLD": "Dieses Item wurde schon verkauft.",
     "ITEM_NOT_SOLD": "Dieses Item wurde noch nicht verkauft.",
@@ -906,7 +903,9 @@
     "unit": "Einheit",
     "minPriceLabel": "Preis ohne Verlust",
     "youReceive": "Du erhältst",
-    "feesMissing": "Für diesen Shop sind keine Verkaufsgebühren eingestellt, daher lässt sich der Nettobetrag nicht berechnen. Gib den erhaltenen Betrag ein oder stelle die Gebühren auf der Seite Shops ein."
+    "feesMissing": "Für diesen Shop sind keine Verkaufsgebühren eingestellt, daher lässt sich der Nettobetrag nicht berechnen. Gib den erhaltenen Betrag ein oder stelle die Gebühren auf der Seite Shops ein.",
+    "buyOnlyBadge": "nur Kauf",
+    "buyOnlyWarning": "Dieser Shop ist als „Nur Kauf“ markiert. Aktiviere unter Shops „Ich verkaufe in diesem Shop“, um dort zu verkaufen."
   },
   "fields": {
     "catalogId": "Katalog-Item",
@@ -1551,7 +1550,8 @@
       "stock": "Bestand zu Kosten",
       "deposited": "Insgesamt eingezahlt",
       "depositedNote": "enthält {value} an Einzahlungsgebühren",
-      "result": "Echter Gewinn"
+      "result": "Echter Gewinn",
+      "pendingNoteAll": "alles frei bis {date}"
     },
     "info": {
       "title": "Weitere Zahlen",
@@ -1696,12 +1696,6 @@
     "nonWithdrawable": "nicht auszahlbar",
     "available": "verfügbar",
     "difference": "Differenz",
-    "lastCheckDays": {
-      "one": "Zuletzt vor {count} Tag geprüft",
-      "other": "Zuletzt vor {count} Tagen geprüft"
-    },
-    "lastCheckToday": "Zuletzt heute geprüft",
-    "neverChecked": "Guthaben nie geprüft",
     "check": "Guthaben prüfen",
     "breakdown": {
       "title": "So wird das verfügbare Guthaben berechnet",
@@ -1771,9 +1765,14 @@
       "withdraw": "Auszahlung erfassen",
       "more": "Weitere Aktionen für {store}",
       "currencyTag": "Währung: {currency}",
-      "pendingFoot": "{value} ausstehend · frei am {date}",
       "noPending": "Nichts ausstehend",
-      "detailsLabel": "Details zur Berechnung"
+      "detailsLabel": "Details zur Berechnung",
+      "pendingShort": "{value} ausstehend",
+      "releasesTopic": "Freigaben des ausstehenden Guthabens",
+      "releaseLine": {
+        "one": "{date}: {value} ({count} Verkauf)",
+        "other": "{date}: {value} ({count} Verkäufe)"
+      }
     },
     "checkDialog": {
       "explain": "Prüfung: Sie geben das Guthaben ein, das Sie auf der Website sehen. Korrektur: gleicht das Guthaben der App um die Differenz an.",

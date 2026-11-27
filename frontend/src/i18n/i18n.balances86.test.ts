@@ -18,12 +18,12 @@ function flatten(node: unknown, prefix = ''): string[] {
 
 const NEW_KEYS = [
   'storeBalances.difference', 'storeBalances.startHint', 'storeBalances.totalsTitle', 'storeBalances.totalPendingDate',
-  'storeBalances.lastCheckToday', 'storeBalances.neverChecked', 'storeBalances.check', 'storeBalances.checkPreview',
+  'storeBalances.check', 'storeBalances.checkPreview',
   'storeBalances.adjustAndSave', 'storeBalances.adjustmentNote',
   'storeBalances.kind.CHECK', 'storeBalances.kind.LEGACY',
   'storeBalances.breakdown.deposits', 'storeBalances.breakdown.purchases',
   'storeBalances.breakdown.withdrawals', 'storeBalances.breakdown.salesReleased', 'storeBalances.breakdown.adjustments',
-  'storeBalances.lastCheckDays.one', 'storeBalances.lastCheckDays.other', 'storeBalances.legacyDepositsIgnored.one',
+  'storeBalances.legacyDepositsIgnored.one',
   'storeBalances.legacyDepositsIgnored.other', 'warnings.COMPUTED_BALANCE_NEGATIVE', 'warnings.BALANCE_CURRENCY_MISMATCH',
   'errors.ADJUSTMENT_NOTE_REQUIRED', 'errors.BALANCE_CHECK_BEFORE_LAST',
 ];

@@ -2,7 +2,7 @@
 
 // Pedido do usuário (D370, v028): "Vendo nesta loja" (`sellsHere`). Padrão ligado, booleano estrito e filtro só do preço mínimo.
 const request = require('supertest');
-const { closeDb } = require('../../src/config/database');
+const { closeDb, getDb } = require('../../src/config/database');
 const { freshDb } = require('../helpers/fixtures');
 const { makeCatalogApp, storeId, purchaseBody, createItemViaApi, expectError } = require('../helpers/apiFixtures');
 const { minPricesForItem } = require('../../src/services/pricingService');
@@ -79,5 +79,43 @@ describe('minPricesForItem (puro)', () => {
   test('só entram lojas ativas que vendem', () => {
     const out = minPricesForItem({ item, stores, settings: {}, costParts: null });
     expect(out.map((m) => m.storeName)).toEqual(['A']);
+  });
+});
+
+describe('D370: lojas de fábrica e venda manual em loja só compra', () => {
+  test('banco novo (seed): CSFloat vende; Steam e CSMoney nascem só compra', () => {
+    freshDb({ factorySellsHere: true });
+    const rows = Object.fromEntries(getDb().prepare('SELECT name, sells_here FROM stores').all().map((r) => [r.name, r.sells_here]));
+    expect(rows).toEqual({ CSFloat: 1, Steam: 0, CSMoney: 0 });
+  });
+
+  const sellIn = (id, store, extra = {}) =>
+    post(`/api/items/${id}/sell`, { saleStoreId: storeId(store), salePriceCents: 125, soldAt: '2026-11-18T12:00:00.000Z', ...extra });
+
+  test('venda manual em loja só compra: 409 STORE_NOT_SELLING no campo saleStoreId; o item continua em estoque', async () => {
+    const item = await createItemViaApi(app, purchaseBody());
+    await patch(`/api/stores/${storeId('Steam')}`, { sellsHere: false });
+    expectError(await sellIn(item.id, 'Steam'), 409, 'STORE_NOT_SELLING', { field: 'saleStoreId' });
+    expect((await request(app).get(`/api/items/${item.id}`)).body.data.status).toBe('EM_ESTOQUE');
+  });
+
+  test('venda em loja que vende passa; editar a venda e desfazer continuam valendo mesmo se a loja virar só compra depois', async () => {
+    const item = await createItemViaApi(app, purchaseBody());
+    expect((await sellIn(item.id, 'CSFloat')).status).toBe(200);
+    await patch(`/api/stores/${storeId('CSFloat')}`, { sellsHere: false });
+    const edited = await patch(`/api/items/${item.id}`, { originDetail: 'ajuste' });
+    expect(edited.status).toBe(200);
+    expect((await post(`/api/items/${item.id}/unsell`, {})).status).toBe(200);
+    expectError(await sellIn(item.id, 'CSFloat'), 409, 'STORE_NOT_SELLING', { field: 'saleStoreId' });
+  });
+
+  test('serviço: allowBuyOnlyStore (importação) vende numa loja só compra', () => {
+    const itemService = require('../../src/services/itemService');
+    const Store = require('../../src/models/Store');
+    Store.update(storeId('CSFloat'), { sellsHere: false });
+    const created = itemService.createItem(purchaseBody({ acquiredAt: '2026-11-01T00:00:00.000Z' }), { now: new Date('2026-11-20T00:00:00.000Z') });
+    const input = { saleStoreId: storeId('CSFloat'), salePriceCents: 125, soldAt: '2026-11-18T12:00:00.000Z' };
+    expect(() => itemService.sellItem(created.id, input, { now: new Date('2026-11-20T00:00:00.000Z') })).toThrow(expect.objectContaining({ code: 'STORE_NOT_SELLING' }));
+    expect(itemService.sellItem(created.id, input, { now: new Date('2026-11-20T00:00:00.000Z'), allowBuyOnlyStore: true }).item.status).toBe('VENDIDO');
   });
 });

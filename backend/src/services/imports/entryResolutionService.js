@@ -134,7 +134,7 @@ function sellImported(record, item, store, { now }) {
   itemService.sellItem(
     item.id,
     { saleStoreId: store.id, salePriceCents: record.amountCents, soldAt: saleMoment(tradeOfRecord(record)), netReceivedCents: credit.netCents },
-    { now, saleReleaseAt: saleReleaseOf(record.contractId, record.verifySaleAt) }
+    { now, saleReleaseAt: saleReleaseOf(record.contractId, record.verifySaleAt), allowBuyOnlyStore: true }
   );
   return Item.findById(item.id);
 }

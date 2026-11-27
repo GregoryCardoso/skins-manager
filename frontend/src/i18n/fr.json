@@ -109,11 +109,7 @@
   },
   "status": {
     "recheck": "Vérifier à nouveau",
-    "checking": "Vérification...",
-    "server": "Connexion à l'app",
-    "online": "Connecté",
-    "offline": "Ne répond pas",
-    "lastResponse": "Dernière réponse : {time}"
+    "checking": "Vérification..."
   },
   "catalog": {
     "title": "Catalogue",
@@ -187,6 +183,7 @@
     "PURCHASE_STORE_REQUIRED": "Saisissez la boutique d'achat.",
     "PURCHASE_PRICE_REQUIRED": "Saisissez le prix payé.",
     "STORE_NOT_FOUND": "Boutique introuvable.",
+    "STORE_NOT_SELLING": "Cette boutique est marquée comme achat seulement. Activez \"Je vends sur cette boutique\" dans Boutiques pour y vendre.",
     "ITEM_NOT_FOUND": "Objet introuvable.",
     "ITEM_ALREADY_SOLD": "Cet objet a déjà été vendu.",
     "ITEM_NOT_SOLD": "Cet objet n'a pas encore été vendu.",
@@ -906,7 +903,9 @@
     "unit": "Unité",
     "minPriceLabel": "Prix d'équilibre",
     "youReceive": "Vous recevez",
-    "feesMissing": "Cette boutique n'a pas de frais de vente configurés, donc le net ne peut pas être calculé. Saisissez le montant reçu ou configurez les frais dans la page Boutiques."
+    "feesMissing": "Cette boutique n'a pas de frais de vente configurés, donc le net ne peut pas être calculé. Saisissez le montant reçu ou configurez les frais dans la page Boutiques.",
+    "buyOnlyBadge": "achat seulement",
+    "buyOnlyWarning": "Cette boutique est marquée comme achat seulement. Activez \"Je vends sur cette boutique\" dans Boutiques pour y vendre."
   },
   "fields": {
     "catalogId": "Objet du catalogue",
@@ -1551,7 +1550,8 @@
       "stock": "Stock au coût",
       "deposited": "Total déposé",
       "depositedNote": "inclut {value} de frais de dépôt",
-      "result": "Bénéfice réel"
+      "result": "Bénéfice réel",
+      "pendingNoteAll": "tout libéré le {date}"
     },
     "info": {
       "title": "Autres chiffres",
@@ -1696,12 +1696,6 @@
     "nonWithdrawable": "non retirable",
     "available": "disponible",
     "difference": "Différence",
-    "lastCheckDays": {
-      "one": "Dernière vérification il y a {count} jour",
-      "other": "Dernière vérification il y a {count} jours"
-    },
-    "lastCheckToday": "Dernière vérification aujourd'hui",
-    "neverChecked": "Solde jamais vérifié",
     "check": "Vérifier le solde",
     "breakdown": {
       "title": "Comment le solde disponible est calculé",
@@ -1771,9 +1765,14 @@
       "withdraw": "Enregistrer un retrait",
       "more": "Autres actions pour {store}",
       "currencyTag": "Devise : {currency}",
-      "pendingFoot": "{value} en attente · libération le {date}",
       "noPending": "Rien en attente",
-      "detailsLabel": "Détails du calcul"
+      "detailsLabel": "Détails du calcul",
+      "pendingShort": "{value} en attente",
+      "releasesTopic": "Libérations du solde en attente",
+      "releaseLine": {
+        "one": "{date} : {value} ({count} vente)",
+        "other": "{date} : {value} ({count} ventes)"
+      }
     },
     "checkDialog": {
       "explain": "Vérification : vous indiquez le solde affiché sur le site. Ajustement : corrige le solde de l'application selon la différence.",

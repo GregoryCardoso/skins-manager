@@ -75,7 +75,9 @@ export interface SellContext {
 
 export function initialSellState(ctx: SellContext, nowLocal: string): SellFormState {
   const { stores, language } = ctx;
-  const primary = stores.find((s) => s.isPrimary) ?? stores[0] ?? null;
+  // D370: a loja inicial é uma que vende (a principal, se vende); só se nenhuma vende cai na principal.
+  const sells = (s: Store) => s.isActive && s.sellsHere;
+  const primary = stores.find((s) => s.isPrimary && sells(s)) ?? stores.find(sells) ?? stores.find((s) => s.isPrimary) ?? stores[0] ?? null;
   return {
     storeId: primary ? primary.id : null,
     priceText: '',

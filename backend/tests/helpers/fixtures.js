@@ -7,9 +7,12 @@ const { getDb, closeDb } = require('../../src/config/database');
 // de uma instalação nova (USD) ou outra moeda para testá-la.
 // A loja Steam de uma instalação nova nasce na moeda de conversão inicial (USD, 11.4); com o padrão BRL do teste ela fica em BRL, como nos
 // bancos existentes (a maioria dos testes usa a Steam em BRL). `{ steamCurrency }` força outra moeda para a Steam.
-function freshDb({ displayCurrency = 'BRL', steamCurrency } = {}) {
+// `factorySellsHere`: false deixa o "Vendo nesta loja" como o seed de uma instalação nova (só a CSFloat vende). O padrão (true) liga
+// todas as lojas, como numa instalação existente (a v028 ligou todas), para os testes de preço mínimo que usam Steam e CSMoney.
+function freshDb({ displayCurrency = 'BRL', steamCurrency, factorySellsHere = false } = {}) {
   closeDb();
   const db = getDb();
+  if (!factorySellsHere) db.prepare('UPDATE stores SET sells_here = 1').run();
   if (displayCurrency !== null) db.prepare('UPDATE settings SET display_currency = ?').run(displayCurrency);
   const steam = steamCurrency ?? (displayCurrency === 'BRL' ? 'BRL' : null);
   if (steam !== null) db.prepare("UPDATE stores SET currency = ? WHERE name = 'Steam'").run(steam);

@@ -109,11 +109,7 @@
   },
   "status": {
     "recheck": "Check again",
-    "checking": "Checking...",
-    "server": "Connection to the app",
-    "online": "Connected",
-    "offline": "Not responding",
-    "lastResponse": "Last response: {time}"
+    "checking": "Checking..."
   },
   "catalog": {
     "title": "Catalog",
@@ -187,6 +183,7 @@
     "PURCHASE_STORE_REQUIRED": "Enter the purchase store.",
     "PURCHASE_PRICE_REQUIRED": "Enter the price paid.",
     "STORE_NOT_FOUND": "Store not found.",
+    "STORE_NOT_SELLING": "This store is set to buy only. Turn on \"Selling on this store\" in Stores to sell on it.",
     "ITEM_NOT_FOUND": "Item not found.",
     "ITEM_ALREADY_SOLD": "This item has already been sold.",
     "ITEM_NOT_SOLD": "This item has not been sold yet.",
@@ -906,7 +903,9 @@
     "unit": "Unit",
     "minPriceLabel": "Break-even price",
     "youReceive": "You receive",
-    "feesMissing": "This store has no sale fees set, so the net amount can't be calculated. Enter the amount you received, or set the fees on the Stores page."
+    "feesMissing": "This store has no sale fees set, so the net amount can't be calculated. Enter the amount you received, or set the fees on the Stores page.",
+    "buyOnlyBadge": "buy only",
+    "buyOnlyWarning": "This store is set to buy only. Turn on \"Selling on this store\" in Stores to sell on it."
   },
   "fields": {
     "catalogId": "Catalog item",
@@ -1551,7 +1550,8 @@
       "stock": "Stock at cost",
       "deposited": "Total deposited",
       "depositedNote": "includes {value} of deposit fees",
-      "result": "Real profit"
+      "result": "Real profit",
+      "pendingNoteAll": "all released by {date}"
     },
     "info": {
       "title": "More numbers",
@@ -1696,12 +1696,6 @@
     "nonWithdrawable": "not withdrawable",
     "available": "available",
     "difference": "Difference",
-    "lastCheckDays": {
-      "one": "Last checked {count} day ago",
-      "other": "Last checked {count} days ago"
-    },
-    "lastCheckToday": "Last checked today",
-    "neverChecked": "Balance never checked",
     "check": "Check balance",
     "breakdown": {
       "title": "How the available balance is calculated",
@@ -1771,9 +1765,14 @@
       "withdraw": "Record withdrawal",
       "more": "More actions for {store}",
       "currencyTag": "Currency: {currency}",
-      "pendingFoot": "{value} pending · releases on {date}",
       "noPending": "Nothing pending",
-      "detailsLabel": "Calculation details"
+      "detailsLabel": "Calculation details",
+      "pendingShort": "{value} pending",
+      "releasesTopic": "Pending balance releases",
+      "releaseLine": {
+        "one": "{date}: {value} ({count} sale)",
+        "other": "{date}: {value} ({count} sales)"
+      }
     },
     "checkDialog": {
       "explain": "Check: you enter the balance you see on the site. Adjustment: corrects the app's balance by the difference.",

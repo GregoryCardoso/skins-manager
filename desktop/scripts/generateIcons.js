@@ -17,7 +17,9 @@ const SOURCES = {
 };
 const ICO_SIZES = [16, 24, 32, 48, 64, 128, 256];
 const FAVICON_SIZES = [16, 32, 48];
-const SMALL_MAX = 32; // até este tamanho usa a variante sem o fuzil
+// 0 = a logo completa (S com o fuzil) em TODOS os tamanhos. Até a 12.12 era 32 (16/24/32 px só com o S), mas o usuário viu essa
+// variante no instalador e na barra de tarefas como "a logo antiga" e pediu a logo escolhida em tudo. logo-small.svg fica guardado.
+const SMALL_MAX = 0;
 const DIB_MAX = 48; // até este tamanho a entrada do .ico é DIB 32 bits; acima, PNG embutido
 
 const OUTPUTS = {

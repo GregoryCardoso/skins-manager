@@ -149,6 +149,19 @@ describe('venda casada com uma compra importada', () => {
     expect(count('external_links')).toBe(2);
   });
 
+  test('D370: venda importada numa loja "só compra" (sellsHere false) continua sendo registrada', async () => {
+    state.trades = [buy()];
+    state.transactions = [purchaseTx('91001', 1250, { createdAt: '2026-11-05T10:00:01.000Z' })];
+    const itemId = (await firstRun()).body.data.batch.entries[0].entityId;
+    getDb().prepare("UPDATE stores SET sells_here = 0 WHERE name = 'CSFloat'").run();
+
+    state.trades = [sell(), buy()];
+    state.transactions = [soldTx('92001'), ...state.transactions];
+    const second = (await run()).body.data.batch;
+    expect(second.counts).toMatchObject({ salesCreated: 1, failed: 0 });
+    expect(await getItem(itemId)).toMatchObject({ status: 'VENDIDO', saleStoreId: storeId('CSFloat'), salePriceCents: 1500 });
+  });
+
   test('a liberação real é a do verify_sale_at mesmo quando difere de soldAt + 7; trade_verified depois vale a data dele', async () => {
     const verifyAt = '2026-11-29T18:30:00.000Z';
     state.trades = [buy()];

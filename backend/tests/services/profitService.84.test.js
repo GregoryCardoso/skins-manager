@@ -198,6 +198,19 @@ describe('computeRealProfit: bordas (8.5)', () => {
     expect(computeRealProfit({ balances, settings: SETTINGS }).nextReleaseAt).toBe('2026-11-26T12:00:00.000Z');
   });
 
+  test('lastReleaseAt é a maior data entre as lojas; sem pendente fica nulo', () => {
+    const balances = balancesOf({
+      stores: [csfloat({ id: 1 }), csmoney({ id: 3 })],
+      items: [sale(1, 100, '2026-11-20T18:00:00.000Z'), sale(3, 100, '2026-11-19T12:00:00.000Z'), sale(3, 100, '2026-11-20T01:00:00.000Z')],
+    });
+    const r = computeRealProfit({ balances, settings: SETTINGS });
+    expect(r.nextReleaseAt).toBe('2026-11-26T12:00:00.000Z');
+    expect(r.lastReleaseAt).toBe(balances.totals.lastReleaseAt);
+    expect(Date.parse(r.lastReleaseAt)).toBeGreaterThanOrEqual(Date.parse(r.nextReleaseAt));
+    const none = computeRealProfit({ balances: balancesOf({ stores: [csfloat({ id: 1 })], items: [] }), settings: SETTINGS });
+    expect(none.lastReleaseAt).toBeNull();
+  });
+
   test('sem balances: parcelas 0 e sem avisos', () => {
     const r = computeRealProfit({ settings: SETTINGS });
     expect([r.platformBalanceUsdCents, r.pendingBalanceUsdCents]).toEqual([0, 0]);

@@ -69,6 +69,8 @@ export default function SellItemModal({ item: initialItem, units, stores, onClos
   const [saving, setSaving] = useState(false);
 
   const store = stores.find((s) => s.id === state.storeId);
+  const buyOnly = store !== undefined && !store.sellsHere;
+  const buyOnlyId = `${formId}-buy-only`;
   const configured = feesConfigured(store);
   const inDetails = fieldsInDetails(store);
   const [detailsOpen, setDetailsOpen] = useState(() => !detailsCollapsedByDefault(stores.find((s) => s.isPrimary) ?? stores[0]));
@@ -137,7 +139,7 @@ export default function SellItemModal({ item: initialItem, units, stores, onClos
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    if (saving) return;
+    if (saving || buyOnly) return;
     setTopError(null);
     const built = buildSellBody(state, ctx, quoteNet);
     if (!built.ok) {
@@ -167,7 +169,8 @@ export default function SellItemModal({ item: initialItem, units, stores, onClos
   const storeOptionLabel = (s: Store) => {
     const parts: string[] = [];
     if (!s.isActive) parts.push(t('itemForm.storeInactive'));
-    if (!s.saleFeesConfigured) parts.push(t('sellForm.feesNotConfiguredBadge'));
+    if (!s.sellsHere) parts.push(t('sellForm.buyOnlyBadge'));
+    if (s.sellsHere && !s.saleFeesConfigured) parts.push(t('sellForm.feesNotConfiguredBadge'));
     return parts.length > 0 ? `${s.name} (${parts.join(', ')})` : s.name;
   };
 
@@ -238,7 +241,14 @@ export default function SellItemModal({ item: initialItem, units, stores, onClos
       footer={
         <>
           <Button onClick={onClose} disabled={saving}>{t('common.cancel')}</Button>
-          <Button type="submit" form={formId} variant="primary" loading={saving}>
+          <Button
+            type="submit"
+            form={formId}
+            variant="primary"
+            loading={saving}
+            aria-disabled={buyOnly ? true : undefined}
+            aria-describedby={buyOnly ? buyOnlyId : undefined}
+          >
             {saving ? t('common.saving') : t('sellForm.submit')}
           </Button>
         </>
@@ -329,7 +339,13 @@ export default function SellItemModal({ item: initialItem, units, stores, onClos
           {reference.kind === 'price' && needsFx(store) && <span className={itemStyles.muted}>{t('sellForm.refUsesSavedRate')}</span>}
         </div>
 
-        {store && !configured && (
+        {buyOnly && (
+          <Banner tone="warning" announce={false} action={{ label: t('inventory.warnings.goToStores'), href: '/stores/' }}>
+            <span id={buyOnlyId}>{t('sellForm.buyOnlyWarning')}</span>
+          </Banner>
+        )}
+
+        {store && !buyOnly && !configured && (
           <Banner tone="warning" announce={false} action={{ label: t('inventory.warnings.goToStores'), href: '/stores' }}>
             {t('sellForm.feesMissing')}
           </Banner>

@@ -74,10 +74,10 @@ describe('computeStoreBalance: bordas extras', () => {
     const items = [sale(1, '2026-11-08T12:00:00.000Z', 700)]; // libera 11-15
     const early = run({ items, at: new Date('2026-11-14T00:00:00.000Z') });
     expect(early.availableCents).toBe(0);
-    expect(early.pending).toEqual({ cents: 700, count: 1, nextReleaseAt: '2026-11-15T12:00:00.000Z' });
+    expect(early.pending).toEqual({ cents: 700, count: 1, nextReleaseAt: '2026-11-15T12:00:00.000Z', lastReleaseAt: '2026-11-15T12:00:00.000Z', releases: [{ releaseAt: '2026-11-15T12:00:00.000Z', cents: 700, count: 1 }] });
     const late = run({ items, at: new Date('2026-11-15T12:00:00.000Z') });
     expect(late.availableCents).toBe(700);
-    expect(late.pending).toEqual({ cents: 0, count: 0, nextReleaseAt: null });
+    expect(late.pending).toEqual({ cents: 0, count: 0, nextReleaseAt: null, lastReleaseAt: null, releases: [] });
   });
 
   test('sem corte por data: venda antiga já liberada e aporte antigo entram', () => {
@@ -267,6 +267,9 @@ describe('buildCurrentBalances: bordas extras', () => {
     ];
     const r = buildCurrentBalances({ stores, items, settings: RATE, now: NOW });
     expect(r.totals.nextReleaseAt).toBe('2026-11-25T12:00:00.000Z');
+    expect(r.totals.lastReleaseAt).toBe('2026-11-30T12:00:00.000Z'); // a maior entre as lojas (a inativa)
+    expect(r.stores.find((s) => s.storeId === 1).pending.releases.map((x) => x.releaseAt)).toEqual(['2026-11-25T12:00:00.000Z', '2026-11-28T12:00:00.000Z']);
+    expect(r.stores.find((s) => s.storeId === 1).pending.lastReleaseAt).toBe('2026-11-28T12:00:00.000Z');
     expect(r.totals.pendingUsdCents).toBe(350);
     expect(r.stores.find((s) => s.storeId === 3)).toMatchObject({ isActive: false, pending: { cents: 200, usdCents: 200 } });
   });
@@ -285,7 +288,7 @@ describe('buildCurrentBalances: bordas extras', () => {
   test('sem lojas: totais zerados e sem datas', () => {
     const r = buildCurrentBalances({ stores: [], settings: RATE, now: NOW });
     expect(r.stores).toEqual([]);
-    expect(r.totals).toMatchObject({ availableUsdCents: 0, pendingUsdCents: 0, nonWithdrawableUsdCents: 0, nextReleaseAt: null, estimated: false });
+    expect(r.totals).toMatchObject({ availableUsdCents: 0, pendingUsdCents: 0, nonWithdrawableUsdCents: 0, nextReleaseAt: null, lastReleaseAt: null, estimated: false });
   });
 
   test('negativo em BRL: convertido com sinal, estimado e com o aviso; nunca -0 quando o valor é 0', () => {

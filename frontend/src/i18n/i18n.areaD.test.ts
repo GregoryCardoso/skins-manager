@@ -42,9 +42,8 @@ describe('sem jargão na interface', () => {
     expect(hits).toEqual([]);
   });
 
-  test('conexão com o app, sem servidor', () => {
-    expect(tPt('status.server')).toBe('Conexão com o app');
-    expect(tEn('status.offline')).toBe('Not responding');
+  // 12.12: a linha 'Conexão com o app' saiu do Sobre (soava como conexão externa), com as chaves status.server/online/offline/lastResponse.
+  test('textos do app sem falar em servidor', () => {
     expect(tPt('desktopUpdate.hide')).toBe('Continuar usando o app');
   });
 });

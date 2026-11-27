@@ -55,7 +55,7 @@ describe('GET /api/store-balances/current: exemplo de D239 (sem saldo inicial)',
       saleHoldDays: 7, availableCents: 10400, availableUsdCents: 10400, availableApproxCents: 56494, allowsWithdrawal: true,
       estimated: false, negative: false, warningCode: null, daysSinceLastCheck: 6,
       breakdown: { depositsCents: 15000, purchasesCents: 3000, withdrawalsCents: 4000, salesReleasedCents: 2500, adjustmentsCents: -100 },
-      pending: { cents: 1500, count: 1, nextReleaseAt: '2026-11-27T18:00:00.000Z', usdCents: 1500, approxCents: 8148, estimated: false },
+      pending: { cents: 1500, count: 1, nextReleaseAt: '2026-11-27T18:00:00.000Z', lastReleaseAt: '2026-11-27T18:00:00.000Z', releases: [{ releaseAt: '2026-11-27T18:00:00.000Z', cents: 1500, count: 1 }], usdCents: 1500, approxCents: 8148, estimated: false },
       ignored: { legacyDeposits: 0, currencyMismatch: 0 },
       lastCheck: { id: ids.check.id, kind: 'CHECK', balanceCents: 7900, computedCents: 8000, differenceCents: -100, adjustmentCents: -100, legacy: false },
     });
@@ -82,6 +82,7 @@ describe('GET /api/store-balances/current: exemplo de D239 (sem saldo inicial)',
       approxCurrency: 'BRL',
       approx: { available: 56494, pending: 8148, nonWithdrawable: 0 },
       nextReleaseAt: '2026-11-27T18:00:00.000Z',
+      lastReleaseAt: '2026-11-27T18:00:00.000Z',
       estimated: false,
     });
     expect(data.usdBrlRate).toBe(5.4321);
@@ -90,7 +91,7 @@ describe('GET /api/store-balances/current: exemplo de D239 (sem saldo inicial)',
 
   test('/summary: parcelas do exemplo, sem os campos removidos e sem avisos', async () => {
     const data = (await get('/api/profit/summary')).body.data;
-    expect(data).toMatchObject({ platformBalanceUsdCents: 10400, pendingBalanceUsdCents: 1500, nextReleaseAt: '2026-11-27T18:00:00.000Z' });
+    expect(data).toMatchObject({ platformBalanceUsdCents: 10400, pendingBalanceUsdCents: 1500, nextReleaseAt: '2026-11-27T18:00:00.000Z', lastReleaseAt: '2026-11-27T18:00:00.000Z' });
     expect(data).not.toHaveProperty('releasedAfterBalanceUsdCents');
     expect(data.counts).not.toHaveProperty('releasedAfterBalanceSales');
     expect(data.warnings).toEqual([]);
@@ -112,7 +113,7 @@ describe('GET /api/store-balances/current: exemplo de D239 (sem saldo inicial)',
 
   test('unsell de uma venda pendente (B) sai do pendente na hora; de uma liberada (A) sai do disponível', async () => {
     expect((await request(app).post(`/api/items/${ids.b.id}/unsell`).send({})).status).toBe(200);
-    expect(row(await current(), 'CSFloat').pending).toMatchObject({ cents: 0, count: 0, nextReleaseAt: null });
+    expect(row(await current(), 'CSFloat').pending).toMatchObject({ cents: 0, count: 0, nextReleaseAt: null, lastReleaseAt: null, releases: [] });
     expect((await request(app).post(`/api/items/${ids.a.id}/unsell`).send({})).status).toBe(200);
     expect(row(await current(), 'CSFloat').availableCents).toBe(7900);
   });

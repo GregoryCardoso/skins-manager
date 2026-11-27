@@ -116,6 +116,9 @@ function runDevSeed({ now = new Date(), allowMemory = false, realDbPaths = devDb
   for (const store of data.EXTRA_STORES) storeService.createStore(store, { now });
   for (const [currency, rate] of Object.entries(data.EXTRA_FX_RATES)) settingsService.setFxRate(currency, rate, { now });
 
+  // Numa instalação nova só a CSFloat vende; o exemplo vende também na Steam e na CSMoney, então liga "Vendo nesta loja" nelas.
+  for (const store of Store.findAll()) if (!store.sellsHere) Store.update(store.id, { sellsHere: true }, { now });
+
   const ctx = { now, stores: Store.findAll(), deps: { CatalogItem, normalizeSearchText } };
   const createStock = (def) => {
     const view = itemService.createItem(buildItemInput(def, ctx), { now });

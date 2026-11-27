@@ -109,11 +109,7 @@
   },
   "status": {
     "recheck": "Controlla di nuovo",
-    "checking": "Controllo in corso...",
-    "server": "Connessione all'app",
-    "online": "Connesso",
-    "offline": "Non risponde",
-    "lastResponse": "Ultima risposta: {time}"
+    "checking": "Controllo in corso..."
   },
   "catalog": {
     "title": "Catalogo",
@@ -187,6 +183,7 @@
     "PURCHASE_STORE_REQUIRED": "Inserisci il negozio dell'acquisto.",
     "PURCHASE_PRICE_REQUIRED": "Inserisci il prezzo pagato.",
     "STORE_NOT_FOUND": "Negozio non trovato.",
+    "STORE_NOT_SELLING": "Questo negozio è impostato come solo acquisto. Attiva \"Vendo in questo negozio\" in Negozi per vendere qui.",
     "ITEM_NOT_FOUND": "Oggetto non trovato.",
     "ITEM_ALREADY_SOLD": "Questo oggetto è già stato venduto.",
     "ITEM_NOT_SOLD": "Questo oggetto non è ancora stato venduto.",
@@ -906,7 +903,9 @@
     "unit": "Unità",
     "minPriceLabel": "Prezzo di pareggio",
     "youReceive": "Ricevi",
-    "feesMissing": "Questo negozio non ha commissioni di vendita impostate, quindi il netto non può essere calcolato. Inserisci l'importo ricevuto o imposta le commissioni nella pagina Negozi."
+    "feesMissing": "Questo negozio non ha commissioni di vendita impostate, quindi il netto non può essere calcolato. Inserisci l'importo ricevuto o imposta le commissioni nella pagina Negozi.",
+    "buyOnlyBadge": "solo acquisto",
+    "buyOnlyWarning": "Questo negozio è impostato come solo acquisto. Attiva \"Vendo in questo negozio\" in Negozi per vendere qui."
   },
   "fields": {
     "catalogId": "Oggetto del catalogo",
@@ -1551,7 +1550,8 @@
       "stock": "Magazzino al costo",
       "deposited": "Totale depositato",
       "depositedNote": "include {value} di commissioni dei depositi",
-      "result": "Profitto reale"
+      "result": "Profitto reale",
+      "pendingNoteAll": "tutto sbloccato entro il {date}"
     },
     "info": {
       "title": "Altri numeri",
@@ -1696,12 +1696,6 @@
     "nonWithdrawable": "non prelevabile",
     "available": "disponibile",
     "difference": "Differenza",
-    "lastCheckDays": {
-      "one": "Ultima verifica {count} giorno fa",
-      "other": "Ultima verifica {count} giorni fa"
-    },
-    "lastCheckToday": "Ultima verifica oggi",
-    "neverChecked": "Saldo mai verificato",
     "check": "Verifica il saldo",
     "breakdown": {
       "title": "Come si calcola il saldo disponibile",
@@ -1771,9 +1765,14 @@
       "withdraw": "Registra prelievo",
       "more": "Altre azioni per {store}",
       "currencyTag": "Valuta: {currency}",
-      "pendingFoot": "{value} in sospeso · si rilascia il {date}",
       "noPending": "Niente in sospeso",
-      "detailsLabel": "Dettagli del calcolo"
+      "detailsLabel": "Dettagli del calcolo",
+      "pendingShort": "{value} in sospeso",
+      "releasesTopic": "Sblocchi del saldo in sospeso",
+      "releaseLine": {
+        "one": "{date}: {value} ({count} vendita)",
+        "other": "{date}: {value} ({count} vendite)"
+      }
     },
     "checkDialog": {
       "explain": "Verifica: inserisci il saldo che vedi sul sito. Rettifica: corregge il saldo dell'app in base alla differenza.",

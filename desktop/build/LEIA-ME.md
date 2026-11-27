@@ -1,6 +1,6 @@
 # Ícone do aplicativo
 
-A logo vem de `logo.svg` (a arte completa) e `logo-small.svg` (variante só com o "S", sem o fuzil, usada
+A logo vem de `logo.svg` (a arte completa), usada em TODOS os tamanhos desde a 12.12 (pedido do usuário). `logo-small.svg` (variante só com o "S", sem o fuzil, antes usada
 nos tamanhos 16, 24 e 32 px, onde o fuzil vira borrão).
 
 ## Como regerar
