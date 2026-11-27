@@ -5,6 +5,7 @@ import { componentTooltip } from '@/lib/itemComponents';
 import type { ItemComponent } from '@/types/api';
 import styles from './ComponentThumbs.module.css';
 import ItemImage from './ItemImage';
+import Tooltip from './ui/Tooltip';
 
 interface Props {
   components: ItemComponent[];
@@ -12,7 +13,7 @@ interface Props {
 }
 
 // Miniaturas dos componentes aplicados (10.1): stickers colados e, à parte, o pendurado (chaveiro ou Sticker Slab).
-// Só exibição; o `title` traz nome, slot, desgaste e pattern.
+// Só exibição; nome, slot, desgaste e pattern ficam numa dica que abre no foco do teclado e no hover (B5, 12.11) e no nome acessível.
 export default function ComponentThumbs({ components, size = 26 }: Props) {
   const t = useT();
   const language = useLanguage();
@@ -25,8 +26,12 @@ export default function ComponentThumbs({ components, size = 26 }: Props) {
   const thumb = (component: ItemComponent) => {
     const text = componentTooltip(component, language, labels);
     return (
-      <li key={component.id} className={styles.thumb} title={text} aria-label={text}>
-        <ItemImage category={component.kind === 'CHARM' ? 'PINGENTE' : 'STICKER'} url={component.imageUrl} size={size} />
+      <li key={component.id} className={styles.thumb}>
+        <Tooltip content={text}>
+          <span className={styles.thumbFocus} tabIndex={0} role="img" aria-label={text}>
+            <ItemImage category={component.kind === 'CHARM' ? 'PINGENTE' : 'STICKER'} url={component.imageUrl} size={size} />
+          </span>
+        </Tooltip>
       </li>
     );
   };

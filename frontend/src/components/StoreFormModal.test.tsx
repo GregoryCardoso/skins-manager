@@ -18,7 +18,7 @@ vi.mock('@/services/api', async (importOriginal) => ({ ...(await importOriginal<
 import StoreFormModal from './StoreFormModal';
 
 const store = (extra: Partial<Store> = {}): Store => ({
-  id: 7, name: 'CSFloat', currency: 'USD', isActive: true, isPrimary: false, saleFeeType: null, saleFeeRate: null,
+  id: 7, name: 'CSFloat', currency: 'USD', isActive: true, isPrimary: false, sellsHere: true, saleFeeType: null, saleFeeRate: null,
   saleFeeRounding: 'CEIL', saleMinFeeCents: null, saleFixedFeeCents: 0, allowsWithdrawal: false, withdrawalFeeRate: null,
   withdrawalFixedFeeCents: 0, saleHoldDays: 0, createdAt: '', updatedAt: '', saleFeesConfigured: false, inUse: false, ...extra,
 });
@@ -194,5 +194,55 @@ describe('salvar', () => {
     await userEvent.type(screen.getByLabelText('Name'), 'Outro nome');
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() => expect(onGone).toHaveBeenCalled());
+  });
+});
+
+describe('Vendo nesta loja (v028)', () => {
+  test('nova loja: o interruptor vem ligado, a seção da taxa aberta e o aviso de configurar a taxa aparece', () => {
+    renderModal();
+    const sw = screen.getByRole('switch', { name: 'Selling on this store' });
+    expect(sw).toBeChecked();
+    expect(screen.getByText(/Set the sale fee below to see this store's minimum price/)).toBeInTheDocument();
+    expect(screen.getByLabelText('Fee type')).toBeVisible();
+  });
+
+  test('com a taxa já configurada não há aviso', () => {
+    renderModal({ store: store({ saleFeeType: 'DEDUCTED', saleFeeRate: 0.02, saleFeesConfigured: true }) });
+    expect(screen.queryByText(/Set the sale fee below/)).toBeNull();
+  });
+
+  test('desligar tira o aviso e recolhe a seção da taxa; ligar de novo abre', async () => {
+    renderModal();
+    await userEvent.click(screen.getByRole('switch', { name: 'Selling on this store' }));
+    expect(screen.queryByText(/Set the sale fee below/)).toBeNull();
+    expect(screen.queryByLabelText('Fee type')).toBeNull();
+    await userEvent.click(screen.getByRole('switch', { name: 'Selling on this store' }));
+    expect(screen.getByLabelText('Fee type')).toBeVisible();
+  });
+
+  test('loja existente com sellsHere=false abre desligada e salvar sem mexer não envia nada', async () => {
+    const h = renderModal({ store: store({ sellsHere: false }) });
+    expect(screen.getByRole('switch', { name: 'Selling on this store' })).not.toBeChecked();
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    expect(api.updateStore).not.toHaveBeenCalled();
+    expect(h.onClose).toHaveBeenCalled();
+  });
+
+  test('criar com o interruptor desligado envia sellsHere false; ligado (padrão) envia true', async () => {
+    api.createStore.mockResolvedValue(store({ name: 'Nova' }));
+    renderModal();
+    await userEvent.type(screen.getByLabelText(/^Name/), 'Nova');
+    await userEvent.click(screen.getByRole('switch', { name: 'Selling on this store' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(api.createStore).toHaveBeenCalledTimes(1));
+    expect(api.createStore.mock.calls[0][0]).toMatchObject({ sellsHere: false });
+  });
+
+  test('editar: mudar só o interruptor envia só sellsHere', async () => {
+    api.updateStore.mockResolvedValue(store());
+    renderModal({ store: store() });
+    await userEvent.click(screen.getByRole('switch', { name: 'Selling on this store' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(api.updateStore).toHaveBeenCalledWith(7, { sellsHere: false }));
   });
 });

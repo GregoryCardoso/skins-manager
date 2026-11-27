@@ -1,5 +1,5 @@
 {
-  "userVersion": 27,
+  "userVersion": 28,
   "objects": [
     {
       "type": "index",
@@ -263,7 +263,7 @@
       "type": "table",
       "name": "stores",
       "tblName": "stores",
-      "sql": "CREATE TABLE \"stores\" (\n  id INTEGER PRIMARY KEY AUTOINCREMENT,\n  name TEXT NOT NULL COLLATE NOCASE UNIQUE CHECK (length(trim(name)) > 0),\n  currency TEXT NOT NULL CHECK (length(currency) = 3 AND currency = upper(currency)),\n  is_active INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0,1)),\n  is_primary INTEGER NOT NULL DEFAULT 0 CHECK (is_primary IN (0,1)),\n  sale_fee_type TEXT NULL CHECK (sale_fee_type IN ('DEDUCTED','ADDED')),\n  sale_fee_rate REAL NULL CHECK (sale_fee_rate >= 0 AND sale_fee_rate < 1),\n  sale_fee_rounding TEXT NOT NULL DEFAULT 'CEIL' CHECK (sale_fee_rounding IN ('CEIL','ROUND','FLOOR')),\n  sale_min_fee_cents INTEGER NULL CHECK (sale_min_fee_cents >= 0),\n  sale_fixed_fee_cents INTEGER NOT NULL DEFAULT 0 CHECK (sale_fixed_fee_cents >= 0),\n  allows_withdrawal INTEGER NOT NULL DEFAULT 0 CHECK (allows_withdrawal IN (0,1)),\n  withdrawal_fee_rate REAL NULL CHECK (withdrawal_fee_rate >= 0 AND withdrawal_fee_rate < 1),\n  withdrawal_fixed_fee_cents INTEGER NOT NULL DEFAULT 0 CHECK (withdrawal_fixed_fee_cents >= 0),\n  created_at TEXT NOT NULL,\n  updated_at TEXT NOT NULL,\n  sale_hold_days INTEGER NOT NULL DEFAULT 0\n  CHECK (sale_hold_days BETWEEN 0 AND 30),\n  CHECK (is_primary = 0 OR is_active = 1)\n) STRICT"
+      "sql": "CREATE TABLE \"stores\" (\n  id INTEGER PRIMARY KEY AUTOINCREMENT,\n  name TEXT NOT NULL COLLATE NOCASE UNIQUE CHECK (length(trim(name)) > 0),\n  currency TEXT NOT NULL CHECK (length(currency) = 3 AND currency = upper(currency)),\n  is_active INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0,1)),\n  is_primary INTEGER NOT NULL DEFAULT 0 CHECK (is_primary IN (0,1)),\n  sale_fee_type TEXT NULL CHECK (sale_fee_type IN ('DEDUCTED','ADDED')),\n  sale_fee_rate REAL NULL CHECK (sale_fee_rate >= 0 AND sale_fee_rate < 1),\n  sale_fee_rounding TEXT NOT NULL DEFAULT 'CEIL' CHECK (sale_fee_rounding IN ('CEIL','ROUND','FLOOR')),\n  sale_min_fee_cents INTEGER NULL CHECK (sale_min_fee_cents >= 0),\n  sale_fixed_fee_cents INTEGER NOT NULL DEFAULT 0 CHECK (sale_fixed_fee_cents >= 0),\n  allows_withdrawal INTEGER NOT NULL DEFAULT 0 CHECK (allows_withdrawal IN (0,1)),\n  withdrawal_fee_rate REAL NULL CHECK (withdrawal_fee_rate >= 0 AND withdrawal_fee_rate < 1),\n  withdrawal_fixed_fee_cents INTEGER NOT NULL DEFAULT 0 CHECK (withdrawal_fixed_fee_cents >= 0),\n  created_at TEXT NOT NULL,\n  updated_at TEXT NOT NULL,\n  sale_hold_days INTEGER NOT NULL DEFAULT 0\n  CHECK (sale_hold_days BETWEEN 0 AND 30), sells_here INTEGER NOT NULL DEFAULT 1 CHECK (sells_here IN (0,1)),\n  CHECK (is_primary = 0 OR is_active = 1)\n) STRICT"
     },
     {
       "type": "table",
@@ -299,6 +299,7 @@
     "v024_fx_rates_display_currency.js": "fe2353204f986372a93e4e73378aec2081b0ca7d052ffb59a78da9fc52bda24d",
     "v025_store_currencies.js": "293e8903bf965197fb72841a7aad47b588a2f61670a4067c4779fe6898962d49",
     "v026_catalog_item_names.js": "ee5ccb60b5db459d3199cb80cfec3851d78213121f7b97386b2f0200a286a566",
-    "v027_inventory_density.js": "12a1529ce4d8f632af3da8cf123c976d57c01c4f28f8d9101443911d94b0984c"
+    "v027_inventory_density.js": "12a1529ce4d8f632af3da8cf123c976d57c01c4f28f8d9101443911d94b0984c",
+    "v028_store_sells_here.js": "bf68266672ac544dd518a01babd4b7edab31cae7dc6efaaa7b7bd4611bcf9bbd"
   }
 }

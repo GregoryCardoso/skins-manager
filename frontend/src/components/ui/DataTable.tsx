@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useId, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { useT } from '@/i18n/I18nProvider';
 import { CONTAINER_BREAKPOINTS } from '@/styles/breakpoints';
 import Checkbox from './Checkbox';
@@ -29,6 +29,17 @@ export interface Column<R> {
   priority?: 1 | 2 | 3;
   // Cabeçalho só para leitor de tela (coluna de ações).
   hideHeader?: boolean;
+  // Elemento auxiliar ao lado do nome no cabeçalho (por exemplo, um HelpTip). Fica fora do botão de ordenar e fora do aria-sort/nome da coluna.
+  headerAddon?: ReactNode;
+  // Presa na borda direita da tabela enquanto o resto rola na horizontal (coluna de ações; pedido do usuário na 12.11, para os botões
+  // não ficarem atrás da rolagem em janelas estreitas).
+  stickyEnd?: boolean;
+}
+
+// Classe da célula: alinhamento e coluna presa à direita.
+function cellClass(column: { align?: 'start' | 'end'; stickyEnd?: boolean }, end: string, sticky: string): string | undefined {
+  const names = [column.align === 'end' ? end : '', column.stickyEnd ? sticky : ''].filter(Boolean).join(' ');
+  return names || undefined;
 }
 
 export interface ExpandContext {
@@ -129,7 +140,7 @@ export function DetailsRow({ colSpan, children }: { colSpan: number; children: R
   return (
     <tr>
       <td colSpan={colSpan} className={styles.details}>
-        {children}
+        <div className={styles.detailsInner}>{children}</div>
       </td>
     </tr>
   );
@@ -234,6 +245,9 @@ export default function DataTable<R>({
       <div
         ref={ref}
         className={`${styles.scroller} ${stickyHeader ? styles.sticky : ''}`}
+        data-scrollable={scrollable || undefined}
+        // Largura visível do rolável, para conteúdo da linha expandida que deve caber na tela (a tabela das unidades do grupo).
+        style={width !== null ? ({ '--scroller-w': `${width}px` } as CSSProperties) : undefined}
         role={scrollable ? 'region' : undefined}
         tabIndex={scrollable ? 0 : undefined}
         aria-label={scrollable ? t('ui.table.scrollRegion', { caption }) : undefined}
@@ -245,7 +259,11 @@ export default function DataTable<R>({
           </caption>
           <thead>
             <tr>
-              {hasExpander && <th scope="col" className={styles.utility} />}
+              {hasExpander && (
+                <th scope="col" className={styles.utility}>
+                  <VisuallyHidden>{t('ui.table.expandColumn')}</VisuallyHidden>
+                </th>
+              )}
               {selection && (
                 <th scope="col" className={styles.utility}>
                   <Checkbox
@@ -263,24 +281,33 @@ export default function DataTable<R>({
                 const ariaSort = column.sortable ? (sorted ? (sort?.order === 'asc' ? 'ascending' : 'descending') : 'none') : undefined;
                 const headerText = column.hideHeader ? <VisuallyHidden>{column.header}</VisuallyHidden> : column.header;
                 const nextOrder: SortOrder = sorted ? (sort?.order === 'asc' ? 'desc' : 'asc') : (column.firstOrder ?? 'asc');
+                const headContent = column.sortable ? (
+                  <button type="button" className={`${styles.sortButton} ${sorted ? styles.sorted : ''}`} onClick={() => onSortChange?.(column.id, nextOrder)}>
+                    <span>{headerText}</span>
+                    <span className={styles.sortIcon}>
+                      <Icon name={sorted && sort?.order === 'desc' ? 'arrowDown' : 'arrowUp'} size={14} />
+                    </span>
+                  </button>
+                ) : (
+                  headerText
+                );
                 return (
                   <th
                     key={column.id}
                     scope="col"
                     aria-sort={ariaSort}
+                    aria-label={column.headerAddon ? column.header : undefined}
                     data-priority={column.priority ?? 1}
-                    className={column.align === 'end' ? styles.end : undefined}
+                    className={cellClass(column, styles.end, styles.stickyEnd)}
                     style={column.width || column.minWidth ? { width: column.width, minWidth: column.minWidth } : undefined}
                   >
-                    {column.sortable ? (
-                      <button type="button" className={`${styles.sortButton} ${sorted ? styles.sorted : ''}`} onClick={() => onSortChange?.(column.id, nextOrder)}>
-                        <span>{headerText}</span>
-                        <span className={styles.sortIcon}>
-                          <Icon name={sorted && sort?.order === 'desc' ? 'arrowDown' : 'arrowUp'} size={14} />
-                        </span>
-                      </button>
+                    {column.headerAddon ? (
+                      <span className={styles.headCell}>
+                        {headContent}
+                        {column.headerAddon}
+                      </span>
                     ) : (
-                      headerText
+                      headContent
                     )}
                   </th>
                 );
@@ -295,7 +322,7 @@ export default function DataTable<R>({
                     <td key={`u${i}`} className={styles.utility} />
                   ))}
                   {visible.map((column) => (
-                    <td key={column.id} data-priority={column.priority ?? 1}>
+                    <td key={column.id} data-priority={column.priority ?? 1} className={cellClass(column, '', styles.stickyEnd)}>
                       <Skeleton width="70%" />
                     </td>
                   ))}
@@ -313,12 +340,13 @@ export default function DataTable<R>({
               </tbody>
             )
           ) : (
-            rows.map((row) => {
+            rows.map((row, rowIndex) => {
               const id = getRowId(row);
               const open = isOpen(id);
               const tone = rowTone?.(row);
               const expandableRow = canExpandRow(row);
-              const groupId = `${uid}-${id}`;
+              // A chave da linha pode ter espaços e símbolos; um id HTML não pode ter espaço e o aria-controls separa ids por espaço.
+              const groupId = `${uid}-row-${rowIndex}`;
               return (
                 <tbody key={id} id={groupId}>
                   <tr data-row-id={id} data-tone={tone} data-open={open || undefined} aria-current={highlightedId === id ? 'true' : undefined} data-selected={selection?.selectedIds.has(id) || undefined}>
@@ -350,7 +378,7 @@ export default function DataTable<R>({
                       </td>
                     )}
                     {visible.map((column) => (
-                      <td key={column.id} data-priority={column.priority ?? 1} className={column.align === 'end' ? styles.end : undefined}>
+                      <td key={column.id} data-priority={column.priority ?? 1} className={cellClass(column, styles.end, styles.stickyEnd)}>
                         {column.cell(row)}
                       </td>
                     ))}

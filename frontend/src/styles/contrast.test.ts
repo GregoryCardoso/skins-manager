@@ -55,6 +55,16 @@ const TEXT_PAIRS: Array<[string, string, number]> = [
   ['loss', 'surface', 4.5],
   ['stuck', 'surface', 4.5],
   ['lock', 'surface', 4.5],
+  ['brand', 'surface-2', 4.5],
+  ['brand', 'bg', 4.5],
+  ['profit', 'surface-2', 4.5],
+  ['profit', 'bg', 4.5],
+  ['loss', 'surface-2', 4.5],
+  ['loss', 'bg', 4.5],
+  ['stuck', 'surface-2', 4.5],
+  ['stuck', 'bg', 4.5],
+  ['lock', 'surface-2', 4.5],
+  ['lock', 'bg', 4.5],
   ['focus', 'bg', 3],
   ['focus', 'surface', 3],
 ];
@@ -68,7 +78,15 @@ const SOFT_PAIRS: Array<[string, string]> = [
   ['text', 'lock-soft'],
   ['text', 'loss-soft'],
   ['text', 'brand-soft'],
+  ['brand', 'brand-soft'],
 ];
+// B1 (12.11): os mesmos textos sobre o fundo suave quando a linha ou o aviso está sobre --surface-2 ou sobre o fundo da página.
+const SOFT_ON_OTHER_PAIRS: Array<[string, string, string]> = ['surface-2', 'bg'].flatMap((base) =>
+  ['brand', 'stuck', 'loss', 'lock', 'profit'].flatMap((name) => [
+    [name, name + '-soft', base] as [string, string, string],
+    ['text', name + '-soft', base] as [string, string, string],
+  ]),
+);
 
 describe.each(Object.entries(themes))('contraste AA, tema %s', (_name, tokens) => {
   test.each(TEXT_PAIRS)('%s sobre %s >= %s', (fg, bg, min) => {
@@ -76,6 +94,10 @@ describe.each(Object.entries(themes))('contraste AA, tema %s', (_name, tokens) =
   });
   test.each(SOFT_PAIRS)('%s sobre %s (translúcido sobre a superfície) >= 4.5', (fg, soft) => {
     const bg = over(parse(tokens[soft]), parse(tokens.surface));
+    expect(contrast(parse(tokens[fg]), bg)).toBeGreaterThanOrEqual(4.5);
+  });
+  test.each(SOFT_ON_OTHER_PAIRS)('%s sobre %s (translúcido sobre %s) >= 4.5', (fg, soft, base) => {
+    const bg = over(parse(tokens[soft]), parse(tokens[base]));
     expect(contrast(parse(tokens[fg]), bg)).toBeGreaterThanOrEqual(4.5);
   });
 });

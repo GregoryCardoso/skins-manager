@@ -33,7 +33,7 @@ const snapshot = (d) => ({
   components: d.prepare('SELECT * FROM item_components ORDER BY id').all(),
   operations: d.prepare('SELECT * FROM item_operations ORDER BY id').all().map(({ detail_json: detail, ended_by_operation_id: ended, ...rest }) => rest), // a v19 acrescenta detail_json e a v22, ended_by_operation_id
   links: d.prepare('SELECT * FROM item_operation_links ORDER BY id').all(),
-  stores: d.prepare('SELECT * FROM stores ORDER BY id').all(),
+  stores: d.prepare('SELECT * FROM stores ORDER BY id').all().map(({ sells_here: _sh, ...r }) => r), // v28 (D370)
   deposits: d.prepare('SELECT * FROM deposits ORDER BY id').all().map(({ amount_brl_currency: _abc, ...r }) => r),
   settings: d.prepare('SELECT * FROM settings').all().map(({ steam_store_id: _steam, price_refresh_started_at: _p1, price_refresh_last_at: _p2, price_refresh_last_status: _p3, price_refresh_last_error_code: _p4, display_currency: _dc, inventory_density: _dn, ...r }) => r),
   sequence: d.prepare("SELECT seq FROM sqlite_sequence WHERE name = 'items'").get(),
@@ -93,7 +93,7 @@ test('v19 sobre v18 cheio de dados: linhas idênticas, contador preservado, índ
   expect(before.items).toHaveLength(5);
   const db = openDatabase(dbPath, { now: NOW });
   try {
-    expect(db.pragma('user_version', { simple: true })).toBe(27);
+    expect(db.pragma('user_version', { simple: true })).toBe(28);
     expect(db.pragma('foreign_key_check')).toEqual([]);
     const after = snapshot(db);
     for (const key of Object.keys(before)) expect(after[key]).toEqual(before[key]);
@@ -156,7 +156,7 @@ test('v19 falha no meio: rollback total, versão 18 e dados intactos; depois mig
   }
   const ok = openDatabase(dbPath, { now: NOW });
   try {
-    expect(ok.pragma('user_version', { simple: true })).toBe(27);
+    expect(ok.pragma('user_version', { simple: true })).toBe(28);
     expect(ok.prepare('SELECT COUNT(*) AS n FROM items').get().n).toBe(5);
   } finally {
     ok.close();
@@ -165,5 +165,5 @@ test('v19 falha no meio: rollback total, versão 18 e dados intactos; depois mig
 
 test('a migração tem número e nome estáveis e é a última', () => {
   expect(v019).toMatchObject({ version: 19, name: 'consumed_generated_patch', disableForeignKeys: true });
-  expect(MIGRATIONS[MIGRATIONS.length - 1].version).toBe(27);
+  expect(MIGRATIONS[MIGRATIONS.length - 1].version).toBe(28);
 });

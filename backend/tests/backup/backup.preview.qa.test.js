@@ -60,7 +60,7 @@ describe('versões antigas e a atual', () => {
 
   test('arquivo na versão atual (v027 ou a mais nova): sem migrações a aplicar', async () => {
     const latest = database.getLatestSchemaVersion();
-    expect(latest).toBeGreaterThanOrEqual(27);
+    expect(latest).toBeGreaterThanOrEqual(28);
     const res = await preview(await exportBuffer());
     expect(res.body.data.schemaVersion).toBe(latest);
     expect(res.body.data.migrationsToApply).toEqual([]);

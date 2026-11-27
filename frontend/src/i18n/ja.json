@@ -14,9 +14,6 @@
     "save": "保存",
     "cancel": "キャンセル",
     "close": "閉じる",
-    "confirm": "確認",
-    "edit": "編集",
-    "delete": "削除",
     "saving": "保存中...",
     "optional": "（任意）",
     "moreDetails": "詳細を見る",
@@ -371,20 +368,15 @@
     "group": {
       "expand": "{name}の個体を表示",
       "collapse": "{name}の個体を隠す",
-      "forSale": "販売中{count}件",
       "tradeLocked": "trade lock中{count}件（{date}に解除）",
-      "offSale": "Holding {count}件",
       "stagnant": {
         "other": "滞留{count}件"
       },
-      "convertedCost": "他の通貨での購入を含みます。購入日のレートで換算しています",
       "quantitySplit": "販売中{forSale}件 · Holding {holding}件",
       "withComponents": {
         "other": "Sticker／チャーム付き{count}件"
-      },
-      "withComponentsHint": "グループ内で、Sticker、チャーム、Sticker Slab、パッチが記録されている個体"
+      }
     },
-    "refresh": "更新",
     "empty": "インベントリにアイテムがありません。",
     "emptyFiltered": "この条件に合うアイテムはありません。",
     "clearFilters": "フィルターをクリア",
@@ -394,19 +386,16 @@
       "quantity": "数量",
       "avgCost": "平均原価",
       "totalCost": "原価合計",
-      "situation": "状態",
       "item": "アイテム",
       "store": "購入ストア",
       "cost": "原価",
       "days": "日数",
-      "tradeLock": "Trade lock",
       "minPrice": "損益分岐価格",
       "actions": "操作",
       "marketValue": "市場価値 ≈",
       "unrealized": "未実現損益 ≈",
       "turnover": "回転"
     },
-    "primaryStore": "メインストア",
     "otherStores": "その他のストア",
     "noPrice": "有効なストアがありません",
     "ganhei": "受取",
@@ -415,7 +404,6 @@
     "sold": "販売済み",
     "turnaround": "trade lock終了から{days}で販売",
     "inspect": "インスペクト",
-    "inspectInvalid": "インスペクトのリンクが無効です",
     "actions": {
       "newItem": "新規アイテム",
       "edit": "編集",
@@ -427,8 +415,6 @@
       "offSale": "Holdingに移す",
       "forSale": "販売に戻す",
       "apply": "在庫から適用",
-      "applyNoCandidates": "適用できるSticker、チャーム、パッチが在庫にありません。",
-      "applyFull": "このアイテムには、Sticker、チャーム、パッチを付ける空きがありません。",
       "openCase": "ケースを開ける",
       "openCapsule": "カプセルを開ける",
       "openPackage": "パッケージを開ける",
@@ -443,8 +429,6 @@
       "components": "コンポーネント"
     },
     "itemGone": "このアイテムはもう存在しません。別のタブで削除された可能性があります。一覧を更新しました。",
-    "daysForSale": "販売中：{days}",
-    "daysInInventory": "インベントリに{days}",
     "inTradeLock": "trade lock中 · {time}",
     "daysHeld": "購入から{days}",
     "tabs": {
@@ -454,7 +438,6 @@
     },
     "offSaleConfirmTitle": "Holdingに移しますか？",
     "offSaleConfirmMessage": "アイテムは「販売中」の一覧から外れ、Holdingに移ります。販売に戻すと、日数のカウントが最初からやり直しになります。",
-    "offSaleSince": "{date}からHolding",
     "offSaleEmpty": "Holdingにアイテムがありません。",
     "offSaleDone": "{name}をHoldingに移しました。",
     "forSaleDone": "{name}を販売に戻しました。",
@@ -537,9 +520,9 @@
     "help": {
       "minPrice": "損益分岐価格：手取りが原価をまかなえる最低価格（ストアの販売手数料のみで計算）。",
       "convertedCost": "原価は購入日のレートで換算しています。",
-      "marketValue": "市場価値：CSFloat の推定値です。売るまでは残高にあるお金ではありません。",
-      "unrealized": "未実現損益：推定値から販売手数料と原価を引いた額。売却して初めて確定します。",
-      "priceRange": "表示中の個体の損益分岐価格の範囲。個体ごとに原価が異なります。"
+      "minPriceNoFee": "ストア {store} には販売手数料が設定されていないため、損益分岐価格を計算できません。",
+      "minPriceBased": "この値は、「ストア」タブでストア {store} に設定された販売手数料に基づいています。",
+      "minPriceRange": "表示中の個体の損益分岐価格の範囲（個体ごとに原価が異なります）。「ストア」タブで各ストアに設定された販売手数料に基づきます。"
     },
     "warnings": {
       "goToStores": "ストアへ移動",
@@ -569,15 +552,10 @@
     "category": "カテゴリ",
     "categoryAll": "すべて",
     "stagnantOnly": "滞留のみ（{days}を超えて販売中）",
-    "order": "経過日数で並べ替え",
-    "orderDesc": "古い順",
-    "orderAsc": "新しい順"
+    "order": "経過日数で並べ替え"
   },
   "tradeLock": {
-    "locked": "Trade lock",
-    "released": "解除済み",
     "remaining": "残り{time}",
-    "until": "{date}に解除",
     "units": {
       "d": "日",
       "h": "時間",
@@ -657,8 +635,7 @@
       "AWESOMEAPI": "商用（AwesomeAPI）"
     },
     "ptaxOf": "{date}のPTAX",
-    "editedAt": "{date}に編集",
-    "tooltip": "取得元：{source}"
+    "editedAt": "{date}に編集"
   },
   "confirm": {
     "deleteTitle": "アイテムを削除",
@@ -681,7 +658,6 @@
     "catalogRefresh": "カタログを更新",
     "catalogRefreshing": "カタログを更新中（最大2分かかることがあります）...",
     "catalogRefreshed": "カタログを{date}に更新しました",
-    "catalogShowing": "{total}件中{shown}件",
     "catalogSearching": "検索中...",
     "changeItem": "アイテムを変更",
     "freeName": "カタログにないアイテム",
@@ -717,14 +693,12 @@
     "soldNote": "このアイテムは販売済みです。販売データはここでは編集できません。変更するには、販売を取り消してください。",
     "created": "アイテムを作成しました。",
     "saved": "アイテムを保存しました。",
-    "noChanges": "保存する変更はありません。",
     "invalidNumber": "数値が無効です。数字だけを使ってください。",
     "invalidMoney": "金額が無効です。{example}のような形式で入力してください。",
     "invalidMoneyWhole": "金額が無効です。{currency}には小数点以下がありません。{example}のように整数で入力してください。",
     "invalidDate": "日付が無効です。",
     "chooseItem": "カタログからアイテムを選ぶか、「カタログにないアイテム」にチェックを入れてください。",
     "components": {
-      "title": "Stickerとチャーム",
       "costNote": "これは武器に付いているものの記録だけです。原価、残高、回転には影響しません。",
       "stickers": "貼り付け済みのSticker（{count}/{max}）",
       "noStickers": "Stickerは記録されていません。",
@@ -755,7 +729,6 @@
       "slotShort": "位置",
       "wearShort": "摩耗",
       "patternShort": "pattern",
-      "patchesTitle": "パッチ",
       "patches": "貼り付け済みのパッチ（{count}/{max}）",
       "noPatches": "パッチは登録されていません。",
       "addPatch": "パッチを追加",
@@ -1023,7 +996,6 @@
     "fxTitle": "記録されたレートで利益を計算しています。販売時のレート：{sale}。購入時のレート：{purchase}。",
     "saleRateNote": "販売時のレート {rate}",
     "columns": {
-      "image": "画像",
       "item": "アイテム",
       "purchaseStore": "購入ストア",
       "saleStore": "販売ストア",
@@ -1035,7 +1007,6 @@
       "days": "販売までの日数",
       "actions": "操作"
     },
-    "daysAfterRelease": "trade lock終了から{days}",
     "daysHeld": "購入から{days}",
     "balanceReleasesAt": "残高は{date}に解除",
     "turnover": {
@@ -1136,7 +1107,6 @@
     "steamBadge": "自分のSteam",
     "steamSet": "自分のSteamストアとして使う",
     "steamClear": "自分のSteamストアとして使わない",
-    "steamHint": "自分のSteamストアは、アプリがターミナルでの支払い価格を記録する場所です。",
     "steamSaved": "「{name}」を自分のSteamストアにしました。",
     "steamCleared": "Steamストアは選ばれていません。",
     "card": {
@@ -1144,7 +1114,8 @@
         "DEDUCTED": "価格から{rate}%を差し引き",
         "ADDED": "価格に{rate}%を上乗せ"
       },
-      "moreActionsFor": "{name}のその他の操作"
+      "moreActionsFor": "{name}のその他の操作",
+      "buyOnlyBadge": "購入のみ"
     },
     "steamTip": {
       "title": "Steamストアを選択",
@@ -1154,22 +1125,15 @@
   },
   "storesTable": {
     "columns": {
-      "name": "ストア",
-      "currency": "通貨",
-      "status": "状態",
       "saleFee": "販売手数料",
       "rounding": "端数処理",
-      "minFixed": "最低手数料と固定手数料",
       "withdrawal": "出金可能",
-      "actions": "操作",
       "saleHold": "残高の保留"
     },
     "primary": "メイン",
     "active": "有効",
     "inactive": "無効",
     "feesNotConfigured": "販売手数料が未設定",
-    "feeDeducted": "{rate}%を差し引き",
-    "feeAdded": "{rate}%を上乗せ",
     "minFee": "最低 {value}",
     "fixedFee": "固定 {value}",
     "withdrawalNo": "いいえ",
@@ -1249,7 +1213,10 @@
       "notConfigured": "販売手数料が未設定です。このストアの損益分岐価格は表示されません。",
       "incomplete": "手数料の種類を選び、率を入力すると例が表示されます。",
       "error": "例を計算できませんでした（{reason}）。"
-    }
+    },
+    "sellsHere": "このストアで販売する",
+    "sellsHereHint": "オフにすると、インベントリのアイテムの最低価格にこのストアは表示されませんが、購入や記録済みの販売には引き続き使えます。",
+    "sellsHereNoFee": "インベントリでこのストアの最低価格を表示するには、下で販売手数料を設定してください。"
   },
   "settings": {
     "title": "設定",
@@ -1259,7 +1226,6 @@
       "noneNeeded": "現在はすべて米ドルなので、為替レートは必要ありません。別の換算通貨を選ぶか、他の通貨のストアを追加すると、そのレートがここに表示されます。",
       "displayBadge": "換算通貨",
       "staleHint": "このレートは{age}前に最後に更新されました。最新のレートに更新してください。",
-      "current": "現在のレート",
       "notSet": "レートが未設定",
       "value": "US$ 1 = {rate}",
       "manualLabel": "手動のレート",
@@ -1318,9 +1284,6 @@
       "exporting": "バックアップを作成中...",
       "exported": "バックアップを{file}として保存しました。",
       "import": "バックアップをインポート",
-      "importing": "インポート中...",
-      "chooseFile": "バックアップファイルを選択",
-      "selectedFile": "選択したファイル：{file}",
       "confirmTitle": "バックアップをインポートしますか？",
       "confirmMessage": "現在のデータがすべて、「{file}」のデータに置き換えられます。その前に、アプリが現在のデータのコピーをバックアップフォルダーに保存します。",
       "confirmButton": "データを置き換える",
@@ -1393,7 +1356,6 @@
         "save": "キーを保存",
         "savedKey": "保存済みのキー：{masked}",
         "noKey": "保存されたキーはありません。",
-        "keyRequired": "保存するには、APIキーを貼り付けてください。",
         "keySaved": "キーを保存しました。「接続をテスト」で確認してください。",
         "keyRemoved": "キーを削除しました。",
         "replaceKey": "キーを置き換える",
@@ -1421,7 +1383,6 @@
         "noStore": "CSFloatストアが見つかりません。ストアで、「CSFloat」という名前のUS$のストアを作成してください。アプリが自動で紐づけます。",
         "importNow": "今すぐインポート",
         "fullScan": "全件スキャン",
-        "fullScanHint": "CSFloatの履歴をすべて読み直します。時間がかかります。取りこぼしがありそうなときに使ってください。",
         "lastImport": "前回のインポート：{date}",
         "lastImportFailed": "前回のインポートは失敗しました：{reason}",
         "neverImported": "まだインポートしていません。",
@@ -1498,19 +1459,12 @@
   "profit": {
     "title": "実利益",
     "subtitle": "入金額、出金額、各ストアの残高、実利益を確認できます。",
-    "pendingIncluded": "保留中の{amount}を含みます（最初の解除日：{date}）",
-    "pendingIncludedNoDate": "保留中の{amount}を含みます",
     "estimatedNote": "≈付きの金額は、{fx}のレートを使った推定値です。",
     "estimatedNoFx": "≈付きの金額は為替レートを使った推定値ですが、レートがまだ設定されていません。設定でレートを入力してください。",
     "emptyHint": "実利益を見るには、入金を記録してください。",
     "summary": {
-      "title": "まとめ",
       "loadError": "まとめを読み込めませんでした：{reason}",
-      "realProfit": "実利益",
-      "realProfitHint": "出金の純額、ストアの残高（利用可能と保留中）、原価ベースの在庫を足し、入金額を引いた金額です。すべて米ドル（US$）です。",
-      "deposited": "入金の合計",
       "withdrawn": "出金の合計",
-      "platformBalance": "ストアの残高",
       "stock": "在庫（原価）",
       "stockForSale": "販売中の在庫（原価）",
       "stockOffSale": "Holdingの在庫（原価）",
@@ -1600,7 +1554,6 @@
       "actions": "操作",
       "paid": "支払い額"
     },
-    "noStore": "—",
     "inactiveStore": "{name}（無効）",
     "actions": {
       "edit": "編集",
@@ -1650,7 +1603,6 @@
     "updated": "出金を更新しました。",
     "deleted": "{value}の出金を削除しました。",
     "legacyNoStore": "ストアなし（古い記録）",
-    "feeNotInformed": "—",
     "inactiveStore": "{name}（無効）",
     "noWithdrawalStores": "出金に対応している有効なストアがありません。出金を記録するには、ストアで「出金可能」をオンにしてください。",
     "goToStores": "ストアへ移動",
@@ -1706,10 +1658,7 @@
     "empty": "登録されたストアがありません。",
     "inactive": "無効",
     "nonWithdrawable": "出金不可",
-    "nonWithdrawableTitle": "このストアは出金に対応していません。残高はストアに残ります。",
     "available": "利用可能",
-    "pending": "保留中（{date}に解除）",
-    "computed": "計算値",
     "difference": "差額",
     "lastCheckDays": {
       "other": "最終確認：{count}日前"
@@ -1717,8 +1666,6 @@
     "lastCheckToday": "最終確認：今日",
     "neverChecked": "残高を一度も確認していません",
     "check": "残高を確認",
-    "details": "詳細",
-    "hideDetails": "詳細を隠す",
     "breakdown": {
       "title": "利用可能な残高の計算方法",
       "deposits": "入金",
@@ -1737,7 +1684,6 @@
     "checkPreviewLoading": "計算中...",
     "checkPreviewMatch": "計算上の残高と一致しています。",
     "adjustAndSave": "確認と調整を記録",
-    "saveCheckOnly": "確認のみ記録",
     "saveCheck": "確認を記録",
     "adjustmentNote": "調整のメモ",
     "adjustmentNoteHint": "調整を記録するには必須です（例：記録していない手数料）。",
@@ -1753,7 +1699,6 @@
     },
     "form": {
       "title": "残高を確認：{store}",
-      "intro": "ストアのウェブサイトに表示されている実際の残高を入力してください。アプリが計算上の残高と差額を表示します。調整を記録するかどうかは、ご自身で選べます。",
       "amount": "実際の残高（{currency}）",
       "date": "確認日",
       "amountRequired": "残高を入力してください（空の場合は0を使ってください）。",
@@ -1813,14 +1758,11 @@
     "running": "CSFloatからインポート中…",
     "errorTitle": "インポートできませんでした",
     "badge": "CSFloat",
-    "badgeHint": "CSFloatからインポートした記録",
     "seeInInventory": "インベントリで見る",
     "seeInSales": "販売で見る",
     "seeCandidate": "記録 #{id}を見る",
     "unknownItem": "名前のないアイテム",
     "disabled": {
-      "noKey": "インポートするには、設定でCSFloatのキーを保存してください。",
-      "noStore": "ストアで、「CSFloat」という名前のUS$のストアを作成してください。",
       "running": "インポートはすでに実行中です。"
     },
     "cutoff": {
@@ -1897,7 +1839,6 @@
     },
     "componentWarningsTitle": "登録されなかったもの",
     "componentWarningsHint": "アイテムを編集して追加できます。",
-    "applyFromStockHint": "同じ個体が在庫にあります。武器に付いていたものであれば、正しい日付で適用してください。",
     "componentUnnamed": "名前のないコンポーネント",
     "componentWarnings": {
       "COMPONENT_CATALOG_NOT_FOUND": "{name}（カタログに見つかりません）",
@@ -1944,7 +1885,6 @@
     },
     "page": {
       "title": "インポート",
-      "open": "要確認",
       "noOpen": "確認するものはありません。",
       "batches": "インポートの履歴",
       "noBatches": "まだインポートがありません。",
@@ -1955,7 +1895,6 @@
       "fullScan": "全件スキャン",
       "loadMore": "さらに読み込む",
       "showDetails": "詳細を見る",
-      "hideDetails": "詳細を隠す",
       "noEntries": "このインポートには、表示するものがありません。",
       "pendingCount": {
         "other": "要確認{count}件"
@@ -2187,7 +2126,6 @@
         "zero": "取引明細で確認済みの出金はありません。",
         "other": "取引明細で確認済みの出金が、最大{count}件（{value}）あります。"
       },
-      "mayHaveUnseen": "設定すると、取引明細をすべて読み直します。アプリがまだ読み取っていない入金と出金も取り込まれます。",
       "openToClose": {
         "other": "新しい日付より前の、まだインポートされていない入金・出金{count}件は、インポートされなくなります。インポート済みのものは残ります。"
       },
@@ -2235,7 +2173,6 @@
     "checking": "照合中…",
     "explain": "差額の理由を見る",
     "explaining": "取引明細を読み取り中…",
-    "register": "この値で残高の確認を記録",
     "matches": "残高はCSFloatと一致しています。",
     "differs": "CSFloatとの差額：利用可能{available}、保留中{pending}。",
     "csfloat": "CSFloat：利用可能{available} · 保留中{pending}",
@@ -2431,6 +2368,7 @@
       "collapseRow": "{name}の個別アイテムを非表示",
       "selectRow": "{name}を選択",
       "selectAll": "すべての行を選択",
+      "expandColumn": "詳細を展開",
       "scrollRegion": "{caption}（スクロール可能）"
     }
   },

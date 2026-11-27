@@ -27,14 +27,12 @@ describe('resumo do lucro real (8.4)', () => {
   });
 
   test('textos do pendente e do liberado existem nos dois idiomas com os mesmos marcadores', () => {
-    for (const key of ['profit.pendingIncluded', 'profit.estimatedNote', 'profit.summary.realProfit', 'profit.summary.warningStore']) {
+    for (const key of ['profit.estimatedNote', 'profit.summary.warningStore']) {
       expect(translate(ptBR, key), key).not.toBe(key);
       expect(translate(en, key), key).not.toBe(key);
       const holders = (text: string) => (text.match(/\{\w+\}/g) ?? []).sort();
       expect(holders(translate(en, key)), key).toEqual(holders(translate(ptBR, key)));
     }
-    expect(translate(ptBR, 'profit.pendingIncluded', { amount: 'R$ 461,73', date: '25/11/2026' }))
-      .toBe('inclui R$ 461,73 pendente (primeira liberação em 25/11/2026)'); // o "≈" vem junto do valor, só se estimado
   });
 
   test('o subtítulo não promete mais o resumo para depois', () => {

@@ -1,6 +1,8 @@
 'use strict';
 
-// Cria/recria o banco de exemplo backend/data/inventory.dev.sqlite com itens fictícios (D108).
+// Cria/recria o banco de exemplo backend/data/inventory.dev.sqlite com dados fictícios (D108; ampliado na 12.11): itens em todas as faixas de
+// giro, trade lock, fora de venda, componentes, caixas com/sem chave, vendas retidas e liberadas, lojas USD/BRL/EUR/JPY, aportes, saques,
+// conferência com ajuste e uma importação com pendências "para conferir". Também serve ao `npm run dev:demo`.
 //   npm run seed:dev   (dentro de backend/ ou na raiz)
 // NUNCA abre o banco real. O DB_PATH é definido aqui, antes de carregar qualquer módulo de src/.
 const path = require('path');
@@ -44,11 +46,40 @@ function buildItemInput(def, ctx) {
     input.purchasePriceCents = def.priceCents;
     if (def.fxRateAtPurchase !== undefined) input.fxRateAtPurchase = def.fxRateAtPurchase;
   }
+  if (def.components) {
+    input.components = def.components.map(({ kind, catalog, slot }) => ({
+      kind, catalogId: resolveCatalogId(catalog, deps), ...(slot !== undefined ? { slot } : {}),
+    }));
+  }
   if (def.lockMs) input.tradeUnlockAt = data.inFuture(now, def.lockMs).toISOString();
   if (def.unlockAfterDays) {
     input.tradeUnlockAt = new Date(data.acquiredAtFor(now, def.daysAgo).getTime() + def.unlockAfterDays * data.DAY_MS).toISOString();
   }
   return input;
+}
+
+// Lote de importação do CSFloat já concluído, com pendências "para conferir" (D318). Grava direto nos models: não chama o CSFloat.
+function seedImport(def, { now, deps }) {
+  const ImportBatch = require('../src/models/ImportBatch');
+  const ImportBatchEntry = require('../src/models/ImportBatchEntry');
+  const ExternalRecord = require('../src/models/ExternalRecord');
+  const at = new Date(now.getTime() - def.daysAgo * data.DAY_MS).toISOString();
+  const batch = ImportBatch.create({
+    source: 'CSFLOAT', trigger: 'MANUAL', status: 'DONE', startedAt: at, finishedAt: at, fullScan: false, reviewCount: def.entries.length,
+  }, { now });
+  for (const entry of def.entries) {
+    const catalogId = resolveCatalogId(entry.display.catalog, deps);
+    const { catalog, ...rest } = entry.display;
+    const record = ExternalRecord.create({
+      source: 'CSFLOAT', kind: 'TRADE', externalId: entry.externalId, direction: entry.direction, tracking: 'NEEDS_REVIEW',
+      externalCreatedAt: at, amountCents: entry.amountCents, displayName: catalog.name, firstBatchId: batch.id, lastBatchId: batch.id, lastSeenAt: at,
+    }, { now });
+    ImportBatchEntry.create({
+      batchId: batch.id, recordId: record.id, outcome: entry.outcome, reasonCode: entry.reasonCode,
+      displayJson: JSON.stringify({ ...rest, marketHashName: catalog.name, catalogId, category: catalog.category, currency: 'USD', date: at }),
+    }, { now });
+  }
+  return def.entries.length;
 }
 
 // Recria o conteúdo do banco já configurado no app (env.dbPath). Usa os services: todas as regras de negócio valem.
@@ -67,6 +98,10 @@ function runDevSeed({ now = new Date(), allowMemory = false, realDbPaths = devDb
 
   const catalogService = require('../src/services/catalogService');
   const itemService = require('../src/services/itemService');
+  const storeService = require('../src/services/storeService');
+  const depositService = require('../src/services/depositService');
+  const withdrawalService = require('../src/services/withdrawalService');
+  const storeBalanceService = require('../src/services/storeBalanceService');
   const settingsService = require('../src/services/settingsService');
   const Store = require('../src/models/Store');
   const CatalogItem = require('../src/models/CatalogItem');
@@ -77,22 +112,57 @@ function runDevSeed({ now = new Date(), allowMemory = false, realDbPaths = devDb
   settingsService.updateFxRate(data.DEV_FX_RATE, { now });
   settingsService.updatePreferences({ displayCurrency: 'BRL', steamStore: 'FOLLOW' }, { now }); // os dados de exemplo são em R$ (como os bancos existentes), com a Steam em R$
 
+  // Lojas extras (EUR e JPY) e cotações de exemplo, antes dos itens.
+  for (const store of data.EXTRA_STORES) storeService.createStore(store, { now });
+  for (const [currency, rate] of Object.entries(data.EXTRA_FX_RATES)) settingsService.setFxRate(currency, rate, { now });
+
   const ctx = { now, stores: Store.findAll(), deps: { CatalogItem, normalizeSearchText } };
-  const created = [];
-  for (const def of data.STOCK_ITEMS) {
-    created.push(itemService.createItem(buildItemInput(def, ctx), { now }));
-  }
-  let sold = 0;
-  for (const { item, sale } of data.SOLD_ITEMS) {
-    const view = itemService.createItem(buildItemInput(item, ctx), { now });
+  const createStock = (def) => {
+    const view = itemService.createItem(buildItemInput(def, ctx), { now });
+    if (def.offSale) itemService.markOffSale(view.id, { now });
+    return view;
+  };
+  const sell = (def) => {
+    const view = itemService.createItem(buildItemInput(def.item, ctx), { now });
     itemService.sellItem(view.id, {
-      saleStoreId: storeIdByName(ctx.stores, sale.store),
-      salePriceCents: sale.priceCents,
-      soldAt: new Date(now.getTime() - sale.soldDaysAgo * data.DAY_MS).toISOString(),
+      saleStoreId: storeIdByName(ctx.stores, def.sale.store),
+      salePriceCents: def.sale.priceCents,
+      soldAt: new Date(now.getTime() - def.sale.soldDaysAgo * data.DAY_MS).toISOString(),
     }, { now });
+  };
+  const created = [];
+  for (const def of [...data.STOCK_ITEMS, ...data.EXTRA_STOCK_ITEMS]) created.push(createStock(def));
+  let sold = 0;
+  for (const def of [...data.SOLD_ITEMS, ...data.EXTRA_SOLD_ITEMS]) {
+    sell(def);
     sold += 1;
   }
-  return { inStock: created.length, sold, total: created.length + sold, catalogImported: sync.imported, dbPath: env.dbPath };
+
+  const daysBefore = (days) => new Date(now.getTime() - days * data.DAY_MS).toISOString();
+  for (const d of data.EXTRA_DEPOSITS) {
+    depositService.createDeposit({
+      storeId: storeIdByName(ctx.stores, d.store), amountStoreCents: d.amountStoreCents, feeCents: d.feeCents, amountBrlCents: d.amountBrlCents,
+      depositedAt: daysBefore(d.daysAgo), ...(d.note ? { note: d.note } : {}),
+    }, { now });
+  }
+  for (const w of data.EXTRA_WITHDRAWALS) {
+    withdrawalService.createWithdrawal({
+      storeId: storeIdByName(ctx.stores, w.store), amountStoreCents: w.amountStoreCents, feeCents: w.feeCents, amountBrlCents: w.amountBrlCents,
+      withdrawnAt: daysBefore(w.daysAgo), ...(w.note ? { note: w.note } : {}),
+    }, { now });
+  }
+  // Conferências em ordem de data (a mais antiga primeiro). Sem `balanceCents`, usa o saldo calculado (sem diferença).
+  for (const c of [...data.EXTRA_BALANCE_CHECKS].sort((a, b) => b.daysAgo - a.daysAgo)) {
+    const storeId = storeIdByName(ctx.stores, c.store);
+    const recordedAt = daysBefore(c.daysAgo);
+    const balanceCents = c.balanceCents !== undefined
+      ? c.balanceCents
+      : storeBalanceService.previewCheck({ storeId, recordedAt, balanceCents: 0 }, { now }).computedCents;
+    storeBalanceService.createCheck({ storeId, recordedAt, balanceCents, adjust: c.adjust, ...(c.note ? { note: c.note } : {}) }, { now });
+  }
+  const importedPending = seedImport(data.EXTRA_IMPORT, { now, deps: ctx.deps });
+
+  return { inStock: created.length, sold, total: created.length + sold, importPending: importedPending, catalogImported: sync.imported, dbPath: env.dbPath };
 }
 
 function main() {
@@ -102,7 +172,7 @@ function main() {
   const { closeDb } = require('../src/config/database');
   closeDb();
   console.log(`Banco de exemplo criado em ${result.dbPath}`);
-  console.log(`${result.total} itens (${result.inStock} em estoque, ${result.sold} vendidos). Cotação USD→BRL de exemplo: ${data.DEV_FX_RATE}.`);
+  console.log(`${result.total} itens (${result.inStock} em estoque, ${result.sold} vendidos), ${result.importPending} pendências de importação. Cotação USD→BRL de exemplo: ${data.DEV_FX_RATE}.`);
   console.log('Para usar: npm run dev:backend:demo  (no PowerShell: npm.cmd run dev:backend:demo)');
   console.log(`O banco real (${path.join('backend', 'data', 'inventory.sqlite')}) não foi aberto nem alterado.`);
 }

@@ -13,13 +13,13 @@ const KEYS = [
   'inventory.position.label', 'inventory.position.forSale', 'inventory.position.offSale', 'inventory.position.tradeLocked', 'inventory.position.nextUnlock',
   'inventory.position.stagnant', 'inventory.position.groups', 'inventory.position.stagnantHint', 'inventory.position.costHelp',
   'inventory.bulk.hint', 'inventory.bulk.limit', 'inventory.bulk.selectGroup',
-  'inventory.help.priceRange',
+  'inventory.help.minPriceNoFee', 'inventory.help.minPriceBased', 'inventory.help.minPriceRange',
 ];
 const placeholders = (text: string) => (text.match(/\{\w+\}/g) ?? []).sort().join(',');
 const codes = LANGUAGE_REGISTRY.map((entry) => entry.code);
 
 describe('chaves da 12.5b', () => {
-  test.each(codes)('%s tem as 14 chaves, não vazias e com os mesmos marcadores do inglês', (code) => {
+  test.each(codes)('%s tem as chaves, não vazias e com os mesmos marcadores do inglês', (code) => {
     const en = read('en');
     const dict = read(code);
     for (const key of KEYS) {

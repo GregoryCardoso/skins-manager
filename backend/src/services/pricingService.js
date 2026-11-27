@@ -71,7 +71,7 @@ function minPriceForStore({ costCents, costCurrency, costFxRate, costParts, stor
 
 function minPricesForItem({ item, stores, settings, costParts }) {
   return stores
-    .filter((store) => store.isActive)
+    .filter((store) => store.isActive && store.sellsHere !== false)
     .map((store) =>
       minPriceForStore({
         costCents: item.purchasePriceCents,

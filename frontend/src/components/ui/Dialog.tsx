@@ -66,6 +66,16 @@ export default function Dialog({ open = true, onClose, title, description, size 
             if (first && !bodyRef.current?.contains(document.activeElement)) {
               event.preventDefault();
               first.focus();
+              return;
+            }
+            // Sem campo: o foco vai ao próprio diálogo (o leitor de tela lê o título) e não ao botão de fechar, cuja dica abriria no foco
+            // e engoliria o primeiro Esc (o Esc fecha primeiro a dica, depois o diálogo).
+            if (!first) {
+              const content = bodyRef.current?.parentElement;
+              if (content) {
+                event.preventDefault();
+                content.focus();
+              }
             }
           }}
           onCloseAutoFocus={(event) => {

@@ -24,11 +24,12 @@ import Disclosure from './ui/Disclosure';
 import FormErrorSummary, { type FormErrorItem } from './ui/FormErrorSummary';
 import NumberField from './ui/NumberField';
 import Select from './ui/Select';
+import Switch from './ui/Switch';
 import TextField from './ui/TextField';
 
 const BASE_FIELDS = [
   'name', 'currency', 'saleFeeType', 'saleFeeRate', 'saleFeeRounding', 'saleMinFeeCents', 'saleFixedFeeCents',
-  'allowsWithdrawal', 'withdrawalFeeRate', 'withdrawalFixedFeeCents', 'saleHoldDays', 'isActive',
+  'allowsWithdrawal', 'withdrawalFeeRate', 'withdrawalFixedFeeCents', 'saleHoldDays', 'isActive', 'sellsHere',
 ] as const;
 const ROUNDINGS: SaleFeeRounding[] = ['CEIL', 'ROUND', 'FLOOR'];
 const FEE_TYPES: SaleFeeType[] = ['DEDUCTED', 'ADDED'];
@@ -66,7 +67,7 @@ export default function StoreFormModal({ store, onClose, onSaved, onGone }: Prop
   const [showSummary, setShowSummary] = useState(false);
   const [topError, setTopError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [open, setOpen] = useState<Record<Section, boolean>>({ sale: true, hold: false, withdrawal: false, status: false });
+  const [open, setOpen] = useState<Record<Section, boolean>>({ sale: store ? store.sellsHere !== false : true, hold: false, withdrawal: false, status: false });
 
   const patch = (partial: Partial<StoreFormState>) => setState((s) => ({ ...s, ...partial }));
   const clearError = (...fields: string[]) =>
@@ -235,6 +236,21 @@ export default function StoreFormModal({ store, onClose, onSaved, onGone }: Prop
               }}
             />
           </div>
+        </section>
+
+        <section className={styles.section} aria-label={t('storeForm.sellsHere')}>
+          <Switch
+            label={t('storeForm.sellsHere')}
+            name="sellsHere"
+            checked={state.sellsHere}
+            hint={t('storeForm.sellsHereHint')}
+            error={errors.sellsHere}
+            onChange={(checked) => {
+              patch({ sellsHere: checked });
+              setOpen((o) => ({ ...o, sale: checked }));
+            }}
+          />
+          {state.sellsHere && state.saleFeeType === '' && <Banner tone="info">{t('storeForm.sellsHereNoFee')}</Banner>}
         </section>
 
         <Disclosure label={t('storeForm.saleFeeSection')} open={open.sale} onOpenChange={(value) => setOpen((o) => ({ ...o, sale: value }))}>

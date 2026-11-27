@@ -48,9 +48,7 @@ describe('textos da 8.5', () => {
     expect(API_ERROR_CODES).toContain('DEPOSIT_STORE_CURRENCY_NOT_ALLOWED');
   });
 
-  test('o "≈" vem junto do valor: pendente e liberado não repetem o símbolo no texto', () => {
-    expect(translate(ptBR, 'profit.pendingIncluded', { amount: '≈ US$ 1,00', date: '25/11' })).toBe('inclui ≈ US$ 1,00 pendente (primeira liberação em 25/11)');
-    expect(translate(ptBR, 'profit.pendingIncluded', { amount: 'US$ 1,00', date: '25/11' })).not.toContain('≈');
+  test('o "≈" vem junto do valor: o liberado não repete o símbolo no texto', () => {
     expect(translate(en, 'profit.releasedIncluded', { amount: 'US$ 1.00' })).not.toContain('≈');
   });
 

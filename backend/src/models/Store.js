@@ -2,11 +2,11 @@ const { getDb } = require('../config/database');
 const { mapRow, insertRow, updateRow } = require('./modelHelpers');
 
 const FIELDS = [
-  'name', 'currency', 'isActive', 'isPrimary', 'saleFeeType', 'saleFeeRate', 'saleFeeRounding',
+  'name', 'currency', 'isActive', 'isPrimary', 'sellsHere', 'saleFeeType', 'saleFeeRate', 'saleFeeRounding',
   'saleMinFeeCents', 'saleFixedFeeCents', 'allowsWithdrawal', 'withdrawalFeeRate', 'withdrawalFixedFeeCents',
   'saleHoldDays',
 ];
-const BOOLEANS = ['isActive', 'isPrimary', 'allowsWithdrawal'];
+const BOOLEANS = ['isActive', 'isPrimary', 'allowsWithdrawal', 'sellsHere'];
 
 const map = (row) => mapRow(row, BOOLEANS);
 

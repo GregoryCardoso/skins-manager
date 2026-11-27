@@ -18,8 +18,15 @@
 }
 .button:hover:not(:disabled, [aria-disabled='true']) { border-color: var(--brand); }
 .button:focus-visible { outline: none; box-shadow: var(--focus-ring); }
-.button:disabled { opacity: 0.55; cursor: not-allowed; }
-.button[aria-disabled='true'] { cursor: progress; }
+/* Desativado (disabled ou aria-disabled sem carregando): fundo neutro e texto --muted (>= 4,5:1), sem opacidade (D370, I2/M4). */
+.button:disabled,
+.button[aria-disabled='true']:not(.loading) {
+  background: var(--surface-2);
+  border-color: var(--line);
+  color: var(--muted);
+  filter: none;
+  cursor: not-allowed;
+}
 
 /* Tamanhos: a altura mínima cresce com o texto quebrado (rótulos nunca são cortados). */
 .sm { min-height: var(--control-h-sm); padding: var(--space-1) var(--space-3); font-size: var(--fs-sm); }
@@ -34,7 +41,7 @@
 .ghost:hover:not(:disabled, [aria-disabled='true']) { border-color: transparent; background: var(--surface-2); color: var(--text); }
 
 .full { width: 100%; }
-.loading { cursor: progress; }
+.button.loading { cursor: progress; }
 .label { min-width: 0; overflow-wrap: anywhere; }
 
 /* Estados de demonstração do guia /design: simulam hover e foco. */

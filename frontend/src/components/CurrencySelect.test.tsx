@@ -26,52 +26,40 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-describe('CurrencySelect (Combobox de moedas)', () => {
-  test('mostra a moeda gravada e abre a lista de 42 moedas por região, com USD, BRL e EUR no topo', async () => {
+describe('CurrencySelect (lista simples, igual à do idioma; pedido do usuário na 12.11)', () => {
+  test('é uma lista nativa sem campo de busca: 42 moedas, USD, BRL e EUR soltos no topo e as outras por região', () => {
     renderSelect();
-    const input = screen.getByRole('combobox', { name: 'Conversion currency' });
-    expect((input as HTMLInputElement).value).toContain('BRL');
-    await userEvent.click(input);
-    const options = await screen.findAllByRole('option');
-    expect(options).toHaveLength(42);
-    expect(options[0]).toHaveTextContent('USD');
-    expect(options[1]).toHaveTextContent('BRL');
-    expect(options[2]).toHaveTextContent('EUR');
+    const select = screen.getByRole('combobox', { name: 'Conversion currency' }) as HTMLSelectElement;
+    expect(select.tagName).toBe('SELECT');
+    expect(select.value).toBe('BRL');
+    expect(select.options).toHaveLength(42);
+    expect([...select.options].slice(0, 3).map((o) => o.value)).toEqual(['USD', 'BRL', 'EUR']);
+    expect(new Set([...select.options].map((o) => o.value)).size).toBe(42);
+    const groups = [...select.querySelectorAll('optgroup')].map((g) => g.label);
+    expect(groups).toEqual(['Americas', 'Europe', 'Asia', 'Other']);
+    expect(select.querySelector('optgroup option[value="USD"]')).toBeNull();
+    expect(screen.queryByRole('textbox')).toBeNull();
   });
 
-  test('a busca acha pelo nome no idioma e pelo código: "real" acha BRL', async () => {
-    renderSelect();
-    await userEvent.click(screen.getByRole('combobox', { name: 'Conversion currency' }));
-    await userEvent.keyboard('{Control>}a{/Control}');
-    await userEvent.keyboard('real');
-    const options = await screen.findAllByRole('option');
-    expect(options.some((option) => option.textContent?.includes('BRL'))).toBe(true);
-    expect(options.length).toBeLessThan(42);
-  });
-
-  test('busca em japonês: "円" acha o iene (JPY)', async () => {
+  test('em japonês, os nomes vêm no idioma (o iene aparece com o nome traduzido)', () => {
     renderSelect('ja');
-    await userEvent.click(screen.getByRole('combobox'));
-    await userEvent.keyboard('{Control>}a{/Control}');
-    await userEvent.keyboard('円');
-    const options = await screen.findAllByRole('option');
-    expect(options.some((option) => option.textContent?.includes('JPY'))).toBe(true);
+    const select = screen.getByRole('combobox') as HTMLSelectElement;
+    const jpy = [...select.options].find((o) => o.value === 'JPY');
+    expect(jpy?.textContent).toMatch(/円/);
   });
 
-  test('escolher outra moeda com Enter abre o modal de confirmação e NÃO grava', async () => {
+  test('escolher outra moeda abre o modal de confirmação e NÃO grava; a lista continua na moeda gravada', async () => {
     renderSelect();
-    await userEvent.click(screen.getByRole('combobox', { name: 'Conversion currency' }));
-    await userEvent.keyboard('{Control>}a{/Control}');
-    await userEvent.keyboard('EUR');
-    await userEvent.keyboard('{ArrowDown}{Enter}');
+    const select = screen.getByRole('combobox', { name: 'Conversion currency' }) as HTMLSelectElement;
+    await userEvent.selectOptions(select, 'EUR');
     expect(await screen.findByRole('dialog', { name: /Show values in/ })).toBeInTheDocument();
     expect(prefs.changeDisplayCurrency).not.toHaveBeenCalled();
+    expect(select.value).toBe('BRL');
   });
 
   test('escolher a moeda que já vale não abre nada', async () => {
     renderSelect();
-    await userEvent.click(screen.getByRole('combobox', { name: 'Conversion currency' }));
-    await userEvent.click(await screen.findByRole('option', { name: /BRL/ }));
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Conversion currency' }), 'BRL');
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 });

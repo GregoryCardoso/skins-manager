@@ -66,8 +66,7 @@ describe('M7: "Separar" na seção de componentes', () => {
 });
 
 describe('B5 e B7: dicas', () => {
-  test.each([['pt-BR', ptBR], ['en', en]])('dica de agrupados menciona patches e a de líquido menciona a loja em US$ (%s)', (_label, tree) => {
-    expect(get(tree, 'inventory.group.withComponentsHint')).toMatch(/patch/i);
+  test.each([['pt-BR', ptBR], ['en', en]])('a dica de líquido menciona a loja em US$ (%s)', (_label, tree) => {
     expect(get(tree, 'inventory.marketValue.netUnavailable.NET_NOT_COMPUTABLE')).toMatch(/US\$/);
   });
 });

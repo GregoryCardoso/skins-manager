@@ -37,7 +37,7 @@ test('importar um backup v26 deixa a densidade em COMPACT', async () => {
   database.openDatabase(file, { migrations: MIGRATIONS.filter((m) => m.version <= 26) }).close();
   const res = await octet(fs.readFileSync(file));
   expect(res.status).toBe(200);
-  expect(res.body.data).toMatchObject({ fileVersion: 26, schemaVersion: 27 });
+  expect(res.body.data).toMatchObject({ fileVersion: 26, schemaVersion: 28 });
   expect((await settings()).inventoryDensity).toBe('COMPACT');
 });
 
@@ -51,6 +51,6 @@ test('exportar com COMFORTABLE, mudar e importar de volta restaura COMFORTABLE',
   await request(app).patch('/api/settings').send({ inventoryDensity: 'COMPACT' });
   const res = await octet(exported);
   expect(res.status).toBe(200);
-  expect(res.body.data).toMatchObject({ fileVersion: 27, schemaVersion: 27 });
+  expect(res.body.data).toMatchObject({ fileVersion: 28, schemaVersion: 28 });
   expect((await settings()).inventoryDensity).toBe('COMFORTABLE');
 });

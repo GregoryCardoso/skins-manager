@@ -25,7 +25,7 @@ describe('Etapa 8.3: chaves e códigos', () => {
   });
 
   test('chaves da retenção existem nos dois idiomas', () => {
-    for (const key of ['sales.balanceReleasesAt', 'storeForm.invalidSaleHoldDays', 'warnings.COMPUTED_BALANCE_NEGATIVE', 'storeBalances.pending']) {
+    for (const key of ['sales.balanceReleasesAt', 'storeForm.invalidSaleHoldDays', 'warnings.COMPUTED_BALANCE_NEGATIVE']) {
       expect(translate(ptBR, key), key).not.toBe(key);
       expect(translate(en, key), key).not.toBe(key);
     }

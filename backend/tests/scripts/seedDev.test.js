@@ -184,13 +184,13 @@ describe('runDevSeed em :memory:', () => {
     }
   });
 
-  test('cria ~16 itens com a cobertura exigida (catálogo real)', async () => {
+  test('cria os itens com a cobertura exigida (catálogo real)', async () => {
     const result = seedInMemory();
-    expect(result).toMatchObject({ inStock: 13, sold: 3, total: 16 });
+    expect(result).toMatchObject({ inStock: 33, sold: 9, total: 42, importPending: 3 });
     expect(result.catalogImported).toBeGreaterThan(1000);
     const { stock, sold } = await listAll();
-    expect(stock).toHaveLength(13);
-    expect(sold).toHaveLength(3);
+    expect(stock).toHaveLength(33);
+    expect(sold).toHaveLength(9);
     const all = [...stock, ...sold];
 
     const cats = new Set(all.map((i) => i.category));
@@ -224,7 +224,8 @@ describe('runDevSeed em :memory:', () => {
     expect(byDays(8).every((i) => i.aging.agingBucket === 'EM_GIRO')).toBe(true);
     expect(byDays(21).every((i) => i.aging.agingBucket === 'EM_GIRO')).toBe(true);
     expect(byDays(22).every((i) => i.aging.agingBucket === 'AGARRADO')).toBe(true);
-    expect([...new Set(stock.map((i) => i.aging.daysInInventory))].sort((a, b) => a - b)).toEqual([1, 3, 7, 8, 12, 21, 22, 30, 40]);
+    const days = new Set(stock.map((i) => i.aging.daysInInventory));
+    for (const d of [1, 3, 7, 8, 12, 21, 22, 30, 40, 120]) expect(days.has(d)).toBe(true);
 
     expect(sold.every((i) => i.status === 'VENDIDO' && i.salePriceCents > 0)).toBe(true);
     expect(sold.every((i) => Number.isInteger(i.aging.turnaroundDays))).toBe(true);
@@ -234,19 +235,19 @@ describe('runDevSeed em :memory:', () => {
 
     const bought = all.filter((i) => i.acquisitionType === 'COMPRA');
     expect(new Set(bought.map((i) => i.purchaseStoreId)).size).toBeGreaterThanOrEqual(3);
-    expect(new Set(bought.map((i) => i.purchaseCurrency))).toEqual(new Set(['USD', 'BRL']));
+    expect(new Set(bought.map((i) => i.purchaseCurrency))).toEqual(new Set(['USD', 'BRL', 'EUR']));
 
     const inspect = all.filter((i) => i.inspectLink);
     expect(inspect.length).toBeGreaterThanOrEqual(3);
     for (const i of inspect) expect(i.inspectLink).toMatch(/^steam:\/\//);
 
-    const one = stock[0];
+    const one = stock.find((i) => i.name === 'Sticker | Shooter');
     expect(one.minPrices.find((m) => m.storeName === 'CSMoney')).toMatchObject({ minPriceCents: null, warningCode: 'FEES_NOT_CONFIGURED' });
     const csf = one.minPrices.find((m) => m.storeName === 'CSFloat');
     expect(csf.approx).toEqual({ currency: 'BRL', cents: Math.round(csf.minPriceCents * 5.4) });
   });
 
-  test('itens com catalogId existente (só o OUTRO é livre) e a lista declarativa tem 16 itens', async () => {
+  test('itens com catalogId existente (só o OUTRO é livre) e a lista declarativa tem 42 itens', async () => {
     seedInMemory();
     const { stock, sold } = await listAll();
     const linked = [...stock, ...sold].filter((i) => i.category !== 'OUTRO');
@@ -254,7 +255,7 @@ describe('runDevSeed em :memory:', () => {
       expect(i.isLegacy).toBe(false);
       expect(i.catalog).toBeTruthy();
     }
-    expect(data.STOCK_ITEMS.length + data.SOLD_ITEMS.length).toBe(16);
+    expect(data.STOCK_ITEMS.length + data.SOLD_ITEMS.length + data.EXTRA_STOCK_ITEMS.length + data.EXTRA_SOLD_ITEMS.length).toBe(42);
   });
 
   test('stagnantOnly devolve exatamente os agarrados do seed', async () => {
@@ -298,11 +299,11 @@ describe('runDevSeed em arquivo temporário (DB_PATH isolado)', () => {
 
   const dbFile = () => path.join(tmp, 'inventory.dev.sqlite');
 
-  test('cria o arquivo, 16 itens e cotação 5,40', () => {
+  test('cria o arquivo, 42 itens e cotação 5,40', () => {
     const { summary, snapshot } = runInFile(dbFile());
-    expect(summary).toMatchObject({ total: 16, inStock: 13, sold: 3, dbPath: dbFile() });
+    expect(summary).toMatchObject({ total: 42, inStock: 33, sold: 9, dbPath: dbFile() });
     expect(fs.existsSync(dbFile())).toBe(true);
-    expect(snapshot.items).toHaveLength(16);
+    expect(snapshot.items).toHaveLength(42);
     expect(snapshot.fx.usd_brl_rate).toBe(5.4);
     expect(snapshot.catalogCount).toBeGreaterThan(1000);
   });
@@ -310,7 +311,7 @@ describe('runDevSeed em arquivo temporário (DB_PATH isolado)', () => {
   test('idempotente: rodar duas vezes dá o mesmo conjunto (recria, não soma)', () => {
     const first = runInFile(dbFile());
     const second = runInFile(dbFile());
-    expect(second.snapshot.items).toHaveLength(16);
+    expect(second.snapshot.items).toHaveLength(42);
     expect(second.snapshot.items).toEqual(first.snapshot.items);
     expect(second.summary.total).toBe(first.summary.total);
   });
@@ -328,7 +329,7 @@ describe('runDevSeed em arquivo temporário (DB_PATH isolado)', () => {
     const extra = new Database(dbFile());
     extra.prepare('DELETE FROM items WHERE id = (SELECT MIN(id) FROM items)').run();
     extra.close();
-    expect(runInFile(dbFile()).snapshot.items).toHaveLength(16);
+    expect(runInFile(dbFile()).snapshot.items).toHaveLength(42);
   });
 
   test('recusa gravar em arquivo que não é *.dev.sqlite e não o apaga', () => {
@@ -358,6 +359,115 @@ describe('runDevSeed em arquivo temporário (DB_PATH isolado)', () => {
       locker.close();
     }
     expect(fs.existsSync(file)).toBe(true);
-    expect(runInFile(file).snapshot.items).toHaveLength(16);
+    expect(runInFile(file).snapshot.items).toHaveLength(42);
+  });
+});
+
+describe('banco de exemplo ampliado (12.11)', () => {
+  // Roda o seed num banco :memory: e confere as situações principais pelos models e pela API (nada toca no banco real).
+  async function seeded() {
+    freshDb();
+    const { runDevSeed } = require('../../scripts/seedDev');
+    runDevSeed({ now: NOW, allowMemory: true });
+    const app = createApp({ now: () => new Date(NOW.getTime()) });
+    const stock = (await request(app).get('/api/items?status=EM_ESTOQUE&sortBy=age&order=desc')).body.data.items;
+    const sold = (await request(app).get('/api/items?status=VENDIDO')).body.data.items;
+    return { app, stock, sold };
+  }
+
+  test('lojas em USD, BRL, EUR e JPY, com a Steam e cotações de exemplo', async () => {
+    await seeded();
+    const Store = require('../../src/models/Store');
+    const byName = Object.fromEntries(Store.findAll().map((s) => [s.name, s]));
+    expect(Object.fromEntries(Object.entries(byName).map(([name, s]) => [name, s.currency]))).toEqual({
+      CSFloat: 'USD', CSMoney: 'USD', Steam: 'BRL', 'Loja EUR': 'EUR', 'Loja JPY': 'JPY',
+    });
+    const FxRate = require('../../src/models/FxRate');
+    expect(Object.fromEntries(FxRate.findAll().filter((r) => r.rate).map((r) => [r.currency, r.rate]))).toMatchObject({ BRL: 5.4, EUR: 0.92, JPY: 150 });
+  });
+
+  test('estoque: todas as faixas de giro, trade lock, fora de venda e componentes', async () => {
+    const { stock } = await seeded();
+    expect(stock).toHaveLength(33);
+    const offSale = stock.filter((i) => i.saleState === 'OFF_SALE');
+    expect(offSale.map((i) => i.name).sort()).toEqual(['AWP | Dragon Lore', 'M4A4 | Howl', 'Sticker | Crown (Foil)']);
+    for (const i of offSale) expect(i.aging.agingBucket).toBe('FORA_DE_VENDA');
+    const onSale = stock.filter((i) => i.saleState === 'FOR_SALE');
+    for (const bucket of ['RECENTE', 'EM_GIRO', 'AGARRADO']) expect(onSale.some((i) => i.aging.agingBucket === bucket)).toBe(true);
+    expect(stock.filter((i) => i.tradeLock.isLocked).length).toBeGreaterThanOrEqual(5);
+
+    const withComponents = stock.filter((i) => i.components.length > 0);
+    expect(withComponents.map((i) => i.name).sort()).toEqual(['AK-47 | Asiimov', 'Desert Eagle | Blaze', 'M4A1-S | Printstream']);
+    const ak = withComponents.find((i) => i.name === 'AK-47 | Asiimov');
+    expect(ak.components.filter((c) => c.kind === 'STICKER')).toHaveLength(4);
+    expect(ak.components.filter((c) => c.kind === 'CHARM')).toHaveLength(1);
+    expect(withComponents.find((i) => i.name === 'Desert Eagle | Blaze').components[0].kind).toBe('STICKER_SLAB');
+  });
+
+  test('caixas com chave (Fracture Case + 2 chaves) e sem chave, e unidades repetidas para o agrupado', async () => {
+    const { stock } = await seeded();
+    const count = (name) => stock.filter((i) => i.name === name).length;
+    expect(count('Fracture Case')).toBe(3);
+    expect(count('Fracture Case Key')).toBe(2);
+    expect(count('Dreams & Nightmares Case')).toBe(2);
+    expect(count('Kilowatt Case')).toBe(3);
+    expect(stock.filter((i) => i.name === 'Sticker | Crown (Foil)')).toHaveLength(3);
+    // As chaves são itens OUTRO de nome livre (sem catálogo); nenhuma caixa sem chave tem uma "... Key" correspondente.
+    expect(stock.filter((i) => i.name.endsWith(' Key')).every((i) => i.category === 'OUTRO' && i.isLegacy === false)).toBe(true);
+    expect(stock.some((i) => i.name === 'Dreams & Nightmares Case Key')).toBe(false);
+  });
+
+  test('vendas retidas e liberadas, em USD, BRL, EUR e JPY', async () => {
+    const { sold } = await seeded();
+    expect(sold).toHaveLength(9);
+    const held = sold.filter((i) => i.saleRelease && i.saleRelease.isHeld);
+    const released = sold.filter((i) => i.saleRelease && !i.saleRelease.isHeld);
+    expect(held.length).toBeGreaterThanOrEqual(3); // AWP (CSFloat, 1 dia), AK (5 dias), + as extras de 1 e 3 dias
+    expect(released.length).toBeGreaterThanOrEqual(5);
+    expect(new Set(sold.map((i) => i.saleCurrency))).toEqual(new Set(['USD', 'BRL', 'EUR', 'JPY']));
+    for (const i of sold.filter((x) => x.saleCurrency === 'JPY')) expect(i.salePriceCents % 100).toBe(0);
+  });
+
+  test('aportes, saques, conferência com ajuste (Steam) e conferência sem diferença (CSFloat)', async () => {
+    await seeded();
+    const Deposit = require('../../src/models/Deposit');
+    const Withdrawal = require('../../src/models/Withdrawal');
+    const StoreBalance = require('../../src/models/StoreBalance');
+    const Store = require('../../src/models/Store');
+    expect(Deposit.findAll()).toHaveLength(4);
+    expect(Withdrawal.findAll()).toHaveLength(2);
+    const id = Object.fromEntries(Store.findAll().map((s) => [s.name, s.id]));
+    const checks = StoreBalance.findAllEntries();
+    const steam = checks.find((c) => c.storeId === id.Steam);
+    expect(steam.adjustmentCents).not.toBeNull();
+    expect(steam.adjustmentCents).not.toBe(0);
+    expect(steam.note).toBeTruthy();
+    const csfloat = checks.find((c) => c.storeId === id.CSFloat);
+    expect(csfloat.adjustmentCents).toBeNull();
+    expect(csfloat.balanceCents).toBe(csfloat.computedCents);
+  });
+
+  test('importação do CSFloat com 3 pendências para conferir', async () => {
+    const { app } = await seeded();
+    const ImportBatchEntry = require('../../src/models/ImportBatchEntry');
+    expect(ImportBatchEntry.countOpen()).toBe(3);
+    const res = await request(app).get('/api/imports/entries?open=true');
+    expect(res.status).toBe(200);
+    const list = res.body.data.entries || res.body.data.items || res.body.data;
+    expect(list.map((e) => e.outcome).sort()).toEqual(['FAILED', 'POSSIBLE_DUPLICATE', 'REVERTED']);
+  });
+
+  test('o saldo calculado das lojas não fica negativo no exemplo', async () => {
+    const { app } = await seeded();
+    const res = await request(app).get('/api/store-balances/current');
+    expect(res.status).toBe(200);
+    const stores = res.body.data.stores;
+    expect(stores.length).toBeGreaterThanOrEqual(4);
+    for (const s of stores) expect(s.negative).toBe(false);
+  });
+
+  test('os dados de exemplo não trazem e-mails, chaves nem caminhos pessoais', () => {
+    const text = JSON.stringify([data.EXTRA_STORES, data.EXTRA_STOCK_ITEMS, data.EXTRA_SOLD_ITEMS, data.EXTRA_DEPOSITS, data.EXTRA_WITHDRAWALS, data.EXTRA_BALANCE_CHECKS, data.EXTRA_IMPORT]);
+    expect(text).not.toMatch(/@|https?:\/\/|AppData|Users\\/i);
   });
 });

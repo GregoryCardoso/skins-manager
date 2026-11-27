@@ -32,7 +32,10 @@ export function makeProfit(overrides: Partial<ProfitSummary> = {}): ProfitSummar
     balancesByStore: [makeBalance()],
     counts: { deposits: 2, legacyDeposits: 0, withdrawals: 1, legacyWithdrawals: 0, withdrawalsWithoutFee: 0, stockItems: 6, pendingSales: 1 },
     warnings: [],
-    fx: { usdBrlRate: 5, source: 'AWESOMEAPI', updatedAt: '2026-11-27T10:00:00.000Z', quotedAt: '2026-11-27T09:00:00.000Z', displayCurrency: 'BRL' },
+    fx: {
+      usdBrlRate: 5, source: 'AWESOMEAPI', updatedAt: '2026-11-27T10:00:00.000Z', quotedAt: '2026-11-27T09:00:00.000Z', displayCurrency: 'BRL',
+      display: { currency: 'BRL', rate: 5, source: 'AWESOMEAPI', quotedAt: '2026-11-27T09:00:00.000Z', updatedAt: '2026-11-27T10:00:00.000Z' },
+    },
     computedAt: '2026-11-27T10:00:00.000Z',
     ...overrides,
   } as ProfitSummary;

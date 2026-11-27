@@ -4,7 +4,7 @@ import { useT } from '@/i18n/I18nProvider';
 import { itemDisplayName } from '@/lib/itemName';
 import { groupRowActions, type DisabledReason, type ItemActionId } from '@/lib/itemRowActions';
 import type { ItemGroup, SaleState } from '@/types/api';
-import Button from '../ui/Button';
+import ReasonButton from './ReasonButton';
 import Menu, { type MenuEntry } from '../ui/Menu';
 import styles from './inventory.module.css';
 
@@ -57,16 +57,14 @@ export default function GroupRowActions({ group, saleState, expanded, handlers }
   return (
     <div className={styles.actions}>
       {primary && (
-        <Button
-          size="sm"
+        <ReasonButton
+          disabled={Boolean(primary.disabled)}
+          reason={reasonText(primary.disabledReason)}
           variant={primary.id === 'sell' ? 'primary' : 'secondary'}
-          aria-disabled={primary.disabled ? true : undefined}
-          onClick={() => {
-            if (!primary.disabled) run(primary.id);
-          }}
+          onClick={() => run(primary.id)}
         >
           {labelOf(primary.id)}
-        </Button>
+        </ReasonButton>
       )}
       <Menu label={t('inventory.actions.moreFor', { name })} items={entries} />
     </div>

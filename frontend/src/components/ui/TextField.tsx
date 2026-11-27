@@ -88,7 +88,8 @@ export default function TextField({
             autoFocus={autoFocus}
             maxLength={maxLength}
             max={max}
-            autoComplete={autoComplete}
+            // Nenhum campo do app é de login: sem isto o navegador oferece entradas antigas (nomes de itens, valores) por cima do formulário.
+            autoComplete={autoComplete ?? 'off'}
             autoCorrect={autoCorrect}
             autoCapitalize={autoCapitalize}
             spellCheck={spellCheck}

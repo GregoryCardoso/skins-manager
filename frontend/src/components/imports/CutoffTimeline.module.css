@@ -1,7 +1,7 @@
 .root { margin: 0; container-type: inline-size; display: flex; flex-direction: column; gap: var(--space-2); }
 .track { position: relative; height: 0.75rem; border-radius: var(--radius-pill); background: var(--surface-2); overflow: hidden; }
 /* Lado "antes" (da esquerda até o marcador) e lado "depois" (do marcador até a direita). */
-.before { position: absolute; inset-block: 0; left: 0; width: calc(var(--at) * 1%); background: var(--surface-alt); }
+.before { position: absolute; inset-block: 0; left: 0; width: calc(var(--at) * 1%); background: var(--surface-2); }
 .after { position: absolute; inset-block: 0; right: 0; left: calc(var(--at) * 1%); background: var(--brand-soft); }
 .segment { position: absolute; inset-block: 0; left: calc(var(--at) * 1%); width: calc(var(--size) * 1%); opacity: 0.85; }
 .segment[data-direction='EARLIER'] { background: var(--profit-soft); border-inline: 2px solid var(--profit); }

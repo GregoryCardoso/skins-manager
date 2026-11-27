@@ -1,4 +1,4 @@
 .image {
   display: block; object-fit: contain; border-radius: 6px;
-  background: var(--surface-alt); border: 1px solid var(--border);
+  background: var(--surface-2); border: 1px solid var(--line);
 }

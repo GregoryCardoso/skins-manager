@@ -10,8 +10,7 @@ const get = (dict: Json, key: string): Json | string | undefined => key.split('.
 
 const KEYS = [
   'inventory.density.label', 'inventory.density.compact', 'inventory.density.comfortable',
-  'inventory.help.minPrice', 'inventory.help.convertedCost', 'inventory.help.marketValue', 'inventory.help.unrealized',
-  'inventory.warnings.goToStores', 'inventory.warnings.goToSettings',
+  'inventory.help.minPrice', 'inventory.help.convertedCost', 'inventory.warnings.goToStores', 'inventory.warnings.goToSettings',
   'inventory.actions.viewUnits', 'inventory.actions.moreFor', 'inventory.actions.noSellableUnit',
   'inventory.columns.turnover', 'inventory.emptyTitle', 'inventory.emptyFilteredTitle',
 ];

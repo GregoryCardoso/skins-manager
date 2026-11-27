@@ -1,6 +1,7 @@
 .groups { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; }
 .group { display: flex; flex-direction: column; gap: var(--space-2); }
 .groupTitle { margin: 0; display: flex; align-items: center; gap: var(--space-2); font-size: var(--fs-md); font-weight: var(--fw-bold); }
+.groupHeading { margin: 0; display: flex; align-items: center; gap: var(--space-2); font-size: inherit; font-weight: inherit; }
 .list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
 .tip {
   margin: 0; display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border-radius: var(--radius-md);
@@ -20,7 +21,7 @@
 .name { font-weight: var(--fw-bold); overflow-wrap: anywhere; }
 .details { font-size: var(--fs-sm); color: var(--muted); }
 .reason { font-size: var(--fs-sm); }
-.warn { color: var(--warning); }
+.warn { color: var(--stuck); }
 .links { display: flex; gap: var(--space-3); flex-wrap: wrap; font-size: var(--fs-sm); }
 .disclosure { font-size: var(--fs-sm); }
 .choices { display: flex; flex-direction: column; gap: var(--space-3); }

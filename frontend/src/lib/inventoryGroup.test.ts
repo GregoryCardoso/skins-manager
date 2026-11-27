@@ -93,7 +93,6 @@ describe('textos do holding (D282)', () => {
     expect(ptBR.inventory.tabs.offSaleHint).toBe('Itens guardados esperando valorização.');
     expect(en.inventory.actions.offSale).toBe('Move to holding');
     expect(en.inventory.tabs.offSale).toBe('Holding ({count})');
-    expect(ptBR.inventory.group.offSale).toBe('{count} no holding');
   });
 
   test('a página e o provider usam a visão agrupada e o cache', () => {

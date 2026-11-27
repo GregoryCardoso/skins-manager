@@ -731,6 +731,8 @@ export interface Store {
   currency: Currency;
   isActive: boolean;
   isPrimary: boolean;
+  // "Vendo nesta loja" (v028): desligado, a loja não entra no preço mínimo do item (compras e vendas registradas seguem iguais).
+  sellsHere: boolean;
   saleFeeType: SaleFeeType | null;
   saleFeeRate: number | null;
   saleFeeRounding: SaleFeeRounding;
@@ -764,6 +766,7 @@ export interface StoreCreateBody {
   saleHoldDays: number;
   isActive: boolean;
   isPrimary: boolean;
+  sellsHere: boolean;
 }
 
 export type StorePatchBody = Partial<StoreCreateBody>;
@@ -1170,7 +1173,15 @@ export interface ProfitSummary {
     pendingSales: number;
   };
   warnings: ProfitWarning[];
-  fx: { usdBrlRate: number | null; source: FxRateSource | null; updatedAt: string | null; quotedAt: string | null; displayCurrency: string };
+  fx: {
+    usdBrlRate: number | null;
+    source: FxRateSource | null;
+    updatedAt: string | null;
+    quotedAt: string | null;
+    displayCurrency: string;
+    // Cotação da moeda de conversão (aditivo, 12.12). Opcional para respostas antigas; em USD vem com rate nulo.
+    display?: { currency: string; rate: number | null; source: FxRateSource | null; quotedAt: string | null; updatedAt: string | null };
+  };
   computedAt: string;
 }
 

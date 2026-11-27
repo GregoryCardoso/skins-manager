@@ -20,7 +20,7 @@
 .short { display: none; min-width: 0; }
 .strong { color: var(--text); font-weight: var(--fw-bold); }
 .name { overflow-wrap: anywhere; }
-.isStuck .strong { color: var(--stuck); }
+.isStuck .strong { color: color-mix(in srgb, var(--stuck) 75%, var(--text)); }
 
 /* Trade lock: o trilho vira as listras de lavanda e não há pino. */
 .isLock .track { background: var(--pattern-lock); }

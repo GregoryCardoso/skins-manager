@@ -15,9 +15,6 @@
     "save": "Save",
     "cancel": "Cancel",
     "close": "Close",
-    "confirm": "Confirm",
-    "edit": "Edit",
-    "delete": "Delete",
     "saving": "Saving...",
     "optional": "(optional)",
     "moreDetails": "More details",
@@ -376,22 +373,17 @@
     "group": {
       "expand": "Show units of {name}",
       "collapse": "Hide units of {name}",
-      "forSale": "{count} for sale",
       "tradeLocked": "{count} trade locked (unlocks on {date})",
-      "offSale": "{count} in holding",
       "stagnant": {
         "one": "{count} stuck",
         "other": "{count} stuck"
       },
-      "convertedCost": "Includes purchases in other currencies, converted at the rate of the purchase day",
       "quantitySplit": "{forSale} for sale · {holding} in holding",
       "withComponents": {
         "one": "{count} with sticker/charm",
         "other": "{count} with sticker/charm"
-      },
-      "withComponentsHint": "Units in the group with recorded stickers, charm, Sticker Slab or patches"
+      }
     },
-    "refresh": "Refresh",
     "empty": "No items in the inventory.",
     "emptyFiltered": "No items match these filters.",
     "clearFilters": "Clear filters",
@@ -401,19 +393,16 @@
       "quantity": "Qty.",
       "avgCost": "Average cost",
       "totalCost": "Total cost",
-      "situation": "Status",
       "item": "Item",
       "store": "Purchase store",
       "cost": "Cost",
       "days": "Days",
-      "tradeLock": "Trade lock",
       "minPrice": "Break-even price",
       "actions": "Actions",
       "marketValue": "Market value ≈",
       "unrealized": "Unrealized profit/loss ≈",
       "turnover": "Turnover"
     },
-    "primaryStore": "Primary store",
     "otherStores": "Other stores",
     "noPrice": "No active stores",
     "ganhei": "Received",
@@ -422,7 +411,6 @@
     "sold": "Sold",
     "turnaround": "Sold {days} after the trade lock ended",
     "inspect": "Inspect",
-    "inspectInvalid": "Invalid inspect link",
     "actions": {
       "newItem": "New item",
       "edit": "Edit",
@@ -434,8 +422,6 @@
       "offSale": "Move to holding",
       "forSale": "Put back on sale",
       "apply": "Apply from stock",
-      "applyNoCandidates": "There is no sticker, charm or patch in stock to apply.",
-      "applyFull": "This item has no room left for stickers, a charm or patches.",
       "openCase": "Open case",
       "openCapsule": "Open capsule",
       "openPackage": "Open package",
@@ -450,8 +436,6 @@
       "components": "Components"
     },
     "itemGone": "This item no longer exists. It may have been deleted in another tab. The list was refreshed.",
-    "daysForSale": "for sale for {days}",
-    "daysInInventory": "in the inventory for {days}",
     "inTradeLock": "In trade lock · {time}",
     "daysHeld": "{days} since purchase",
     "tabs": {
@@ -461,7 +445,6 @@
     },
     "offSaleConfirmTitle": "Move to holding?",
     "offSaleConfirmMessage": "The item leaves the \"For sale\" list and goes to holding. When you put it back on sale, the day count starts again.",
-    "offSaleSince": "In holding since {date}",
     "offSaleEmpty": "No items in holding.",
     "offSaleDone": "{name} moved to holding.",
     "forSaleDone": "{name} put back on sale.",
@@ -547,9 +530,9 @@
     "help": {
       "minPrice": "Break-even price: the lowest price at which the net amount covers the cost, using only the store's sale fee.",
       "convertedCost": "Cost converted at the rate of the purchase day.",
-      "marketValue": "Market value: a CSFloat estimate. It is not money in your balance until you sell.",
-      "unrealized": "Unrealized profit or loss: the estimate minus the sale fee and the cost. It only becomes real when you sell.",
-      "priceRange": "Range of the break-even prices of the units shown. Each unit has its own cost."
+      "minPriceNoFee": "The store {store} has no sale fee set, so the break-even price can't be calculated.",
+      "minPriceBased": "This value is based on the sale fee set for {store} in the Stores tab.",
+      "minPriceRange": "Range of the break-even prices of the units shown (each unit has its own cost), based on the sale fees set for the stores in the Stores tab."
     },
     "warnings": {
       "goToStores": "Go to Stores",
@@ -579,15 +562,10 @@
     "category": "Category",
     "categoryAll": "All",
     "stagnantOnly": "Stuck only (for sale for more than {days})",
-    "order": "Sort by age",
-    "orderDesc": "Oldest first",
-    "orderAsc": "Newest first"
+    "order": "Sort by age"
   },
   "tradeLock": {
-    "locked": "Trade lock",
-    "released": "Released",
     "remaining": "{time} left",
-    "until": "Unlocks on {date}",
     "units": {
       "d": "d",
       "h": "h",
@@ -667,8 +645,7 @@
       "AWESOMEAPI": "Commercial (AwesomeAPI)"
     },
     "ptaxOf": "PTAX from {date}",
-    "editedAt": "edited on {date}",
-    "tooltip": "Source: {source}"
+    "editedAt": "edited on {date}"
   },
   "confirm": {
     "deleteTitle": "Delete item",
@@ -691,7 +668,6 @@
     "catalogRefresh": "Update catalog",
     "catalogRefreshing": "Updating the catalog (may take up to 2 minutes)...",
     "catalogRefreshed": "Catalog updated on {date}",
-    "catalogShowing": "{shown} of {total}",
     "catalogSearching": "Searching...",
     "changeItem": "Change item",
     "freeName": "Item not in the catalog",
@@ -727,14 +703,12 @@
     "soldNote": "This item was sold. Sale data cannot be edited here. To change it, undo the sale.",
     "created": "Item created.",
     "saved": "Item saved.",
-    "noChanges": "No changes to save.",
     "invalidNumber": "Invalid number. Use digits only.",
     "invalidMoney": "Invalid amount. Use a format like {example}.",
     "invalidMoneyWhole": "Invalid amount. {currency} has no decimal places: use a whole number, like {example}.",
     "invalidDate": "Invalid date.",
     "chooseItem": "Pick the item from the catalog or check \"Item not in the catalog\".",
     "components": {
-      "title": "Stickers and charm",
       "costNote": "This is only a record of what the weapon has. It does not change cost, balance or turnover.",
       "stickers": "Applied stickers ({count}/{max})",
       "noStickers": "No stickers recorded.",
@@ -765,7 +739,6 @@
       "slotShort": "position",
       "wearShort": "wear",
       "patternShort": "pattern",
-      "patchesTitle": "Patches",
       "patches": "Applied patches ({count}/{max})",
       "noPatches": "No patches registered.",
       "addPatch": "Add patch",
@@ -1034,7 +1007,6 @@
     "fxTitle": "Profit calculated with the recorded rates. Sale rate: {sale}. Purchase rate: {purchase}.",
     "saleRateNote": "sale rate {rate}",
     "columns": {
-      "image": "Image",
       "item": "Item",
       "purchaseStore": "Purchase store",
       "saleStore": "Sale store",
@@ -1046,7 +1018,6 @@
       "days": "Time to sell",
       "actions": "Actions"
     },
-    "daysAfterRelease": "{days} after the trade lock ended",
     "daysHeld": "{days} since purchase",
     "balanceReleasesAt": "balance released on {date}",
     "turnover": {
@@ -1154,7 +1125,6 @@
     "steamBadge": "Your Steam",
     "steamSet": "Use as my Steam store",
     "steamClear": "Stop using as my Steam store",
-    "steamHint": "Your Steam store is where the app records the price paid at the terminal.",
     "steamSaved": "\"{name}\" is now your Steam store.",
     "steamCleared": "No Steam store chosen.",
     "card": {
@@ -1162,7 +1132,8 @@
         "DEDUCTED": "{rate}% deducted from the price",
         "ADDED": "{rate}% added to the price"
       },
-      "moreActionsFor": "More actions for {name}"
+      "moreActionsFor": "More actions for {name}",
+      "buyOnlyBadge": "Buy only"
     },
     "steamTip": {
       "title": "Choose your Steam store",
@@ -1172,22 +1143,15 @@
   },
   "storesTable": {
     "columns": {
-      "name": "Store",
-      "currency": "Currency",
-      "status": "Status",
       "saleFee": "Sale fee",
       "rounding": "Rounding",
-      "minFixed": "Minimum and fixed fee",
       "withdrawal": "Allows withdrawal",
-      "actions": "Actions",
       "saleHold": "Balance hold"
     },
     "primary": "Primary",
     "active": "Active",
     "inactive": "Inactive",
     "feesNotConfigured": "no sale fee set",
-    "feeDeducted": "{rate}% deducted",
-    "feeAdded": "{rate}% added",
     "minFee": "minimum {value}",
     "fixedFee": "fixed {value}",
     "withdrawalNo": "No",
@@ -1268,7 +1232,10 @@
       "notConfigured": "No sale fee set: the break-even price for this store will not be available.",
       "incomplete": "Choose the fee type and enter the rate to see an example.",
       "error": "Could not calculate the example ({reason})."
-    }
+    },
+    "sellsHere": "Selling on this store",
+    "sellsHereHint": "When off, this store does not appear in the item's minimum price in the inventory, but it stays available for purchases and registered sales.",
+    "sellsHereNoFee": "Set the sale fee below to see this store's minimum price in the inventory."
   },
   "settings": {
     "title": "Settings",
@@ -1278,7 +1245,6 @@
       "noneNeeded": "No exchange rate is needed right now, because everything is in US dollars. If you choose another conversion currency or add a store in another currency, its rate appears here.",
       "displayBadge": "Conversion currency",
       "staleHint": "This rate was last updated {age} ago. Update it to get a recent one.",
-      "current": "Current rate",
       "notSet": "Rate not set",
       "value": "US$ 1 = {rate}",
       "manualLabel": "Manual rate",
@@ -1337,9 +1303,6 @@
       "exporting": "Creating the backup...",
       "exported": "Backup saved as {file}.",
       "import": "Import backup",
-      "importing": "Importing...",
-      "chooseFile": "Choose backup file",
-      "selectedFile": "Chosen file: {file}",
       "confirmTitle": "Import backup?",
       "confirmMessage": "This replaces ALL your current data with the data in \"{file}\". First, the app saves a copy of your current data in the backups folder.",
       "confirmButton": "Replace my data",
@@ -1417,7 +1380,6 @@
         "save": "Save key",
         "savedKey": "Saved key: {masked}",
         "noKey": "No key saved.",
-        "keyRequired": "Paste the API key to save it.",
         "keySaved": "Key saved. Use \"Test connection\" to check it.",
         "keyRemoved": "Key removed.",
         "replaceKey": "Replace key",
@@ -1445,7 +1407,6 @@
         "noStore": "The CSFloat store was not found. In Stores, create a store in US$ named \"CSFloat\". The app links it by itself.",
         "importNow": "Import now",
         "fullScan": "Full scan",
-        "fullScanHint": "Reads the whole CSFloat history again. It takes longer. Use it if you think something was missed.",
         "lastImport": "Last import: {date}",
         "lastImportFailed": "The last import failed: {reason}",
         "neverImported": "Not imported yet.",
@@ -1527,19 +1488,12 @@
   "profit": {
     "title": "Real profit",
     "subtitle": "Track what you put in, what you withdrew, each store's balance and your real profit.",
-    "pendingIncluded": "includes {amount} pending (first release on {date})",
-    "pendingIncludedNoDate": "includes {amount} pending",
     "estimatedNote": "Values with ≈ are estimated using the {fx} rate.",
     "estimatedNoFx": "Values with ≈ are estimated using the exchange rate, which is not set yet. Enter the rate in Settings.",
     "emptyHint": "Record your deposits to see the real profit.",
     "summary": {
-      "title": "Summary",
       "loadError": "Could not load the summary: {reason}",
-      "realProfit": "Real profit",
-      "realProfitHint": "Net withdrawals, plus store balances (available and pending), plus stock at cost, minus deposits. All in US dollars (US$).",
-      "deposited": "Total deposited",
       "withdrawn": "Total withdrawn",
-      "platformBalance": "Store balances",
       "stock": "Stock (at cost)",
       "stockForSale": "Stock for sale (cost)",
       "stockOffSale": "Stock in holding (cost)",
@@ -1634,7 +1588,6 @@
       "actions": "Actions",
       "paid": "Amount paid"
     },
-    "noStore": "—",
     "inactiveStore": "{name} (inactive)",
     "actions": {
       "edit": "Edit",
@@ -1685,7 +1638,6 @@
     "updated": "Withdrawal updated.",
     "deleted": "Withdrawal of {value} deleted.",
     "legacyNoStore": "No store (old record)",
-    "feeNotInformed": "—",
     "inactiveStore": "{name} (inactive)",
     "noWithdrawalStores": "No active store allows withdrawals. To record a withdrawal, turn on \"Allows withdrawal\" on a store.",
     "goToStores": "Go to Stores",
@@ -1742,10 +1694,7 @@
     "empty": "No stores registered.",
     "inactive": "inactive",
     "nonWithdrawable": "not withdrawable",
-    "nonWithdrawableTitle": "This store does not allow withdrawals. The balance stays in it.",
     "available": "available",
-    "pending": "pending (releases on {date})",
-    "computed": "Calculated",
     "difference": "Difference",
     "lastCheckDays": {
       "one": "Last checked {count} day ago",
@@ -1754,8 +1703,6 @@
     "lastCheckToday": "Last checked today",
     "neverChecked": "Balance never checked",
     "check": "Check balance",
-    "details": "Details",
-    "hideDetails": "Hide details",
     "breakdown": {
       "title": "How the available balance is calculated",
       "deposits": "Deposits",
@@ -1776,7 +1723,6 @@
     "checkPreviewLoading": "Calculating...",
     "checkPreviewMatch": "Matches the calculated balance.",
     "adjustAndSave": "Record check and adjustment",
-    "saveCheckOnly": "Record the check only",
     "saveCheck": "Record check",
     "adjustmentNote": "Adjustment note",
     "adjustmentNoteHint": "Required to record the adjustment (for example: fee not recorded).",
@@ -1792,7 +1738,6 @@
     },
     "form": {
       "title": "Check balance: {store}",
-      "intro": "Enter the real balance shown on the store's website. The app shows the calculated balance and the difference. You choose whether to record an adjustment.",
       "amount": "Real balance ({currency})",
       "date": "Check date",
       "amountRequired": "Enter the balance (use 0 if it is empty).",
@@ -1852,14 +1797,11 @@
     "running": "Importing from CSFloat…",
     "errorTitle": "Could not import",
     "badge": "CSFloat",
-    "badgeHint": "Entry imported from CSFloat",
     "seeInInventory": "See in inventory",
     "seeInSales": "See in sales",
     "seeCandidate": "See entry #{id}",
     "unknownItem": "Unnamed item",
     "disabled": {
-      "noKey": "Save the CSFloat key in Settings to import.",
-      "noStore": "In Stores, create a store in US$ named \"CSFloat\".",
       "running": "An import is already running."
     },
     "cutoff": {
@@ -1955,7 +1897,6 @@
     },
     "componentWarningsTitle": "Not registered",
     "componentWarningsHint": "You can add them by editing the item.",
-    "applyFromStockHint": "There is an identical unit in stock. If it was the one on the weapon, apply it with the right date.",
     "componentUnnamed": "unnamed component",
     "componentWarnings": {
       "COMPONENT_CATALOG_NOT_FOUND": "{name} (not found in the catalog)",
@@ -2006,7 +1947,6 @@
     },
     "page": {
       "title": "Imports",
-      "open": "To review",
       "noOpen": "Nothing to review.",
       "batches": "Import history",
       "noBatches": "No imports yet.",
@@ -2017,7 +1957,6 @@
       "fullScan": "Full scan",
       "loadMore": "Load more",
       "showDetails": "See details",
-      "hideDetails": "Hide details",
       "noEntries": "This import has no items to show.",
       "pendingCount": {
         "one": "{count} to review",
@@ -2266,7 +2205,6 @@
         "one": "Up to {count} withdrawal already seen in the statement ({value}).",
         "other": "Up to {count} withdrawals already seen in the statement ({value})."
       },
-      "mayHaveUnseen": "Setting it reads the whole statement again: deposits and withdrawals the app has not read yet also come in.",
       "openToClose": {
         "one": "{count} deposit or withdrawal from before the new date, not imported yet, stops being imported. Those already imported stay.",
         "other": "{count} deposits or withdrawals from before the new date, not imported yet, stop being imported. Those already imported stay."
@@ -2316,7 +2254,6 @@
     "checking": "Checking…",
     "explain": "Explain difference",
     "explaining": "Reading the statement…",
-    "register": "Record a balance check with these values",
     "matches": "The balance matches CSFloat.",
     "differs": "Difference from CSFloat: available {available}, pending {pending}.",
     "csfloat": "CSFloat: {available} available · {pending} pending",
@@ -2522,6 +2459,7 @@
       "collapseRow": "Hide units of {name}",
       "selectRow": "Select {name}",
       "selectAll": "Select all rows",
+      "expandColumn": "Expand details",
       "scrollRegion": "{caption}, scrollable"
     }
   },

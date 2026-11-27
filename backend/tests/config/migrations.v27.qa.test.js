@@ -37,8 +37,8 @@ describe('migração v27 com dados reais', () => {
 
     const db = openDatabase(dbPath, { now: new Date('2026-11-27T12:00:00.000Z') });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(27);
-      for (const table of TABLES) expect(db.prepare(`SELECT * FROM ${table} ORDER BY id`).all()).toEqual(snapshot[table]);
+      expect(db.pragma('user_version', { simple: true })).toBe(28);
+      for (const table of TABLES) expect(db.prepare(`SELECT * FROM ${table} ORDER BY id`).all().map(({ sells_here: _sh, ...r }) => r)).toEqual(snapshot[table]);
       const after = db.prepare('SELECT * FROM settings').get();
       expect(Object.keys(after).sort()).toEqual([...Object.keys(settingsBefore), 'inventory_density'].sort());
       expect(after).toMatchObject({ ...settingsBefore, inventory_density: 'COMPACT' });

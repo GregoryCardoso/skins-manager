@@ -15,6 +15,8 @@ const V17_COLUMNS = ['components_imported_at', 'consumed_at']; // + a v19 (D362)
 
 // A v25 (D369, 11.4) acrescenta `amount_brl_currency` em deposits e withdrawals.
 const V25_COLUMNS = ['amount_brl_currency'];
+// A v28 (D370) acrescenta `sells_here` só em stores.
+const V28_COLUMNS = ['sells_here'];
 
 const stripV6 = (row) => Object.fromEntries(
   Object.entries(row).filter(([key]) => !V6_COLUMNS.includes(key)
@@ -25,8 +27,12 @@ const stripV6 = (row) => Object.fromEntries(
     && !V10_COLUMNS.includes(key)
     && !V14_COLUMNS.includes(key)
     && !V17_COLUMNS.includes(key)
-    && !V25_COLUMNS.includes(key))
+    && !V25_COLUMNS.includes(key)
+    && !V28_COLUMNS.includes(key))
 );
 const stripV6Rows = (rows) => rows.map(stripV6);
 
-module.exports = { V6_COLUMNS, stripV6, stripV6Rows };
+// Só a v28 (D370): tira `sells_here` das linhas de stores migradas, para comparar com as de antes dela.
+const stripSellsHere = (rows) => rows.map(({ sells_here: _s, ...row }) => row);
+
+module.exports = { V6_COLUMNS, stripV6, stripV6Rows, stripSellsHere };

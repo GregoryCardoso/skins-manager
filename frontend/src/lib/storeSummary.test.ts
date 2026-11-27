@@ -7,7 +7,7 @@ import type { Store } from '@/types/api';
 import { saleFeeSentence, saleHoldSentence, storeActionReasons, withdrawalSentence } from './storeSummary';
 
 const store = (extra: Partial<Store> = {}): Store => ({
-  id: 1, name: 'CSFloat', currency: 'USD', isActive: true, isPrimary: false, saleFeeType: 'DEDUCTED', saleFeeRate: 0.02,
+  id: 1, name: 'CSFloat', currency: 'USD', isActive: true, isPrimary: false, sellsHere: true, saleFeeType: 'DEDUCTED', saleFeeRate: 0.02,
   saleFeeRounding: 'CEIL', saleMinFeeCents: null, saleFixedFeeCents: 0, allowsWithdrawal: false, withdrawalFeeRate: null,
   withdrawalFixedFeeCents: 0, saleHoldDays: 0, createdAt: '', updatedAt: '', saleFeesConfigured: true, inUse: false, ...extra,
 });

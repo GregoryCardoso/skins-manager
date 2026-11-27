@@ -4,12 +4,18 @@ import { describe, expect, test } from 'vitest';
 import { BREAKPOINTS, CONTAINER_BREAKPOINTS, HEIGHT_BREAKPOINTS } from './breakpoints';
 import { LIGHT_SELECTOR, readBlock } from './parseTokens';
 
-const UI_DIR = path.join(__dirname, '..', 'components', 'ui');
-// 12.4: os CSS do layout (menu, avisos, tela de indisponível) seguem as mesmas listas de larguras.
-const LAYOUT_DIR = path.join(__dirname, '..', 'components', 'layout');
+const SRC_DIR = path.join(__dirname, '..');
+
+// 12.11: todos os *.module.css (e o globals.css) do frontend seguem as mesmas listas de larguras e alturas.
+function walk(dir: string): string[] {
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const full = path.join(dir, entry.name);
+    return entry.isDirectory() ? walk(full) : [full];
+  });
+}
 
 function cssFiles(): string[] {
-  return [UI_DIR, LAYOUT_DIR].flatMap((dir) => fs.readdirSync(dir).filter((name) => name.endsWith('.module.css')).map((name) => path.join(dir, name)));
+  return walk(SRC_DIR).filter((file) => file.endsWith('.module.css') || path.basename(file) === 'globals.css');
 }
 
 interface Query {
@@ -52,12 +58,18 @@ describe('breakpoints', () => {
     expect(Object.keys(readBlock(css, LIGHT_SELECTOR)).some((key) => key.startsWith('bp-'))).toBe(false);
   });
 
+  test('a varredura enxerga os CSS de ui, layout, telas e componentes soltos', () => {
+    const names = cssFiles().map((file) => path.relative(SRC_DIR, file).split(path.sep).join('/'));
+    expect(names.length).toBeGreaterThan(60);
+    expect(names).toEqual(expect.arrayContaining(['components/ui/Dialog.module.css', 'components/layout/AppShell.module.css', 'app/globals.css', 'app/profit/page.module.css']));
+  });
+
   test('as faixas estão em ordem crescente', () => {
     const values = Object.values(BREAKPOINTS);
     expect([...values].sort((a, b) => a - b)).toEqual(values);
   });
 
-  test('todo @media/@container de components/ui usa só larguras e alturas das listas', () => {
+  test('todo @media/@container de todos os *.module.css usa só larguras e alturas das listas', () => {
     const problems: string[] = [];
     for (const file of cssFiles()) {
       for (const query of findQueries(fs.readFileSync(file, 'utf8'))) {

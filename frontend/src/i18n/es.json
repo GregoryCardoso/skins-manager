@@ -15,9 +15,6 @@
     "save": "Guardar",
     "cancel": "Cancelar",
     "close": "Cerrar",
-    "confirm": "Confirmar",
-    "edit": "Editar",
-    "delete": "Eliminar",
     "saving": "Guardando...",
     "optional": "(opcional)",
     "moreDetails": "Más detalles",
@@ -376,22 +373,17 @@
     "group": {
       "expand": "Mostrar las unidades de {name}",
       "collapse": "Ocultar las unidades de {name}",
-      "forSale": "{count} a la venta",
       "tradeLocked": "{count} en trade lock (se libera el {date})",
-      "offSale": "{count} en el holding",
       "stagnant": {
         "one": "{count} estancado",
         "other": "{count} estancados"
       },
-      "convertedCost": "Incluye compras en otras monedas, convertidas al tipo de cambio del día de la compra",
       "quantitySplit": "{forSale} a la venta · {holding} en el holding",
       "withComponents": {
         "one": "{count} con sticker/llavero",
         "other": "{count} con sticker/llavero"
-      },
-      "withComponentsHint": "Unidades del grupo con stickers, llavero, Sticker Slab o parches registrados"
+      }
     },
-    "refresh": "Actualizar",
     "empty": "No hay ítems en el inventario.",
     "emptyFiltered": "Ningún ítem coincide con estos filtros.",
     "clearFilters": "Borrar filtros",
@@ -401,19 +393,16 @@
       "quantity": "Cant.",
       "avgCost": "Costo promedio",
       "totalCost": "Costo total",
-      "situation": "Estado",
       "item": "Ítem",
       "store": "Tienda de la compra",
       "cost": "Costo",
       "days": "Días",
-      "tradeLock": "Trade lock",
       "minPrice": "Precio mínimo (sin pérdida)",
       "actions": "Acciones",
       "marketValue": "Valor de mercado ≈",
       "unrealized": "Ganancia/pérdida no realizada ≈",
       "turnover": "Rotación"
     },
-    "primaryStore": "Tienda principal",
     "otherStores": "Otras tiendas",
     "noPrice": "No hay tiendas activas",
     "ganhei": "Recibido",
@@ -422,7 +411,6 @@
     "sold": "Vendido",
     "turnaround": "Vendido {days} después de terminar el trade lock",
     "inspect": "Inspeccionar",
-    "inspectInvalid": "Enlace de inspección no válido",
     "actions": {
       "newItem": "Nuevo ítem",
       "edit": "Editar",
@@ -434,8 +422,6 @@
       "offSale": "Mover al holding",
       "forSale": "Volver a la venta",
       "apply": "Aplicar desde el stock",
-      "applyNoCandidates": "No hay ningún sticker, llavero ni parche en el stock para aplicar.",
-      "applyFull": "Este ítem no tiene más lugar para stickers, llavero ni parches.",
       "openCase": "Abrir caja",
       "openCapsule": "Abrir cápsula",
       "openPackage": "Abrir paquete",
@@ -450,8 +436,6 @@
       "components": "Componentes"
     },
     "itemGone": "Este ítem ya no existe. Puede que se haya eliminado en otra pestaña. La lista se actualizó.",
-    "daysForSale": "a la venta hace {days}",
-    "daysInInventory": "en el inventario hace {days}",
     "inTradeLock": "En trade lock · {time}",
     "daysHeld": "{days} desde la compra",
     "tabs": {
@@ -461,7 +445,6 @@
     },
     "offSaleConfirmTitle": "¿Mover al holding?",
     "offSaleConfirmMessage": "El ítem sale de la lista \"A la venta\" y pasa al holding. Cuando lo vuelvas a poner a la venta, el conteo de días empieza de nuevo.",
-    "offSaleSince": "En el holding desde el {date}",
     "offSaleEmpty": "No hay ítems en el holding.",
     "offSaleDone": "{name} se movió al holding.",
     "forSaleDone": "{name} volvió a la venta.",
@@ -547,9 +530,9 @@
     "help": {
       "minPrice": "Precio mínimo sin pérdida: el menor precio en el que el neto cubre el costo, solo con la comisión de venta de la tienda.",
       "convertedCost": "Costo convertido al tipo de cambio del día de la compra.",
-      "marketValue": "Valor de mercado: una estimación de CSFloat. No es dinero en tu saldo hasta que vendas.",
-      "unrealized": "Ganancia o pérdida no realizada: la estimación menos la comisión de venta y el costo. Solo se vuelve real al vender.",
-      "priceRange": "Rango de los precios mínimos de las unidades en pantalla. Cada unidad tiene su propio costo."
+      "minPriceNoFee": "La tienda {store} no tiene comisión de venta registrada, por eso no se puede calcular el precio mínimo.",
+      "minPriceBased": "Este valor se basa en la comisión de venta configurada para la tienda {store} en la pestaña Tiendas.",
+      "minPriceRange": "Rango de los precios mínimos de las unidades en pantalla (cada unidad tiene su propio costo), según las comisiones de venta configuradas para las tiendas en la pestaña Tiendas."
     },
     "warnings": {
       "goToStores": "Ir a Tiendas",
@@ -579,15 +562,10 @@
     "category": "Categoría",
     "categoryAll": "Todas",
     "stagnantOnly": "Solo estancados (a la venta hace más de {days})",
-    "order": "Ordenar por antigüedad",
-    "orderDesc": "Más antiguos primero",
-    "orderAsc": "Más nuevos primero"
+    "order": "Ordenar por antigüedad"
   },
   "tradeLock": {
-    "locked": "Trade lock",
-    "released": "Liberado",
     "remaining": "faltan {time}",
-    "until": "Se libera el {date}",
     "units": {
       "d": "d",
       "h": "h",
@@ -667,8 +645,7 @@
       "AWESOMEAPI": "Comercial (AwesomeAPI)"
     },
     "ptaxOf": "PTAX del {date}",
-    "editedAt": "editado el {date}",
-    "tooltip": "Fuente: {source}"
+    "editedAt": "editado el {date}"
   },
   "confirm": {
     "deleteTitle": "Eliminar ítem",
@@ -691,7 +668,6 @@
     "catalogRefresh": "Actualizar catálogo",
     "catalogRefreshing": "Actualizando el catálogo (puede tardar hasta 2 minutos)...",
     "catalogRefreshed": "Catálogo actualizado el {date}",
-    "catalogShowing": "{shown} de {total}",
     "catalogSearching": "Buscando...",
     "changeItem": "Cambiar ítem",
     "freeName": "Ítem que no está en el catálogo",
@@ -727,14 +703,12 @@
     "soldNote": "Este ítem se vendió. Los datos de la venta no se pueden editar aquí. Para cambiarlos, deshaz la venta.",
     "created": "Ítem creado.",
     "saved": "Ítem guardado.",
-    "noChanges": "No hay cambios que guardar.",
     "invalidNumber": "Número no válido. Usa solo dígitos.",
     "invalidMoney": "Monto no válido. Usa un formato como {example}.",
     "invalidMoneyWhole": "Monto no válido. {currency} no tiene decimales: usa un número entero, como {example}.",
     "invalidDate": "Fecha no válida.",
     "chooseItem": "Elige el ítem en el catálogo o marca \"Ítem que no está en el catálogo\".",
     "components": {
-      "title": "Stickers y llavero",
       "costNote": "Es solo un registro de lo que tiene el arma. No cambia el costo, el saldo ni la rotación.",
       "stickers": "Stickers aplicados ({count}/{max})",
       "noStickers": "No hay stickers registrados.",
@@ -765,7 +739,6 @@
       "slotShort": "posición",
       "wearShort": "desgaste",
       "patternShort": "pattern",
-      "patchesTitle": "Parches",
       "patches": "Parches aplicados ({count}/{max})",
       "noPatches": "No hay parches registrados.",
       "addPatch": "Agregar parche",
@@ -1034,7 +1007,6 @@
     "fxTitle": "Ganancia calculada con los tipos de cambio registrados. Tipo de cambio de la venta: {sale}. Tipo de cambio de la compra: {purchase}.",
     "saleRateNote": "tipo de cambio de la venta {rate}",
     "columns": {
-      "image": "Imagen",
       "item": "Ítem",
       "purchaseStore": "Tienda de la compra",
       "saleStore": "Tienda de la venta",
@@ -1046,7 +1018,6 @@
       "days": "Tiempo hasta vender",
       "actions": "Acciones"
     },
-    "daysAfterRelease": "{days} después de terminar el trade lock",
     "daysHeld": "{days} desde la compra",
     "balanceReleasesAt": "saldo liberado el {date}",
     "turnover": {
@@ -1154,7 +1125,6 @@
     "steamBadge": "Tu Steam",
     "steamSet": "Usar como mi tienda Steam",
     "steamClear": "Dejar de usar como mi tienda Steam",
-    "steamHint": "Tu tienda Steam es donde la app registra el precio pagado en la terminal.",
     "steamSaved": "\"{name}\" ahora es tu tienda Steam.",
     "steamCleared": "No hay ninguna tienda Steam elegida.",
     "card": {
@@ -1162,7 +1132,8 @@
         "DEDUCTED": "{rate}% descontado del precio",
         "ADDED": "{rate}% añadido al precio"
       },
-      "moreActionsFor": "Más acciones para {name}"
+      "moreActionsFor": "Más acciones para {name}",
+      "buyOnlyBadge": "Solo compra"
     },
     "steamTip": {
       "title": "Elige tu tienda Steam",
@@ -1172,22 +1143,15 @@
   },
   "storesTable": {
     "columns": {
-      "name": "Tienda",
-      "currency": "Moneda",
-      "status": "Estado",
       "saleFee": "Comisión de venta",
       "rounding": "Redondeo",
-      "minFixed": "Comisión mínima y fija",
       "withdrawal": "Permite retiro",
-      "actions": "Acciones",
       "saleHold": "Retención del saldo"
     },
     "primary": "Principal",
     "active": "Activa",
     "inactive": "Inactiva",
     "feesNotConfigured": "sin comisión de venta definida",
-    "feeDeducted": "{rate}% descontado",
-    "feeAdded": "{rate}% añadido",
     "minFee": "mínima {value}",
     "fixedFee": "fija {value}",
     "withdrawalNo": "No",
@@ -1268,7 +1232,10 @@
       "notConfigured": "Comisión de venta sin configurar: el precio mínimo de esta tienda no estará disponible.",
       "incomplete": "Elige el tipo de comisión e indica el porcentaje para ver un ejemplo.",
       "error": "No se pudo calcular el ejemplo ({reason})."
-    }
+    },
+    "sellsHere": "Vendo en esta tienda",
+    "sellsHereHint": "Si está desactivado, la tienda no aparece en el precio mínimo del artículo en el inventario, pero sigue disponible para compras y ventas registradas.",
+    "sellsHereNoFee": "Configura la comisión de venta abajo para ver el precio mínimo de esta tienda en el inventario."
   },
   "settings": {
     "title": "Configuración",
@@ -1278,7 +1245,6 @@
       "noneNeeded": "Ahora no hace falta ningún tipo de cambio, porque todo está en dólares estadounidenses. Si eliges otra moneda de conversión o añades una tienda en otra moneda, su tipo de cambio aparece aquí.",
       "displayBadge": "Moneda de conversión",
       "staleHint": "Este tipo de cambio se actualizó por última vez hace {age}. Actualízalo para obtener uno reciente.",
-      "current": "Tipo de cambio actual",
       "notSet": "Tipo de cambio sin definir",
       "value": "US$ 1 = {rate}",
       "manualLabel": "Tipo de cambio manual",
@@ -1337,9 +1303,6 @@
       "exporting": "Creando la copia de seguridad...",
       "exported": "Copia de seguridad guardada como {file}.",
       "import": "Importar copia de seguridad",
-      "importing": "Importando...",
-      "chooseFile": "Elegir archivo de copia de seguridad",
-      "selectedFile": "Archivo elegido: {file}",
       "confirmTitle": "¿Importar copia de seguridad?",
       "confirmMessage": "Esto reemplaza TODOS tus datos actuales con los de \"{file}\". Antes, la app guarda una copia de tus datos actuales en la carpeta de copias de seguridad.",
       "confirmButton": "Reemplazar mis datos",
@@ -1417,7 +1380,6 @@
         "save": "Guardar clave",
         "savedKey": "Clave guardada: {masked}",
         "noKey": "No hay ninguna clave guardada.",
-        "keyRequired": "Pega la clave de API para guardarla.",
         "keySaved": "Clave guardada. Usa \"Probar conexión\" para comprobarla.",
         "keyRemoved": "Clave eliminada.",
         "replaceKey": "Reemplazar clave",
@@ -1445,7 +1407,6 @@
         "noStore": "No se encontró la tienda CSFloat. En Tiendas, crea una tienda en US$ llamada \"CSFloat\". La app la vincula sola.",
         "importNow": "Importar ahora",
         "fullScan": "Escaneo completo",
-        "fullScanHint": "Vuelve a leer todo el historial de CSFloat. Tarda más. Úsalo si crees que se omitió algo.",
         "lastImport": "Última importación: {date}",
         "lastImportFailed": "La última importación falló: {reason}",
         "neverImported": "Aún sin importar.",
@@ -1527,19 +1488,12 @@
   "profit": {
     "title": "Ganancia real",
     "subtitle": "Sigue lo que aportaste, lo que retiraste, el saldo de cada tienda y tu ganancia real.",
-    "pendingIncluded": "incluye {amount} pendiente (primera liberación el {date})",
-    "pendingIncludedNoDate": "incluye {amount} pendiente",
     "estimatedNote": "Los valores con ≈ son estimados con el tipo de cambio {fx}.",
     "estimatedNoFx": "Los valores con ≈ son estimados con el tipo de cambio, que aún no está definido. Escribe el tipo de cambio en Configuración.",
     "emptyHint": "Registra tus aportes para ver la ganancia real.",
     "summary": {
-      "title": "Resumen",
       "loadError": "No se pudo cargar el resumen: {reason}",
-      "realProfit": "Ganancia real",
-      "realProfitHint": "Retiros netos, más los saldos de las tiendas (disponible y pendiente), más el stock al costo, menos los aportes. Todo en dólares estadounidenses (US$).",
-      "deposited": "Total aportado",
       "withdrawn": "Total retirado",
-      "platformBalance": "Saldos de las tiendas",
       "stock": "Stock (al costo)",
       "stockForSale": "Stock a la venta (costo)",
       "stockOffSale": "Stock en el holding (costo)",
@@ -1634,7 +1588,6 @@
       "actions": "Acciones",
       "paid": "Monto pagado"
     },
-    "noStore": "—",
     "inactiveStore": "{name} (inactiva)",
     "actions": {
       "edit": "Editar",
@@ -1685,7 +1638,6 @@
     "updated": "Retiro actualizado.",
     "deleted": "Retiro de {value} eliminado.",
     "legacyNoStore": "Sin tienda (registro antiguo)",
-    "feeNotInformed": "—",
     "inactiveStore": "{name} (inactiva)",
     "noWithdrawalStores": "Ninguna tienda activa permite retiros. Para registrar un retiro, activa \"Permite retiro\" en una tienda.",
     "goToStores": "Ir a Tiendas",
@@ -1742,10 +1694,7 @@
     "empty": "No hay tiendas registradas.",
     "inactive": "inactiva",
     "nonWithdrawable": "no retirable",
-    "nonWithdrawableTitle": "Esta tienda no permite retiros. El saldo se queda en ella.",
     "available": "disponible",
-    "pending": "pendiente (se libera el {date})",
-    "computed": "Calculado",
     "difference": "Diferencia",
     "lastCheckDays": {
       "one": "Última verificación hace {count} día",
@@ -1754,8 +1703,6 @@
     "lastCheckToday": "Última verificación hoy",
     "neverChecked": "Saldo nunca verificado",
     "check": "Verificar saldo",
-    "details": "Detalles",
-    "hideDetails": "Ocultar detalles",
     "breakdown": {
       "title": "Cómo se calcula el saldo disponible",
       "deposits": "Aportes",
@@ -1776,7 +1723,6 @@
     "checkPreviewLoading": "Calculando...",
     "checkPreviewMatch": "Coincide con el saldo calculado.",
     "adjustAndSave": "Registrar verificación y ajuste",
-    "saveCheckOnly": "Registrar solo la verificación",
     "saveCheck": "Registrar verificación",
     "adjustmentNote": "Nota del ajuste",
     "adjustmentNoteHint": "Obligatoria para registrar el ajuste (por ejemplo: comisión no registrada).",
@@ -1792,7 +1738,6 @@
     },
     "form": {
       "title": "Verificar saldo: {store}",
-      "intro": "Escribe el saldo real que muestra el sitio de la tienda. La app muestra el saldo calculado y la diferencia. Tú eliges si registrar un ajuste.",
       "amount": "Saldo real ({currency})",
       "date": "Fecha de la verificación",
       "amountRequired": "Escribe el saldo (usa 0 si está vacío).",
@@ -1852,14 +1797,11 @@
     "running": "Importando desde CSFloat…",
     "errorTitle": "No se pudo importar",
     "badge": "CSFloat",
-    "badgeHint": "Registro importado desde CSFloat",
     "seeInInventory": "Ver en el inventario",
     "seeInSales": "Ver en ventas",
     "seeCandidate": "Ver registro #{id}",
     "unknownItem": "Ítem sin nombre",
     "disabled": {
-      "noKey": "Guarda la clave de CSFloat en Configuración para importar.",
-      "noStore": "En Tiendas, crea una tienda en US$ llamada \"CSFloat\".",
       "running": "Ya hay una importación en curso."
     },
     "cutoff": {
@@ -1955,7 +1897,6 @@
     },
     "componentWarningsTitle": "Sin registrar",
     "componentWarningsHint": "Puedes añadirlos editando el ítem.",
-    "applyFromStockHint": "Hay una unidad idéntica en el stock. Si era la que estaba en el arma, aplícala con la fecha correcta.",
     "componentUnnamed": "componente sin nombre",
     "componentWarnings": {
       "COMPONENT_CATALOG_NOT_FOUND": "{name} (no se encontró en el catálogo)",
@@ -2006,7 +1947,6 @@
     },
     "page": {
       "title": "Importaciones",
-      "open": "Por revisar",
       "noOpen": "No hay nada por revisar.",
       "batches": "Historial de importaciones",
       "noBatches": "Aún no hay importaciones.",
@@ -2017,7 +1957,6 @@
       "fullScan": "Escaneo completo",
       "loadMore": "Cargar más",
       "showDetails": "Ver detalles",
-      "hideDetails": "Ocultar detalles",
       "noEntries": "Esta importación no tiene ítems para mostrar.",
       "pendingCount": {
         "one": "{count} por revisar",
@@ -2266,7 +2205,6 @@
         "one": "Hasta {count} retiro ya visto en el extracto ({value}).",
         "other": "Hasta {count} retiros ya vistos en el extracto ({value})."
       },
-      "mayHaveUnseen": "Al definirla se vuelve a leer todo el extracto: también entran los aportes y retiros que la app aún no ha leído.",
       "openToClose": {
         "one": "{count} aporte o retiro anterior a la fecha nueva, aún sin importar, deja de importarse. Los ya importados se quedan.",
         "other": "{count} aportes o retiros anteriores a la fecha nueva, aún sin importar, dejan de importarse. Los ya importados se quedan."
@@ -2316,7 +2254,6 @@
     "checking": "Comparando…",
     "explain": "Explicar la diferencia",
     "explaining": "Leyendo el extracto…",
-    "register": "Registrar una verificación de saldo con estos valores",
     "matches": "El saldo coincide con CSFloat.",
     "differs": "Diferencia con CSFloat: disponible {available}, pendiente {pending}.",
     "csfloat": "CSFloat: {available} disponible · {pending} pendiente",
@@ -2522,6 +2459,7 @@
       "collapseRow": "Ocultar unidades de {name}",
       "selectRow": "Seleccionar {name}",
       "selectAll": "Seleccionar todas las filas",
+      "expandColumn": "Expandir detalles",
       "scrollRegion": "{caption}, desplazable"
     }
   },

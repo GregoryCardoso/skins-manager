@@ -5,8 +5,7 @@ import { translate } from '@/i18n/translate';
 
 // Revisão final da Etapa 8: chaves novas do resumo (linhas "indisponível" e dica do lucro real).
 const keys = [
-  'profit.summary.pendingUnavailable', 'profit.summary.realProfitHint',
-  'profit.summary.unavailable', 'profit.summary.unavailableHint',
+  'profit.summary.pendingUnavailable', 'profit.summary.unavailable', 'profit.summary.unavailableHint',
 ];
 const holders = (s: string) => (s.match(/\{\w+\}/g) ?? []).sort();
 
@@ -24,13 +23,6 @@ describe('paridade das chaves da revisão final da Etapa 8', () => {
     expect(pt.trim()).not.toBe('');
     expect(enText.trim()).not.toBe('');
     expect(holders(enText)).toEqual(holders(pt));
-  });
-
-  test('realProfitHint cita o saldo calculado e o pendente nos dois idiomas (sem o liberado, D245)', () => {
-    expect(translate(ptBR, 'profit.summary.realProfitHint').toLowerCase()).toMatch(/pendente/);
-    expect(translate(ptBR, 'profit.summary.realProfitHint').toLowerCase()).toMatch(/saldo das lojas/);
-    expect(translate(en, 'profit.summary.realProfitHint').toLowerCase()).toMatch(/pending/);
-    expect(translate(en, 'profit.summary.realProfitHint').toLowerCase()).toMatch(/store balances/);
   });
 
   test('as linhas indisponível citam a cotação do dólar', () => {

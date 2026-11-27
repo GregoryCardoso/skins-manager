@@ -17,9 +17,9 @@ function flatten(node: unknown, prefix = ''): string[] {
 }
 
 const NEW_KEYS = [
-  'storeBalances.computed', 'storeBalances.difference', 'storeBalances.startHint', 'storeBalances.totalsTitle', 'storeBalances.totalPendingDate',
+  'storeBalances.difference', 'storeBalances.startHint', 'storeBalances.totalsTitle', 'storeBalances.totalPendingDate',
   'storeBalances.lastCheckToday', 'storeBalances.neverChecked', 'storeBalances.check', 'storeBalances.checkPreview',
-  'storeBalances.adjustAndSave', 'storeBalances.saveCheckOnly', 'storeBalances.adjustmentNote',
+  'storeBalances.adjustAndSave', 'storeBalances.adjustmentNote',
   'storeBalances.kind.CHECK', 'storeBalances.kind.LEGACY',
   'storeBalances.breakdown.deposits', 'storeBalances.breakdown.purchases',
   'storeBalances.breakdown.withdrawals', 'storeBalances.breakdown.salesReleased', 'storeBalances.breakdown.adjustments',

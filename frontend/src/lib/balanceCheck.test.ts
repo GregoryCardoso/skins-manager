@@ -24,7 +24,7 @@ test('a conferência é só leitura: nenhuma chamada de escrita no componente', 
 
 test('textos da 9.7 nos dois idiomas', () => {
   for (const lang of [ptBR, en]) {
-    for (const key of ['button', 'explain', 'register', 'matches', 'differs', 'inTransit', 'explainHint'] as const) {
+    for (const key of ['button', 'explain', 'matches', 'differs', 'inTransit', 'explainHint'] as const) {
       expect(lang.balanceCheck[key]).toBeTruthy();
     }
     for (const reason of ['BEFORE_CUTOFF', 'NOT_IMPORTED', 'NOT_READ', 'IN_TRANSIT', 'IGNORED', 'REMOVED_IN_APP', 'FINE', 'REFUND', 'UNKNOWN_TYPE'] as const) {

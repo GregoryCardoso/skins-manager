@@ -18,7 +18,7 @@ export default function NotFound() {
         title={t('pages.notFoundText')}
         action={
           // Link (e não botão dentro de link) com a aparência do Button primário.
-          <Link href="/" className={`${buttonStyles.button} ${buttonStyles.primary} ${buttonStyles.md} ${styles.link}`}>
+          <Link prefetch={false} href="/" className={`${buttonStyles.button} ${buttonStyles.primary} ${buttonStyles.md} ${styles.link}`}>
             {t('pages.backHome')}
           </Link>
         }

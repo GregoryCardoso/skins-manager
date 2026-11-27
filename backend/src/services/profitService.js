@@ -15,6 +15,7 @@ const Store = require('../models/Store');
 const Deposit = require('../models/Deposit');
 const Withdrawal = require('../models/Withdrawal');
 const StoreBalance = require('../models/StoreBalance');
+const FxRate = require('../models/FxRate');
 
 const addNullable = (a, b) => (a === null || b === null ? null : a + b);
 
@@ -195,6 +196,18 @@ function computeRealProfit(input = {}) {
   };
 }
 
+// Cotação, fonte e datas da moeda de conversão (a linha dela em `fx_rates`). USD é a base e não tem cotação.
+function displayRateInfo(currency) {
+  const row = currency && currency !== 'USD' ? FxRate.find(currency) : null;
+  return {
+    currency,
+    rate: row && isValidFxRate(row.rate) ? row.rate : null,
+    source: row ? row.source ?? null : null,
+    quotedAt: row ? row.quotedAt ?? null : null,
+    updatedAt: row ? row.updatedAt ?? null : null,
+  };
+}
+
 // Orquestração de GET /api/profit/summary (D205, D229): total acumulado, sem filtro de período.
 function getProfitSummary({ now = new Date() } = {}) {
   const settings = Setting.get();
@@ -231,6 +244,9 @@ function getProfitSummary({ now = new Date() } = {}) {
       updatedAt: settings.usdBrlRateUpdatedAt ?? null,
       quotedAt: settings.rateQuotedAt ?? null,
       displayCurrency: displayCurrencyOf(fxFromSettings(settings)),
+      // A cotação da MOEDA DE CONVERSÃO (aditivo, 12.12): a nota "Valores com ≈ são estimados pela cotação ..." usava os campos do BRL
+      // acima (compatibilidade da API antiga) mesmo com outra moeda escolhida. Em USD não há "≈", então rate/source/datas ficam nulos.
+      display: displayRateInfo(displayCurrencyOf(fxFromSettings(settings))),
     },
     computedAt: now.toISOString(),
   };

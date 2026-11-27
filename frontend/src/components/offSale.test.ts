@@ -13,7 +13,7 @@ const read = (rel: string) => readFileSync(path.join(__dirname, '..', rel), 'utf
 
 const KEYS = [
   'inventory.tabs.forSale', 'inventory.tabs.offSale', 'inventory.actions.offSale', 'inventory.actions.forSale',
-  'inventory.offSaleConfirmTitle', 'inventory.offSaleConfirmMessage', 'inventory.offSaleSince', 'inventory.offSaleEmpty',
+  'inventory.offSaleConfirmTitle', 'inventory.offSaleConfirmMessage', 'inventory.offSaleEmpty',
   'inventory.offSaleDone', 'inventory.forSaleDone', 'enums.agingBucket.FORA_DE_VENDA', 'enums.turnaroundBucket.SEM_GIRO',
   'history.soldOffSale.one', 'history.soldOffSale.other',
 ];
@@ -61,11 +61,7 @@ describe('confirmação e botões', () => {
     expect(dialogs).toContain("'item.offSale'");
   });
 
-  test('os botões só aparecem conforme o estado e não existem na página de vendas', () => {
-    // 12.5a: as ações por situação ficam em `lib/itemRowActions` (holding: voltar à venda; à venda: mover para o holding)
-    const actions = read('lib/itemRowActions.ts');
-    expect(actions).toMatch(/if \(holding\) return \{ primary: act\('forSale'\)/);
-    expect(actions).toMatch(/return \{ primary: sell, menu: \[\.\.\.common, act\('offSale'\)/);
+  test('a página de vendas não tem os botões do holding (as ações por situação são testadas em lib/itemRowActions.test.ts)', () => {
     expect(read('app/sales/page.tsx')).not.toMatch(/openOffSale|putForSale/);
   });
 

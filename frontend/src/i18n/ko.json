@@ -14,9 +14,6 @@
     "save": "저장",
     "cancel": "취소",
     "close": "닫기",
-    "confirm": "확인",
-    "edit": "수정",
-    "delete": "삭제",
     "saving": "저장하는 중...",
     "optional": "(선택)",
     "moreDetails": "자세히 보기",
@@ -371,20 +368,15 @@
     "group": {
       "expand": "{name}의 개체 보기",
       "collapse": "{name}의 개체 숨기기",
-      "forSale": "판매 중 {count}개",
       "tradeLocked": "trade lock {count}개 ({date}에 해제)",
-      "offSale": "holding {count}개",
       "stagnant": {
         "other": "정체 {count}개"
       },
-      "convertedCost": "다른 통화로 한 구매를 구매일의 환율로 환산해 포함했어요",
       "quantitySplit": "판매 중 {forSale}개 · holding {holding}개",
       "withComponents": {
         "other": "Sticker/키체인 있음 {count}개"
-      },
-      "withComponentsHint": "Sticker, 키체인, Sticker Slab 또는 패치가 기록된 그룹 내 개체"
+      }
     },
-    "refresh": "새로고침",
     "empty": "인벤토리에 아이템이 없어요.",
     "emptyFiltered": "이 필터에 맞는 아이템이 없어요.",
     "clearFilters": "필터 지우기",
@@ -394,19 +386,16 @@
       "quantity": "수량",
       "avgCost": "평균 비용",
       "totalCost": "총 비용",
-      "situation": "상태",
       "item": "아이템",
       "store": "구매 상점",
       "cost": "비용",
       "days": "일수",
-      "tradeLock": "Trade lock",
       "minPrice": "손익분기 가격",
       "actions": "작업",
       "marketValue": "시장 가치 ≈",
       "unrealized": "미실현 손익 ≈",
       "turnover": "회전"
     },
-    "primaryStore": "주 상점",
     "otherStores": "기타 상점",
     "noPrice": "활성 상점 없음",
     "ganhei": "선물받음",
@@ -415,7 +404,6 @@
     "sold": "판매됨",
     "turnaround": "trade lock이 끝나고 {days} 만에 판매됨",
     "inspect": "검사",
-    "inspectInvalid": "검사 링크가 올바르지 않음",
     "actions": {
       "newItem": "새 아이템",
       "edit": "수정",
@@ -427,8 +415,6 @@
       "offSale": "holding으로 이동",
       "forSale": "다시 판매 중으로",
       "apply": "재고에서 적용",
-      "applyNoCandidates": "적용할 Sticker, 키체인 또는 패치가 재고에 없어요.",
-      "applyFull": "이 아이템에는 Sticker, 키체인, 패치를 더 붙일 자리가 없어요.",
       "openCase": "케이스 열기",
       "openCapsule": "캡슐 열기",
       "openPackage": "패키지 열기",
@@ -443,8 +429,6 @@
       "components": "구성 요소"
     },
     "itemGone": "이 아이템은 더 이상 존재하지 않아요. 다른 탭에서 삭제되었을 수 있어요. 목록을 새로고침했어요.",
-    "daysForSale": "판매 중 {days}",
-    "daysInInventory": "인벤토리에 {days}째",
     "inTradeLock": "trade lock 중 · {time}",
     "daysHeld": "구매 후 {days}",
     "tabs": {
@@ -454,7 +438,6 @@
     },
     "offSaleConfirmTitle": "holding으로 옮길까요?",
     "offSaleConfirmMessage": "아이템이 \"판매 중\" 목록에서 빠지고 holding으로 이동해요. 다시 판매 중으로 돌리면 일수 계산이 처음부터 다시 시작돼요.",
-    "offSaleSince": "{date}부터 holding 중",
     "offSaleEmpty": "holding 중인 아이템이 없어요.",
     "offSaleDone": "holding으로 이동했어요: {name}",
     "forSaleDone": "다시 판매 중으로 돌렸어요: {name}",
@@ -537,9 +520,9 @@
     "help": {
       "minPrice": "손익분기 가격: 순수령액이 원가를 충당하는 최저 가격이며, 상점의 판매 수수료만 반영합니다.",
       "convertedCost": "원가는 구매일의 환율로 환산한 값입니다.",
-      "marketValue": "시장 가치: CSFloat의 추정치입니다. 판매하기 전까지는 잔액에 있는 돈이 아닙니다.",
-      "unrealized": "미실현 손익: 추정치에서 판매 수수료와 원가를 뺀 값입니다. 판매해야 실제 손익이 됩니다.",
-      "priceRange": "표시된 개체들의 손익분기 가격 범위. 개체마다 비용이 다릅니다."
+      "minPriceNoFee": "상점 {store}에 판매 수수료가 설정되어 있지 않아 손익분기 가격을 계산할 수 없습니다.",
+      "minPriceBased": "이 값은 '상점' 탭에서 상점 {store}에 설정한 판매 수수료를 기준으로 합니다.",
+      "minPriceRange": "표시된 개체들의 손익분기 가격 범위(개체마다 비용이 다름). '상점' 탭에서 각 상점에 설정한 판매 수수료를 기준으로 합니다."
     },
     "warnings": {
       "goToStores": "상점으로 이동",
@@ -569,15 +552,10 @@
     "category": "카테고리",
     "categoryAll": "전체",
     "stagnantOnly": "정체 아이템만 ({days} 넘게 판매 중)",
-    "order": "보유 기간순 정렬",
-    "orderDesc": "오래된 순",
-    "orderAsc": "최신 순"
+    "order": "보유 기간순 정렬"
   },
   "tradeLock": {
-    "locked": "Trade lock",
-    "released": "해제됨",
     "remaining": "{time} 남음",
-    "until": "{date}에 해제",
     "units": {
       "d": "일",
       "h": "시간",
@@ -657,8 +635,7 @@
       "AWESOMEAPI": "상업 환율 (AwesomeAPI)"
     },
     "ptaxOf": "{date} PTAX",
-    "editedAt": "{date}에 수정됨",
-    "tooltip": "출처: {source}"
+    "editedAt": "{date}에 수정됨"
   },
   "confirm": {
     "deleteTitle": "아이템 삭제",
@@ -681,7 +658,6 @@
     "catalogRefresh": "카탈로그 업데이트",
     "catalogRefreshing": "카탈로그를 업데이트하는 중(최대 2분 걸릴 수 있어요)...",
     "catalogRefreshed": "{date}에 카탈로그를 업데이트했어요",
-    "catalogShowing": "{total}개 중 {shown}개",
     "catalogSearching": "검색하는 중...",
     "changeItem": "아이템 변경",
     "freeName": "카탈로그에 없는 아이템",
@@ -717,14 +693,12 @@
     "soldNote": "이 아이템은 판매되었어요. 판매 데이터는 여기서 수정할 수 없어요. 변경하려면 판매를 취소해 주세요.",
     "created": "아이템을 만들었어요.",
     "saved": "아이템을 저장했어요.",
-    "noChanges": "저장할 변경 사항이 없어요.",
     "invalidNumber": "숫자가 올바르지 않아요. 숫자만 사용해 주세요.",
     "invalidMoney": "금액이 올바르지 않아요. {example} 같은 형식을 사용해 주세요.",
     "invalidMoneyWhole": "금액이 올바르지 않아요. 이 통화({currency})는 소수점 이하 자릿수가 없으니 {example}처럼 정수를 사용해 주세요.",
     "invalidDate": "날짜가 올바르지 않아요.",
     "chooseItem": "카탈로그에서 아이템을 선택하거나 \"카탈로그에 없는 아이템\"을 체크해 주세요.",
     "components": {
-      "title": "Sticker와 키체인",
       "costNote": "무기에 붙어 있는 것을 기록만 하는 항목이에요. 비용, 잔액, 회전에는 영향을 주지 않아요.",
       "stickers": "붙인 Sticker ({count}/{max})",
       "noStickers": "기록된 Sticker가 없어요.",
@@ -755,7 +729,6 @@
       "slotShort": "위치",
       "wearShort": "마모도",
       "patternShort": "pattern",
-      "patchesTitle": "패치",
       "patches": "붙인 패치 ({count}/{max})",
       "noPatches": "등록된 패치가 없어요.",
       "addPatch": "패치 추가",
@@ -1023,7 +996,6 @@
     "fxTitle": "기록된 환율로 계산한 수익이에요. 판매 환율: {sale}. 구매 환율: {purchase}.",
     "saleRateNote": "판매 환율 {rate}",
     "columns": {
-      "image": "이미지",
       "item": "아이템",
       "purchaseStore": "구매 상점",
       "saleStore": "판매 상점",
@@ -1035,7 +1007,6 @@
       "days": "판매까지 걸린 기간",
       "actions": "작업"
     },
-    "daysAfterRelease": "trade lock이 끝나고 {days} 만에",
     "daysHeld": "구매 후 {days}",
     "balanceReleasesAt": "{date}에 잔액 반영",
     "turnover": {
@@ -1136,7 +1107,6 @@
     "steamBadge": "내 Steam",
     "steamSet": "내 Steam 상점으로 사용",
     "steamClear": "내 Steam 상점 사용 해제",
-    "steamHint": "내 Steam 상점은 앱이 터미널에서 지불한 가격을 기록하는 상점이에요.",
     "steamSaved": "\"{name}\" 상점이 이제 내 Steam 상점이에요.",
     "steamCleared": "선택된 Steam 상점이 없어요.",
     "card": {
@@ -1144,7 +1114,8 @@
         "DEDUCTED": "가격에서 {rate}% 차감",
         "ADDED": "가격에 {rate}% 추가"
       },
-      "moreActionsFor": "{name}의 추가 작업"
+      "moreActionsFor": "{name}의 추가 작업",
+      "buyOnlyBadge": "구매 전용"
     },
     "steamTip": {
       "title": "Steam 상점을 선택하세요",
@@ -1154,22 +1125,15 @@
   },
   "storesTable": {
     "columns": {
-      "name": "상점",
-      "currency": "통화",
-      "status": "상태",
       "saleFee": "판매 수수료",
       "rounding": "반올림",
-      "minFixed": "최소 및 고정 수수료",
       "withdrawal": "출금 허용",
-      "actions": "작업",
       "saleHold": "잔액 보류 기간"
     },
     "primary": "주 상점",
     "active": "활성",
     "inactive": "비활성",
     "feesNotConfigured": "판매 수수료 없음",
-    "feeDeducted": "{rate}% 차감",
-    "feeAdded": "{rate}% 추가",
     "minFee": "최소 {value}",
     "fixedFee": "고정 {value}",
     "withdrawalNo": "아니요",
@@ -1249,7 +1213,10 @@
       "notConfigured": "판매 수수료가 설정되지 않았어요. 이 상점의 손익분기 가격은 표시되지 않습니다.",
       "incomplete": "수수료 유형을 고르고 비율을 입력하면 예시가 표시됩니다.",
       "error": "예시를 계산하지 못했어요({reason})."
-    }
+    },
+    "sellsHere": "이 상점에서 판매",
+    "sellsHereHint": "끄면 인벤토리의 아이템 최저가에 이 상점이 표시되지 않지만, 구매와 기록된 판매에는 계속 사용할 수 있습니다.",
+    "sellsHereNoFee": "인벤토리에서 이 상점의 최저가를 보려면 아래에서 판매 수수료를 설정하세요."
   },
   "settings": {
     "title": "설정",
@@ -1259,7 +1226,6 @@
       "noneNeeded": "지금은 모든 것이 미국 달러라서 환율이 필요하지 않아요. 다른 환산 통화를 선택하거나 다른 통화의 상점을 추가하면 해당 환율이 여기에 표시돼요.",
       "displayBadge": "환산 통화",
       "staleHint": "이 환율의 마지막 업데이트: {age} 전. 최신 환율로 업데이트해 주세요.",
-      "current": "현재 환율",
       "notSet": "환율 미설정",
       "value": "US$ 1 = {rate}",
       "manualLabel": "수동 환율",
@@ -1318,9 +1284,6 @@
       "exporting": "백업을 만드는 중...",
       "exported": "백업을 저장했어요: {file}",
       "import": "백업 가져오기",
-      "importing": "가져오는 중...",
-      "chooseFile": "백업 파일 선택",
-      "selectedFile": "선택한 파일: {file}",
       "confirmTitle": "백업을 가져올까요?",
       "confirmMessage": "현재 모든 데이터가 \"{file}\"의 데이터로 바뀌어요. 먼저 앱이 현재 데이터의 사본을 백업 폴더에 저장해요.",
       "confirmButton": "내 데이터 바꾸기",
@@ -1393,7 +1356,6 @@
         "save": "키 저장",
         "savedKey": "저장된 키: {masked}",
         "noKey": "저장된 키가 없어요.",
-        "keyRequired": "저장하려면 API 키를 붙여넣어 주세요.",
         "keySaved": "키를 저장했어요. \"연결 테스트\"로 확인해 보세요.",
         "keyRemoved": "키를 삭제했어요.",
         "replaceKey": "키 교체",
@@ -1421,7 +1383,6 @@
         "noStore": "CSFloat 상점을 찾지 못했어요. 상점 화면에서 \"CSFloat\"이라는 이름의 US$ 상점을 만들어 주세요. 앱이 자동으로 연결해요.",
         "importNow": "지금 가져오기",
         "fullScan": "전체 스캔",
-        "fullScanHint": "CSFloat의 전체 내역을 처음부터 다시 읽어요. 시간이 더 오래 걸려요. 놓친 것이 있다고 생각될 때 사용해 주세요.",
         "lastImport": "마지막 가져오기: {date}",
         "lastImportFailed": "마지막 가져오기에 실패했어요: {reason}",
         "neverImported": "아직 가져오지 않았어요.",
@@ -1498,19 +1459,12 @@
   "profit": {
     "title": "실제 수익",
     "subtitle": "입금한 금액, 출금한 금액, 상점별 잔액, 실제 수익을 한눈에 확인해 보세요.",
-    "pendingIncluded": "보류 {amount} 포함 ({date}부터 순차 반영)",
-    "pendingIncludedNoDate": "보류 {amount} 포함",
     "estimatedNote": "≈ 표시가 있는 금액은 {fx} 환율로 추정한 값이에요.",
     "estimatedNoFx": "≈ 표시가 있는 금액은 환율로 추정한 값인데, 환율이 아직 설정되지 않았어요. 설정에서 환율을 입력해 주세요.",
     "emptyHint": "실제 수익을 보려면 입금 내역을 기록해 주세요.",
     "summary": {
-      "title": "요약",
       "loadError": "요약을 불러오지 못했어요: {reason}",
-      "realProfit": "실제 수익",
-      "realProfitHint": "출금 순액에 상점 잔액(사용 가능 및 보류)과 원가 기준 재고를 더하고 입금액을 뺀 값이에요. 모두 미국 달러(US$)예요.",
-      "deposited": "총 입금",
       "withdrawn": "총 출금",
-      "platformBalance": "상점 잔액",
       "stock": "재고 (원가 기준)",
       "stockForSale": "판매 중 재고 (원가)",
       "stockOffSale": "Holding 재고 (원가)",
@@ -1600,7 +1554,6 @@
       "actions": "작업",
       "paid": "지불한 금액"
     },
-    "noStore": "—",
     "inactiveStore": "{name} (비활성)",
     "actions": {
       "edit": "수정",
@@ -1650,7 +1603,6 @@
     "updated": "출금을 수정했어요.",
     "deleted": "{value} 출금을 삭제했어요.",
     "legacyNoStore": "상점 없음 (예전 기록)",
-    "feeNotInformed": "—",
     "inactiveStore": "{name} (비활성)",
     "noWithdrawalStores": "출금을 허용하는 활성 상점이 없어요. 출금을 기록하려면 상점에서 \"출금 허용\"을 켜 주세요.",
     "goToStores": "상점으로 이동",
@@ -1706,10 +1658,7 @@
     "empty": "등록된 상점이 없어요.",
     "inactive": "비활성",
     "nonWithdrawable": "출금 불가",
-    "nonWithdrawableTitle": "이 상점은 출금을 허용하지 않아요. 잔액은 상점에 그대로 남아요.",
     "available": "사용 가능",
-    "pending": "보류 ({date}에 반영)",
-    "computed": "계산된 잔액",
     "difference": "차이",
     "lastCheckDays": {
       "other": "마지막 확인: {count}일 전"
@@ -1717,8 +1666,6 @@
     "lastCheckToday": "마지막 확인: 오늘",
     "neverChecked": "잔액을 확인한 적이 없어요",
     "check": "잔액 확인",
-    "details": "자세히",
-    "hideDetails": "자세히 숨기기",
     "breakdown": {
       "title": "사용 가능 잔액 계산 방법",
       "deposits": "입금",
@@ -1737,7 +1684,6 @@
     "checkPreviewLoading": "계산하는 중...",
     "checkPreviewMatch": "계산된 잔액과 일치해요.",
     "adjustAndSave": "확인과 조정 기록",
-    "saveCheckOnly": "확인만 기록",
     "saveCheck": "확인 기록",
     "adjustmentNote": "조정 메모",
     "adjustmentNoteHint": "조정을 기록하려면 꼭 필요해요(예: 기록하지 않은 수수료).",
@@ -1753,7 +1699,6 @@
     },
     "form": {
       "title": "잔액 확인: {store}",
-      "intro": "상점 웹사이트에 표시된 실제 잔액을 입력해 주세요. 앱이 계산된 잔액과 차이를 보여 줘요. 조정을 기록할지는 직접 선택해요.",
       "amount": "실제 잔액 ({currency})",
       "date": "확인 날짜",
       "amountRequired": "잔액을 입력해 주세요(비어 있으면 0을 입력해 주세요).",
@@ -1813,14 +1758,11 @@
     "running": "CSFloat에서 가져오는 중…",
     "errorTitle": "가져오지 못했어요",
     "badge": "CSFloat",
-    "badgeHint": "CSFloat에서 가져온 내역이에요",
     "seeInInventory": "인벤토리에서 보기",
     "seeInSales": "판매에서 보기",
     "seeCandidate": "내역 #{id} 보기",
     "unknownItem": "이름 없는 아이템",
     "disabled": {
-      "noKey": "가져오려면 설정에서 CSFloat 키를 저장해 주세요.",
-      "noStore": "상점 화면에서 \"CSFloat\"이라는 이름의 US$ 상점을 만들어 주세요.",
       "running": "이미 가져오기가 진행 중이에요."
     },
     "cutoff": {
@@ -1897,7 +1839,6 @@
     },
     "componentWarningsTitle": "등록하지 못함",
     "componentWarningsHint": "아이템을 수정해서 추가할 수 있어요.",
-    "applyFromStockHint": "재고에 같은 개체가 있어요. 무기에 붙어 있던 것이라면 올바른 날짜로 적용해 주세요.",
     "componentUnnamed": "이름 없는 부품",
     "componentWarnings": {
       "COMPONENT_CATALOG_NOT_FOUND": "{name} (카탈로그에서 찾을 수 없음)",
@@ -1944,7 +1885,6 @@
     },
     "page": {
       "title": "가져오기",
-      "open": "확인 필요",
       "noOpen": "확인할 내용이 없어요.",
       "batches": "가져오기 기록",
       "noBatches": "아직 가져오기가 없어요.",
@@ -1955,7 +1895,6 @@
       "fullScan": "전체 스캔",
       "loadMore": "더 불러오기",
       "showDetails": "자세히 보기",
-      "hideDetails": "자세히 숨기기",
       "noEntries": "이 가져오기에는 표시할 아이템이 없어요.",
       "pendingCount": {
         "other": "확인 필요 {count}건"
@@ -2187,7 +2126,6 @@
         "zero": "명세서에서 이미 확인한 출금이 없어요.",
         "other": "명세서에서 이미 확인한 출금 최대 {count}건({value})."
       },
-      "mayHaveUnseen": "설정하면 명세서 전체를 다시 읽어요. 앱이 아직 읽지 않은 입금과 출금도 함께 들어와요.",
       "openToClose": {
         "other": "새 날짜 이전의 아직 가져오지 않은 입금/출금 {count}건은 더 이상 가져오지 않아요. 이미 가져온 것은 그대로 남아요."
       },
@@ -2235,7 +2173,6 @@
     "checking": "대조하는 중…",
     "explain": "차이 설명",
     "explaining": "명세서를 읽는 중…",
-    "register": "이 값으로 잔액 확인 기록",
     "matches": "잔액이 CSFloat과 일치해요.",
     "differs": "CSFloat과의 차이: 사용 가능 {available}, 보류 {pending}.",
     "csfloat": "CSFloat: 사용 가능 {available} · 보류 {pending}",
@@ -2431,6 +2368,7 @@
       "collapseRow": "{name}의 개별 항목 숨기기",
       "selectRow": "{name} 선택",
       "selectAll": "모든 행 선택",
+      "expandColumn": "세부 정보 펼치기",
       "scrollRegion": "{caption}, 스크롤 가능"
     }
   },

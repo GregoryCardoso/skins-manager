@@ -93,7 +93,11 @@ describe('GET /api/profit/summary: vazio', () => {
     const data = await summary();
     expect(data.realProfitUsdCents).toBe(0);
     expect(data.approx.realProfit).toBeNull();
-    expect(data.fx).toEqual({ usdBrlRate: null, source: null, updatedAt: null, quotedAt: null, displayCurrency: 'BRL' });
+    expect(data.fx).toEqual({
+      usdBrlRate: null, source: null, updatedAt: null, quotedAt: null, displayCurrency: 'BRL',
+      // 12.12: a cotação da moeda de conversão (aqui BRL, ainda sem cotação).
+      display: { currency: 'BRL', rate: null, source: null, quotedAt: null, updatedAt: null },
+    });
   });
 
   test('Host estranho -> 403; POST -> 404 padrão', async () => {

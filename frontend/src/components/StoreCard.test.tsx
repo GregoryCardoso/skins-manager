@@ -8,7 +8,7 @@ import type { Store } from '@/types/api';
 import StoreCard from './StoreCard';
 
 const store = (extra: Partial<Store> = {}): Store => ({
-  id: 7, name: 'CSFloat', currency: 'USD', isActive: true, isPrimary: false, saleFeeType: 'DEDUCTED', saleFeeRate: 0.02,
+  id: 7, name: 'CSFloat', currency: 'USD', isActive: true, isPrimary: false, sellsHere: true, saleFeeType: 'DEDUCTED', saleFeeRate: 0.02,
   saleFeeRounding: 'CEIL', saleMinFeeCents: 3, saleFixedFeeCents: 0, allowsWithdrawal: true, withdrawalFeeRate: 0.01,
   withdrawalFixedFeeCents: 0, saleHoldDays: 7, createdAt: '', updatedAt: '', saleFeesConfigured: true, inUse: false, ...extra,
 });
@@ -40,6 +40,15 @@ describe('StoreCard', () => {
     expect(screen.getByText('Inactive')).toBeInTheDocument();
     expect(screen.getByText('no sale fee set')).toBeInTheDocument();
     expect(screen.queryByText('Round up')).toBeNull();
+  });
+
+  test('loja que não vende mostra o selo "Buy only" e nenhum aviso de taxa; a que vende sem taxa mantém o aviso', () => {
+    const { rerender } = renderUi(<StoreCard store={store({ sellsHere: false, saleFeeType: null, saleFeeRate: null })} busy={false} {...handlers()} />);
+    expect(screen.getByText('Buy only')).toBeInTheDocument();
+    expect(screen.queryByText('no sale fee set')).toBeNull();
+    rerender(<StoreCard store={store({ sellsHere: true, saleFeeType: null, saleFeeRate: null })} busy={false} {...handlers()} />);
+    expect(screen.queryByText('Buy only')).toBeNull();
+    expect(screen.getByText('no sale fee set')).toBeInTheDocument();
   });
 
   test('Editar chama onEdit com a loja; busy desabilita Editar e o menu', async () => {

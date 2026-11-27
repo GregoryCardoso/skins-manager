@@ -18,7 +18,7 @@ export default function ImportSetupModal({ onClose }: { onClose: () => void }) {
       footer={(
         <>
           <Button onClick={onClose}>{t('csfloatSetup.later')}</Button>
-          <Link href="/settings/#csfloat" className={styles.linkButton} onClick={onClose}>{t('csfloatSetup.configure')}</Link>
+          <Link prefetch={false} href="/settings/#csfloat" className={styles.linkButton} onClick={onClose}>{t('csfloatSetup.configure')}</Link>
         </>
       )}
     >

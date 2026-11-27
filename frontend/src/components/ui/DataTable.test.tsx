@@ -169,6 +169,14 @@ describe('DataTable: colunas por largura (container)', () => {
     expect(screen.getByRole('columnheader', { name: 'Store' })).toBeInTheDocument();
   });
 
+  test('stickyEnd: a coluna fica presa à direita (classe no th e em cada td); as outras não', () => {
+    const cols = COLUMNS.map((c) => (c.id === 'act' ? { ...c, stickyEnd: true } : c));
+    const { container } = renderUi(<DataTable caption="Inventory" columns={cols} rows={ROWS} getRowId={(r) => r.id} />);
+    const stickyCells = container.querySelectorAll('[class*="stickyEnd"]');
+    expect(stickyCells.length).toBe(1 + ROWS.length);
+    expect(container.querySelectorAll('th[class*="stickyEnd"]')).toHaveLength(1);
+  });
+
   test('largura média: some a coluna 3 e a linha ganha o expansor (sem `expandable`)', async () => {
     mockWidth(800);
     renderUi(<DataTable caption="Inventory" columns={COLUMNS} rows={ROWS} getRowId={(r) => r.id} rowLabel={(r) => r.name} />);

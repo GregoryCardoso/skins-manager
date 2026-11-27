@@ -66,7 +66,7 @@ export default function Menu({ label, trigger, items, align = 'end' }: MenuProps
                 <DropdownMenu.Item key={entry.id} asChild className={className} onSelect={() => entry.onSelect?.()}>
                   {entry.href.startsWith('/') && !entry.external ? (
                     // Página do próprio app: navega pelo roteador, sem recarregar.
-                    <Link href={entry.href}>{body}</Link>
+                    <Link prefetch={false} href={entry.href}>{body}</Link>
                   ) : (
                     <a href={entry.href} rel="noopener noreferrer" {...(entry.external ? { target: '_blank' } : {})}>
                       {body}

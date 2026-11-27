@@ -45,7 +45,7 @@ export default function PriceStatusIndicator() {
       <span>{text}</span>
       {title && <span className={styles.srOnly}>{title}</span>}
       {view.kind === 'NOT_CONFIGURED' && (
-        <Link href="/settings/#csfloat" className={styles.link}>{t('prices.status.configureLink')}</Link>
+        <Link prefetch={false} href="/settings/#csfloat" className={styles.link}>{t('prices.status.configureLink')}</Link>
       )}
     </span>
   );

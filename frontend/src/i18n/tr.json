@@ -15,9 +15,6 @@
     "save": "Kaydet",
     "cancel": "İptal",
     "close": "Kapat",
-    "confirm": "Onayla",
-    "edit": "Düzenle",
-    "delete": "Sil",
     "saving": "Kaydediliyor...",
     "optional": "(isteğe bağlı)",
     "moreDetails": "Daha fazla ayrıntı",
@@ -376,22 +373,17 @@
     "group": {
       "expand": "{name} birimlerini göster",
       "collapse": "{name} birimlerini gizle",
-      "forSale": "{count} satışta",
       "tradeLocked": "{count} trade lock altında (açılış: {date})",
-      "offSale": "{count} holding'de",
       "stagnant": {
         "one": "{count} takılı",
         "other": "{count} takılı"
       },
-      "convertedCost": "Diğer para birimlerindeki alımları içerir; alım gününün kuruyla dönüştürülmüştür",
       "quantitySplit": "{forSale} satışta · {holding} holding'de",
       "withComponents": {
         "one": "{count} sticker/anahtarlıklı",
         "other": "{count} sticker/anahtarlıklı"
-      },
-      "withComponentsHint": "Gruptaki, kayıtlı sticker, anahtarlık, Sticker Slab veya yaması olan birimler"
+      }
     },
-    "refresh": "Yenile",
     "empty": "Envanterde eşya yok.",
     "emptyFiltered": "Bu filtrelere uyan eşya yok.",
     "clearFilters": "Filtreleri temizle",
@@ -401,19 +393,16 @@
       "quantity": "Adet",
       "avgCost": "Ortalama maliyet",
       "totalCost": "Toplam maliyet",
-      "situation": "Durum",
       "item": "Eşya",
       "store": "Satın alma mağazası",
       "cost": "Maliyet",
       "days": "Gün",
-      "tradeLock": "Trade lock",
       "minPrice": "Başabaş fiyatı",
       "actions": "İşlemler",
       "marketValue": "Piyasa değeri ≈",
       "unrealized": "Gerçekleşmemiş kâr/zarar ≈",
       "turnover": "Devir"
     },
-    "primaryStore": "Ana mağaza",
     "otherStores": "Diğer mağazalar",
     "noPrice": "Etkin mağaza yok",
     "ganhei": "Hediye",
@@ -422,7 +411,6 @@
     "sold": "Satıldı",
     "turnaround": "Trade lock bittikten {days} sonra satıldı",
     "inspect": "İncele",
-    "inspectInvalid": "Geçersiz inceleme bağlantısı",
     "actions": {
       "newItem": "Yeni eşya",
       "edit": "Düzenle",
@@ -434,8 +422,6 @@
       "offSale": "Holding'e taşı",
       "forSale": "Satışa geri koy",
       "apply": "Stoktan uygula",
-      "applyNoCandidates": "Stokta uygulanacak sticker, anahtarlık veya yama yok.",
-      "applyFull": "Bu eşyada sticker, anahtarlık veya yama için yer kalmadı.",
       "openCase": "Kasayı aç",
       "openCapsule": "Kapsülü aç",
       "openPackage": "Paketi aç",
@@ -450,8 +436,6 @@
       "components": "Bileşenler"
     },
     "itemGone": "Bu eşya artık yok. Başka bir sekmede silinmiş olabilir. Liste yenilendi.",
-    "daysForSale": "satışta: {days}",
-    "daysInInventory": "envanterde: {days}",
     "inTradeLock": "Trade lock altında · {time}",
     "daysHeld": "alımdan beri {days}",
     "tabs": {
@@ -461,7 +445,6 @@
     },
     "offSaleConfirmTitle": "Holding'e taşınsın mı?",
     "offSaleConfirmMessage": "Eşya \"Satışta\" listesinden çıkar ve holding'e gider. Tekrar satışa koyduğunuzda gün sayımı yeniden başlar.",
-    "offSaleSince": "Holding'e giriş: {date}",
     "offSaleEmpty": "Holding'de eşya yok.",
     "offSaleDone": "{name} holding'e taşındı.",
     "forSaleDone": "{name} tekrar satışa konuldu.",
@@ -547,9 +530,9 @@
     "help": {
       "minPrice": "Zararsız en düşük fiyat: net tutarın maliyeti karşıladığı en düşük fiyat, yalnızca mağazanın satış komisyonuyla.",
       "convertedCost": "Maliyet, alım gününün kuruyla çevrilmiştir.",
-      "marketValue": "Piyasa değeri: CSFloat tahmini. Satana kadar bakiyende para değildir.",
-      "unrealized": "Gerçekleşmemiş kâr veya zarar: tahmin eksi satış komisyonu ve maliyet. Ancak sattığında gerçek olur.",
-      "priceRange": "Ekrandaki adetlerin başa baş fiyat aralığı. Her adedin kendi maliyeti vardır."
+      "minPriceNoFee": "{store} mağazası için satış komisyonu girilmemiş, bu yüzden en düşük fiyat hesaplanamıyor.",
+      "minPriceBased": "Bu değer, Mağazalar sekmesinde {store} mağazası için ayarlanan satış komisyonuna dayanır.",
+      "minPriceRange": "Ekrandaki adetlerin en düşük fiyat aralığı (her adedin kendi maliyeti vardır); Mağazalar sekmesinde mağazalar için ayarlanan satış komisyonlarına dayanır."
     },
     "warnings": {
       "goToStores": "Mağazalara git",
@@ -579,15 +562,10 @@
     "category": "Kategori",
     "categoryAll": "Tümü",
     "stagnantOnly": "Yalnızca takılı olanlar ({days} üzerinde satışta)",
-    "order": "Yaşa göre sırala",
-    "orderDesc": "Önce en eski",
-    "orderAsc": "Önce en yeni"
+    "order": "Yaşa göre sırala"
   },
   "tradeLock": {
-    "locked": "Trade lock",
-    "released": "Serbest",
     "remaining": "{time} kaldı",
-    "until": "Açılış: {date}",
     "units": {
       "d": "g",
       "h": "sa",
@@ -667,8 +645,7 @@
       "AWESOMEAPI": "Ticari (AwesomeAPI)"
     },
     "ptaxOf": "PTAX, {date}",
-    "editedAt": "düzenlendi: {date}",
-    "tooltip": "Kaynak: {source}"
+    "editedAt": "düzenlendi: {date}"
   },
   "confirm": {
     "deleteTitle": "Eşyayı sil",
@@ -691,7 +668,6 @@
     "catalogRefresh": "Kataloğu güncelle",
     "catalogRefreshing": "Katalog güncelleniyor (2 dakikaya kadar sürebilir)...",
     "catalogRefreshed": "Katalog güncellendi: {date}",
-    "catalogShowing": "{shown} / {total}",
     "catalogSearching": "Aranıyor...",
     "changeItem": "Eşyayı değiştir",
     "freeName": "Katalogda olmayan eşya",
@@ -727,14 +703,12 @@
     "soldNote": "Bu eşya satıldı. Satış verileri burada düzenlenemez. Değiştirmek için satışı geri alın.",
     "created": "Eşya oluşturuldu.",
     "saved": "Eşya kaydedildi.",
-    "noChanges": "Kaydedilecek değişiklik yok.",
     "invalidNumber": "Geçersiz sayı. Yalnızca rakam kullanın.",
     "invalidMoney": "Geçersiz tutar. {example} gibi bir biçim kullanın.",
     "invalidMoneyWhole": "Geçersiz tutar. Para birimi {currency} ondalık basamak içermez: {example} gibi bir tam sayı kullanın.",
     "invalidDate": "Geçersiz tarih.",
     "chooseItem": "Eşyayı katalogdan seçin veya \"Katalogda olmayan eşya\" kutusunu işaretleyin.",
     "components": {
-      "title": "Sticker'lar ve anahtarlık",
       "costNote": "Bu yalnızca silahta neler olduğunun kaydıdır. Maliyeti, bakiyeyi veya devri değiştirmez.",
       "stickers": "Takılı sticker'lar ({count}/{max})",
       "noStickers": "Kayıtlı sticker yok.",
@@ -765,7 +739,6 @@
       "slotShort": "konum",
       "wearShort": "aşınma",
       "patternShort": "pattern",
-      "patchesTitle": "Yamalar",
       "patches": "Takılı yamalar ({count}/{max})",
       "noPatches": "Kayıtlı yama yok.",
       "addPatch": "Yama ekle",
@@ -1034,7 +1007,6 @@
     "fxTitle": "Kâr, kayıtlı kurlarla hesaplandı. Satış kuru: {sale}. Satın alma kuru: {purchase}.",
     "saleRateNote": "satış kuru {rate}",
     "columns": {
-      "image": "Görsel",
       "item": "Eşya",
       "purchaseStore": "Satın alma mağazası",
       "saleStore": "Satış mağazası",
@@ -1046,7 +1018,6 @@
       "days": "Satış süresi",
       "actions": "İşlemler"
     },
-    "daysAfterRelease": "Trade lock bittikten {days} sonra",
     "daysHeld": "alımdan beri {days}",
     "balanceReleasesAt": "bakiye serbest kalma tarihi: {date}",
     "turnover": {
@@ -1154,7 +1125,6 @@
     "steamBadge": "Steam'iniz",
     "steamSet": "Steam mağazam olarak kullan",
     "steamClear": "Steam mağazam olarak kullanmayı bırak",
-    "steamHint": "Steam mağazanız, uygulamanın terminalde ödenen fiyatı kaydettiği mağazadır.",
     "steamSaved": "\"{name}\" artık Steam mağazanız.",
     "steamCleared": "Steam mağazası seçilmedi.",
     "card": {
@@ -1162,7 +1132,8 @@
         "DEDUCTED": "Fiyattan %{rate} düşülür",
         "ADDED": "Fiyata %{rate} eklenir"
       },
-      "moreActionsFor": "{name} için diğer işlemler"
+      "moreActionsFor": "{name} için diğer işlemler",
+      "buyOnlyBadge": "Yalnızca alım"
     },
     "steamTip": {
       "title": "Steam mağazanı seç",
@@ -1172,22 +1143,15 @@
   },
   "storesTable": {
     "columns": {
-      "name": "Mağaza",
-      "currency": "Para birimi",
-      "status": "Durum",
       "saleFee": "Satış ücreti",
       "rounding": "Yuvarlama",
-      "minFixed": "Asgari ve sabit ücret",
       "withdrawal": "Çekime izin verir",
-      "actions": "İşlemler",
       "saleHold": "Bakiye bekletme"
     },
     "primary": "Ana",
     "active": "Etkin",
     "inactive": "Devre dışı",
     "feesNotConfigured": "satış ücreti tanımlı değil",
-    "feeDeducted": "%{rate} düşülür",
-    "feeAdded": "%{rate} eklenir",
     "minFee": "asgari {value}",
     "fixedFee": "sabit {value}",
     "withdrawalNo": "Hayır",
@@ -1268,7 +1232,10 @@
       "notConfigured": "Satış ücreti ayarlanmadı: bu mağaza için başabaş fiyatı kullanılamaz.",
       "incomplete": "Örneği görmek için ücret türünü seç ve oranı gir.",
       "error": "Örnek hesaplanamadı ({reason})."
-    }
+    },
+    "sellsHere": "Bu mağazada satıyorum",
+    "sellsHereHint": "Kapalıyken mağaza, envanterde eşyanın asgari fiyatında görünmez; ancak alımlar ve kayıtlı satışlar için kullanılabilir kalır.",
+    "sellsHereNoFee": "Bu mağazanın asgari fiyatını envanterde görmek için aşağıdan satış komisyonunu ayarlayın."
   },
   "settings": {
     "title": "Ayarlar",
@@ -1278,7 +1245,6 @@
       "noneNeeded": "Her şey ABD doları olduğundan şu anda kura gerek yok. Başka bir dönüştürme para birimi seçerseniz veya başka para biriminde bir mağaza eklerseniz kuru burada görünür.",
       "displayBadge": "Dönüştürme para birimi",
       "staleHint": "Bu kur en son {age} önce güncellendi. Yeni bir kur için güncelleyin.",
-      "current": "Güncel kur",
       "notSet": "Kur belirlenmedi",
       "value": "US$ 1 = {rate}",
       "manualLabel": "Elle girilen kur",
@@ -1337,9 +1303,6 @@
       "exporting": "Yedek oluşturuluyor...",
       "exported": "Yedek {file} olarak kaydedildi.",
       "import": "Yedeği içe aktar",
-      "importing": "İçe aktarılıyor...",
-      "chooseFile": "Yedek dosyasını seç",
-      "selectedFile": "Seçilen dosya: {file}",
       "confirmTitle": "Yedek içe aktarılsın mı?",
       "confirmMessage": "Bu işlem TÜM mevcut verilerinizi \"{file}\" dosyasındaki verilerle değiştirir. Önce uygulama, mevcut verilerinizin bir kopyasını yedekler klasörüne kaydeder.",
       "confirmButton": "Verilerimi değiştir",
@@ -1417,7 +1380,6 @@
         "save": "Anahtarı kaydet",
         "savedKey": "Kayıtlı anahtar: {masked}",
         "noKey": "Kayıtlı anahtar yok.",
-        "keyRequired": "Kaydetmek için API anahtarını yapıştırın.",
         "keySaved": "Anahtar kaydedildi. Kontrol etmek için \"Bağlantıyı test et\"i kullanın.",
         "keyRemoved": "Anahtar kaldırıldı.",
         "replaceKey": "Anahtarı değiştir",
@@ -1445,7 +1407,6 @@
         "noStore": "CSFloat mağazası bulunamadı. Mağazalar'da \"CSFloat\" adlı bir US$ mağazası oluşturun. Uygulama onu kendiliğinden bağlar.",
         "importNow": "Şimdi içe aktar",
         "fullScan": "Tam tarama",
-        "fullScanHint": "CSFloat geçmişinin tamamını yeniden okur. Daha uzun sürer. Bir şeyin kaçırıldığını düşünüyorsanız kullanın.",
         "lastImport": "Son içe aktarma: {date}",
         "lastImportFailed": "Son içe aktarma başarısız oldu: {reason}",
         "neverImported": "Henüz içe aktarılmadı.",
@@ -1527,19 +1488,12 @@
   "profit": {
     "title": "Gerçek kâr",
     "subtitle": "Ne koyduğunuzu, ne çektiğinizi, her mağazanın bakiyesini ve gerçek kârınızı takip edin.",
-    "pendingIncluded": "{amount} bekleyen dahil (ilk serbest kalma: {date})",
-    "pendingIncludedNoDate": "{amount} bekleyen dahil",
     "estimatedNote": "≈ işaretli değerler tahminidir; kullanılan kur: {fx}.",
     "estimatedNoFx": "≈ işaretli değerler kurla tahmin edilir; kur henüz belirlenmedi. Kuru Ayarlar'a girin.",
     "emptyHint": "Gerçek kârı görmek için para yatırmalarınızı kaydedin.",
     "summary": {
-      "title": "Özet",
       "loadError": "Özet yüklenemedi: {reason}",
-      "realProfit": "Gerçek kâr",
-      "realProfitHint": "Net çekimler, artı mağaza bakiyeleri (kullanılabilir ve bekleyen), artı maliyetinden stok, eksi para yatırmalar. Hepsi ABD doları (US$) cinsinden.",
-      "deposited": "Toplam yatırılan",
       "withdrawn": "Toplam çekilen",
-      "platformBalance": "Mağaza bakiyeleri",
       "stock": "Stok (maliyetle)",
       "stockForSale": "Satıştaki stok (maliyet)",
       "stockOffSale": "Holding'deki stok (maliyet)",
@@ -1634,7 +1588,6 @@
       "actions": "İşlemler",
       "paid": "Ödenen tutar"
     },
-    "noStore": "—",
     "inactiveStore": "{name} (devre dışı)",
     "actions": {
       "edit": "Düzenle",
@@ -1685,7 +1638,6 @@
     "updated": "Çekim güncellendi.",
     "deleted": "{value} tutarındaki çekim silindi.",
     "legacyNoStore": "Mağaza yok (eski kayıt)",
-    "feeNotInformed": "—",
     "inactiveStore": "{name} (devre dışı)",
     "noWithdrawalStores": "Etkin hiçbir mağaza çekime izin vermiyor. Çekim kaydetmek için bir mağazada \"Çekime izin verir\"i açın.",
     "goToStores": "Mağazalar'a git",
@@ -1742,10 +1694,7 @@
     "empty": "Kayıtlı mağaza yok.",
     "inactive": "devre dışı",
     "nonWithdrawable": "çekilemez",
-    "nonWithdrawableTitle": "Bu mağaza çekime izin vermiyor. Bakiye mağazada kalır.",
     "available": "kullanılabilir",
-    "pending": "bekleyen (serbest kalma: {date})",
-    "computed": "Hesaplanan",
     "difference": "Fark",
     "lastCheckDays": {
       "one": "Son kontrol: {count} gün önce",
@@ -1754,8 +1703,6 @@
     "lastCheckToday": "Son kontrol: bugün",
     "neverChecked": "Bakiye hiç kontrol edilmedi",
     "check": "Bakiyeyi kontrol et",
-    "details": "Ayrıntılar",
-    "hideDetails": "Ayrıntıları gizle",
     "breakdown": {
       "title": "Kullanılabilir bakiye nasıl hesaplanır",
       "deposits": "Para yatırmalar",
@@ -1776,7 +1723,6 @@
     "checkPreviewLoading": "Hesaplanıyor...",
     "checkPreviewMatch": "Hesaplanan bakiyeyle eşleşiyor.",
     "adjustAndSave": "Kontrolü ve düzeltmeyi kaydet",
-    "saveCheckOnly": "Yalnızca kontrolü kaydet",
     "saveCheck": "Kontrolü kaydet",
     "adjustmentNote": "Düzeltme notu",
     "adjustmentNoteHint": "Düzeltmeyi kaydetmek için zorunlu (örneğin: kaydedilmemiş ücret).",
@@ -1792,7 +1738,6 @@
     },
     "form": {
       "title": "Bakiyeyi kontrol et: {store}",
-      "intro": "Mağazanın web sitesinde görünen gerçek bakiyeyi girin. Uygulama hesaplanan bakiyeyi ve farkı gösterir. Düzeltme kaydedip kaydetmeyeceğinize siz karar verirsiniz.",
       "amount": "Gerçek bakiye ({currency})",
       "date": "Kontrol tarihi",
       "amountRequired": "Bakiyeyi girin (boşsa 0 kullanın).",
@@ -1852,14 +1797,11 @@
     "running": "CSFloat'tan içe aktarılıyor…",
     "errorTitle": "İçe aktarılamadı",
     "badge": "CSFloat",
-    "badgeHint": "CSFloat'tan içe aktarılan kayıt",
     "seeInInventory": "Envanterde gör",
     "seeInSales": "Satışlarda gör",
     "seeCandidate": "Kaydı gör (#{id})",
     "unknownItem": "Adsız eşya",
     "disabled": {
-      "noKey": "İçe aktarmak için CSFloat anahtarını Ayarlar'da kaydedin.",
-      "noStore": "Mağazalar'da \"CSFloat\" adlı bir US$ mağazası oluşturun.",
       "running": "Bir içe aktarma zaten çalışıyor."
     },
     "cutoff": {
@@ -1955,7 +1897,6 @@
     },
     "componentWarningsTitle": "Kaydedilmedi",
     "componentWarningsHint": "Eşyayı düzenleyerek ekleyebilirsiniz.",
-    "applyFromStockHint": "Stokta aynı birim var. Silahtaki o idiyse doğru tarihle uygulayın.",
     "componentUnnamed": "adsız bileşen",
     "componentWarnings": {
       "COMPONENT_CATALOG_NOT_FOUND": "{name} (katalogda bulunamadı)",
@@ -2006,7 +1947,6 @@
     },
     "page": {
       "title": "İçe aktarmalar",
-      "open": "İncelenecek",
       "noOpen": "İncelenecek bir şey yok.",
       "batches": "İçe aktarma geçmişi",
       "noBatches": "Henüz içe aktarma yok.",
@@ -2017,7 +1957,6 @@
       "fullScan": "Tam tarama",
       "loadMore": "Daha fazla yükle",
       "showDetails": "Ayrıntıları gör",
-      "hideDetails": "Ayrıntıları gizle",
       "noEntries": "Bu içe aktarmada gösterilecek eşya yok.",
       "pendingCount": {
         "one": "{count} incelenecek",
@@ -2266,7 +2205,6 @@
         "one": "Ekstrede daha önce görülmüş en fazla {count} çekim ({value}).",
         "other": "Ekstrede daha önce görülmüş en fazla {count} çekim ({value})."
       },
-      "mayHaveUnseen": "Belirlemek ekstrenin tamamını yeniden okur: uygulamanın henüz okumadığı para yatırmalar ve çekimler de gelir.",
       "openToClose": {
         "one": "Yeni tarihten önceki, henüz içe aktarılmamış {count} para yatırma veya çekim artık içe aktarılmaz. Zaten içe aktarılanlar kalır.",
         "other": "Yeni tarihten önceki, henüz içe aktarılmamış {count} para yatırma veya çekim artık içe aktarılmaz. Zaten içe aktarılanlar kalır."
@@ -2316,7 +2254,6 @@
     "checking": "Kontrol ediliyor…",
     "explain": "Farkı açıkla",
     "explaining": "Ekstre okunuyor…",
-    "register": "Bu değerlerle bir bakiye kontrolü kaydet",
     "matches": "Bakiye CSFloat ile eşleşiyor.",
     "differs": "CSFloat ile fark: kullanılabilir {available}, bekleyen {pending}.",
     "csfloat": "CSFloat: {available} kullanılabilir · {pending} bekleyen",
@@ -2522,6 +2459,7 @@
       "collapseRow": "{name} birimlerini gizle",
       "selectRow": "{name} seç",
       "selectAll": "Tüm satırları seç",
+      "expandColumn": "Ayrıntıları genişlet",
       "scrollRegion": "{caption}, kaydırılabilir"
     }
   },

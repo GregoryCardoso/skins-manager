@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
 import { formatMoney } from '@/lib/format';
 import type { ItemView, MinPrice, Store, WarningCode } from '@/types/api';
+import { useDisplayStaleRateNote } from '../useStaleRateNote';
 import HelpTip from '../ui/HelpTip';
 import Icon from '../ui/Icon';
 import Money from '../ui/Money';
@@ -34,7 +35,7 @@ function Warning({ entry }: { entry: MinPrice }) {
         <span>{text}</span>
       </span>
       {link && (
-        <Link href={link.href} className={styles.warningLink}>
+        <Link prefetch={false} href={link.href} className={styles.warningLink}>
           {t(link.labelKey)}
         </Link>
       )}
@@ -43,15 +44,40 @@ function Warning({ entry }: { entry: MinPrice }) {
 }
 
 function Entry({ entry, size }: { entry: MinPrice; size: 'sm' | 'md' }) {
+  const t = useT();
+  const staleRateNote = useDisplayStaleRateNote(entry.approx !== null && entry.approx !== undefined);
+  const topic = t('inventory.columns.minPrice');
+  // Loja sem taxa de venda: só "sem preço" e a ajuda, com o caminho para Lojas dentro do balão (D370, pedido do usuário).
+  if (entry.minPriceCents === null && entry.warningCode === 'FEES_NOT_CONFIGURED') {
+    return (
+      <span className={styles.minPriceRow}>
+        <span className={styles.muted}>{t('inventory.marketValue.noPrice')}</span>
+        <HelpTip topic={topic} side="bottom">
+          <span className={styles.helpBody}>
+            <span>{t('inventory.help.minPriceNoFee', { store: entry.storeName })}</span>
+            <Link prefetch={false} href="/stores/" className={styles.warningLink}>
+              {t('inventory.warnings.goToStores')}
+            </Link>
+          </span>
+        </HelpTip>
+      </span>
+    );
+  }
   if (entry.minPriceCents === null) return <Warning entry={entry} />;
   return (
-    <Money
-      size={size}
-      cents={entry.minPriceCents}
-      currency={entry.currency}
-      approxCents={entry.approx?.cents ?? null}
-      approxCurrency={entry.approx?.currency ?? null}
-    />
+    <span className={styles.minPriceRow}>
+      <Money
+        size={size}
+        cents={entry.minPriceCents}
+        currency={entry.currency}
+        approxCents={entry.approx?.cents ?? null}
+        approxCurrency={entry.approx?.currency ?? null}
+        staleRateNote={staleRateNote}
+      />
+      <HelpTip topic={topic} side="bottom">
+        {t('inventory.help.minPriceBased', { store: entry.storeName })}
+      </HelpTip>
+    </span>
   );
 }
 
@@ -68,10 +94,7 @@ export default function MinPriceSummary({ minPrices, stores, showOthers = false 
 
   return (
     <div className={styles.minPrice}>
-      <span className={styles.cellWithHelp}>
-        <Entry entry={main} size="md" />
-        <HelpTip topic={t('inventory.columns.minPrice')}>{t('inventory.help.minPrice')}</HelpTip>
-      </span>
+      <Entry entry={main} size="md" />
       <span className={styles.storeName}>{main.storeName}</span>
       {showOthers && others.length > 0 && (
         <ul className={styles.others} aria-label={t('inventory.otherStores')}>
@@ -100,6 +123,7 @@ export function GroupMinPrice({ units, stores }: { units: ItemView[]; stores: St
   });
   const priced = entries.filter((entry): entry is MinPrice => entry !== null && entry.minPriceCents !== null);
   const first = units[0];
+  const staleRateNote = useDisplayStaleRateNote();
   if (priced.length < 2 || !first) return <MinPriceSummary minPrices={first?.minPrices ?? null} stores={stores} />;
 
   const currency = priced[0].currency;
@@ -115,13 +139,20 @@ export function GroupMinPrice({ units, stores }: { units: ItemView[]; stores: St
   const approxCents = approxOk ? approxs.map((a) => (a as { cents: number }).cents) : [];
   return (
     <div className={styles.priceRange}>
-      <span className={styles.cellWithHelp}>
+      <span className={styles.minPriceRow}>
         <span className={styles.rangeMain}>{`${formatMoney(low, currency, locale)} – ${formatMoney(high, currency, locale)}`}</span>
-        <HelpTip topic={t('inventory.columns.minPrice')}>{t('inventory.help.priceRange')}</HelpTip>
+        <HelpTip topic={t('inventory.columns.minPrice')} side="bottom">
+          {t('inventory.help.minPriceRange')}
+        </HelpTip>
       </span>
       {approxOk && approxCurrency && (
         <span className={styles.rangeApprox}>
           {t('common.approx', { value: `${formatMoney(Math.min(...approxCents), approxCurrency, locale)} – ${formatMoney(Math.max(...approxCents), approxCurrency, locale)}` })}
+          {staleRateNote && (
+            <HelpTip topic={t('ui.money.staleRate')} icon="clock" side="bottom">
+              {staleRateNote}
+            </HelpTip>
+          )}
         </span>
       )}
       <span className={styles.storeName}>{priced[0].storeName}</span>

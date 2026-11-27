@@ -12,6 +12,7 @@ import {
   Download,
   Ellipsis,
   Eye,
+  Hourglass,
   EyeOff,
   ExternalLink,
   Info,
@@ -81,6 +82,7 @@ export const ICONS = {
   rows3: Rows3,
   eye: Eye,
   eyeOff: EyeOff,
+  hourglass: Hourglass,
 } as const satisfies Record<string, LucideIcon>;
 
 export type IconName = keyof typeof ICONS;

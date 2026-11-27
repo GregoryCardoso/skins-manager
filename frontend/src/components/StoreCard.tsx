@@ -64,12 +64,13 @@ export default function StoreCard({ store, busy, onEdit, onToggleActive, onMakeP
     <Panel
       as="div"
       title={store.name}
-      headingLevel={3}
+      headingLevel={2}
       className={`${styles.card} ${store.isActive ? '' : styles.inactive}`}
       hint={
         <span className={styles.badges}>
           <Badge tone="neutral">{store.currency}</Badge>
           {store.isPrimary && <Badge tone="info">{t('storesTable.primary')}</Badge>}
+          {!store.sellsHere && <Badge tone="neutral">{t('stores.card.buyOnlyBadge')}</Badge>}
           {store.isSteamStore && <Badge tone="info">{t('stores.steamBadge')}</Badge>}
           <Badge tone={store.isActive ? 'profit' : 'neutral'} icon={store.isActive ? 'circleCheck' : undefined}>
             {store.isActive ? t('storesTable.active') : t('storesTable.inactive')}
@@ -89,10 +90,12 @@ export default function StoreCard({ store, busy, onEdit, onToggleActive, onMakeP
       }
     >
       <dl className={styles.facts}>
-        <div className={styles.fact}>
-          <dt>{t('storesTable.columns.saleFee')}</dt>
-          <dd className={fee === null ? styles.warn : undefined}>{fee ?? t('storesTable.feesNotConfigured')}</dd>
-        </div>
+        {(fee !== null || store.sellsHere) && (
+          <div className={styles.fact}>
+            <dt>{t('storesTable.columns.saleFee')}</dt>
+            <dd className={fee === null ? styles.warn : undefined}>{fee ?? t('storesTable.feesNotConfigured')}</dd>
+          </div>
+        )}
         {fee !== null && (
           <div className={styles.fact}>
             <dt>{t('storesTable.columns.rounding')}</dt>

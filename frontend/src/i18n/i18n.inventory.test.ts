@@ -21,14 +21,12 @@ const ENUMS: Record<string, string[]> = {
 
 const NEW_KEYS = [
   'common.dayCount.one', 'common.dayCount.other', 'common.approx', 'common.refresh',
-  'inventory.title', 'inventory.itemCount.one', 'inventory.itemCount.other', 'inventory.refresh', 'inventory.empty', 'inventory.emptyFiltered', 'inventory.clearFilters',
-  'inventory.loadError', 'inventory.primaryStore', 'inventory.otherStores', 'inventory.noPrice', 'inventory.ganhei',
-  'inventory.informativeStore', 'inventory.legacy', 'inventory.sold', 'inventory.turnaround', 'inventory.inspect', 'inventory.inspectInvalid',
-  ...['image', 'item', 'store', 'cost', 'days', 'tradeLock', 'minPrice', 'actions'].map((c) => `inventory.columns.${c}`),
+  'inventory.title', 'inventory.itemCount.one', 'inventory.itemCount.other', 'inventory.empty', 'inventory.emptyFiltered', 'inventory.clearFilters',
+  'inventory.loadError', 'inventory.otherStores', 'inventory.noPrice', 'inventory.ganhei',
+  'inventory.informativeStore', 'inventory.legacy', 'inventory.sold', 'inventory.turnaround', 'inventory.inspect', 
+  ...['image', 'item', 'store', 'cost', 'days', 'minPrice', 'actions'].map((c) => `inventory.columns.${c}`),
   'filters.label', 'filters.status', 'filters.statusAll', 'filters.category', 'filters.categoryAll', 'filters.stagnantOnly',
-  'filters.order', 'filters.orderDesc', 'filters.orderAsc',
-  'tradeLock.locked', 'tradeLock.released', 'tradeLock.remaining', 'tradeLock.until',
-  'tradeLock.units.d', 'tradeLock.units.h', 'tradeLock.units.min',
+  'filters.order', 'tradeLock.remaining', 'tradeLock.units.d', 'tradeLock.units.h', 'tradeLock.units.min',
   'fx.saving', 'fx.invalidInput',
 ];
 
@@ -65,7 +63,6 @@ describe.each([['pt-BR', ptBR], ['en', en]])('chaves da 4B.2 em %s', (_name, dic
     expect(get(dict, 'common.approx')).toContain('{value}');
     expect(get(dict, 'filters.stagnantOnly')).toContain('{days}');
     expect(get(dict, 'tradeLock.remaining')).toContain('{time}');
-    expect(get(dict, 'tradeLock.until')).toContain('{date}');
     expect(get(dict, 'inventory.itemCount.other')).toContain('{count}');
   });
 });
@@ -73,7 +70,7 @@ describe.each([['pt-BR', ptBR], ['en', en]])('chaves da 4B.2 em %s', (_name, dic
 const SALES_KEYS = [
   'inventory.actions.history',
   ...['title', 'count.one', 'count.other', 'refresh', 'empty', 'emptyFiltered', 'clearFilters', 'loadError', 'manualNet', 'fxBadge', 'fxTitle', 'saleRateNote'].map((k) => `sales.${k}`),
-  ...['image', 'item', 'purchaseStore', 'saleStore', 'cost', 'salePrice', 'netReceived', 'profit', 'soldAt', 'days', 'actions'].map((k) => `sales.columns.${k}`),
+  ...['item', 'purchaseStore', 'saleStore', 'cost', 'salePrice', 'netReceived', 'profit', 'soldAt', 'days', 'actions'].map((k) => `sales.columns.${k}`),
   ...['label', 'store', 'storeAll', 'inactive', 'period', 'from', 'to', 'sort', 'sortSoldAtDesc', 'sortSoldAtAsc', 'sortTurnaroundAsc', 'sortTurnaroundDesc', 'invalidRange'].map((k) => `salesFilters.${k}`),
   ...['ALL', 'LAST_7', 'LAST_30', 'LAST_90', 'THIS_MONTH', 'LAST_MONTH', 'THIS_YEAR', 'CUSTOM'].map((k) => `salesFilters.periods.${k}`),
   ...['label', 'sales', 'totalSold', 'totalNet', 'totalProfit', 'avgTurnaround', 'avgTurnaroundValue.one', 'avgTurnaroundValue.other', 'usdNote', 'profitTitle'].map((k) => `salesSummary.${k}`),

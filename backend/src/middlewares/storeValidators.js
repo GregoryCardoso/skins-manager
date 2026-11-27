@@ -88,6 +88,7 @@ const BODY_FIELDS = Object.freeze({
   saleHoldDays: { type: NUMBER, nullable: false },
   isActive: { type: BOOLEAN, nullable: false },
   isPrimary: { type: BOOLEAN, nullable: false },
+  sellsHere: { type: BOOLEAN, nullable: false },
 });
 
 function checkBodyShape(body, { requireKeys }) {

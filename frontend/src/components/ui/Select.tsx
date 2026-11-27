@@ -12,6 +12,13 @@ export interface SelectOption {
   disabled?: boolean;
   // Idioma do texto da opção (nomes de idiomas escritos neles mesmos).
   lang?: string;
+  // Grupo (`<optgroup>`) da opção; sem grupo, a opção vem antes dos grupos.
+  group?: string;
+}
+
+export interface SelectGroup {
+  id: string;
+  label: string;
 }
 
 export interface SelectProps {
@@ -19,6 +26,8 @@ export interface SelectProps {
   value: string;
   onChange: (value: string) => void;
   options: SelectOption[];
+  // Grupos, na ordem em que aparecem (`<optgroup>`). As opções sem `group` vêm antes, soltas.
+  groups?: SelectGroup[];
   // Texto da opção vazia (padrão common.select), mostrada só enquanto `value` é ''.
   placeholder?: string;
   hint?: ReactNode;
@@ -32,9 +41,15 @@ export interface SelectProps {
   className?: string;
 }
 
-// Lista curta (até ~12 opções). <select> nativo estilizado: teclado e leitor de tela são os do sistema. Listas longas usam o Combobox.
-export default function Select({ label, value, onChange, options, placeholder, hint, error, disabled, required, optional, full, name, autoFocus, className }: SelectProps) {
+// <select> nativo estilizado: teclado e leitor de tela são os do sistema. Listas longas podem vir em grupos (a moeda de conversão,
+// por região, a pedido do usuário: lista igual à do idioma, sem campo de busca). O Combobox fica para busca no catálogo.
+export default function Select({ label, value, onChange, options, groups, placeholder, hint, error, disabled, required, optional, full, name, autoFocus, className }: SelectProps) {
   const t = useT();
+  const renderOption = (option: SelectOption) => (
+    <option key={option.value} value={option.value} disabled={option.disabled} lang={option.lang}>
+      {option.label}
+    </option>
+  );
   return (
     <Field label={label} hint={hint} error={error} required={required} optional={optional} full={full} name={name} className={className}>
       {(control) => (
@@ -45,11 +60,15 @@ export default function Select({ label, value, onChange, options, placeholder, h
                 {placeholder ?? t('common.select')}
               </option>
             )}
-            {options.map((option) => (
-              <option key={option.value} value={option.value} disabled={option.disabled} lang={option.lang}>
-                {option.label}
-              </option>
-            ))}
+            {options.filter((option) => !groups || option.group === undefined).map(renderOption)}
+            {groups?.map((group) => {
+              const inGroup = options.filter((option) => option.group === group.id);
+              return inGroup.length === 0 ? null : (
+                <optgroup key={group.id} label={group.label}>
+                  {inGroup.map(renderOption)}
+                </optgroup>
+              );
+            })}
           </select>
           <Icon name="chevronDown" size={16} className={styles.chevron} />
         </div>

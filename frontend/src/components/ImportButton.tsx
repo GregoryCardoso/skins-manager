@@ -22,7 +22,7 @@ export default function ImportButton() {
 
   // O mesmo tom do selo do menu (--stuck). O tom `pending` é do saldo pendente (tem listras e não se lê com texto por cima).
   const reviewLink = reviewCount > 0 && (
-    <Link href="/imports/" className={styles.reviewLink}>
+    <Link prefetch={false} href="/imports/" className={styles.reviewLink}>
       <Badge tone="stuck">{tPlural('settings.integrations.csfloat.openEntries', reviewCount)}</Badge>
     </Link>
   );

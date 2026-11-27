@@ -67,10 +67,10 @@
 .expander svg { transition: transform var(--dur-fast) var(--ease); }
 .expander[aria-expanded='true'] svg { transform: rotate(90deg); }
 
-/* Linhas: hover e tom (o texto da linha continua sendo a fonte do significado). */
+/* Linhas: hover e tom (o texto da linha continua sendo a fonte do significado). O tom é 70% do fundo suave: o texto apagado (--muted) precisa manter 4,5:1 sobre ele no tema escuro. */
 .table tr[data-row-id]:hover > td { background: var(--surface-2); }
-.table tr[data-tone='stuck'] > td { background: var(--stuck-soft); }
-.table tr[data-tone='lock'] > td { background: var(--lock-soft); }
+.table tr[data-tone='stuck'] > td { background: color-mix(in srgb, var(--stuck-soft) 70%, transparent); }
+.table tr[data-tone='lock'] > td { background: color-mix(in srgb, var(--lock-soft) 70%, transparent); }
 .table tr[data-open] > td { border-bottom-color: transparent; }
 
 /* Linhas filhas (as que não têm data-row-id): fundo mais suave e a borda --brand à esquerda. */
@@ -78,6 +78,17 @@
 .table tbody[id] > tr:not([data-row-id]) > td:first-child { box-shadow: inset 3px 0 0 var(--brand); }
 
 .table td.details { padding-block: var(--space-3); }
+/* Conteúdo da linha expandida: ocupa só a parte VISÍVEL do rolável (`--scroller-w`, medido) e fica parado à esquerda enquanto a
+   tabela rola na horizontal. Sem isso, ele seguia a largura da tabela (mais larga que a tela em janelas estreitas) e o cartão cortava
+   botões e informações à direita (relato do usuário, 12.12). width 0: não pede largura à célula. */
+.detailsInner {
+  box-sizing: border-box;
+  position: sticky;
+  inset-inline-start: var(--space-3);
+  width: 0;
+  min-width: calc(var(--scroller-w, 100%) - 2 * var(--space-3));
+  max-width: calc(var(--scroller-w, 100vw) - 2 * var(--space-3));
+}
 .hiddenList { display: grid; grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); gap: var(--space-3) var(--space-4); margin: 0; }
 .hiddenItem { min-width: 0; }
 .hiddenItem dt { color: var(--muted); font-size: var(--fs-xs); font-weight: var(--fw-bold); }
@@ -87,3 +98,20 @@
 .table td.empty { padding: 0; border-bottom: 0; }
 .footer { border-top: 1px solid var(--line); }
 .table tr[aria-current='true'] > td { background: var(--brand-soft); }
+
+/* Nome da coluna + elemento auxiliar (HelpTip) lado a lado. */
+.headCell { display: inline-flex; align-items: center; gap: var(--space-1); }
+
+/* Coluna presa à direita (stickyEnd, ações). Fundo opaco: os tons das linhas são semitransparentes, então a cor vai por cima de
+   --surface para o conteúdo que rola por baixo não aparecer através dela. A linha divisória só aparece quando a tabela rola. */
+.table .stickyEnd { position: sticky; inset-inline-end: 0; z-index: 1; background: var(--surface); }
+.scroller[data-scrollable] .stickyEnd { box-shadow: inset 1px 0 0 var(--line), -6px 0 8px -6px color-mix(in srgb, var(--text) 25%, transparent); }
+.table tr[data-row-id]:hover > td.stickyEnd { background: var(--surface-2); }
+.table tr[data-tone='stuck'] > td.stickyEnd {
+  background: linear-gradient(color-mix(in srgb, var(--stuck-soft) 70%, transparent), color-mix(in srgb, var(--stuck-soft) 70%, transparent)), var(--surface);
+}
+.table tr[data-tone='lock'] > td.stickyEnd {
+  background: linear-gradient(color-mix(in srgb, var(--lock-soft) 70%, transparent), color-mix(in srgb, var(--lock-soft) 70%, transparent)), var(--surface);
+}
+.table tr[aria-current='true'] > td.stickyEnd { background: linear-gradient(var(--brand-soft), var(--brand-soft)), var(--surface); }
+.sticky th.stickyEnd { z-index: calc(var(--z-sticky) + 1); }

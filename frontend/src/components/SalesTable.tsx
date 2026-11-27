@@ -6,6 +6,7 @@ import { formatDate, formatMoney, formatRate } from '@/lib/format';
 import { itemDisplayName } from '@/lib/itemName';
 import type { SalesFilters } from '@/lib/salesQuery';
 import type { ItemView, Store } from '@/types/api';
+import { useDisplayStaleRateNote } from './useStaleRateNote';
 import { PurchaseStoreCell, SaleItemCell, SaleMoney } from './SaleCells';
 import SaleReleaseNote from './SaleReleaseNote';
 import SaleTurnoverCell from './SaleTurnoverCell';
@@ -47,6 +48,7 @@ export default function SalesTable({
   const t = useT();
   const tPlural = useTPlural();
   const locale = useLocale();
+  const staleRateNote = useDisplayStaleRateNote();
   const [open, setOpen] = useState<ReadonlySet<string>>(() => new Set());
   const unitHandlers: UnitRowHandlers = {
     onEdit: handlers.onEdit,
@@ -139,7 +141,7 @@ export default function SalesTable({
         if (!info || profit === null) return none;
         return (
           <span className={styles.stack}>
-            <Money size="sm" signed cents={profit} currency="USD" approxCents={info.approx.profit} approxCurrency={info.approxCurrency} />
+            <Money size="sm" signed cents={profit} currency="USD" approxCents={info.approx.profit} approxCurrency={info.approxCurrency} staleRateNote={info.approx.profit !== null ? staleRateNote : undefined} />
             {info.usesRecordedFx && (
               <span className={styles.nowrap}>
                 <Badge tone="info">{t('sales.fxBadge')}</Badge>{' '}
@@ -176,6 +178,7 @@ export default function SalesTable({
       header: t('sales.columns.actions'),
       hideHeader: true,
       align: 'end',
+      stickyEnd: true,
       priority: 1,
       cell: (item) => <ItemRowActions item={item} handlers={unitHandlers} />,
     },

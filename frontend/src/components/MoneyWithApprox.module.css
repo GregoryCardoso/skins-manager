@@ -1,5 +1,5 @@
 .wrap { display: flex; flex-direction: column; gap: 0.1rem; white-space: nowrap; }
 .main { font-weight: 600; }
-.side { font-size: 0.78rem; color: var(--text-muted); opacity: 0.9; }
-.negative { color: var(--danger); }
-.positive { color: var(--success); }
+.side { font-size: 0.78rem; color: var(--muted); opacity: 0.9; }
+.negative { color: var(--loss); }
+.positive { color: var(--profit); }

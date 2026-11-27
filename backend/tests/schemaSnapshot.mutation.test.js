@@ -75,7 +75,7 @@ describe('schemaSnapshot.test.js reprova mudanças (processo filho)', () => {
 describe('snapshot: conteúdo', () => {
   test('os hashes cobrem só vNNN_*.js (index.js fora) e batem com o arquivo real', () => {
     const names = Object.keys(SNAPSHOT.migrations);
-    expect(names.length).toBeGreaterThanOrEqual(27);
+    expect(names.length).toBeGreaterThanOrEqual(28);
     expect(names.every((n) => /^v\d{3}_.+\.js$/.test(n))).toBe(true);
     expect(names).not.toContain('index.js');
     const real = fs.readdirSync(path.join(BACKEND, 'src', 'config', 'migrations')).filter((n) => /^v\d{3}_/.test(n)).sort();

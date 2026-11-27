@@ -209,7 +209,6 @@ describe('textos do holding (bordas, D282)', () => {
       'inventory.tabs.offSale': ['Holding ({count})', 'Holding ({count})'],
       'inventory.tabs.offSaleHint': ['Itens guardados esperando valorização.', 'Items held while waiting for their value to rise.'],
       'inventory.offSaleConfirmTitle': ['Mover para o holding?', 'Move to holding?'],
-      'inventory.offSaleSince': ['No holding desde {date}', 'In holding since {date}'],
       'inventory.offSaleEmpty': ['Nenhum item no holding.', 'No items in holding.'],
       'inventory.offSaleDone': ['{name} foi movido para o holding.', '{name} moved to holding.'],
       'inventory.forSaleDone': ['{name} voltou para a venda.', '{name} put back on sale.'],
@@ -217,7 +216,6 @@ describe('textos do holding (bordas, D282)', () => {
       'enums.turnaroundBucket.SEM_GIRO': ['Vendido do holding (sem contar giro)', 'Sold from holding (not counted)'],
       'history.soldOffSale.one': ['{count} venda do holding não entra no tempo médio', '{count} sale from holding is not in the average time'],
       'history.soldOffSale.other': ['{count} vendas do holding não entram no tempo médio', '{count} sales from holding are not in the average time'],
-      'inventory.group.offSale': ['{count} no holding', '{count} in holding'],
     };
     for (const [key, [ptText, enText]] of Object.entries(expected)) {
       expect(pt[key], `pt ${key}`).toBe(ptText);
@@ -237,10 +235,8 @@ describe('chaves da visão agrupada (D278)', () => {
   const keys = [
     'inventory.view.label', 'inventory.view.grouped', 'inventory.view.individual', 'inventory.view.onlyInStock',
     'inventory.itemCount.one', 'inventory.itemCount.other', 'inventory.groupsCount.one', 'inventory.groupsCount.other', 'inventory.countInGroups',
-    'inventory.columns.quantity', 'inventory.columns.avgCost', 'inventory.columns.totalCost', 'inventory.columns.situation',
-    'inventory.group.expand', 'inventory.group.collapse', 'inventory.group.forSale', 'inventory.group.tradeLocked',
-    'inventory.group.offSale', 'inventory.group.stagnant.one', 'inventory.group.stagnant.other', 'inventory.group.convertedCost',
-    'inventory.tabs.offSaleHint', 'errors.INVALID_INVENTORY_VIEW',
+    'inventory.columns.quantity', 'inventory.columns.avgCost', 'inventory.columns.totalCost', 'inventory.group.expand', 'inventory.group.collapse', 'inventory.group.tradeLocked',
+    'inventory.group.stagnant.one', 'inventory.group.stagnant.other', 'inventory.tabs.offSaleHint', 'errors.INVALID_INVENTORY_VIEW',
   ];
 
   test('todas existem, não vazias, nos dois idiomas, com os mesmos placeholders', () => {
@@ -307,7 +303,6 @@ describe('plural do título (itemCount, groupsCount, countInGroups) e stagnant',
 
   test('situação do grupo: textos preenchidos', () => {
     expect(translate(ptBR, 'inventory.group.tradeLocked', { count: 2, date: '25/11/2026' })).toBe('2 em trade lock (libera em 25/11/2026)');
-    expect(translate(en, 'inventory.group.forSale', { count: 3 })).toBe('3 for sale');
     expect(translate(ptBR, 'inventory.group.expand', { name: 'AK-47 | Redline' })).toBe('Mostrar unidades de AK-47 | Redline');
   });
 });

@@ -1,38 +1,38 @@
 .titleRow { display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap; }
 .titleRow h1 { margin-bottom: 0.75rem; }
-.count { color: var(--text-muted); }
-.muted { color: var(--text-muted); }
-.dim { opacity: 0.6; transition: opacity 0.15s; }
+.count { color: var(--muted); }
+.muted { color: var(--muted); }
+.dim { opacity: 0.6; transition: opacity var(--dur-fast); }
 .error {
-  color: var(--danger); background: var(--danger-bg); border: 1px solid var(--danger); border-radius: 8px;
+  color: var(--loss); background: var(--loss-soft); border: 1px solid var(--loss); border-radius: 8px;
   padding: 0.5rem 1rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
 }
 .error p { margin: 0; }
 .empty {
-  text-align: center; padding: 2.5rem 1rem; color: var(--text-muted); background: var(--surface);
-  border: 1px dashed var(--border); border-radius: 10px;
+  text-align: center; padding: 2.5rem 1rem; color: var(--muted); background: var(--surface);
+  border: 1px dashed var(--line); border-radius: 10px;
 }
 .retry {
-  font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border);
+  font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--line);
   border-radius: 6px; padding: 0.35rem 0.8rem; cursor: pointer;
 }
-.retry:hover { border-color: var(--accent); }
+.retry:hover { border-color: var(--brand); }
 
 .titleActions { margin-left: auto; display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
 .newItem {
-  font: inherit; color: var(--accent-text); background: var(--accent); border: 1px solid var(--accent);
+  font: inherit; color: var(--brand-ink); background: var(--brand); border: 1px solid var(--brand);
   border-radius: 6px; padding: 0.35rem 0.9rem; cursor: pointer;
 }
 .newItem:hover { filter: brightness(1.1); }
 .notice {
   display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
-  color: var(--text); background: var(--surface); border: 1px solid var(--success); border-radius: 8px;
+  color: var(--text); background: var(--surface); border: 1px solid var(--profit); border-radius: 8px;
   padding: 0.5rem 1rem; margin-bottom: 1rem;
 }
 
-.tabs { display: flex; gap: 0.25rem; margin: 0.75rem 0; border-bottom: 1px solid var(--border); }
+.tabs { display: flex; gap: 0.25rem; margin: 0.75rem 0; border-bottom: 1px solid var(--line); }
 .tab {
   background: none; border: 0; border-bottom: 2px solid transparent; padding: 0.45rem 0.9rem; font: inherit; cursor: pointer;
-  color: var(--text-muted);
+  color: var(--muted);
 }
-.tabActive { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
+.tabActive { color: var(--text); border-bottom-color: var(--brand); font-weight: 600; }

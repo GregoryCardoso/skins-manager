@@ -74,7 +74,9 @@ describe('ProfitEquation (12.7b)', () => {
   });
 
   test('cotação velha: o relógio de ajuda aparece junto do lucro', () => {
-    const old = makeProfit({ fx: { ...makeProfit().fx, quotedAt: '2020-01-02T00:00:00.000Z' } });
+    // O relógio segue a cotação da moeda de conversão (`fx.display`, 12.12), não os campos antigos do real.
+    const base = makeProfit().fx;
+    const old = makeProfit({ fx: { ...base, display: { ...base.display!, quotedAt: '2020-01-02T00:00:00.000Z' } } });
     renderUi(<ProfitEquation data={old} />);
     expect(within(rowOf('Real profit')).getByRole('button', { name: /exchange rate may be outdated/i })).toBeInTheDocument();
   });

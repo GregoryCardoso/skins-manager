@@ -14,7 +14,7 @@ vi.mock('@/services/api', async (importOriginal) => ({ ...(await importOriginal<
 import StoresPage from './page';
 
 const store = (id: number, name: string, extra: Partial<Store> = {}): Store => ({
-  id, name, currency: 'USD', isActive: true, isPrimary: id === 1, saleFeeType: 'DEDUCTED', saleFeeRate: 0.02, saleFeeRounding: 'CEIL',
+  id, name, currency: 'USD', isActive: true, isPrimary: id === 1, sellsHere: true, saleFeeType: 'DEDUCTED', saleFeeRate: 0.02, saleFeeRounding: 'CEIL',
   saleMinFeeCents: null, saleFixedFeeCents: 0, allowsWithdrawal: false, withdrawalFeeRate: null, withdrawalFixedFeeCents: 0, saleHoldDays: 0,
   createdAt: '', updatedAt: '', saleFeesConfigured: true, inUse: false, ...extra,
 });
@@ -37,9 +37,9 @@ afterEach(cleanup);
 describe('página de Lojas', () => {
   test('um cartão por loja, com a contagem no cabeçalho', async () => {
     renderPage();
-    expect(await screen.findByRole('heading', { level: 3, name: 'CSFloat' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 3, name: 'Steam' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 3, name: 'CSMoney' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 2, name: 'CSFloat' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Steam' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'CSMoney' })).toBeInTheDocument();
     expect(screen.getByText('3 stores')).toBeInTheDocument();
   });
 
@@ -54,7 +54,7 @@ describe('página de Lojas', () => {
   test('a dica some quando já há loja Steam escolhida', async () => {
     api.getSettings.mockResolvedValue({ steamStoreId: 2 });
     renderPage();
-    await screen.findByRole('heading', { level: 3, name: 'Steam' });
+    await screen.findByRole('heading', { level: 2, name: 'Steam' });
     await waitFor(() => expect(api.getSettings).toHaveBeenCalled());
     expect(screen.queryByText('Choose your Steam store')).toBeNull();
   });
@@ -91,7 +91,7 @@ describe('página de Lojas', () => {
     renderPage();
     expect(await screen.findByText(/Could not load the stores/)).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
-    expect(await screen.findByRole('heading', { level: 3, name: 'CSFloat' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 2, name: 'CSFloat' })).toBeInTheDocument();
   });
 
   test('sem lojas: estado vazio com o botão de criar', async () => {

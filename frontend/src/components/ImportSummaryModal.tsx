@@ -40,7 +40,7 @@ export default function ImportSummaryModal({ batch, onClose }: Props) {
         footer={(
           <>
             {batch.undoable && <Button onClick={() => setUndoOpen(true)}>{t('imports.undo.button')}</Button>}
-            <Link href="/imports/" className={styles.linkButton} onClick={onClose}>{t('imports.summary.details')}</Link>
+            <Link prefetch={false} href="/imports/" className={styles.linkButton} onClick={onClose}>{t('imports.summary.details')}</Link>
             <Button variant="primary" onClick={onClose}>{t('common.close')}</Button>
           </>
         )}
@@ -68,7 +68,7 @@ export default function ImportSummaryModal({ batch, onClose }: Props) {
           )}
           {batch.counts.beforeCutoff > 0 && (
             <p className={styles.help}>
-              {t('imports.cutoffChange.olderHint')} <Link href="/imports/#cutoff" onClick={onClose}>{t('imports.cutoffChange.link')}</Link>
+              {t('imports.cutoffChange.olderHint')} <Link prefetch={false} href="/imports/#cutoff" onClick={onClose}>{t('imports.cutoffChange.link')}</Link>
             </p>
           )}
           {batch.warnings.map((warning) => {

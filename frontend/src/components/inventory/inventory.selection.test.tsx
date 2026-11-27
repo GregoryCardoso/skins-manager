@@ -211,13 +211,14 @@ describe('GroupMinPrice (Q-12.5-3)', () => {
     { storeId: 1, storeName: 'CSFloat', currency: 'USD', minPriceCents: cents, approx: approx === null ? null : { currency: 'BRL', cents: approx }, warning: null, warningCode: null },
   ];
 
-  test('uma unidade: o valor dela; várias com valores diferentes: faixa "x – y" com ajuda', () => {
+  test('uma unidade: o valor dela; várias com valores diferentes: faixa "x – y" com uma ajuda só', () => {
     const { rerender } = renderUi(<GroupMinPrice units={[makeItem({ id: 1, minPrices: price(4140) })]} stores={STORES} />);
     expect(screen.getByText('$41.40')).toBeInTheDocument();
     rerender(<GroupMinPrice units={[makeItem({ id: 1, minPrices: price(4554, 22770) }), makeItem({ id: 2, minPrices: price(4140, 20700) })]} stores={STORES} />);
     expect(screen.getByText('$41.40 – $45.54')).toBeInTheDocument();
     expect(screen.getByText(/R\$\s?207\.00 – R\$\s?227\.70/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Help: Break-even price' })).toBeInTheDocument();
+    // D370: a faixa tem um único "?" próprio (a ajuda não fica mais no cabeçalho da coluna).
+    expect(screen.getAllByRole('button', { name: 'Help: Break-even price' })).toHaveLength(1);
   });
 
   test('valores iguais: um valor só (sem faixa)', () => {

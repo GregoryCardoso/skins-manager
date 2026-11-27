@@ -1,3 +1,5 @@
+// S4 (12.11): o comportamento do seletor, do modal e da tela de cotações está em CurrencySelect.test.tsx, CurrencyChangeModal.test.tsx e
+// FxRateSettings.test.tsx (jsdom); aqui sobram só as varreduras de código-fonte.
 // 11.3: seletor "Moeda de conversão", modal da troca, cotações por moeda e "≈" na moeda escolhida. Ligação pelo código-fonte (os
 // componentes não rodam no ambiente node dos testes) e pelos textos; a lógica em si está em lib/currencies, lib/fxRates e lib/currencyChange.
 import fs from 'node:fs';
@@ -24,16 +26,6 @@ describe('seletor (menu e Configurações)', () => {
     expect(prefs.indexOf('setLanguage(')).toBeLessThan(prefs.indexOf('<CurrencySelect'));
   });
 
-  test('escolher outra moeda abre o modal e não grava; o valor mostrado continua o gravado até confirmar', () => {
-    const code = read('components/CurrencySelect.tsx');
-    expect(code).toMatch(/value=\{displayCurrency\}/);
-    expect(code).toMatch(/setPending\(value\)/);
-    expect(code).toMatch(/<Combobox/);
-    expect(code).toMatch(/<CurrencyChangeModal /);
-    expect(code).not.toMatch(/changeDisplayCurrency|updatePreferences/);
-    expect(code).toMatch(/currencyComboboxOptions\(locale\)/);
-  });
-
   test('trocar o idioma nunca muda a moeda: setLanguage só envia o idioma', () => {
     const provider = read('components/PreferencesProvider.tsx');
     const setLanguage = provider.slice(provider.indexOf('const setLanguage'), provider.indexOf('// Troca otimista'));
@@ -46,25 +38,12 @@ describe('seletor (menu e Configurações)', () => {
 describe('modal da troca', () => {
   const modal = read('components/CurrencyChangeModal.tsx');
 
-  test('usa o Modal padrão (acessível: Esc, foco e botão fechar), a prévia do backend e só grava ao confirmar', () => {
-    expect(modal).toMatch(/import Dialog from '\.\/ui\/Dialog'/);
-    expect(modal).toMatch(/getCurrencyChangePreview\(currency, signal\)/);
-    expect(modal).toMatch(/changeDisplayCurrency\(currency, steamChoiceFor\(view, checks\)\)/);
-    // durante o envio nada fecha
-    expect(modal).toMatch(/busy=\{busy\}/);
-  });
-
   test('11.4: as linhas da loja Steam vêm de view.steamLines; a opção de nova loja nasce desmarcada e só marcada envia NEW_STORE', () => {
     expect(modal).toMatch(/view\.steamLines\.map/);
     expect(modal).toMatch(/currency\.modal\.steamFollow/);
     expect(modal).toMatch(/currency\.modal\.steamNewStore/);
     expect(modal).toMatch(/currency\.modal\.steamLocked/);
     expect(modal).toMatch(/initialSteamChecks\(view\)/);
-  });
-
-  test('busca a cotação na hora só quando falta e há fonte automática; falha não desfaz a troca', () => {
-    // a busca falhou: a troca já está gravada, e o campo da cotação reaparece no próprio modal (12.8)
-    expect(modal).toMatch(/if \(view\.fetchRateAfter\) \{\s+try \{\s+await refreshFxRate\(currency\);\s+\} catch \{\s+setFetchFailed\(true\)/);
   });
 
   test('textos aprovados (E-P3-Q18 e Q19) em pt-BR e en', () => {
@@ -121,16 +100,6 @@ describe('"≈" na moeda escolhida: nenhum componente fixa BRL', () => {
 });
 
 describe('cotações: telas e atualização ao abrir', () => {
-  test('a tela lista as moedas necessárias, com fonte, data, edição manual, atualizar e destaque da antiga', () => {
-    const code = read('components/FxRateSettings.tsx');
-    expect(code).toMatch(/buildFxRows\(requiredFxCurrencies, fxRates, displayCurrency/);
-    expect(code).toMatch(/refreshFxRate\(currency\)/);
-    expect(code).toMatch(/saveFxRate\(currency, value\)/);
-    expect(code).toMatch(/row\.stale/);
-    expect(code).toMatch(/row\.sources\.length > 1/);
-    expect(code).toMatch(/formatRate\(rate, locale, currency\)/);
-  });
-
   test('textos novos nos dois idiomas', () => {
     for (const dict of [ptBR, en]) {
       for (const key of ['intro', 'noneNeeded', 'displayBadge', 'staleHint'] as const) expect(dict.settings.fx[key].length).toBeGreaterThan(0);

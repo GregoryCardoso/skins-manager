@@ -6,7 +6,7 @@ import { itemDisplayName } from '@/lib/itemName';
 import { rowActions, type DisabledReason, type ItemActionId, type RowAction } from '@/lib/itemRowActions';
 import { isHttpsLink } from '@/lib/safeUrl';
 import type { ItemView } from '@/types/api';
-import Button from '../ui/Button';
+import ReasonButton from './ReasonButton';
 import Menu, { type MenuEntry } from '../ui/Menu';
 import type { IconName } from '../ui/Icon';
 import styles from './inventory.module.css';
@@ -128,17 +128,15 @@ export default function ItemRowActions({ item, handlers, forSalePendingId = null
   return (
     <div className={styles.actions}>
       {primary && (
-        <Button
-          size="sm"
+        <ReasonButton
+          disabled={Boolean(primary.disabled)}
+          reason={reasonText(primary.disabledReason)}
           variant={primary.id === 'sell' ? 'primary' : 'secondary'}
           loading={primaryBusy}
-          aria-disabled={primary.disabled ? true : undefined}
-          onClick={() => {
-            if (!primary.disabled) run(primary.id);
-          }}
+          onClick={() => run(primary.id)}
         >
           {labelOf(primary.id)}
-        </Button>
+        </ReasonButton>
       )}
       <Menu label={t('inventory.actions.moreFor', { name })} items={entries} />
     </div>

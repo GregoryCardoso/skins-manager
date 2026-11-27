@@ -135,7 +135,6 @@ describe('i18n: paridade e textos', () => {
   });
 
   test('os textos de data usam {date} e os de nome usam {name}; ação não fala em "saldo inicial"', () => {
-    expect(holders(flatPt['inventory.offSaleSince'])).toEqual(['{date}']);
     expect(holders(flatPt['inventory.offSaleDone'])).toEqual(['{name}']);
     expect(holders(flatEn['inventory.forSaleDone'])).toEqual(['{name}']);
     expect(translate(ptBR, 'inventory.offSaleConfirmMessage')).toMatch(/recomeça/);
@@ -143,20 +142,9 @@ describe('i18n: paridade e textos', () => {
   });
 });
 
+// S4 (12.11): as ações da linha (Mover para holding / Voltar para a venda / Vender em trade lock) são testadas por comportamento em
+// lib/itemRowActions.test.ts e itemRowActions.qa125a.test.ts.
 describe('botões, abas e exibição', () => {
-  test('ações da linha: "Mover para holding" só em FOR_SALE e "Voltar para a venda" só em OFF_SALE; Vender, Editar e Excluir sempre', () => {
-    const code = read('lib/itemRowActions.ts');
-    expect(code).toMatch(/if \(holding\) return \{ primary: act\('forSale'\)/);
-    expect(code).toMatch(/act\('offSale'\)/);
-    expect(code).toContain("act('edit')");
-    expect(code).toContain("act('delete')");
-    expect(code).toContain("act('sell'");
-  });
-
-  test('Vender fica desabilitado em trade lock também para item fora de venda (a regra do backend é a mesma)', () => {
-    expect(read('lib/itemRowActions.ts')).toMatch(/const sell = act\('sell', locked \? \{ disabled: true, disabledReason: 'TRADE_LOCK' \} : \{\}\);[\s\S]*menu: \[sell, /);
-  });
-
   test('as abas mostram as contagens do backend e a aba escolhida zera "só agarrados"', () => {
     const page = read('app/page.tsx');
     expect(page).toContain('meta.saleStateCounts.forSale');

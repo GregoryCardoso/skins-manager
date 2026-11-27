@@ -183,11 +183,11 @@ describe('modal e seletor: ligação do fluxo (ambiente node, sem DOM)', () => {
   const confirmBody = modal.slice(modal.indexOf('const confirm'), modal.indexOf('return ('));
 
   test('escolher a mesma moeda gravada não abre o modal nem chama a API', () => {
-    expect(select).toMatch(/if \(value !== null && value !== displayCurrency\) setPending\(value\)/);
+    expect(select).toMatch(/if \(value !== displayCurrency\) setPending\(value\)/);
     expect(select).not.toMatch(/changeDisplayCurrency|updatePreferences|services\/api/);
   });
 
-  test('o Combobox é controlado por displayCurrency (volta à moeda gravada); o modal é remontado a cada moeda', () => {
+  test('a lista é controlada por displayCurrency (volta à moeda gravada); o modal é remontado a cada moeda', () => {
     expect(select).toMatch(/value=\{displayCurrency\}/);
     expect(select).toMatch(/onClose=\{\(\) => setPending\(null\)\}/);
     expect(select).toMatch(/key=\{pending\}/);

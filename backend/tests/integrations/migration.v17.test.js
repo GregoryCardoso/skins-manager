@@ -5,6 +5,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { stripSellsHere } = require('../helpers/stripV6');
 const crypto = require('crypto');
 const { openDatabase } = require('../../src/config/database');
 const { MIGRATIONS } = require('../../src/config/migrations');
@@ -69,11 +70,11 @@ test('v17 sobre v16 com dados variados: itens, aportes, lojas e configurações 
   const before = seedV16(dbPath);
   const db = openDatabase(dbPath, { now: new Date('2026-11-23T12:00:00.000Z') });
   try {
-    expect(db.pragma('user_version', { simple: true })).toBe(27);
+    expect(db.pragma('user_version', { simple: true })).toBe(28);
     const after = snapshot(db);
     expect(withoutNewColumn(after.items)).toEqual(before.items);
     expect(after.deposits).toEqual(before.deposits);
-    expect(after.stores).toEqual(before.stores);
+    expect(stripSellsHere(after.stores)).toEqual(before.stores);
     expect(after.settings).toEqual(before.settings);
     for (const table of ['item_components', 'item_operations', 'item_operation_links']) {
       expect(db.prepare(`SELECT COUNT(*) n FROM ${table}`).get().n).toBe(0);
@@ -95,7 +96,7 @@ test('reabrir um banco já na v17 não reaplica a migração nem cria outro back
   const first = count();
   const reopened = openDatabase(dbPath);
   try {
-    expect(reopened.pragma('user_version', { simple: true })).toBe(27);
+    expect(reopened.pragma('user_version', { simple: true })).toBe(28);
   } finally {
     reopened.close();
   }
@@ -126,7 +127,7 @@ test('v17 falha no meio: rollback total (sem tabelas nem coluna), versão 16 e d
   }
   const ok = openDatabase(dbPath);
   try {
-    expect(ok.pragma('user_version', { simple: true })).toBe(27);
+    expect(ok.pragma('user_version', { simple: true })).toBe(28);
     expect(ok.prepare('SELECT COUNT(*) n FROM items').get().n).toBe(before.items.length);
   } finally {
     ok.close();

@@ -350,14 +350,14 @@ export default function CsfloatIntegrationCard() {
                     <p className={cardStyles.muted}>
                       {t('settings.integrations.csfloat.cutoffInfo', { date: formatDateTime(integration.tradesCutoffAt, locale) })}
                     </p>
-                    <Link href="/imports/" className={cardStyles.link} data-testid="csfloat-review-imports">
+                    <Link prefetch={false} href="/imports/" className={cardStyles.link} data-testid="csfloat-review-imports">
                       {t('settings.integrations.csfloat.reviewImports')}
                     </Link>
                   </div>
                 )}
                 {integration.openEntriesCount > 0 && (
                   <p className={cardStyles.muted}>
-                    <Link href="/imports/">{tPlural('settings.integrations.csfloat.openEntries', integration.openEntriesCount)}</Link>
+                    <Link prefetch={false} href="/imports/">{tPlural('settings.integrations.csfloat.openEntries', integration.openEntriesCount)}</Link>
                   </p>
                 )}
               </div>

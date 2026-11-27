@@ -26,11 +26,16 @@ body:lang(ko) { font-family: system-ui, -apple-system, 'Segoe UI', 'Malgun Gothi
 main { padding: 1.5rem; max-width: 80rem; margin: 0 auto; }
 /* Páginas com tabelas largas (inventário, vendas) usam a largura da janela; as demais seguem em 80rem. */
 main:has([data-wide-table]) { max-width: 120rem; }
-@media (max-width: 64rem) {
+@media (width < 1100px) {
   main { padding: 1rem 0.75rem; }
 }
 
 h1 { margin-top: 0; }
-a { color: var(--accent); }
+a { color: var(--brand); }
 
 :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+/* Modo de alto contraste do Windows (forced-colors): o anel de foco dos componentes é um box-shadow, que o sistema remove; sem isto o foco some. */
+@media (forced-colors: active) {
+  :focus-visible { outline: 2px solid Highlight !important; outline-offset: 2px; }
+}

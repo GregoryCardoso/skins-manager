@@ -173,6 +173,13 @@ describe('ImportEntriesList: escolhas, passos e lote', () => {
     expect(screen.queryByRole('region', { name: 'Selected trades' })).toBeNull();
   });
 
+  test('auditoria 12.11: o título do grupo é um h2 só com o texto (o checkbox do grupo fica fora do título)', () => {
+    view(<ImportEntriesList entries={[withoutPurchase(1, 'Item A'), withoutPurchase(2, 'Item B')]} />);
+    const heading = screen.getByRole('heading', { level: 2, name: /Sale without a purchase in the app/ });
+    expect(within(heading).queryByRole('checkbox')).toBeNull();
+    expect(screen.getByRole('checkbox', { name: /^Select all in / })).toBeInTheDocument();
+  });
+
   test('tudo ou nada: o conflito do lote mostra a falha na linha e nada some', async () => {
     api.bulkResolveImportEntries.mockRejectedValue(
       new ApiRequestError('IMPORT_BULK_CONFLICT', 'conflito', 409, { params: { failures: [{ entryId: 2, code: 'IMPORT_ENTRY_CONFLICT', reason: 'SALE_TX_NOT_FOUND' }] } }),

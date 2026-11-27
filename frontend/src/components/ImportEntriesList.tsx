@@ -274,9 +274,9 @@ function EntryRow({
         {failed && <Banner tone="danger">{failed}</Banner>}
         {(link !== null || entry.candidateIds.length > 0) && (
           <span className={styles.links}>
-            {link !== null && <Link href={link} onClick={onNavigate}>{t(entryLinkLabelKey(entry))}</Link>}
+            {link !== null && <Link prefetch={false} href={link} onClick={onNavigate}>{t(entryLinkLabelKey(entry))}</Link>}
             {entry.candidateIds.map((id) => (
-              <Link key={id} href={candidateLink(entry, id)} onClick={onNavigate}>{t('imports.seeCandidate', { id })}</Link>
+              <Link key={id} prefetch={false} href={candidateLink(entry, id)} onClick={onNavigate}>{t('imports.seeCandidate', { id })}</Link>
             ))}
           </span>
         )}
@@ -417,7 +417,7 @@ export default function ImportEntriesList({ entries, onNavigate, ignoredList = f
         const groupLabel = t(`imports.groups.${group.key}`);
         return (
           <section key={group.key} className={styles.group} aria-label={groupLabel}>
-            <h3 className={styles.groupTitle}>
+            <div className={styles.groupTitle}>
               {selectable.length > 1 && (
                 <Checkbox
                   label=""
@@ -428,9 +428,11 @@ export default function ImportEntriesList({ entries, onNavigate, ignoredList = f
                   className={styles.check}
                 />
               )}
-              <Badge tone={GROUP_TONE[group.key]}>{group.entries.length}</Badge>
-              <span>{groupLabel}</span>
-            </h3>
+              <h2 className={styles.groupHeading}>
+                <Badge tone={GROUP_TONE[group.key]}>{group.entries.length}</Badge>
+                <span>{groupLabel}</span>
+              </h2>
+            </div>
             <ul className={styles.list}>
               {group.entries.map((entry) => (
                 <EntryRow

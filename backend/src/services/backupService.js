@@ -70,6 +70,7 @@ function assessBackupFile(info, latestVersion) {
 
 // Resumo para a prévia da importação (12.8), puro. `info`: o arquivo inspecionado ({ userVersion }); `raw`: o que o model leu
 // ({ items, sales, stores, deposits, withdrawals, lastUpdates[] }); `ctx`: { latestVersion, appVersion, sizeBytes }.
+// `appVersion` é a versão do app EM EXECUÇÃO (a que está lendo o arquivo), não a de quem gerou o backup: o arquivo não guarda isso (12.12, M6).
 // `exportedAt`: o arquivo não guarda a data da exportação; usa-se a última alteração registrada (maior `updated_at`) ou null.
 function summarizeBackup(info, raw, { latestVersion, appVersion, sizeBytes }) {
   const dates = (Array.isArray(raw.lastUpdates) ? raw.lastUpdates : []).filter((v) => typeof v === 'string' && !Number.isNaN(Date.parse(v)));

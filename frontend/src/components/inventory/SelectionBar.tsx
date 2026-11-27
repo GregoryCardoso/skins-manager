@@ -1,5 +1,6 @@
 'use client';
 
+import { useId } from 'react';
 import { useT, useTPlural } from '@/i18n/I18nProvider';
 import { MAX_BULK_IDS, type BulkDirection } from '@/lib/inventorySelection';
 import Button from '../ui/Button';
@@ -30,6 +31,7 @@ interface Props {
 export default function SelectionBar({ count, direction, onMove, onClear }: Props) {
   const t = useT();
   const tPlural = useTPlural();
+  const limitId = useId();
   if (count === 0) return null;
   const overLimit = count > MAX_BULK_IDS;
   return (
@@ -41,6 +43,7 @@ export default function SelectionBar({ count, direction, onMove, onClear }: Prop
         variant="primary"
         size="sm"
         aria-disabled={overLimit ? true : undefined}
+        aria-describedby={overLimit ? limitId : undefined}
         onClick={() => {
           if (!overLimit) onMove();
         }}
@@ -51,7 +54,7 @@ export default function SelectionBar({ count, direction, onMove, onClear }: Prop
         {t('inventory.bulk.clearSelection')}
       </Button>
       {overLimit && (
-        <span className={styles.selectionLimit} role="status">
+        <span id={limitId} className={styles.selectionLimit} role="status">
           {t('inventory.bulk.limit', { max: MAX_BULK_IDS })}
         </span>
       )}

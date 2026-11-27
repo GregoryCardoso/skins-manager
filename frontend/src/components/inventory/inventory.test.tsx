@@ -116,8 +116,10 @@ describe('MinPriceSummary', () => {
   const base: MinPrice = { storeId: 1, storeName: 'CSFloat', currency: 'USD', minPriceCents: null, approx: null, warning: null, warningCode: null };
 
   test('FEES_NOT_CONFIGURED leva a Lojas e FX_NOT_CONFIGURED, às configurações; PRICE_OVERFLOW fica sem link', () => {
+    // Sem taxa (D370): "no price" curto e o link para Lojas dentro do balão da ajuda (ver MinPriceSummary.help.test.tsx).
     const { rerender } = renderUi(<MinPriceSummary minPrices={[{ ...base, warningCode: 'FEES_NOT_CONFIGURED' }]} stores={STORES} />);
-    expect(screen.getByRole('link', { name: 'Go to Stores' })).toHaveAttribute('href', '/stores');
+    expect(screen.getByText('no price')).toBeInTheDocument();
+    expect(screen.queryByRole('link')).toBeNull();
     rerender(<MinPriceSummary minPrices={[{ ...base, warningCode: 'FX_NOT_CONFIGURED' }]} stores={STORES} />);
     expect(screen.getByRole('link', { name: 'Go to Settings' })).toHaveAttribute('href', '/settings#fx');
     rerender(<MinPriceSummary minPrices={[{ ...base, warningCode: 'PRICE_OVERFLOW' }]} stores={STORES} />);
@@ -125,8 +127,7 @@ describe('MinPriceSummary', () => {
     expect(screen.getByText(/too high/)).toBeInTheDocument();
   });
 
-  test('mostra o valor da loja principal e, com showOthers, as demais lojas; a ajuda abre pelo teclado', async () => {
-    const user = userEvent.setup();
+  test('mostra o valor da loja principal e, com showOthers, as demais lojas; cada linha tem a sua ajuda (D370)', () => {
     const prices: MinPrice[] = [
       { ...base, storeId: 2, storeName: 'Steam', currency: 'BRL', minPriceCents: 5000, approx: { currency: 'USD', cents: 950 } },
       { ...base, storeId: 1, storeName: 'CSFloat', minPriceCents: 1234 },
@@ -135,10 +136,7 @@ describe('MinPriceSummary', () => {
     expect(screen.getByText('$12.34')).toBeInTheDocument();
     const others = screen.getByRole('list', { name: 'Other stores' });
     expect(within(others).getByText('Steam')).toBeInTheDocument();
-    const help = screen.getByRole('button', { name: 'Help: Break-even price' });
-    help.focus();
-    await user.keyboard('{Enter}');
-    expect(await screen.findByText(/lowest price at which the net amount covers the cost/)).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Help: Break-even price' })).toHaveLength(2);
   });
 
   test('sem lojas ativas e sem preços', () => {

@@ -42,7 +42,7 @@ function NavLink({ item, active, withTooltip, reviewCount }: NavLinkProps) {
   const count = item.id === 'imports' && reviewCount > 0 ? reviewCount : 0;
   const reviewText = count > 0 ? tPlural('nav.reviewCount', count) : '';
   const link = (
-    <Link href={item.href} className={`${styles.link} ${active ? styles.active : ''}`} aria-current={active ? 'page' : undefined} data-nav-id={item.id}>
+    <Link prefetch={false} href={item.href} className={`${styles.link} ${active ? styles.active : ''}`} aria-current={active ? 'page' : undefined} data-nav-id={item.id}>
       <span className={styles.icon}>
         <Icon name={item.icon} size={18} />
         {count > 0 && <span className={styles.dot} aria-hidden="true" />}
@@ -192,6 +192,15 @@ export default function SideNav({ mode, short, onToggle, onCloseOverlay }: SideN
               className={styles.panel}
               aria-describedby={undefined}
               data-testid="side-nav-overlay"
+              // O Radix ignora links ao escolher o foco inicial e cairia no controle do tema, no meio do menu: o foco vai ao link da página atual.
+              onOpenAutoFocus={(event) => {
+                const panel = event.target instanceof HTMLElement ? event.target : null;
+                const first = panel?.querySelector<HTMLElement>('a[aria-current="page"]') ?? panel?.querySelector<HTMLElement>('a[href]');
+                if (first) {
+                  event.preventDefault();
+                  first.focus();
+                }
+              }}
               onCloseAutoFocus={(event) => {
                 event.preventDefault();
                 railToggle.current?.focus();

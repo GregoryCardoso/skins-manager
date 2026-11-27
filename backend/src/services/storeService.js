@@ -21,6 +21,7 @@ const STORE_DEFAULTS = Object.freeze({
   currency: null,
   isActive: true,
   isPrimary: false,
+  sellsHere: true,
   saleFeeType: null,
   saleFeeRate: null,
   saleFeeRounding: 'CEIL',

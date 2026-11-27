@@ -15,9 +15,6 @@
     "save": "保存",
     "cancel": "取消",
     "close": "关闭",
-    "confirm": "确认",
-    "edit": "编辑",
-    "delete": "删除",
     "saving": "保存中…",
     "optional": "（可选）",
     "moreDetails": "更多详情",
@@ -376,22 +373,17 @@
     "group": {
       "expand": "显示 {name} 的各件物品",
       "collapse": "隐藏 {name} 的各件物品",
-      "forSale": "{count} 件在售",
       "tradeLocked": "{count} 件处于 trade lock（{date}解锁）",
-      "offSale": "{count} 件在 Holding",
       "stagnant": {
         "one": "{count} 件滞销",
         "other": "{count} 件滞销"
       },
-      "convertedCost": "包含以其他货币购买的物品，按购买当天的汇率换算",
       "quantitySplit": "{forSale} 件在售 · {holding} 件在 Holding",
       "withComponents": {
         "one": "{count} 件带 sticker/挂件",
         "other": "{count} 件带 sticker/挂件"
-      },
-      "withComponentsHint": "组内已记录 sticker、挂件、Sticker Slab 或布章的物品"
+      }
     },
-    "refresh": "刷新",
     "empty": "库存里没有物品。",
     "emptyFiltered": "没有符合这些筛选条件的物品。",
     "clearFilters": "清除筛选",
@@ -401,19 +393,16 @@
       "quantity": "数量",
       "avgCost": "平均成本",
       "totalCost": "总成本",
-      "situation": "状态",
       "item": "物品",
       "store": "买入商店",
       "cost": "成本",
       "days": "天数",
-      "tradeLock": "Trade lock",
       "minPrice": "保本价",
       "actions": "操作",
       "marketValue": "市场价值 ≈",
       "unrealized": "未实现盈亏 ≈",
       "turnover": "周转"
     },
-    "primaryStore": "主要商店",
     "otherStores": "其他商店",
     "noPrice": "没有启用的商店",
     "ganhei": "获赠",
@@ -422,7 +411,6 @@
     "sold": "已售出",
     "turnaround": "trade lock 结束 {days}后售出",
     "inspect": "检视",
-    "inspectInvalid": "检视链接无效",
     "actions": {
       "newItem": "新建物品",
       "edit": "编辑",
@@ -434,8 +422,6 @@
       "offSale": "移入 Holding",
       "forSale": "重新上架",
       "apply": "从库存中应用",
-      "applyNoCandidates": "库存中没有可应用的 sticker、挂件或布章。",
-      "applyFull": "这件物品已经没有位置再放 sticker、挂件或布章了。",
       "openCase": "开启武器箱",
       "openCapsule": "开启胶囊",
       "openPackage": "开启包",
@@ -450,8 +436,6 @@
       "components": "组件"
     },
     "itemGone": "这件物品已不存在，可能已在另一个标签页中删除。列表已刷新。",
-    "daysForSale": "已在售 {days}",
-    "daysInInventory": "已在库存中 {days}",
     "inTradeLock": "Trade lock 中 · {time}",
     "daysHeld": "购买后 {days}",
     "tabs": {
@@ -461,7 +445,6 @@
     },
     "offSaleConfirmTitle": "移入 Holding？",
     "offSaleConfirmMessage": "这件物品会从“在售”列表移入 Holding。重新上架后，天数会重新开始计算。",
-    "offSaleSince": "自 {date} 起在 Holding",
     "offSaleEmpty": "Holding 中没有物品。",
     "offSaleDone": "{name} 已移入 Holding。",
     "forSaleDone": "{name} 已重新上架。",
@@ -547,9 +530,9 @@
     "help": {
       "minPrice": "保本价：净额刚好覆盖成本的最低价格，仅计入商店的出售手续费。",
       "convertedCost": "成本按购买当天的汇率换算。",
-      "marketValue": "市场价值：CSFloat 的估算。在你出售之前，这不是你余额中的钱。",
-      "unrealized": "未实现盈亏：估算值减去出售手续费和成本。只有出售后才会变成真实盈亏。",
-      "priceRange": "所示各件的保本价范围。每件有各自的成本。"
+      "minPriceNoFee": "商店 {store} 未设置出售手续费，因此无法计算保本价。",
+      "minPriceBased": "此数值基于“商店”标签页中为商店 {store} 设置的出售手续费。",
+      "minPriceRange": "所示各件的保本价范围（每件有各自的成本），依据“商店”标签页中为各商店设置的出售手续费。"
     },
     "warnings": {
       "goToStores": "前往商店",
@@ -579,15 +562,10 @@
     "category": "类别",
     "categoryAll": "全部",
     "stagnantOnly": "只看滞销（在售超过 {days}）",
-    "order": "按时间排序",
-    "orderDesc": "最早的在前",
-    "orderAsc": "最新的在前"
+    "order": "按时间排序"
   },
   "tradeLock": {
-    "locked": "Trade lock",
-    "released": "已解锁",
     "remaining": "还剩 {time}",
-    "until": "{date}解锁",
     "units": {
       "d": "天",
       "h": "小时",
@@ -667,8 +645,7 @@
       "AWESOMEAPI": "商业汇率（AwesomeAPI）"
     },
     "ptaxOf": "{date} 的 PTAX",
-    "editedAt": "{date}编辑",
-    "tooltip": "来源：{source}"
+    "editedAt": "{date}编辑"
   },
   "confirm": {
     "deleteTitle": "删除物品",
@@ -691,7 +668,6 @@
     "catalogRefresh": "更新目录",
     "catalogRefreshing": "正在更新目录（最多需要 2 分钟）…",
     "catalogRefreshed": "目录已于 {date} 更新",
-    "catalogShowing": "{shown} / {total}",
     "catalogSearching": "搜索中…",
     "changeItem": "更换物品",
     "freeName": "物品不在目录中",
@@ -727,14 +703,12 @@
     "soldNote": "这件物品已售出，出售数据不能在这里编辑。如需修改，请先撤销出售。",
     "created": "物品已创建。",
     "saved": "物品已保存。",
-    "noChanges": "没有需要保存的更改。",
     "invalidNumber": "数字无效。请只使用数字。",
     "invalidMoney": "金额无效。请使用类似 {example} 的格式。",
     "invalidMoneyWhole": "金额无效。{currency} 没有小数位：请输入整数，例如 {example}。",
     "invalidDate": "日期无效。",
     "chooseItem": "请从目录中选择物品，或勾选“物品不在目录中”。",
     "components": {
-      "title": "Sticker 和挂件",
       "costNote": "这里只记录武器上有什么，不会改变成本、余额或周转。",
       "stickers": "已应用的 sticker（{count}/{max}）",
       "noStickers": "没有记录 sticker。",
@@ -765,7 +739,6 @@
       "slotShort": "位置",
       "wearShort": "磨损",
       "patternShort": "pattern",
-      "patchesTitle": "布章",
       "patches": "已应用的布章（{count}/{max}）",
       "noPatches": "没有登记布章。",
       "addPatch": "添加布章",
@@ -1034,7 +1007,6 @@
     "fxTitle": "利润按已记录的汇率计算。出售汇率：{sale}。购买汇率：{purchase}。",
     "saleRateNote": "出售汇率 {rate}",
     "columns": {
-      "image": "图片",
       "item": "物品",
       "purchaseStore": "买入商店",
       "saleStore": "卖出商店",
@@ -1046,7 +1018,6 @@
       "days": "售出用时",
       "actions": "操作"
     },
-    "daysAfterRelease": "trade lock 结束 {days}后",
     "daysHeld": "购买后 {days}",
     "balanceReleasesAt": "余额于 {date} 解冻",
     "turnover": {
@@ -1154,7 +1125,6 @@
     "steamBadge": "你的 Steam",
     "steamSet": "设为我的 Steam 商店",
     "steamClear": "不再作为我的 Steam 商店",
-    "steamHint": "你的 Steam 商店用来记录在终端机支付的价格。",
     "steamSaved": "“{name}”现在是你的 Steam 商店。",
     "steamCleared": "没有选择 Steam 商店。",
     "card": {
@@ -1162,7 +1132,8 @@
         "DEDUCTED": "从价格中扣除 {rate}%",
         "ADDED": "在价格上加收 {rate}%"
       },
-      "moreActionsFor": "{name} 的更多操作"
+      "moreActionsFor": "{name} 的更多操作",
+      "buyOnlyBadge": "仅购买"
     },
     "steamTip": {
       "title": "选择你的 Steam 商店",
@@ -1172,22 +1143,15 @@
   },
   "storesTable": {
     "columns": {
-      "name": "商店",
-      "currency": "货币",
-      "status": "状态",
       "saleFee": "卖出手续费",
       "rounding": "取整方式",
-      "minFixed": "最低和固定手续费",
       "withdrawal": "允许提现",
-      "actions": "操作",
       "saleHold": "余额冻结期"
     },
     "primary": "主要",
     "active": "已启用",
     "inactive": "已停用",
     "feesNotConfigured": "未设置卖出手续费",
-    "feeDeducted": "从价格中扣除 {rate}%",
-    "feeAdded": "在价格上加收 {rate}%",
     "minFee": "最低 {value}",
     "fixedFee": "固定 {value}",
     "withdrawalNo": "否",
@@ -1268,7 +1232,10 @@
       "notConfigured": "未设置卖出手续费：这家商店的保本价将不可用。",
       "incomplete": "选择手续费类型并填写费率，即可查看示例。",
       "error": "无法计算示例（{reason}）。"
-    }
+    },
+    "sellsHere": "在此商店出售",
+    "sellsHereHint": "关闭后，该商店不会出现在库存中物品的最低价里，但仍可用于购买和已登记的出售。",
+    "sellsHereNoFee": "请在下方设置出售手续费，以便在库存中查看此商店的最低价。"
   },
   "settings": {
     "title": "设置",
@@ -1278,7 +1245,6 @@
       "noneNeeded": "目前不需要任何汇率，因为所有金额都是美元。如果你选择了其他换算货币，或添加了其他货币的商店，它的汇率会显示在这里。",
       "displayBadge": "换算货币",
       "staleHint": "这个汇率上次更新是 {age}前。请更新以获取最新汇率。",
-      "current": "当前汇率",
       "notSet": "未设置汇率",
       "value": "US$ 1 = {rate}",
       "manualLabel": "手动汇率",
@@ -1337,9 +1303,6 @@
       "exporting": "正在创建备份…",
       "exported": "备份已保存为 {file}。",
       "import": "导入备份",
-      "importing": "导入中…",
-      "chooseFile": "选择备份文件",
-      "selectedFile": "已选择的文件：{file}",
       "confirmTitle": "导入备份？",
       "confirmMessage": "这会用“{file}”中的数据替换你当前的全部数据。导入前，应用会先在备份文件夹中保存一份当前数据的副本。",
       "confirmButton": "替换我的数据",
@@ -1412,7 +1375,6 @@
         "save": "保存密钥",
         "savedKey": "已保存的密钥：{masked}",
         "noKey": "没有保存密钥。",
-        "keyRequired": "请粘贴 API 密钥后再保存。",
         "keySaved": "密钥已保存。请用“测试连接”检查。",
         "keyRemoved": "密钥已删除。",
         "replaceKey": "更换密钥",
@@ -1440,7 +1402,6 @@
         "noStore": "没有找到 CSFloat 商店。请在“商店”中创建一个名为“CSFloat”、货币为 US$ 的商店。应用会自动关联它。",
         "importNow": "立即导入",
         "fullScan": "完整扫描",
-        "fullScanHint": "重新读取 CSFloat 的全部历史记录，耗时较长。如果你觉得漏掉了什么，可以使用。",
         "lastImport": "上次导入：{date}",
         "lastImportFailed": "上次导入失败：{reason}",
         "neverImported": "还没有导入过。",
@@ -1519,19 +1480,12 @@
   "profit": {
     "title": "实际利润",
     "subtitle": "查看你投入了多少、提现了多少、各商店的余额，以及你的实际利润。",
-    "pendingIncluded": "包含待结算的 {amount}（首次解冻于 {date}）",
-    "pendingIncludedNoDate": "包含待结算的 {amount}",
     "estimatedNote": "带 ≈ 的金额按 {fx} 的汇率估算。",
     "estimatedNoFx": "带 ≈ 的金额按汇率估算，但汇率还没有设置。请在设置中输入汇率。",
     "emptyHint": "记录你的存入，就能看到实际利润。",
     "summary": {
-      "title": "汇总",
       "loadError": "无法加载汇总：{reason}",
-      "realProfit": "实际利润",
-      "realProfitHint": "净提现，加上商店余额（可用和待结算），加上库存成本，再减去存入。全部以美元（US$）计算。",
-      "deposited": "累计存入",
       "withdrawn": "累计提现",
-      "platformBalance": "商店余额",
       "stock": "库存（按成本）",
       "stockForSale": "在售库存（成本）",
       "stockOffSale": "Holding 库存（成本）",
@@ -1626,7 +1580,6 @@
       "actions": "操作",
       "paid": "支付金额"
     },
-    "noStore": "—",
     "inactiveStore": "{name}（已停用）",
     "actions": {
       "edit": "编辑",
@@ -1677,7 +1630,6 @@
     "updated": "提现已更新。",
     "deleted": "已删除 {value} 的提现。",
     "legacyNoStore": "无商店（旧记录）",
-    "feeNotInformed": "—",
     "inactiveStore": "{name}（已停用）",
     "noWithdrawalStores": "没有启用的商店允许提现。要记录提现，请在某个商店中打开“允许提现”。",
     "goToStores": "前往商店",
@@ -1734,10 +1686,7 @@
     "empty": "没有已登记的商店。",
     "inactive": "已停用",
     "nonWithdrawable": "不可提现",
-    "nonWithdrawableTitle": "这个商店不允许提现。余额会留在店里。",
     "available": "可用",
-    "pending": "待结算（{date}解冻）",
-    "computed": "计算值",
     "difference": "差额",
     "lastCheckDays": {
       "one": "上次核对在 {count} 天前",
@@ -1746,8 +1695,6 @@
     "lastCheckToday": "今天已核对",
     "neverChecked": "从未核对余额",
     "check": "核对余额",
-    "details": "详情",
-    "hideDetails": "隐藏详情",
     "breakdown": {
       "title": "可用余额的计算方式",
       "deposits": "存入",
@@ -1768,7 +1715,6 @@
     "checkPreviewLoading": "计算中…",
     "checkPreviewMatch": "与计算出的余额一致。",
     "adjustAndSave": "记录核对和调整",
-    "saveCheckOnly": "只记录核对",
     "saveCheck": "记录核对",
     "adjustmentNote": "调整备注",
     "adjustmentNoteHint": "记录调整时必填（例如：手续费未记录）。",
@@ -1784,7 +1730,6 @@
     },
     "form": {
       "title": "核对余额：{store}",
-      "intro": "请输入商店网站上显示的真实余额。应用会显示计算出的余额和差额，是否记录调整由你决定。",
       "amount": "真实余额（{currency}）",
       "date": "核对日期",
       "amountRequired": "请输入余额（如果为空，请填 0）。",
@@ -1844,14 +1789,11 @@
     "running": "正在从 CSFloat 导入…",
     "errorTitle": "无法导入",
     "badge": "CSFloat",
-    "badgeHint": "从 CSFloat 导入的记录",
     "seeInInventory": "在库存中查看",
     "seeInSales": "在销售中查看",
     "seeCandidate": "查看记录 #{id}",
     "unknownItem": "未命名物品",
     "disabled": {
-      "noKey": "请先在设置中保存 CSFloat 密钥，才能导入。",
-      "noStore": "请在“商店”中创建一个名为“CSFloat”、货币为 US$ 的商店。",
       "running": "已有一个导入正在进行。"
     },
     "cutoff": {
@@ -1947,7 +1889,6 @@
     },
     "componentWarningsTitle": "未登记",
     "componentWarningsHint": "你可以编辑物品来添加它们。",
-    "applyFromStockHint": "库存中有一件相同的物品。如果它就是武器上的那件，请按正确的日期从库存中应用。",
     "componentUnnamed": "未命名的组件",
     "componentWarnings": {
       "COMPONENT_CATALOG_NOT_FOUND": "{name}（目录中没有找到）",
@@ -1998,7 +1939,6 @@
     },
     "page": {
       "title": "导入",
-      "open": "待核对",
       "noOpen": "没有待核对的内容。",
       "batches": "导入历史",
       "noBatches": "还没有导入过。",
@@ -2009,7 +1949,6 @@
       "fullScan": "完整扫描",
       "loadMore": "加载更多",
       "showDetails": "查看详情",
-      "hideDetails": "隐藏详情",
       "noEntries": "这次导入没有可显示的内容。",
       "pendingCount": {
         "one": "{count} 笔待核对",
@@ -2258,7 +2197,6 @@
         "one": "对账单中最多有 {count} 笔已看到的提现（{value}）。",
         "other": "对账单中最多有 {count} 笔已看到的提现（{value}）。"
       },
-      "mayHaveUnseen": "设置后会重新读取整个对账单：应用尚未读取的存入和提现也会被带进来。",
       "openToClose": {
         "one": "新日期之前尚未导入的 {count} 笔存入或提现将不再导入。已导入的会保留。",
         "other": "新日期之前尚未导入的 {count} 笔存入或提现将不再导入。已导入的会保留。"
@@ -2308,7 +2246,6 @@
     "checking": "核对中…",
     "explain": "解释差额",
     "explaining": "正在读取对账单…",
-    "register": "用这些数值记录一次余额核对",
     "matches": "余额与 CSFloat 一致。",
     "differs": "与 CSFloat 的差额：可用 {available}，待结算 {pending}。",
     "csfloat": "CSFloat：可用 {available} · 待结算 {pending}",
@@ -2506,6 +2443,7 @@
       "collapseRow": "隐藏 {name} 的单件",
       "selectRow": "选择 {name}",
       "selectAll": "选择所有行",
+      "expandColumn": "展开详情",
       "scrollRegion": "{caption}，可滚动"
     }
   },

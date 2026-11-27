@@ -17,7 +17,7 @@
 .chip:hover:not(:disabled) { border-color: var(--muted); }
 .chip[aria-pressed='true'] { border-color: var(--brand); background: var(--brand-soft); color: var(--text); }
 .chip:focus-visible { outline: none; box-shadow: var(--focus-ring); }
-.chip:disabled { opacity: 0.55; cursor: not-allowed; }
+.chip:disabled { background: var(--surface-2); border-color: var(--line); color: var(--muted); cursor: not-allowed; }
 .chip[data-demo-state='hover'] { border-color: var(--muted); }
 .chip[data-demo-state='focus'] { box-shadow: var(--focus-ring); }
 .text { min-width: 0; overflow-wrap: anywhere; }

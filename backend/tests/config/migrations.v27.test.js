@@ -4,6 +4,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { stripSellsHere } = require('../helpers/stripV6');
 const { openDatabase } = require('../../src/config/database');
 const { MIGRATIONS } = require('../../src/config/migrations');
 
@@ -19,7 +20,7 @@ const dbIn = (name) => path.join(tmpRoot, name, 'inventory.sqlite');
 describe('migração v27', () => {
   test('é a migração 27 (inventory_density), sem reconstruir a tabela', () => {
     const last = MIGRATIONS[MIGRATIONS.length - 1];
-    expect(last).toMatchObject({ version: 27, name: 'inventory_density' });
+    expect(last).toMatchObject({ version: 28, name: 'store_sells_here' });
     expect(last.disableForeignKeys).toBeUndefined();
   });
 
@@ -32,11 +33,11 @@ describe('migração v27', () => {
     old.close();
     const db = openDatabase(dbPath, { now: new Date('2026-11-27T12:00:00.000Z') });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(27);
+      expect(db.pragma('user_version', { simple: true })).toBe(28);
       const { inventory_density: density, ...rest } = db.prepare('SELECT * FROM settings').get();
       expect(density).toBe('COMPACT');
       expect(rest).toEqual(before);
-      expect(db.prepare('SELECT * FROM stores ORDER BY id').all()).toEqual(storesBefore);
+      expect(stripSellsHere(db.prepare('SELECT * FROM stores ORDER BY id').all())).toEqual(storesBefore);
       expect(() => db.prepare("UPDATE settings SET inventory_density = 'WIDE'").run()).toThrow(/CHECK/);
       expect(() => db.prepare('UPDATE settings SET inventory_density = NULL').run()).toThrow(/NOT NULL/);
       db.prepare("UPDATE settings SET inventory_density = 'COMFORTABLE'").run();
@@ -57,7 +58,7 @@ describe('migração v27', () => {
     }
     const third = openDatabase(dbPath);
     try {
-      expect(third.pragma('user_version', { simple: true })).toBe(27);
+      expect(third.pragma('user_version', { simple: true })).toBe(28);
       expect(third.prepare('SELECT inventory_density AS d FROM settings').get().d).toBe('COMFORTABLE');
     } finally {
       third.close();

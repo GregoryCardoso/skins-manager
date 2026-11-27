@@ -55,13 +55,15 @@ export interface StoreFormState {
   saleHoldDaysText: string;
   isActive: boolean;
   isPrimary: boolean;
+  // "Vendo nesta loja" (padrão ligado).
+  sellsHere: boolean;
 }
 
 export function initialStoreFormState(): StoreFormState {
   return {
     name: '', currency: 'USD', saleFeeType: '', saleFeeRateText: '', saleFeeRounding: 'CEIL', saleMinFeeText: '',
     saleFixedFeeText: '', allowsWithdrawal: false, withdrawalFeeRateText: '', withdrawalFixedFeeText: '', saleHoldDaysText: '0',
-    isActive: true, isPrimary: false,
+    isActive: true, isPrimary: false, sellsHere: true,
   };
 }
 
@@ -80,6 +82,7 @@ export function storeFormFromStore(store: Store, language: string): StoreFormSta
     saleHoldDaysText: String(store.saleHoldDays),
     isActive: store.isActive,
     isPrimary: store.isPrimary,
+    sellsHere: store.sellsHere !== false,
   };
 }
 
@@ -141,6 +144,7 @@ export function buildStoreCreateBody(state: StoreFormState, language: string): S
     saleHoldDays: parseIntegerInput(state.saleHoldDaysText) ?? 0,
     isActive: state.isActive,
     isPrimary: state.isPrimary,
+    sellsHere: state.sellsHere,
   };
 }
 

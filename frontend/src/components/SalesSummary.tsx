@@ -4,6 +4,7 @@ import { useLocale, useT, useTPlural } from '@/i18n/I18nProvider';
 import { formatMoney } from '@/lib/format';
 import type { SalesSummary as Summary } from '@/types/api';
 import Money from './ui/Money';
+import { useDisplayStaleRateNote } from './useStaleRateNote';
 import { PositionStrip, StatCard } from './ui/StatCard';
 import styles from './sales.module.css';
 
@@ -16,6 +17,7 @@ export default function SalesSummary({ summary }: { summary: Summary }) {
   const profit = summary.totalProfitUsdCents;
   const avg = summary.avgTurnaroundDays;
   const approxCurrency = summary.approxCurrency;
+  const staleRateNote = useDisplayStaleRateNote();
 
   return (
     <section className={styles.summary} aria-label={t('salesSummary.label')}>
@@ -23,17 +25,17 @@ export default function SalesSummary({ summary }: { summary: Summary }) {
         <StatCard label={t('salesSummary.sales')} value={summary.count} />
         <StatCard
           label={t('salesSummary.totalSold')}
-          value={<Money size="lg" cents={summary.totalSalePriceUsdCents} currency="USD" approxCents={summary.approx.totalSalePrice} approxCurrency={approxCurrency} />}
+          value={<Money size="lg" cents={summary.totalSalePriceUsdCents} currency="USD" approxCents={summary.approx.totalSalePrice} approxCurrency={approxCurrency} staleRateNote={staleRateNote} />}
         />
         <StatCard
           label={t('salesSummary.totalNet')}
-          value={<Money size="lg" cents={summary.totalNetReceivedUsdCents} currency="USD" approxCents={summary.approx.totalNetReceived} approxCurrency={approxCurrency} />}
+          value={<Money size="lg" cents={summary.totalNetReceivedUsdCents} currency="USD" approxCents={summary.approx.totalNetReceived} approxCurrency={approxCurrency} staleRateNote={staleRateNote} />}
         />
         <StatCard
           label={t('salesSummary.totalProfit')}
           tone={profit > 0 ? 'profit' : profit < 0 ? 'loss' : 'neutral'}
           help={t('salesSummary.profitTitle', { net: usd(summary.totalNetReceivedUsdCents), cost: usd(summary.totalPurchaseCostUsdCents) })}
-          value={<Money size="lg" signed cents={profit} currency="USD" approxCents={summary.approx.totalProfit} approxCurrency={approxCurrency} />}
+          value={<Money size="lg" signed cents={profit} currency="USD" approxCents={summary.approx.totalProfit} approxCurrency={approxCurrency} staleRateNote={staleRateNote} />}
         />
         <StatCard
           label={t('salesSummary.avgTurnaround')}

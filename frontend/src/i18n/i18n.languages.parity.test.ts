@@ -83,14 +83,13 @@ const IDENTICAL_BY_LANGUAGE: Record<string, readonly string[]> = {
   ],
   it: [
     'Asia', // 12.3a: nome da região igual ao inglês
-    '{count} min', '{count} h', '{items} in {groups}', '{count} in holding', 'Trade lock', 'In trade lock · {time}', 'Holding ({count})',
+    '{count} min', '{count} h', '{items} in {groups}', 'Trade lock', 'In trade lock · {time}', 'Holding ({count})',
     'h', 'min', 'Skin', 'Sticker', 'Patch', 'Souvenir', 'In trade lock', 'Holding', 'Float', 'Paint seed', 'Asset ID', 'Sticker Slab',
     'Pattern', 'pattern', 'pattern {n}', 'in trade lock', 'No', 'Backup', 'in holding',
   ],
   de: [
     '(optional)', 'Skins', 'Patches', '{items} in {groups}', 'Status', 'Item', 'Trade lock', 'Holding ({count})', 'Item: {value}', 'Skin',
     'Sticker', 'Agent', 'Patch', 'Normal', 'Souvenir', 'Holding', 'Name', 'Float', 'Phase', 'Position', 'Sticker Slab', 'Pattern', 'Backup',
-    'Details',
   ],
   ru: [
     'Skins', 'Skin', 'Stickers', 'Sticker', 'Sticker Slab', 'Souvenir', 'Trade lock', 'Holding', 'Holding ({count})', 'Float', 'Paint seed',
@@ -113,7 +112,7 @@ const IDENTICAL_BY_LANGUAGE: Record<string, readonly string[]> = {
     'pattern {n}', 'GitHub Issues',
   ],
   ja: [
-    'Trade lock', 'Holding', 'Sticker', 'Sticker Slab', 'Souvenir', 'Float', 'Paint seed', 'Pattern', 'pattern', 'pattern {n}', 'Asset ID',
+    'Holding', 'Sticker', 'Sticker Slab', 'Souvenir', 'Float', 'Paint seed', 'Pattern', 'pattern', 'pattern {n}', 'Asset ID',
     'GitHub Issues',
   ],
   ko: [

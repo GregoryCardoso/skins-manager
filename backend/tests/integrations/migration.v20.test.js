@@ -5,6 +5,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { stripSellsHere } = require('../helpers/stripV6');
 const { openDatabase } = require('../../src/config/database');
 const { MIGRATIONS } = require('../../src/config/migrations');
 
@@ -45,11 +46,11 @@ describe('migração v20', () => {
     });
     const db = openDatabase(dbPath, { now: NOW });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(27);
+      expect(db.pragma('user_version', { simple: true })).toBe(28);
       const { steam_store_id: steamId, price_refresh_started_at: _p1, price_refresh_last_at: _p2, price_refresh_last_status: _p3, price_refresh_last_error_code: _p4, display_currency: _dc, inventory_density: _dn, ...rest } = db.prepare('SELECT * FROM settings').get();
       expect(rest).toEqual(before.settings);
       expect(steamId).toBe(db.prepare("SELECT id FROM stores WHERE name = 'Steam'").get().id);
-      expect(db.prepare('SELECT * FROM stores').all()).toEqual(before.stores);
+      expect(stripSellsHere(db.prepare('SELECT * FROM stores').all())).toEqual(before.stores);
       expect(db.prepare('SELECT * FROM items').all()).toEqual(before.items);
       expect(db.pragma('foreign_key_check')).toEqual([]);
     } finally {

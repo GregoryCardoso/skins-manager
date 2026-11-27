@@ -45,8 +45,7 @@ describe('NavPreferences expandido', () => {
   test('escolher outra moeda só avisa quem usa (onPickCurrency); nada é gravado aqui', async () => {
     const onPick = vi.fn();
     renderUi(<NavPreferences compact={false} onPickCurrency={onPick} />);
-    await userEvent.click(screen.getByRole('combobox', { name: 'Conversion currency' }));
-    await userEvent.click(await screen.findByRole('option', { name: /EUR/ }));
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Conversion currency' }), 'EUR');
     expect(onPick).toHaveBeenCalledWith('EUR');
     expect(prefs.changeDisplayCurrency).not.toHaveBeenCalled();
     expect(prefs.updatePreferences).not.toHaveBeenCalled();
@@ -55,8 +54,7 @@ describe('NavPreferences expandido', () => {
   test('escolher a moeda que já vale não faz nada', async () => {
     const onPick = vi.fn();
     renderUi(<NavPreferences compact={false} onPickCurrency={onPick} />);
-    await userEvent.click(screen.getByRole('combobox', { name: 'Conversion currency' }));
-    await userEvent.click(await screen.findByRole('option', { name: /USD/ }));
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Conversion currency' }), 'USD');
     expect(onPick).not.toHaveBeenCalled();
   });
 });
@@ -85,8 +83,7 @@ describe('NavPreferences recolhido', () => {
     const onPick = vi.fn();
     renderUi(<NavPreferences compact onPickCurrency={onPick} />);
     await userEvent.click(screen.getByRole('button', { name: 'Preferences' }));
-    await userEvent.click(await screen.findByRole('combobox', { name: 'Conversion currency' }));
-    await userEvent.click(await screen.findByRole('option', { name: /EUR/ }));
+    await userEvent.selectOptions(await screen.findByRole('combobox', { name: 'Conversion currency' }), 'EUR');
     expect(onPick).toHaveBeenCalledWith('EUR');
     await waitFor(() => expect(screen.queryByRole('combobox', { name: 'Language' })).toBeNull());
   });

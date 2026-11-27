@@ -6,6 +6,7 @@ import type { Currency, ItemView, Store } from '@/types/api';
 import ItemImage from './ItemImage';
 import { ItemNameCell } from './inventory/ItemNameCell';
 import Badge from './ui/Badge';
+import { useDisplayStaleRateNote } from './useStaleRateNote';
 import Money from './ui/Money';
 import styles from './sales.module.css';
 
@@ -32,8 +33,9 @@ export function SaleMoney({
   rateNote?: string | null;
 }) {
   const locale = useLocale();
+  const staleRateNote = useDisplayStaleRateNote(approxCents !== null);
   if (currency === 'USD') {
-    return <Money size="sm" cents={cents} currency="USD" approxCents={approxCents} approxCurrency={approxCurrency} />;
+    return <Money size="sm" cents={cents} currency="USD" approxCents={approxCents} approxCurrency={approxCurrency} staleRateNote={staleRateNote} />;
   }
   return (
     <span className={styles.stack}>

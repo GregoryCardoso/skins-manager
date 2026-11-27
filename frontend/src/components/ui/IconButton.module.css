@@ -24,8 +24,15 @@
 
 .button[aria-pressed='true'] { background: var(--brand-soft); color: var(--text); border-color: var(--brand); }
 .button:focus-visible { outline: none; box-shadow: var(--focus-ring); }
-.button:disabled { opacity: 0.55; cursor: not-allowed; }
-.button[aria-disabled='true'] { cursor: progress; }
+/* Desativado (disabled ou aria-disabled sem carregando): fundo neutro e ícone --muted, sem opacidade (D370, I2/M4). */
+.button:disabled,
+.button[aria-disabled='true']:not([aria-busy='true']) {
+  background: var(--surface-2);
+  border-color: var(--line);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+.button[aria-disabled='true'][aria-busy='true'] { cursor: progress; }
 
 .button[data-demo-state='hover'] { background: var(--surface-2); color: var(--text); }
 .button[data-demo-state='focus'] { box-shadow: var(--focus-ring); }

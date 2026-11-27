@@ -176,6 +176,14 @@ describe('SideNav: por cima do conteúdo (faixa estreita)', () => {
     expect(onCloseOverlay).toHaveBeenCalled();
   });
 
+  test('auditoria 12.11: o foco inicial vai ao link da página atual (o Radix pularia os links e cairia no tema)', async () => {
+    renderNav({ mode: 'overlay' });
+    const dialog = await screen.findByRole('dialog', { name: 'Main navigation' });
+    await waitFor(() => expect(dialog.contains(document.activeElement)).toBe(true));
+    expect(document.activeElement?.tagName).toBe('A');
+    expect(document.activeElement).toHaveAttribute('aria-current', 'page');
+  });
+
   test('o foco fica preso dentro do painel', async () => {
     renderNav({ mode: 'overlay' });
     const dialog = await screen.findByRole('dialog', { name: 'Main navigation' });

@@ -407,7 +407,8 @@ function stripApprox(value) {
   if (value && typeof value === 'object') {
     const out = {};
     for (const [key, inner] of Object.entries(value)) {
-      if (/approx|displayCurrency/i.test(key)) continue;
+      // `display` (12.12): a cotação da moeda de conversão no resumo do lucro real; muda com a moeda, como o "≈".
+      if (/approx|displayCurrency/i.test(key) || key === 'display') continue;
       out[key] = stripApprox(inner);
     }
     return out;

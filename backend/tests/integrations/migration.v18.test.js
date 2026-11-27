@@ -5,6 +5,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { stripSellsHere } = require('../helpers/stripV6');
 const { openDatabase } = require('../../src/config/database');
 const { MIGRATIONS } = require('../../src/config/migrations');
 const v018 = require('../../src/config/migrations/v018_component_slots_and_batch_counts');
@@ -68,12 +69,12 @@ test('v18 sobre v17 com dados: tudo idêntico; o índice de slot sai; as colunas
   const { before } = seedV17(dbPath);
   const db = openDatabase(dbPath, { now: new Date('2026-11-24T12:00:00.000Z') });
   try {
-    expect(db.pragma('user_version', { simple: true })).toBe(27);
+    expect(db.pragma('user_version', { simple: true })).toBe(28);
     const after = snapshot(db);
     expect(after.items).toEqual(before.items);
     expect(after.components).toEqual(before.components);
     expect(after.deposits).toEqual(before.deposits);
-    expect(after.stores).toEqual(before.stores);
+    expect(stripSellsHere(after.stores)).toEqual(before.stores);
     expect(after.settings).toEqual(before.settings);
     expect(withoutBatchColumns(after.batches)).toEqual(before.batches);
     expect(db.prepare("SELECT COUNT(*) n FROM sqlite_master WHERE name = 'idx_item_components_slot'").get().n).toBe(0);
@@ -145,7 +146,7 @@ test('v18 falha no meio: rollback total (índice de volta, sem colunas), versão
   }
   const ok = openDatabase(dbPath);
   try {
-    expect(ok.pragma('user_version', { simple: true })).toBe(27);
+    expect(ok.pragma('user_version', { simple: true })).toBe(28);
   } finally {
     ok.close();
   }

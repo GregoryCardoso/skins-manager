@@ -29,7 +29,10 @@ export default function ProfitEquation({ data, depositFeeCents = 0 }: Props) {
   const tPlural = useTPlural();
   const locale = useLocale();
   const moneyLine = useMoneyLine();
-  const staleRateNote = useStaleRateNote({ source: data.fx.source, quotedAt: data.fx.quotedAt });
+  // A nota e o relógio de cotação velha seguem a MOEDA DE CONVERSÃO (antes usavam sempre o BRL). Em USD não há "≈" nem nota.
+  const displayFx = data.fx.display ?? null;
+  const isUsd = data.fx.displayCurrency === 'USD';
+  const staleRateNote = useStaleRateNote(displayFx && !isUsd ? { source: displayFx.source, quotedAt: displayFx.quotedAt } : null);
 
   const money = (cents: number | null, approx: number | null, estimated: boolean) => (
     <Money size="md" align="end" cents={cents} estimated={estimated} estimatedBadge={false} approxCents={approx} approxCurrency={data.approxCurrency} />
@@ -63,7 +66,7 @@ export default function ProfitEquation({ data, depositFeeCents = 0 }: Props) {
       label: t('profit.equation.pending'),
       note: (
         <span className={styles.pendingLabel}>
-          <Badge tone="pending">{t('profit.equation.pendingBadge')}</Badge>
+          <Badge tone="pending" icon="hourglass">{t('profit.equation.pendingBadge')}</Badge>
           {pendingNotes.join(' · ')}
         </span>
       ),
@@ -112,8 +115,12 @@ export default function ProfitEquation({ data, depositFeeCents = 0 }: Props) {
   const isEmpty =
     data.counts.deposits === 0 && data.counts.withdrawals === 0 && data.counts.stockItems === 0 &&
     data.balancesByStore.every((row) => row.lastCheck === null && row.pending.count === 0 && row.availableCents === 0);
-  const fxText = data.fx.usdBrlRate !== null
-    ? describeFxRate({ rate: data.fx.usdBrlRate, source: data.fx.source, quotedAt: data.fx.quotedAt, updatedAt: data.fx.updatedAt }, locale, tLoose)
+  const fxText = displayFx && !isUsd && displayFx.rate !== null
+    ? describeFxRate(
+        { rate: displayFx.rate, currency: displayFx.currency, source: displayFx.source, quotedAt: displayFx.quotedAt, updatedAt: displayFx.updatedAt },
+        locale,
+        tLoose,
+      )
     : null;
 
   return (
@@ -142,7 +149,7 @@ export default function ProfitEquation({ data, depositFeeCents = 0 }: Props) {
           </Banner>
         )}
 
-        <p className={styles.note}>{fxText ? t('profit.estimatedNote', { fx: fxText }) : t('profit.estimatedNoFx')}</p>
+        {!isUsd && <p className={styles.note}>{fxText ? t('profit.estimatedNote', { fx: fxText }) : t('profit.estimatedNoFx')}</p>}
 
         {isEmpty && <EmptyState icon="profit" title={t('profit.emptyHint')} />}
       </div>

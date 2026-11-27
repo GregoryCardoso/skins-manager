@@ -153,7 +153,7 @@ describe('colunas escondidas pela largura', () => {
     expect(headers.some((h) => /Turnover/.test(h))).toBe(true);
     expect(headers.some((h) => /Break-even|Min/i.test(h))).toBe(true);
     // a coluna escondida vai para a linha expandida, aberta pelo botão da linha
-    const expander = screen.getAllByRole('button').find((b) => b.hasAttribute('aria-expanded'));
+    const expander = screen.getAllByRole('button').find((b) => b.hasAttribute('aria-expanded') && b.hasAttribute('aria-controls'));
     expect(expander).toBeDefined();
     await user.click(expander!);
     expect(await screen.findByText('Purchase store', { selector: 'dt' })).toBeInTheDocument();

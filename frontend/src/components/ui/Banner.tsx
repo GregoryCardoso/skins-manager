@@ -60,7 +60,7 @@ export default function Banner({ tone, title, children, action, onRetry, retryin
               </Button>
             )}
             {action?.href ? (
-              <Link href={action.href} className={styles.link} onClick={action.onClick}>
+              <Link prefetch={false} href={action.href} className={styles.link} onClick={action.onClick}>
                 <span>{action.label}</span>
                 <Icon name="chevronRight" size={14} />
               </Link>

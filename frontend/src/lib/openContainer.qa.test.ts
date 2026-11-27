@@ -51,6 +51,8 @@ describe('paridade i18n', () => {
   });
 });
 
+// S4 (12.11): quando "Aplicar do estoque", "Abrir" e "Cadastrar chave" aparecem (e o motivo do desabilitado) é testado por comportamento
+// em lib/itemRowActions.test.ts e itemRowActions.qa125a.test.ts.
 describe('ligação dos botões', () => {
   test('o botão "Aplicar do estoque" e o "Abrir" chegam da página até a linha da unidade, nas visões individual e agrupada', () => {
     const page = read('app', 'page.tsx');
@@ -66,20 +68,6 @@ describe('ligação dos botões', () => {
       expect(read('components', file), file).toMatch(/handlers: UnitRowHandlers/);
     }
     expect(actions).toMatch(/onApply\?: \(item: ItemView\) => void;/);
-  });
-
-  test('"Aplicar do estoque" só aparece com canReceiveComponents; "Abrir" só com item.openable', () => {
-    const actions = read('lib', 'itemRowActions.ts');
-    expect(actions).toMatch(/if \(item\.canReceiveComponents\) common\.push\(act\('apply'\)\)/);
-    expect(actions).toMatch(/if \(item\.openable\) \{/);
-  });
-
-  test('caixa sem chave compatível: botão desabilitado com o motivo (title) e o atalho "Cadastrar chave"; só a caixa exige chave', () => {
-    const actions = read('lib', 'itemRowActions.ts');
-    expect(actions).toMatch(/const needsKey = item\.openable\.kind === 'CASE' && item\.openable\.compatibleKeys === 0;/);
-    expect(actions).toMatch(/disabledReason: item\.openable\.otherKeysInStock > 0 \? 'NEEDS_KEY_OTHER' : 'NEEDS_KEY'/);
-    expect(actions).toMatch(/needsKey && item\.openable\.requiredKeyName\) common\.push\(act\('registerKey'\)\)/);
-    expect(pt['inventory.actions.openNeedsKey']).toContain('{keyName}');
   });
 
   test('o atalho "Cadastrar chave" abre o cadastro em OUTRO com o nome sugerido', () => {

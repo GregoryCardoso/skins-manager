@@ -10,7 +10,7 @@ afterAll(() => closeDb());
 // Health, 404 e JSON malformado já são cobertos em tests/middlewares/errorHandler.test.js (T7).
 describe('app', () => {
   test('banco e seed', () => {
-    expect(getDb().pragma('user_version', { simple: true })).toBe(27);
+    expect(getDb().pragma('user_version', { simple: true })).toBe(28);
     expect(getDb().pragma('foreign_keys', { simple: true })).toBe(1);
     expect(Store.findAll().map((s) => s.name)).toEqual(['CSFloat', 'CSMoney', 'Steam']);
     expect(Store.findPrimary().name).toBe('CSFloat');

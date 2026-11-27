@@ -83,6 +83,7 @@ export function unitColumns(deps: UnitColumnsDeps): Column<ItemView>[] {
       header: t('inventory.columns.actions'),
       hideHeader: true,
       align: 'end',
+      stickyEnd: true,
       priority: 1,
       cell: (item) => <ItemRowActions item={item} handlers={handlers} forSalePendingId={forSalePendingId} />,
     },
@@ -188,6 +189,7 @@ export function groupColumns(deps: GroupColumnsDeps): Column<ItemGroup>[] {
     header: t('inventory.columns.actions'),
     hideHeader: true,
     align: 'end',
+    stickyEnd: true,
     priority: 1,
     cell: (group) => <GroupRowActions group={group} saleState={saleState} expanded={expandedKeys.has(group.key)} handlers={groupHandlers} />,
   });

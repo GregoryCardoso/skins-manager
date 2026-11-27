@@ -27,7 +27,7 @@ export default function HelpTip({ topic, side = 'top', icon = 'help', className,
         <IconButton icon={icon} size="sm" label={t('ui.helpTip.label', { topic })} className={className} />
       </Popover.Trigger>
       <Popover.Portal>
-        <Popover.Content className={styles.content} side={side} sideOffset={6} collisionPadding={8} avoidCollisions>
+        <Popover.Content className={styles.content} side={side} sideOffset={6} collisionPadding={8} avoidCollisions aria-label={t('ui.helpTip.label', { topic })}>
           {children}
         </Popover.Content>
       </Popover.Portal>

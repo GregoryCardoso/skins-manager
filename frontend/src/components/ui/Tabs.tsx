@@ -1,7 +1,7 @@
 'use client';
 
 import * as RadixTabs from '@radix-ui/react-tabs';
-import type { ReactNode } from 'react';
+import { useId, type ReactNode } from 'react';
 import styles from './Tabs.module.css';
 
 export interface TabItem {
@@ -29,6 +29,9 @@ export interface TabsProps {
 // Abas (Radix Tabs): setas com ativação automática. Em janela estreita a lista rola na horizontal e a aba em foco fica visível.
 export default function Tabs({ label, value, onChange, items, orientation = 'horizontal', children, className }: TabsProps) {
   const vertical = orientation === 'vertical';
+  const uid = useId();
+  // Com subtítulo, o nome acessível da aba é só o título; o subtítulo vira descrição (B7, 12.11).
+  const idOf = (value: string, part: 'name' | 'desc') => `${uid}-${part}-${value.replace(/[^A-Za-z0-9_-]/g, '_')}`;
   return (
     <RadixTabs.Root
       value={value}
@@ -44,11 +47,13 @@ export default function Tabs({ label, value, onChange, items, orientation = 'hor
               key={item.value}
               value={item.value}
               className={`${styles.tab} ${vertical ? styles.tabVertical : ''}`}
+              aria-labelledby={item.description ? idOf(item.value, 'name') : undefined}
+              aria-describedby={item.description ? idOf(item.value, 'desc') : undefined}
               onFocus={(event) => event.currentTarget.scrollIntoView?.({ block: 'nearest', inline: 'nearest' })}
             >
               <span className={styles.text}>
-                <span className={styles.name}>{item.label}</span>
-                {item.description && <span className={styles.description}>{item.description}</span>}
+                <span id={item.description ? idOf(item.value, 'name') : undefined} className={styles.name}>{item.label}</span>
+                {item.description && <span id={idOf(item.value, 'desc')} className={styles.description}>{item.description}</span>}
               </span>
               {item.count !== undefined && <span className={styles.count}>{item.count}</span>}
               {item.badge}

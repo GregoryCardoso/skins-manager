@@ -32,7 +32,7 @@ describe('formulário de loja', () => {
   test('corpo de criação: vazio = null nas anuláveis e 0 nas fixas', () => {
     expect(buildStoreCreateBody(base, 'pt-BR')).toEqual({
       name: 'Nova', currency: 'BRL', saleFeeType: null, saleFeeRate: null, saleFeeRounding: 'CEIL', saleMinFeeCents: null,
-      saleFixedFeeCents: 0, allowsWithdrawal: false, withdrawalFeeRate: null, withdrawalFixedFeeCents: 0, saleHoldDays: 0, isActive: true, isPrimary: false,
+      saleFixedFeeCents: 0, allowsWithdrawal: false, withdrawalFeeRate: null, withdrawalFixedFeeCents: 0, saleHoldDays: 0, isActive: true, isPrimary: false, sellsHere: true,
     });
   });
 

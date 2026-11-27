@@ -4,6 +4,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { stripSellsHere } = require('../helpers/stripV6');
 const { openDatabase } = require('../../src/config/database');
 const { MIGRATIONS } = require('../../src/config/migrations');
 
@@ -35,10 +36,10 @@ test('v13 sobre um banco v12 com dados: nada se perde, as quatro tabelas nascem 
 
   const db = openDatabase(dbPath, { now: new Date('2026-11-22T12:00:00.000Z') });
   try {
-    expect(db.pragma('user_version', { simple: true })).toBe(27);
+    expect(db.pragma('user_version', { simple: true })).toBe(28);
     // a v14 acrescenta só `sale_release_at` (nula) em items
     expect(db.prepare('SELECT * FROM items').all().map(({ sale_release_at: saleReleaseAt, components_imported_at: componentsImportedAt, consumed_at: consumedAt, ...rest }) => { expect(saleReleaseAt).toBeNull(); return rest; })).toEqual(before.items);
-    expect(db.prepare('SELECT * FROM stores').all()).toEqual(before.stores);
+    expect(stripSellsHere(db.prepare('SELECT * FROM stores').all())).toEqual(before.stores);
     expect(db.prepare('SELECT * FROM integrations').all()).toEqual(before.integrations);
     for (const name of NEW_TABLES) {
       expect(hasTable(db, name)).toBe(true);

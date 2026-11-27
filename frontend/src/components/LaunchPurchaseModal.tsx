@@ -266,7 +266,7 @@ export default function LaunchPurchaseModal({ entry, onClose, onDone }: Props) {
             <p>{t('imports.launch.unitInStock')}</p>
             <div className={styles.links}>
               {problem.itemIds.map((itemId) => (
-                <Link key={itemId} href={`/?item=${itemId}`} onClick={onClose}>{t('imports.seeCandidate', { id: itemId })}</Link>
+                <Link key={itemId} prefetch={false} href={`/?item=${itemId}`} onClick={onClose}>{t('imports.seeCandidate', { id: itemId })}</Link>
               ))}
             </div>
           </Banner>

@@ -105,6 +105,16 @@ export interface CurrencyComboboxOption {
   group: CurrencyGroupId;
 }
 
+// Lista simples (Select nativo) da moeda de conversão, igual à do idioma (pedido do usuário, 12.11): USD, BRL e EUR soltos no topo e as
+// outras por região (`group`), sem repetir.
+export function currencySelectOptions(locale: string): { value: string; label: string; group?: string }[] {
+  const pinned = CURRENCY_PINNED.map((code) => ({ value: code as string, label: currencyLabel(code, locale) }));
+  const rest = currencyComboboxOptions(locale)
+    .filter((option) => !(CURRENCY_PINNED as readonly string[]).includes(option.value))
+    .map(({ value, label, group }) => ({ value, label, group }));
+  return [...pinned, ...rest];
+}
+
 // Opções do Combobox de moedas: rótulo no idioma, busca também pelo código e pelo nome em inglês, grupo por região (dentro do grupo,
 // ordem pelo código, como na 11.11).
 export function currencyComboboxOptions(locale: string): CurrencyComboboxOption[] {

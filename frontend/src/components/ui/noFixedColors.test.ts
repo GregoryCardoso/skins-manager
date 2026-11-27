@@ -1,17 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, test } from 'vitest';
+import { cssProblems, tsxProblems } from '../../styles/colorScan';
 
 // D370, 12.3a: os componentes de ui/ usam cor só por token (var(--...)), transparent, currentColor, inherit, none e color-mix só com
 // esses. Nada de hex, rgb(), rgba(), hsl(), oklch(), cor por nome nas propriedades de cor, nem `style` com cor nos .tsx.
 
 const UI_DIR = __dirname;
-const COLOR_PROPS = /^(color|background|background-color|background-image|border|border-[a-z-]+|fill|stroke|outline|outline-color|box-shadow|text-decoration-color|caret-color|accent-color)$/;
-const NAMED_COLORS = [
-  'white', 'black', 'red', 'green', 'blue', 'gray', 'grey', 'orange', 'yellow', 'purple', 'pink', 'brown', 'cyan', 'magenta', 'silver',
-  'gold', 'navy', 'teal', 'lime', 'maroon', 'olive', 'aqua', 'fuchsia', 'coral', 'crimson', 'indigo', 'violet', 'tomato', 'salmon', 'khaki',
-];
-
 // 12.4: o CSS e o TSX de components/layout também usam só tokens de cor.
 const LAYOUT_DIR = path.join(__dirname, '..', 'layout');
 
@@ -22,32 +17,6 @@ function files(ext: string): string[] {
       .filter((name) => name.endsWith(ext) && !name.endsWith('.test.tsx') && !name.endsWith('.test.ts'))
       .map((name) => path.join(dir, name)),
   );
-}
-
-// Remove var(...) (com um nível de parênteses aninhado, como var(--a, var(--b))).
-const stripVars = (value: string) => value.replace(/var\((?:[^()]|\([^()]*\))*\)/g, ' ');
-
-export function cssProblems(css: string): string[] {
-  const problems: string[] = [];
-  const text = css.replace(/\/\*[\s\S]*?\*\//g, ' ');
-  for (const m of text.matchAll(/(^|[;{\s])([a-z-]+)\s*:\s*([^;{}]+)(?=;|})/g)) {
-    const [, , prop, rawValue] = m;
-    const value = stripVars(rawValue);
-    if (/#[0-9a-fA-F]{3,8}\b/.test(value) || /\b(rgba?|hsla?|hwb|lab|lch|oklab|oklch)\(/i.test(value)) problems.push(`${prop}: ${rawValue.trim()}`);
-    else if (COLOR_PROPS.test(prop) && NAMED_COLORS.some((name) => new RegExp(`(^|[\\s,(])${name}(?=[\\s,)]|$)`, 'i').test(value))) problems.push(`${prop}: ${rawValue.trim()}`);
-  }
-  return problems;
-}
-
-export function tsxProblems(code: string): string[] {
-  const problems: string[] = [];
-  const text = code.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[\s;{}(),])\/\/[^\n]*/g, '$1');
-  if (/#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b/.test(text.replace(/&#\d+;/g, ''))) problems.push('hex');
-  if (/\b(rgba?|hsla?|oklch)\(/i.test(text)) problems.push('função de cor');
-  for (const m of text.matchAll(/style=\{\{([^}]*)\}\}/g)) {
-    if (/color|background|border|fill|stroke|outline|shadow/i.test(m[1])) problems.push(`style: ${m[1].trim()}`);
-  }
-  return problems;
 }
 
 describe('cores só por token em components/ui', () => {

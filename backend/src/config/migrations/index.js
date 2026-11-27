@@ -28,7 +28,8 @@ const v024 = require('./v024_fx_rates_display_currency');
 const v025 = require('./v025_store_currencies');
 const v026 = require('./v026_catalog_item_names');
 const v027 = require('./v027_inventory_density');
+const v028 = require('./v028_store_sells_here');
 
-const MIGRATIONS = Object.freeze([v001, v002, v003, v004, v005, v006, v007, v008, v009, v010, v011, v012, v013, v014, v015, v016, v017, v018, v019, v020, v021, v022, v023, v024, v025, v026, v027]);
+const MIGRATIONS = Object.freeze([v001, v002, v003, v004, v005, v006, v007, v008, v009, v010, v011, v012, v013, v014, v015, v016, v017, v018, v019, v020, v021, v022, v023, v024, v025, v026, v027, v028]);
 
 module.exports = { MIGRATIONS };

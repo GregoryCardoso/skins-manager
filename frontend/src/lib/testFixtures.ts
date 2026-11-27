@@ -4,7 +4,7 @@ import type { ItemView, Store } from '@/types/api';
 // Loja completa com padrões; os testes sobrescrevem só o que importa.
 export function makeStore(overrides: Partial<Store> = {}): Store {
   return {
-    id: 1, name: 'Loja', currency: 'USD', isActive: true, isPrimary: false, saleFeeType: null, saleFeeRate: null,
+    id: 1, name: 'Loja', currency: 'USD', isActive: true, isPrimary: false, sellsHere: true, saleFeeType: null, saleFeeRate: null,
     saleFeeRounding: 'CEIL', saleMinFeeCents: null, saleFixedFeeCents: 0, allowsWithdrawal: false,
     withdrawalFeeRate: null, withdrawalFixedFeeCents: 0, saleHoldDays: 0, createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z', saleFeesConfigured: false, inUse: false, ...overrides,
