@@ -1,0 +1,4 @@
+.svg { display: block; width: 100%; max-width: 11rem; height: auto; flex: none; }
+@container (width < 480px) {
+  .svg { max-width: 7rem; }
+}

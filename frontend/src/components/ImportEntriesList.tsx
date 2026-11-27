@@ -1,22 +1,35 @@
 'use client';
 
+import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useState } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLocale, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import { formatDate, formatFloat, formatMoney } from '@/lib/format';
-import { candidateLink, componentWarningsOf, entryActions, stockCandidateOf, entryLink, entryLinkLabelKey, groupEntries, reasonKey, removeConfirmKey } from '@/lib/importSummary';
-import { bulkActionsOf, commonBulkActions, type BulkEntryAction } from '@/lib/pendingActions';
-import { useInvalidate } from '@/lib/useInvalidate';
-import { ApiRequestError, bulkResolveImportEntries, reopenImportEntry, resolveImportEntry } from '@/services/api';
+import {
+  candidateLink, componentWarningsOf, entryActions, entryLink, entryLinkLabelKey, groupEntries, reasonKey, removeConfirmKey, stockCandidateOf,
+  WITHOUT_PURCHASE_REASON, type EntryGroupKey,
+} from '@/lib/importSummary';
 import { localizedOrName } from '@/lib/itemName';
+import { bulkActionsOf, commonBulkActions, type BulkEntryAction } from '@/lib/pendingActions';
+import { queryKeys } from '@/lib/queryKeys';
+import { useInvalidate } from '@/lib/useInvalidate';
+import { ApiRequestError, bulkResolveImportEntries, getCsfloatIntegration, reopenImportEntry, resolveImportEntry } from '@/services/api';
 import type { Category, ImportEntryAction, ImportEntryView } from '@/types/api';
 import ApplyComponentModal from './ApplyComponentModal';
-import ConfirmDialog from './ConfirmDialog';
+import EntryChoice from './imports/EntryChoice';
+import WithoutPurchaseSteps from './imports/WithoutPurchaseSteps';
 import ItemImage from './ItemImage';
 import LaunchPurchaseModal from './LaunchPurchaseModal';
 import MarkWonDialog from './MarkWonDialog';
-import forms from './forms.module.css';
+import Badge, { type BadgeTone } from './ui/Badge';
+import Banner from './ui/Banner';
+import Button from './ui/Button';
+import Checkbox from './ui/Checkbox';
+import ConfirmDialog from './ui/ConfirmDialog';
+import Disclosure from './ui/Disclosure';
+import Icon from './ui/Icon';
+import { useToast } from './ui/Toast';
 import styles from './ImportEntriesList.module.css';
 
 interface Props {
@@ -42,13 +55,28 @@ function useResolveErrorText() {
   };
 }
 
-// Botões de uma pendência (9.4, D301; 9.5.1b, D327 a D329). "Remover lançamento" pede confirmação; "Lançar compra" e "Foi drop"
-// abrem os seus diálogos. Depois de resolvida, mostra o resultado (a lista do resumo é estática; a da página recarrega sozinha).
+// Tom do Badge de cada grupo.
+const GROUP_TONE: Record<EntryGroupKey | 'IGNORED', BadgeTone> = {
+  CREATED: 'profit',
+  MATCHED: 'info',
+  POSSIBLE_DUPLICATE: 'stuck',
+  REVERTED: 'loss',
+  WITHOUT_PURCHASE: 'pending',
+  FAILED: 'loss',
+  IGNORED: 'neutral',
+};
+
+// Escolhas de uma pendência (9.4, D301; 9.5.1b, D327 a D329; 12.9): cada ação é "botão + frase". "Remover lançamento" pede confirmação;
+// "Lançar compra" e "Foi drop" abrem os seus diálogos; "Ignorar" mostra um aviso com "Desfazer" (volta para pendências) quando há data de
+// corte (a volta só vale com corte, seção 2.12). Depois de resolvida, mostra o resultado.
 function EntryActions({ entry, resolvedAs, onResolved }: { entry: ImportEntryView; resolvedAs: string | null; onResolved: (r: string) => void }) {
   const t = useT();
   const tLoose = useTLoose();
   const invalidate = useInvalidate();
+  const toast = useToast();
   const errorText = useResolveErrorText();
+  const integrationQuery = useQuery({ queryKey: queryKeys.integrations.csfloat, queryFn: ({ signal }) => getCsfloatIntegration(signal) });
+  const hasCutoff = integrationQuery.data?.tradesCutoffAt != null;
   const [busy, setBusy] = useState(false);
   const [dialog, setDialog] = useState<'REMOVE' | 'LAUNCH' | 'WON' | 'APPLY' | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -62,6 +90,11 @@ function EntryActions({ entry, resolvedAs, onResolved }: { entry: ImportEntryVie
     onResolved(resolution);
     return invalidate('import.resolve');
   };
+  const undoIgnore = () => {
+    reopenImportEntry(entry.id)
+      .then(() => invalidate('import.resolve'))
+      .catch((err: unknown) => toast.show({ tone: 'danger', message: errorText(err) }));
+  };
   const act = (action: ImportEntryAction, extra: { targetId?: number; acquiredAt?: string } = {}) => {
     setBusy(true);
     setError(null);
@@ -69,52 +102,51 @@ function EntryActions({ entry, resolvedAs, onResolved }: { entry: ImportEntryVie
       ? reopenImportEntry(entry.id).then(() => 'REOPENED')
       : resolveImportEntry(entry.id, { action, ...extra }).then((updated) => updated.resolution ?? action);
     call
-      .then((resolution) => done(resolution))
+      .then((resolution) => {
+        if (action === 'IGNORE' && hasCutoff) {
+          toast.show({ tone: 'info', message: t('imports.ignoredToast'), action: { label: t('imports.ignoredUndo'), onClick: undoIgnore } });
+        }
+        return done(resolution);
+      })
       .catch((err: unknown) => setError(errorText(err)))
       .finally(() => setBusy(false));
   };
 
   const label = (action: ImportEntryAction) => tLoose(`imports.actions.${action}`);
-  const onClick = (action: ImportEntryAction) => {
+  const explain = (action: ImportEntryAction) => tLoose(`imports.actions.explain.${action}`);
+  const choose = (action: ImportEntryAction) => {
     if (action === 'REMOVE') setDialog('REMOVE');
     else if (action === 'CREATE_PURCHASE') setDialog('LAUNCH');
     else if (action === 'MARK_WON') setDialog('WON');
     else if (action === 'APPLY_FROM_STOCK') setDialog('APPLY');
     else act(action);
   };
+
+  const withoutPurchase = entry.outcome === 'FAILED' && entry.reasonCode === WITHOUT_PURCHASE_REASON;
+  const stepActions: readonly ImportEntryAction[] = ['CREATE_PURCHASE', 'MARK_WON', 'IGNORE'];
+  const plainActions = withoutPurchase ? actions.filter((action) => !stepActions.includes(action)) : actions;
+
   return (
     <>
-      <span className={styles.actions}>
-        {actions.map((action) => {
+      <div className={styles.choices}>
+        {withoutPurchase && <WithoutPurchaseSteps actions={actions} busy={busy} onChoose={choose} />}
+        {plainActions.map((action) => {
           if (action === 'LINK') {
             return entry.candidateIds.map((id) => (
-              <button key={`link-${id}`} type="button" className={forms.button} disabled={busy} onClick={() => act('LINK', { targetId: id })}>
-                {t('imports.actions.linkTo', { id })}
-              </button>
+              <EntryChoice key={`link-${id}`} label={t('imports.actions.linkTo', { id })} explain={explain('LINK')} disabled={busy} onClick={() => act('LINK', { targetId: id })} />
             ));
           }
-          const primary = action === 'CREATE_PURCHASE';
-          const danger = action === 'REMOVE';
-          return (
-            <button
-              key={action}
-              type="button"
-              className={danger ? `${forms.button} ${forms.danger}` : primary ? `${forms.button} ${forms.primary}` : forms.button}
-              disabled={busy}
-              onClick={() => onClick(action)}
-            >
-              {label(action)}
-            </button>
-          );
+          const tone = action === 'REMOVE' ? 'danger' : action === 'CREATE_PURCHASE' ? 'primary' : 'secondary';
+          return <EntryChoice key={action} label={label(action)} explain={explain(action)} tone={tone} disabled={busy} onClick={() => choose(action)} />;
         })}
-      </span>
-      {error && dialog === null && <span className={styles.error} role="alert">{error}</span>}
+      </div>
+      {error && dialog === null && <Banner tone="danger">{error}</Banner>}
       {dialog === 'REMOVE' && (
         <ConfirmDialog
           title={t('imports.actions.removeTitle')}
           message={tLoose(removeConfirmKey(entry))}
           confirmLabel={label('REMOVE')}
-          danger
+          tone="danger"
           busy={busy}
           error={error}
           onConfirm={() => act('REMOVE')}
@@ -178,13 +210,15 @@ function EntryRow({
   const locale = useLocale();
   const { display } = entry;
 
+  // Resumo na vista: preço e data. Os demais detalhes do item (variante, float, fase, seed) ficam em "Mais detalhes".
+  const summary: string[] = [];
+  if (display.priceCents !== null) summary.push(formatMoney(display.priceCents, display.currency, locale));
+  if (display.date) summary.push(formatDate(display.date, locale));
   const details: string[] = [];
   if (display.variant && display.variant !== 'NORMAL') details.push(tLoose(`enums.variant.${display.variant}`));
   if (display.floatValue !== null) details.push(`float ${formatFloat(display.floatValue, locale)}`);
   if (display.phase) details.push(display.phase);
   if (display.paintSeed !== null) details.push(`seed ${display.paintSeed}`);
-  if (display.priceCents !== null) details.push(formatMoney(display.priceCents, display.currency, locale));
-  if (display.date) details.push(formatDate(display.date, locale));
 
   const key = reasonKey(entry);
   const money = (cents: number | null | undefined) => (cents === null || cents === undefined ? '' : formatMoney(cents, display.currency, locale));
@@ -198,32 +232,33 @@ function EntryRow({
   // Aporte ou saque do extrato (9.6): o título é o tipo, e o valor e a taxa vão nos detalhes.
   const title = display.txKind ? tLoose(`imports.txKind.${display.txKind}`) : (display.name ? localizedOrName(display.name, display.localizedName) : display.marketHashName) ?? t('imports.unknownItem');
   if (display.txKind && display.feeCents !== null && display.feeCents !== undefined) {
-    details.push(t('imports.txFee', { value: formatMoney(display.feeCents, display.currency, locale) }));
+    summary.push(t('imports.txFee', { value: formatMoney(display.feeCents, display.currency, locale) }));
   }
+  const warnings = componentWarningsOf(entry);
 
   return (
     <li className={failed ? `${styles.entry} ${styles.failedEntry}` : styles.entry}>
       {selection && (
-        <input
-          type="checkbox"
-          className={styles.check}
+        <Checkbox
+          label=""
           checked={selection.checked}
-          onChange={(event) => selection.onChange(event.target.checked)}
+          onChange={selection.onChange}
           aria-label={t('imports.bulk.selectEntry', { name: title })}
+          className={styles.check}
         />
       )}
       <ItemImage category={category} url={display.imageUrl} size={40} />
       <div className={styles.body}>
         <span className={styles.name}>{title}</span>
-        {details.length > 0 && <span className={styles.details}>{details.join(' · ')}</span>}
+        {summary.length > 0 && <span className={styles.details}>{summary.join(' · ')}</span>}
         {reasonText && (
           <span className={entry.outcome === 'CREATED' || entry.outcome === 'MATCHED' ? `${styles.reason} ${styles.warn}` : styles.reason}>
             {reasonText}
           </span>
         )}
-        {componentWarningsOf(entry).length > 0 && (
+        {warnings.length > 0 && (
           <span className={styles.reason}>
-            {t('imports.componentWarningsTitle')}: {componentWarningsOf(entry)
+            {t('imports.componentWarningsTitle')}: {warnings
               .map((w) => tLoose(`imports.componentWarnings.${w.code}`, { name: w.name ?? t('imports.componentUnnamed') }))
               .join('; ')}. {t('imports.componentWarningsHint')}
           </span>
@@ -231,7 +266,12 @@ function EntryRow({
         {entry.outcome === 'REVERTED' && entry.linkKind === 'MATCHED' && (
           <span className={`${styles.reason} ${styles.warn}`}>{t('imports.actions.manualLaunch')}</span>
         )}
-        {failed && <span className={styles.error} role="alert">{failed}</span>}
+        {details.length > 0 && (
+          <Disclosure label={t('common.moreDetails')} className={styles.disclosure}>
+            <span className={styles.details}>{details.join(' · ')}</span>
+          </Disclosure>
+        )}
+        {failed && <Banner tone="danger">{failed}</Banner>}
         {(link !== null || entry.candidateIds.length > 0) && (
           <span className={styles.links}>
             {link !== null && <Link href={link} onClick={onNavigate}>{t(entryLinkLabelKey(entry))}</Link>}
@@ -240,13 +280,16 @@ function EntryRow({
             ))}
           </span>
         )}
+      </div>
+      <div className={styles.side}>
         <EntryActions entry={entry} resolvedAs={resolvedAs} onResolved={onResolved} />
       </div>
     </li>
   );
 }
 
-// Barra das ações em lote (D330): só as ações que valem para todas as selecionadas. Tudo ou nada.
+// Barra das ações em lote (D330; 12.9): só as ações que valem para todas as selecionadas, com a frase de cada uma. Tudo ou nada.
+// Fica fixa no topo da lista (embaixo, em largura total, na janela compacta). "Lançar compra" nunca entra aqui: é uma por vez.
 function BulkBar({
   selected, onDone, onFailures, onClear,
 }: {
@@ -277,7 +320,7 @@ function BulkBar({
       })
       .catch((err: unknown) => {
         if (err instanceof ApiRequestError && err.code === 'IMPORT_BULK_CONFLICT') {
-          const failures = ((err.params as { failures?: { entryId: number; code: string; reason: string | null }[] })?.failures ?? []);
+          const failures = ((err.details as { failures?: { entryId: number; code: string; reason: string | null }[] } | undefined)?.failures ?? []);
           onFailures(new Map(failures.map((f) => {
             const key = f.reason ? `imports.actions.conflict.${f.reason}` : `errors.${f.code}`;
             const text = tLoose(key);
@@ -293,20 +336,21 @@ function BulkBar({
 
   return (
     <div className={styles.bulkBar} role="region" aria-label={t('imports.bulk.bar')}>
-      <span>{tPlural('imports.bulk.selected', selected.length)}</span>
-      {actions.map((action) => (
-        <button
-          key={action}
-          type="button"
-          className={action === 'MARK_WON' ? `${forms.button} ${forms.primary}` : forms.button}
-          disabled={busy}
-          onClick={() => (action === 'MARK_WON' ? setWon(true) : run(action))}
-        >
-          {tLoose(`imports.actions.${action}`)}
-        </button>
-      ))}
-      <button type="button" className={forms.button} disabled={busy} onClick={onClear}>{t('imports.bulk.clear')}</button>
-      {error && !won && <span className={styles.error} role="alert">{error}</span>}
+      <span className={styles.bulkCount}>{tPlural('imports.bulk.selected', selected.length)}</span>
+      <div className={styles.bulkChoices}>
+        {actions.map((action) => (
+          <EntryChoice
+            key={action}
+            label={tLoose(`imports.actions.${action}`)}
+            explain={tLoose(`imports.actions.explain.${action}`)}
+            tone={action === 'MARK_WON' ? 'primary' : 'secondary'}
+            disabled={busy}
+            onClick={() => (action === 'MARK_WON' ? setWon(true) : run(action))}
+          />
+        ))}
+      </div>
+      <Button size="sm" variant="ghost" disabled={busy} onClick={onClear}>{t('imports.bulk.clear')}</Button>
+      {error && !won && <Banner tone="danger" className={styles.bulkError}>{error}</Banner>}
       {won && (
         <MarkWonDialog
           count={selected.length}
@@ -324,7 +368,7 @@ function BulkBar({
 }
 
 // Entradas do resumo (ou das pendências, ou das ignoradas) agrupadas por resultado, com o motivo, o link para o lançamento, as
-// ações (9.4) e a seleção para as ações em lote (9.5.1b).
+// escolhas (9.4; 12.9) e a seleção para as ações em lote (9.5.1b), com a dica fixa de seleção.
 export default function ImportEntriesList({ entries, onNavigate, ignoredList = false }: Props) {
   const t = useT();
   const [resolved, setResolved] = useState<ReadonlyMap<number, string>>(new Map());
@@ -353,28 +397,39 @@ export default function ImportEntriesList({ entries, onNavigate, ignoredList = f
       return next;
     });
   const selected = entries.filter((entry) => selectedIds.has(entry.id) && isOpen(entry));
+  const selectableCount = entries.filter(isOpen).length;
 
   return (
     <div className={styles.groups}>
+      {selectableCount > 1 && (
+        <p className={styles.tip} data-testid="bulk-tip">
+          <Icon name="info" size={16} />
+          <span>{t('imports.bulk.tip')}</span>
+        </p>
+      )}
       {selected.length > 0 && (
         <BulkBar selected={selected} onDone={markResolved} onFailures={setFailures} onClear={() => setSelectedIds(new Set())} />
       )}
       {groups.map((group) => {
         const selectable = group.entries.filter(isOpen);
-        const allChecked = selectable.length > 0 && selectable.every((e) => selectedIds.has(e.id));
+        const checkedCount = selectable.filter((e) => selectedIds.has(e.id)).length;
+        const allChecked = selectable.length > 0 && checkedCount === selectable.length;
+        const groupLabel = t(`imports.groups.${group.key}`);
         return (
-          <section key={group.key} className={styles.group} aria-label={t(`imports.groups.${group.key}`)}>
+          <section key={group.key} className={styles.group} aria-label={groupLabel}>
             <h3 className={styles.groupTitle}>
               {selectable.length > 1 && (
-                <input
-                  type="checkbox"
-                  className={styles.check}
+                <Checkbox
+                  label=""
                   checked={allChecked}
-                  onChange={(event) => setChecked(selectable.map((e) => e.id), event.target.checked)}
-                  aria-label={t('imports.bulk.selectGroup', { group: t(`imports.groups.${group.key}`) })}
+                  indeterminate={checkedCount > 0 && !allChecked}
+                  onChange={(checked) => setChecked(selectable.map((e) => e.id), checked)}
+                  aria-label={t('imports.bulk.selectGroup', { group: groupLabel })}
+                  className={styles.check}
                 />
               )}
-              {t(`imports.groups.${group.key}`)} ({group.entries.length})
+              <Badge tone={GROUP_TONE[group.key]}>{group.entries.length}</Badge>
+              <span>{groupLabel}</span>
             </h3>
             <ul className={styles.list}>
               {group.entries.map((entry) => (

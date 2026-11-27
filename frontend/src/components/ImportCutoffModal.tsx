@@ -1,11 +1,15 @@
 'use client';
 
-import { useId, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useT } from '@/i18n/I18nProvider';
-import { nowLocalInput } from '@/lib/dateInput';
+import { localInputToIso } from '@/lib/dateInput';
 import { suggestionToInputValue, validateCutoffInput } from '@/lib/importCutoff';
-import forms from './forms.module.css';
-import Modal from './Modal';
+import CutoffTimeline from './imports/CutoffTimeline';
+import styles from './imports/importModals.module.css';
+import Banner from './ui/Banner';
+import Button from './ui/Button';
+import Dialog from './ui/Dialog';
+import TextField from './ui/TextField';
 
 interface Props {
   // Sugestão do backend (ISO): só o valor inicial do campo; o usuário pode mudar (D296).
@@ -17,10 +21,11 @@ interface Props {
   onCancel: () => void;
 }
 
-// Primeira importação do CSFloat (9.2, D296): "Já lancei à mão tudo até qual data?".
+const FORM_ID = 'import-cutoff-form';
+
+// Primeira importação do CSFloat (9.2, D296; 12.9): "Já lancei à mão tudo até qual data?", com a linha do tempo da data escolhida.
 export default function ImportCutoffModal({ suggestedCutoffAt, busy, error, onConfirm, onCancel }: Props) {
   const t = useT();
-  const fieldId = useId();
   const [value, setValue] = useState(() => suggestionToInputValue(suggestedCutoffAt));
   const [fieldError, setFieldError] = useState<string | null>(null);
 
@@ -37,35 +42,36 @@ export default function ImportCutoffModal({ suggestedCutoffAt, busy, error, onCo
     onConfirm(result.iso);
   };
 
+  const chosenIso = localInputToIso(value);
+
   return (
-    <Modal title={t('imports.cutoff.title')} onClose={onCancel} busy={busy}>
-      <form className={forms.form} onSubmit={submit} noValidate>
-        <p>{t('imports.cutoff.help')}</p>
-        <p>{t('imports.cutoff.baseDepositHint')}</p>
-        <div className={forms.field}>
-          <label htmlFor={fieldId} className={forms.label}>{t('imports.cutoff.question')}</label>
-          <input
-            id={fieldId}
-            type="datetime-local"
-            className={forms.input}
-            value={value}
-            max={nowLocalInput()}
-            onChange={(e) => setValue(e.target.value)}
-            aria-invalid={fieldError !== null}
-            disabled={busy}
-            autoFocus
-          />
-          {fieldError !== null && <span className={forms.error} role="alert">{fieldError}</span>}
-          {suggestedCutoffAt === null && <span className={forms.hint}>{t('imports.cutoff.noSuggestion')}</span>}
-        </div>
-        {error !== null && <div className={forms.topError} role="alert">{error}</div>}
-        <div className={forms.actions}>
-          <button type="button" className={forms.button} onClick={onCancel} disabled={busy}>{t('common.cancel')}</button>
-          <button type="submit" className={`${forms.button} ${forms.primary}`} disabled={busy}>
-            {busy ? t('imports.running') : t('imports.cutoff.confirm')}
-          </button>
-        </div>
+    <Dialog
+      title={t('imports.cutoff.title')}
+      onClose={onCancel}
+      busy={busy}
+      footer={(
+        <>
+          <Button onClick={onCancel} disabled={busy}>{t('common.cancel')}</Button>
+          <Button type="submit" form={FORM_ID} variant="primary" loading={busy}>{busy ? t('imports.running') : t('imports.cutoff.confirm')}</Button>
+        </>
+      )}
+    >
+      <form id={FORM_ID} className={styles.form} onSubmit={submit} noValidate>
+        <p className={styles.help}>{t('imports.cutoff.help')}</p>
+        <TextField
+          label={t('imports.cutoff.question')}
+          type="datetime-local"
+          value={value}
+          onChange={setValue}
+          error={fieldError}
+          hint={suggestedCutoffAt === null ? t('imports.cutoff.noSuggestion') : t('imports.cutoff.baseDepositHint')}
+          disabled={busy}
+          autoFocus
+          full
+        />
+        <CutoffTimeline current={chosenIso} />
+        {error !== null && <Banner tone="danger">{error}</Banner>}
       </form>
-    </Modal>
+    </Dialog>
   );
 }

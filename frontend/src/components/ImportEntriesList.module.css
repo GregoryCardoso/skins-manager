@@ -1,26 +1,39 @@
-.groups { display: flex; flex-direction: column; gap: 1rem; }
-.group { display: flex; flex-direction: column; gap: 0.4rem; }
-.groupTitle { margin: 0; font-size: 0.95rem; }
-.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+.groups { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; }
+.group { display: flex; flex-direction: column; gap: var(--space-2); }
+.groupTitle { margin: 0; display: flex; align-items: center; gap: var(--space-2); font-size: var(--fs-md); font-weight: var(--fw-bold); }
+.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.tip {
+  margin: 0; display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border-radius: var(--radius-md);
+  background: var(--brand-soft); color: var(--text); font-size: var(--fs-sm);
+}
+.tip svg { flex: none; }
+
+/* Uma pendência: imagem, nome e detalhes; as escolhas à direita. Quando falta largura, as escolhas descem para baixo do nome. */
 .entry {
-  display: flex; gap: 0.75rem; align-items: flex-start; padding: 0.5rem 0.7rem; border: 1px solid var(--border);
-  border-radius: 8px; background: var(--surface);
+  display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: flex-start; padding: var(--space-3); min-width: 0;
+  border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface);
 }
-.body { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; flex: 1; }
-.name { font-weight: 600; overflow-wrap: anywhere; }
-.details { font-size: 0.82rem; color: var(--text-muted); }
-.reason { font-size: 0.85rem; }
+.failedEntry { border-color: var(--loss); }
+.check { flex: none; }
+.body { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; flex: 1 1 16rem; }
+.side { flex: 1 1 16rem; max-width: 26rem; min-width: 0; }
+.name { font-weight: var(--fw-bold); overflow-wrap: anywhere; }
+.details { font-size: var(--fs-sm); color: var(--muted); }
+.reason { font-size: var(--fs-sm); }
 .warn { color: var(--warning); }
-.links { display: flex; gap: 0.75rem; flex-wrap: wrap; font-size: 0.85rem; }
-.empty { color: var(--text-muted); margin: 0; }
-.actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.3rem; }
-.resolved { font-size: 0.85rem; color: var(--text-muted); }
-.error { font-size: 0.85rem; color: var(--danger); }
-/* 9.5.1b: seleção e barra das ações em lote. */
-.check { margin-top: 0.7rem; flex-shrink: 0; }
-.groupTitle .check { margin: 0 0.4rem 0 0; vertical-align: middle; }
+.links { display: flex; gap: var(--space-3); flex-wrap: wrap; font-size: var(--fs-sm); }
+.disclosure { font-size: var(--fs-sm); }
+.choices { display: flex; flex-direction: column; gap: var(--space-3); }
+.resolved { font-size: var(--fs-sm); color: var(--muted); }
+
+/* Barra de lote: fixa no topo da lista; embaixo, em largura total, na janela compacta. */
 .bulkBar {
-  position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; padding: 0.5rem 0.7rem;
-  border: 1px solid var(--accent); border-radius: 8px; background: var(--surface);
+  position: sticky; top: 0; z-index: var(--z-sticky); display: flex; align-items: flex-start; gap: var(--space-3); flex-wrap: wrap; padding: var(--space-3);
+  border: 1px solid var(--brand); border-radius: var(--radius-md); background: var(--surface); box-shadow: var(--shadow-2);
 }
-.failedEntry { border-color: var(--danger); }
+.bulkCount { font-weight: var(--fw-bold); align-self: center; }
+.bulkChoices { display: flex; gap: var(--space-4); flex-wrap: wrap; flex: 1 1 auto; min-width: 0; }
+.bulkError { flex-basis: 100%; }
+@media (width < 900px) {
+  .bulkBar { top: auto; bottom: 0; }
+}

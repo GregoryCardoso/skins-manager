@@ -391,9 +391,9 @@ describe('célula de valor da unidade (unitMarketCell)', () => {
     const cell = code('components/MarketValueCell.tsx');
     expect(cell).toMatch(/const noKey = view\.reason === 'NOT_FETCHED' && summary !== null && !summary\.configured;/);
     expect(cell).toContain("NOT_FETCHED_NO_KEY");
-    // dica no title e também no srOnly (o title não chega ao teclado nem ao leitor de tela)
-    expect(cell).toMatch(/title=\{title \?\? undefined\}/);
-    expect(cell).toMatch(/\{title && <span className=\{styles\.srOnly\}>\{title\}<\/span>\}/);
+    // a dica vai num HelpTip (teclado e leitor de tela), nunca no title (12.5a)
+    expect(cell).toMatch(/\{title && <HelpTip topic=/);
+    expect(cell).not.toMatch(/title=\{title \?\? undefined\}/);
   });
 });
 

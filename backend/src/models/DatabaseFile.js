@@ -8,6 +8,7 @@ module.exports = {
   getLatestSchemaVersion: () => database.getLatestSchemaVersion(),
   exportTo: (targetPath, options) => database.exportDatabaseTo(targetPath, options),
   inspectFile: (filePath) => database.inspectDatabaseFile(filePath),
+  readBackupSummary: (filePath) => database.readBackupSummary(filePath),
   replaceFile: (sourcePath) => database.replaceDatabaseFile(sourcePath),
   restoreFile: (backupPath) => database.restoreDatabaseFile(backupPath),
   open: (options) => database.getDb(options),

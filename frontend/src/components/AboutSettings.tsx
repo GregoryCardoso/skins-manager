@@ -7,7 +7,9 @@ import { formatDateTime } from '@/lib/format';
 import { getDesktopBridge, type DesktopAppInfo, type UpdateCheckResult } from '@/lib/desktop';
 import { queryKeys } from '@/lib/queryKeys';
 import { getHealth } from '@/services/api';
-import styles from './settings.module.css';
+import styles from './AboutSettings.module.css';
+import Button from './ui/Button';
+import Panel from './ui/Panel';
 
 // Card "Sobre" (D181): versão do app e atualização. A verificação só existe no desktop (instalador/portátil).
 export default function AboutSettings() {
@@ -58,46 +60,47 @@ export default function AboutSettings() {
   }
 
   return (
-    <section className={styles.card} aria-labelledby="settings-about-title">
-      <h2 id="settings-about-title" className={styles.cardTitle}>{t('settings.about.title')}</h2>
-      <p>
-        {version ? t('settings.about.version', { version }) : t('settings.about.versionUnknown')}
-        {mode === 'installer' && ` · ${t('settings.about.modeInstaller')}`}
-        {mode === 'portable' && ` · ${t('settings.about.modePortable')}`}
-      </p>
+    <Panel title={t('settings.about.title')}>
+      <div className={styles.stack}>
+        <p className={styles.line}>
+          {version ? t('settings.about.version', { version }) : t('settings.about.versionUnknown')}
+          {mode === 'installer' && ` · ${t('settings.about.modeInstaller')}`}
+          {mode === 'portable' && ` · ${t('settings.about.modePortable')}`}
+        </p>
 
-      <p data-testid="about-connection">
-        {t('status.server')}:{' '}
-        {healthQuery.data
-          ? `${t('status.online')} · ${t('status.lastResponse', { time: formatDateTime(healthQuery.data.timestamp, locale) })}`
-          : healthQuery.isError
-            ? t('status.offline')
-            : t('common.loading')}
-      </p>
-      <div className={styles.row}>
-        <button type="button" className={styles.button} onClick={() => void healthQuery.refetch()} disabled={healthQuery.isFetching}>
-          {healthQuery.isFetching ? t('status.checking') : t('status.recheck')}
-        </button>
+        <p className={styles.line} data-testid="about-connection">
+          {t('status.server')}:{' '}
+          {healthQuery.data
+            ? `${t('status.online')} · ${t('status.lastResponse', { time: formatDateTime(healthQuery.data.timestamp, locale) })}`
+            : healthQuery.isError
+              ? t('status.offline')
+              : t('common.loading')}
+        </p>
+        <div className={styles.row}>
+          <Button icon="refresh" onClick={() => void healthQuery.refetch()} disabled={healthQuery.isFetching}>
+            {healthQuery.isFetching ? t('status.checking') : t('status.recheck')}
+          </Button>
+        </div>
+
+        {canCheck ? (
+          <>
+            <div className={styles.row}>
+              <Button onClick={onCheck} disabled={checking}>
+                {checking ? t('settings.about.checking') : t('settings.about.check')}
+              </Button>
+            </div>
+            {statusText !== null && (
+              <p className={result?.status === 'error' ? styles.error : styles.ok} role="status">{statusText}</p>
+            )}
+            {failed && <p className={styles.error} role="alert">{t('settings.about.error')}</p>}
+            <p className={styles.muted}>
+              {t(mode === 'portable' ? 'settings.about.notePortable' : 'settings.about.noteInstaller')}
+            </p>
+          </>
+        ) : (
+          <p className={styles.muted}>{t(mode === 'dev' ? 'settings.about.disabled' : 'settings.about.manualUpdate')}</p>
+        )}
       </div>
-
-      {canCheck ? (
-        <>
-          <div className={styles.row}>
-            <button type="button" className={styles.button} onClick={onCheck} disabled={checking}>
-              {checking ? t('settings.about.checking') : t('settings.about.check')}
-            </button>
-          </div>
-          {statusText !== null && (
-            <p className={result?.status === 'error' ? styles.error : styles.ok} role="status">{statusText}</p>
-          )}
-          {failed && <p className={styles.error} role="alert">{t('settings.about.error')}</p>}
-          <p className={styles.muted}>
-            {t(mode === 'portable' ? 'settings.about.notePortable' : 'settings.about.noteInstaller')}
-          </p>
-        </>
-      ) : (
-        <p className={styles.muted}>{t(mode === 'dev' ? 'settings.about.disabled' : 'settings.about.manualUpdate')}</p>
-      )}
-    </section>
+    </Panel>
   );
 }

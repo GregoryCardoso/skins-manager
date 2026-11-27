@@ -67,3 +67,27 @@ describe('assessBackupFile', () => {
 test('buildExportFileName', () => {
   expect(buildExportFileName(4, new Date(2026, 10, 20, 9, 5))).toBe('skins-manager-backup-v4-2026-11-20-0905.sqlite');
 });
+
+describe('summarizeBackup (12.8)', () => {
+  const { summarizeBackup } = require('../../src/services/backupService');
+  const raw = { items: 3, sales: 1, stores: 2, deposits: 4, withdrawals: 5, lastUpdates: ['2026-11-01T10:00:00.000Z', '2026-11-20T15:34:00.000Z', null] };
+  const ctx = { latestVersion: 26, appVersion: '2.0.0', sizeBytes: 100 };
+
+  test('usa a maior data, as versões a aplicar e as contagens', () => {
+    const out = summarizeBackup({ userVersion: 20 }, raw, ctx);
+    expect(out).toEqual({
+      exportedAt: '2026-11-20T15:34:00.000Z',
+      schemaVersion: 20,
+      currentSchemaVersion: 26,
+      migrationsToApply: [21, 22, 23, 24, 25, 26],
+      appVersion: '2.0.0',
+      sizeBytes: 100,
+      counts: { items: 3, stores: 2, sales: 1, deposits: 4, withdrawals: 5 },
+    });
+  });
+  test('na versão atual não há migrações; sem datas válidas, exportedAt é null', () => {
+    const out = summarizeBackup({ userVersion: 26 }, { ...raw, lastUpdates: [null, 'lixo'] }, ctx);
+    expect(out.migrationsToApply).toEqual([]);
+    expect(out.exportedAt).toBeNull();
+  });
+});

@@ -33,11 +33,11 @@ test('parseBulkQuantity: inteiro de 1 até o máximo', () => {
 test('textos nos dois idiomas e a QTD com a divisão logo abaixo', () => {
   expect(ptBR.inventory.group.quantitySplit.replace('{forSale}', '61').replace('{holding}', '19')).toBe('61 à venda · 19 no holding');
   for (const lang of [ptBR, en]) {
-    for (const key of ['offSaleButton', 'forSaleButton', 'quantity', 'whichOffSale', 'whichForSale', 'selectAll', 'clearSelection'] as const) {
+    for (const key of ['offSaleButton', 'forSaleButton', 'quantity', 'whichOffSale', 'whichForSale', 'clearSelection'] as const) {
       expect(lang.inventory.bulk[key]).toBeTruthy();
     }
     expect((lang.errors as Record<string, string>).BULK_QUANTITY_EXCEEDS_AVAILABLE).toBeTruthy();
   }
-  const table = fs.readFileSync(path.join(__dirname, '..', 'components', 'InventoryGroupTable.tsx'), 'utf8');
+  const table = fs.readFileSync(path.join(__dirname, '..', 'lib', 'inventoryColumns.tsx'), 'utf8');
   expect(table).toMatch(/inventory\.group\.quantitySplit/);
 });

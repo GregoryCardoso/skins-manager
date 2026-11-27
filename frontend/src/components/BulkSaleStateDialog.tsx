@@ -6,33 +6,39 @@ import { useLocale, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import { parseBulkQuantity } from '@/lib/bulkSaleState';
 import { useInvalidate } from '@/lib/useInvalidate';
 import { bulkMarkForSale, bulkMarkOffSale } from '@/services/api';
-import forms from './forms.module.css';
-import Modal from './Modal';
+import Banner from './ui/Banner';
+import Button from './ui/Button';
+import Dialog from './ui/Dialog';
+import NumberField from './ui/NumberField';
+import styles from './BulkSaleStateDialog.module.css';
 
 export type BulkDirection = 'OFF_SALE' | 'FOR_SALE';
 
 interface Props {
   direction: BulkDirection;
-  name: string;
+  // Nome do item (lote por grupo); na seleção de unidades de vários itens fica de fora.
+  name?: string;
   // Por grupo: a chave e quantas unidades há para mover. Por seleção: os ids marcados.
   target: { groupKey: string; available: number } | { itemIds: number[] };
   onClose: () => void;
   onDone: () => void;
 }
 
-// Mover para o holding / voltar para a venda em lote (9.5.1a, D332): uma chamada atômica e uma única invalidação no fim.
+// Mover para o holding / voltar para a venda em lote (9.5.1a, D332; visual novo na 12.5b): uma chamada atômica e uma única invalidação
+// no fim. O contrato (props e chamadas à API) é o mesmo de antes.
 export default function BulkSaleStateDialog({ direction, name, target, onClose, onDone }: Props) {
   const t = useT();
   const tLoose = useTLoose();
   const tPlural = useTPlural();
   const locale = useLocale();
   const invalidate = useInvalidate();
-  const quantityId = useId();
+  const formId = useId();
   const byGroup = 'groupKey' in target;
   const max = byGroup ? target.available : target.itemIds.length;
   const [quantityText, setQuantityText] = useState(String(max));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [quantityError, setQuantityError] = useState<string | null>(null);
 
   const toHolding = direction === 'OFF_SALE';
   const quantity = byGroup ? parseBulkQuantity(quantityText, max) : max;
@@ -40,7 +46,7 @@ export default function BulkSaleStateDialog({ direction, name, target, onClose, 
   const submit = (event: FormEvent) => {
     event.preventDefault();
     if (quantity === null) {
-      setError(t('inventory.bulk.invalidQuantity', { max }));
+      setQuantityError(t('inventory.bulk.invalidQuantity', { max }));
       return;
     }
     setBusy(true);
@@ -54,39 +60,50 @@ export default function BulkSaleStateDialog({ direction, name, target, onClose, 
   };
 
   return (
-    <Modal title={t(toHolding ? 'inventory.bulk.offSaleTitle' : 'inventory.bulk.forSaleTitle')} onClose={onClose} busy={busy}>
-      <form className={forms.form} onSubmit={submit}>
-        <p><strong>{name}</strong></p>
+    <Dialog
+      title={t(toHolding ? 'inventory.bulk.offSaleTitle' : 'inventory.bulk.forSaleTitle')}
+      size="sm"
+      busy={busy}
+      onClose={onClose}
+      footer={
+        <>
+          <Button onClick={onClose} disabled={busy}>
+            {t('common.cancel')}
+          </Button>
+          <Button type="submit" form={formId} variant="primary" loading={busy}>
+            {t(toHolding ? 'inventory.bulk.offSaleConfirm' : 'inventory.bulk.forSaleConfirm')}
+          </Button>
+        </>
+      }
+    >
+      <form id={formId} className={styles.form} onSubmit={submit} noValidate>
+        {name && (
+          <p className={styles.name}>
+            <strong>{name}</strong>
+          </p>
+        )}
         {byGroup ? (
           <>
-            <label className={forms.field} htmlFor={quantityId}>
-              <span>{t('inventory.bulk.quantity', { max })}</span>
-              <input
-                id={quantityId}
-                type="number"
-                min={1}
-                max={max}
-                step={1}
-                value={quantityText}
-                onChange={(event) => setQuantityText(event.target.value)}
-                disabled={busy}
-                autoFocus
-              />
-            </label>
-            <p className={forms.hint}>{t(toHolding ? 'inventory.bulk.whichOffSale' : 'inventory.bulk.whichForSale')}</p>
+            <NumberField
+              kind="integer"
+              label={t('inventory.bulk.quantity', { max })}
+              value={quantityText}
+              onValueChange={(text) => {
+                setQuantityText(text);
+                setQuantityError(null);
+              }}
+              error={quantityError}
+              hint={t(toHolding ? 'inventory.bulk.whichOffSale' : 'inventory.bulk.whichForSale')}
+              disabled={busy}
+              autoFocus
+            />
           </>
         ) : (
           <p>{tPlural('inventory.bulk.selectedCount', max)}</p>
         )}
-        {!toHolding && <p className={forms.hint}>{t('inventory.bulk.turnoverRestarts')}</p>}
-        {error && <div className={forms.topError} role="alert">{error}</div>}
-        <div className={forms.actions}>
-          <button type="button" className={forms.button} onClick={onClose} disabled={busy}>{t('common.cancel')}</button>
-          <button type="submit" className={`${forms.button} ${forms.primary}`} disabled={busy}>
-            {busy ? t('common.saving') : t(toHolding ? 'inventory.bulk.offSaleConfirm' : 'inventory.bulk.forSaleConfirm')}
-          </button>
-        </div>
+        {!toHolding && <p className={styles.hint}>{t('inventory.bulk.turnoverRestarts')}</p>}
+        {error && <Banner tone="danger">{error}</Banner>}
       </form>
-    </Modal>
+    </Dialog>
   );
 }

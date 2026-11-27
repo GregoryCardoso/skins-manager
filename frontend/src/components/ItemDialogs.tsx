@@ -7,7 +7,7 @@ import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
 import { ApiRequestError, deleteItem, markItemForSale, markItemOffSale, unsellItem } from '@/services/api';
 import { itemDisplayName, itemEnglishTitle } from '@/lib/itemName';
 import type { ItemView, Store } from '@/types/api';
-import ConfirmDialog from './ConfirmDialog';
+import ConfirmDialog from './ui/ConfirmDialog';
 import ItemFormModal from './ItemFormModal';
 import ApplyComponentModal from './ApplyComponentModal';
 import DetachComponentModal from './DetachComponentModal';
@@ -58,7 +58,12 @@ export interface ItemDialogsApi {
 
 // Modais e confirmações de item compartilhados pelo inventário e pela página de vendas (D129).
 // Sucesso -> fecha, mostra a mensagem e invalida as consultas (D259); ITEM_NOT_FOUND -> avisa e atualiza as telas.
-export function useItemDialogs(stores: Store[]): ItemDialogsApi {
+export interface ItemDialogsOptions {
+  // Com ele, as mensagens vão para o aviso rápido (Toast) da página em vez do `notice` (o inventário, D370 12.5a).
+  notify?: (message: string, tone: 'success' | 'danger') => void;
+}
+
+export function useItemDialogs(stores: Store[], options: ItemDialogsOptions = {}): ItemDialogsApi {
   const t = useT();
   const tLoose = useTLoose();
   const locale = useLocale();
@@ -69,6 +74,7 @@ export function useItemDialogs(stores: Store[]): ItemDialogsApi {
   const [confirmError, setConfirmError] = useState<string | null>(null);
   const [forSalePendingId, setForSalePendingId] = useState<number | null>(null);
   const forSalePendingRef = useRef<number | null>(null);
+  const { notify } = options;
 
   const closeDialog = useCallback(() => {
     setDialog(null);
@@ -79,9 +85,10 @@ export function useItemDialogs(stores: Store[]): ItemDialogsApi {
   const finish = useCallback(
     (message: string) => {
       closeDialog();
-      setNotice(message);
+      if (notify) notify(message, 'success');
+      else setNotice(message);
     },
-    [closeDialog],
+    [closeDialog, notify],
   );
 
   const itemGone = useCallback(() => {
@@ -128,7 +135,9 @@ export function useItemDialogs(stores: Store[]): ItemDialogsApi {
       })
       .then(() => {
         invalidate('item.backOnSale');
-        setNotice(t('inventory.forSaleDone', { name: itemDisplayName(item) }));
+        const message = t('inventory.forSaleDone', { name: itemDisplayName(item) });
+        if (notify) notify(message, 'success');
+        else setNotice(message);
       })
       .catch((err: unknown) => {
         if (err instanceof ApiRequestError && err.code === 'ITEM_NOT_FOUND') {
@@ -136,7 +145,9 @@ export function useItemDialogs(stores: Store[]): ItemDialogsApi {
           return;
         }
         if (err instanceof ApiRequestError && err.code === 'ITEM_ALREADY_SOLD') invalidate('item.sell');
-        setNotice(errorMessageFor(err, tLoose, locale));
+        const message = errorMessageFor(err, tLoose, locale);
+        if (notify) notify(message, 'danger');
+        else setNotice(message);
       });
   };
 
@@ -195,7 +206,7 @@ export function useItemDialogs(stores: Store[]): ItemDialogsApi {
           title={t('confirm.deleteTitle')}
           message={t('confirm.deleteMessage', { name: itemDisplayName(dialog.item) })}
           confirmLabel={t('confirm.confirmDelete')}
-          danger
+          tone="danger"
           busy={confirmBusy}
           error={confirmError}
           onCancel={closeDialog}

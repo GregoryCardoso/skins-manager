@@ -113,7 +113,7 @@ describe('invalidação e traduções dos componentes novos', () => {
 
   test('toda chave literal usada nos componentes da abertura existe em pt-BR e en', () => {
     const dir = path.resolve(__dirname, '../components');
-    const files = ['OpenContainerModal.tsx', 'GeneratedFromNote.tsx', 'ItemActions.tsx', 'StoresTable.tsx', 'ItemOperationsList.tsx', 'ItemHistoryBox.tsx', 'SummaryCards.tsx', 'ItemIdentityFields.tsx'];
+    const files = ['OpenContainerModal.tsx', 'GeneratedFromNote.tsx', 'ItemActions.tsx', 'StoreCard.tsx', 'ItemOperationsList.tsx', 'ItemHistoryBox.tsx', 'SummaryCards.tsx', 'ItemIdentityFields.tsx'];
     const missing: string[] = [];
     for (const file of files) {
       const source = fs.readFileSync(path.join(dir, file), 'utf8');

@@ -10,6 +10,8 @@ export type ThemeChoice = 'LIGHT' | 'DARK';
 export type { Language };
 // Visão do inventário (D276): agrupada (padrão) ou individual.
 export type InventoryView = 'INDIVIDUAL' | 'GROUPED';
+// Densidade da tabela do inventário (D370, 12.5a, v027): compacta (padrão) ou confortável.
+export type InventoryDensity = 'COMPACT' | 'COMFORTABLE';
 export type ResolvedTheme = 'light' | 'dark';
 
 export type ErrorParams = Record<string, string | number>;
@@ -70,12 +72,15 @@ export interface Settings {
   // cotação (a de conversão, as das lojas e, se houver legado, o BRL). Sem USD.
   fxRates: FxRateEntry[];
   requiredFxCurrencies: string[];
+  // Faixa aceita para a cotação digitada à mão, por moeda (12.8; sem USD). Só para mostrar e avisar: quem valida é a API.
+  fxManualRateBounds?: Record<string, { min: number; max: number }>;
   catalogUpdatedAt: string | null;
   // Loja Steam do app (10.4, D363): onde o item comprado no terminal é registrado; nulo = não escolhida.
   steamStoreId: number | null;
   theme: Theme;
   language: Language;
   inventoryView: InventoryView;
+  inventoryDensity: InventoryDensity;
   // Limites de giro (D159): valores salvos (null = padrão), efetivos e padrões.
   fastTurnoverDaysCustom: number | null;
   slowItemDaysCustom: number | null;
@@ -94,6 +99,7 @@ export interface PreferencesPatch {
   theme?: ThemeChoice;
   language?: Language;
   inventoryView?: InventoryView;
+  inventoryDensity?: InventoryDensity;
   // Fonte do "atualizar cotação" do BRL (a PTAX só existe nele).
   fxRefreshSource?: FxRefreshSource;
   // Inteiro ou null (volta ao padrão).
@@ -588,10 +594,25 @@ export interface UndoOperationResult {
   removedItemIds?: number[];
 }
 
+// Faixa de posição do inventário (12.5b, Q-12.5-2): sobre todo o estoque, independente de filtros, busca e abas. Só nas listas de estoque.
+export interface PositionCost {
+  costUsdCents: number | null;
+  costUsesRecordedFx: boolean;
+  approx: ApproxAmount | null;
+}
+export interface InventoryPosition {
+  forSale: PositionCost;
+  offSale: PositionCost;
+  tradeLocked: { units: number; nextUnlockAt: string | null };
+  // Encalhados: à venda e liberados; holding e trade lock nunca entram.
+  stagnant: { units: number; groups: number };
+}
+
 export interface ItemListMeta {
   count: number;
-  // Contagem das abas, sobre os itens em estoque (com a categoria; sem saleState nem stagnantOnly).
+  // Contagem das abas, sobre os itens em estoque (com a categoria e a busca; sem saleState nem stagnantOnly).
   saleStateCounts: { forSale: number; offSale: number };
+  position?: InventoryPosition;
   fastTurnoverDays: number;
   slowItemDays: number;
   usdBrlRate: number | null;
@@ -632,6 +653,7 @@ export interface ItemGroupListMeta {
   count: number;
   groupCount: number;
   saleStateCounts: { forSale: number; offSale: number };
+  position?: InventoryPosition;
   fastTurnoverDays: number;
   slowItemDays: number;
   usdBrlRate: number | null;
@@ -660,6 +682,8 @@ export interface ItemListQuery {
   category?: Category;
   stagnantOnly?: boolean;
   saleState?: SaleState;
+  // Busca pelo nome (12.5b): 1 a 100 caracteres, sem acento e sem caixa; só enviada com texto.
+  search?: string;
   order: 'asc' | 'desc';
 }
 
@@ -935,6 +959,38 @@ export interface BackupImportResult {
   migrationsApplied: number[];
   preImportBackupFile: string;
   counts: { items: number; stores: number };
+}
+
+// Resposta de POST /backup/import-preview (12.8): resumo do arquivo, sem gravar nada.
+export interface BackupImportPreview {
+  // A última alteração registrada no arquivo (o arquivo não guarda a data da exportação); null se não houver.
+  exportedAt: string | null;
+  schemaVersion: number;
+  currentSchemaVersion: number;
+  migrationsToApply: number[];
+  appVersion: string;
+  sizeBytes: number;
+  counts: { items: number; stores: number; sales: number; deposits: number; withdrawals: number };
+}
+
+// Resposta de GET /stores/fee-preview (12.8): exemplo da taxa de uma loja ainda não gravada.
+export interface StoreFeePreview {
+  currency: Currency;
+  saleFeeType: SaleFeeType;
+  priceCents: number;
+  feeCents: number;
+  netCents: number;
+}
+
+// Parâmetros de GET /stores/fee-preview (12.8). `rate` é a fração (0.02 = 2%).
+export interface StoreFeePreviewQuery {
+  currency: Currency;
+  saleFeeType: SaleFeeType;
+  rate: number;
+  rounding?: SaleFeeRounding;
+  minCents?: number | null;
+  fixedCents?: number | null;
+  priceCents?: number | null;
 }
 
 // --- Saldo das lojas calculado (8.6: D239 a D246) ---

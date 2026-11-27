@@ -27,6 +27,7 @@ const { computeSaleProfitUsdCents, buildSaleInfo } = require('./profitService');
 const { buildStatsIndex, buildStatsKey, computeStats, computeSalesSummary } = require('./itemStatsService');
 const { groupByStatsKey, summarizeGroupCost, summarizeStockStates, countStagnant, pickUnitsForSaleState } = require('./inventoryGroupService');
 const { getStoreOrFail } = require('./storeService');
+const { normalizeInventorySearch, matchesInventorySearch, buildPosition } = require('./inventoryPositionService');
 const { getAgingThresholds } = require('./settingsService');
 const externalLinkService = require('./externalLinkService');
 const itemComponentService = require('./itemComponentService');
@@ -629,10 +630,15 @@ function assertNotConsumed(item) {
 // Filtros e ordenação comuns à lista individual e à agrupada (D272), nesta ordem: category, status, saleState, stagnantOnly e ordenação.
 // `saleStateCounts` (D265, adendo 1 da revisão 8.6/8.7): sobre os itens em estoque, com a categoria, independente de status,
 // saleState e stagnantOnly.
-function selectItems(all, query, { now, thresholds }) {
+function selectItems(all, query, { now, thresholds, catalogById = new Map() }) {
   // Sem `status`, só EM_ESTOQUE e VENDIDO (D362 item 8): as consumidas só vêm com `status=CONSUMIDO`.
   let items = query.status ? all : all.filter((i) => i.status !== 'CONSUMIDO');
   if (query.category) items = items.filter((i) => i.category === query.category);
+  // Busca pelo nome (12.5b): aditiva, junto com a categoria e antes das abas, das contagens e de stagnantOnly.
+  if (query.search) {
+    const needle = normalizeInventorySearch(query.search);
+    items = items.filter((i) => matchesInventorySearch(i, isNil(i.catalogId) ? null : (catalogById.get(i.catalogId) || {}).localizedName, needle));
+  }
   const stock = items.filter((i) => i.status === 'EM_ESTOQUE');
   if (query.status) items = items.filter((i) => i.status === query.status);
   const saleStateCounts = { forSale: stock.filter((i) => !isOffSale(i)).length, offSale: stock.filter((i) => isOffSale(i)).length };
@@ -646,13 +652,14 @@ function selectItems(all, query, { now, thresholds }) {
 
 function listItems(query = {}, { now = new Date(), thresholds = getAgingThresholds() } = {}) {
   const { items: all, stores, settings, statsIndex, catalogById, externalSources, componentsByItemId, operationContext, stockKeys, valuationIndex } = loadContext(now);
-  const { items, saleStateCounts } = selectItems(all, query, { now, thresholds });
+  const { items, saleStateCounts } = selectItems(all, query, { now, thresholds, catalogById });
 
   return {
     items: items.map((item) => toItemView(item, { stores, settings, statsIndex, catalogById, externalSources, componentsByItemId, now, thresholds, operationContext, stockKeys, valuationIndex })),
     meta: {
       count: items.length,
       saleStateCounts,
+      position: buildPosition(all, { costIndex: operationContext.costIndex, fx: fxFromSettings(settings), thresholds, now }),
       fastTurnoverDays: thresholds.fastTurnoverDays,
       slowItemDays: thresholds.slowItemDays,
       usdBrlRate: settings.usdBrlRate,
@@ -665,7 +672,7 @@ function listItems(query = {}, { now = new Date(), thresholds = getAgingThreshol
 // ordem da primeira aparição na lista ordenada; `stock` conta todo o estoque da chave, independente da aba e dos filtros.
 function listItemGroups(query = {}, { now = new Date(), thresholds = getAgingThresholds() } = {}) {
   const { items: all, stores, settings, statsIndex, catalogById, externalSources, componentsByItemId, operationContext, stockKeys, valuationIndex } = loadContext(now);
-  const { items, saleStateCounts } = selectItems(all, { ...query, status: 'EM_ESTOQUE' }, { now, thresholds });
+  const { items, saleStateCounts } = selectItems(all, { ...query, status: 'EM_ESTOQUE' }, { now, thresholds, catalogById });
 
   const stockByKey = new Map();
   for (const item of all) {
@@ -705,6 +712,7 @@ function listItemGroups(query = {}, { now = new Date(), thresholds = getAgingThr
       count: items.length,
       groupCount: groups.length,
       saleStateCounts,
+      position: buildPosition(all, { costIndex: operationContext.costIndex, fx: fxFromSettings(settings), thresholds, now }),
       fastTurnoverDays: thresholds.fastTurnoverDays,
       slowItemDays: thresholds.slowItemDays,
       usdBrlRate: settings.usdBrlRate,

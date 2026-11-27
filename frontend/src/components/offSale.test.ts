@@ -69,8 +69,8 @@ describe('confirmação e botões', () => {
   });
 
   test('as abas usam a contagem do backend (meta.saleStateCounts) e a célula de giro mostra "No holding desde"', () => {
-    expect(read('app/page.tsx')).toContain('data.meta.saleStateCounts');
-    expect(read('components/InventoryUnitRow.tsx')).toContain("t('inventory.offSaleSince'");
+    expect(read('app/page.tsx')).toContain('meta.saleStateCounts');
+    expect(read('components/inventory/UnitCells.tsx')).toContain('offSaleSinceText');
     expect(read('components/ItemHistoryBox.tsx')).toContain('soldOffSaleCount');
   });
 });

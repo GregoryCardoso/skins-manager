@@ -70,7 +70,7 @@ describe('cada função de escrita do api.ts invalida a ação certa onde é usa
     const api = read(path.join(src, 'services', 'api.ts'));
     const writers = [...api.matchAll(/export const (\w+)\s*=[^;]*?request<[^>]+>\(\s*'(POST|PUT|PATCH|DELETE)'/gs)].map((m) => m[1]);
     // isentas: não mudam dados guardados (pasta de backups, importação tratada à parte)
-    const EXEMPT = ['importBackup', 'openBackupsFolder'];
+    const EXEMPT = ['importBackup', 'openBackupsFolder', 'previewBackupImport'];
     expect(writers.length).toBeGreaterThan(15);
     for (const fn of writers) expect(Object.keys(WRITES).concat(EXEMPT), `${fn} sem invalidação mapeada`).toContain(fn);
     expect(writers).toEqual(expect.arrayContaining(['createItem', 'sellItem', 'createDeposit', 'refreshCatalog']));

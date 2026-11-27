@@ -16,9 +16,9 @@ describe('/api/settings', () => {
     const res = await request(app).get('/api/settings');
     expect(res.status).toBe(200);
     expect(res.body.data).toEqual({
-      usdBrlRate: null, usdBrlRateUpdatedAt: null, usdBrlRateSource: null, catalogUpdatedAt: null, theme: 'SYSTEM', language: 'en', inventoryView: 'GROUPED',
+      usdBrlRate: null, usdBrlRateUpdatedAt: null, usdBrlRateSource: null, catalogUpdatedAt: null, theme: 'SYSTEM', language: 'en', inventoryView: 'GROUPED', inventoryDensity: 'COMPACT',
       agingThresholdsAdjusted: false, fastTurnoverDays: 7, fastTurnoverDaysCustom: null, fastTurnoverDaysDefault: 7,
-      slowItemDays: 21, slowItemDaysCustom: null, slowItemDaysDefault: 21, steamStoreId: expect.any(Number), rateQuotedAt: null, fxRefreshSource: 'AWESOMEAPI', displayCurrency: 'BRL', fxRates: expect.any(Array), requiredFxCurrencies: expect.any(Array), updatedAt: expect.any(String),
+      slowItemDays: 21, slowItemDaysCustom: null, slowItemDaysDefault: 21, steamStoreId: expect.any(Number), rateQuotedAt: null, fxRefreshSource: 'AWESOMEAPI', displayCurrency: 'BRL', fxManualRateBounds: expect.any(Object), fxRates: expect.any(Array), requiredFxCurrencies: expect.any(Array), updatedAt: expect.any(String),
     });
     expect(res.body.data).not.toHaveProperty('id');
   });
@@ -29,9 +29,9 @@ describe('/api/settings', () => {
     expect(res.body.data).toEqual({
       usdBrlRate: 5.25,
       usdBrlRateUpdatedAt: '2026-11-19T15:00:00.000Z',
-      catalogUpdatedAt: null, theme: 'SYSTEM', language: 'en', inventoryView: 'GROUPED', usdBrlRateSource: 'MANUAL',
+      catalogUpdatedAt: null, theme: 'SYSTEM', language: 'en', inventoryView: 'GROUPED', inventoryDensity: 'COMPACT', usdBrlRateSource: 'MANUAL',
       agingThresholdsAdjusted: false, fastTurnoverDays: 7, fastTurnoverDaysCustom: null, fastTurnoverDaysDefault: 7,
-      slowItemDays: 21, slowItemDaysCustom: null, slowItemDaysDefault: 21, steamStoreId: expect.any(Number), rateQuotedAt: null, fxRefreshSource: 'AWESOMEAPI', displayCurrency: 'BRL', fxRates: expect.any(Array), requiredFxCurrencies: expect.any(Array),
+      slowItemDays: 21, slowItemDaysCustom: null, slowItemDaysDefault: 21, steamStoreId: expect.any(Number), rateQuotedAt: null, fxRefreshSource: 'AWESOMEAPI', displayCurrency: 'BRL', fxManualRateBounds: expect.any(Object), fxRates: expect.any(Array), requiredFxCurrencies: expect.any(Array),
       updatedAt: '2026-11-19T15:00:00.000Z',
     });
     expect((await request(app).get('/api/settings')).body.data.usdBrlRate).toBe(5.25);
@@ -60,7 +60,7 @@ describe('/api/settings', () => {
 
     test('GET inicial traz theme SYSTEM, language en e catalogUpdatedAt nulo', async () => {
       const res = await request(app).get('/api/settings');
-      expect(res.body.data).toMatchObject({ theme: 'SYSTEM', language: 'en', inventoryView: 'GROUPED', catalogUpdatedAt: null });
+      expect(res.body.data).toMatchObject({ theme: 'SYSTEM', language: 'en', inventoryView: 'GROUPED', inventoryDensity: 'COMPACT', catalogUpdatedAt: null });
     });
 
     test.each([
@@ -73,9 +73,9 @@ describe('/api/settings', () => {
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
       expect(res.body.data).toEqual({
-        usdBrlRate: null, usdBrlRateUpdatedAt: null, usdBrlRateSource: null, catalogUpdatedAt: null, inventoryView: 'GROUPED', ...expected,
+        usdBrlRate: null, usdBrlRateUpdatedAt: null, usdBrlRateSource: null, catalogUpdatedAt: null, inventoryView: 'GROUPED', inventoryDensity: 'COMPACT', ...expected,
         agingThresholdsAdjusted: false, fastTurnoverDays: 7, fastTurnoverDaysCustom: null, fastTurnoverDaysDefault: 7,
-      slowItemDays: 21, slowItemDaysCustom: null, slowItemDaysDefault: 21, steamStoreId: expect.any(Number), rateQuotedAt: null, fxRefreshSource: 'AWESOMEAPI', displayCurrency: 'BRL', fxRates: expect.any(Array), requiredFxCurrencies: expect.any(Array), updatedAt: '2026-11-19T15:00:00.000Z',
+      slowItemDays: 21, slowItemDaysCustom: null, slowItemDaysDefault: 21, steamStoreId: expect.any(Number), rateQuotedAt: null, fxRefreshSource: 'AWESOMEAPI', displayCurrency: 'BRL', fxManualRateBounds: expect.any(Object), fxRates: expect.any(Array), requiredFxCurrencies: expect.any(Array), updatedAt: '2026-11-19T15:00:00.000Z',
       });
       expect((await request(app).get('/api/settings')).body.data).toMatchObject(expected);
     });

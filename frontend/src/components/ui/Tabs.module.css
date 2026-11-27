@@ -33,3 +33,21 @@
 .count { padding: 0 var(--space-2); border-radius: var(--radius-pill); background: var(--surface-2); color: var(--muted); font-size: var(--fs-xs); }
 .panel { padding-top: var(--space-4); }
 .panel:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }
+
+/* Índice vertical (Configurações, 12.8): uma coluna à esquerda e o conteúdo à direita. */
+.rootVertical { display: grid; grid-template-columns: 16rem minmax(0, 1fr); gap: var(--space-5); align-items: start; }
+.scrollerVertical { border-bottom: 0; border-right: 1px solid var(--line); background: none; overflow: visible; }
+.listVertical { display: flex; flex-direction: column; gap: var(--space-1); width: auto; min-width: 0; padding-right: var(--space-3); }
+.tabVertical {
+  align-items: flex-start;
+  border-bottom: 0;
+  border-left: 2px solid transparent;
+  border-radius: var(--radius-sm);
+  text-align: start;
+  white-space: normal;
+}
+.tabVertical[data-state='active'] { border-bottom-color: transparent; border-left-color: var(--brand); background: var(--surface-2); }
+.name { display: block; }
+.description { display: block; margin-top: 2px; color: var(--muted); font-size: var(--fs-xs); font-weight: var(--fw-regular, 400); overflow-wrap: anywhere; }
+.rootVertical > .panel { padding-top: 0; }
+.tab:not(.tabVertical) .description { max-width: 14rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

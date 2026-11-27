@@ -1,133 +1,19 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { createElement } from 'react';
-import { renderToStaticMarkup } from 'react-dom/server';
-import { afterEach, describe, expect, test, vi } from 'vitest';
+import { describe, expect, test } from 'vitest';
 import en from '@/i18n/en.json';
 import ptBR from '@/i18n/pt-BR.json';
-import { translate, translatePlural } from '@/i18n/translate';
-import { queryKeys } from '@/lib/queryKeys';
-import type { IntegrationView, Store } from '@/types/api';
+import { translate } from '@/i18n/translate';
 
-// QA 9.1: card do CSFloat. Sem jsdom: renderização estática com os dados já no cache (estados) + análise do código-fonte
-// para o que depende de clique (mostrar/esconder, limpar o campo, chave fora do cache) + i18n e cliente da API.
-const LANG = { current: 'pt-BR' as 'pt-BR' | 'en' };
-const dict = () => (LANG.current === 'en' ? en : ptBR);
-vi.mock('@/i18n/I18nProvider', () => {
-  const t = (key: string, params?: Record<string, string | number>) => translate(dict(), key, params);
-  const tPlural = (key: string, count: number, params?: Record<string, string | number>) => translatePlural(dict(), key, count, LANG.current, params);
-  return { useT: () => t, useTLoose: () => t, useTPlural: () => tPlural, useLanguage: () => LANG.current, useLocale: () => LANG.current };
-});
-
-import CsfloatIntegrationCard from './CsfloatIntegrationCard';
-
-// Dados INVENTADOS.
-const baseView: IntegrationView = {
-  source: 'CSFLOAT', storeId: 1, storeName: 'CSFloat', storeCurrency: 'USD', storeSaleFeeRate: 0.02, storeWithdrawalFeeRate: 0.025,
-  hasApiKey: false, apiKeyMasked: null, apiKeySavedAt: null, accountLinked: false, autoImportOnOpen: false, autoImportPaused: false,
-  tradesCutoffAt: null, lastImportAt: null, lastImportStatus: null, lastImportErrorCode: null,
-  importInProgress: false, openEntriesCount: 0, suggestedCutoffAt: null, helpUrl: 'https://csfloat.com/profile',
-};
-const stores = [
-  { id: 1, name: 'CSFloat', currency: 'USD' },
-  { id: 2, name: 'Steam', currency: 'BRL' },
-  { id: 3, name: 'CSMoney', currency: 'USD' },
-] as unknown as Store[];
-
-function render(view: IntegrationView | null, language: 'pt-BR' | 'en' = 'pt-BR') {
-  LANG.current = language;
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: Infinity } } });
-  if (view) client.setQueryData(queryKeys.integrations.csfloat, view);
-  client.setQueryData(queryKeys.stores.all, stores);
-  return renderToStaticMarkup(createElement(QueryClientProvider, { client }, createElement(CsfloatIntegrationCard)));
-}
-
-describe('estados do card (renderização)', () => {
-  test('carregando: mostra "Carregando" e nenhum formulário', () => {
-    const html = render(null);
-    expect(html).toContain(translate(ptBR, 'common.loading'));
-    expect(html).not.toContain('<form');
-  });
-
-  test('sem chave: "Nenhuma chave salva.", campo de senha vazio, "Salvar chave" e "Testar conexão" desabilitado, sem "Remover"', () => {
-    const html = render(baseView);
-    expect(html).toContain('Nenhuma chave salva.');
-    expect(html).toMatch(/<input[^>]*type="password"/);
-    expect(html).toContain('Salvar chave');
-    expect(html).not.toContain('Trocar chave');
-    expect(html).not.toContain('Remover chave');
-    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Testar conexão<\/button>/);
-  });
-
-  test('com chave: mostra só a máscara, "Trocar chave", "Remover chave" e "Testar conexão" habilitado', () => {
-    const html = render({ ...baseView, hasApiKey: true, apiKeyMasked: '••••••••a1b2' });
-    expect(html).toContain('Chave salva: ••••••••a1b2');
-    expect(html).toContain('Trocar chave');
-    expect(html).toContain('Remover chave');
-    expect(html).not.toMatch(/<button[^>]*disabled=""[^>]*>Testar conexão<\/button>/);
-    // o campo nasce vazio e escondido: a chave nunca é preenchida de volta
-    expect(html).toMatch(/<input[^>]*type="password"[^>]*value=""/);
-    expect(html).toContain('autoComplete="off"');
-  });
-
-  test('o botão de mostrar começa como "Mostrar" (aria-pressed false)', () => {
-    const html = render(baseView);
-    expect(html).toMatch(/aria-pressed="false"[^>]*>Mostrar<\/button>|<button[^>]*aria-pressed="false"[^>]*>Mostrar/);
-  });
-
-  test('não lista outras lojas: sem seletor, e os nomes das outras lojas do cache não aparecem (D317)', () => {
-    // o passo a passo cita a "conta Steam" (o login); fora dele, nenhum nome de outra loja aparece
-    const html = render(baseView).replace(/<div[^>]*data-testid="csfloat-setup-guide"[\s\S]*?<\/div>/, '');
-    expect(html).not.toContain('<select');
-    expect(html).not.toContain('<option');
-    expect(html).not.toContain('Steam');
-    expect(html).not.toContain('CSMoney');
-    expect(html).toContain('Os lançamentos importados vão para a loja CSFloat.');
-  });
-
-  test('loja renomeada: mostra o nome atual da loja vinculada', () => {
-    expect(render({ ...baseView, storeName: 'Minha CSFloat' })).toContain('Os lançamentos importados vão para a loja Minha CSFloat.');
-  });
-
-  test('sem loja vinculada: aviso curto traduzido pedindo para criar a loja "CSFloat" em US$', () => {
-    const html = render({ ...baseView, storeId: null, storeName: null, storeCurrency: null });
-    expect(html).toContain('Não encontramos a loja do CSFloat');
-    expect(html).toContain('chamada &quot;CSFloat&quot;');
-    expect(html).not.toContain('Lançamentos vão para a loja');
-    expect(render({ ...baseView, storeId: null, storeName: null, storeCurrency: null }, 'en')).toContain('The CSFloat store was not found');
-  });
-
-  test('"Abrir o CSFloat" abre em nova aba com rel seguro, sempre no endereço fixo (a helpUrl da API não é usada)', () => {
-    const ok = render(baseView);
-    expect(ok).toMatch(/<a[^>]*href="https:\/\/csfloat\.com\/profile"[^>]*target="_blank"[^>]*rel="noopener noreferrer"/);
-    const bad = render({ ...baseView, helpUrl: 'javascript:alert(1)' });
-    expect(bad).not.toContain('javascript:');
-    expect(bad).toContain('Abrir o CSFloat');
-    // com a chave salva, o passo a passo fica recolhido em "Como gerar a chave?"
-    expect(render({ ...baseView, hasApiKey: true, apiKeyMasked: '••••1234' })).toContain('Como gerar a chave?');
-  });
-
-  test('mostra o aviso de privacidade (chave fora dos backups e dos registros)', () => {
-    expect(render(baseView)).toContain('não vai para os backups');
-    expect(render(baseView, 'en')).toContain('not included in backups');
-  });
-
-  test('em inglês os rótulos mudam', () => {
-    const html = render({ ...baseView, hasApiKey: true, apiKeyMasked: '••••••••a1b2' }, 'en');
-    expect(html).toContain('Saved key: ••••••••a1b2');
-    expect(html).toContain('Test connection');
-    expect(html).toContain('Remove key');
-  });
-});
-
+// QA 9.1 (reescrito na 12.9): o card do CSFloat agora é testado por comportamento em CsfloatIntegrationCard.test.tsx (jsdom). Aqui
+// ficam só a análise do código-fonte para o que não aparece na tela (a chave fora do cache, invalidações) e a i18n.
 describe('o que depende de clique (análise do código-fonte)', () => {
   const source = fs.readFileSync(path.join(__dirname, 'CsfloatIntegrationCard.tsx'), 'utf8');
 
-  test('mostrar/esconder alterna o type entre text e password e começa escondido', () => {
-    expect(source).toMatch(/const \[showKey, setShowKey\] = useState\(false\)/);
-    expect(source).toMatch(/type=\{showKey \? 'text' : 'password'\}/);
-    expect(source).toMatch(/aria-pressed=\{showKey\}/);
+  test('mostrar/esconder alterna o type entre text e password, começa escondido e usa um botão com aria-pressed', () => {
+    expect(source).toContain("const [showKey, setShowKey] = useState(false)");
+    expect(source).toContain("type={showKey ? 'text' : 'password'}");
+    expect(source).toContain("pressed={showKey}");
   });
 
   test('depois de salvar o campo é limpo e escondido; a chave nunca entra no cache de consultas nem no console', () => {
@@ -142,7 +28,7 @@ describe('o que depende de clique (análise do código-fonte)', () => {
 
   test('validação do formato antes de enviar (mesma regra do backend) e erros via errorMessageFor com o código', () => {
     expect(source).toMatch(/validateApiKeyInput\(keyText\)/);
-    expect(source).toContain("'errors.INVALID_API_KEY_FORMAT'");
+    expect(source).toContain("'settings.integrations.csfloat.keyTooShort'");
     expect(source).toMatch(/errorMessageFor\(error, tLoose, locale\)/);
   });
 
@@ -165,7 +51,7 @@ describe('o que depende de clique (análise do código-fonte)', () => {
   });
 
   test('o botão "Atualizar a loja" só aparece com aviso de taxa, corpo a enviar e loja definida', () => {
-    expect(source).toMatch(/warnings\.length > 0 && feeUpdateBody !== null && integration\.storeId !== null/);
+    expect(source).toMatch(/feeUpdateBody !== null && integration.storeId !== null/);
   });
 });
 

@@ -6,7 +6,7 @@ const Setting = require('../models/Setting');
 const { runInTransaction } = require('../models/modelHelpers');
 const { ValidationError, NotFoundError, ConflictError } = require('../errors/AppError');
 const {
-  maxAmountCents, MAX_STORE_NAME_LENGTH, RATE_MAX_DECIMALS, MAX_SALE_HOLD_DAYS, CURRENCIES,
+  maxAmountCents, MAX_STORE_NAME_LENGTH, RATE_MAX_DECIMALS, MAX_SALE_HOLD_DAYS, CURRENCIES, examplePriceCents,
 } = require('../config/constants');
 const { assertAmountPrecision, fxFromSettings, rateOf, convertCents } = require('./currencyService');
 const { saleFeeParamsFromStore } = require('./fees');
@@ -74,6 +74,31 @@ function quoteSale(id, salePriceCents) {
   assertAmountPrecision(salePriceCents, store.currency, 'salePriceCents');
   const { netReceivedCents, feeCents } = computeSale({ salePriceCents, store });
   return { storeId: store.id, currency: store.currency, salePriceCents, feeCents, netReceivedCents };
+}
+
+// Exemplo de taxa para uma loja ainda não gravada (12.8): mesmas Strategies e mesma fórmula da 2.4 (via `computeSale` sobre uma loja
+// provisória), sem banco e sem relógio. `priceCents` ausente = preço de exemplo da moeda (~US$ 10). No ADDED, `priceCents` é o preço
+// pago pelo comprador (a mesma semântica do `sale-quote`). Valores já vêm com a forma validada (centavos inteiros); aqui valem o
+// teto e a unidade mínima da moeda.
+function previewSaleFee({ currency, saleFeeType, rate, rounding = 'CEIL', minCents = null, fixedCents = 0, priceCents = null }) {
+  assertRate(rate, 'rate');
+  const maxCents = maxAmountCents(currency);
+  const checked = [['minCents', minCents], ['fixedCents', fixedCents], ['priceCents', priceCents]];
+  for (const [field, value] of checked) {
+    if (value === null || value === undefined) continue;
+    if (value > maxCents) {
+      throw new ValidationError(`${field} excede o limite permitido para a moeda.`, 'INVALID_QUERY', { field, params: { maxCents, currency } });
+    }
+    assertAmountPrecision(value, currency, field);
+  }
+  const price = priceCents ?? examplePriceCents(currency);
+  const { netReceivedCents, feeCents } = computeSale({
+    salePriceCents: price,
+    store: {
+      currency, saleFeeType, saleFeeRate: rate, saleFeeRounding: rounding, saleMinFeeCents: minCents ?? null, saleFixedFeeCents: fixedCents ?? 0,
+    },
+  });
+  return { currency, saleFeeType, priceCents: price, feeCents, netCents: netReceivedCents };
 }
 
 function assertRate(value, field) {
@@ -308,6 +333,6 @@ function deleteStore(id) {
 }
 
 module.exports = {
-  listStores, getStore, getStoreOrFail, storeHasEntries, quoteSale, createStore, updateStore, deleteStore, buildStoreRecord,
+  listStores, getStore, getStoreOrFail, storeHasEntries, quoteSale, previewSaleFee, createStore, updateStore, deleteStore, buildStoreRecord,
   cloneSteamStoreInCurrency, changeStoreCurrency,
 };

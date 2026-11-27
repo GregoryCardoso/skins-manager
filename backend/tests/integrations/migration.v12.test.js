@@ -31,7 +31,7 @@ const dump = (db) => ({
   // a v25 acrescenta `amount_brl_currency` em deposits e withdrawals: fica fora da comparação
   withdrawals: db.prepare('SELECT * FROM withdrawals ORDER BY id').all().map(({ amount_brl_currency: _abc, ...rest }) => rest),
   balances: db.prepare('SELECT * FROM store_balances ORDER BY id').all(),
-  settings: db.prepare('SELECT * FROM settings').all().map(({ steam_store_id: _steam, price_refresh_started_at: _p1, price_refresh_last_at: _p2, price_refresh_last_status: _p3, price_refresh_last_error_code: _p4, display_currency: _dc, ...r }) => r),
+  settings: db.prepare('SELECT * FROM settings').all().map(({ steam_store_id: _steam, price_refresh_started_at: _p1, price_refresh_last_at: _p2, price_refresh_last_status: _p3, price_refresh_last_error_code: _p4, display_currency: _dc, inventory_density: _dn, ...r }) => r),
 });
 const hasTable = (db, name) => db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?").get(name) !== undefined;
 
@@ -53,7 +53,7 @@ describe('v12 sobre um banco v11 com dados', () => {
     const now = new Date('2026-11-22T12:00:00.000Z');
     const db = openDatabase(dbPath, { now });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(26);
+      expect(db.pragma('user_version', { simple: true })).toBe(27);
       expect(dump(db)).toEqual(before);
       const rows = db.prepare('SELECT * FROM integrations').all();
       expect(rows).toHaveLength(1);
@@ -189,20 +189,20 @@ describe('restrições da tabela integrations', () => {
 });
 
 describe('backup automático antes de migrar não leva a chave (D290)', () => {
-  test('migração v26 -> v27 (simulada): o backup sai com api_key nula e o banco vivo mantém a chave', () => {
+  test('migração v27 -> v28 (simulada): o backup sai com api_key nula e o banco vivo mantém a chave', () => {
     const dbPath = dbIn('autobackup');
     const db = openDatabase(dbPath);
     db.prepare('UPDATE integrations SET api_key = ?, api_key_saved_at = ?').run(KEY, '2026-11-22T10:00:00.000Z');
     db.close();
 
-    const fake23 = { version: 27, name: 'qa_fake', up(d) { d.exec('CREATE TABLE qa_fake (id INTEGER)'); } };
+    const fake23 = { version: 28, name: 'qa_fake', up(d) { d.exec('CREATE TABLE qa_fake (id INTEGER)'); } };
     const live = openDatabase(dbPath, { migrations: [...MIGRATIONS, fake23], now: new Date('2026-11-22T13:00:00.000Z') });
     try {
       expect(live.prepare('SELECT api_key FROM integrations').get().api_key).toBe(KEY);
     } finally {
       live.close();
     }
-    const backups = backupsOf(dbPath).filter((f) => /inventory-v26-/.test(path.basename(f)));
+    const backups = backupsOf(dbPath).filter((f) => /inventory-v27-/.test(path.basename(f)));
     expect(backups).toHaveLength(1);
     const copy = new Database(backups[0], { readonly: true });
     try {

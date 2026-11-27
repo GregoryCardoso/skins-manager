@@ -4,23 +4,31 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ImportButton from '@/components/ImportButton';
-import InventoryFilters from '@/components/InventoryFilters';
 import InventoryGroupTable from '@/components/InventoryGroupTable';
 import InventoryTable from '@/components/InventoryTable';
+import BulkSaleStateDialog from '@/components/BulkSaleStateDialog';
+import InventoryPosition from '@/components/inventory/InventoryPosition';
+import InventoryToolbar from '@/components/inventory/InventoryToolbar';
+import SelectionBar, { SelectionHint } from '@/components/inventory/SelectionBar';
 import { MarketTabSummary } from '@/components/MarketValueCell';
 import PriceStatusIndicator from '@/components/PriceStatusIndicator';
 import { useMarketSummary } from '@/components/useMarketSummary';
-import InventoryViewToggle from '@/components/InventoryViewToggle';
 import { usePreferences } from '@/components/PreferencesProvider';
 import { useItemDialogs } from '@/components/ItemDialogs';
 import PageSkeleton from '@/components/layout/PageSkeleton';
+import Button from '@/components/ui/Button';
+import EmptyState from '@/components/ui/EmptyState';
+import ErrorState from '@/components/ui/ErrorState';
 import PageHeader from '@/components/ui/PageHeader';
+import Tabs from '@/components/ui/Tabs';
+import { useToast } from '@/components/ui/Toast';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLocale, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import {
   clearedFilters, hasActiveFilters, isGroupedAvailable, parseFilters, toApiQuery, toGroupQuery, toSearchString, type InventoryFilters as Filters,
 } from '@/lib/inventoryQuery';
 import { inventoryCountText } from '@/lib/inventoryCount';
+import { itemIdsOf, pruneSelection, selectionDirection, unitIdsOf, type InventorySelection } from '@/lib/inventorySelection';
 import { parseItemParam } from '@/lib/importSummary';
 import { queryKeys } from '@/lib/queryKeys';
 import { listItemGroups, listItems, listStores } from '@/services/api';
@@ -34,7 +42,8 @@ function InventoryPageContent() {
   const router = useRouter();
   const pathname = usePathname() ?? '/';
   const searchParams = useSearchParams();
-  const { inventoryView, setInventoryView } = usePreferences();
+  const { inventoryView, setInventoryView, inventoryDensity, setInventoryDensity } = usePreferences();
+  const toast = useToast();
 
   const { summary: marketSummary } = useMarketSummary();
   const searchKey = searchParams.toString();
@@ -54,6 +63,17 @@ function InventoryPageContent() {
       return next;
     });
   }, []);
+
+  // Seleção única de unidades (12.5b), nas duas visões; só com o status "Em estoque" (com Vendido/Todos não há seleção).
+  const [selected, setSelected] = useState<ReadonlySet<number>>(() => new Set());
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const selectionEnabled = filters.status === 'EM_ESTOQUE';
+  // Trocar aba, filtro, busca ou visão limpa a seleção (a ordem não).
+  const selectionScope = `${filters.status}|${filters.category}|${filters.stagnant}|${filters.saleState}|${filters.search}|${grouped}`;
+  useEffect(() => {
+    setSelected(new Set());
+    setBulkOpen(false);
+  }, [selectionScope]);
 
   // Itens e lojas vêm do cache compartilhado (D259): qualquer ação que mude o dinheiro os invalida.
   // Trocar o filtro mantém a lista anterior na tela (esmaecida) até a nova chegar; o foco da janela recarrega (D258).
@@ -78,12 +98,16 @@ function InventoryPageContent() {
   const stores = storesQuery.data ?? [];
   const error = activeQuery.error ?? storesQuery.error;
   const loading = activeQuery.isFetching || storesQuery.isFetching;
-  const isEmpty = grouped ? groupsData?.groups.length === 0 : itemsData?.items.length === 0;
-  const hasRows = grouped ? (groupsData?.groups.length ?? 0) > 0 : (itemsData?.items.length ?? 0) > 0;
   const reload = useCallback(() => {
     activeQuery.refetch();
     storesQuery.refetch();
   }, [activeQuery, storesQuery]);
+
+  // Depois de uma recarga, só ficam marcadas as unidades que ainda estão na tela.
+  useEffect(() => {
+    const visible = grouped ? (groupsData ? unitIdsOf(groupsData.groups) : null) : itemsData ? itemIdsOf(itemsData.items) : null;
+    if (visible) setSelected((current) => pruneSelection(current, visible));
+  }, [grouped, groupsData, itemsData]);
 
   // `?item=<id>` (link do resumo da importação): não é filtro. Expande o grupo do item (visão agrupada), rola até a linha uma vez
   // e a destaca.
@@ -100,16 +124,31 @@ function InventoryPageContent() {
       return;
     }
     if (scrolledFor.current === focusItemId) return;
-    const row = document.getElementById(`item-row-${focusItemId}`);
+    const row = document.querySelector(`tr[data-row-id="${focusItemId}"]`);
     if (row) {
       scrolledFor.current = focusItemId;
       row.scrollIntoView({ block: 'center' });
     }
   }, [focusItemId, itemsData, groupsData, expandedKeys]);
 
+  // Mensagens de sucesso e de erro das ações viram avisos rápidos (o de erro fica até ser dispensado).
+  const notify = useCallback((message: string, tone: 'success' | 'danger') => toast.show({ tone, message }), [toast]);
   const {
-    openCreate, openEdit, openSell, openUnsell, openDelete, openHistory, openOffSale, openApply, openOpen, openDetach, openRegisterKey, putForSale, forSalePendingId, notice, dismissNotice, dialogs,
-  } = useItemDialogs(stores);
+    openCreate, openEdit, openSell, openUnsell, openDelete, openHistory, openOffSale, openApply, openOpen, openDetach, openRegisterKey, putForSale, forSalePendingId, dialogs,
+  } = useItemDialogs(stores, { notify });
+  const handlers = {
+    onEdit: openEdit,
+    onSell: openSell,
+    onUnsell: openUnsell,
+    onDelete: openDelete,
+    onHistory: openHistory,
+    onOffSale: openOffSale,
+    onForSale: putForSale,
+    onApply: openApply,
+    onOpen: openOpen,
+    onDetach: openDetach,
+    onRegisterKey: openRegisterKey,
+  };
 
   const setFilters = useCallback(
     (next: Filters) => {
@@ -120,7 +159,24 @@ function InventoryPageContent() {
   );
 
   const slowItemDays = data?.meta.slowItemDays ?? 21;
+  const limits = { fastTurnoverDays: data?.meta.fastTurnoverDays ?? 7, slowItemDays };
   const filtered = hasActiveFilters(filters);
+  const density = inventoryDensity === 'COMFORTABLE' ? 'comfortable' : 'compact';
+  const firstLoad = data === null && error === null;
+  const selection: InventorySelection | undefined = selectionEnabled ? { selected, onChange: setSelected } : undefined;
+  const direction = selectionDirection(filters.saleState);
+  const inHolding = filters.status === 'EM_ESTOQUE' && filters.saleState === 'OFF_SALE';
+  const showMarket = filters.status !== 'VENDIDO';
+  const empty = filtered ? (
+    <EmptyState
+      icon="search"
+      title={t('inventory.emptyFilteredTitle')}
+      description={t('inventory.emptyFiltered')}
+      action={<Button onClick={() => setFilters(clearedFilters(filters))}>{t('inventory.clearFilters')}</Button>}
+    />
+  ) : (
+    <EmptyState icon="inventory" title={t('inventory.emptyTitle')} description={inHolding ? t('inventory.offSaleEmpty') : t('inventory.empty')} />
+  );
 
   return (
     <>
@@ -138,51 +194,44 @@ function InventoryPageContent() {
           <>
             <PriceStatusIndicator />
             <ImportButton />
-            <button type="button" className={styles.newItem} onClick={openCreate}>
+            <Button variant="primary" icon="plus" onClick={openCreate}>
               {t('inventory.actions.newItem')}
-            </button>
+            </Button>
           </>
         }
       />
 
-      {notice && (
-        <div className={styles.notice} role="status">
-          <span>{notice}</span>
-          <button type="button" className={styles.retry} onClick={dismissNotice}>{t('common.close')}</button>
-        </div>
-      )}
-
-      <InventoryFilters
+      <InventoryToolbar
         filters={filters}
         slowItemDays={slowItemDays}
         loading={loading}
+        view={inventoryView}
+        groupedAvailable={groupedAvailable}
+        onViewChange={setInventoryView}
+        density={inventoryDensity}
+        onDensityChange={(next) => {
+          void setInventoryDensity(next);
+        }}
         onChange={setFilters}
         onClear={() => setFilters(clearedFilters(filters))}
         onRefresh={reload}
       />
 
-      <InventoryViewToggle value={inventoryView} onChange={setInventoryView} disabled={!groupedAvailable} />
+      {data?.meta.position && <InventoryPosition position={data.meta.position} />}
 
       {filters.status === 'EM_ESTOQUE' && (
-        <div className={styles.tabs} role="tablist" aria-label={t('inventory.title')}>
-          {(['FOR_SALE', 'OFF_SALE'] as const).map((state) => {
-            const count = data ? (state === 'FOR_SALE' ? data.meta.saleStateCounts.forSale : data.meta.saleStateCounts.offSale) : 0;
-            const selected = filters.saleState === state;
-            return (
-              <button
-                key={state}
-                type="button"
-                role="tab"
-                aria-selected={selected}
-                title={state === 'OFF_SALE' ? t('inventory.tabs.offSaleHint') : undefined}
-                className={selected ? `${styles.tab} ${styles.tabActive}` : styles.tab}
-                onClick={() => setFilters({ ...filters, saleState: state, stagnant: state === 'OFF_SALE' ? false : filters.stagnant })}
-              >
-                {t(state === 'FOR_SALE' ? 'inventory.tabs.forSale' : 'inventory.tabs.offSale', { count })}
-              </button>
-            );
-          })}
-        </div>
+        <Tabs
+          label={t('inventory.title')}
+          value={filters.saleState}
+          onChange={(value) => {
+            const state = value === 'OFF_SALE' ? 'OFF_SALE' : 'FOR_SALE';
+            setFilters({ ...filters, saleState: state, stagnant: state === 'OFF_SALE' ? false : filters.stagnant });
+          }}
+          items={[
+            { value: 'FOR_SALE', label: t('inventory.tabs.forSale', { count: data?.meta.saleStateCounts.forSale ?? 0 }) },
+            { value: 'OFF_SALE', label: t('inventory.tabs.offSale', { count: data?.meta.saleStateCounts.offSale ?? 0 }) },
+          ]}
+        />
       )}
 
       {filters.status === 'EM_ESTOQUE' && marketSummary && (
@@ -192,78 +241,64 @@ function InventoryPageContent() {
         />
       )}
 
-      {filters.status === 'EM_ESTOQUE' && filters.saleState === 'OFF_SALE' && (
-        <p className={styles.muted}>{t('inventory.tabs.offSaleHint')}</p>
-      )}
+      {inHolding && <p className={styles.muted}>{t('inventory.tabs.offSaleHint')}</p>}
 
-      {error !== null && (
-        <div className={styles.error} role="alert">
-          <p>{t('inventory.loadError', { reason: errorMessageFor(error, tLoose, locale) })}</p>
-          <button type="button" className={styles.retry} onClick={reload}>{t('common.retry')}</button>
-        </div>
-      )}
+      {selectionEnabled && error === null && <SelectionHint />}
 
-      {data === null && error === null && <p className={styles.muted}>{t('common.loading')}</p>}
+      {error !== null && <ErrorState message={t('inventory.loadError', { reason: errorMessageFor(error, tLoose, locale) })} onRetry={reload} retrying={loading} />}
 
-      {data !== null && isEmpty && error === null && (
-        <div className={styles.empty}>
-          <p>
-            {filtered
-              ? t('inventory.emptyFiltered')
-              : filters.status === 'EM_ESTOQUE' && filters.saleState === 'OFF_SALE' ? t('inventory.offSaleEmpty') : t('inventory.empty')}
-          </p>
-          {filtered && (
-            <button type="button" className={styles.retry} onClick={() => setFilters(clearedFilters(filters))}>
-              {t('inventory.clearFilters')}
-            </button>
-          )}
-        </div>
-      )}
-
-      {data !== null && hasRows && (
-        <div className={loading ? styles.dim : undefined} aria-busy={loading}>
-          {grouped && groupsData ? (
+      {error === null && (
+        <div className={loading && !firstLoad ? styles.dim : undefined} aria-busy={loading}>
+          {grouped ? (
             <InventoryGroupTable
-              groups={groupsData.groups}
+              groups={groupsData?.groups ?? []}
               stores={stores}
+              handlers={handlers}
+              limits={limits}
               expandedKeys={expandedKeys}
               onToggle={toggleGroup}
-              onEdit={openEdit}
-              onSell={openSell}
-              onUnsell={openUnsell}
-              onDelete={openDelete}
-              onHistory={openHistory}
-              onOffSale={openOffSale}
-              onApply={openApply}
-              onOpen={openOpen}
-              onDetach={openDetach}
-              onRegisterKey={openRegisterKey}
-              onForSale={putForSale}
               forSalePendingId={forSalePendingId}
               highlightedItemId={focusItemId}
               saleState={filters.saleState}
+              showMarket={showMarket}
+              density={density}
+              order={filters.order}
+              onOrderChange={(order) => setFilters({ ...filters, order })}
+              loading={firstLoad}
+              empty={empty}
+              selection={selection}
             />
-          ) : itemsData && (
+          ) : (
             <InventoryTable
-              items={itemsData.items}
+              items={itemsData?.items ?? []}
               stores={stores}
-              onEdit={openEdit}
-              onSell={openSell}
-              onUnsell={openUnsell}
-              onDelete={openDelete}
-              onHistory={openHistory}
-              onOffSale={openOffSale}
-              onApply={openApply}
-              onOpen={openOpen}
-              onDetach={openDetach}
-              onRegisterKey={openRegisterKey}
-              onForSale={putForSale}
+              handlers={handlers}
+              limits={limits}
               forSalePendingId={forSalePendingId}
               highlightedItemId={focusItemId}
-              showMarket={filters.status !== 'VENDIDO'}
+              showMarket={showMarket}
+              density={density}
+              order={filters.order}
+              onOrderChange={(order) => setFilters({ ...filters, order })}
+              loading={firstLoad}
+              empty={empty}
+              selection={selection}
             />
           )}
         </div>
+      )}
+
+      {selectionEnabled && <SelectionBar count={selected.size} direction={direction} onMove={() => setBulkOpen(true)} onClear={() => setSelected(new Set())} />}
+      {bulkOpen && (
+        <BulkSaleStateDialog
+          direction={direction}
+          target={{ itemIds: [...selected] }}
+          onClose={() => setBulkOpen(false)}
+          onDone={() => {
+            setBulkOpen(false);
+            setSelected(new Set());
+          }}
+        />
       )}
 
       {dialogs}

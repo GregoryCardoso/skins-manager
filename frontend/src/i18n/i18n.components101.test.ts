@@ -55,7 +55,7 @@ describe('chaves novas da 10.1', () => {
     const root = path.join(__dirname, '..');
     const files = [
       'components/ItemComponentsSection.tsx', 'components/ComponentThumbs.tsx', 'components/ItemFormModal.tsx',
-      'components/InventoryGroupTable.tsx', 'components/InventoryUnitRow.tsx', 'components/SalesTable.tsx', 'components/CatalogAutocomplete.tsx',
+      'components/InventoryGroupTable.tsx', 'components/inventory/ItemNameCell.tsx', 'components/inventory/ItemRowActions.tsx', 'components/inventory/UnitCells.tsx', 'components/SalesTable.tsx', 'components/CatalogAutocomplete.tsx',
     ];
     const missing: string[] = [];
     for (const file of files) {

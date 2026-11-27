@@ -1,0 +1,58 @@
+/* Estilos compartilhados dos componentes do inventário (D370, 12.5a). Só tokens. */
+.actions { display: inline-flex; align-items: center; justify-content: flex-end; gap: var(--space-1); }
+
+.itemCell { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+.name { font-weight: var(--fw-bold); overflow-wrap: anywhere; }
+.english { color: var(--muted); font-size: var(--fs-xs); overflow-wrap: anywhere; }
+.details { color: var(--muted); font-size: var(--fs-sm); overflow-wrap: anywhere; }
+.badges { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.stack { display: flex; flex-direction: column; gap: var(--space-1); }
+.muted { color: var(--muted); }
+.image { display: inline-flex; }
+
+.minPrice { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.others { display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 0; list-style: none; color: var(--muted); font-size: var(--fs-xs); }
+.otherStore { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.storeName { color: var(--muted); font-size: var(--fs-xs); }
+.warning { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-1); color: var(--stuck); font-size: var(--fs-sm); }
+.warningText { display: inline-flex; align-items: flex-start; gap: var(--space-1); }
+.warningLink { color: var(--brand); font-weight: var(--fw-bold); text-decoration: underline; text-underline-offset: 2px; white-space: nowrap; }
+.warningLink:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }
+
+.lockNote { display: block; margin-top: var(--space-1); color: var(--muted); font-size: var(--fs-xs); }
+.cellWithHelp { display: inline-flex; align-items: flex-start; gap: var(--space-1); }
+
+.toolbar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-3) var(--space-4); margin-bottom: var(--space-4); }
+.toolbarGroup { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-2); }
+.toolbarSpacer { flex: 1 1 0; }
+.chips { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+.controlLabel { display: flex; flex-direction: column; gap: var(--space-1); color: var(--muted); font-size: var(--fs-xs); font-weight: var(--fw-bold); }
+.hint { color: var(--muted); font-size: var(--fs-xs); }
+
+.unitsWrap { padding: var(--space-2) 0 var(--space-2) var(--space-6); }
+
+.nested.nested { border: 0; border-radius: 0; box-shadow: none; background: transparent; }
+.selectionHint { display: flex; align-items: center; gap: var(--space-1); margin: 0 0 var(--space-2); color: var(--muted); font-size: var(--fs-sm); }
+.selectionBarFixed {
+  position: sticky;
+  bottom: var(--space-3);
+  z-index: var(--z-sticky, 5);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  margin-top: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--brand);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-3);
+}
+.selectionCount { font-weight: var(--fw-bold); }
+.selectionLimit { color: var(--stuck); font-size: var(--fs-sm); }
+
+.position { margin-bottom: var(--space-4); }
+.searchField { flex: 1 1 14rem; max-width: 22rem; min-width: 12rem; }
+.priceRange { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.rangeMain { font-weight: var(--fw-bold); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.rangeApprox { color: var(--muted); font-size: var(--fs-xs); font-variant-numeric: tabular-nums; }

@@ -91,7 +91,10 @@
       "steamLocked": "Steam 상점에 환산할 수 없는 {from} 내역이 있어서 {from} 기준을 그대로 유지해요.",
       "steamNewStore": "앞으로의 내역을 위해 {currency} 기준 새 Steam 상점 만들기",
       "steamNewStoreHint": "기존 상점은 비활성화되고 이름이 바뀌어요(예: \"Steam ({from})\"). 아무것도 환산되거나 삭제되지 않으며, 기존 잔액도 계속 수익에 반영돼요. 새 상점은 같은 수수료와 규칙을 유지해요.",
-      "confirm": "{currency} 사용"
+      "confirm": "{currency} 사용",
+      "rateLabel": "환율 (1 US$ = ___ {currency})",
+      "rateOptional": "선택 사항이에요. 지금 입력하면 환산된 금액을 바로 볼 수 있고, 나중에 설정에서 입력해도 돼요.",
+      "fetchFailed": "{currency} 환율을 가져오지 못했어요. 아래에 입력하거나 나중에 설정에서 입력하세요."
     },
     "groups": {
       "america": "아메리카",
@@ -400,7 +403,8 @@
       "minPrice": "손익분기 가격",
       "actions": "작업",
       "marketValue": "시장 가치 ≈",
-      "unrealized": "미실현 손익 ≈"
+      "unrealized": "미실현 손익 ≈",
+      "turnover": "회전"
     },
     "primaryStore": "주 상점",
     "otherStores": "기타 상점",
@@ -432,7 +436,10 @@
       "openNeedsKey": "먼저 이 케이스의 열쇠({keyName})를 등록해 주세요.",
       "openNeedsKeyOther": "먼저 이 케이스의 열쇠({keyName})를 등록해 주세요. 재고에 있는 열쇠는 이 케이스에 맞지 않아요.",
       "registerKey": "열쇠 등록",
-      "detach": "키체인/slab 분리"
+      "detach": "키체인/slab 분리",
+      "viewUnits": "개별 보기",
+      "moreFor": "{name}의 다른 작업",
+      "noSellableUnit": "지금은 판매할 수 있는 아이템이 없습니다. 모두 Trade lock 상태입니다."
     },
     "itemGone": "이 아이템은 더 이상 존재하지 않아요. 다른 탭에서 삭제되었을 수 있어요. 목록을 새로고침했어요.",
     "daysForSale": "판매 중 {days}",
@@ -465,14 +472,16 @@
       "invalidQuantity": "1에서 {max} 사이의 정수를 입력해 주세요.",
       "offSaleConfirm": "holding으로 이동",
       "forSaleConfirm": "판매 중으로 복귀",
-      "selectAll": "모든 개체 선택",
       "selectUnit": "{name} 선택 (#{id})",
       "selectionBar": "선택한 개체",
       "selected": {
         "zero": "선택 없음",
         "other": "{count}개 선택됨"
       },
-      "clearSelection": "선택 해제"
+      "clearSelection": "선택 해제",
+      "hint": "여러 개를 체크하면 함께 옮길 수 있습니다.",
+      "limit": "한 번에 최대 {max}개까지.",
+      "selectGroup": "표시된 {name}의 개체 모두 선택"
     },
     "marketValue": {
       "noPrice": "가격 없음",
@@ -518,6 +527,38 @@
         "unrealized": "미실현 손익: {value}",
         "coverage": "(가격 있음: {total}개 중 {priced}개)"
       }
+    },
+    "density": {
+      "label": "밀도",
+      "compact": "촘촘하게",
+      "comfortable": "여유 있게"
+    },
+    "help": {
+      "minPrice": "손익분기 가격: 순수령액이 원가를 충당하는 최저 가격이며, 상점의 판매 수수료만 반영합니다.",
+      "convertedCost": "원가는 구매일의 환율로 환산한 값입니다.",
+      "marketValue": "시장 가치: CSFloat의 추정치입니다. 판매하기 전까지는 잔액에 있는 돈이 아닙니다.",
+      "unrealized": "미실현 손익: 추정치에서 판매 수수료와 원가를 뺀 값입니다. 판매해야 실제 손익이 됩니다.",
+      "priceRange": "표시된 개체들의 손익분기 가격 범위. 개체마다 비용이 다릅니다."
+    },
+    "warnings": {
+      "goToStores": "상점으로 이동",
+      "goToSettings": "설정으로 이동"
+    },
+    "emptyTitle": "아직 아이템이 없습니다",
+    "emptyFilteredTitle": "일치하는 아이템이 없습니다",
+    "toolbar": {
+      "search": "이름으로 검색"
+    },
+    "position": {
+      "label": "인벤토리 현황",
+      "forSale": "판매 중 (비용)",
+      "offSale": "Holding 중 (비용)",
+      "tradeLocked": "trade lock 중 (개수)",
+      "nextUnlock": "다음 해제: {date}",
+      "stagnant": "정체 (개수)",
+      "groups": "서로 다른 아이템: {count}",
+      "stagnantHint": "판매 중이고 trade lock 밖이며 정체 기준을 넘긴 개수입니다. Holding과 trade lock 중인 아이템은 세지 않습니다.",
+      "costHelp": "이 상태에 있는 전체 재고의 비용입니다. 필터와 검색의 영향을 받지 않습니다."
     }
   },
   "filters": {
@@ -1075,7 +1116,19 @@
     "steamClear": "내 Steam 상점 사용 해제",
     "steamHint": "내 Steam 상점은 앱이 터미널에서 지불한 가격을 기록하는 상점이에요.",
     "steamSaved": "\"{name}\" 상점이 이제 내 Steam 상점이에요.",
-    "steamCleared": "선택된 Steam 상점이 없어요."
+    "steamCleared": "선택된 Steam 상점이 없어요.",
+    "card": {
+      "saleFeeSentence": {
+        "DEDUCTED": "가격에서 {rate}% 차감",
+        "ADDED": "가격에 {rate}% 추가"
+      },
+      "moreActionsFor": "{name}의 추가 작업"
+    },
+    "steamTip": {
+      "title": "Steam 상점을 선택하세요",
+      "body": "터미널을 열려면 카드의 '추가 작업' 메뉴에서 어느 상점이 Steam 상점인지 선택하세요.",
+      "action": "선택"
+    }
   },
   "storesTable": {
     "columns": {
@@ -1161,7 +1214,20 @@
     "created": "\"{name}\" 상점을 만들었어요.",
     "updated": "\"{name}\" 상점을 수정했어요.",
     "balanceSection": "판매 후 잔액",
-    "invalidSaleHoldDays": "0일에서 30일 사이의 정수를 입력해 주세요."
+    "invalidSaleHoldDays": "0일에서 30일 사이의 정수를 입력해 주세요.",
+    "sections": {
+      "identity": "식별 정보",
+      "status": "상태"
+    },
+    "example": {
+      "title": "수수료 예시",
+      "deducted": "{price}에 판매하면 수수료는 {fee}이고 {net}을(를) 받습니다.",
+      "added": "구매자가 {price}을(를) 결제하면 수수료는 {fee}이고 {net}을(를) 받습니다.",
+      "priceLabel": "예시 가격({currency})",
+      "notConfigured": "판매 수수료가 설정되지 않았어요. 이 상점의 손익분기 가격은 표시되지 않습니다.",
+      "incomplete": "수수료 유형을 고르고 비율을 입력하면 예시가 표시됩니다.",
+      "error": "예시를 계산하지 못했어요({reason})."
+    }
   },
   "settings": {
     "title": "설정",
@@ -1190,7 +1256,9 @@
       "autoRefreshHint": "이 출처를 사용하면 앱을 열 때마다(열 때 한 번) 환율이 자동으로 업데이트돼요. 환율을 직접 입력하면 그 값이 적용되고, \"환율 업데이트\"를 누르기 전까지는 앱을 열어도 바뀌지 않아요.",
       "autoRefreshPausedManual": "현재 환율은 직접 입력한 값이라서 앱을 열 때 업데이트되지 않아요. \"환율 업데이트\"를 누르면 위의 출처를 다시 사용해요. 그 뒤로는 앱을 열 때마다 자동으로 업데이트돼요.",
       "autoFailed": "앱을 열 때 {currency} 환율을 업데이트하지 못했어요({reason}). 설정에서 다시 시도해 주세요.",
-      "autoFailedWithRate": "앱을 열 때 {currency} 환율을 업데이트하지 못했어요({reason}). 앱이 마지막 환율을 사용했어요: {rate}."
+      "autoFailedWithRate": "앱을 열 때 {currency} 환율을 업데이트하지 못했어요({reason}). 앱이 마지막 환율을 사용했어요: {rate}.",
+      "boundsHint": "허용 범위: {min} ~ {max}",
+      "outOfBounds": "이 환율은 일반적인 범위를 벗어났어요. 저장하기 전에 확인하세요."
     },
     "preferences": {
       "title": "환경설정",
@@ -1213,7 +1281,9 @@
       "noChanges": "저장할 내용이 없어요.",
       "middle": "회전 중: {from}일 이상 {to}일 이하.",
       "adjusted": "저장된 기준이 현재 기본값과 맞지 않아요. 빠른 회전은 {fast}일로 계산되고 있어요. 새 기준을 저장해서 바로잡아 주세요.",
-      "invalidNumber": "7처럼 정수를 입력해 주세요."
+      "invalidNumber": "7처럼 정수를 입력해 주세요.",
+      "scaleTitle": "구간 미리보기",
+      "scaleInvalid": "구간을 보려면 두 한도가 1 ≤ 빠른 < 정체 ≤ 365 조건을 만족해야 해요."
     },
     "catalog": {
       "title": "아이템 카탈로그"
@@ -1241,7 +1311,33 @@
       "copyPath": "경로 복사",
       "pathCopied": "경로를 복사했어요.",
       "copyFailed": "복사하지 못했어요. 경로를 선택해서 직접 복사해 주세요.",
-      "retention": "앱은 데이터 폴더 안의 백업 폴더에 자동 백업을 저장해요. 백업을 가져오기 전에 만든 것과 앱을 업데이트하기 전에 만든 것 각각 최근 10개씩 보관해요."
+      "retention": "앱은 데이터 폴더 안의 백업 폴더에 자동 백업을 저장해요. 백업을 가져오기 전에 만든 것과 앱을 업데이트하기 전에 만든 것 각각 최근 10개씩 보관해요.",
+      "preview": {
+        "reading": "파일을 읽는 중…",
+        "fileLine": "파일: {file}({size})",
+        "lastChange": "파일에 기록된 마지막 변경: {date}",
+        "lastChangeUnknown": "파일에 변경 날짜가 없어요.",
+        "schema": "데이터 버전: v{version}",
+        "willMigrate": "가져오면 데이터가 v{current}(으)로 업데이트됩니다.",
+        "counts": {
+          "items": {
+            "other": "아이템 {count}개"
+          },
+          "sales": {
+            "other": "판매 {count}건"
+          },
+          "stores": {
+            "other": "상점 {count}개"
+          },
+          "deposits": {
+            "other": "입금 {count}건"
+          },
+          "withdrawals": {
+            "other": "출금 {count}건"
+          }
+        },
+        "pickAnother": "다른 파일 선택"
+      }
     },
     "about": {
       "title": "정보",
@@ -1317,10 +1413,36 @@
         "autoPausedUndo": "{date}에 가져오기를 취소해서 앱을 열 때 가져오기가 일시 중지되었어요. 취소한 내용이 저절로 다시 들어오지 않게 하기 위해서예요. 원할 때 다시 시작해 주세요.",
         "autoPausedSwitch": "CSFloat 계정이 전환되어 앱을 열 때 가져오기가 일시 중지되었어요. 새 계정으로 첫 가져오기를 진행한 뒤 다시 시작해 주세요.",
         "autoResume": "앱을 열 때 가져오기 다시 시작",
-        "reviewImports": "가져온 내역과 확인할 아이템 보기"
+        "reviewImports": "가져온 내역과 확인할 아이템 보기",
+        "keyValid": {
+          "other": "올바른 형식 · {count}자"
+        },
+        "keyTooShort": "키가 너무 짧은 것 같습니다. 전체를 복사했는지 확인하세요.",
+        "keyTooLong": "키가 너무 긴 것 같습니다. 키만 복사했는지 확인하세요.",
+        "keyHasSpaces": "키 중간에 공백이 있습니다. 다시 복사하세요."
       }
     },
-    "loadError": "설정을 불러오지 못했어요({reason}). 다시 시도해 주세요."
+    "loadError": "설정을 불러오지 못했어요({reason}). 다시 시도해 주세요.",
+    "index": {
+      "label": "설정 섹션"
+    },
+    "status": {
+      "fxCount": {
+        "other": "통화 {count}개"
+      },
+      "fxStale": {
+        "other": "오래된 환율 {count}개"
+      },
+      "fxMissing": "{currency} 환율이 없어요",
+      "aging": "빠른 회전 {fast}까지 · 정체 {slow} 초과",
+      "csfloatConnected": "CSFloat 연결됨",
+      "csfloatNoKey": "CSFloat: 키 없음",
+      "csfloatReview": {
+        "other": "확인 필요 {count}건"
+      },
+      "backupFolder": "백업 폴더를 사용할 수 있어요",
+      "catalog": "아이템 {total}개 · {date} 업데이트"
+    }
   },
   "desktopUpdate": {
     "availableTitle": "업데이트 사용 가능",
@@ -1842,7 +1964,18 @@
       "CREATE_PURCHASE": "구매 입력",
       "MARK_WON": "이 아이템을 받았어요(드롭)",
       "APPLY_FROM_STOCK": "적용하고 기록",
-      "REOPEN": "확인 대기로 되돌리기"
+      "REOPEN": "확인 대기로 되돌리기",
+      "explain": {
+        "REMOVE": "앱에 입력한 구매를 삭제하거나 판매를 취소합니다. 확인을 요청합니다.",
+        "KEEP": "입력한 내용을 그대로 둡니다. 이 거래에 대해 더 이상 경고하지 않습니다.",
+        "CREATE": "중복처럼 보여도 이 거래를 앱에 입력합니다.",
+        "LINK": "이미 입력한 기록에 이 거래를 연결합니다. 새로 만들지 않습니다.",
+        "IGNORE": "지금은 아무것도 하지 않습니다. 「무시함」 탭에서 되돌릴 수 있습니다.",
+        "CREATE_PURCHASE": "상점, 가격, 날짜를 입력하세요. 곧바로 판매가 기록됩니다.",
+        "MARK_WON": "아이템을 받은 것으로(원가 0) 기록하고 판매도 기록합니다.",
+        "APPLY_FROM_STOCK": "보유 아이템을 이 무기의 스티커나 키링으로 사용합니다.",
+        "REOPEN": "거래를 확인 목록으로 되돌립니다."
+      }
     },
     "auto": {
       "created": {
@@ -1908,13 +2041,15 @@
       "selectGroup": "{group}의 모든 항목 선택",
       "failed": {
         "other": "거래 {count}건을 처리하지 못했어요(아래에 표시됨). 아무것도 저장되지 않았어요. 선택을 해제하고 다시 시도해 주세요."
-      }
+      },
+      "tip": "여러 거래를 선택해 한 번에 처리하세요."
     },
     "fullScanConfirm": {
       "title": "전체 스캔을 실행할까요?",
       "body": "앱이 마지막 가져오기가 멈춘 곳에서 멈추지 않고 CSFloat의 거래 내역과 명세서 전체를 다시 읽어요. 요청이 더 많아지고 최대 2분 걸릴 수 있어요. 중복되는 것은 없어요. 이미 가져온 거래는 ID로 알아보고, 직접 입력한 내역은 계속 float(또는 아이템, 가격, 날짜)로 연결돼요. 기준 날짜({date}) 이전의 거래는 가져오지 않으므로 내 내역과 입금에 이미 들어 있는 돈이 두 번 계산되지 않아요. 더 오래된 거래를 가져오려면 가져오기 화면에서 기준 날짜를 바꿔 주세요.",
       "componentsNote": "스캔은 이미 가져온 구매의 Sticker와 키체인도 한 번 채워 넣어요. 직접 등록한 것은 바뀌지 않아요.",
-      "confirm": "전체 스캔 실행"
+      "confirm": "전체 스캔 실행",
+      "timeNote": "몇 분 걸릴 수 있습니다. 앱을 열어 두세요."
     },
     "cutoffChange": {
       "title": "기준 날짜 변경",
@@ -1961,7 +2096,8 @@
       "salesCount": {
         "zero": "판매 없음",
         "other": "판매 {count}건"
-      }
+      },
+      "howItWorks": "기준 날짜의 작동 방식"
     },
     "seeInProfit": "실제 수익에서 보기",
     "txFee": "수수료 {value}",
@@ -1983,7 +2119,42 @@
         "other": "새 날짜 이전의 아직 가져오지 않은 입금/출금 {count}건은 더 이상 가져오지 않아요. 이미 가져온 것은 그대로 남아요."
       },
       "history": "이 가져오기에서 입금과 출금의 기준 날짜를 설정하거나 변경했어요."
-    }
+    },
+    "steps": {
+      "title": "이 아이템은 어떻게 됐나요?",
+      "bought": "구매했나요? 구매를 입력하세요.",
+      "won": "드롭이나 선물인가요? 받은 것으로 표시하세요.",
+      "skip": "입력하고 싶지 않나요? 일단 무시하세요."
+    },
+    "tabs": {
+      "label": "가져오기 구역",
+      "review": "확인 필요",
+      "ignored": "무시함",
+      "history": "기록"
+    },
+    "status": {
+      "lastImport": "마지막 가져오기: {date}",
+      "cutoff": "기준 날짜: {date}",
+      "noCutoff": "기준 날짜가 아직 없음",
+      "autoOn": "실행 시 가져오기: 켜짐",
+      "autoOff": "실행 시 가져오기: 꺼짐",
+      "autoPaused": "실행 시 가져오기: 일시 중지"
+    },
+    "moreOptions": "더 보기",
+    "timeline": {
+      "label": "기준 날짜 타임라인",
+      "before": "이전: 가져오지 않음",
+      "after": "이후: 가져옴",
+      "current": "현재: {date}",
+      "new": "새 날짜: {date}",
+      "earlier": "두 날짜 사이의 거래를 가져오기 시작합니다.",
+      "later": "두 날짜 사이의 거래는 더 이상 가져오지 않습니다.",
+      "moves": {
+        "other": "쪽이 바뀌는 거래: {count}건"
+      }
+    },
+    "ignoredToast": "거래를 무시했습니다.",
+    "ignoredUndo": "실행 취소"
   },
   "balanceCheck": {
     "button": "CSFloat과 대조",
@@ -2059,7 +2230,14 @@
     "step4": "아래에 키를 붙여넣고 \"키 저장\"을 클릭한 뒤 \"연결 테스트\"를 클릭해 주세요.",
     "step5": "\"지금 가져오기\"(아래) 또는 인벤토리의 \"CSFloat에서 가져오기\"를 클릭해 주세요. 기준 날짜는 앱에 모두 입력해 둔 날짜까지로 선택해 주세요.",
     "open": "CSFloat 열기",
-    "safety": "이 키는 내 CSFloat 계정에 접근할 수 있어요. 아무에게도 공유하지 마세요. 유출되었다면 CSFloat에서 삭제하고 새로 만들어 주세요."
+    "safety": "이 키는 내 CSFloat 계정에 접근할 수 있어요. 아무에게도 공유하지 마세요. 유출되었다면 CSFloat에서 삭제하고 새로 만들어 주세요.",
+    "illustrationAlt": {
+      "step1": "그림: CSFloat 주소가 표시된 브라우저 창.",
+      "step2": "그림: 로그인한 계정의 프로필 메뉴.",
+      "step3": "그림: 목록에서 키를 만드는 모습.",
+      "step4": "그림: 키를 복사해 입력란에 붙여넣는 모습.",
+      "step5": "그림: 키를 비밀로 지키기 위한 방패."
+    }
   },
   "openForm": {
     "title": "{name} 열기",

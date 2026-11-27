@@ -17,20 +17,26 @@ function getSaleFeeStrategy(saleFeeType) {
   return strategy;
 }
 
-// Retorna null quando a taxa de venda necessária não está configurada (nunca assume 0).
-function saleFeeParamsFromStore(store) {
-  if (!store || store.saleFeeType == null || store.saleFeeRate == null) return null;
+// Parâmetros da taxa a partir dos campos de uma loja AINDA NÃO gravada (rascunho do formulário, 12.8): o mesmo cálculo de
+// `saleFeeParamsFromStore`, sem exigir um registro. Campos com os mesmos nomes da loja. Retorna null sem tipo ou taxa (nunca assume 0).
+function saleFeeParamsFromDraft(draft) {
+  if (!draft || draft.saleFeeType == null || draft.saleFeeRate == null) return null;
   const params = {
-    feeType: store.saleFeeType,
-    rate: store.saleFeeRate,
-    rounding: store.saleFeeRounding ?? 'CEIL',
-    minFeeCents: store.saleMinFeeCents ?? null,
-    fixedFeeCents: store.saleFixedFeeCents ?? 0,
+    feeType: draft.saleFeeType,
+    rate: draft.saleFeeRate,
+    rounding: draft.saleFeeRounding ?? 'CEIL',
+    minFeeCents: draft.saleMinFeeCents ?? null,
+    fixedFeeCents: draft.saleFixedFeeCents ?? 0,
     // Unidade mínima da moeda da loja (D369 A3): 100 em JPY, KRW e CLP; 1 nas demais.
-    unitCents: ZERO_DECIMAL_CURRENCIES.includes(store.currency) ? 100 : 1,
+    unitCents: ZERO_DECIMAL_CURRENCIES.includes(draft.currency) ? 100 : 1,
   };
   assertSaleFeeParams(params);
   return params;
+}
+
+// Retorna null quando a taxa de venda necessária não está configurada (nunca assume 0).
+function saleFeeParamsFromStore(store) {
+  return saleFeeParamsFromDraft(store);
 }
 
 // Valida o tipo e delega à fórmula única (2.4): max(arredondar(base × rate), minFee ?? 0) + fixa.
@@ -42,6 +48,7 @@ function computeSaleFee(baseCents, params) {
 module.exports = {
   getSaleFeeStrategy,
   saleFeeParamsFromStore,
+  saleFeeParamsFromDraft,
   computeSaleFee,
   assertSaleFeeParams,
   MAX_PRICE_SEARCH_ITERATIONS,

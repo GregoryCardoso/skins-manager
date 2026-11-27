@@ -93,7 +93,10 @@
       "steamLocked": "Sua loja Steam tem lançamentos em {from}, que não podem ser convertidos. Ela continua em {from}.",
       "steamNewStore": "Criar uma nova loja Steam em {currency} para os próximos lançamentos",
       "steamNewStoreHint": "A atual é desativada e renomeada (por exemplo \"Steam ({from})\"). Nada é convertido nem apagado, e o saldo dela continua contando no seu lucro. A nova mantém as mesmas taxas e regras.",
-      "confirm": "Usar {currency}"
+      "confirm": "Usar {currency}",
+      "rateLabel": "Cotação (US$ 1 = ___ {currency})",
+      "rateOptional": "Opcional. Informe agora para ver os valores convertidos já, ou faça isso depois em Configurações.",
+      "fetchFailed": "Não foi possível buscar a cotação de {currency}. Informe abaixo, ou faça isso depois em Configurações."
     },
     "groups": {
       "america": "Américas",
@@ -407,7 +410,8 @@
       "minPrice": "Preço mínimo (sem prejuízo)",
       "actions": "Ações",
       "marketValue": "Valor de mercado ≈",
-      "unrealized": "Lucro/prejuízo não realizado ≈"
+      "unrealized": "Lucro/prejuízo não realizado ≈",
+      "turnover": "Giro"
     },
     "primaryStore": "Loja principal",
     "otherStores": "Outras lojas",
@@ -439,7 +443,10 @@
       "openNeedsKey": "Cadastre a chave desta caixa ({keyName}) primeiro.",
       "openNeedsKeyOther": "Cadastre a chave desta caixa ({keyName}) primeiro. As chaves em estoque não servem para esta caixa.",
       "registerKey": "Cadastrar chave",
-      "detach": "Separar chaveiro/slab"
+      "detach": "Separar chaveiro/slab",
+      "viewUnits": "Ver unidades",
+      "moreFor": "Mais ações para {name}",
+      "noSellableUnit": "Nenhuma unidade pode ser vendida agora: todas estão em trade lock."
     },
     "itemGone": "Este item não existe mais (talvez tenha sido excluído em outra aba). A lista foi atualizada.",
     "daysForSale": "à venda há {days}",
@@ -473,7 +480,6 @@
       "invalidQuantity": "Informe um número inteiro de 1 a {max}.",
       "offSaleConfirm": "Mover para o holding",
       "forSaleConfirm": "Voltar para a venda",
-      "selectAll": "Selecionar todas as unidades",
       "selectUnit": "Selecionar {name} (#{id})",
       "selectionBar": "Unidades selecionadas",
       "selected": {
@@ -481,7 +487,10 @@
         "one": "{count} selecionada",
         "other": "{count} selecionadas"
       },
-      "clearSelection": "Limpar seleção"
+      "clearSelection": "Limpar seleção",
+      "hint": "Marque várias unidades para mover juntas.",
+      "limit": "Até {max} unidades por vez.",
+      "selectGroup": "Selecionar as unidades de {name} na tela"
     },
     "marketValue": {
       "noPrice": "sem preço",
@@ -528,6 +537,38 @@
         "unrealized": "Lucro/prejuízo não realizado: {value}",
         "coverage": "(com preço: {priced} de {total})"
       }
+    },
+    "density": {
+      "label": "Densidade",
+      "compact": "Compacta",
+      "comfortable": "Confortável"
+    },
+    "help": {
+      "minPrice": "Preço mínimo sem prejuízo: o menor preço em que o líquido cobre o custo, só com a taxa de venda da loja.",
+      "convertedCost": "Custo convertido pela cotação do dia da compra.",
+      "marketValue": "Valor de mercado: estimativa do CSFloat. Não é dinheiro no seu saldo até você vender.",
+      "unrealized": "Lucro ou prejuízo não realizado: a estimativa menos a taxa de venda e o custo. Só vira real quando você vende.",
+      "priceRange": "Faixa dos preços mínimos das unidades na tela. Cada unidade tem o seu custo."
+    },
+    "warnings": {
+      "goToStores": "Ir para Lojas",
+      "goToSettings": "Ir para Configurações"
+    },
+    "emptyTitle": "Nenhum item ainda",
+    "emptyFilteredTitle": "Nenhum item encontrado",
+    "toolbar": {
+      "search": "Buscar pelo nome"
+    },
+    "position": {
+      "label": "Posição do inventário",
+      "forSale": "À venda (custo)",
+      "offSale": "No holding (custo)",
+      "tradeLocked": "Em trade lock (unidades)",
+      "nextUnlock": "Próxima liberação: {date}",
+      "stagnant": "Encalhados (unidades)",
+      "groups": "Itens diferentes: {count}",
+      "stagnantHint": "Unidades à venda, fora do trade lock, acima do limite de encalhado. Itens no holding e em trade lock nunca entram.",
+      "costHelp": "Custo de todo o estoque nesta situação, independente dos filtros e da busca."
     }
   },
   "filters": {
@@ -1093,7 +1134,19 @@
     "steamClear": "Deixar de usar como minha loja Steam",
     "steamHint": "Sua loja Steam é onde o app registra o preço pago no terminal.",
     "steamSaved": "\"{name}\" agora é a sua loja Steam.",
-    "steamCleared": "Nenhuma loja Steam escolhida."
+    "steamCleared": "Nenhuma loja Steam escolhida.",
+    "card": {
+      "saleFeeSentence": {
+        "DEDUCTED": "{rate}% descontados do preço",
+        "ADDED": "{rate}% somados ao preço"
+      },
+      "moreActionsFor": "Mais ações para {name}"
+    },
+    "steamTip": {
+      "title": "Escolha a sua loja Steam",
+      "body": "Para abrir terminais, escolha qual das suas lojas é a loja Steam, no menu \"Mais ações\" do cartão.",
+      "action": "Escolher"
+    }
   },
   "storesTable": {
     "columns": {
@@ -1180,7 +1233,20 @@
     "created": "Loja \"{name}\" criada.",
     "updated": "Loja \"{name}\" atualizada.",
     "balanceSection": "Saldo após a venda",
-    "invalidSaleHoldDays": "Informe um número inteiro de dias, de 0 a 30."
+    "invalidSaleHoldDays": "Informe um número inteiro de dias, de 0 a 30.",
+    "sections": {
+      "identity": "Identificação",
+      "status": "Situação"
+    },
+    "example": {
+      "title": "Exemplo da taxa",
+      "deducted": "Numa venda de {price}, a taxa é {fee} e você recebe {net}.",
+      "added": "O comprador paga {price}, a taxa é {fee} e você recebe {net}.",
+      "priceLabel": "Preço do exemplo ({currency})",
+      "notConfigured": "Taxa de venda não configurada: o preço mínimo desta loja ficará indisponível.",
+      "incomplete": "Escolha o tipo da taxa e informe o percentual para ver um exemplo.",
+      "error": "Não foi possível calcular o exemplo ({reason})."
+    }
   },
   "settings": {
     "title": "Configurações",
@@ -1209,7 +1275,9 @@
       "autoRefreshHint": "Com esta fonte, a cotação se atualiza sozinha quando você abre o app (uma vez por abertura). Se você digitar a cotação, ela passa a valer e não muda mais ao abrir o app, até você clicar em \"Atualizar cotação\".",
       "autoRefreshPausedManual": "A cotação atual foi digitada por você, então não é atualizada ao abrir o app. Clique em \"Atualizar cotação\" para voltar a usar a fonte acima. Depois disso, ela se atualiza sozinha toda vez que você abre o app.",
       "autoFailed": "Não foi possível atualizar a cotação de {currency} ao abrir o app ({reason}). Tente em Configurações.",
-      "autoFailedWithRate": "Não foi possível atualizar a cotação de {currency} ao abrir o app ({reason}). O app usou a última cotação: {rate}."
+      "autoFailedWithRate": "Não foi possível atualizar a cotação de {currency} ao abrir o app ({reason}). O app usou a última cotação: {rate}.",
+      "boundsHint": "Faixa aceita: {min} a {max}",
+      "outOfBounds": "Essa cotação está fora da faixa usual. Confira antes de salvar."
     },
     "preferences": {
       "title": "Preferências",
@@ -1232,7 +1300,9 @@
       "noChanges": "Nenhuma alteração para salvar.",
       "middle": "Em giro: de {from} até {to}.",
       "adjusted": "Os limites salvos não combinam com o padrão atual. O giro rápido está sendo calculado com {fast}. Salve novos limites para corrigir.",
-      "invalidNumber": "Digite um número inteiro, como 7."
+      "invalidNumber": "Digite um número inteiro, como 7.",
+      "scaleTitle": "Como ficam as faixas",
+      "scaleInvalid": "Para ver as faixas, os dois limites precisam respeitar 1 ≤ rápido < encalhado ≤ 365."
     },
     "catalog": {
       "title": "Catálogo de itens"
@@ -1260,7 +1330,38 @@
       "copyPath": "Copiar caminho",
       "pathCopied": "Caminho copiado.",
       "copyFailed": "Não foi possível copiar. Selecione o caminho e copie manualmente.",
-      "retention": "O app salva backups automáticos na pasta de backups, dentro da pasta de dados. Ele guarda os 10 mais recentes de cada tipo: os feitos antes de importar um backup e os feitos antes de atualizar o app."
+      "retention": "O app salva backups automáticos na pasta de backups, dentro da pasta de dados. Ele guarda os 10 mais recentes de cada tipo: os feitos antes de importar um backup e os feitos antes de atualizar o app.",
+      "preview": {
+        "reading": "Lendo o arquivo…",
+        "fileLine": "Arquivo: {file} ({size})",
+        "lastChange": "Última alteração registrada no arquivo: {date}",
+        "lastChangeUnknown": "O arquivo não registra a data de alteração.",
+        "schema": "Versão dos dados: v{version}",
+        "willMigrate": "Ao importar, seus dados serão atualizados para a v{current}.",
+        "counts": {
+          "items": {
+            "one": "{count} item",
+            "other": "{count} itens"
+          },
+          "sales": {
+            "one": "{count} venda",
+            "other": "{count} vendas"
+          },
+          "stores": {
+            "one": "{count} loja",
+            "other": "{count} lojas"
+          },
+          "deposits": {
+            "one": "{count} aporte",
+            "other": "{count} aportes"
+          },
+          "withdrawals": {
+            "one": "{count} saque",
+            "other": "{count} saques"
+          }
+        },
+        "pickAnother": "Escolher outro arquivo"
+      }
     },
     "about": {
       "title": "Sobre",
@@ -1337,10 +1438,40 @@
         "autoPausedUndo": "A importação ao abrir o app está pausada porque você desfez uma importação em {date}. Assim, o que foi desfeito não volta sozinho. Reative quando quiser.",
         "autoPausedSwitch": "A importação ao abrir o app está pausada porque a conta do CSFloat foi trocada. Faça a primeira importação da conta nova e reative.",
         "autoResume": "Reativar a importação ao abrir o app",
-        "reviewImports": "Ver importações e itens para conferir"
+        "reviewImports": "Ver importações e itens para conferir",
+        "keyValid": {
+          "one": "Formato válido · {count} caractere",
+          "other": "Formato válido · {count} caracteres"
+        },
+        "keyTooShort": "A chave parece curta demais. Confira se copiou tudo.",
+        "keyTooLong": "A chave parece longa demais. Confira se copiou só a chave.",
+        "keyHasSpaces": "A chave tem espaços no meio. Copie de novo."
       }
     },
-    "loadError": "Não foi possível carregar as configurações ({reason}). Tente de novo."
+    "loadError": "Não foi possível carregar as configurações ({reason}). Tente de novo.",
+    "index": {
+      "label": "Seções das configurações"
+    },
+    "status": {
+      "fxCount": {
+        "one": "{count} moeda",
+        "other": "{count} moedas"
+      },
+      "fxStale": {
+        "one": "{count} antiga",
+        "other": "{count} antigas"
+      },
+      "fxMissing": "falta a cotação de {currency}",
+      "aging": "Giro rápido até {fast} · encalhado acima de {slow}",
+      "csfloatConnected": "CSFloat conectado",
+      "csfloatNoKey": "CSFloat: sem chave",
+      "csfloatReview": {
+        "one": "{count} para conferir",
+        "other": "{count} para conferir"
+      },
+      "backupFolder": "Pasta de backups disponível",
+      "catalog": "{total} itens · atualizado em {date}"
+    }
   },
   "desktopUpdate": {
     "availableTitle": "Atualização disponível",
@@ -1897,7 +2028,18 @@
       "CREATE_PURCHASE": "Lançar compra",
       "MARK_WON": "Ganhei este item (drop)",
       "APPLY_FROM_STOCK": "Aplicar e registrar",
-      "REOPEN": "Voltar para conferir"
+      "REOPEN": "Voltar para conferir",
+      "explain": {
+        "REMOVE": "Exclui a compra ou desfaz a venda lançada no app. Pede confirmação.",
+        "KEEP": "Mantém o seu lançamento como está. O app para de avisar sobre este trade.",
+        "CREATE": "Lança este trade no app mesmo parecendo duplicado.",
+        "LINK": "Liga este trade a um lançamento que você já fez, sem criar outro.",
+        "IGNORE": "Não faz nada por enquanto. Você pode voltar atrás na aba Ignorados.",
+        "CREATE_PURCHASE": "Informe a loja, o preço e a data. A venda é registrada logo em seguida.",
+        "MARK_WON": "Registra o item como ganho, com custo 0, e registra a venda.",
+        "APPLY_FROM_STOCK": "Usa um item do seu estoque como sticker ou chaveiro desta arma.",
+        "REOPEN": "Devolve o trade para a lista de conferência."
+      }
     },
     "auto": {
       "created": {
@@ -1969,13 +2111,15 @@
       "failed": {
         "one": "Não foi possível resolver {count} trade (marcado abaixo). Nada foi salvo. Desmarque-o e tente de novo.",
         "other": "Não foi possível resolver {count} trades (marcados abaixo). Nada foi salvo. Desmarque-os e tente de novo."
-      }
+      },
+      "tip": "Marque vários trades para resolvê-los juntos."
     },
     "fullScanConfirm": {
       "title": "Fazer varredura completa?",
       "body": "O app vai ler de novo todo o histórico de trades e o extrato do CSFloat, sem parar onde a última importação parou. Isso faz mais consultas e pode levar até 2 minutos. Nada é duplicado: os trades já importados são reconhecidos pelo ID, e os lançamentos que você fez continuam sendo ligados pelo float (ou por item, preço e dia). Trades de antes da data de corte ({date}) continuam de fora, para não contar duas vezes o dinheiro que já está nos seus lançamentos e aportes. Para importar trades mais antigos, altere a data de corte na página Importações.",
       "componentsNote": "A varredura também preenche, uma única vez, os stickers e o chaveiro das compras já importadas. Os que você registrou não são alterados.",
-      "confirm": "Fazer varredura completa"
+      "confirm": "Fazer varredura completa",
+      "timeNote": "Pode levar alguns minutos. Mantenha o app aberto."
     },
     "cutoffChange": {
       "title": "Alterar data de corte",
@@ -2029,7 +2173,8 @@
         "zero": "nenhuma venda",
         "one": "{count} venda",
         "other": "{count} vendas"
-      }
+      },
+      "howItWorks": "Como funciona a data de corte"
     },
     "seeInProfit": "Ver no lucro real",
     "txFee": "taxa {value}",
@@ -2054,7 +2199,43 @@
         "other": "{count} aportes ou saques de antes da nova data, ainda não importados, deixam de ser importados. Os já importados continuam."
       },
       "history": "Esta importação definiu ou alterou a data de corte dos aportes e saques."
-    }
+    },
+    "steps": {
+      "title": "O que aconteceu com este item?",
+      "bought": "Comprou? Lance a compra.",
+      "won": "Foi drop ou presente? Marque como ganho.",
+      "skip": "Não quer lançar? Ignore por enquanto."
+    },
+    "tabs": {
+      "label": "Seções das importações",
+      "review": "Para conferir",
+      "ignored": "Ignorados",
+      "history": "Histórico"
+    },
+    "status": {
+      "lastImport": "Última importação: {date}",
+      "cutoff": "Data de corte: {date}",
+      "noCutoff": "Ainda sem data de corte",
+      "autoOn": "Importar ao abrir: ligado",
+      "autoOff": "Importar ao abrir: desligado",
+      "autoPaused": "Importar ao abrir: pausado"
+    },
+    "moreOptions": "Mais opções",
+    "timeline": {
+      "label": "Linha do tempo da data de corte",
+      "before": "Antes: não importado",
+      "after": "Depois: importado",
+      "current": "Atual: {date}",
+      "new": "Nova: {date}",
+      "earlier": "Os trades entre as duas datas passarão a ser importados.",
+      "later": "Os trades entre as duas datas deixarão de ser importados.",
+      "moves": {
+        "one": "{count} trade muda de lado",
+        "other": "{count} trades mudam de lado"
+      }
+    },
+    "ignoredToast": "Trade ignorado.",
+    "ignoredUndo": "Desfazer"
   },
   "balanceCheck": {
     "button": "Conferir com o CSFloat",
@@ -2132,7 +2313,14 @@
     "step4": "Cole a chave aqui embaixo, clique em \"Salvar chave\" e depois em \"Testar conexão\".",
     "step5": "Clique em \"Importar agora\" (aqui embaixo) ou em \"Importar do CSFloat\" no Inventário. Escolha a data de corte: até quando você já lançou tudo no app.",
     "open": "Abrir o CSFloat",
-    "safety": "A chave dá acesso à sua conta do CSFloat: não compartilhe com ninguém. Se ela vazar, apague-a no CSFloat e gere outra."
+    "safety": "A chave dá acesso à sua conta do CSFloat: não compartilhe com ninguém. Se ela vazar, apague-a no CSFloat e gere outra.",
+    "illustrationAlt": {
+      "step1": "Ilustração: uma janela de navegador com o endereço do CSFloat.",
+      "step2": "Ilustração: o menu de perfil de uma conta conectada.",
+      "step3": "Ilustração: uma chave sendo criada numa lista.",
+      "step4": "Ilustração: copiando a chave e colando num campo.",
+      "step5": "Ilustração: um escudo, para manter a chave em segredo."
+    }
   },
   "openForm": {
     "title": "Abrir {name}",

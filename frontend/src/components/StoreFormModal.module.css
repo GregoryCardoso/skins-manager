@@ -1,0 +1,5 @@
+.form { display: grid; gap: var(--space-4); min-width: 0; }
+.section { display: grid; gap: var(--space-3); }
+.sectionTitle { margin: 0; font-size: var(--fs-base); font-weight: var(--fw-bold); }
+.sectionBody { display: grid; gap: var(--space-4); padding-top: var(--space-3); }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: var(--space-4); align-items: start; }

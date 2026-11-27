@@ -11,9 +11,13 @@ export interface InventoryFilters {
   order: AgeOrder;
   // Aba do inventário (D266): à venda (padrão) ou fora de venda. Só vale com o status "Em estoque".
   saleState: SaleState;
+  // Busca pelo nome (12.5b, `?q=`): o texto como digitado ('' = sem busca). A API aceita de 1 a 100 caracteres.
+  search: string;
 }
 
-export const DEFAULT_FILTERS: InventoryFilters = { status: 'EM_ESTOQUE', category: 'ALL', stagnant: false, order: 'desc', saleState: 'FOR_SALE' };
+export const MAX_SEARCH_LENGTH = 100;
+
+export const DEFAULT_FILTERS: InventoryFilters = { status: 'EM_ESTOQUE', category: 'ALL', stagnant: false, order: 'desc', saleState: 'FOR_SALE', search: '' };
 
 export const STATUS_FILTERS: readonly StatusFilter[] = ['EM_ESTOQUE', 'VENDIDO', 'ALL'];
 export const CATEGORIES: readonly Category[] = [
@@ -35,6 +39,7 @@ export function parseFilters(params: ParamsReader): InventoryFilters {
     stagnant: params.get('stagnant') === '1',
     order: order === 'asc' || order === 'desc' ? order : DEFAULT_FILTERS.order,
     saleState: params.get('sale') === 'off' ? 'OFF_SALE' : 'FOR_SALE',
+    search: (params.get('q') ?? '').trim().slice(0, MAX_SEARCH_LENGTH),
   };
   if (filters.status === 'VENDIDO' || filters.saleState === 'OFF_SALE') filters.stagnant = false;
   return filters;
@@ -48,6 +53,8 @@ export function toSearchString(filters: InventoryFilters): string {
   if (filters.stagnant && filters.status !== 'VENDIDO' && filters.saleState !== 'OFF_SALE') params.set('stagnant', '1');
   if (filters.saleState === 'OFF_SALE') params.set('sale', 'off');
   if (filters.order !== DEFAULT_FILTERS.order) params.set('order', filters.order);
+  const search = filters.search.trim();
+  if (search !== '') params.set('q', search.slice(0, MAX_SEARCH_LENGTH));
   return params.toString();
 }
 
@@ -59,6 +66,8 @@ export function toApiQuery(filters: InventoryFilters): ItemListQuery {
   if (filters.category !== 'ALL') query.category = filters.category;
   if (filters.stagnant && !isStagnantDisabled(filters)) query.stagnantOnly = true;
   if (filters.status === 'EM_ESTOQUE') query.saleState = filters.saleState;
+  const search = filters.search.trim();
+  if (search !== '') query.search = search.slice(0, MAX_SEARCH_LENGTH);
   return query;
 }
 
@@ -86,5 +95,5 @@ export function clearedFilters(filters: InventoryFilters): InventoryFilters {
 }
 
 export function hasActiveFilters(filters: InventoryFilters): boolean {
-  return filters.status !== DEFAULT_FILTERS.status || filters.category !== 'ALL' || filters.stagnant;
+  return filters.status !== DEFAULT_FILTERS.status || filters.category !== 'ALL' || filters.stagnant || filters.search.trim() !== '';
 }

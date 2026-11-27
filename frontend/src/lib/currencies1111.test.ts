@@ -161,7 +161,7 @@ describe('B6: cotação ambígua ("1,250" em idioma de ponto; "1.250" em idioma 
 
   test('a tela de cotação e os formulários usam a mensagem', () => {
     const read = (file: string) => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
-    for (const file of ['components/FxRateSettings.tsx', 'lib/itemForm.ts', 'lib/sellForm.ts', 'lib/pendingActions.ts', 'components/OpenContainerModal.tsx']) {
+    for (const file of ['components/ui/NumberField.tsx', 'lib/itemForm.ts', 'lib/sellForm.ts', 'lib/pendingActions.ts', 'components/OpenContainerModal.tsx']) {
       expect(read(file)).toContain('fx.ambiguousInput');
     }
   });

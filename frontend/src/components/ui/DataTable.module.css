@@ -1,5 +1,6 @@
 .card { min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface); box-shadow: var(--shadow-2); }
-.scroller { overflow-x: auto; scrollbar-width: thin; }
+/* position: relative: o texto oculto (VisuallyHidden, absoluto) das células fica preso ao rolável e não alarga a página. */
+.scroller { position: relative; overflow-x: auto; scrollbar-width: thin; }
 .scroller:focus-visible { outline: none; box-shadow: inset var(--focus-ring); }
 /* Cabeçalho fixo: o rolável passa a ter altura máxima (o fixar relativo à janela não funciona dentro de overflow). */
 .sticky { max-height: min(70dvh, 40rem); overflow-y: auto; }
@@ -85,3 +86,4 @@
 .skeletonRow > td { height: var(--row-h); }
 .table td.empty { padding: 0; border-bottom: 0; }
 .footer { border-top: 1px solid var(--line); }
+.table tr[aria-current='true'] > td { background: var(--brand-soft); }

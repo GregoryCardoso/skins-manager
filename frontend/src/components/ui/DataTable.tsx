@@ -53,8 +53,18 @@ export interface DataTableProps<R> {
     // Devolve <tr>s (linhas filhas, com a borda --brand à esquerda). Receba as colunas escondidas para mostrá-las.
     renderExpanded: (row: R, hiddenColumns: Column<R>[], context: ExpandContext) => ReactNode;
   };
-  selection?: { selectedIds: ReadonlySet<string>; onChange: (ids: Set<string>) => void; rowLabel: (row: R) => string };
+  selection?: {
+    selectedIds: ReadonlySet<string>;
+    onChange: (ids: Set<string>) => void;
+    rowLabel: (row: R) => string;
+    // Texto completo do rótulo da caixa da linha (padrão: "Selecionar {rowLabel}").
+    ariaLabel?: (row: R) => string;
+    // Seleção parcial da linha (por exemplo, só parte das unidades de um grupo): a caixa mostra o estado misto.
+    isIndeterminate?: (row: R) => boolean;
+  };
   rowTone?: (row: R) => 'stuck' | 'lock' | undefined;
+  // Linha apontada por um link (`?item=`): ganha aria-current e um realce.
+  highlightedId?: string | null;
   // Nome da linha para o botão de expandir quando não há `expandable` (as colunas escondidas viram a linha expandida).
   rowLabel?: (row: R) => string;
   loading?: boolean;
@@ -63,6 +73,8 @@ export interface DataTableProps<R> {
   stickyHeader?: boolean;
   // Rodapé dentro do cartão (por exemplo, a legenda da régua de giro).
   footer?: ReactNode;
+  // Larguras da tabela (px) abaixo das quais somem as colunas de prioridade 2 e 3 (padrão: 720 e 960).
+  hideAt?: HideAt;
   className?: string;
 }
 
@@ -70,11 +82,23 @@ const LOADING_ROWS = 5;
 
 // Colunas que cabem na largura da tabela (não da janela): menos de 960 px esconde as de prioridade 3; menos de 720 px, também as de
 // prioridade 2. Sem largura medida (servidor, testes em jsdom), todas aparecem.
-export function splitColumns<R>(columns: Column<R>[], width: number | null): { visible: Column<R>[]; hidden: Column<R>[] } {
+// `hideAt` troca esses limites numa tabela com muitas colunas (por exemplo, o inventário), para a coluna de ações não ficar atrás da rolagem.
+export interface HideAt {
+  2?: number;
+  3?: number;
+}
+
+export function splitColumns<R>(
+  columns: Column<R>[],
+  width: number | null,
+  hideAt: HideAt = {},
+): { visible: Column<R>[]; hidden: Column<R>[] } {
+  const below3 = hideAt[3] ?? CONTAINER_BREAKPOINTS.lg;
+  const below2 = hideAt[2] ?? CONTAINER_BREAKPOINTS.md;
   const hides = (column: Column<R>) => {
     if (width === null) return false;
     const priority = column.priority ?? 1;
-    return (priority === 3 && width < CONTAINER_BREAKPOINTS.lg) || (priority === 2 && width < CONTAINER_BREAKPOINTS.md);
+    return (priority === 3 && width < below3) || (priority === 2 && width < below2);
   };
   return { visible: columns.filter((column) => !hides(column)), hidden: columns.filter(hides) };
 }
@@ -141,11 +165,13 @@ export default function DataTable<R>({
   expandable,
   selection,
   rowTone,
+  highlightedId = null,
   rowLabel,
   loading = false,
   empty,
   stickyHeader = false,
   footer,
+  hideAt,
   className,
 }: DataTableProps<R>) {
   const t = useT();
@@ -153,7 +179,7 @@ export default function DataTable<R>({
   const { ref, width, scrollable } = useMeasure();
   const [internalOpen, setInternalOpen] = useState<ReadonlySet<string>>(new Set());
 
-  const { visible, hidden } = splitColumns(columns, width);
+  const { visible, hidden } = splitColumns(columns, width, hideAt);
   const hasExpander = expandable !== undefined || hidden.length > 0;
   const utilityCount = (hasExpander ? 1 : 0) + (selection ? 1 : 0);
   const colSpan = visible.length + utilityCount;
@@ -226,7 +252,7 @@ export default function DataTable<R>({
                     label={null}
                     aria-label={t('ui.table.selectAll')}
                     checked={allSelected}
-                    indeterminate={selectedCount > 0 && !allSelected}
+                    indeterminate={!allSelected && (selectedCount > 0 || rows.some((row) => selection.isIndeterminate?.(row) === true))}
                     disabled={rows.length === 0}
                     onChange={changeAll}
                   />
@@ -295,7 +321,7 @@ export default function DataTable<R>({
               const groupId = `${uid}-${id}`;
               return (
                 <tbody key={id} id={groupId}>
-                  <tr data-row-id={id} data-tone={tone} data-open={open || undefined} data-selected={selection?.selectedIds.has(id) || undefined}>
+                  <tr data-row-id={id} data-tone={tone} data-open={open || undefined} aria-current={highlightedId === id ? 'true' : undefined} data-selected={selection?.selectedIds.has(id) || undefined}>
                     {hasExpander && (
                       <td className={styles.utility}>
                         {expandableRow && (
@@ -316,8 +342,9 @@ export default function DataTable<R>({
                       <td className={styles.utility}>
                         <Checkbox
                           label={null}
-                          aria-label={t('ui.table.selectRow', { name: selection.rowLabel(row) })}
+                          aria-label={selection.ariaLabel ? selection.ariaLabel(row) : t('ui.table.selectRow', { name: selection.rowLabel(row) })}
                           checked={selection.selectedIds.has(id)}
+                          indeterminate={selection.isIndeterminate?.(row) === true}
                           onChange={(checked) => changeRow(id, checked)}
                         />
                       </td>

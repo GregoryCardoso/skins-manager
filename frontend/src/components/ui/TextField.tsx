@@ -9,7 +9,7 @@ export interface TextFieldProps {
   label: string;
   value: string;
   onChange: (value: string) => void;
-  type?: 'text' | 'search' | 'date' | 'url' | 'password';
+  type?: 'text' | 'search' | 'date' | 'datetime-local' | 'url' | 'password';
   hint?: ReactNode;
   error?: string | null;
   placeholder?: string;
@@ -21,6 +21,11 @@ export interface TextFieldProps {
   autoFocus?: boolean;
   name?: string;
   maxLength?: number;
+  // Campos secretos (chave da API): sem autocompletar, correção nem checagem ortográfica.
+  autoComplete?: string;
+  autoCorrect?: 'on' | 'off';
+  autoCapitalize?: 'off' | 'none' | 'sentences' | 'words' | 'characters';
+  spellCheck?: boolean;
   inputMode?: 'none' | 'text' | 'tel' | 'url' | 'email' | 'numeric' | 'decimal' | 'search';
   required?: boolean;
   optional?: boolean;
@@ -48,6 +53,10 @@ export default function TextField({
   autoFocus,
   name,
   maxLength,
+  autoComplete,
+  autoCorrect,
+  autoCapitalize,
+  spellCheck,
   inputMode,
   required,
   optional,
@@ -75,6 +84,10 @@ export default function TextField({
             readOnly={readOnly}
             autoFocus={autoFocus}
             maxLength={maxLength}
+            autoComplete={autoComplete}
+            autoCorrect={autoCorrect}
+            autoCapitalize={autoCapitalize}
+            spellCheck={spellCheck}
             inputMode={inputMode}
             required={required}
             onChange={(event) => onChange(event.target.value)}

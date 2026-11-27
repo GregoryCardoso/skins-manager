@@ -46,7 +46,7 @@ test('v22 sobre v21 cheio de operações: dados idênticos, coluna nula, índice
 
   const db = openDatabase(dbPath, { now: NOW });
   try {
-    expect(db.pragma('user_version', { simple: true })).toBe(26);
+    expect(db.pragma('user_version', { simple: true })).toBe(27);
     expect(db.pragma('foreign_key_check')).toEqual([]);
     expect(dump(db)).toEqual(before);
     expect(db.prepare('SELECT ended_by_operation_id AS ended FROM item_operations').all()).toEqual([{ ended: null }]);
@@ -64,7 +64,7 @@ test('migração v22 aplicada duas vezes não repete (idempotente pelo user_vers
   openDatabase(dbPath, { now: NOW }).close();
   const again = openDatabase(dbPath, { now: NOW });
   try {
-    expect(again.pragma('user_version', { simple: true })).toBe(26);
+    expect(again.pragma('user_version', { simple: true })).toBe(27);
   } finally {
     again.close();
   }

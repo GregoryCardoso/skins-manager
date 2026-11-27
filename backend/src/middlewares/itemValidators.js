@@ -218,6 +218,19 @@ function queryValue(query, key, allowed) {
   return raw;
 }
 
+const MAX_SEARCH_LENGTH = 100;
+
+// Busca pelo nome (12.5b): texto aparado de 1 a 100 caracteres; vazio ou maior que isso é recusado.
+function searchValue(query) {
+  const raw = queryValue(query, 'search');
+  if (raw === undefined) return undefined;
+  const text = raw.trim();
+  if (text === '' || text.length > MAX_SEARCH_LENGTH) {
+    throw fail(`search deve ter de 1 a ${MAX_SEARCH_LENGTH} caracteres.`, 'INVALID_QUERY', { field: 'search' });
+  }
+  return text;
+}
+
 const validateItemQuery = wrap((req) => {
   const q = req.query;
   const status = queryValue(q, 'status', ['EM_ESTOQUE', 'VENDIDO', 'CONSUMIDO']);
@@ -226,6 +239,7 @@ const validateItemQuery = wrap((req) => {
   const order = queryValue(q, 'order', ['asc', 'desc']);
   const stagnantOnly = queryValue(q, 'stagnantOnly', ['true', 'false']);
   const saleState = queryValue(q, 'saleState', ['FOR_SALE', 'OFF_SALE']);
+  const search = searchValue(q);
   if (saleState !== undefined && status !== undefined && status !== 'EM_ESTOQUE') {
     throw fail('saleState só vale para itens em estoque.', 'INVALID_QUERY', { field: 'saleState' });
   }
@@ -239,6 +253,7 @@ const validateItemQuery = wrap((req) => {
     order: sortBy ? order ?? (sortBy === 'age' ? 'desc' : 'asc') : undefined,
     stagnantOnly: stagnantOnly === 'true',
     saleState,
+    search,
   };
 });
 
@@ -253,6 +268,7 @@ const validateGroupQuery = wrap((req) => {
   const order = queryValue(q, 'order', ['asc', 'desc']);
   const stagnantOnly = queryValue(q, 'stagnantOnly', ['true', 'false']);
   const saleState = queryValue(q, 'saleState', ['FOR_SALE', 'OFF_SALE']);
+  const search = searchValue(q);
   if (order !== undefined && sortBy === undefined) {
     throw fail('order só pode ser usado junto com sortBy.', 'INVALID_QUERY', { field: 'order' });
   }
@@ -262,6 +278,7 @@ const validateGroupQuery = wrap((req) => {
     order: sortBy ? order ?? 'desc' : undefined,
     stagnantOnly: stagnantOnly === 'true',
     saleState,
+    search,
   };
 });
 

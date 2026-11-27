@@ -160,7 +160,7 @@ describe('importar: sucesso', () => {
     old.close();
     const res = await octet(fs.readFileSync(v4));
     expect(res.status).toBe(200);
-    expect(res.body.data).toMatchObject({ fileVersion: 4, schemaVersion: 26, migrationsApplied: [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26] });
+    expect(res.body.data).toMatchObject({ fileVersion: 4, schemaVersion: 27, migrationsApplied: [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27] });
     const settings = (await request(app).get('/api/settings')).body.data;
     expect(settings).toMatchObject({
       usdBrlRate: 5.3012, usdBrlRateSource: 'PTAX', rateQuotedAt: '2026-11-19T16:04:28.123Z', fxRefreshSource: 'AWESOMEAPI',

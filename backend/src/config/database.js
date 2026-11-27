@@ -262,6 +262,28 @@ function inspectDatabaseFile(filePath) {
   }
 }
 
+// Resumo de um arquivo de backup para a prévia da importação (12.8): contagens e a última alteração registrada. Só leitura, sem tocar no
+// banco do app; as tabelas e colunas usadas existem desde a v1 (REQUIRED_TABLES e REQUIRED_COLUMNS, já conferidas antes por quem chama).
+// A chave da integração (tabela posterior) nunca é lida. `items` conta todas as unidades (como Item.countAll) e `sales` só as VENDIDO.
+function readBackupSummary(filePath) {
+  const db = new Database(filePath, { readonly: true, fileMustExist: true });
+  try {
+    const count = (sql) => db.prepare(sql).get().n;
+    const lastUpdates = ['items', 'stores', 'settings'].map((table) => db.prepare(`SELECT MAX(updated_at) AS v FROM ${table}`).get().v);
+    return {
+      items: count('SELECT COUNT(*) AS n FROM items'),
+      sales: count("SELECT COUNT(*) AS n FROM items WHERE status = 'VENDIDO'"),
+      stores: count('SELECT COUNT(*) AS n FROM stores'),
+      deposits: count('SELECT COUNT(*) AS n FROM deposits'),
+      withdrawals: count('SELECT COUNT(*) AS n FROM withdrawals'),
+      lastUpdates,
+    };
+  } finally {
+    db.close();
+    removeWalFiles(filePath);
+  }
+}
+
 function sleepSync(ms) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }
@@ -313,6 +335,7 @@ module.exports = {
   exportDatabaseTo,
   stripSecretsInFile,
   inspectDatabaseFile,
+  readBackupSummary,
   replaceDatabaseFile,
   restoreDatabaseFile,
   pruneAutoBackups,

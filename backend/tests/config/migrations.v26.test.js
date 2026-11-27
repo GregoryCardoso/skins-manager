@@ -35,7 +35,7 @@ test('v26 cria catalog_item_names, copia só os nomes pt-BR preenchidos e não a
   const { dbPath, before } = seedV25('a');
   const db = openDatabase(dbPath, { now: NOW });
   try {
-    expect(db.pragma('user_version', { simple: true })).toBe(26);
+    expect(db.pragma('user_version', { simple: true })).toBe(27);
     expect(db.prepare('SELECT catalog_id, language, name FROM catalog_item_names ORDER BY catalog_id').all()).toEqual([
       { catalog_id: 'a', language: 'pt-BR', name: 'AK-47 | Linha Vermelha' },
     ]);

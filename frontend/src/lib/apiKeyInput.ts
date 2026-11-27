@@ -18,3 +18,15 @@ export function validateApiKeyInput(raw: string): ApiKeyValidation {
   }
   return { ok: true, value };
 }
+
+// Motivo detalhado do formato inválido (12.9): para a mensagem junto do campo. `validateApiKeyInput` continua devolvendo `FORMAT`.
+export type ApiKeyFormatDetail = 'SHORT' | 'LONG' | 'SPACES';
+
+export function apiKeyFormatDetail(raw: string): ApiKeyFormatDetail | null {
+  const value = normalizeApiKeyInput(raw);
+  if (value === '') return null;
+  if (/\s/.test(value)) return 'SPACES';
+  if (value.length < API_KEY_MIN_LENGTH) return 'SHORT';
+  if (value.length > API_KEY_MAX_LENGTH) return 'LONG';
+  return null;
+}

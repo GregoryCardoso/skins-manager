@@ -159,14 +159,14 @@ describe('botões, abas e exibição', () => {
 
   test('as abas mostram as contagens do backend e a aba escolhida zera "só agarrados"', () => {
     const page = read('app/page.tsx');
-    expect(page).toContain('data.meta.saleStateCounts.forSale');
-    expect(page).toContain('data.meta.saleStateCounts.offSale');
+    expect(page).toContain('meta.saleStateCounts.forSale');
+    expect(page).toContain('meta.saleStateCounts.offSale');
     expect(page).toMatch(/stagnant: state === 'OFF_SALE' \? false : filters\.stagnant/);
     expect(page).not.toMatch(/\.filter\([^)]*saleState|\.length\s*\}\)/); // nada contado no frontend
   });
 
   test('a tabela mostra "no holding desde" só com offSaleAt e a página de vendas mostra SEM_GIRO com tradução', () => {
-    expect(read('components/InventoryUnitRow.tsx')).toMatch(/item\.offSaleAt && /);
+    expect(read('components/inventory/UnitCells.tsx')).toMatch(/item\.offSaleAt \? /);
     const sales = read('components/SalesTable.tsx');
     expect(sales).toContain('SEM_GIRO');
     expect(sales).toContain('enums.turnaroundBucket.');

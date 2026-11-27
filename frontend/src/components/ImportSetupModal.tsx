@@ -2,23 +2,30 @@
 
 import Link from 'next/link';
 import { useT } from '@/i18n/I18nProvider';
-import styles from './forms.module.css';
-import Modal from './Modal';
+import styles from './imports/importModals.module.css';
+import Button from './ui/Button';
+import Dialog from './ui/Dialog';
 
 // "Importar automaticamente" (pedido do usuário): com o CSFloat ainda não ligado, explica em poucas linhas e leva às
 // configurações, onde fica o passo a passo.
 export default function ImportSetupModal({ onClose }: { onClose: () => void }) {
   const t = useT();
   return (
-    <Modal title={t('csfloatSetup.modalTitle')} onClose={onClose}>
-      <div data-testid="import-setup-modal">
+    <Dialog
+      title={t('csfloatSetup.modalTitle')}
+      size="sm"
+      onClose={onClose}
+      footer={(
+        <>
+          <Button onClick={onClose}>{t('csfloatSetup.later')}</Button>
+          <Link href="/settings/#csfloat" className={styles.linkButton} onClick={onClose}>{t('csfloatSetup.configure')}</Link>
+        </>
+      )}
+    >
+      <div className={styles.stack} data-testid="import-setup-modal">
         <p>{t('csfloatSetup.modalBody')}</p>
-        <p>{t('csfloatSetup.modalHint')}</p>
-        <div className={styles.actions}>
-          <button type="button" className={styles.button} onClick={onClose}>{t('csfloatSetup.later')}</button>
-          <Link href="/settings/#csfloat" className={`${styles.button} ${styles.primary}`} onClick={onClose}>{t('csfloatSetup.configure')}</Link>
-        </div>
+        <p className={styles.help}>{t('csfloatSetup.modalHint')}</p>
       </div>
-    </Modal>
+    </Dialog>
   );
 }

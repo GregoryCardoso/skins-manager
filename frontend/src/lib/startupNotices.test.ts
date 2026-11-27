@@ -46,7 +46,7 @@ test('"Importar automaticamente" nos lugares de lançar e o passo a passo nas co
   expect(read('app/profit/page.tsx')).toMatch(/<ImportButton \/>/);
   expect(read('components/WithdrawalsSection.tsx')).toMatch(/<ImportButton \/>/);
   expect(read('components/ImportSetupModal.tsx')).toMatch(/\/settings\/#csfloat/);
-  expect(read('components/CsfloatIntegrationCard.tsx')).toMatch(/!integration\.hasApiKey && <CsfloatSetupGuide \/>/);
+  expect(read('components/CsfloatIntegrationCard.tsx')).toMatch(/integration\.hasApiKey \? \([\s\S]*<CsfloatSetupGuide \/>[\s\S]*\) : \(\s*<CsfloatSetupGuide \/>/);
   for (const lang of [ptBR, en]) {
     for (const key of ['button', 'modalTitle', 'configure', 'step1', 'step5', 'open', 'safety'] as const) expect(lang.csfloatSetup[key]).toBeTruthy();
     for (const key of ['title', 'intro', 'fx', 'csfloat', 'hint', 'lastFx', 'lastImport', 'neverImported'] as const) expect(lang.startup.offline[key]).toBeTruthy();

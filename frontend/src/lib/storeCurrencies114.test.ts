@@ -82,12 +82,14 @@ describe('formulário de lojas nas 42 moedas', () => {
 
   test('o modal usa a lista das 42 moedas, trava a moeda com lançamentos e segue a moeda da loja nos rótulos e no teclado', () => {
     const modal = read('components/StoreFormModal.tsx');
-    expect(modal).toMatch(/currencyOptions\(locale\)\.map/);
+    expect(modal).toMatch(/currencyComboboxOptions\(locale\)/);
+    expect(modal).toMatch(/<Combobox/);
     expect(modal).toMatch(/currencyLocked = editing && store\.inUse/);
     expect(modal).toMatch(/disabled=\{currencyLocked\}/);
     expect(modal).toMatch(/currencySymbol\(state\.currency, locale\)/);
     expect(modal).not.toMatch(/'US\$' : 'R\$'/);
-    expect(modal.match(/moneyInputMode\(state\.currency\)/g)).toHaveLength(3);
+    // os campos de valor são NumberField money na moeda da loja (12.8): o teclado e a validação são do componente
+    expect(modal.match(/kind="money"\s+currency=\{state\.currency\}/g)).toHaveLength(3);
   });
 });
 

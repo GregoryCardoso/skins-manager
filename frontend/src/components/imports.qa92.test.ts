@@ -10,9 +10,9 @@ import { API_ERROR_CODES } from '@/i18n/errorCodes';
 import { translate, translatePlural } from '@/i18n/translate';
 import { INVALIDATION_MAP } from '@/lib/queryInvalidation';
 import { queryKeys } from '@/lib/queryKeys';
-import { COUNT_LINES, groupEntries, isNothingNew, summaryLines } from '@/lib/importSummary';
+import { COUNT_LINES, isNothingNew, summaryLines } from '@/lib/importSummary';
 import { suggestionToInputValue, validateCutoffInput } from '@/lib/importCutoff';
-import type { ImportBatchCounts, ImportBatchView, ImportEntryView, IntegrationView } from '@/types/api';
+import type { ImportBatchCounts, IntegrationView } from '@/types/api';
 
 // QA 9.2 (D305, D318): frontend da importação do CSFloat. Sem jsdom: renderização estática com os dados no cache, análise do
 // código-fonte para o que depende de clique, i18n (pt-BR e en) e o mapa de invalidação. Dados inventados.
@@ -25,9 +25,6 @@ vi.mock('@/i18n/I18nProvider', () => {
 });
 
 import ImportButton from './ImportButton';
-import ImportCutoffModal from './ImportCutoffModal';
-import ImportEntriesList from './ImportEntriesList';
-import ImportSummaryModal from './ImportSummaryModal';
 import { importDisabledReason } from './useCsfloatImport';
 
 const SRC = path.join(__dirname, '..');
@@ -51,26 +48,6 @@ const baseView: IntegrationView = {
   tradesCutoffAt: null, lastImportAt: null, lastImportStatus: null, lastImportErrorCode: null,
   importInProgress: false, openEntriesCount: 0, suggestedCutoffAt: null, helpUrl: 'https://csfloat.com/profile',
 };
-
-function entry(id: number, outcome: ImportEntryView['outcome'], extra: Partial<ImportEntryView> = {}, display: Partial<ImportEntryView['display']> = {}): ImportEntryView {
-  return {
-    id, batchId: 1, outcome, reasonCode: null, entityType: null, entityId: null, candidateIds: [], resolution: null, resolvedAt: null,
-    display: {
-      direction: 'BUY', marketHashName: 'AK-47 | Redline (Field-Tested)', name: 'AK-47 | Redline', localizedName: 'AK-47 | Linha Vermelha', imageUrl: null,
-      catalogId: 'skin-ak-redline', category: 'SKIN', variant: 'NORMAL', floatValue: 0.2534, paintSeed: 661, phase: null, priceCents: 1250,
-      currency: 'USD', date: '2026-11-20T14:00:00.000Z', state: 'pending', ...display,
-    },
-    ...extra,
-  };
-}
-
-function batch(extra: Partial<ImportBatchView> = {}): ImportBatchView {
-  return {
-    id: 7, source: 'CSFLOAT', trigger: 'MANUAL', status: 'DONE', startedAt: '2026-11-22T15:00:00.000Z', finishedAt: '2026-11-22T15:00:03.000Z', fullScan: false,
-    cutoffAt: '2026-11-01T00:00:00.000Z', pagesRead: { trades: 1, transactions: 1 }, counts: { ...ZERO }, warnings: [], unknownTypes: {}, errorCode: null,
-    undoneAt: null, undoable: false, openEntriesCount: 0, entries: [], ...extra,
-  } as unknown as ImportBatchView;
-}
 
 function client(view: IntegrationView | null) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: Infinity } } });
@@ -217,9 +194,9 @@ describe('botão "Importar do CSFloat"', () => {
   });
 
   test('o selo "CSFloat" aparece nas linhas do inventário e das vendas só para itens importados', () => {
-    for (const file of ['InventoryUnitRow.tsx', 'SalesTable.tsx']) {
-      expect(read('components', file)).toMatch(/externalSource === 'CSFLOAT'[\s\S]{0,80}<Badge tone="info" title=\{t\('imports\.badgeHint'\)\}>\{t\('imports\.badge'\)\}<\/Badge>/);
-    }
+    expect(read('components', 'SalesTable.tsx')).toMatch(/externalSource === 'CSFLOAT'[\s\S]{0,80}<Badge tone="info" title=\{t\('imports\.badgeHint'\)\}>\{t\('imports\.badge'\)\}<\/Badge>/);
+    // 12.5a: no inventário o selo não usa `title` (acessibilidade); o texto "CSFloat" continua visível
+    expect(read('components', 'inventory', 'ItemNameCell.tsx')).toMatch(/externalSource === 'CSFLOAT'[\s\S]{0,80}<Badge tone="info">\{t\('imports\.badge'\)\}<\/Badge>/);
     expect(translate(ptBR, 'imports.badge')).toBe('CSFloat');
     expect(translate(en, 'imports.badge')).toBe('CSFloat');
   });
@@ -235,32 +212,6 @@ describe('botão "Importar do CSFloat"', () => {
 // --- Modal do corte --------------------------------------------------------------------------------------------------------
 
 describe('modal da data de corte', () => {
-  const noop = () => undefined;
-  const modal = (suggested: string | null, lang: 'pt-BR' | 'en' = 'pt-BR', error: string | null = null) =>
-    render(createElement(ImportCutoffModal, { suggestedCutoffAt: suggested, busy: false, error, onConfirm: noop, onCancel: noop }), baseView, lang);
-
-  test('a sugestão vira o valor inicial do campo (editável); sem sugestão o campo vem vazio e há dica', () => {
-    const withSuggestion = modal('2026-11-08T13:00:00.000Z');
-    const value = suggestionToInputValue('2026-11-08T13:00:00.000Z');
-    expect(value).toMatch(/^2026-11-0[78]T\d\d:\d\d$/);
-    expect(withSuggestion).toContain(`value="${value}"`);
-    expect(withSuggestion).not.toContain('readonly');
-    expect(withSuggestion).not.toContain(translate(ptBR, 'imports.cutoff.noSuggestion'));
-    const empty = modal(null);
-    expect(empty).toContain('value=""');
-    expect(empty).toContain(translate(ptBR, 'imports.cutoff.noSuggestion'));
-  });
-
-  test('pergunta e explicação do aporte-base em pt-BR e en; erro da importação aparece como alerta; campo limitado a agora', () => {
-    const pt = modal(null, 'pt-BR', 'Falhou: tente de novo.');
-    expect(pt).toContain(translate(ptBR, 'imports.cutoff.question'));
-    expect(pt).toContain(translate(ptBR, 'imports.cutoff.baseDepositHint'));
-    expect(pt).toContain('Falhou: tente de novo.');
-    expect(pt).toContain('role="alert"');
-    expect(pt).toMatch(/type="datetime-local"[^>]*max="\d{4}-\d\d-\d\dT\d\d:\d\d"|max="\d{4}-\d\d-\d\dT\d\d:\d\d"[^>]*type="datetime-local"/);
-    expect(modal(null, 'en')).toContain(translate(en, 'imports.cutoff.question'));
-  });
-
   test('validateCutoffInput: vazio, lixo, futuro, agora e passado', () => {
     const now = new Date('2026-11-22T15:00:00.000Z');
     expect(validateCutoffInput('', now)).toEqual({ ok: false, reason: 'EMPTY' });
@@ -270,73 +221,6 @@ describe('modal da data de corte', () => {
     expect(validateCutoffInput('2026-11-01T00:00', now)).toMatchObject({ ok: true });
     const ok = validateCutoffInput('2026-11-01T00:00', now);
     if (ok.ok) expect(Number.isNaN(Date.parse(ok.iso))).toBe(false); // ISO com fuso; o backend converte para UTC
-  });
-});
-
-// --- Resumo ----------------------------------------------------------------------------------------------------------------
-
-describe('modal de resumo e lista de entradas', () => {
-  const summary = (b: ImportBatchView, lang: 'pt-BR' | 'en' = 'pt-BR') =>
-    render(createElement(ImportSummaryModal, { batch: b, onClose: () => undefined }), baseView, lang);
-
-  test('sem novidades: mostra "nada novo", sem lista de contagens vazia, sem "Desfazer" (lote sem mudanças) e com "Ver detalhes"', () => {
-    const html = summary(batch({ counts: { ...ZERO, known: 12, beforeCutoff: 30 } }));
-    expect(html).toContain(translate(ptBR, 'imports.summary.nothingNew'));
-    expect(html).not.toContain(translate(ptBR, 'imports.undo.button'));
-    expect(html).toContain(translate(ptBR, 'imports.summary.details'));
-    expect(html).toContain('12 já importadas'.slice(0, 2));
-    expect(isNothingNew({ ...ZERO, known: 12, beforeCutoff: 30 })).toBe(true);
-  });
-
-  test('com novidade: contagens em plural, aviso do lote traduzido, "Desfazer importação" só quando undoable', () => {
-    const counts = { ...ZERO, purchasesCreated: 1, matched: 2, review: 1, failed: 3 };
-    const html = summary(batch({ counts, undoable: true, warnings: ['SCAN_LIMIT_REACHED'], entries: [entry(1, 'CREATED', { entityType: 'ITEM_PURCHASE', entityId: 42 })] }));
-    expect(html).toContain(translatePlural(ptBR, 'imports.counts.purchasesCreated', 1, 'pt-BR'));
-    expect(html).toContain(translatePlural(ptBR, 'imports.counts.matched', 2, 'pt-BR'));
-    expect(html).toContain(translate(ptBR, 'imports.warnings.SCAN_LIMIT_REACHED'));
-    expect(html).toContain(translate(ptBR, 'imports.undo.button'));
-    expect(html).not.toContain(translate(ptBR, 'imports.summary.nothingNew'));
-    expect(summary(batch({ counts, undoable: false })).includes(translate(ptBR, 'imports.undo.button'))).toBe(false);
-    const english = summary(batch({ counts, undoable: true, warnings: ['ORDER_NOT_GUARANTEED'] }), 'en');
-    expect(english).toContain(translate(en, 'imports.warnings.ORDER_NOT_GUARANTEED'));
-    expect(english).toContain(translate(en, 'imports.undo.button'));
-  });
-
-  test('aviso de lote desconhecido mostra o código em vez de quebrar', () => {
-    expect(summary(batch({ counts: { ...ZERO, purchasesCreated: 1 }, warnings: ['NOVO_AVISO_X'] }))).toContain('NOVO_AVISO_X');
-  });
-
-  test('entradas: grupos na ordem (duplicado, revertido, falhas, criadas, ligadas), motivo traduzido, link do item e candidatos', () => {
-    const entries = [
-      entry(1, 'CREATED', { entityType: 'ITEM_PURCHASE', entityId: 42, reasonCode: 'PRICE_MISMATCH' }),
-      entry(2, 'MATCHED', { entityType: 'ITEM_PURCHASE', entityId: 43 }),
-      entry(3, 'POSSIBLE_DUPLICATE', { candidateIds: [5, 6] }),
-      entry(4, 'REVERTED', { entityType: 'ITEM_PURCHASE', entityId: 44, reasonCode: 'REVERTED_PENDING_ACTION' }),
-      entry(5, 'FAILED', { reasonCode: 'CATALOG_NOT_FOUND' }, { name: null, localizedName: null, marketHashName: null, imageUrl: null, category: null }),
-      entry(6, 'UNKNOWN_STATE', { reasonCode: 'UNKNOWN_STATE' }, { state: 'weird_state' }),
-    ];
-    expect(groupEntries(entries).map((g) => g.key)).toEqual(['POSSIBLE_DUPLICATE', 'REVERTED', 'FAILED', 'CREATED', 'MATCHED']);
-    const html = render(createElement(ImportEntriesList, { entries }));
-    for (const key of ['POSSIBLE_DUPLICATE', 'REVERTED', 'FAILED', 'CREATED', 'MATCHED']) expect(html).toContain(translate(ptBR, `imports.groups.${key}`));
-    expect(html).toContain('href="/?item=42"');
-    expect(html).toContain('href="/?item=43"');
-    expect(html).toContain('href="/?item=5"');
-    expect(html).toContain('href="/?item=6"');
-    expect(html).toContain(translate(ptBR, 'imports.reasons.PRICE_MISMATCH'));
-    expect(html).toContain(translate(ptBR, 'imports.reasons.CATALOG_NOT_FOUND'));
-    expect(html).toContain('weird_state'); // {state} do UNKNOWN_STATE
-    expect(html).toContain(translate(ptBR, 'imports.unknownItem')); // sem nome no catálogo nem no trade
-  });
-
-  test('entradas sem dados da contraparte: nada de comprador, vendedor, URL ou token na marcação', () => {
-    const html = render(createElement(ImportEntriesList, { entries: [entry(1, 'CREATED', { entityType: 'ITEM_PURCHASE', entityId: 1 })] }));
-    for (const secret of ['steamcommunity', 'trade_token', 'steam://', '7656119']) expect(html).not.toContain(secret);
-    expect(html).toContain('float');
-    expect(html).toContain('seed 661');
-  });
-
-  test('lista vazia não renderiza nada', () => {
-    expect(render(createElement(ImportEntriesList, { entries: [] }))).toBe('');
   });
 });
 

@@ -152,6 +152,23 @@ describe('DataTable: colunas por largura (container)', () => {
     expect(splitColumns(COLUMNS, 719).visible.map((c) => c.id)).toEqual(['name', 'qty', 'act']);
   });
 
+  test('splitColumns com hideAt: limites próprios da tabela (inventário: 1280 e 1000); o que não vier usa o padrão', () => {
+    const hideAt = { 2: 1000, 3: 1280 };
+    expect(splitColumns(COLUMNS, 1280, hideAt).hidden).toEqual([]);
+    expect(splitColumns(COLUMNS, 1279, hideAt).hidden.map((c) => c.id)).toEqual(['note']);
+    expect(splitColumns(COLUMNS, 999, hideAt).hidden.map((c) => c.id)).toEqual(['store', 'note']);
+    expect(splitColumns(COLUMNS, 959, { 3: 1280 }).hidden.map((c) => c.id)).toEqual(['note']);
+    expect(splitColumns(COLUMNS, 719, { 3: 1280 }).hidden.map((c) => c.id)).toEqual(['store', 'note']);
+    expect(splitColumns(COLUMNS, null, hideAt).hidden).toEqual([]);
+  });
+
+  test('hideAt na tabela: com 1100 px, a coluna 3 some mesmo acima de 960', () => {
+    mockWidth(1100);
+    renderUi(<DataTable caption="Inventory" columns={COLUMNS} rows={ROWS} getRowId={(r) => r.id} rowLabel={(r) => r.name} hideAt={{ 3: 1280 }} />);
+    expect(screen.queryByRole('columnheader', { name: 'Note' })).toBeNull();
+    expect(screen.getByRole('columnheader', { name: 'Store' })).toBeInTheDocument();
+  });
+
   test('largura média: some a coluna 3 e a linha ganha o expansor (sem `expandable`)', async () => {
     mockWidth(800);
     renderUi(<DataTable caption="Inventory" columns={COLUMNS} rows={ROWS} getRowId={(r) => r.id} rowLabel={(r) => r.name} />);

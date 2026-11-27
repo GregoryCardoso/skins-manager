@@ -72,24 +72,27 @@ describe('navigationPolicy x botão Inspecionar', () => {
   });
 
   test('o frontend renderiza <a href={link}> sem target para steam: (cai no will-navigate)', () => {
-    // Desde a 8.8 o botão fica na linha de unidade (InventoryUnitRow.tsx), usada pelas visões individual e agrupada.
+    // Desde a 12.5a o "Inspecionar" é um item de link do menu "Mais ações" (ui/Menu.tsx), montado em inventory/ItemRowActions.tsx,
+    // usado pelas visões individual e agrupada.
     const components = path.join(__dirname, '..', '..', 'frontend', 'src', 'components');
-    const src = fs.readFileSync(path.join(components, 'InventoryUnitRow.tsx'), 'utf8');
-    const start = src.indexOf('function InspectAction(');
+    const menu = fs.readFileSync(path.join(components, 'ui', 'Menu.tsx'), 'utf8');
+    const start = menu.indexOf('if (entry.href && !entry.disabled)');
     expect(start).toBeGreaterThanOrEqual(0);
-    const rest = src.slice(start);
-    const block = rest.slice(0, rest.search(/\r?\n\}\r?\n/));
-    expect(block.length).toBeGreaterThan(0);
-    expect(block).toMatch(/href=\{link\}/);
-    expect(block).toMatch(/const external = isHttpsLink\(link\)/);
+    const block = menu.slice(start, menu.indexOf('return (', start + 40) > 0 ? menu.indexOf('</DropdownMenu.Item>', start) : undefined);
+    expect(block).toMatch(/href=\{entry\.href\}/);
+    expect(block).toMatch(/rel="noopener noreferrer"/);
     // target="_blank" só para https: (steam: fica sem target e passa pelo will-navigate).
-    expect(block).toMatch(/\{\.\.\.\(external \? \{ target: '_blank' \} : \{\}\)\}/);
+    expect(block).toMatch(/\{\.\.\.\(entry\.external \? \{ target: '_blank' \} : \{\}\)\}/);
     expect(block.match(/target/g)).toHaveLength(1);
-    // As duas tabelas do inventário usam essa linha (o botão não foi duplicado em outro lugar).
+    const actions = fs.readFileSync(path.join(components, 'inventory', 'ItemRowActions.tsx'), 'utf8');
+    expect(actions).toMatch(/external: isHttpsLink\(item\.inspectLink\)/);
+    // As duas tabelas do inventário usam as mesmas colunas (o botão não foi duplicado em outro lugar).
+    const columns = fs.readFileSync(path.join(components, '..', 'lib', 'inventoryColumns.tsx'), 'utf8');
+    expect(columns).toMatch(/ItemRowActions/);
     for (const file of ['InventoryTable.tsx', 'InventoryGroupTable.tsx']) {
       const table = fs.readFileSync(path.join(components, file), 'utf8');
-      expect(table).toMatch(/from '\.\/InventoryUnitRow'/);
-      expect(table).not.toMatch(/function InspectAction\(/);
+      expect(table).toMatch(/inventoryColumns/);
+      expect(table).not.toMatch(/href=/);
     }
   });
 

@@ -1,0 +1,9 @@
+.card { height: 100%; }
+.inactive { border-style: dashed; }
+.inactive .facts { opacity: 0.8; }
+.badges { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); }
+.facts { display: grid; gap: var(--space-2); margin: 0; }
+.fact { display: grid; gap: 2px; min-width: 0; }
+.fact dt { color: var(--muted); font-size: var(--fs-xs); font-weight: var(--fw-bold); text-transform: uppercase; letter-spacing: 0.04em; }
+.fact dd { margin: 0; font-size: var(--fs-sm); overflow-wrap: anywhere; }
+.warn { color: var(--stuck, var(--text)); }

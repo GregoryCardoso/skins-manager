@@ -54,18 +54,18 @@ describe('paridade i18n', () => {
 describe('ligação dos botões', () => {
   test('o botão "Aplicar do estoque" e o "Abrir" chegam da página até a linha da unidade, nas visões individual e agrupada', () => {
     const page = read('app', 'page.tsx');
-    expect(page.match(/onApply=\{openApply\}/g)).toHaveLength(2);
-    expect(page.match(/onOpen=\{openOpen\}/g)).toHaveLength(2);
-    expect(page.match(/onRegisterKey=\{openRegisterKey\}/g)).toHaveLength(2);
-    const row = read('components', 'InventoryUnitRow.tsx');
-    expect(row).toMatch(/onApply=\{onApply\}/);
-    expect(row).toMatch(/onOpen=\{onOpen\}/);
+    // 12.5a: a página monta um único objeto `handlers`, repassado às duas tabelas.
+    expect(page).toMatch(/onApply: openApply/);
+    expect(page).toMatch(/onOpen: openOpen/);
+    expect(page).toMatch(/onRegisterKey: openRegisterKey/);
+    expect(page.match(/handlers=\{handlers\}/g)).toHaveLength(2);
+    const actions = read('components', 'inventory', 'ItemRowActions.tsx');
+    expect(actions).toMatch(/handlers\.onApply\?\.\(item\)/);
+    expect(actions).toMatch(/handlers\.onOpen\?\.\(item\)/);
     for (const file of ['InventoryTable.tsx', 'InventoryGroupTable.tsx']) {
-      const source = read('components', file);
-      expect(source, file).toMatch(/extends UnitRowHandlers/);
-      expect(source, file).toMatch(/\{\.\.\.handlers\}/);
+      expect(read('components', file), file).toMatch(/handlers: UnitRowHandlers/);
     }
-    expect(read('components', 'InventoryUnitRow.tsx')).toMatch(/onApply\?: \(item: ItemView\) => void;/);
+    expect(actions).toMatch(/onApply\?: \(item: ItemView\) => void;/);
   });
 
   test('"Aplicar do estoque" só aparece com canReceiveComponents; "Abrir" só com item.openable', () => {

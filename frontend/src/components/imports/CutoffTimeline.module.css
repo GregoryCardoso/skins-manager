@@ -1,0 +1,32 @@
+.root { margin: 0; container-type: inline-size; display: flex; flex-direction: column; gap: var(--space-2); }
+.track { position: relative; height: 0.75rem; border-radius: var(--radius-pill); background: var(--surface-2); overflow: hidden; }
+/* Lado "antes" (da esquerda até o marcador) e lado "depois" (do marcador até a direita). */
+.before { position: absolute; inset-block: 0; left: 0; width: calc(var(--at) * 1%); background: var(--surface-alt); }
+.after { position: absolute; inset-block: 0; right: 0; left: calc(var(--at) * 1%); background: var(--brand-soft); }
+.segment { position: absolute; inset-block: 0; left: calc(var(--at) * 1%); width: calc(var(--size) * 1%); opacity: 0.85; }
+.segment[data-direction='EARLIER'] { background: var(--profit-soft); border-inline: 2px solid var(--profit); }
+.segment[data-direction='LATER'] { background: var(--stuck-soft); border-inline: 2px solid var(--stuck); }
+.marker { position: absolute; top: 0; bottom: 0; left: calc(var(--at) * 1%); width: 3px; transform: translateX(-50%); border-radius: 1px; }
+.markerCurrent { background: var(--brand); }
+.markerNew { background: var(--text); }
+.labels { display: flex; justify-content: space-between; gap: var(--space-3); font-size: var(--fs-xs); color: var(--muted); }
+.labelBefore, .labelAfter { overflow-wrap: anywhere; }
+.labelAfter { text-align: end; }
+.dates { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); font-size: var(--fs-sm); }
+.dot { display: inline-block; width: 0.6rem; height: 0.6rem; margin-inline-end: var(--space-2); border-radius: var(--radius-pill); }
+.dotCurrent { background: var(--brand); }
+.dotNew { background: var(--text); }
+.caption { font-size: var(--fs-sm); color: var(--text); }
+
+/* Contêiner compacto: a linha do tempo fica vertical, com os textos ao lado. */
+@container (width < 480px) {
+  .root { display: grid; grid-template-columns: 0.75rem 1fr; column-gap: var(--space-3); align-items: start; }
+  .track { grid-column: 1; grid-row: 1 / span 4; width: 0.75rem; height: 9rem; }
+  .labels, .dates, .caption { grid-column: 2; }
+  .before { inset-inline: 0; left: auto; width: auto; top: 0; bottom: auto; height: calc(var(--at) * 1%); }
+  .after { inset-inline: 0; left: auto; right: auto; bottom: 0; top: calc(var(--at) * 1%); }
+  .segment { inset-inline: 0; left: auto; width: auto; top: calc(var(--at) * 1%); height: calc(var(--size) * 1%); border-inline: 0; border-block: 2px solid currentColor; }
+  .marker { left: 0; right: 0; top: calc(var(--at) * 1%); bottom: auto; width: auto; height: 3px; transform: translateY(-50%); }
+  .labels { flex-direction: column; justify-content: flex-start; }
+  .labelAfter { text-align: start; }
+}

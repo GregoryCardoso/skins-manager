@@ -17,7 +17,8 @@ export const queryKeys = {
     retroTarget: (id: number) => ['items', 'retroTarget', id] as const,
   },
   sales: { all: ['sales'] as const, list: (query: unknown) => ['sales', query] as const },
-  stores: { all: ['stores'] as const },
+  // `feePreview`: exemplo da taxa do formulário de loja (12.8), sob o prefixo `stores`.
+  stores: { all: ['stores'] as const, feePreview: (params: unknown) => ['stores', 'feePreview', params] as const },
   // Prévia da troca da moeda de conversão (11.3): sob o prefixo `settings`.
   settings: { all: ['settings'] as const, currencyPreview: (currency: string) => ['settings', 'currencyPreview', currency] as const },
   deposits: { all: ['deposits'] as const },

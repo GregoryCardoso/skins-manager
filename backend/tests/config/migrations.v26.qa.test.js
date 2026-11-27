@@ -20,7 +20,7 @@ afterAll(() => {
 function dumpAll(db, skip = []) {
   const out = {};
   const tables = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all();
-  for (const { name } of tables) if (!skip.includes(name)) out[name] = db.prepare(`SELECT * FROM "${name}" ORDER BY rowid`).all();
+  for (const { name } of tables) if (!skip.includes(name)) out[name] = db.prepare(`SELECT * FROM "${name}" ORDER BY rowid`).all().map(({ inventory_density: _dn, ...r }) => r);
   return out;
 }
 
@@ -68,7 +68,7 @@ describe('v026 sobre um banco v25 cheio', () => {
     const { dbPath, before } = seedFullV25('full');
     const db = openDatabase(dbPath, { now: NOW });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(26);
+      expect(db.pragma('user_version', { simple: true })).toBe(27);
       expect(dumpAll(db, ['catalog_item_names'])).toEqual(before);
       expect(db.prepare('SELECT catalog_id, language, name FROM catalog_item_names ORDER BY catalog_id').all()).toEqual([
         { catalog_id: 'keychain-1', language: 'pt-BR', name: 'Pingente | Lil Ava' },
@@ -104,7 +104,7 @@ describe('v026 sobre um banco v25 cheio', () => {
     openDatabase(dbPath, { now: NOW }).close();
     const db = openDatabase(dbPath, { now: NOW });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(26);
+      expect(db.pragma('user_version', { simple: true })).toBe(27);
       expect(db.prepare('SELECT COUNT(*) AS n FROM catalog_item_names').get().n).toBe(3);
       expect(() => V26.up(db)).toThrow(/already exists/);
       expect(db.prepare('SELECT COUNT(*) AS n FROM catalog_item_names').get().n).toBe(3);
@@ -179,7 +179,7 @@ describe('importar backups v23, v24 e v25 na v26', () => {
     const { dbPath, before } = seedFullV25(`bk${version}`, version);
     const res = await request(app).post('/api/backup/import').set('Content-Type', 'application/octet-stream').send(fs.readFileSync(dbPath));
     expect(res.status).toBe(200);
-    expect(res.body.data).toMatchObject({ fileVersion: version, schemaVersion: 26 });
+    expect(res.body.data).toMatchObject({ fileVersion: version, schemaVersion: 27 });
     const db = database.getDb();
     expect(db.pragma('foreign_key_check')).toEqual([]);
     expect(db.prepare('SELECT catalog_id, name FROM catalog_item_names WHERE language = ? ORDER BY catalog_id').all('pt-BR').map((r) => r.catalog_id))

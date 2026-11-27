@@ -16,9 +16,9 @@ describe('settingsService', () => {
     expect(settingsService.updateFxRate(5.1234, { now })).toEqual({
       usdBrlRate: 5.1234,
       usdBrlRateUpdatedAt: '2026-11-19T15:00:00.000Z',
-      catalogUpdatedAt: null, theme: 'SYSTEM', language: 'en', inventoryView: 'GROUPED', usdBrlRateSource: 'MANUAL',
+      catalogUpdatedAt: null, theme: 'SYSTEM', language: 'en', inventoryView: 'GROUPED', inventoryDensity: 'COMPACT', usdBrlRateSource: 'MANUAL',
       agingThresholdsAdjusted: false, fastTurnoverDays: 7, fastTurnoverDaysCustom: null, fastTurnoverDaysDefault: 7,
-      slowItemDays: 21, slowItemDaysCustom: null, slowItemDaysDefault: 21, steamStoreId: expect.any(Number), rateQuotedAt: null, fxRefreshSource: 'AWESOMEAPI', displayCurrency: 'BRL', fxRates: expect.any(Array), requiredFxCurrencies: expect.any(Array),
+      slowItemDays: 21, slowItemDaysCustom: null, slowItemDaysDefault: 21, steamStoreId: expect.any(Number), rateQuotedAt: null, fxRefreshSource: 'AWESOMEAPI', displayCurrency: 'BRL', fxManualRateBounds: expect.any(Object), fxRates: expect.any(Array), requiredFxCurrencies: expect.any(Array),
       updatedAt: '2026-11-19T15:00:00.000Z',
     });
   });

@@ -9,6 +9,7 @@ import type {
   UndoOperationResult,
   BulkSaleStateBody,
   BulkSaleStateResult,
+  BackupImportPreview,
   BackupImportResult,
   BackupInfo,
   Category,
@@ -74,6 +75,8 @@ import type {
   WithdrawalCreateBody,
   WithdrawalList,
   WithdrawalPatchBody,
+  StoreFeePreview,
+  StoreFeePreviewQuery,
 } from '@/types/api';
 
 // Build de produção: o backend serve a interface na mesma origem (D134); em desenvolvimento a API fica na 3001.
@@ -87,6 +90,9 @@ export class ApiRequestError extends Error {
   // Campo da API a que o erro se refere e valores para interpolar a mensagem (D113).
   readonly field?: string;
   readonly params?: ErrorParams;
+  // Parâmetros estruturados como vieram da API (listas e objetos: falhas por linha do lote, unidades em estoque, avisos). `params`
+  // guarda só texto e número, para interpolar a mensagem; aqui nada é descartado. Quem usa confere o formato.
+  readonly details?: Record<string, unknown>;
 
   constructor(code: string, message: string, status = 0, extra: { field?: unknown; params?: unknown } = {}) {
     super(message);
@@ -96,6 +102,7 @@ export class ApiRequestError extends Error {
     if (typeof extra.field === 'string' && extra.field !== '') this.field = extra.field;
     const params = sanitizeParams(extra.params);
     if (params) this.params = params;
+    if (extra.params !== null && typeof extra.params === 'object' && !Array.isArray(extra.params)) this.details = extra.params as Record<string, unknown>;
   }
 }
 
@@ -237,6 +244,7 @@ export const listItems = (query: ItemListQuery, signal?: AbortSignal) =>
       category: query.category,
       stagnantOnly: query.stagnantOnly ? 'true' : undefined,
       saleState: query.saleState,
+      search: query.search,
       sortBy: 'age',
       order: query.order,
     },
@@ -250,6 +258,7 @@ export const listItemGroups = (query: ItemGroupQuery, signal?: AbortSignal) =>
       category: query.category,
       stagnantOnly: query.stagnantOnly ? 'true' : undefined,
       saleState: query.saleState,
+      search: query.search,
       sortBy: 'age',
       order: query.order,
     },
@@ -279,6 +288,21 @@ export const bulkMarkOffSale = (body: BulkSaleStateBody) => request<BulkSaleStat
 export const bulkMarkForSale = (body: BulkSaleStateBody) => request<BulkSaleStateResult>('POST', '/items/bulk/for-sale', { body });
 
 export const updateStore = (id: number, body: StorePatchBody) => request<Store>('PATCH', `/stores/${id}`, { body });
+
+// Exemplo da taxa de uma loja ainda não gravada (12.8): a conta é do backend (as mesmas Strategies da venda).
+export const previewStoreFee = (query: StoreFeePreviewQuery, signal?: AbortSignal) =>
+  request<StoreFeePreview>('GET', '/stores/fee-preview', {
+    signal,
+    query: {
+      currency: query.currency,
+      saleFeeType: query.saleFeeType,
+      rate: query.rate,
+      rounding: query.rounding,
+      minCents: query.minCents ?? undefined,
+      fixedCents: query.fixedCents ?? undefined,
+      priceCents: query.priceCents ?? undefined,
+    },
+  });
 
 export const deleteStore = (id: number) => request<{ id: number }>('DELETE', `/stores/${id}`);
 
@@ -438,6 +462,14 @@ export const importBackup = (file: Blob) =>
   request<BackupImportResult>('POST', '/backup/import', {
     rawBody: { data: file, contentType: 'application/octet-stream' },
     timeoutMs: 120000,
+  });
+
+// Prévia da importação (12.8): envia o arquivo como corpo binário e recebe o resumo; nada é gravado.
+export const previewBackupImport = (file: Blob, signal?: AbortSignal) =>
+  request<BackupImportPreview>('POST', '/backup/import-preview', {
+    rawBody: { data: file, contentType: 'application/octet-stream' },
+    timeoutMs: 120000,
+    signal,
   });
 
 // Caminho das pastas de dados e de backups (D175).

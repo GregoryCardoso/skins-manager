@@ -28,7 +28,7 @@ describe('GET /api/items filtros e ordenação', () => {
     await seed();
     const res = await get('/api/items');
     expect(res.body.data.items.map((i) => i.aging.agingBucket)).toEqual(['RECENTE', 'EM_GIRO', 'EM_GIRO', 'AGARRADO']);
-    expect(res.body.data.meta).toEqual({ count: 4, saleStateCounts: { forSale: 4, offSale: 0 }, fastTurnoverDays: 7, slowItemDays: 21, usdBrlRate: null, generatedAt: '2026-11-19T15:00:00.000Z' });
+    expect(res.body.data.meta).toEqual({ count: 4, saleStateCounts: { forSale: 4, offSale: 0 }, position: expect.any(Object), fastTurnoverDays: 7, slowItemDays: 21, usdBrlRate: null, generatedAt: '2026-11-19T15:00:00.000Z' });
   });
 
   test('stagnantOnly só 22+ em estoque; com status=VENDIDO vazio', async () => {

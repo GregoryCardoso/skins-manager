@@ -240,7 +240,7 @@ describe('PATCH /api/settings: preferências (bordas)', () => {
       const res = await patch(app, { theme });
       expect(res.status).toBe(200);
       expect(res.body.data).toMatchObject({ theme });
-      expect(Object.keys(res.body.data).sort()).toEqual(['agingThresholdsAdjusted', 'catalogUpdatedAt', 'displayCurrency', 'fastTurnoverDays', 'fastTurnoverDaysCustom', 'fastTurnoverDaysDefault', 'fxRates', 'fxRefreshSource', 'inventoryView', 'language', 'rateQuotedAt', 'requiredFxCurrencies', 'slowItemDays', 'slowItemDaysCustom', 'slowItemDaysDefault', 'steamStoreId', 'theme', 'updatedAt', 'usdBrlRate', 'usdBrlRateSource', 'usdBrlRateUpdatedAt']);
+      expect(Object.keys(res.body.data).sort()).toEqual(['agingThresholdsAdjusted', 'catalogUpdatedAt', 'displayCurrency', 'fastTurnoverDays', 'fastTurnoverDaysCustom', 'fastTurnoverDaysDefault', 'fxManualRateBounds', 'fxRates', 'fxRefreshSource', 'inventoryDensity', 'inventoryView', 'language', 'rateQuotedAt', 'requiredFxCurrencies', 'slowItemDays', 'slowItemDaysCustom', 'slowItemDaysDefault', 'steamStoreId', 'theme', 'updatedAt', 'usdBrlRate', 'usdBrlRateSource', 'usdBrlRateUpdatedAt']);
     }
     for (const language of ['en', 'pt-BR']) {
       expect((await patch(app, { language })).body.data.language).toBe(language);

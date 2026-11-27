@@ -1,0 +1,7 @@
+.batches { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-3); }
+.batch { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3) var(--space-4); border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface); }
+.head { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+.date { font-weight: var(--fw-bold); margin-inline-end: var(--space-2); }
+.counts { margin: 0; padding-inline-start: var(--space-5); font-size: var(--fs-sm); }
+.actions { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+.muted { color: var(--muted); font-size: var(--fs-sm); margin: 0; }

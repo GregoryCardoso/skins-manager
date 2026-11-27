@@ -93,7 +93,10 @@
       "steamLocked": "Steam mağazanızda {from} cinsinden kayıtlar var ve bunlar dönüştürülemez. Mağaza {from} olarak kalır.",
       "steamNewStore": "Sonraki kayıtlar için {currency} cinsinden yeni bir Steam mağazası oluştur",
       "steamNewStoreHint": "Mevcut mağaza kapatılır ve adı değiştirilir (örneğin \"Steam ({from})\"). Hiçbir şey dönüştürülmez veya silinmez; bakiyesi kârınıza yine dahildir. Yeni mağaza aynı ücretleri ve kuralları kullanır.",
-      "confirm": "{currency} kullan"
+      "confirm": "{currency} kullan",
+      "rateLabel": "Döviz kuru (1 US$ = ___ {currency})",
+      "rateOptional": "İsteğe bağlı. Çevrilmiş değerleri hemen görmek için şimdi gir ya da sonra Ayarlar'dan yap.",
+      "fetchFailed": "{currency} döviz kuru alınamadı. Aşağıya gir ya da sonra Ayarlar'dan yap."
     },
     "groups": {
       "america": "Amerika",
@@ -407,7 +410,8 @@
       "minPrice": "Başabaş fiyatı",
       "actions": "İşlemler",
       "marketValue": "Piyasa değeri ≈",
-      "unrealized": "Gerçekleşmemiş kâr/zarar ≈"
+      "unrealized": "Gerçekleşmemiş kâr/zarar ≈",
+      "turnover": "Devir"
     },
     "primaryStore": "Ana mağaza",
     "otherStores": "Diğer mağazalar",
@@ -439,7 +443,10 @@
       "openNeedsKey": "Önce bu kasanın anahtarını ({keyName}) kaydedin.",
       "openNeedsKeyOther": "Önce bu kasanın anahtarını ({keyName}) kaydedin. Stoktaki anahtarlar bu kasaya uymuyor.",
       "registerKey": "Anahtarı kaydet",
-      "detach": "Anahtarlığı/slab'ı ayır"
+      "detach": "Anahtarlığı/slab'ı ayır",
+      "viewUnits": "Birimleri göster",
+      "moreFor": "{name} için diğer işlemler",
+      "noSellableUnit": "Şu anda hiçbir birim satılamaz: hepsi trade lock altında."
     },
     "itemGone": "Bu eşya artık yok. Başka bir sekmede silinmiş olabilir. Liste yenilendi.",
     "daysForSale": "satışta: {days}",
@@ -473,7 +480,6 @@
       "invalidQuantity": "1 ile {max} arasında bir tam sayı girin.",
       "offSaleConfirm": "Holding'e taşı",
       "forSaleConfirm": "Satışa dön",
-      "selectAll": "Tüm birimleri seç",
       "selectUnit": "{name} (#{id}) seç",
       "selectionBar": "Seçilen birimler",
       "selected": {
@@ -481,7 +487,10 @@
         "one": "{count} seçili",
         "other": "{count} seçili"
       },
-      "clearSelection": "Seçimi temizle"
+      "clearSelection": "Seçimi temizle",
+      "hint": "Birlikte taşımak için birkaç adet işaretleyin.",
+      "limit": "Tek seferde en fazla {max} adet.",
+      "selectGroup": "Ekrandaki {name} adetlerini seç"
     },
     "marketValue": {
       "noPrice": "fiyat yok",
@@ -528,6 +537,38 @@
         "unrealized": "Gerçekleşmemiş kâr/zarar: {value}",
         "coverage": "(fiyatlı: {priced} / {total})"
       }
+    },
+    "density": {
+      "label": "Yoğunluk",
+      "compact": "Sıkı",
+      "comfortable": "Rahat"
+    },
+    "help": {
+      "minPrice": "Zararsız en düşük fiyat: net tutarın maliyeti karşıladığı en düşük fiyat, yalnızca mağazanın satış komisyonuyla.",
+      "convertedCost": "Maliyet, alım gününün kuruyla çevrilmiştir.",
+      "marketValue": "Piyasa değeri: CSFloat tahmini. Satana kadar bakiyende para değildir.",
+      "unrealized": "Gerçekleşmemiş kâr veya zarar: tahmin eksi satış komisyonu ve maliyet. Ancak sattığında gerçek olur.",
+      "priceRange": "Ekrandaki adetlerin başa baş fiyat aralığı. Her adedin kendi maliyeti vardır."
+    },
+    "warnings": {
+      "goToStores": "Mağazalara git",
+      "goToSettings": "Ayarlara git"
+    },
+    "emptyTitle": "Henüz öğe yok",
+    "emptyFilteredTitle": "Eşleşen öğe yok",
+    "toolbar": {
+      "search": "Ada göre ara"
+    },
+    "position": {
+      "label": "Envanter durumu",
+      "forSale": "Satışta (maliyet)",
+      "offSale": "Holding'de (maliyet)",
+      "tradeLocked": "Trade lock altında (adet)",
+      "nextUnlock": "Sonraki açılış: {date}",
+      "stagnant": "Takılı olanlar (adet)",
+      "groups": "Farklı eşya: {count}",
+      "stagnantHint": "Satışta olan, trade lock dışındaki ve takılı sınırını aşan adetler. Holding'deki ve trade lock altındaki eşyalar hiçbir zaman sayılmaz.",
+      "costHelp": "Bu durumdaki tüm stokun maliyeti; filtrelerden ve aramadan bağımsızdır."
     }
   },
   "filters": {
@@ -1093,7 +1134,19 @@
     "steamClear": "Steam mağazam olarak kullanmayı bırak",
     "steamHint": "Steam mağazanız, uygulamanın terminalde ödenen fiyatı kaydettiği mağazadır.",
     "steamSaved": "\"{name}\" artık Steam mağazanız.",
-    "steamCleared": "Steam mağazası seçilmedi."
+    "steamCleared": "Steam mağazası seçilmedi.",
+    "card": {
+      "saleFeeSentence": {
+        "DEDUCTED": "Fiyattan %{rate} düşülür",
+        "ADDED": "Fiyata %{rate} eklenir"
+      },
+      "moreActionsFor": "{name} için diğer işlemler"
+    },
+    "steamTip": {
+      "title": "Steam mağazanı seç",
+      "body": "Terminalleri açmak için, kartın \"Diğer işlemler\" menüsünden hangi mağazanın Steam mağazan olduğunu seç.",
+      "action": "Seç"
+    }
   },
   "storesTable": {
     "columns": {
@@ -1180,7 +1233,20 @@
     "created": "\"{name}\" mağazası oluşturuldu.",
     "updated": "\"{name}\" mağazası güncellendi.",
     "balanceSection": "Satıştan sonra bakiye",
-    "invalidSaleHoldDays": "0 ile 30 arasında bir tam gün sayısı girin."
+    "invalidSaleHoldDays": "0 ile 30 arasında bir tam gün sayısı girin.",
+    "sections": {
+      "identity": "Kimlik",
+      "status": "Durum"
+    },
+    "example": {
+      "title": "Ücret örneği",
+      "deducted": "{price} tutarındaki bir satışta ücret {fee} olur ve sen {net} alırsın.",
+      "added": "Alıcı {price} öder, ücret {fee} olur ve sen {net} alırsın.",
+      "priceLabel": "Örnek fiyat ({currency})",
+      "notConfigured": "Satış ücreti ayarlanmadı: bu mağaza için başabaş fiyatı kullanılamaz.",
+      "incomplete": "Örneği görmek için ücret türünü seç ve oranı gir.",
+      "error": "Örnek hesaplanamadı ({reason})."
+    }
   },
   "settings": {
     "title": "Ayarlar",
@@ -1209,7 +1275,9 @@
       "autoRefreshHint": "Bu kaynakla kur, uygulamayı açtığınızda kendiliğinden güncellenir (her açılışta bir kez). Bir kur girerseniz o geçerli olur ve \"Kuru güncelle\"ye tıklayana kadar uygulama açılırken değişmez.",
       "autoRefreshPausedManual": "Güncel kuru siz girdiğiniz için uygulama açılırken güncellenmez. Yukarıdaki kaynağı yeniden kullanmak için \"Kuru güncelle\"ye tıklayın. Bundan sonra uygulamayı her açtığınızda kendiliğinden güncellenir.",
       "autoFailed": "Uygulama açılırken {currency} kuru güncellenemedi ({reason}). Ayarlar'dan tekrar deneyin.",
-      "autoFailedWithRate": "Uygulama açılırken {currency} kuru güncellenemedi ({reason}). Uygulama son kuru kullandı: {rate}."
+      "autoFailedWithRate": "Uygulama açılırken {currency} kuru güncellenemedi ({reason}). Uygulama son kuru kullandı: {rate}.",
+      "boundsHint": "Kabul edilen aralık: {min} – {max}",
+      "outOfBounds": "Bu kur olağan aralığın dışında. Kaydetmeden önce kontrol et."
     },
     "preferences": {
       "title": "Tercihler",
@@ -1232,7 +1300,9 @@
       "noChanges": "Kaydedilecek bir şey yok.",
       "middle": "Hareketli: {from} ile {to} arası.",
       "adjusted": "Kayıtlı sınırlar mevcut varsayılanla uyuşmuyor. Hızlı devir {fast} olarak hesaplanıyor. Düzeltmek için yeni sınırları kaydedin.",
-      "invalidNumber": "7 gibi bir tam sayı girin."
+      "invalidNumber": "7 gibi bir tam sayı girin.",
+      "scaleTitle": "Aralıklar nasıl görünüyor",
+      "scaleInvalid": "Aralıkları görmek için iki sınır da 1 ≤ hızlı < takılı ≤ 365 koşulunu sağlamalı."
     },
     "catalog": {
       "title": "Eşya kataloğu"
@@ -1260,7 +1330,38 @@
       "copyPath": "Yolu kopyala",
       "pathCopied": "Yol kopyalandı.",
       "copyFailed": "Kopyalanamadı. Yolu seçip elle kopyalayın.",
-      "retention": "Uygulama otomatik yedekleri, veri klasörünün içindeki yedekler klasörüne kaydeder. Her türden en yeni 10 yedeği tutar: yedek içe aktarmadan önce alınanlar ve uygulamayı güncellemeden önce alınanlar."
+      "retention": "Uygulama otomatik yedekleri, veri klasörünün içindeki yedekler klasörüne kaydeder. Her türden en yeni 10 yedeği tutar: yedek içe aktarmadan önce alınanlar ve uygulamayı güncellemeden önce alınanlar.",
+      "preview": {
+        "reading": "Dosya okunuyor…",
+        "fileLine": "Dosya: {file} ({size})",
+        "lastChange": "Dosyada kayıtlı son değişiklik: {date}",
+        "lastChangeUnknown": "Dosyada değişiklik tarihi yok.",
+        "schema": "Veri sürümü: v{version}",
+        "willMigrate": "İçe aktarırken verilerin v{current} sürümüne güncellenecek.",
+        "counts": {
+          "items": {
+            "one": "{count} eşya",
+            "other": "{count} eşya"
+          },
+          "sales": {
+            "one": "{count} satış",
+            "other": "{count} satış"
+          },
+          "stores": {
+            "one": "{count} mağaza",
+            "other": "{count} mağaza"
+          },
+          "deposits": {
+            "one": "{count} para yatırma",
+            "other": "{count} para yatırma"
+          },
+          "withdrawals": {
+            "one": "{count} çekim",
+            "other": "{count} çekim"
+          }
+        },
+        "pickAnother": "Başka dosya seç"
+      }
     },
     "about": {
       "title": "Hakkında",
@@ -1337,10 +1438,40 @@
         "autoPausedUndo": "Uygulama açılırken içe aktarma duraklatıldı, çünkü {date} tarihinde bir içe aktarmayı geri aldınız. Böylece geri alınanlar kendiliğinden dönmez. Dilediğinizde devam ettirin.",
         "autoPausedSwitch": "Uygulama açılırken içe aktarma duraklatıldı, çünkü CSFloat hesabı değiştirildi. Yeni hesabın ilk içe aktarmasını yapın ve devam ettirin.",
         "autoResume": "Uygulama açılırken içe aktarmaya devam et",
-        "reviewImports": "İçe aktarmaları ve incelenecek eşyaları gör"
+        "reviewImports": "İçe aktarmaları ve incelenecek eşyaları gör",
+        "keyValid": {
+          "one": "Geçerli biçim · {count} karakter",
+          "other": "Geçerli biçim · {count} karakter"
+        },
+        "keyTooShort": "Anahtar çok kısa görünüyor. Tamamını kopyaladığını kontrol et.",
+        "keyTooLong": "Anahtar çok uzun görünüyor. Yalnızca anahtarı kopyaladığını kontrol et.",
+        "keyHasSpaces": "Anahtarın ortasında boşluk var. Yeniden kopyala."
       }
     },
-    "loadError": "Ayarlar yüklenemedi ({reason}). Tekrar deneyin."
+    "loadError": "Ayarlar yüklenemedi ({reason}). Tekrar deneyin.",
+    "index": {
+      "label": "Ayar bölümleri"
+    },
+    "status": {
+      "fxCount": {
+        "one": "{count} para birimi",
+        "other": "{count} para birimi"
+      },
+      "fxStale": {
+        "one": "{count} eski",
+        "other": "{count} eski"
+      },
+      "fxMissing": "{currency} kuru eksik",
+      "aging": "Hızlı devir en fazla {fast} · takılı: {slow} üzeri",
+      "csfloatConnected": "CSFloat bağlı",
+      "csfloatNoKey": "CSFloat: anahtar yok",
+      "csfloatReview": {
+        "one": "{count} incelenecek",
+        "other": "{count} incelenecek"
+      },
+      "backupFolder": "Yedek klasörü kullanılabilir",
+      "catalog": "{total} eşya · {date} tarihinde güncellendi"
+    }
   },
   "desktopUpdate": {
     "availableTitle": "Güncelleme var",
@@ -1897,7 +2028,18 @@
       "CREATE_PURCHASE": "Alımı gir",
       "MARK_WON": "Bu eşyayı ben kazandım (drop)",
       "APPLY_FROM_STOCK": "Uygula ve kaydet",
-      "REOPEN": "İncelemeye geri al"
+      "REOPEN": "İncelemeye geri al",
+      "explain": {
+        "REMOVE": "Uygulamada girilen alımı siler veya satışı geri alır. Onay ister.",
+        "KEEP": "Kaydını olduğu gibi bırakır. Uygulama bu takas için uyarmayı bırakır.",
+        "CREATE": "Kopya gibi görünse de bu takası uygulamaya girer.",
+        "LINK": "Bu takası daha önce yaptığın bir kayda bağlar, yenisini oluşturmaz.",
+        "IGNORE": "Şimdilik hiçbir şey yapmaz. Yok sayılanlar sekmesinden geri dönebilirsin.",
+        "CREATE_PURCHASE": "Mağazayı, fiyatı ve tarihi gir. Satış hemen ardından kaydedilir.",
+        "MARK_WON": "Eşyayı maliyeti 0 olarak alınmış sayar ve satışı kaydeder.",
+        "APPLY_FROM_STOCK": "Envanterindeki bir eşyayı bu silahın etiketi veya anahtarlığı olarak kullanır.",
+        "REOPEN": "Takası inceleme listesine geri koyar."
+      }
     },
     "auto": {
       "created": {
@@ -1969,13 +2111,15 @@
       "failed": {
         "one": "{count} trade çözülemedi (aşağıda işaretli). Hiçbir şey kaydedilmedi. Seçimini kaldırıp tekrar deneyin.",
         "other": "{count} trade çözülemedi (aşağıda işaretli). Hiçbir şey kaydedilmedi. Seçimlerini kaldırıp tekrar deneyin."
-      }
+      },
+      "tip": "Birkaç takası birlikte çözmek için işaretle."
     },
     "fullScanConfirm": {
       "title": "Tam tarama yapılsın mı?",
       "body": "Uygulama, son içe aktarmanın durduğu yerde durmadan CSFloat trade geçmişinin ve ekstrenin tamamını yeniden okuyacak. Bu daha fazla istek yapar ve 2 dakikaya kadar sürebilir. Hiçbir şey kopyalanmaz: daha önce içe aktarılan trade'ler kimliğinden tanınır ve kendiniz girdiğiniz kayıtlar float'a (veya eşya, fiyat ve güne) göre bağlanmaya devam eder. Kesme tarihinden ({date}) önceki trade'ler dışarıda kalır; böylece kayıtlarınızda ve para yatırmalarınızda zaten bulunan para iki kez sayılmaz. Daha eski trade'leri içe aktarmak için İçe aktarmalar sayfasında kesme tarihini değiştirin.",
       "componentsNote": "Tarama ayrıca, daha önce içe aktarılan alımların sticker ve anahtarlıklarını bir kez doldurur. Kendiniz kaydettikleriniz değişmez.",
-      "confirm": "Tam taramayı çalıştır"
+      "confirm": "Tam taramayı çalıştır",
+      "timeNote": "Birkaç dakika sürebilir. Uygulamayı açık tut."
     },
     "cutoffChange": {
       "title": "Kesme tarihini değiştir",
@@ -2029,7 +2173,8 @@
         "zero": "satış yok",
         "one": "{count} satış",
         "other": "{count} satış"
-      }
+      },
+      "howItWorks": "Kesme tarihi nasıl çalışır"
     },
     "seeInProfit": "Gerçek kârda gör",
     "txFee": "ücret {value}",
@@ -2054,7 +2199,43 @@
         "other": "Yeni tarihten önceki, henüz içe aktarılmamış {count} para yatırma veya çekim artık içe aktarılmaz. Zaten içe aktarılanlar kalır."
       },
       "history": "Bu içe aktarma, para yatırma ve çekim kesme tarihini belirledi veya değiştirdi."
-    }
+    },
+    "steps": {
+      "title": "Bu eşyaya ne oldu?",
+      "bought": "Satın mı aldın? Alımı gir.",
+      "won": "Drop mu, hediye mi? Alınmış olarak işaretle.",
+      "skip": "Girmek istemiyor musun? Şimdilik yok say."
+    },
+    "tabs": {
+      "label": "İçe aktarma bölümleri",
+      "review": "İncelenecek",
+      "ignored": "Yok sayıldı",
+      "history": "Geçmiş"
+    },
+    "status": {
+      "lastImport": "Son içe aktarma: {date}",
+      "cutoff": "Kesme tarihi: {date}",
+      "noCutoff": "Henüz kesme tarihi yok",
+      "autoOn": "Açılışta içe aktarma: açık",
+      "autoOff": "Açılışta içe aktarma: kapalı",
+      "autoPaused": "Açılışta içe aktarma: duraklatıldı"
+    },
+    "moreOptions": "Diğer seçenekler",
+    "timeline": {
+      "label": "Kesme tarihi zaman çizelgesi",
+      "before": "Önce: içe aktarılmaz",
+      "after": "Sonra: içe aktarılır",
+      "current": "Şimdiki: {date}",
+      "new": "Yeni: {date}",
+      "earlier": "İki tarih arasındaki takaslar içe aktarılmaya başlanacak.",
+      "later": "İki tarih arasındaki takaslar artık içe aktarılmayacak.",
+      "moves": {
+        "one": "Taraf değiştiren takas: {count}",
+        "other": "Taraf değiştiren takas: {count}"
+      }
+    },
+    "ignoredToast": "Takas yok sayıldı.",
+    "ignoredUndo": "Geri al"
   },
   "balanceCheck": {
     "button": "CSFloat ile karşılaştır",
@@ -2132,7 +2313,14 @@
     "step4": "Anahtarı aşağıya yapıştırın, \"Anahtarı kaydet\"e ve ardından \"Bağlantıyı test et\"e tıklayın.",
     "step5": "\"Şimdi içe aktar\"a (aşağıda) veya Envanter'deki \"CSFloat'tan içe aktar\"a tıklayın. Kesme tarihini seçin: uygulamaya her şeyi hangi tarihe kadar girdiniz.",
     "open": "CSFloat'ı aç",
-    "safety": "Anahtar CSFloat hesabınıza erişim verir: kimseyle paylaşmayın. Sızarsa CSFloat'ta silin ve yenisini oluşturun."
+    "safety": "Anahtar CSFloat hesabınıza erişim verir: kimseyle paylaşmayın. Sızarsa CSFloat'ta silin ve yenisini oluşturun.",
+    "illustrationAlt": {
+      "step1": "Çizim: CSFloat adresi olan bir tarayıcı penceresi.",
+      "step2": "Çizim: oturum açmış bir hesabın profil menüsü.",
+      "step3": "Çizim: bir listede oluşturulan anahtar.",
+      "step4": "Çizim: anahtarı kopyalayıp bir alana yapıştırmak.",
+      "step5": "Çizim: anahtarı gizli tutmak için bir kalkan."
+    }
   },
   "openForm": {
     "title": "Aç: {name}",

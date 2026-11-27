@@ -1,21 +1,29 @@
 'use client';
 
-import { moneyErrorParams, moneyInputMode } from '@/lib/currencies';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
-import { useId, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
-import { formatDateTime, formatFloat, formatMoney } from '@/lib/format';
-import { buildLaunchBody, initialLaunchState, setLaunchAcquiredAt, type LaunchErrors, type LaunchFormState } from '@/lib/pendingActions';
+import { moneyErrorParams } from '@/lib/currencies';
 import { addDaysToLocalInput } from '@/lib/dateInput';
+import { formatDateTime, formatFloat, formatMoney } from '@/lib/format';
+import { boundsFor, boundsParams, isOutOfBounds } from '@/lib/fxBounds';
+import { localizedOrName } from '@/lib/itemName';
+import { parseDecimalInput } from '@/lib/numberInput';
+import { buildLaunchBody, initialLaunchState, setLaunchAcquiredAt, type LaunchErrors, type LaunchFormState } from '@/lib/pendingActions';
 import { queryKeys } from '@/lib/queryKeys';
 import { useInvalidate } from '@/lib/useInvalidate';
-import { ApiRequestError, getCsfloatIntegration, listStores, resolveImportEntry } from '@/services/api';
-import { localizedOrName } from '@/lib/itemName';
+import { ApiRequestError, getCsfloatIntegration, getSettings, listStores, resolveImportEntry } from '@/services/api';
 import type { ImportEntryView } from '@/types/api';
-import forms from './forms.module.css';
-import Modal from './Modal';
+import styles from './imports/importModals.module.css';
+import Banner from './ui/Banner';
+import Button from './ui/Button';
+import Dialog from './ui/Dialog';
+import FormErrorSummary, { type FormErrorItem } from './ui/FormErrorSummary';
+import NumberField from './ui/NumberField';
+import Select from './ui/Select';
+import TextField from './ui/TextField';
 
 interface Props {
   entry: ImportEntryView;
@@ -30,16 +38,19 @@ type Problem =
   | { kind: 'UNIT_IN_STOCK'; itemIds: number[] }
   | { kind: 'TEXT'; text: string; field?: keyof LaunchErrors };
 
-// "Lançar compra" de uma "venda sem compra no app" (9.5.1b, D327): a identidade do item vem da pendência (travada); o usuário
-// informa loja, preço, cotação, data e fim do trade lock. Ao salvar, o backend cria a compra e registra a venda na hora.
+const FORM_ID = 'launch-purchase-form';
+
+// "Lançar compra" de uma "venda sem compra no app" (9.5.1b, D327; 12.9): a identidade do item vem da pendência (travada); o usuário
+// informa loja, preço, cotação, data e fim do trade lock. Ao salvar, o backend cria a compra e registra a venda na hora. Os problemas
+// que o backend devolve viram avisos com a saída certa (confirmar mesmo assim, salvar só a compra, ver a unidade em estoque).
 export default function LaunchPurchaseModal({ entry, onClose, onDone }: Props) {
   const t = useT();
   const tLoose = useTLoose();
   const locale = useLocale();
   const invalidate = useInvalidate();
-  const ids = { store: useId(), price: useId(), fx: useId(), acquired: useId(), unlock: useId() };
   const storesQuery = useQuery({ queryKey: queryKeys.stores.all, queryFn: ({ signal }) => listStores(signal) });
   const integrationQuery = useQuery({ queryKey: queryKeys.integrations.csfloat, queryFn: ({ signal }) => getCsfloatIntegration(signal) });
+  const settingsQuery = useQuery({ queryKey: queryKeys.settings.all, queryFn: ({ signal }) => getSettings(signal) });
   const stores = storesQuery.data ?? [];
   const [state, setState] = useState<LaunchFormState | null>(null);
   const [errors, setErrors] = useState<LaunchErrors>({});
@@ -51,6 +62,8 @@ export default function LaunchPurchaseModal({ entry, onClose, onDone }: Props) {
   const { display } = entry;
   const saleAt = display.date;
   const update = (patch: Partial<LaunchFormState>) => form && setState({ ...form, ...patch });
+  const bounds = store && store.currency !== 'USD' ? boundsFor(settingsQuery.data?.fxManualRateBounds, store.currency) : null;
+  const fxOutOfBounds = form ? isOutOfBounds(parseDecimalInput(form.fxRate, locale), bounds) : false;
 
   const send = (options: { confirmWarnings?: boolean; purchaseOnly?: boolean } = {}) => {
     if (!form) return;
@@ -67,7 +80,7 @@ export default function LaunchPurchaseModal({ entry, onClose, onDone }: Props) {
       .then(() => onDone(options.purchaseOnly ? 'PURCHASE_ONLY' : 'CREATED'))
       .catch((err: unknown) => {
         if (err instanceof ApiRequestError) {
-          const params = (err.params ?? {}) as Record<string, unknown>;
+          const params = (err.details ?? err.params ?? {}) as Record<string, unknown>;
           if (err.code === 'IMPORT_ENTRY_WARNINGS_NOT_CONFIRMED') {
             const warning = (params.warnings as { cutoffAt?: string }[] | undefined)?.[0];
             setProblem({ kind: 'WARNING', cutoffAt: warning?.cutoffAt ?? '' });
@@ -103,109 +116,162 @@ export default function LaunchPurchaseModal({ entry, onClose, onDone }: Props) {
   if (display.floatValue !== null) details.push(`float ${formatFloat(display.floatValue, locale)}`);
   if (display.paintSeed !== null) details.push(`seed ${display.paintSeed}`);
   if (display.phase) details.push(display.phase);
-  const fieldError = (field: keyof LaunchErrors) =>
-    errors[field] ? tLoose(errors[field] as string, moneyErrorParams(locale, field === 'price' ? store?.currency : undefined)) : problem?.kind === 'TEXT' && problem.field === field ? problem.text : null;
+
+  const fieldError = (field: keyof LaunchErrors): string | null =>
+    errors[field]
+      ? tLoose(errors[field] as string, moneyErrorParams(locale, field === 'price' ? store?.currency : undefined))
+      : problem?.kind === 'TEXT' && problem.field === field
+        ? problem.text
+        : null;
+
+  const labels: Record<keyof LaunchErrors, string> = {
+    store: t('imports.launch.store'),
+    price: t('imports.launch.price', { currency: store?.currency ?? '' }),
+    fxRate: store ? t('imports.launch.fxRate', { currency: store.currency }) : '',
+    acquiredAt: t('imports.launch.acquiredAt'),
+    tradeUnlockAt: t('imports.launch.tradeUnlockAt'),
+  };
+  const summary: FormErrorItem[] = (Object.keys(labels) as (keyof LaunchErrors)[])
+    .filter((field) => fieldError(field) !== null)
+    .map((field) => ({ field, label: labels[field], message: fieldError(field) as string }));
 
   return (
-    <Modal title={t('imports.launch.title')} onClose={onClose} busy={busy}>
-      <form className={forms.form} onSubmit={submit} noValidate>
-        <div>
-          <p><strong>{display.name ? localizedOrName(display.name, display.localizedName) : display.marketHashName}</strong></p>
-          {details.length > 0 && <p className={forms.hint}>{details.join(' · ')}</p>}
-          <p className={forms.hint}>
+    <Dialog
+      title={t('imports.launch.title')}
+      onClose={onClose}
+      busy={busy}
+      footer={(
+        <>
+          <Button onClick={onClose} disabled={busy}>{t('common.cancel')}</Button>
+          <Button type="submit" form={FORM_ID} variant="primary" loading={busy} disabled={!form}>
+            {busy ? t('common.saving') : t('imports.launch.submit')}
+          </Button>
+        </>
+      )}
+    >
+      <form id={FORM_ID} className={styles.form} onSubmit={submit} noValidate>
+        <FormErrorSummary errors={summary} />
+        <div className={styles.identity}>
+          <p className={styles.identityName}>{display.name ? localizedOrName(display.name, display.localizedName) : display.marketHashName}</p>
+          {details.length > 0 && <p className={styles.muted}>{details.join(' · ')}</p>}
+          <p className={styles.muted}>
             {t('imports.launch.saleInfo', {
               price: display.priceCents !== null ? formatMoney(display.priceCents, display.currency, locale) : '',
               date: saleAt ? formatDateTime(saleAt, locale) : '',
             })}
           </p>
-          <p className={forms.hint}>{t('imports.launch.identityLocked')}</p>
+          <p className={styles.muted}>{t('imports.launch.identityLocked')}</p>
         </div>
         {!form ? <p>{t('common.loading')}</p> : (
           <>
-            <label className={forms.field} htmlFor={ids.store}>
-              <span>{t('imports.launch.store')}</span>
-              <select className={forms.input} id={ids.store} value={form.storeId ?? ''} onChange={(e) => update({ storeId: e.target.value ? Number(e.target.value) : null })} disabled={busy}>
-                {stores.filter((s) => s.isActive).map((s) => <option key={s.id} value={s.id}>{s.name} ({s.currency})</option>)}
-              </select>
-              {fieldError('store') && <span className={forms.error}>{fieldError('store')}</span>}
-            </label>
-            <label className={forms.field} htmlFor={ids.price}>
-              <span>{t('imports.launch.price', { currency: store?.currency ?? '' })}</span>
-              <input className={forms.input} id={ids.price} inputMode={moneyInputMode(store?.currency)} value={form.price} onChange={(e) => update({ price: e.target.value })} disabled={busy} autoFocus />
-              {fieldError('price') && <span className={forms.error}>{fieldError('price')}</span>}
-            </label>
+            <Select
+              label={t('imports.launch.store')}
+              name="store"
+              value={form.storeId === null ? '' : String(form.storeId)}
+              onChange={(value) => update({ storeId: value ? Number(value) : null })}
+              options={stores.filter((s) => s.isActive).map((s) => ({ value: String(s.id), label: `${s.name} (${s.currency})` }))}
+              error={fieldError('store')}
+              disabled={busy}
+              required
+              full
+            />
+            <NumberField
+              kind="money"
+              currency={store?.currency}
+              label={t('imports.launch.price', { currency: store?.currency ?? '' })}
+              name="price"
+              value={form.price}
+              onValueChange={(text) => update({ price: text })}
+              error={fieldError('price')}
+              disabled={busy}
+              required
+              full
+            />
             {store && store.currency !== 'USD' && (
-              <label className={forms.field} htmlFor={ids.fx}>
-                <span>{t('imports.launch.fxRate', { currency: store.currency })}</span>
-                <input className={forms.input} id={ids.fx} inputMode="decimal" value={form.fxRate} onChange={(e) => update({ fxRate: e.target.value })} disabled={busy} />
-                {fieldError('fxRate') && <span className={forms.error}>{fieldError('fxRate')}</span>}
-              </label>
+              <NumberField
+                kind="decimal"
+                label={t('imports.launch.fxRate', { currency: store.currency })}
+                name="fxRate"
+                value={form.fxRate}
+                onValueChange={(text) => update({ fxRate: text })}
+                error={fieldError('fxRate')}
+                hint={bounds ? (
+                  <>
+                    <span>{t('settings.fx.boundsHint', boundsParams(bounds, locale))}</span>
+                    {fxOutOfBounds && <span> {t('settings.fx.outOfBounds', boundsParams(bounds, locale))}</span>}
+                  </>
+                ) : undefined}
+                disabled={busy}
+                optional
+                full
+              />
             )}
-            <label className={forms.field} htmlFor={ids.acquired}>
-              <span>{t('imports.launch.acquiredAt')}</span>
-              <input className={forms.input} id={ids.acquired} type="datetime-local" value={form.acquiredAt} onChange={(e) => setState(setLaunchAcquiredAt(form, e.target.value))} disabled={busy} />
-              <span className={forms.hint}>{t('imports.launch.acquiredHint')}</span>
-              {fieldError('acquiredAt') && <span className={forms.error}>{fieldError('acquiredAt')}</span>}
-            </label>
-            <label className={forms.field} htmlFor={ids.unlock}>
-              <span>{t('imports.launch.tradeUnlockAt')}</span>
-              <input
-                id={ids.unlock}
+            <TextField
+              label={t('imports.launch.acquiredAt')}
+              name="acquiredAt"
+              type="datetime-local"
+              value={form.acquiredAt}
+              onChange={(value) => setState(setLaunchAcquiredAt(form, value))}
+              hint={t('imports.launch.acquiredHint')}
+              error={fieldError('acquiredAt')}
+              disabled={busy}
+              required
+              full
+            />
+            <div className={styles.stack}>
+              <TextField
+                label={t('imports.launch.tradeUnlockAt')}
+                name="tradeUnlockAt"
                 type="datetime-local"
                 value={form.tradeUnlockAt}
-                onChange={(e) => update({ tradeUnlockAt: e.target.value, unlockEdited: true })}
+                onChange={(value) => update({ tradeUnlockAt: value, unlockEdited: true })}
+                hint={t('imports.launch.unlockHint', { date: saleAt ? formatDateTime(saleAt, locale) : '' })}
+                error={fieldError('tradeUnlockAt')}
                 disabled={busy}
+                optional
+                full
               />
-              <span className={forms.hint}>
-                {t('imports.launch.unlockHint', { date: saleAt ? formatDateTime(saleAt, locale) : '' })}
-                {' '}
-                <button
-                  type="button"
-                  className={forms.linkButton}
+              <div>
+                <Button
+                  size="sm"
                   disabled={busy || form.acquiredAt === ''}
                   onClick={() => update({ tradeUnlockAt: addDaysToLocalInput(form.acquiredAt, 7), unlockEdited: true })}
                 >
                   {t('imports.launch.plusSeven')}
-                </button>
-              </span>
-              {fieldError('tradeUnlockAt') && <span className={forms.error}>{fieldError('tradeUnlockAt')}</span>}
-            </label>
+                </Button>
+              </div>
+            </div>
           </>
         )}
 
-        {problem?.kind === 'TEXT' && !problem.field && <div className={forms.topError} role="alert">{problem.text}</div>}
+        {problem?.kind === 'TEXT' && !problem.field && <Banner tone="danger">{problem.text}</Banner>}
         {problem?.kind === 'WARNING' && (
-          <div className={forms.topError} role="alert">
+          <Banner tone="warning">
             <p>{t('imports.launch.warnBeforeCutoff', { date: problem.cutoffAt ? formatDateTime(problem.cutoffAt, locale) : '' })}</p>
-            <button type="button" className={forms.button} disabled={busy} onClick={() => send({ confirmWarnings: true })}>
-              {t('imports.launch.confirmAnyway')}
-            </button>
-          </div>
+            <div className={styles.inlineAction}>
+              <Button size="sm" disabled={busy} onClick={() => send({ confirmWarnings: true })}>{t('imports.launch.confirmAnyway')}</Button>
+            </div>
+          </Banner>
         )}
         {problem?.kind === 'NO_CREDIT' && (
-          <div className={forms.topError} role="alert">
+          <Banner tone="warning">
             <p>{t('imports.launch.noCredit')}</p>
-            <button type="button" className={forms.button} disabled={busy} onClick={() => send({ confirmWarnings: true, purchaseOnly: true })}>
-              {t('imports.launch.purchaseOnly')}
-            </button>
-          </div>
+            <div className={styles.inlineAction}>
+              <Button size="sm" disabled={busy} onClick={() => send({ confirmWarnings: true, purchaseOnly: true })}>{t('imports.launch.purchaseOnly')}</Button>
+            </div>
+          </Banner>
         )}
         {problem?.kind === 'UNIT_IN_STOCK' && (
-          <div className={forms.topError} role="alert">
+          <Banner tone="warning">
             <p>{t('imports.launch.unitInStock')}</p>
-            {problem.itemIds.map((itemId) => (
-              <Link key={itemId} href={`/?item=${itemId}`} onClick={onClose}>{t('imports.seeCandidate', { id: itemId })}</Link>
-            ))}
-          </div>
+            <div className={styles.links}>
+              {problem.itemIds.map((itemId) => (
+                <Link key={itemId} href={`/?item=${itemId}`} onClick={onClose}>{t('imports.seeCandidate', { id: itemId })}</Link>
+              ))}
+            </div>
+          </Banner>
         )}
-
-        <div className={forms.actions}>
-          <button type="button" className={forms.button} onClick={onClose} disabled={busy}>{t('common.cancel')}</button>
-          <button type="submit" className={`${forms.button} ${forms.primary}`} disabled={busy || !form}>
-            {busy ? t('common.saving') : t('imports.launch.submit')}
-          </button>
-        </div>
       </form>
-    </Modal>
+    </Dialog>
   );
 }

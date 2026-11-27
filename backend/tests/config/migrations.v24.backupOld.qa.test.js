@@ -54,7 +54,7 @@ describe.each([20, 22, 23])('backup v%i', (version) => {
     await request(app).patch('/api/settings').send({ displayCurrency: 'JPY' }).expect(200); // o banco atual está em outra moeda
     const res = await octet(makeBackup(`v${version}.sqlite`, version, { rate: 5.2, source: 'PTAX', refresh: 'PTAX' }));
     expect(res.status).toBe(200);
-    expect(res.body.data).toMatchObject({ fileVersion: version, schemaVersion: 26 });
+    expect(res.body.data).toMatchObject({ fileVersion: version, schemaVersion: 27 });
     expect(res.body.data.migrationsApplied).toContain(24);
     const s = await settings();
     expect(s.displayCurrency).toBe('BRL');

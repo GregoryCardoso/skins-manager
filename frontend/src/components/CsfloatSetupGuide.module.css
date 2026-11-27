@@ -1,12 +1,17 @@
-/* Passo a passo para ligar o CSFloat (configurações). */
-.guide { border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: 8px; padding: 0.6rem 0.8rem; margin: 0.5rem 0; }
-.title { margin: 0 0 0.3rem; font-weight: 600; }
-.steps { margin: 0.2rem 0 0.4rem; padding-left: 1.3rem; }
-.steps li { margin: 0.15rem 0; }
+/* Passo a passo para ligar o CSFloat (12.9): grade de 2 colunas na largura do card; 1 coluna quando o card é estreito. */
+.guide { container-type: inline-size; display: flex; flex-direction: column; gap: var(--space-3); }
+.title { margin: 0; font-weight: var(--fw-bold); }
+.steps { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); counter-reset: step; }
+.step { counter-increment: step; display: flex; gap: var(--space-3); align-items: flex-start; min-width: 0; }
+.text { display: flex; flex-direction: column; gap: var(--space-2); align-items: flex-start; min-width: 0; }
+.stepText { margin: 0; overflow-wrap: anywhere; }
+.stepText::before { content: counter(step) '. '; font-weight: var(--fw-bold); }
 .open {
-  display: inline-block; padding: 0.3rem 0.8rem; border: 1px solid var(--accent); border-radius: 6px; color: var(--accent);
-  text-decoration: none;
+  display: inline-flex; align-items: center; gap: var(--space-2); min-height: var(--control-h-sm); padding: 0 var(--space-3);
+  border: 1px solid var(--brand); border-radius: var(--radius-md); color: var(--text); text-decoration: none; font-size: var(--fs-sm); font-weight: var(--fw-bold);
 }
-.open:hover { background: var(--surface); }
-.safety { margin: 0.4rem 0 0; color: var(--text-muted); font-size: 0.85rem; }
-.details summary { cursor: pointer; color: var(--accent); }
+.open:hover { background: var(--brand-soft); }
+.open:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+@container (width < 720px) {
+  .steps { grid-template-columns: minmax(0, 1fr); }
+}

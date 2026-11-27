@@ -6,6 +6,7 @@ const path = require('path');
 const DatabaseFile = require('../models/DatabaseFile');
 const { MIGRATIONS } = require('../config/migrations');
 const { SQLITE_APPLICATION_ID } = require('../config/constants');
+const { APP_VERSION } = require('../config/appInfo');
 const {
   IMPORT_BACKUP_PREFIX,
   MIGRATION_BACKUP_PREFIX,
@@ -65,6 +66,24 @@ function assessBackupFile(info, latestVersion) {
   }
   if (userVersion >= 4 && applicationId !== SQLITE_APPLICATION_ID) return invalid;
   return { accepted: true };
+}
+
+// Resumo para a prévia da importação (12.8), puro. `info`: o arquivo inspecionado ({ userVersion }); `raw`: o que o model leu
+// ({ items, sales, stores, deposits, withdrawals, lastUpdates[] }); `ctx`: { latestVersion, appVersion, sizeBytes }.
+// `exportedAt`: o arquivo não guarda a data da exportação; usa-se a última alteração registrada (maior `updated_at`) ou null.
+function summarizeBackup(info, raw, { latestVersion, appVersion, sizeBytes }) {
+  const dates = (Array.isArray(raw.lastUpdates) ? raw.lastUpdates : []).filter((v) => typeof v === 'string' && !Number.isNaN(Date.parse(v)));
+  const last = dates.reduce((best, v) => (best === null || Date.parse(v) > Date.parse(best) ? v : best), null);
+  const migrationsToApply = MIGRATIONS.map((m) => m.version).filter((v) => v > info.userVersion && v <= latestVersion);
+  return {
+    exportedAt: last === null ? null : new Date(last).toISOString(),
+    schemaVersion: info.userVersion,
+    currentSchemaVersion: latestVersion,
+    migrationsToApply,
+    appVersion,
+    sizeBytes,
+    counts: { items: raw.items, stores: raw.stores, sales: raw.sales, deposits: raw.deposits, withdrawals: raw.withdrawals },
+  };
 }
 
 function hasSqliteSignature(buffer) {
@@ -277,6 +296,30 @@ function importBackup(buffer, { now = new Date() } = {}) {
   }
 }
 
+// Prévia da importação (12.8): mesmas verificações da importação, na mesma ordem (menos a trava de operações longas, porque a prévia
+// não toca no banco aberto), sem gravar nada. O arquivo temporário some em todos os caminhos.
+function previewBackup(buffer) {
+  ensureFileDatabase();
+  if (!hasSqliteSignature(buffer)) {
+    throw new ValidationError('O arquivo não é um banco SQLite.', 'BACKUP_INVALID_FILE');
+  }
+  const latestVersion = DatabaseFile.getLatestSchemaVersion();
+  const tempPath = tempFilePath('preview');
+  try {
+    fs.writeFileSync(tempPath, buffer);
+    const info = inspectUploadedCopy(tempPath, latestVersion);
+    let raw;
+    try {
+      raw = DatabaseFile.readBackupSummary(tempPath);
+    } catch (err) {
+      throw new ValidationError('O arquivo está corrompido ou não é um banco de dados válido.', 'BACKUP_CORRUPTED');
+    }
+    return summarizeBackup(info, raw, { latestVersion, appVersion: APP_VERSION, sizeBytes: buffer.length });
+  } finally {
+    removeQuietly(tempPath);
+  }
+}
+
 // --- Pasta de backups (D175) ----------------------------------------------------------------------
 
 function backupsDirPath() {
@@ -325,4 +368,6 @@ module.exports = {
   isExportInProgress,
   createExport,
   importBackup,
+  previewBackup,
+  summarizeBackup,
 };

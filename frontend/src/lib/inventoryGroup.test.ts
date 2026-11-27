@@ -101,7 +101,7 @@ describe('textos do holding (D282)', () => {
     expect(page).toContain('listItemGroups');
     expect(page).toMatch(/enabled: grouped/);
     expect(page).toMatch(/enabled: !grouped/);
-    const files = ['components/InventoryGroupTable.tsx', 'components/InventoryViewToggle.tsx', 'components/InventoryUnitRow.tsx'];
+    const files = ['components/InventoryGroupTable.tsx', 'components/inventory/InventoryToolbar.tsx', 'lib/inventoryColumns.tsx'];
     for (const f of files) expect(readFileSync(path.join(__dirname, '..', f), 'utf8').length).toBeGreaterThan(100);
   });
 });

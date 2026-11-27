@@ -69,7 +69,7 @@ describe('migração v10', () => {
     const snapshot = seedV9(dbPath);
     const db = openDatabase(dbPath, { now: NOW });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(26);
+      expect(db.pragma('user_version', { simple: true })).toBe(27);
       expect(db.pragma('foreign_key_check')).toEqual([]);
       const rows = db.prepare('SELECT * FROM items ORDER BY id').all();
       expect(rows).toHaveLength(snapshot.items.length);
@@ -95,7 +95,7 @@ describe('migração v10', () => {
     const csfSeed = seedV9(dbPath, version);
     const db = openDatabase(dbPath, { now: NOW });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(26);
+      expect(db.pragma('user_version', { simple: true })).toBe(27);
       expect(db.prepare('SELECT COUNT(*) AS n FROM items').get().n).toBe(csfSeed.items.length);
       expect(db.prepare('SELECT COUNT(*) AS n FROM items WHERE off_sale_at IS NOT NULL OR for_sale_since IS NOT NULL').get().n).toBe(0);
     } finally {

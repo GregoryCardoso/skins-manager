@@ -7,6 +7,7 @@ import {
   groupMarketCell, groupUnrealizedCell, signOf, tabSummary, unitMarketCell, unitUnrealizedCell, type Sign,
 } from '@/lib/marketValueDisplay';
 import type { MarketValue, MarketValueTotals } from '@/types/api';
+import HelpTip from './ui/HelpTip';
 import styles from './MarketValueCell.module.css';
 import { useMarketSummary } from './useMarketSummary';
 
@@ -23,11 +24,13 @@ function useSignedMoney() {
 
 const signClass = (sign: Sign) => (sign === 'POSITIVE' ? styles.positive : sign === 'NEGATIVE' ? styles.negative : '');
 
-function Hinted({ title, children }: { title: string | null; children: ReactNode }) {
+// A explicação vai num HelpTip (abre com teclado e toque), no lugar do `title` (D370, 12.5a).
+function Hinted({ title, topic = 'marketValue', children }: { title: string | null; topic?: 'marketValue' | 'unrealized'; children: ReactNode }) {
+  const t = useT();
   return (
-    <span className={styles.cell} title={title ?? undefined}>
-      {children}
-      {title && <span className={styles.srOnly}>{title}</span>}
+    <span className={styles.hinted}>
+      <span className={styles.cell}>{children}</span>
+      {title && <HelpTip topic={t(topic === 'unrealized' ? 'inventory.columns.unrealized' : 'inventory.columns.marketValue')}>{title}</HelpTip>}
     </span>
   );
 }
@@ -93,13 +96,13 @@ export function UnitUnrealizedCell({ marketValue }: { marketValue: MarketValue |
   if (view.kind === 'NET_UNAVAILABLE') {
     const reason = tLoose(`inventory.marketValue.netUnavailable.${view.reason ?? 'NET_NOT_COMPUTABLE'}`);
     return (
-      <Hinted title={[reason, gross(view.grossCents)].filter(Boolean).join(' · ')}>
+      <Hinted topic="unrealized" title={[reason, gross(view.grossCents)].filter(Boolean).join(' · ')}>
         <span className={styles.muted}>{t('common.none')}</span>
       </Hinted>
     );
   }
   return (
-    <Hinted title={[t('inventory.marketValue.unrealizedHint'), gross(view.grossCents)].filter(Boolean).join(' · ')}>
+    <Hinted topic="unrealized" title={[t('inventory.marketValue.unrealizedHint'), gross(view.grossCents)].filter(Boolean).join(' · ')}>
       <span className={`${styles.main} ${signClass(view.sign)}`}>{t('common.approx', { value: signed(view.cents, view.sign) })}</span>
       <ApproxLine cents={view.approxCents} currency={view.approxCurrency} />
     </Hinted>
@@ -138,13 +141,13 @@ export function GroupUnrealizedCell({ totals }: { totals: MarketValueTotals | nu
   const gross = t('inventory.marketValue.gross', { value: signed(view.grossCents) });
   if (view.kind === 'NET_UNAVAILABLE') {
     return (
-      <Hinted title={[t('inventory.marketValue.netUnavailable.GROUP'), gross, t('inventory.marketValue.groupOnlyPriced')].join(' · ')}>
+      <Hinted topic="unrealized" title={[t('inventory.marketValue.netUnavailable.GROUP'), gross, t('inventory.marketValue.groupOnlyPriced')].join(' · ')}>
         <span className={styles.muted}>{t('common.none')}</span>
       </Hinted>
     );
   }
   return (
-    <Hinted title={[t('inventory.marketValue.unrealizedHint'), gross, t('inventory.marketValue.groupOnlyPriced')].join(' · ')}>
+    <Hinted topic="unrealized" title={[t('inventory.marketValue.unrealizedHint'), gross, t('inventory.marketValue.groupOnlyPriced')].join(' · ')}>
       <span className={`${styles.main} ${signClass(view.sign)}`}>{t('common.approx', { value: signed(view.cents, view.sign) })}</span>
       <ApproxLine cents={view.approxCents} currency={view.approxCurrency} />
       {view.partial && <small className={styles.side}>{t('inventory.marketValue.partial')}</small>}

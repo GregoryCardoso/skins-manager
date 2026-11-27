@@ -2,7 +2,7 @@
 
 import { useT } from '@/i18n/I18nProvider';
 import { isMachineTranslated } from '@/i18n/languages';
-import styles from './settings.module.css';
+import styles from './TranslationNotice.module.css';
 
 // Endereço fixo das Issues do projeto. Só https: o desktop abre no navegador padrão.
 export const ISSUES_URL = 'https://github.com/GregoryCardoso/skins-manager/issues';
@@ -15,9 +15,9 @@ export default function TranslationNotice({ language }: { language: string }) {
   if (!isMachineTranslated(language)) return null;
   const [before, after = ''] = t('settings.preferences.translationNotice', { link: LINK_TOKEN }).split(LINK_TOKEN);
   return (
-    <p className={styles.muted} data-testid="translation-notice">
+    <p className={styles.notice} data-testid="translation-notice">
       {before}
-      <a className={styles.noticeLink} href={ISSUES_URL} target="_blank" rel="noopener noreferrer">
+      <a className={styles.link} href={ISSUES_URL} target="_blank" rel="noopener noreferrer">
         {t('settings.preferences.translationNoticeLink')}
       </a>
       {after}

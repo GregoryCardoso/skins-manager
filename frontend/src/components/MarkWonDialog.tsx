@@ -1,10 +1,14 @@
 'use client';
 
-import { useId, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useT, useTPlural } from '@/i18n/I18nProvider';
 import { localInputToIso } from '@/lib/dateInput';
-import forms from './forms.module.css';
-import Modal from './Modal';
+import styles from './imports/importModals.module.css';
+import Banner from './ui/Banner';
+import Button from './ui/Button';
+import Dialog from './ui/Dialog';
+import SegmentedControl from './ui/SegmentedControl';
+import TextField from './ui/TextField';
 
 interface Props {
   count: number;
@@ -15,18 +19,19 @@ interface Props {
   onCancel: () => void;
 }
 
-// "Foi drop (ganhei)" (9.5.1b, D328), de uma ou de várias pendências: custo 0, sem trade lock, venda registrada na hora.
+const FORM_ID = 'mark-won-form';
+
+// "Foi drop (ganhei)" (9.5.1b, D328; 12.9), de uma ou de várias pendências: custo 0, sem trade lock, venda registrada na hora.
 export default function MarkWonDialog({ count, busy, error, onConfirm, onCancel }: Props) {
   const t = useT();
   const tPlural = useTPlural();
-  const dateId = useId();
-  const [custom, setCustom] = useState(false);
+  const [mode, setMode] = useState<'SALE' | 'OTHER'>('SALE');
   const [date, setDate] = useState('');
   const [dateError, setDateError] = useState<string | null>(null);
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    if (!custom) {
+    if (mode === 'SALE') {
       onConfirm(null);
       return;
     }
@@ -40,33 +45,36 @@ export default function MarkWonDialog({ count, busy, error, onConfirm, onCancel 
   };
 
   return (
-    <Modal title={t('imports.won.title')} onClose={onCancel} busy={busy}>
-      <form className={forms.form} onSubmit={submit} noValidate>
+    <Dialog
+      title={t('imports.won.title')}
+      size="sm"
+      onClose={onCancel}
+      busy={busy}
+      footer={(
+        <>
+          <Button onClick={onCancel} disabled={busy}>{t('common.cancel')}</Button>
+          <Button type="submit" form={FORM_ID} variant="primary" loading={busy}>{busy ? t('common.saving') : t('imports.won.confirm')}</Button>
+        </>
+      )}
+    >
+      <form id={FORM_ID} className={styles.form} onSubmit={submit} noValidate>
         <p>{tPlural('imports.won.body', count)}</p>
-        <label className={forms.radioRow}>
-          <input type="radio" name="won-date" checked={!custom} onChange={() => setCustom(false)} disabled={busy} />
-          {t('imports.won.saleDate')}
-        </label>
-        <label className={forms.radioRow}>
-          <input type="radio" name="won-date" checked={custom} onChange={() => setCustom(true)} disabled={busy} />
-          {t('imports.won.customDate')}
-        </label>
-        {custom && (
-          <label className={forms.field} htmlFor={dateId}>
-            <span>{t('imports.won.acquiredAt')}</span>
-            <input className={forms.input} id={dateId} type="datetime-local" value={date} onChange={(e) => setDate(e.target.value)} disabled={busy} />
-            {dateError && <span className={forms.error}>{dateError}</span>}
-          </label>
+        <SegmentedControl
+          label={t('imports.won.title')}
+          value={mode}
+          onChange={setMode}
+          disabled={busy}
+          options={[
+            { value: 'SALE', label: t('imports.won.saleDate') },
+            { value: 'OTHER', label: t('imports.won.customDate') },
+          ]}
+        />
+        {mode === 'OTHER' && (
+          <TextField label={t('imports.won.acquiredAt')} type="datetime-local" value={date} onChange={setDate} error={dateError} disabled={busy} autoFocus full />
         )}
-        <p className={forms.hint}>{t('imports.won.turnoverHint', { days: tPlural('common.dayCount', 0) })}</p>
-        {error && <div className={forms.topError} role="alert">{error}</div>}
-        <div className={forms.actions}>
-          <button type="button" className={forms.button} onClick={onCancel} disabled={busy}>{t('common.cancel')}</button>
-          <button type="submit" className={`${forms.button} ${forms.primary}`} disabled={busy}>
-            {busy ? t('common.saving') : t('imports.won.confirm')}
-          </button>
-        </div>
+        <p className={styles.help}>{t('imports.won.turnoverHint', { days: tPlural('common.dayCount', 0) })}</p>
+        {error && <Banner tone="danger">{error}</Banner>}
       </form>
-    </Modal>
+    </Dialog>
   );
 }

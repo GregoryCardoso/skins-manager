@@ -67,7 +67,7 @@ describe('importar backups v22, v23 e v24 na v25', () => {
     const { buffer, rows } = makeBackup(version);
     const res = await octet(buffer);
     expect(res.status).toBe(200);
-    expect(res.body.data).toMatchObject({ fileVersion: version, schemaVersion: 26 });
+    expect(res.body.data).toMatchObject({ fileVersion: version, schemaVersion: 27 });
     expect(res.body.data.migrationsApplied).toEqual(MIGRATIONS.filter((m) => m.version > version).map((m) => m.version));
     const db = database.getDb();
     expect(db.pragma('foreign_key_check')).toEqual([]);
@@ -99,7 +99,7 @@ describe('importar backups v22, v23 e v24 na v25', () => {
     });
     const res = await octet(exported);
     expect(res.status).toBe(200);
-    expect(res.body.data).toMatchObject({ fileVersion: 26, schemaVersion: 26, migrationsApplied: [] });
+    expect(res.body.data).toMatchObject({ fileVersion: 27, schemaVersion: 27, migrationsApplied: [] });
     expect(database.getDb().prepare('SELECT * FROM items ORDER BY id').all()).toEqual(before);
   });
 });

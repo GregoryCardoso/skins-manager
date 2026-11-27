@@ -16,7 +16,7 @@ afterAll(() => { try { fs.rmSync(tmpRoot, { recursive: true, force: true }); } c
 
 const dumpTables = (db) => Object.fromEntries(
   db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all()
-    .map((r) => [r.name, db.prepare(`SELECT * FROM ${r.name} ORDER BY 1`).all()])
+    .map((r) => [r.name, db.prepare(`SELECT * FROM ${r.name} ORDER BY 1`).all().map(({ inventory_density: _dn, ...r }) => r)])
 );
 const masterOf = (db) => Object.fromEntries(
   db.prepare("SELECT type, name, tbl_name, sql FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' ORDER BY name").all().map((r) => [`${r.type}:${r.name}`, r])
@@ -97,7 +97,7 @@ describe('v25 sobre um banco v24 cheio', () => {
   test('todas as tabelas ficam com linhas idênticas (só as colunas novas de aportes e saques, em BRL)', () => {
     const after = dumpTables(db);
     delete after.catalog_item_names; // tabela da v026
-    expect(db.pragma('user_version', { simple: true })).toBe(26);
+    expect(db.pragma('user_version', { simple: true })).toBe(27);
     for (const name of Object.keys(ctx.tables)) {
       if (name === 'deposits' || name === 'withdrawals') expect(stripNewColumn(after[name])).toEqual(ctx.tables[name]);
       else expect({ [name]: after[name] }).toEqual({ [name]: ctx.tables[name] });
@@ -119,7 +119,7 @@ describe('v25 sobre um banco v24 cheio', () => {
     delete after['table:catalog_item_names']; // tabela da v026
     expect(Object.keys(after).sort()).toEqual(Object.keys(ctx.master).sort());
     const changed = Object.keys(after).filter((key) => JSON.stringify(after[key]) !== JSON.stringify(ctx.master[key])).sort();
-    expect(changed).toEqual(['table:deposits', 'table:items', 'table:stores', 'table:withdrawals']);
+    expect(changed).toEqual(['table:deposits', 'table:items', 'table:settings', 'table:stores', 'table:withdrawals']) // settings: coluna da v027;
     expect(after['table:stores'].sql).not.toMatch(/IN \('USD','BRL'\)/);
     expect(after['table:items'].sql).not.toMatch(/IN \('USD','BRL'\)/);
     expect(after['table:stores'].sql).toMatch(/AUTOINCREMENT/);

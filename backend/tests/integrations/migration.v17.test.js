@@ -25,7 +25,7 @@ const snapshot = (d) => ({
   items: d.prepare('SELECT * FROM items ORDER BY id').all(),
   deposits: d.prepare('SELECT * FROM deposits ORDER BY id').all().map(({ amount_brl_currency: _abc, ...r }) => r),
   stores: d.prepare('SELECT * FROM stores ORDER BY id').all(),
-  settings: d.prepare('SELECT * FROM settings').all().map(({ steam_store_id: _steam, price_refresh_started_at: _p1, price_refresh_last_at: _p2, price_refresh_last_status: _p3, price_refresh_last_error_code: _p4, display_currency: _dc, ...r }) => r),
+  settings: d.prepare('SELECT * FROM settings').all().map(({ steam_store_id: _steam, price_refresh_started_at: _p1, price_refresh_last_at: _p2, price_refresh_last_status: _p3, price_refresh_last_error_code: _p4, display_currency: _dc, inventory_density: _dn, ...r }) => r),
 });
 
 // Banco v16 com itens variados: em estoque, vendido, fora de venda, GANHEI, FACA, CAIXA, com float/pattern, mais um aporte.
@@ -69,7 +69,7 @@ test('v17 sobre v16 com dados variados: itens, aportes, lojas e configurações 
   const before = seedV16(dbPath);
   const db = openDatabase(dbPath, { now: new Date('2026-11-23T12:00:00.000Z') });
   try {
-    expect(db.pragma('user_version', { simple: true })).toBe(26);
+    expect(db.pragma('user_version', { simple: true })).toBe(27);
     const after = snapshot(db);
     expect(withoutNewColumn(after.items)).toEqual(before.items);
     expect(after.deposits).toEqual(before.deposits);
@@ -95,7 +95,7 @@ test('reabrir um banco já na v17 não reaplica a migração nem cria outro back
   const first = count();
   const reopened = openDatabase(dbPath);
   try {
-    expect(reopened.pragma('user_version', { simple: true })).toBe(26);
+    expect(reopened.pragma('user_version', { simple: true })).toBe(27);
   } finally {
     reopened.close();
   }
@@ -126,7 +126,7 @@ test('v17 falha no meio: rollback total (sem tabelas nem coluna), versão 16 e d
   }
   const ok = openDatabase(dbPath);
   try {
-    expect(ok.pragma('user_version', { simple: true })).toBe(26);
+    expect(ok.pragma('user_version', { simple: true })).toBe(27);
     expect(ok.prepare('SELECT COUNT(*) n FROM items').get().n).toBe(before.items.length);
   } finally {
     ok.close();

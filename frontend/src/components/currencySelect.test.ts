@@ -19,18 +19,19 @@ describe('seletor (menu e Configurações)', () => {
     expect(prefsNav).toMatch(/<NavCurrencyPicker /);
     expect(prefsNav.indexOf('setLanguage(')).toBeLessThan(prefsNav.indexOf('<NavCurrencyPicker'));
     const prefs = read('components/PreferencesSettings.tsx');
-    expect(prefs).toMatch(/<CurrencySelect id=\{currencyId\}/);
-    expect(prefs).toMatch(/currency\.label/);
+    expect(prefs).toMatch(/<CurrencySelect \/>/);
+    expect(read('components/CurrencySelect.tsx')).toMatch(/currency\.label/);
     expect(prefs.indexOf('setLanguage(')).toBeLessThan(prefs.indexOf('<CurrencySelect'));
   });
 
   test('escolher outra moeda abre o modal e não grava; o valor mostrado continua o gravado até confirmar', () => {
     const code = read('components/CurrencySelect.tsx');
     expect(code).toMatch(/value=\{displayCurrency\}/);
-    expect(code).toMatch(/setPending\(event\.target\.value\)/);
+    expect(code).toMatch(/setPending\(value\)/);
+    expect(code).toMatch(/<Combobox/);
     expect(code).toMatch(/<CurrencyChangeModal /);
     expect(code).not.toMatch(/changeDisplayCurrency|updatePreferences/);
-    expect(code).toMatch(/currencyOptions\(locale\)/);
+    expect(code).toMatch(/currencyComboboxOptions\(locale\)/);
   });
 
   test('trocar o idioma nunca muda a moeda: setLanguage só envia o idioma', () => {
@@ -46,11 +47,10 @@ describe('modal da troca', () => {
   const modal = read('components/CurrencyChangeModal.tsx');
 
   test('usa o Modal padrão (acessível: Esc, foco e botão fechar), a prévia do backend e só grava ao confirmar', () => {
-    expect(modal).toMatch(/import Modal from '\.\/Modal'/);
+    expect(modal).toMatch(/import Dialog from '\.\/ui\/Dialog'/);
     expect(modal).toMatch(/getCurrencyChangePreview\(currency, signal\)/);
     expect(modal).toMatch(/changeDisplayCurrency\(currency, steamChoiceFor\(view, checks\)\)/);
-    // o botão "Cancelar" ganha o foco (a troca é opcional) e durante o envio nada fecha
-    expect(modal).toMatch(/autoFocus/);
+    // durante o envio nada fecha
     expect(modal).toMatch(/busy=\{busy\}/);
   });
 
@@ -63,7 +63,8 @@ describe('modal da troca', () => {
   });
 
   test('busca a cotação na hora só quando falta e há fonte automática; falha não desfaz a troca', () => {
-    expect(modal).toMatch(/view\.fetchRateAfter\) await refreshFxRate\(currency\)\.catch\(\(\) => undefined\)/);
+    // a busca falhou: a troca já está gravada, e o campo da cotação reaparece no próprio modal (12.8)
+    expect(modal).toMatch(/if \(view\.fetchRateAfter\) \{\s+try \{\s+await refreshFxRate\(currency\);\s+\} catch \{\s+setFetchFailed\(true\)/);
   });
 
   test('textos aprovados (E-P3-Q18 e Q19) em pt-BR e en', () => {
@@ -102,7 +103,7 @@ describe('"≈" na moeda escolhida: nenhum componente fixa BRL', () => {
 
   test('os "≈" usam o approxCurrency da resposta', () => {
     expect(read('components/SalesSummary.tsx')).toMatch(/summary\.approxCurrency/);
-    expect(read('components/InventoryGroupTable.tsx')).toMatch(/group\.approxCurrency/);
+    expect(read('lib/inventoryColumns.tsx')).toMatch(/group\.approxCurrency/);
     expect(read('components/MoneyWithApprox.tsx')).toMatch(/formatMoney\(approxCents, approxCurrency, locale\)/);
     expect(read('components/SalesTable.tsx')).toMatch(/approxCurrency=\{info\.approxCurrency\}/);
     expect(read('components/StoreBalancesPanel.tsx')).toMatch(/approxCurrency: data\.totals\.approxCurrency/);
@@ -123,7 +124,7 @@ describe('cotações: telas e atualização ao abrir', () => {
     const code = read('components/FxRateSettings.tsx');
     expect(code).toMatch(/buildFxRows\(requiredFxCurrencies, fxRates, displayCurrency/);
     expect(code).toMatch(/refreshFxRate\(currency\)/);
-    expect(code).toMatch(/saveFxRate\(currency, parsed\)/);
+    expect(code).toMatch(/saveFxRate\(currency, value\)/);
     expect(code).toMatch(/row\.stale/);
     expect(code).toMatch(/row\.sources\.length > 1/);
     expect(code).toMatch(/formatRate\(rate, locale, currency\)/);

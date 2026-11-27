@@ -1,29 +1,12 @@
-.titleRow { display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap; }
-.titleRow h1 { margin-bottom: 0.75rem; }
-.section { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.75rem; }
-.sectionTitle { margin: 0; font-size: 1.1rem; }
-.muted { color: var(--text-muted); margin: 0; }
-.error {
-  color: var(--danger); background: var(--danger-bg); border: 1px solid var(--danger); border-radius: 8px;
-  padding: 0.5rem 1rem; margin: 0; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+.stack { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; }
+.muted { color: var(--muted); margin: 0; font-size: var(--fs-sm); }
+.sectionTitle { margin: 0; font-size: var(--fs-lg); }
+.list { margin: 0; padding-inline-start: var(--space-5); display: flex; flex-direction: column; gap: var(--space-1); font-size: var(--fs-sm); color: var(--muted); }
+.status {
+  margin: 0; display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-5); align-items: center; padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface); font-size: var(--fs-sm);
 }
-.empty {
-  text-align: center; padding: 1.5rem 1rem; color: var(--text-muted); background: var(--surface);
-  border: 1px dashed var(--border); border-radius: 10px;
-}
-.batches { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.6rem; }
-.batch {
-  display: flex; flex-direction: column; gap: 0.5rem; padding: 0.7rem 0.9rem; border: 1px solid var(--border);
-  border-radius: 10px; background: var(--surface);
-}
-.batchHead { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
-.batchDate { font-weight: 600; }
-.counts { margin: 0; padding-left: 1.1rem; font-size: 0.9rem; }
-.batchActions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
-.button {
-  font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border);
-  border-radius: 6px; padding: 0.3rem 0.8rem; cursor: pointer;
-}
-.button:hover:not(:disabled) { border-color: var(--accent); }
-.button:disabled { opacity: 0.6; cursor: progress; }
-.button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.statusItem { display: flex; align-items: center; min-width: 0; }
+.statusItem dd { margin: 0; overflow-wrap: anywhere; }
+.cutoffPanel { scroll-margin-top: var(--space-4); }
+.cutoffBody { display: flex; flex-direction: column; gap: var(--space-3); }

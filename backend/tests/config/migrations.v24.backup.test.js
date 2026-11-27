@@ -54,7 +54,7 @@ describe('backup e a v24', () => {
     expect((await settings()).displayCurrency).toBe('USD');
     const res = await octet(makeV23Backup('v23.sqlite'));
     expect(res.status).toBe(200);
-    expect(res.body.data).toMatchObject({ fileVersion: 23, schemaVersion: 26, migrationsApplied: [24, 25, 26] });
+    expect(res.body.data).toMatchObject({ fileVersion: 23, schemaVersion: 27, migrationsApplied: [24, 25, 26, 27] });
     const s = await settings();
     expect(s).toMatchObject({ displayCurrency: 'BRL', usdBrlRate: 5.31, usdBrlRateSource: 'MANUAL', language: 'en' });
     expect(s.fxRates).toEqual([
@@ -66,7 +66,7 @@ describe('backup e a v24', () => {
     const before = await settings();
     const file = path.join(dir, 'newer.sqlite');
     const newer = database.openDatabase(file, { migrations: MIGRATIONS });
-    newer.pragma('user_version = 27');
+    newer.pragma('user_version = 28');
     newer.close();
     const res = await octet(fs.readFileSync(file));
     expect(res.status).toBe(400);

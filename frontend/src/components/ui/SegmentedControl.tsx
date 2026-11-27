@@ -20,13 +20,14 @@ export interface SegmentedControlProps<T extends string> {
   onChange: (value: T) => void;
   options: SegmentedOption<T>[];
   size?: 'sm' | 'md';
+  disabled?: boolean;
   // Nas faixas estreitas, as opções com ícone ficam só no ícone (o texto continua como nome acessível) e ganham Tooltip.
   iconOnlyBelow?: CollapseBelow;
   className?: string;
 }
 
 // Escolha única e exclusiva (Agrupado/Individual, densidade, tema). Setas movem e selecionam; um único ponto de Tab; nunca fica sem valor.
-export default function SegmentedControl<T extends string>({ label, value, onChange, options, size = 'md', iconOnlyBelow, className }: SegmentedControlProps<T>) {
+export default function SegmentedControl<T extends string>({ label, value, onChange, options, size = 'md', iconOnlyBelow, className, disabled }: SegmentedControlProps<T>) {
   const collapsed = useBelow(iconOnlyBelow);
   // Seleciona ao focar só quando o foco veio das setas/Home/End (clique e Tab não disparam duas vezes).
   const byKeyboard = useRef(false);
@@ -38,6 +39,7 @@ export default function SegmentedControl<T extends string>({ label, value, onCha
       value={value}
       aria-label={label}
       rovingFocus
+      disabled={disabled}
       className={`${styles.group} ${styles[size]} ${collapseClass} ${className ?? ''}`}
       // O Radix deixa desmarcar o item ativo (valor ''): ignorado, o controle nunca fica sem valor.
       onValueChange={(next) => {

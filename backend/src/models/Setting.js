@@ -5,7 +5,7 @@ const FxRate = require('./FxRate');
 // Colunas reais de `settings`. A cotação do BRL (`usdBrlRate`, `usdBrlRateUpdatedAt`, `usdBrlRateSource`, `rateQuotedAt`,
 // `fxRefreshSource`) vive em `fx_rates` desde a v024 (D369) e continua aparecendo aqui, derivada da linha do BRL (compatibilidade
 // até o fim da 11.3); as colunas antigas de `settings` ficam sem uso.
-const FIELDS = ['catalogUpdatedAt', 'theme', 'language', 'inventoryView', 'fastTurnoverDays', 'slowItemDays', 'steamStoreId', 'displayCurrency'];
+const FIELDS = ['catalogUpdatedAt', 'theme', 'language', 'inventoryView', 'inventoryDensity', 'fastTurnoverDays', 'slowItemDays', 'steamStoreId', 'displayCurrency'];
 const BRL_FIELDS = ['usdBrlRate', 'usdBrlRateUpdatedAt', 'usdBrlRateSource', 'rateQuotedAt', 'fxRefreshSource'];
 // Estado da atualização de preços (D364): fora de `get()`/`update()` de propósito, para não aparecer na API de configurações.
 const PRICE_REFRESH_FIELDS = ['priceRefreshStartedAt', 'priceRefreshLastAt', 'priceRefreshLastStatus', 'priceRefreshLastErrorCode'];
@@ -15,7 +15,7 @@ function get() {
   const row = mapRow(
     getDb()
       .prepare(
-        `SELECT catalog_updated_at, theme, language, inventory_view, fast_turnover_days, slow_item_days, steam_store_id, display_currency,
+        `SELECT catalog_updated_at, theme, language, inventory_view, inventory_density, fast_turnover_days, slow_item_days, steam_store_id, display_currency,
                 updated_at
          FROM settings WHERE id = 1`
       )

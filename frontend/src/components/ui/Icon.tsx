@@ -11,6 +11,8 @@ import {
   Clock,
   Download,
   Ellipsis,
+  Eye,
+  EyeOff,
   ExternalLink,
   Info,
   Languages,
@@ -24,6 +26,8 @@ import {
   Plus,
   Receipt,
   RefreshCw,
+  Rows2,
+  Rows3,
   Search,
   ServerOff,
   Settings,
@@ -73,6 +77,10 @@ export const ICONS = {
   panelOpen: PanelLeftOpen,
   wifiOff: WifiOff,
   serverOff: ServerOff,
+  rows2: Rows2,
+  rows3: Rows3,
+  eye: Eye,
+  eyeOff: EyeOff,
 } as const satisfies Record<string, LucideIcon>;
 
 export type IconName = keyof typeof ICONS;

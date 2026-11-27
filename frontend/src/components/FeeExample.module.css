@@ -1,0 +1,4 @@
+.box { display: grid; gap: var(--space-3); padding: var(--space-4); border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface-2); }
+.title { margin: 0; font-size: var(--fs-sm); font-weight: var(--fw-bold); }
+.sentence { margin: 0; font-size: var(--fs-md); font-weight: var(--fw-bold); overflow-wrap: anywhere; }
+.muted { margin: 0; color: var(--muted); font-size: var(--fs-sm); overflow-wrap: anywhere; }

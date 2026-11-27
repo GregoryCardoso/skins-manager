@@ -9,7 +9,13 @@ import { queryKeys } from '@/lib/queryKeys';
 import { useInvalidate } from '@/lib/useInvalidate';
 import { getCatalogStatus, refreshCatalog } from '@/services/api';
 import type { CatalogSource, CatalogStatus } from '@/types/api';
-import styles from './settings.module.css';
+import styles from './CatalogSettings.module.css';
+import Banner from './ui/Banner';
+import Button from './ui/Button';
+import ErrorState from './ui/ErrorState';
+import Panel from './ui/Panel';
+import Skeleton from './ui/Skeleton';
+import { useToast } from './ui/Toast';
 
 const SOURCES: CatalogSource[] = ['SKINS', 'STICKERS', 'CRATES', 'KEYCHAINS', 'AGENTS', 'PATCHES'];
 
@@ -19,7 +25,7 @@ export function CatalogSummary({ status }: { status: CatalogStatus }) {
   const locale = useLocale();
   return (
     <>
-      <p className={styles.catalogTotal}>{t('catalog.total', { total: formatInteger(status.total, locale) })}</p>
+      <p className={styles.total}>{t('catalog.total', { total: formatInteger(status.total, locale) })}</p>
       <ul className={styles.counts}>
         {SOURCES.map((source) => (
           <li key={source}>
@@ -43,57 +49,54 @@ export default function CatalogSettings() {
   const tPlural = useTPlural();
   const locale = useLocale();
   const invalidate = useInvalidate();
+  const toast = useToast();
   const statusQuery = useQuery({ queryKey: queryKeys.catalog.status, queryFn: ({ signal }) => getCatalogStatus(signal) });
   const status = statusQuery.data ?? null;
   const loadError = statusQuery.error ?? null;
   const [refreshing, setRefreshing] = useState(false);
   const [refreshError, setRefreshError] = useState<unknown>(null);
-  const [info, setInfo] = useState<{ total: number; skipped: number; linked: number; skippedLanguages: string[] } | null>(null);
+  const [skippedLanguages, setSkippedLanguages] = useState<string[]>([]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     setRefreshError(null);
-    setInfo(null);
+    setSkippedLanguages([]);
     refreshCatalog()
       .then((result) => {
         // Atualizar o catálogo muda o status, os itens e as vendas (imagens e vínculos, D259).
         invalidate('catalog.refresh');
-        setInfo({ total: result.total, skipped: result.skipped, linked: result.linkedLegacyItems, skippedLanguages: (result.skippedLanguages ?? []).map((s) => s.language) });
+        setSkippedLanguages((result.skippedLanguages ?? []).map((s) => s.language));
+        toast.show({
+          tone: 'success',
+          message: t('catalog.refreshDone', {
+            total: tPlural('catalog.itemsCount', result.total, { count: formatInteger(result.total, locale) }),
+            skipped: formatInteger(result.skipped, locale),
+            linked: formatInteger(result.linkedLegacyItems, locale),
+          }),
+        });
       })
       .catch((err: unknown) => setRefreshError(err))
       .finally(() => setRefreshing(false));
-  }, [invalidate]);
+  }, [invalidate, locale, t, tPlural, toast]);
 
   return (
-    <section className={styles.card} aria-labelledby="settings-catalog-title">
-      <h2 id="settings-catalog-title" className={styles.cardTitle}>{t('settings.catalog.title')}</h2>
-      {status ? (
-        <CatalogSummary status={status} />
-      ) : loadError ? (
-        <p className={styles.error} role="alert">{errorMessageFor(loadError, tLoose, locale)}</p>
-      ) : (
-        <p className={styles.muted}>{t('common.loading')}</p>
-      )}
-      <div className={styles.row}>
-        <button type="button" className={styles.button} onClick={onRefresh} disabled={refreshing}>
-          {refreshing ? t('catalog.refreshing') : t('catalog.refresh')}
-        </button>
+    <Panel
+      title={t('settings.catalog.title')}
+      actions={<Button variant="primary" icon="refresh" loading={refreshing} onClick={onRefresh}>{refreshing ? t('catalog.refreshing') : t('catalog.refresh')}</Button>}
+    >
+      <div className={styles.stack}>
+        {status ? (
+          <CatalogSummary status={status} />
+        ) : loadError ? (
+          <ErrorState message={errorMessageFor(loadError, tLoose, locale)} onRetry={() => void statusQuery.refetch()} retrying={statusQuery.isFetching} />
+        ) : (
+          <Skeleton lines={3} />
+        )}
+        {skippedLanguages.length > 0 && (
+          <Banner tone="info">{t('catalog.refreshSkippedLanguages', { languages: skippedLanguages.join(', ') })}</Banner>
+        )}
+        {refreshError !== null && <Banner tone="danger" onDismiss={() => setRefreshError(null)}>{errorMessageFor(refreshError, tLoose, locale)}</Banner>}
       </div>
-      {info && (
-        <p className={styles.ok} role="status">
-          {t('catalog.refreshDone', {
-            total: tPlural('catalog.itemsCount', info.total, { count: formatInteger(info.total, locale) }),
-            skipped: formatInteger(info.skipped, locale),
-            linked: formatInteger(info.linked, locale),
-          })}
-        </p>
-      )}
-      {info && info.skippedLanguages.length > 0 && (
-        <p className={styles.muted} role="status">
-          {t('catalog.refreshSkippedLanguages', { languages: info.skippedLanguages.join(', ') })}
-        </p>
-      )}
-      {refreshError !== null && <p className={styles.error} role="alert">{errorMessageFor(refreshError, tLoose, locale)}</p>}
-    </section>
+    </Panel>
   );
 }

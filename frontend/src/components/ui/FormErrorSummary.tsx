@@ -19,7 +19,9 @@ export interface FormErrorSummaryProps {
 }
 
 function focusField(field: string): void {
-  const control = document.querySelector<HTMLElement>(`[data-field="${CSS.escape(field)}"]`);
+  const name = CSS.escape(field);
+  // Checkbox e Switch não têm `data-field`: o nome do campo é o `name` do <input>.
+  const control = document.querySelector<HTMLElement>(`[data-field="${name}"], input[name="${name}"]`);
   control?.focus();
 }
 

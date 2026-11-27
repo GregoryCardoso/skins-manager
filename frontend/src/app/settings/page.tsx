@@ -1,18 +1,13 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import AboutSettings from '@/components/AboutSettings';
-import AgingSettings from '@/components/AgingSettings';
-import BackupSettings from '@/components/BackupSettings';
-import CatalogSettings from '@/components/CatalogSettings';
-import FxRateSettings from '@/components/FxRateSettings';
-import IntegrationsSettings from '@/components/IntegrationsSettings';
-import PreferencesSettings from '@/components/PreferencesSettings';
+import SettingsIndex from '@/components/settings/SettingsIndex';
+import ErrorState from '@/components/ui/ErrorState';
+import PageHeader from '@/components/ui/PageHeader';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
 import { queryKeys } from '@/lib/queryKeys';
 import { getSettings } from '@/services/api';
-import PageHeader from '@/components/ui/PageHeader';
 import styles from './page.module.css';
 
 export default function SettingsPage() {
@@ -27,26 +22,16 @@ export default function SettingsPage() {
     <>
       <PageHeader title={t('settings.title')} />
 
-      {error !== null && (
-        <div className={styles.error} role="alert">
-          <p>{t('settings.loadError', { reason: errorMessageFor(error, tLoose, locale) })}</p>
-          <button type="button" className={styles.retry} onClick={() => {
-              query.refetch();
-            }}>
-            {t('common.retry')}
-          </button>
-        </div>
-      )}
-
-      {settings === null && error === null && <p className={styles.muted}>{t('common.loading')}</p>}
-
-      <FxRateSettings />
-      <PreferencesSettings />
-      {settings && <AgingSettings settings={settings} />}
-      <CatalogSettings />
-      <IntegrationsSettings />
-      <BackupSettings />
-      <AboutSettings />
+      <div className={styles.stack}>
+        {error !== null && (
+          <ErrorState
+            message={t('settings.loadError', { reason: errorMessageFor(error, tLoose, locale) })}
+            onRetry={() => void query.refetch()}
+            retrying={query.isFetching}
+          />
+        )}
+        <SettingsIndex settings={settings} />
+      </div>
     </>
   );
 }

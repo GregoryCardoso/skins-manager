@@ -183,11 +183,11 @@ describe('modal e seletor: ligação do fluxo (ambiente node, sem DOM)', () => {
   const confirmBody = modal.slice(modal.indexOf('const confirm'), modal.indexOf('return ('));
 
   test('escolher a mesma moeda gravada não abre o modal nem chama a API', () => {
-    expect(select).toMatch(/if \(event\.target\.value !== displayCurrency\) setPending\(event\.target\.value\)/);
+    expect(select).toMatch(/if \(value !== null && value !== displayCurrency\) setPending\(value\)/);
     expect(select).not.toMatch(/changeDisplayCurrency|updatePreferences|services\/api/);
   });
 
-  test('o select é controlado por displayCurrency (volta à moeda gravada); o modal é remontado a cada moeda', () => {
+  test('o Combobox é controlado por displayCurrency (volta à moeda gravada); o modal é remontado a cada moeda', () => {
     expect(select).toMatch(/value=\{displayCurrency\}/);
     expect(select).toMatch(/onClose=\{\(\) => setPending\(null\)\}/);
     expect(select).toMatch(/key=\{pending\}/);
@@ -195,25 +195,32 @@ describe('modal e seletor: ligação do fluxo (ambiente node, sem DOM)', () => {
 
   test('cancelar chama só onClose; o único changeDisplayCurrency está em confirm', () => {
     expect(modal.match(/changeDisplayCurrency\(/g)).toHaveLength(1);
-    expect(modal).toMatch(/onClick=\{onClose\} disabled=\{busy\}/);
+    expect(modal).toMatch(/<Button onClick=\{onClose\} disabled=\{busy\}>/);
     expect(confirmBody).toMatch(/changeDisplayCurrency\(currency, steamChoiceFor\(view, checks\)\)/);
   });
 
-  test('falha do PATCH: erro traduzido, modal continua aberto e o botão é liberado', () => {
-    const catchBlock = confirmBody.slice(confirmBody.indexOf('.catch((err: unknown)'));
+  test('falha da troca: erro traduzido, modal continua aberto e o botão é liberado', () => {
+    const afterChange = confirmBody.slice(confirmBody.indexOf('changeDisplayCurrency('));
+    const catchBlock = afterChange.slice(afterChange.indexOf('catch (err)'), afterChange.indexOf('// 3.'));
     expect(catchBlock).toMatch(/setError\(errorMessageFor\(err, tLoose, locale\)\)/);
     expect(catchBlock).toMatch(/setBusy\(false\)/);
     expect(catchBlock).not.toMatch(/onClose/);
   });
 
-  test('falha da busca da cotação depois de gravar é engolida e a troca vale (onClose roda)', () => {
-    const thenBlock = confirmBody.slice(confirmBody.indexOf('.then(async'), confirmBody.indexOf('.catch((err: unknown)'));
-    expect(thenBlock).toMatch(/await refreshFxRate\(currency\)\.catch\(\(\) => undefined\)/);
-    expect(thenBlock).toMatch(/onClose\(\)/);
+  test('falha da busca da cotação depois de gravar: a troca vale e o campo da cotação reaparece (12.8)', () => {
+    const fetchBlock = confirmBody.slice(confirmBody.indexOf('if (view.fetchRateAfter)'));
+    expect(fetchBlock).toMatch(/await refreshFxRate\(currency\)/);
+    expect(fetchBlock).toMatch(/setFetchFailed\(true\)/);
+    expect(fetchBlock).toMatch(/onClose\(\)/);
+  });
+
+  test('cotação digitada: grava primeiro (PUT) e só então troca; recusada = nada muda', () => {
+    expect(confirmBody.indexOf('saveRate()')).toBeLessThan(confirmBody.indexOf('changeDisplayCurrency('));
+    expect(modal).toMatch(/setRateError\(errorMessageFor\(err, tLoose, locale\)\)/);
   });
 
   test('confirmar fica desabilitado enquanto a prévia carrega; erro na prévia libera e avisa', () => {
-    expect(modal).toMatch(/disabled=\{busy \|\| preview\.isPending\}/);
+    expect(modal).toMatch(/disabled=\{preview\.isPending\}/);
     expect(modal).toMatch(/preview\.isError &&/);
     expect(modal).toMatch(/retry: false/);
   });
@@ -368,7 +375,7 @@ describe('paridade de textos e varredura do "≈"', () => {
 
   test('a varredura inclui MinPriceCell e SellItemModal (fora da lista do teste antigo)', () => {
     const withApprox = prod.filter((f) => /approx/i.test(read(f)));
-    expect(withApprox).toEqual(expect.arrayContaining(['components/MinPriceCell.tsx', 'components/SellItemModal.tsx', 'components/MoneyApprox.tsx']));
+    expect(withApprox).toEqual(expect.arrayContaining(['components/inventory/MinPriceSummary.tsx', 'components/SellItemModal.tsx', 'components/MoneyApprox.tsx']));
   });
 
   // Formulários de loja só conhecem US$ e R$ até a 11.4 (lojas nas 42 moedas): o "R$" fixo deles não é "≈" e fica fora desta varredura.

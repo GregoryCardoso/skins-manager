@@ -29,16 +29,16 @@ function validateFxRateBody(req, res, next) {
 }
 
 // PATCH /api/settings (D83, D159, D162): tema, idioma, fonte da cotação e os limites de giro. Os valores permitidos são checados no service.
-const TEXT_KEYS = ['theme', 'language', 'inventoryView', 'fxRefreshSource', 'displayCurrency', 'steamStore'];
+const TEXT_KEYS = ['theme', 'language', 'inventoryView', 'inventoryDensity', 'fxRefreshSource', 'displayCurrency', 'steamStore'];
 const DAYS_KEYS = ['fastTurnoverDays', 'slowItemDays']; // número ou null; o tipo é checado no service (códigos próprios)
 
 function validatePreferencesBody(req, res, next) {
   const body = req.body;
   if (!isPlainObject(body) || Object.keys(body).length === 0) {
-    throw invalidBody('Informe ao menos um campo (theme, language, inventoryView, fxRefreshSource, displayCurrency, fastTurnoverDays ou slowItemDays) em um objeto JSON.');
+    throw invalidBody('Informe ao menos um campo (theme, language, inventoryView, inventoryDensity, fxRefreshSource, displayCurrency, fastTurnoverDays ou slowItemDays) em um objeto JSON.');
   }
   rejectUnknownFields(body, [...TEXT_KEYS, ...DAYS_KEYS]);
-  const invalid = TEXT_KEYS.find((k) => k !== 'inventoryView' && body[k] !== undefined && typeof body[k] !== 'string');
+  const invalid = TEXT_KEYS.find((k) => k !== 'inventoryView' && k !== 'inventoryDensity' && body[k] !== undefined && typeof body[k] !== 'string');
   if (invalid) throw new ValidationError(`O campo ${invalid} deve ser texto.`, 'INVALID_FIELD', { field: invalid });
   return next();
 }

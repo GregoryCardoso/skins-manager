@@ -25,7 +25,7 @@ const dumpTables = (db, skip = []) => Object.fromEntries(
   db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all()
     .map((r) => r.name)
     .filter((name) => !skip.includes(name))
-    .map((name) => [name, db.prepare(`SELECT * FROM ${name} ORDER BY 1`).all()])
+    .map((name) => [name, db.prepare(`SELECT * FROM ${name} ORDER BY 1`).all().map(({ inventory_density: _dn, ...r }) => r)])
 );
 const withoutNewColumn = (rows) => rows.map(({ amount_brl_currency: currency, ...rest }) => { expect(currency).toBe('BRL'); return rest; });
 
@@ -61,7 +61,7 @@ describe('v25 sobre um banco v24 (banco existente)', () => {
     const { dbPath, before, sequences } = makeV24('existing');
     const db = openDatabase(dbPath, { now: NOW });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(26);
+      expect(db.pragma('user_version', { simple: true })).toBe(27);
       expect(db.pragma('foreign_key_check')).toEqual([]);
       const after = dumpTables(db);
       expect(after.stores).toEqual(before.stores);
@@ -111,7 +111,7 @@ describe('v25 sobre um banco v24 (banco existente)', () => {
     const first = backupsOf(dbPath, 'inventory-v24-');
     const db = openDatabase(dbPath, { now: new Date('2026-11-25T13:00:00.000Z') });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(26);
+      expect(db.pragma('user_version', { simple: true })).toBe(27);
       expect(backupsOf(dbPath, 'inventory-v24-')).toEqual(first);
     } finally {
       db.close();
@@ -135,7 +135,7 @@ describe('v25 sobre um banco v24 (banco existente)', () => {
     expect(backupsOf(dbPath, 'inventory-v24-').length).toBeGreaterThanOrEqual(1);
     const ok = openDatabase(dbPath, { skipBackup: true });
     try {
-      expect(ok.pragma('user_version', { simple: true })).toBe(26);
+      expect(ok.pragma('user_version', { simple: true })).toBe(27);
     } finally {
       ok.close();
     }
@@ -147,7 +147,7 @@ describe('v25 em banco novo', () => {
     const dbPath = dbPathOf('fresh');
     const db = openDatabase(dbPath, { now: NOW });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(26);
+      expect(db.pragma('user_version', { simple: true })).toBe(27);
       expect(db.prepare("SELECT currency FROM stores WHERE name = 'Steam'").get().currency).toBe('USD');
       expect(db.prepare('SELECT display_currency AS d FROM settings').get().d).toBe('USD');
       expect(db.prepare('SELECT steam_store_id AS s FROM settings').get().s).toBe(db.prepare("SELECT id FROM stores WHERE name = 'Steam'").get().id);
@@ -163,7 +163,7 @@ describe('v25 em banco novo', () => {
     old.close();
     const db = openDatabase(dbPath, { now: NOW });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(26);
+      expect(db.pragma('user_version', { simple: true })).toBe(27);
       expect(db.prepare("SELECT currency FROM stores WHERE name = 'Steam'").get().currency).toBe('BRL');
       expect(db.prepare('SELECT display_currency AS d FROM settings').get().d).toBe('BRL');
     } finally {

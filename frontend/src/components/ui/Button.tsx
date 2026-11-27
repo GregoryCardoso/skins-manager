@@ -41,12 +41,13 @@ export default function Button(props: ButtonProps) {
     onClick,
     disabled,
     ref,
+    'aria-disabled': ariaDisabled,
     ...rest
   } = props;
   const collapsed = useBelow(iconOnlyBelow);
 
   const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
-    if (loading) {
+    if (loading || ariaDisabled === true || ariaDisabled === 'true') {
       event.preventDefault();
       return;
     }
@@ -73,7 +74,7 @@ export default function Button(props: ButtonProps) {
       className={classes}
       disabled={disabled}
       aria-busy={loading ? true : undefined}
-      aria-disabled={loading ? true : undefined}
+      aria-disabled={loading ? true : ariaDisabled}
       onClick={handleClick}
     >
       {iconPosition === 'start' && iconNode}

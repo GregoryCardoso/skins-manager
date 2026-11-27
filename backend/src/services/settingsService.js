@@ -12,6 +12,7 @@ const {
   THEMES,
   LANGUAGES,
   INVENTORY_VIEWS,
+  INVENTORY_DENSITIES,
   FX_REFRESH_SOURCES,
   CURRENCIES,
   AWESOMEAPI_PAIRS,
@@ -20,6 +21,7 @@ const {
   MAX_FAST_TURNOVER_DAYS,
   MIN_SLOW_ITEM_DAYS,
   MAX_SLOW_ITEM_DAYS,
+  FX_MANUAL_RATE_BOUNDS,
 } = require('../config/constants');
 
 // Limites efetivos de giro (D159): salvo ?? padrão; combinação incoerente usa rápido = agarrado − 1 e avisa no console.
@@ -59,6 +61,8 @@ function toSettingsView(raw) {
     // DÉBITO (11.11, B3): remover esses campos quando nenhum cliente/teste os usar (hoje só o BRL em `fxRates` é a fonte da verdade).
     fxRates: fxRateService.listRates(),
     requiredFxCurrencies: fxRateService.requiredCurrencies(),
+    // Faixa aceita para a cotação digitada à mão, por moeda (12.8): só para a tela mostrar e avisar; a validação é do fxRateService.
+    fxManualRateBounds: Object.fromEntries(Object.entries(FX_MANUAL_RATE_BOUNDS).map(([code, { min, max }]) => [code, { min, max }])),
     fastTurnoverDaysCustom: savedFast,
     slowItemDaysCustom: savedSlow,
     fastTurnoverDays,
@@ -121,6 +125,9 @@ function updatePreferences(partial, { now = new Date() } = {}) {
       field: 'inventoryView',
     });
   }
+  if (partial.inventoryDensity !== undefined && !INVENTORY_DENSITIES.includes(partial.inventoryDensity)) {
+    throw new ValidationError(`Densidade inválida. Use ${INVENTORY_DENSITIES.join(', ')}.`, 'INVALID_FIELD', { field: 'inventoryDensity' });
+  }
   if (partial.fxRefreshSource !== undefined && !FX_REFRESH_SOURCES.includes(partial.fxRefreshSource)) {
     throw new ValidationError(
       `Fonte de cotação inválida. Use ${FX_REFRESH_SOURCES.join(', ')}.`,
@@ -162,7 +169,7 @@ function updatePreferences(partial, { now = new Date() } = {}) {
     }
   }
   const changes = {};
-  for (const key of ['theme', 'language', 'inventoryView', 'fxRefreshSource', 'fastTurnoverDays', 'slowItemDays', 'displayCurrency']) {
+  for (const key of ['theme', 'language', 'inventoryView', 'inventoryDensity', 'fxRefreshSource', 'fastTurnoverDays', 'slowItemDays', 'displayCurrency']) {
     if (partial[key] !== undefined) changes[key] = partial[key];
   }
   // Tudo na mesma transação (D369 A5): a moeda de conversão e a decisão da loja Steam são gravadas juntas ou nada é gravado.

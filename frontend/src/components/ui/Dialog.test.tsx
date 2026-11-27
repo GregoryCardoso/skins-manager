@@ -236,3 +236,45 @@ describe('Disclosure', () => {
     expect(screen.getByText('Inside')).toBeInTheDocument();
   });
 });
+
+describe('Tabs vertical com descrição (12.8)', () => {
+  function Wrapper() {
+    const [value, setValue] = useState('a');
+    return (
+      <Tabs
+        label="Sections"
+        value={value}
+        onChange={setValue}
+        orientation="vertical"
+        items={[
+          { value: 'a', label: 'Preferences', description: 'Dark · English · $' },
+          { value: 'b', label: 'Backup' },
+        ]}
+      >
+        <TabPanel value="a">Panel A</TabPanel>
+        <TabPanel value="b">Panel B</TabPanel>
+      </Tabs>
+    );
+  }
+
+  test('a lista é vertical, mostra o estado na segunda linha e as setas para baixo e para cima trocam a aba', async () => {
+    renderUi(<Wrapper />);
+    expect(screen.getByRole('tablist', { name: 'Sections' })).toHaveAttribute('aria-orientation', 'vertical');
+    expect(screen.getByText('Dark · English · $')).toBeVisible();
+    screen.getByRole('tab', { name: /Preferences/ }).focus();
+    await userEvent.keyboard('{ArrowDown}');
+    expect(screen.getByRole('tab', { name: 'Backup' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByText('Panel B')).toBeVisible();
+    await userEvent.keyboard('{ArrowUp}');
+    expect(screen.getByRole('tab', { name: /Preferences/ })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  test('sem orientation continua horizontal (comportamento de antes)', () => {
+    renderUi(
+      <Tabs label="Sections" value="a" onChange={() => {}} items={[{ value: 'a', label: 'A' }]}>
+        <TabPanel value="a">Panel A</TabPanel>
+      </Tabs>,
+    );
+    expect(screen.getByRole('tablist')).toHaveAttribute('aria-orientation', 'horizontal');
+  });
+});

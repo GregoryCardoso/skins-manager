@@ -91,7 +91,10 @@
       "steamLocked": "Steamストアには{from}の記録があり、換算できません。Steamストアは{from}のままです。",
       "steamNewStore": "今後の記録用に、{currency}の新しいSteamストアを作成する",
       "steamNewStoreHint": "現在のストアは無効になり、名前が変更されます（例：「Steam（{from}）」）。換算や削除は行われず、その残高は引き続き利益に含まれます。新しいストアは同じ手数料とルールを引き継ぎます。",
-      "confirm": "{currency}を使う"
+      "confirm": "{currency}を使う",
+      "rateLabel": "為替レート（1 US$ = ___ {currency}）",
+      "rateOptional": "任意です。今入力すると換算後の金額をすぐ確認できます。あとで設定から入力することもできます。",
+      "fetchFailed": "{currency}の為替レートを取得できませんでした。下に入力するか、あとで設定から入力してください。"
     },
     "groups": {
       "america": "アメリカ",
@@ -400,7 +403,8 @@
       "minPrice": "損益分岐価格",
       "actions": "操作",
       "marketValue": "市場価値 ≈",
-      "unrealized": "未実現損益 ≈"
+      "unrealized": "未実現損益 ≈",
+      "turnover": "回転"
     },
     "primaryStore": "メインストア",
     "otherStores": "その他のストア",
@@ -432,7 +436,10 @@
       "openNeedsKey": "先にこのケースのキー（{keyName}）を登録してください。",
       "openNeedsKeyOther": "先にこのケースのキー（{keyName}）を登録してください。在庫のキーはこのケースに合いません。",
       "registerKey": "キーを登録",
-      "detach": "チャーム／slabを分離"
+      "detach": "チャーム／slabを分離",
+      "viewUnits": "個別を表示",
+      "moreFor": "{name} のその他の操作",
+      "noSellableUnit": "今は売却できるアイテムがありません。すべて Trade lock 中です。"
     },
     "itemGone": "このアイテムはもう存在しません。別のタブで削除された可能性があります。一覧を更新しました。",
     "daysForSale": "販売中：{days}",
@@ -465,14 +472,16 @@
       "invalidQuantity": "1〜{max}の整数を入力してください。",
       "offSaleConfirm": "Holdingに移す",
       "forSaleConfirm": "販売に戻す",
-      "selectAll": "すべての個体を選択",
       "selectUnit": "{name}（#{id}）を選択",
       "selectionBar": "選択した個体",
       "selected": {
         "zero": "選択なし",
         "other": "{count}件を選択"
       },
-      "clearSelection": "選択を解除"
+      "clearSelection": "選択を解除",
+      "hint": "複数の個体にチェックを入れると、まとめて移せます。",
+      "limit": "一度に最大{max}個まで。",
+      "selectGroup": "表示中の{name}の個体をすべて選択"
     },
     "marketValue": {
       "noPrice": "価格なし",
@@ -518,6 +527,38 @@
         "unrealized": "未実現損益：{value}",
         "coverage": "（価格あり：{priced}／{total}）"
       }
+    },
+    "density": {
+      "label": "表示密度",
+      "compact": "コンパクト",
+      "comfortable": "ゆったり"
+    },
+    "help": {
+      "minPrice": "損益分岐価格：手取りが原価をまかなえる最低価格（ストアの販売手数料のみで計算）。",
+      "convertedCost": "原価は購入日のレートで換算しています。",
+      "marketValue": "市場価値：CSFloat の推定値です。売るまでは残高にあるお金ではありません。",
+      "unrealized": "未実現損益：推定値から販売手数料と原価を引いた額。売却して初めて確定します。",
+      "priceRange": "表示中の個体の損益分岐価格の範囲。個体ごとに原価が異なります。"
+    },
+    "warnings": {
+      "goToStores": "ストアへ移動",
+      "goToSettings": "設定へ移動"
+    },
+    "emptyTitle": "まだアイテムがありません",
+    "emptyFilteredTitle": "一致するアイテムがありません",
+    "toolbar": {
+      "search": "名前で検索"
+    },
+    "position": {
+      "label": "在庫の状況",
+      "forSale": "販売中（原価）",
+      "offSale": "Holding中（原価）",
+      "tradeLocked": "trade lock中（個数）",
+      "nextUnlock": "次の解除：{date}",
+      "stagnant": "滞留（個数）",
+      "groups": "異なるアイテム：{count}",
+      "stagnantHint": "販売中で、trade lock外で、滞留の基準を超えた個数。Holdingとtrade lock中のアイテムは数えません。",
+      "costHelp": "この状態にある全在庫の原価。フィルターや検索の影響を受けません。"
     }
   },
   "filters": {
@@ -1075,7 +1116,19 @@
     "steamClear": "自分のSteamストアとして使わない",
     "steamHint": "自分のSteamストアは、アプリがターミナルでの支払い価格を記録する場所です。",
     "steamSaved": "「{name}」を自分のSteamストアにしました。",
-    "steamCleared": "Steamストアは選ばれていません。"
+    "steamCleared": "Steamストアは選ばれていません。",
+    "card": {
+      "saleFeeSentence": {
+        "DEDUCTED": "価格から{rate}%を差し引き",
+        "ADDED": "価格に{rate}%を上乗せ"
+      },
+      "moreActionsFor": "{name}のその他の操作"
+    },
+    "steamTip": {
+      "title": "Steamストアを選択",
+      "body": "ターミナルを開くには、カードの「その他の操作」メニューで、どのストアがSteamストアかを選んでください。",
+      "action": "選択"
+    }
   },
   "storesTable": {
     "columns": {
@@ -1161,7 +1214,20 @@
     "created": "ストア「{name}」を作成しました。",
     "updated": "ストア「{name}」を更新しました。",
     "balanceSection": "販売後の残高",
-    "invalidSaleHoldDays": "0〜30の整数（日数）を入力してください。"
+    "invalidSaleHoldDays": "0〜30の整数（日数）を入力してください。",
+    "sections": {
+      "identity": "識別情報",
+      "status": "状態"
+    },
+    "example": {
+      "title": "手数料の例",
+      "deducted": "{price}で販売すると、手数料は{fee}で、受け取りは{net}です。",
+      "added": "購入者が{price}を支払うと、手数料は{fee}で、受け取りは{net}です。",
+      "priceLabel": "例の価格（{currency}）",
+      "notConfigured": "販売手数料が未設定です。このストアの損益分岐価格は表示されません。",
+      "incomplete": "手数料の種類を選び、率を入力すると例が表示されます。",
+      "error": "例を計算できませんでした（{reason}）。"
+    }
   },
   "settings": {
     "title": "設定",
@@ -1190,7 +1256,9 @@
       "autoRefreshHint": "この取得元では、アプリを開くたびにレートが自動で更新されます（開くごとに1回）。レートを入力した場合は、そのレートが有効になり、「レートを更新」をクリックするまで、アプリを開いても変わりません。",
       "autoRefreshPausedManual": "現在のレートは手入力されたものなので、アプリを開いても更新されません。上の取得元をもう一度使うには、「レートを更新」をクリックしてください。そのあとは、アプリを開くたびに自動で更新されます。",
       "autoFailed": "アプリを開いたときに{currency}のレートを更新できませんでした（{reason}）。設定でもう一度お試しください。",
-      "autoFailedWithRate": "アプリを開いたときに{currency}のレートを更新できませんでした（{reason}）。アプリは直近のレート（{rate}）を使いました。"
+      "autoFailedWithRate": "アプリを開いたときに{currency}のレートを更新できませんでした（{reason}）。アプリは直近のレート（{rate}）を使いました。",
+      "boundsHint": "許容範囲：{min}～{max}",
+      "outOfBounds": "このレートは通常の範囲外です。保存する前に確認してください。"
     },
     "preferences": {
       "title": "表示設定",
@@ -1213,7 +1281,9 @@
       "noChanges": "保存するものがありません。",
       "middle": "回転中：{from}から{to}まで。",
       "adjusted": "保存済みの基準が現在の初期値と合っていません。高回転は{fast}として計算されています。新しい基準を保存して直してください。",
-      "invalidNumber": "整数を入力してください（例：7）。"
+      "invalidNumber": "整数を入力してください（例：7）。",
+      "scaleTitle": "区分のプレビュー",
+      "scaleInvalid": "区分を表示するには、2つの上限が 1 ≤ 高回転 < 滞留 ≤ 365 を満たす必要があります。"
     },
     "catalog": {
       "title": "アイテムのカタログ"
@@ -1241,7 +1311,33 @@
       "copyPath": "パスをコピー",
       "pathCopied": "パスをコピーしました。",
       "copyFailed": "コピーできませんでした。パスを選択して、手動でコピーしてください。",
-      "retention": "アプリは、データフォルダー内のバックアップフォルダーに、自動バックアップを保存します。種類ごとに最新の10件を保持します。対象は、バックアップのインポート前に作成されたものと、アプリの更新前に作成されたものです。"
+      "retention": "アプリは、データフォルダー内のバックアップフォルダーに、自動バックアップを保存します。種類ごとに最新の10件を保持します。対象は、バックアップのインポート前に作成されたものと、アプリの更新前に作成されたものです。",
+      "preview": {
+        "reading": "ファイルを読み込み中…",
+        "fileLine": "ファイル：{file}（{size}）",
+        "lastChange": "ファイルに記録された最終更新：{date}",
+        "lastChangeUnknown": "ファイルに更新日時の記録がありません。",
+        "schema": "データのバージョン：v{version}",
+        "willMigrate": "インポートすると、データはv{current}に更新されます。",
+        "counts": {
+          "items": {
+            "other": "{count}件のアイテム"
+          },
+          "sales": {
+            "other": "販売{count}件"
+          },
+          "stores": {
+            "other": "ストア{count}件"
+          },
+          "deposits": {
+            "other": "入金{count}件"
+          },
+          "withdrawals": {
+            "other": "出金{count}件"
+          }
+        },
+        "pickAnother": "別のファイルを選ぶ"
+      }
     },
     "about": {
       "title": "アプリについて",
@@ -1317,10 +1413,36 @@
         "autoPausedUndo": "{date}にインポートを取り消したため、アプリを開いたときのインポートは停止中です。取り消したものが自動で戻ってこないようにするためです。必要なときに再開してください。",
         "autoPausedSwitch": "CSFloatのアカウントが切り替えられたため、アプリを開いたときのインポートは停止中です。新しいアカウントで最初のインポートを行ってから、再開してください。",
         "autoResume": "アプリを開いたときのインポートを再開",
-        "reviewImports": "インポートと要確認の項目を見る"
+        "reviewImports": "インポートと要確認の項目を見る",
+        "keyValid": {
+          "other": "形式は正しいです・{count}文字"
+        },
+        "keyTooShort": "キーが短すぎるようです。すべてコピーできたか確認してください。",
+        "keyTooLong": "キーが長すぎるようです。キーだけをコピーしたか確認してください。",
+        "keyHasSpaces": "キーの途中にスペースがあります。もう一度コピーしてください。"
       }
     },
-    "loadError": "設定を読み込めませんでした（{reason}）。もう一度お試しください。"
+    "loadError": "設定を読み込めませんでした（{reason}）。もう一度お試しください。",
+    "index": {
+      "label": "設定のセクション"
+    },
+    "status": {
+      "fxCount": {
+        "other": "{count}通貨"
+      },
+      "fxStale": {
+        "other": "{count}件が古い"
+      },
+      "fxMissing": "{currency}のレートがありません",
+      "aging": "高回転は{fast}まで · 滞留は{slow}超",
+      "csfloatConnected": "CSFloat連携済み",
+      "csfloatNoKey": "CSFloat：キーなし",
+      "csfloatReview": {
+        "other": "要確認{count}件"
+      },
+      "backupFolder": "バックアップフォルダを利用できます",
+      "catalog": "{total}件のアイテム · {date}に更新"
+    }
   },
   "desktopUpdate": {
     "availableTitle": "更新があります",
@@ -1842,7 +1964,18 @@
       "CREATE_PURCHASE": "購入を入力",
       "MARK_WON": "このアイテムは受け取りました（ドロップ）",
       "APPLY_FROM_STOCK": "適用して記録",
-      "REOPEN": "確認待ちに戻す"
+      "REOPEN": "確認待ちに戻す",
+      "explain": {
+        "REMOVE": "アプリで入力した購入を削除するか、売却を取り消します。確認が出ます。",
+        "KEEP": "入力した内容をそのまま残します。このトレードについて警告しなくなります。",
+        "CREATE": "重複に見えても、このトレードをアプリに入力します。",
+        "LINK": "すでに入力した内容にこのトレードを結び付けます。新しく作りません。",
+        "IGNORE": "今は何もしません。「無視」タブで元に戻せます。",
+        "CREATE_PURCHASE": "ストア、価格、日付を入力します。そのあとすぐに売却が記録されます。",
+        "MARK_WON": "アイテムを受け取り済み（原価0）として記録し、売却も記録します。",
+        "APPLY_FROM_STOCK": "在庫のアイテムを、この武器のステッカーまたはチャームとして使います。",
+        "REOPEN": "トレードを確認待ちの一覧に戻します。"
+      }
     },
     "auto": {
       "created": {
@@ -1908,13 +2041,15 @@
       "selectGroup": "{group}をすべて選択",
       "failed": {
         "other": "処理できなかったトレードが{count}件あります（下に表示）。何も保存されていません。選択を外して、もう一度お試しください。"
-      }
+      },
+      "tip": "複数のトレードを選んで、まとめて処理します。"
     },
     "fullScanConfirm": {
       "title": "全件スキャンを実行しますか？",
       "body": "アプリは、前回のインポートが止まった場所で止まらずに、CSFloatのトレード履歴と取引明細をすべて読み直します。リクエストが増え、最大2分かかることがあります。重複はしません。インポート済みのトレードはIDで識別され、あなたが自分で入力した記録は、float（またはアイテム、価格、日付）で引き続き紐づけられます。基準日（{date}）より前のトレードは対象外のため、記録や入金にすでにあるお金は二重に計上されません。それより古いトレードをインポートするには、インポートのページで基準日を変更してください。",
       "componentsNote": "このスキャンでは、インポート済みの購入のStickerとチャームも、一度だけ補完します。あなたが自分で登録したものは変更されません。",
-      "confirm": "全件スキャンを実行"
+      "confirm": "全件スキャンを実行",
+      "timeNote": "数分かかることがあります。アプリを開いたままにしてください。"
     },
     "cutoffChange": {
       "title": "基準日を変更",
@@ -1961,7 +2096,8 @@
       "salesCount": {
         "zero": "販売なし",
         "other": "販売{count}件"
-      }
+      },
+      "howItWorks": "基準日のしくみ"
     },
     "seeInProfit": "実利益で見る",
     "txFee": "手数料 {value}",
@@ -1983,7 +2119,42 @@
         "other": "新しい日付より前の、まだインポートされていない入金・出金{count}件は、インポートされなくなります。インポート済みのものは残ります。"
       },
       "history": "このインポートで、入出金の基準日を設定または変更しました。"
-    }
+    },
+    "steps": {
+      "title": "このアイテムはどうなりましたか？",
+      "bought": "購入しましたか？購入を入力します。",
+      "won": "ドロップまたは贈り物ですか？受け取り済みにします。",
+      "skip": "入力しませんか？今は無視します。"
+    },
+    "tabs": {
+      "label": "インポートの区分",
+      "review": "要確認",
+      "ignored": "無視",
+      "history": "履歴"
+    },
+    "status": {
+      "lastImport": "前回のインポート：{date}",
+      "cutoff": "基準日：{date}",
+      "noCutoff": "基準日はまだありません",
+      "autoOn": "起動時にインポート：オン",
+      "autoOff": "起動時にインポート：オフ",
+      "autoPaused": "起動時にインポート：一時停止中"
+    },
+    "moreOptions": "その他の操作",
+    "timeline": {
+      "label": "基準日のタイムライン",
+      "before": "基準日より前：インポートしない",
+      "after": "基準日より後：インポートする",
+      "current": "現在：{date}",
+      "new": "新しい日付：{date}",
+      "earlier": "2つの日付の間のトレードがインポートされるようになります。",
+      "later": "2つの日付の間のトレードはインポートされなくなります。",
+      "moves": {
+        "other": "対象が入れ替わるトレード：{count}件"
+      }
+    },
+    "ignoredToast": "トレードを無視しました。",
+    "ignoredUndo": "元に戻す"
   },
   "balanceCheck": {
     "button": "CSFloatと照合",
@@ -2059,7 +2230,14 @@
     "step4": "下にキーを貼り付けて、「キーを保存」、続いて「接続をテスト」をクリックします。",
     "step5": "（下の）「今すぐインポート」、またはインベントリの「CSFloatからインポート」をクリックします。基準日を選んでください。いつの分まで、アプリにすべて入力済みかを指定します。",
     "open": "CSFloatを開く",
-    "safety": "このキーでCSFloatのアカウントにアクセスできます。誰にも共有しないでください。漏れた場合は、CSFloatで削除して、新しいキーを作成してください。"
+    "safety": "このキーでCSFloatのアカウントにアクセスできます。誰にも共有しないでください。漏れた場合は、CSFloatで削除して、新しいキーを作成してください。",
+    "illustrationAlt": {
+      "step1": "イラスト：CSFloatのアドレスが表示されたブラウザのウィンドウ。",
+      "step2": "イラスト：ログイン中のアカウントのプロフィールメニュー。",
+      "step3": "イラスト：一覧の中でキーを作成するところ。",
+      "step4": "イラスト：キーをコピーして入力欄に貼り付けるところ。",
+      "step5": "イラスト：キーを秘密にするための盾。"
+    }
   },
   "openForm": {
     "title": "{name}を開ける",

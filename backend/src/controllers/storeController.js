@@ -26,4 +26,8 @@ function saleQuote(req, res) {
   res.json({ success: true, data: storeService.quoteSale(req.params.id, req.validatedQuery.salePriceCents) });
 }
 
-module.exports = { list, getById, create, update, remove, saleQuote };
+function feePreview(req, res) {
+  res.json({ success: true, data: storeService.previewSaleFee(req.validatedQuery) });
+}
+
+module.exports = { list, getById, create, update, remove, saleQuote, feePreview };

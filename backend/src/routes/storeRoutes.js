@@ -2,7 +2,7 @@ const { Router } = require('express');
 const controller = require('../controllers/storeController');
 const validateIdParam = require('../middlewares/validateIdParam');
 const {
-  validateStoreQuery, validateSaleQuoteQuery, validateStoreCreateBody, validateStorePatchBody,
+  validateStoreQuery, validateSaleQuoteQuery, validateFeePreviewQuery, validateStoreCreateBody, validateStorePatchBody,
 } = require('../middlewares/storeValidators');
 
 const { requireJsonForWrites } = require('../middlewares/validationHelpers');
@@ -12,6 +12,8 @@ router.use(requireJsonForWrites);
 
 router.get('/', validateStoreQuery, controller.list);
 router.post('/', validateStoreCreateBody, controller.create);
+// Antes de '/:id': 'fee-preview' não pode ser lido como id.
+router.get('/fee-preview', validateFeePreviewQuery, controller.feePreview);
 router.get('/:id/sale-quote', validateIdParam, validateSaleQuoteQuery, controller.saleQuote);
 router.get('/:id', validateIdParam, controller.getById);
 router.patch('/:id', validateIdParam, validateStorePatchBody, controller.update);

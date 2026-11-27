@@ -70,7 +70,7 @@ describe('migração v9', () => {
     const { snapshot } = seedV8(dbPath);
     const db = openDatabase(dbPath, { now: NOW });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(26);
+      expect(db.pragma('user_version', { simple: true })).toBe(27);
       expect(db.pragma('foreign_key_check')).toEqual([]);
       const rows = db.prepare('SELECT * FROM store_balances ORDER BY id').all();
       expect(rows).toHaveLength(snapshot.balances.length);
@@ -87,7 +87,7 @@ describe('migração v9', () => {
       expect(db.prepare("SELECT name FROM sqlite_master WHERE name = 'idx_store_balances_store_date'").all()).toHaveLength(1);
       expect(db.prepare("SELECT sql FROM sqlite_master WHERE name = 'store_balances'").get().sql).toMatch(/STRICT/);
       for (const t of ['items', 'deposits', 'withdrawals', 'stores', 'settings']) {
-        expect(db.prepare(`SELECT * FROM ${t} ORDER BY 1`).all().map(({ steam_store_id: _steam, price_refresh_started_at: _p1, price_refresh_last_at: _p2, price_refresh_last_status: _p3, price_refresh_last_error_code: _p4, display_currency: _dc, ...r }) => r)).toEqual(t === 'settings' ? snapshot.others[t].map((r) => ({ ...r, inventory_view: 'GROUPED' })) : snapshot.others[t]); // v11: coluna nova com o padrão
+        expect(db.prepare(`SELECT * FROM ${t} ORDER BY 1`).all().map(({ steam_store_id: _steam, price_refresh_started_at: _p1, price_refresh_last_at: _p2, price_refresh_last_status: _p3, price_refresh_last_error_code: _p4, display_currency: _dc, inventory_density: _dn, ...r }) => r)).toEqual(t === 'settings' ? snapshot.others[t].map((r) => ({ ...r, inventory_view: 'GROUPED' })) : snapshot.others[t]); // v11: coluna nova com o padrão
       }
       expect(db.prepare("SELECT seq FROM sqlite_sequence WHERE name = 'store_balances'").get()).toEqual(snapshot.sequence);
       const next = db.prepare("INSERT INTO store_balances (store_id, balance_cents, recorded_at, created_at) VALUES (1, 1, 'r', 'c')").run();
@@ -126,7 +126,7 @@ describe('migração v9', () => {
     old.close();
     const db = openDatabase(dbPath, { now: NOW });
     try {
-      expect(db.pragma('user_version', { simple: true })).toBe(26);
+      expect(db.pragma('user_version', { simple: true })).toBe(27);
       expect(db.prepare('SELECT balance_cents AS b, kind, computed_cents AS c, adjustment_cents AS a FROM store_balances ORDER BY id').all())
         .toEqual([{ b: 1, kind: 'CHECK', c: null, a: null }, { b: 2, kind: 'CHECK', c: null, a: null }]);
     } finally {

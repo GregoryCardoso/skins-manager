@@ -1,14 +1,11 @@
-.keyRow { display: flex; align-items: flex-end; gap: 0.6rem; flex-wrap: wrap; }
-.keyField { display: flex; flex-direction: column; gap: 0.25rem; flex: 1 1 18rem; min-width: 12rem; }
-.keyInput { width: 100%; box-sizing: border-box; }
-.storeSelect { min-width: 12rem; }
-.savedKey { margin: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-.warnings { display: flex; flex-direction: column; gap: 0.5rem; }
-.helpLink { color: var(--accent); }
-.importBox { display: flex; flex-direction: column; gap: 0.5rem; border-top: 1px solid var(--border); padding-top: 0.75rem; }
-.actions { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center; }
-.toggle { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; }
-/* Data de corte e o botão "Verificar meus importes e pendências" (Revisão 28). */
-.cutoffRow { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.stack { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; }
+.keyRow { display: flex; align-items: flex-start; gap: var(--space-3); flex-wrap: wrap; }
+.keyField { flex: 1 1 18rem; min-width: 12rem; }
+.keyRow > button { margin-top: 1.6rem; }
+.savedKey { margin: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; }
+.muted { margin: 0; color: var(--muted); font-size: var(--fs-sm); }
+.importBox { display: flex; flex-direction: column; gap: var(--space-3); border-top: 1px solid var(--line); padding-top: var(--space-4); }
+.actions { display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center; }
+.cutoffRow { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
 .cutoffRow p { margin: 0; }
-.cutoffRow a { text-decoration: none; display: inline-block; }
+.link { color: var(--text); text-decoration: underline; text-underline-offset: 0.15em; }

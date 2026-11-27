@@ -18,3 +18,14 @@ describe('apiKeyInput (mesma regra do backend)', () => {
     expect(validateApiKeyInput(` ${'b'.repeat(512)}\n`)).toEqual({ ok: true, value: 'b'.repeat(512) });
   });
 });
+
+describe('apiKeyFormatDetail (12.9)', () => {
+  test('vazio não é erro de formato; curta, longa e com espaço têm motivo próprio', async () => {
+    const { apiKeyFormatDetail } = await import('./apiKeyInput');
+    expect(apiKeyFormatDetail('   ')).toBeNull();
+    expect(apiKeyFormatDetail('abc')).toBe('SHORT');
+    expect(apiKeyFormatDetail('a'.repeat(513))).toBe('LONG');
+    expect(apiKeyFormatDetail('abcd efghij')).toBe('SPACES');
+    expect(apiKeyFormatDetail(` ${'a'.repeat(20)}\n`)).toBeNull();
+  });
+});

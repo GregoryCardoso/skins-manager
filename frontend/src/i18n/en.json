@@ -93,7 +93,10 @@
       "steamLocked": "Your Steam store has entries in {from}, which cannot be converted. It stays in {from}.",
       "steamNewStore": "Create a new Steam store in {currency} for future entries",
       "steamNewStoreHint": "The current one is turned off and renamed (for example \"Steam ({from})\"). Nothing is converted or deleted, and its balance still counts in your profit. The new one keeps the same fees and rules.",
-      "confirm": "Use {currency}"
+      "confirm": "Use {currency}",
+      "rateLabel": "Exchange rate (US$ 1 = ___ {currency})",
+      "rateOptional": "Optional. Enter it now to see converted values right away, or do it later in Settings.",
+      "fetchFailed": "Could not fetch the exchange rate for {currency}. Enter it below, or do it later in Settings."
     },
     "groups": {
       "america": "Americas",
@@ -407,7 +410,8 @@
       "minPrice": "Break-even price",
       "actions": "Actions",
       "marketValue": "Market value ≈",
-      "unrealized": "Unrealized profit/loss ≈"
+      "unrealized": "Unrealized profit/loss ≈",
+      "turnover": "Turnover"
     },
     "primaryStore": "Primary store",
     "otherStores": "Other stores",
@@ -439,7 +443,10 @@
       "openNeedsKey": "Register this case's key ({keyName}) first.",
       "openNeedsKeyOther": "Register this case's key ({keyName}) first. The keys in stock do not fit this case.",
       "registerKey": "Register key",
-      "detach": "Separate charm/slab"
+      "detach": "Separate charm/slab",
+      "viewUnits": "Show units",
+      "moreFor": "More actions for {name}",
+      "noSellableUnit": "No unit can be sold right now: all of them are in trade lock."
     },
     "itemGone": "This item no longer exists. It may have been deleted in another tab. The list was refreshed.",
     "daysForSale": "for sale for {days}",
@@ -473,7 +480,6 @@
       "invalidQuantity": "Enter a whole number from 1 to {max}.",
       "offSaleConfirm": "Move to holding",
       "forSaleConfirm": "Back to sale",
-      "selectAll": "Select all units",
       "selectUnit": "Select {name} (#{id})",
       "selectionBar": "Selected units",
       "selected": {
@@ -481,7 +487,10 @@
         "one": "{count} selected",
         "other": "{count} selected"
       },
-      "clearSelection": "Clear selection"
+      "clearSelection": "Clear selection",
+      "hint": "Tick several units to move them together.",
+      "limit": "Up to {max} units at a time.",
+      "selectGroup": "Select the units of {name} shown"
     },
     "marketValue": {
       "noPrice": "no price",
@@ -528,6 +537,38 @@
         "unrealized": "Unrealized profit/loss: {value}",
         "coverage": "(priced: {priced} of {total})"
       }
+    },
+    "density": {
+      "label": "Density",
+      "compact": "Compact",
+      "comfortable": "Comfortable"
+    },
+    "help": {
+      "minPrice": "Break-even price: the lowest price at which the net amount covers the cost, using only the store's sale fee.",
+      "convertedCost": "Cost converted at the rate of the purchase day.",
+      "marketValue": "Market value: a CSFloat estimate. It is not money in your balance until you sell.",
+      "unrealized": "Unrealized profit or loss: the estimate minus the sale fee and the cost. It only becomes real when you sell.",
+      "priceRange": "Range of the break-even prices of the units shown. Each unit has its own cost."
+    },
+    "warnings": {
+      "goToStores": "Go to Stores",
+      "goToSettings": "Go to Settings"
+    },
+    "emptyTitle": "No items yet",
+    "emptyFilteredTitle": "No items match",
+    "toolbar": {
+      "search": "Search by name"
+    },
+    "position": {
+      "label": "Inventory position",
+      "forSale": "For sale (cost)",
+      "offSale": "In holding (cost)",
+      "tradeLocked": "In trade lock (units)",
+      "nextUnlock": "Next unlock: {date}",
+      "stagnant": "Stuck (units)",
+      "groups": "Different items: {count}",
+      "stagnantHint": "Units for sale, outside trade lock, past the stuck limit. Items in holding and in trade lock never count.",
+      "costHelp": "Cost of all the stock in this state, regardless of filters and search."
     }
   },
   "filters": {
@@ -1093,7 +1134,19 @@
     "steamClear": "Stop using as my Steam store",
     "steamHint": "Your Steam store is where the app records the price paid at the terminal.",
     "steamSaved": "\"{name}\" is now your Steam store.",
-    "steamCleared": "No Steam store chosen."
+    "steamCleared": "No Steam store chosen.",
+    "card": {
+      "saleFeeSentence": {
+        "DEDUCTED": "{rate}% deducted from the price",
+        "ADDED": "{rate}% added to the price"
+      },
+      "moreActionsFor": "More actions for {name}"
+    },
+    "steamTip": {
+      "title": "Choose your Steam store",
+      "body": "To open terminals, choose which of your stores is your Steam store, using the \"More actions\" menu on the card.",
+      "action": "Choose"
+    }
   },
   "storesTable": {
     "columns": {
@@ -1180,7 +1233,20 @@
     "created": "Store \"{name}\" created.",
     "updated": "Store \"{name}\" updated.",
     "balanceSection": "Balance after a sale",
-    "invalidSaleHoldDays": "Enter a whole number of days, from 0 to 30."
+    "invalidSaleHoldDays": "Enter a whole number of days, from 0 to 30.",
+    "sections": {
+      "identity": "Identification",
+      "status": "Status"
+    },
+    "example": {
+      "title": "Fee example",
+      "deducted": "On a sale of {price}, the fee is {fee} and you receive {net}.",
+      "added": "The buyer pays {price}, the fee is {fee} and you receive {net}.",
+      "priceLabel": "Example price ({currency})",
+      "notConfigured": "No sale fee set: the break-even price for this store will not be available.",
+      "incomplete": "Choose the fee type and enter the rate to see an example.",
+      "error": "Could not calculate the example ({reason})."
+    }
   },
   "settings": {
     "title": "Settings",
@@ -1209,7 +1275,9 @@
       "autoRefreshHint": "With this source, the rate updates by itself when you open the app (once per opening). If you type a rate, it takes effect and no longer changes when the app opens, until you click \"Update rate\".",
       "autoRefreshPausedManual": "The current rate was typed by you, so it is not updated when the app opens. Click \"Update rate\" to use the source above again. After that, it updates by itself every time you open the app.",
       "autoFailed": "Could not update the {currency} rate when opening the app ({reason}). Try again in Settings.",
-      "autoFailedWithRate": "Could not update the {currency} rate when opening the app ({reason}). The app used the last rate: {rate}."
+      "autoFailedWithRate": "Could not update the {currency} rate when opening the app ({reason}). The app used the last rate: {rate}.",
+      "boundsHint": "Accepted range: {min} to {max}",
+      "outOfBounds": "This rate is outside the usual range. Check it before saving."
     },
     "preferences": {
       "title": "Preferences",
@@ -1232,7 +1300,9 @@
       "noChanges": "Nothing to save.",
       "middle": "Moving: from {from} up to {to}.",
       "adjusted": "The saved limits do not match the current default. Fast turnover is being calculated as {fast}. Save new limits to fix this.",
-      "invalidNumber": "Enter a whole number, like 7."
+      "invalidNumber": "Enter a whole number, like 7.",
+      "scaleTitle": "How the ranges look",
+      "scaleInvalid": "To preview the ranges, both limits must satisfy 1 ≤ fast < stuck ≤ 365."
     },
     "catalog": {
       "title": "Item catalog"
@@ -1260,7 +1330,38 @@
       "copyPath": "Copy path",
       "pathCopied": "Path copied.",
       "copyFailed": "Could not copy. Select the path and copy it manually.",
-      "retention": "The app saves automatic backups in the backups folder, inside the data folder. It keeps the 10 most recent of each kind: the ones made before importing a backup and the ones made before updating the app."
+      "retention": "The app saves automatic backups in the backups folder, inside the data folder. It keeps the 10 most recent of each kind: the ones made before importing a backup and the ones made before updating the app.",
+      "preview": {
+        "reading": "Reading the file…",
+        "fileLine": "File: {file} ({size})",
+        "lastChange": "Last change recorded in the file: {date}",
+        "lastChangeUnknown": "The file has no change date.",
+        "schema": "Data version: v{version}",
+        "willMigrate": "On import, your data will be updated to v{current}.",
+        "counts": {
+          "items": {
+            "one": "{count} item",
+            "other": "{count} items"
+          },
+          "sales": {
+            "one": "{count} sale",
+            "other": "{count} sales"
+          },
+          "stores": {
+            "one": "{count} store",
+            "other": "{count} stores"
+          },
+          "deposits": {
+            "one": "{count} deposit",
+            "other": "{count} deposits"
+          },
+          "withdrawals": {
+            "one": "{count} withdrawal",
+            "other": "{count} withdrawals"
+          }
+        },
+        "pickAnother": "Choose another file"
+      }
     },
     "about": {
       "title": "About",
@@ -1337,10 +1438,40 @@
         "autoPausedUndo": "Importing when the app opens is paused because you undid an import on {date}. This way, what was undone does not come back by itself. Resume it when you want.",
         "autoPausedSwitch": "Importing when the app opens is paused because the CSFloat account was switched. Do the first import of the new account and resume it.",
         "autoResume": "Resume importing when the app opens",
-        "reviewImports": "See imports and items to review"
+        "reviewImports": "See imports and items to review",
+        "keyValid": {
+          "one": "Valid format · {count} character",
+          "other": "Valid format · {count} characters"
+        },
+        "keyTooShort": "The key looks too short. Check that you copied all of it.",
+        "keyTooLong": "The key looks too long. Check that you copied only the key.",
+        "keyHasSpaces": "The key has spaces in the middle. Copy it again."
       }
     },
-    "loadError": "Could not load the settings ({reason}). Try again."
+    "loadError": "Could not load the settings ({reason}). Try again.",
+    "index": {
+      "label": "Settings sections"
+    },
+    "status": {
+      "fxCount": {
+        "one": "{count} currency",
+        "other": "{count} currencies"
+      },
+      "fxStale": {
+        "one": "{count} outdated",
+        "other": "{count} outdated"
+      },
+      "fxMissing": "{currency} rate missing",
+      "aging": "Fast up to {fast} · stuck above {slow}",
+      "csfloatConnected": "CSFloat connected",
+      "csfloatNoKey": "CSFloat: no key",
+      "csfloatReview": {
+        "one": "{count} to review",
+        "other": "{count} to review"
+      },
+      "backupFolder": "Backups folder ready",
+      "catalog": "{total} items · updated {date}"
+    }
   },
   "desktopUpdate": {
     "availableTitle": "Update available",
@@ -1897,7 +2028,18 @@
       "CREATE_PURCHASE": "Enter purchase",
       "MARK_WON": "I received this item (drop)",
       "APPLY_FROM_STOCK": "Apply and record",
-      "REOPEN": "Back to review"
+      "REOPEN": "Back to review",
+      "explain": {
+        "REMOVE": "Deletes the purchase or undoes the sale made in the app. Asks for confirmation.",
+        "KEEP": "Keeps your entry as it is. The app stops warning about this trade.",
+        "CREATE": "Enters this trade in the app even though it looks like a duplicate.",
+        "LINK": "Ties this trade to an entry you already made, without creating a new one.",
+        "IGNORE": "Does nothing for now. You can go back in the Ignored tab.",
+        "CREATE_PURCHASE": "Enter the store, price and date. The sale is recorded right after.",
+        "MARK_WON": "Records the item as received, with cost 0, and records the sale.",
+        "APPLY_FROM_STOCK": "Uses an item from your stock as this weapon's sticker or charm.",
+        "REOPEN": "Puts the trade back in the review list."
+      }
     },
     "auto": {
       "created": {
@@ -1969,13 +2111,15 @@
       "failed": {
         "one": "{count} trade could not be resolved (marked below). Nothing was saved. Unselect it and try again.",
         "other": "{count} trades could not be resolved (marked below). Nothing was saved. Unselect them and try again."
-      }
+      },
+      "tip": "Tick several trades to resolve them together."
     },
     "fullScanConfirm": {
       "title": "Run a full scan?",
       "body": "The app will read the whole CSFloat trade history and statement again, without stopping where the last import stopped. This makes more requests and can take up to 2 minutes. Nothing is duplicated: trades already imported are recognized by their ID, and the entries you made yourself keep being linked by float (or by item, price and day). Trades from before the cutoff date ({date}) stay out, so money already in your entries and deposits is not counted twice. To import older trades, change the cutoff date on the Imports page.",
       "componentsNote": "The scan also fills in, once, the stickers and charm of purchases already imported. The ones you registered yourself are not changed.",
-      "confirm": "Run full scan"
+      "confirm": "Run full scan",
+      "timeNote": "It can take a few minutes. Keep the app open."
     },
     "cutoffChange": {
       "title": "Change cutoff date",
@@ -2029,7 +2173,8 @@
         "zero": "no sales",
         "one": "{count} sale",
         "other": "{count} sales"
-      }
+      },
+      "howItWorks": "How the cutoff date works"
     },
     "seeInProfit": "See in real profit",
     "txFee": "fee {value}",
@@ -2054,7 +2199,43 @@
         "other": "{count} deposits or withdrawals from before the new date, not imported yet, stop being imported. Those already imported stay."
       },
       "history": "This import set or changed the deposits and withdrawals cutoff date."
-    }
+    },
+    "steps": {
+      "title": "What happened with this item?",
+      "bought": "Did you buy it? Enter the purchase.",
+      "won": "Was it a drop or a gift? Mark it as received.",
+      "skip": "Do not want to enter it? Ignore it for now."
+    },
+    "tabs": {
+      "label": "Imports sections",
+      "review": "To review",
+      "ignored": "Ignored",
+      "history": "History"
+    },
+    "status": {
+      "lastImport": "Last import: {date}",
+      "cutoff": "Cutoff date: {date}",
+      "noCutoff": "No cutoff date yet",
+      "autoOn": "Import on open: on",
+      "autoOff": "Import on open: off",
+      "autoPaused": "Import on open: paused"
+    },
+    "moreOptions": "More options",
+    "timeline": {
+      "label": "Cutoff date timeline",
+      "before": "Before: not imported",
+      "after": "After: imported",
+      "current": "Current: {date}",
+      "new": "New: {date}",
+      "earlier": "Trades between the two dates will start to be imported.",
+      "later": "Trades between the two dates will stop being imported.",
+      "moves": {
+        "one": "{count} trade changes side",
+        "other": "{count} trades change side"
+      }
+    },
+    "ignoredToast": "Trade ignored.",
+    "ignoredUndo": "Undo"
   },
   "balanceCheck": {
     "button": "Check against CSFloat",
@@ -2132,7 +2313,14 @@
     "step4": "Paste the key below, click \"Save key\" and then \"Test connection\".",
     "step5": "Click \"Import now\" (below) or \"Import from CSFloat\" in the Inventory. Choose the cutoff date: up to when you have already entered everything in the app.",
     "open": "Open CSFloat",
-    "safety": "The key gives access to your CSFloat account: do not share it with anyone. If it leaks, delete it on CSFloat and create another one."
+    "safety": "The key gives access to your CSFloat account: do not share it with anyone. If it leaks, delete it on CSFloat and create another one.",
+    "illustrationAlt": {
+      "step1": "Illustration: a browser window with the CSFloat address.",
+      "step2": "Illustration: the profile menu of a signed-in account.",
+      "step3": "Illustration: a key being created in a list.",
+      "step4": "Illustration: copying the key and pasting it into a field.",
+      "step5": "Illustration: a shield, for keeping the key private."
+    }
   },
   "openForm": {
     "title": "Open {name}",

@@ -9,12 +9,13 @@ import { useInvalidate } from '@/lib/useInvalidate';
 import { formatDateTime } from '@/lib/format';
 import { changeCutoff, getCsfloatIntegration, runCsfloatImport } from '@/services/api';
 import type { ImportBatchView, IntegrationView } from '@/types/api';
-import forms from './forms.module.css';
-import ConfirmDialog from './ConfirmDialog';
 import CutoffChangeModal from './CutoffChangeModal';
 import ImportCutoffModal from './ImportCutoffModal';
 import ImportSummaryModal from './ImportSummaryModal';
-import Modal from './Modal';
+import Banner from './ui/Banner';
+import Button from './ui/Button';
+import ConfirmDialog from './ui/ConfirmDialog';
+import Dialog from './ui/Dialog';
 
 export type ImportDisabledReason = 'LOADING' | 'NO_KEY' | 'NO_STORE' | 'RUNNING';
 
@@ -134,7 +135,7 @@ export function useCsfloatImport(): CsfloatImportControls {
       {confirmFullScan && integration?.tradesCutoffAt && (
         <ConfirmDialog
           title={t('imports.fullScanConfirm.title')}
-          message={`${t('imports.fullScanConfirm.body', { date: formatDateTime(integration.tradesCutoffAt, locale) })} ${t('imports.fullScanConfirm.componentsNote')}`}
+          message={`${t('imports.fullScanConfirm.body', { date: formatDateTime(integration.tradesCutoffAt, locale) })} ${t('imports.fullScanConfirm.componentsNote')} ${t('imports.fullScanConfirm.timeNote')}`}
           confirmLabel={t('imports.fullScanConfirm.confirm')}
           busy={running}
           error={errorText}
@@ -159,16 +160,14 @@ export function useCsfloatImport(): CsfloatImportControls {
       )}
       {result !== null && <ImportSummaryModal batch={result} onClose={() => setResult(null)} />}
       {error !== null && !inlineError && (
-        <Modal title={t('imports.errorTitle')} onClose={() => setError(null)}>
-          <div className={forms.form}>
-            <div className={forms.topError} role="alert">{errorText}</div>
-            <div className={forms.actions}>
-              <button type="button" className={`${forms.button} ${forms.primary}`} onClick={() => setError(null)} autoFocus>
-                {t('common.close')}
-              </button>
-            </div>
-          </div>
-        </Modal>
+        <Dialog
+          title={t('imports.errorTitle')}
+          size="sm"
+          onClose={() => setError(null)}
+          footer={<Button variant="primary" onClick={() => setError(null)}>{t('common.close')}</Button>}
+        >
+          <Banner tone="danger">{errorText}</Banner>
+        </Dialog>
       )}
     </>
   );

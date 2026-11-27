@@ -22,7 +22,7 @@ import { queryKeys } from '@/lib/queryKeys';
 import { useInvalidate } from '@/lib/useInvalidate';
 import { changeDisplayCurrency, getSettings, refreshFxRate, updateFxRate, updatePreferences } from '@/services/api';
 import type {
-  DisplayCurrencyChangeResult, FxRateEntry, FxRefreshResult, FxRefreshSource, InventoryView, Language, SteamStoreChoice, ThemeChoice,
+  DisplayCurrencyChangeResult, FxRateEntry, FxRefreshResult, FxRefreshSource, InventoryDensity, InventoryView, Language, SteamStoreChoice, ThemeChoice,
 } from '@/types/api';
 
 interface PreferencesContextValue {
@@ -40,6 +40,10 @@ interface PreferencesContextValue {
   // Visão do inventário (D276): o banco prevalece; a troca é otimista e volta ao valor anterior se o PATCH falhar.
   inventoryView: InventoryView;
   setInventoryView: (view: InventoryView) => void;
+  // Densidade da tabela do inventário (D370, 12.5a): vem do banco (sem cache local); a troca aplica na hora e volta se o PATCH falhar.
+  // Resolve `true` se gravou e `false` se falhou (o chamador mostra o aviso).
+  inventoryDensity: InventoryDensity;
+  setInventoryDensity: (density: InventoryDensity) => Promise<boolean>;
   // Moeda de conversão (D369): a do "≈". Instalação nova = USD (sem "≈"); banco existente = BRL. Enquanto as configurações não chegam, USD.
   displayCurrency: string;
   // Cotações gravadas por moeda e as moedas que precisam de cotação (a de conversão, as das lojas e, com legado, o BRL).
@@ -235,6 +239,33 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     [invalidate],
   );
 
+  // Densidade: valor local só enquanto o PATCH não termina; depois volta a valer o do cache das configurações (ou o anterior, se falhar).
+  const [densityOverride, setDensityOverride] = useState<InventoryDensity | null>(null);
+  const densitySeq = useRef(0);
+  const inventoryDensity: InventoryDensity = densityOverride ?? settingsData?.inventoryDensity ?? 'COMPACT';
+  const setInventoryDensity = useCallback(
+    async (next: InventoryDensity) => {
+      const seq = ++densitySeq.current;
+      setDensityOverride(next);
+      try {
+        await updatePreferences({ inventoryDensity: next });
+        await invalidate('settings.preferences');
+        if (seq === densitySeq.current) {
+          setDensityOverride(null);
+          setSaveError(null);
+        }
+        return true;
+      } catch (error) {
+        if (seq === densitySeq.current) {
+          setDensityOverride(null);
+          setSaveError(error);
+        }
+        return false;
+      }
+    },
+    [invalidate],
+  );
+
   const saveFxRate = useCallback(async (currency: string, rate: number) => {
     await updateFxRate(currency, rate);
     await invalidate('settings.fx');
@@ -267,10 +298,10 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(
     () => ({
-      theme, language, ready, languageSettled, saveError, setTheme, setLanguage, inventoryView, setInventoryView, displayCurrency, fxRates,
+      theme, language, ready, languageSettled, saveError, setTheme, setLanguage, inventoryView, setInventoryView, inventoryDensity, setInventoryDensity, displayCurrency, fxRates,
       requiredFxCurrencies, changeDisplayCurrency: changeCurrency, usdBrlRate, rateFor, saveFxRate, saveFxRefreshSource, refreshFxRate: refreshFx, reloadFxRate,
     }),
-    [theme, language, ready, languageSettled, saveError, setTheme, setLanguage, inventoryView, setInventoryView, displayCurrency, fxRates,
+    [theme, language, ready, languageSettled, saveError, setTheme, setLanguage, inventoryView, setInventoryView, inventoryDensity, setInventoryDensity, displayCurrency, fxRates,
       requiredFxCurrencies, changeCurrency, usdBrlRate, rateFor, saveFxRate, saveFxRefreshSource, refreshFx, reloadFxRate],
   );
 

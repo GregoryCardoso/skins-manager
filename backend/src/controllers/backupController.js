@@ -38,6 +38,11 @@ function importBackup(req, res) {
   res.json({ success: true, data });
 }
 
+// POST /api/backup/import-preview (12.8): `req.body` é um Buffer; só lê e resume, nada é gravado.
+function importPreview(req, res) {
+  res.json({ success: true, data: backupService.previewBackup(req.body) });
+}
+
 // GET /api/backup/info (D175).
 function info(req, res) {
   res.json({ success: true, data: backupService.getBackupInfo({ canOpenFn: req.app.locals.canOpenFolderFn }) });
@@ -56,4 +61,4 @@ async function openFolder(req, res, next) {
   }
 }
 
-module.exports = { exportBackup, importBackup, info, openFolder };
+module.exports = { exportBackup, importBackup, importPreview, info, openFolder };

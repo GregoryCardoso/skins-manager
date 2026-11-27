@@ -74,6 +74,8 @@ const THEMES = Object.freeze(['SYSTEM', 'LIGHT', 'DARK']);
 const LANGUAGES = Object.freeze(['de', 'en', 'es', 'fr', 'it', 'pl', 'pt-BR', 'tr', 'ru', 'uk', 'ja', 'zh-CN', 'ko']);
 // Visão do inventário (D276): padrão 'GROUPED' (coluna NOT NULL com DEFAULT no banco).
 const INVENTORY_VIEWS = Object.freeze(['INDIVIDUAL', 'GROUPED']);
+// Densidade da tabela do inventário (D370, 12.5a, v027): padrão 'COMPACT'.
+const INVENTORY_DENSITIES = Object.freeze(['COMPACT', 'COMFORTABLE']);
 
 // PTAX do Banco Central (D147).
 const PTAX_BASE_URL = 'https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoDolarDia(dataCotacao=@dataCotacao)';
@@ -225,6 +227,15 @@ const MAX_ANY_AMOUNT_CENTS = Math.max(...Object.values(MAX_AMOUNT_CENTS_BY_CURRE
 // Teto, em centavos, de qualquer valor recebido pela API na moeda dada (moeda desconhecida: o maior teto, a validação da moeda vem à parte).
 const maxAmountCents = (currency) => (Object.prototype.hasOwnProperty.call(MAX_AMOUNT_CENTS_BY_CURRENCY, currency) ? MAX_AMOUNT_CENTS_BY_CURRENCY[currency] : MAX_ANY_AMOUNT_CENTS);
 
+// Preço de exemplo para a prévia da taxa de uma loja (12.8): cerca de US$ 10 na moeda, pela mesma cotação de referência do teto de valor
+// (média geométrica da faixa manual), arredondado para cima num número redondo e alinhado à unidade mínima da moeda. USD = US$ 10.
+function examplePriceCents(currency) {
+  if (currency === 'USD' || !Object.prototype.hasOwnProperty.call(FX_MANUAL_RATE_BOUNDS, currency)) return 1000;
+  const { min, max } = FX_MANUAL_RATE_BOUNDS[currency];
+  const unit = ZERO_DECIMAL_CURRENCIES.includes(currency) ? 100 : 1;
+  return Math.max(unit, Math.ceil(niceCeil(1000 * Math.sqrt(min * max)) / unit) * unit);
+}
+
 // Backup (D150, D151).
 const BACKUP_MAX_BYTES = 100 * 1024 * 1024;
 const { AUTO_BACKUP_KEEP } = require('./backupRetention'); // retenção dos backups automáticos (D151)
@@ -312,6 +323,7 @@ module.exports = Object.freeze({
   MAX_AMOUNT_CENTS_BY_CURRENCY,
   MAX_ANY_AMOUNT_CENTS,
   maxAmountCents,
+  examplePriceCents,
   MAX_NAME_LENGTH,
   MAX_ORIGIN_DETAIL_LENGTH,
   MAX_INSPECT_LINK_LENGTH,
@@ -336,6 +348,7 @@ module.exports = Object.freeze({
   THEMES,
   LANGUAGES,
   INVENTORY_VIEWS,
+  INVENTORY_DENSITIES,
   // Campos de aquisição que o item obtido numa abertura nunca aceita: ele herda tudo da operação (D363 item 4). Fonte única (S2).
   GENERATED_FORBIDDEN_FIELDS: Object.freeze(['acquisitionType', 'purchaseStoreId', 'purchasePriceCents', 'fxRateAtPurchase', 'acquiredAt']),
 });

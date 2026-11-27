@@ -1,60 +1,47 @@
 'use client';
 
-import { useId } from 'react';
 import { useT } from '@/i18n/I18nProvider';
 import { LANGUAGE_REGISTRY } from '@/i18n/languages';
 import { THEME_CHOICES } from '@/lib/preferences';
 import type { Language, ThemeChoice } from '@/types/api';
 import CurrencySelect from './CurrencySelect';
 import { usePreferences } from './PreferencesProvider';
+import styles from './PreferencesSettings.module.css';
 import TranslationNotice from './TranslationNotice';
-import styles from './settings.module.css';
+import Panel from './ui/Panel';
+import SegmentedControl from './ui/SegmentedControl';
+import Select from './ui/Select';
 
-// Tema, idioma e moeda de conversão (os mesmos controles do cabeçalho, com o mesmo estado). Trocar o idioma nunca muda a moeda.
+const LANGUAGE_OPTIONS = LANGUAGE_REGISTRY.map((entry) => ({ value: entry.code as string, label: entry.nativeName, lang: entry.code as string }));
+
+// Tema, idioma e moeda de conversão (os mesmos controles do menu lateral, com o mesmo estado). Trocar o idioma nunca muda a moeda.
 export default function PreferencesSettings() {
   const t = useT();
   const { theme, language, setTheme, setLanguage } = usePreferences();
-  const themeId = useId();
-  const languageId = useId();
-  const currencyId = useId();
 
   return (
-    <section className={styles.card} aria-labelledby="settings-prefs-title">
-      <h2 id="settings-prefs-title" className={styles.cardTitle}>{t('settings.preferences.title')}</h2>
-      <div className={styles.form}>
-        <div className={styles.field}>
-          <label htmlFor={themeId} className={styles.label}>{t('settings.preferences.theme')}</label>
-          <select
-            id={themeId}
-            className={styles.select}
+    <Panel title={t('settings.preferences.title')}>
+      <div className={styles.stack}>
+        <div className={styles.theme}>
+          <SegmentedControl
+            label={t('settings.preferences.theme')}
             value={theme}
-            onChange={(e) => setTheme(e.target.value as ThemeChoice)}
-          >
-            {THEME_CHOICES.map((choice) => (
-              <option key={choice} value={choice}>{t(`theme.${choice}`)}</option>
-            ))}
-          </select>
+            onChange={(value) => setTheme(value as ThemeChoice)}
+            options={THEME_CHOICES.map((choice) => ({ value: choice, label: t(`theme.${choice}`), icon: choice === 'DARK' ? ('moon' as const) : ('sun' as const) }))}
+          />
         </div>
-        <div className={styles.field}>
-          <label htmlFor={languageId} className={styles.label}>{t('settings.preferences.language')}</label>
-          <select
-            id={languageId}
-            className={styles.select}
+        <div className={styles.grid}>
+          <Select
+            label={t('settings.preferences.language')}
             value={language}
-            onChange={(e) => setLanguage(e.target.value as Language)}
-          >
-            {LANGUAGE_REGISTRY.map((entry) => (
-              <option key={entry.code} value={entry.code} lang={entry.code}>{entry.nativeName}</option>
-            ))}
-          </select>
+            onChange={(value) => setLanguage(value as Language)}
+            options={LANGUAGE_OPTIONS}
+          />
+          <CurrencySelect />
         </div>
-        <div className={styles.field}>
-          <label htmlFor={currencyId} className={styles.label}>{t('currency.label')}</label>
-          <CurrencySelect id={currencyId} className={styles.select} />
-        </div>
+        <p className={styles.muted}>{t('currency.hint')}</p>
+        <TranslationNotice language={language} />
       </div>
-      <p className={styles.muted}>{t('currency.hint')}</p>
-      <TranslationNotice language={language} />
-    </section>
+    </Panel>
   );
 }

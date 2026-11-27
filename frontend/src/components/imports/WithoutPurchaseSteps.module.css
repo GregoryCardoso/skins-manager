@@ -1,0 +1,9 @@
+.steps { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-2); }
+.title { margin: 0; font-weight: var(--fw-bold); font-size: var(--fs-sm); }
+.list { margin: 0; padding: 0; list-style: none; counter-reset: step; display: flex; flex-direction: column; gap: var(--space-3); }
+.step { counter-increment: step; display: grid; grid-template-columns: 1.5rem 1fr; column-gap: var(--space-2); row-gap: var(--space-1); }
+.step::before {
+  content: counter(step); grid-row: 1 / span 2; display: inline-flex; align-items: center; justify-content: center; width: 1.5rem; height: 1.5rem;
+  border-radius: var(--radius-pill); background: var(--brand-soft); color: var(--text); font-size: var(--fs-xs); font-weight: var(--fw-bold);
+}
+.question { margin: 0; font-size: var(--fs-sm); }
