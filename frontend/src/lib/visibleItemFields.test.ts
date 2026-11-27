@@ -4,7 +4,7 @@ import { resolveErrorTarget } from './formErrors';
 import { visibleItemFields, type FieldVisibility } from './itemForm';
 
 const ALL = ['catalogId', 'name', 'category', 'variant', 'floatValue', 'exterior', 'paintSeed', 'phase', 'purchasePriceCents', 'fxRateAtPurchase', 'inspectLink'];
-const base: FieldVisibility = { weapon: false, exteriorInput: false, exteriorDerived: false, phaseLocked: false, price: true, fx: false, informativeStore: false };
+const base: FieldVisibility = { weapon: false, exteriorInput: false, exteriorDerived: false, phaseLocked: false, price: true, fx: false, informativeStore: false, receivedDateLabel: false, informativeStoreInDetails: false };
 const mode = { showSearch: false, freeMode: false, hasCatalog: true };
 const err = (code: string, field?: string) => new ApiRequestError(code, 'm', 400, field ? { field } : {});
 

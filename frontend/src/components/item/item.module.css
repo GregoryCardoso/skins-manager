@@ -1,0 +1,70 @@
+/* Formulário do item (12.6a). O contêiner mede o corpo do diálogo: 2 colunas a partir de 720 px, 1 coluna abaixo. */
+.form { display: flex; flex-direction: column; gap: var(--space-5); container-type: inline-size; min-width: 0; }
+.section { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; margin: 0; padding: 0; border: 0; }
+.sectionTitle {
+  margin: 0; padding-bottom: var(--space-1); border-bottom: 1px solid var(--line);
+  font-size: var(--fs-md); font-weight: var(--fw-bold); color: var(--muted); text-transform: none;
+}
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3) var(--space-4); align-items: start; }
+.full { grid-column: 1 / -1; }
+.row { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+.muted { margin: 0; color: var(--muted); font-size: var(--fs-md); }
+.chosen {
+  display: flex; gap: var(--space-3); align-items: center; padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface-2);
+}
+.chosenText { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.chosenName { overflow-wrap: anywhere; }
+.search { display: flex; flex-direction: column; gap: var(--space-2); }
+.searchRow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2.2fr); gap: var(--space-3); align-items: start; }
+.optionMedia { flex: none; display: inline-flex; }
+.comboFooter { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); font-size: var(--fs-sm); color: var(--muted); }
+.lockedValue { display: flex; align-items: center; gap: var(--space-2); min-height: var(--control-h-md); font-size: var(--fs-md); }
+.lockedLabel { font-size: var(--fs-sm); color: var(--muted); font-weight: var(--fw-bold); }
+.costNote { display: flex; flex-direction: column; gap: var(--space-1); }
+.inlineAction { display: flex; gap: var(--space-2); align-items: end; }
+.inlineAction > :first-child { flex: 1; min-width: 0; }
+
+/* Abrir, aplicar e separar (12.6b) */
+.fieldError { color: var(--loss); font-size: var(--fs-sm); font-weight: var(--fw-bold); }
+.fieldError:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius-sm, 4px); }
+.optionList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.option { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-3); border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface); }
+.optionSelected { border-color: var(--brand, var(--line)); background: var(--surface-2); }
+.optionText { display: flex; flex-direction: column; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.optionTags { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.noteBlock { display: flex; flex-direction: column; gap: var(--space-1); }
+.noteBlock p { margin: 0; }
+
+/* Venda (12.6b) */
+.reference { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); min-height: var(--control-h-sm, 2rem); }
+.youReceive { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+
+.historyStack { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; }
+
+/* Desfazer venda: efeito no saldo (12.6b) */
+.effect { display: flex; flex-direction: column; gap: var(--space-2); font-size: var(--fs-md); }
+.effect p { margin: 0; }
+
+/* Painel de componentes */
+.panel { scroll-margin-top: var(--space-4); }
+.panel:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius-md); }
+.heading { margin: var(--space-1) 0 0; font-size: var(--fs-md); font-weight: var(--fw-bold); }
+.componentRow {
+  display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 0.8fr) minmax(0, 0.9fr) auto; gap: var(--space-2) var(--space-3);
+  align-items: end; padding-bottom: var(--space-3); border-bottom: 1px dashed var(--line);
+}
+.componentRow:last-of-type { border-bottom: 0; }
+.origin { font-size: var(--fs-sm); color: var(--muted); }
+.rowButtons { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+.actions { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+.disabledReason { font-size: var(--fs-sm); color: var(--muted); }
+
+@container (width < 720px) {
+  .grid { grid-template-columns: minmax(0, 1fr); }
+  .searchRow { grid-template-columns: minmax(0, 1fr); }
+  .componentRow { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+}
+@container (width < 480px) {
+  .componentRow { grid-template-columns: minmax(0, 1fr); }
+}

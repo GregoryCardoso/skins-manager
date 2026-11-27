@@ -1,0 +1,304 @@
+{
+  "userVersion": 27,
+  "objects": [
+    {
+      "type": "index",
+      "name": "idx_catalog_items_category_key",
+      "tblName": "catalog_items",
+      "sql": "CREATE INDEX idx_catalog_items_category_key ON catalog_items(category, name_key)"
+    },
+    {
+      "type": "index",
+      "name": "idx_deposits_deposited_at",
+      "tblName": "deposits",
+      "sql": "CREATE INDEX idx_deposits_deposited_at ON deposits(deposited_at)"
+    },
+    {
+      "type": "index",
+      "name": "idx_external_links_batch",
+      "tblName": "external_links",
+      "sql": "CREATE INDEX idx_external_links_batch ON external_links(batch_id)"
+    },
+    {
+      "type": "index",
+      "name": "idx_external_records_contract",
+      "tblName": "external_records",
+      "sql": "CREATE INDEX idx_external_records_contract ON external_records(source, contract_id)"
+    },
+    {
+      "type": "index",
+      "name": "idx_external_records_first_batch",
+      "tblName": "external_records",
+      "sql": "CREATE INDEX idx_external_records_first_batch ON external_records(first_batch_id)"
+    },
+    {
+      "type": "index",
+      "name": "idx_external_records_tracking",
+      "tblName": "external_records",
+      "sql": "CREATE INDEX idx_external_records_tracking ON external_records(source, kind, tracking)"
+    },
+    {
+      "type": "index",
+      "name": "idx_import_batches_source_created",
+      "tblName": "import_batches",
+      "sql": "CREATE INDEX idx_import_batches_source_created ON import_batches(source, id DESC)"
+    },
+    {
+      "type": "index",
+      "name": "idx_import_entries_batch",
+      "tblName": "import_batch_entries",
+      "sql": "CREATE INDEX idx_import_entries_batch ON import_batch_entries(batch_id)"
+    },
+    {
+      "type": "index",
+      "name": "idx_import_entries_open",
+      "tblName": "import_batch_entries",
+      "sql": "CREATE INDEX idx_import_entries_open ON import_batch_entries(resolution, outcome)"
+    },
+    {
+      "type": "index",
+      "name": "idx_import_entries_record",
+      "tblName": "import_batch_entries",
+      "sql": "CREATE INDEX idx_import_entries_record ON import_batch_entries(record_id)"
+    },
+    {
+      "type": "index",
+      "name": "idx_item_components_item",
+      "tblName": "item_components",
+      "sql": "CREATE INDEX idx_item_components_item ON item_components(item_id)"
+    },
+    {
+      "type": "index",
+      "name": "idx_item_components_operation",
+      "tblName": "item_components",
+      "sql": "CREATE INDEX idx_item_components_operation ON item_components(operation_id)"
+    },
+    {
+      "type": "index",
+      "name": "idx_item_components_source_item",
+      "tblName": "item_components",
+      "sql": "CREATE UNIQUE INDEX idx_item_components_source_item ON item_components(source_item_id) WHERE source_item_id IS NOT NULL"
+    },
+    {
+      "type": "index",
+      "name": "idx_item_operation_links_item",
+      "tblName": "item_operation_links",
+      "sql": "CREATE INDEX idx_item_operation_links_item ON item_operation_links(item_id, role)"
+    },
+    {
+      "type": "index",
+      "name": "idx_item_operations_ended_by",
+      "tblName": "item_operations",
+      "sql": "CREATE INDEX idx_item_operations_ended_by ON item_operations(ended_by_operation_id)"
+    },
+    {
+      "type": "index",
+      "name": "idx_items_acquired_at",
+      "tblName": "items",
+      "sql": "CREATE INDEX idx_items_acquired_at ON items(acquired_at)"
+    },
+    {
+      "type": "index",
+      "name": "idx_items_catalog_id",
+      "tblName": "items",
+      "sql": "CREATE INDEX idx_items_catalog_id ON items(catalog_id)"
+    },
+    {
+      "type": "index",
+      "name": "idx_items_category",
+      "tblName": "items",
+      "sql": "CREATE INDEX idx_items_category ON items(category)"
+    },
+    {
+      "type": "index",
+      "name": "idx_items_off_sale_at",
+      "tblName": "items",
+      "sql": "CREATE INDEX idx_items_off_sale_at ON items(off_sale_at)"
+    },
+    {
+      "type": "index",
+      "name": "idx_items_purchase_store",
+      "tblName": "items",
+      "sql": "CREATE INDEX idx_items_purchase_store ON items(purchase_store_id)"
+    },
+    {
+      "type": "index",
+      "name": "idx_items_sale_store",
+      "tblName": "items",
+      "sql": "CREATE INDEX idx_items_sale_store ON items(sale_store_id)"
+    },
+    {
+      "type": "index",
+      "name": "idx_items_sold_at",
+      "tblName": "items",
+      "sql": "CREATE INDEX idx_items_sold_at ON items(sold_at)"
+    },
+    {
+      "type": "index",
+      "name": "idx_items_status",
+      "tblName": "items",
+      "sql": "CREATE INDEX idx_items_status ON items(status)"
+    },
+    {
+      "type": "index",
+      "name": "idx_store_balances_store_date",
+      "tblName": "store_balances",
+      "sql": "CREATE INDEX idx_store_balances_store_date ON store_balances(store_id, recorded_at DESC, id DESC)"
+    },
+    {
+      "type": "index",
+      "name": "idx_withdrawals_store_date",
+      "tblName": "withdrawals",
+      "sql": "CREATE INDEX idx_withdrawals_store_date ON withdrawals(store_id, withdrawn_at DESC, id DESC)"
+    },
+    {
+      "type": "index",
+      "name": "idx_withdrawals_withdrawn_at",
+      "tblName": "withdrawals",
+      "sql": "CREATE INDEX idx_withdrawals_withdrawn_at ON withdrawals(withdrawn_at)"
+    },
+    {
+      "type": "index",
+      "name": "ux_stores_primary",
+      "tblName": "stores",
+      "sql": "CREATE UNIQUE INDEX ux_stores_primary ON stores(is_primary) WHERE is_primary = 1"
+    },
+    {
+      "type": "table",
+      "name": "catalog_item_names",
+      "tblName": "catalog_item_names",
+      "sql": "CREATE TABLE catalog_item_names (\n  catalog_id TEXT NOT NULL REFERENCES catalog_items(id) ON DELETE CASCADE,\n  language TEXT NOT NULL CHECK (length(language) BETWEEN 2 AND 10),\n  name TEXT NOT NULL CHECK (length(trim(name, ' ' || char(9, 10, 11, 12, 13))) > 0),\n  PRIMARY KEY (catalog_id, language)\n) STRICT"
+    },
+    {
+      "type": "table",
+      "name": "catalog_items",
+      "tblName": "catalog_items",
+      "sql": "CREATE TABLE \"catalog_items\" (\n  id TEXT PRIMARY KEY CHECK (length(id) BETWEEN 1 AND 100),\n  source TEXT NOT NULL CHECK (source IN ('SKINS','STICKERS','CRATES','KEYCHAINS','AGENTS','PATCHES')),\n  category TEXT NOT NULL CHECK (category IN ('SKIN','FACA','LUVA','CAIXA','CAPSULA','STICKER','PINGENTE','PERSONAGEM','PASSE_BATALHA','OUTRO','PATCH')),\n  name TEXT NOT NULL CHECK (length(trim(name)) > 0),\n  name_pt_br TEXT NULL,\n  name_key TEXT NOT NULL,\n  search_text TEXT NOT NULL,\n  image_url TEXT NULL,\n  min_float REAL NULL CHECK (min_float >= 0 AND min_float <= 1),\n  max_float REAL NULL CHECK (max_float >= 0 AND max_float <= 1),\n  has_stattrak INTEGER NOT NULL DEFAULT 0 CHECK (has_stattrak IN (0,1)),\n  has_souvenir INTEGER NOT NULL DEFAULT 0 CHECK (has_souvenir IN (0,1)),\n  phase TEXT NULL,\n  rarity TEXT NULL,\n  updated_at TEXT NOT NULL,\n  CHECK (min_float IS NULL OR max_float IS NULL OR min_float <= max_float)\n) STRICT"
+    },
+    {
+      "type": "table",
+      "name": "deposits",
+      "tblName": "deposits",
+      "sql": "CREATE TABLE \"deposits\" (\n  id INTEGER PRIMARY KEY AUTOINCREMENT,\n  store_id INTEGER NULL REFERENCES stores(id) ON DELETE RESTRICT,\n  amount_store_cents INTEGER NULL CHECK (amount_store_cents > 0),\n  amount_brl_cents INTEGER NULL CHECK (amount_brl_cents > 0),\n  deposited_at TEXT NOT NULL,\n  note TEXT NULL,\n  created_at TEXT NOT NULL,\n  updated_at TEXT NOT NULL, fee_cents INTEGER NULL CHECK (fee_cents IS NULL OR fee_cents >= 0), amount_brl_currency TEXT NOT NULL DEFAULT 'BRL' CHECK (length(amount_brl_currency) = 3),\n  CHECK (amount_store_cents IS NULL OR store_id IS NOT NULL),\n  CHECK (amount_store_cents IS NOT NULL OR amount_brl_cents IS NOT NULL)\n) STRICT"
+    },
+    {
+      "type": "table",
+      "name": "external_links",
+      "tblName": "external_links",
+      "sql": "CREATE TABLE external_links (\n  id INTEGER PRIMARY KEY AUTOINCREMENT,\n  record_id INTEGER NOT NULL REFERENCES external_records(id) ON DELETE CASCADE,\n  entity_type TEXT NOT NULL CHECK (entity_type IN ('ITEM_PURCHASE','ITEM_SALE','DEPOSIT','WITHDRAWAL')),\n  entity_id INTEGER NOT NULL CHECK (entity_id > 0),\n  link_kind TEXT NOT NULL CHECK (link_kind IN ('CREATED','MATCHED')),\n  batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE RESTRICT,\n  entity_updated_at TEXT NOT NULL,\n  created_at TEXT NOT NULL,\n  UNIQUE (record_id),\n  UNIQUE (entity_type, entity_id)\n) STRICT"
+    },
+    {
+      "type": "table",
+      "name": "external_records",
+      "tblName": "external_records",
+      "sql": "CREATE TABLE external_records (\n  id INTEGER PRIMARY KEY AUTOINCREMENT,\n  source TEXT NOT NULL CHECK (source IN ('CSFLOAT')),\n  kind TEXT NOT NULL CHECK (kind IN ('TRADE','TRANSACTION')),\n  external_id TEXT NOT NULL CHECK (length(external_id) BETWEEN 1 AND 40),\n  account_fingerprint TEXT NULL CHECK (account_fingerprint IS NULL OR length(account_fingerprint) = 64),\n  contract_id TEXT NULL CHECK (contract_id IS NULL OR length(contract_id) BETWEEN 1 AND 40),\n  related_trade_id TEXT NULL,\n  direction TEXT NULL CHECK (direction IN ('BUY','SELL')),\n  tx_type TEXT NULL CHECK (tx_type IS NULL OR length(tx_type) BETWEEN 1 AND 60),\n  raw_state TEXT NULL CHECK (raw_state IS NULL OR length(raw_state) <= 60),\n  offer_state INTEGER NULL,\n  tracking TEXT NOT NULL CHECK (tracking IN (\n    'WAITING_TRANSFER','OPEN','SETTLED','CLOSED_NOT_TRANSFERRED','BEFORE_CUTOFF','NEEDS_REVIEW','RETRY',\n    'UNKNOWN_STATE','REVERTED','REMOVED_IN_APP','IGNORED','DEFERRED','SEEN')),\n  external_created_at TEXT NOT NULL,\n  sold_at TEXT NULL,\n  accepted_at TEXT NULL,\n  protection_ends_at TEXT NULL,\n  verify_sale_at TEXT NULL,\n  amount_cents INTEGER NULL,\n  balance_offset_cents INTEGER NULL,\n  pending_offset_cents INTEGER NULL,\n  fee_cents INTEGER NULL CHECK (fee_cents IS NULL OR fee_cents >= 0),\n  display_name TEXT NULL CHECK (display_name IS NULL OR length(display_name) <= 200),\n  first_batch_id INTEGER NULL REFERENCES import_batches(id) ON DELETE SET NULL,\n  last_batch_id INTEGER NULL REFERENCES import_batches(id) ON DELETE SET NULL,\n  last_seen_at TEXT NOT NULL,\n  created_at TEXT NOT NULL,\n  updated_at TEXT NOT NULL,\n  UNIQUE (source, kind, external_id),\n  CHECK (kind = 'TRANSACTION' OR direction IS NOT NULL OR tracking = 'RETRY'),\n  CHECK (kind = 'TRADE' OR tx_type IS NOT NULL)\n) STRICT"
+    },
+    {
+      "type": "table",
+      "name": "fx_rates",
+      "tblName": "fx_rates",
+      "sql": "CREATE TABLE fx_rates (\n  currency TEXT PRIMARY KEY CHECK (length(currency) = 3 AND currency = upper(currency) AND currency <> 'USD'),\n  rate REAL NULL CHECK (rate IS NULL OR rate > 0),\n  source TEXT NULL CHECK (source IS NULL OR source IN ('MANUAL','PTAX','AWESOMEAPI')),\n  refresh_source TEXT NOT NULL DEFAULT 'AWESOMEAPI' CHECK (refresh_source IN ('AWESOMEAPI','PTAX')),\n  quoted_at TEXT NULL,\n  updated_at TEXT NOT NULL\n) STRICT"
+    },
+    {
+      "type": "table",
+      "name": "import_batch_entries",
+      "tblName": "import_batch_entries",
+      "sql": "CREATE TABLE import_batch_entries (\n  id INTEGER PRIMARY KEY AUTOINCREMENT,\n  batch_id INTEGER NOT NULL REFERENCES import_batches(id) ON DELETE CASCADE,\n  record_id INTEGER NULL REFERENCES external_records(id) ON DELETE SET NULL,\n  outcome TEXT NOT NULL CHECK (outcome IN ('CREATED','MATCHED','POSSIBLE_DUPLICATE','REVERTED','FAILED','UNKNOWN_STATE')),\n  reason_code TEXT NULL CHECK (reason_code IS NULL OR length(reason_code) <= 60),\n  entity_type TEXT NULL CHECK (entity_type IN ('ITEM_PURCHASE','ITEM_SALE','DEPOSIT','WITHDRAWAL')),\n  entity_id INTEGER NULL,\n  candidate_ids TEXT NULL,\n  display_json TEXT NOT NULL,\n  resolution TEXT NULL CHECK (resolution IN ('REMOVED','KEPT','CREATED','LINKED','IGNORED','UNDONE')),\n  resolved_at TEXT NULL,\n  created_at TEXT NOT NULL,\n  CHECK ((resolution IS NULL) = (resolved_at IS NULL))\n) STRICT"
+    },
+    {
+      "type": "table",
+      "name": "import_batches",
+      "tblName": "import_batches",
+      "sql": "CREATE TABLE import_batches (\n  id INTEGER PRIMARY KEY AUTOINCREMENT,\n  source TEXT NOT NULL CHECK (source IN ('CSFLOAT')),\n  trigger TEXT NOT NULL CHECK (trigger IN ('MANUAL','AUTO')),\n  status TEXT NOT NULL CHECK (status IN ('DONE','FAILED','UNDONE')),\n  started_at TEXT NOT NULL,\n  finished_at TEXT NOT NULL,\n  full_scan INTEGER NOT NULL DEFAULT 0 CHECK (full_scan IN (0,1)),\n  cutoff_at TEXT NULL,\n  trade_pages_read INTEGER NOT NULL DEFAULT 0,\n  transaction_pages_read INTEGER NOT NULL DEFAULT 0,\n  purchases_created INTEGER NOT NULL DEFAULT 0,\n  sales_created INTEGER NOT NULL DEFAULT 0,\n  deposits_created INTEGER NOT NULL DEFAULT 0,\n  withdrawals_created INTEGER NOT NULL DEFAULT 0,\n  matched_count INTEGER NOT NULL DEFAULT 0,\n  known_count INTEGER NOT NULL DEFAULT 0,\n  before_cutoff_count INTEGER NOT NULL DEFAULT 0,\n  not_transferred_count INTEGER NOT NULL DEFAULT 0,\n  review_count INTEGER NOT NULL DEFAULT 0,\n  reverted_count INTEGER NOT NULL DEFAULT 0,\n  failed_count INTEGER NOT NULL DEFAULT 0,\n  unknown_state_count INTEGER NOT NULL DEFAULT 0,\n  deferred_count INTEGER NOT NULL DEFAULT 0,\n  without_purchase_count INTEGER NOT NULL DEFAULT 0,\n  unknown_types_json TEXT NULL,\n  diagnostics_json TEXT NULL,\n  warnings_json TEXT NULL,\n  previous_transaction_cursor TEXT NULL,\n  error_code TEXT NULL,\n  undone_at TEXT NULL,\n  created_at TEXT NOT NULL, previous_trades_cutoff_at TEXT NULL, previous_transactions_cutoff_at TEXT NULL, components_filled_count INTEGER NOT NULL DEFAULT 0, components_skipped_count INTEGER NOT NULL DEFAULT 0,\n  CHECK (status <> 'FAILED' OR error_code IS NOT NULL),\n  CHECK ((status = 'UNDONE') = (undone_at IS NOT NULL))\n) STRICT"
+    },
+    {
+      "type": "table",
+      "name": "integrations",
+      "tblName": "integrations",
+      "sql": "CREATE TABLE integrations (\n  source TEXT PRIMARY KEY CHECK (source IN ('CSFLOAT')),\n  store_id INTEGER NULL REFERENCES stores(id) ON DELETE SET NULL,\n  api_key TEXT NULL CHECK (api_key IS NULL OR length(api_key) BETWEEN 8 AND 512),\n  api_key_saved_at TEXT NULL,\n  account_fingerprint TEXT NULL CHECK (account_fingerprint IS NULL OR length(account_fingerprint) = 64),\n  account_salt TEXT NULL CHECK (account_salt IS NULL OR length(account_salt) = 64),\n  auto_import_on_open INTEGER NOT NULL DEFAULT 0 CHECK (auto_import_on_open IN (0,1)),\n  auto_import_paused INTEGER NOT NULL DEFAULT 0 CHECK (auto_import_paused IN (0,1)),\n  trades_cutoff_at TEXT NULL,\n  transactions_cutoff_at TEXT NULL,\n  last_transaction_id TEXT NULL,\n  last_import_at TEXT NULL,\n  last_import_status TEXT NULL CHECK (last_import_status IN ('OK','FAILED')),\n  last_import_error_code TEXT NULL,\n  created_at TEXT NOT NULL,\n  updated_at TEXT NOT NULL,\n  CHECK ((account_fingerprint IS NULL) = (account_salt IS NULL))\n) STRICT"
+    },
+    {
+      "type": "table",
+      "name": "item_components",
+      "tblName": "item_components",
+      "sql": "CREATE TABLE item_components (\n  id INTEGER PRIMARY KEY AUTOINCREMENT,\n  item_id INTEGER NOT NULL REFERENCES items(id) ON DELETE CASCADE,\n  kind TEXT NOT NULL CHECK (kind IN ('STICKER','CHARM','STICKER_SLAB','PATCH')),\n  catalog_id TEXT NULL,\n  name TEXT NOT NULL CHECK (length(name) BETWEEN 1 AND 200),\n  slot INTEGER NULL CHECK (slot IS NULL OR slot BETWEEN 0 AND 5),\n  wear REAL NULL CHECK (wear IS NULL OR (wear >= 0 AND wear < 1)),\n  pattern INTEGER NULL CHECK (pattern IS NULL OR pattern BETWEEN 0 AND 999999),\n  purchase_reference_cents INTEGER NULL CHECK (purchase_reference_cents IS NULL OR purchase_reference_cents >= 0),\n  source TEXT NOT NULL CHECK (source IN ('MANUAL','CSFLOAT')),\n  origin TEXT NOT NULL DEFAULT 'CAME_WITH' CHECK (origin IN ('CAME_WITH','APPLIED_FROM_STOCK')),\n  source_item_id INTEGER NULL REFERENCES items(id) ON DELETE RESTRICT,\n  operation_id INTEGER NULL REFERENCES item_operations(id) ON DELETE RESTRICT,\n  created_at TEXT NOT NULL,\n  updated_at TEXT NOT NULL,\n  CHECK ((origin = 'CAME_WITH' AND source_item_id IS NULL AND operation_id IS NULL)\n      OR (origin = 'APPLIED_FROM_STOCK' AND source_item_id IS NOT NULL AND operation_id IS NOT NULL))\n) STRICT"
+    },
+    {
+      "type": "table",
+      "name": "item_operation_links",
+      "tblName": "item_operation_links",
+      "sql": "CREATE TABLE item_operation_links (\n  id INTEGER PRIMARY KEY AUTOINCREMENT,\n  operation_id INTEGER NOT NULL REFERENCES item_operations(id) ON DELETE CASCADE,\n  item_id INTEGER NOT NULL REFERENCES items(id) ON DELETE RESTRICT,\n  role TEXT NOT NULL CHECK (role IN ('CONSUMED','TARGET','CREATED')),\n  cost_share_bp INTEGER NULL CHECK (cost_share_bp IS NULL OR cost_share_bp BETWEEN 0 AND 10000),\n  UNIQUE (operation_id, item_id)\n) STRICT"
+    },
+    {
+      "type": "table",
+      "name": "item_operations",
+      "tblName": "item_operations",
+      "sql": "CREATE TABLE item_operations (\n  id INTEGER PRIMARY KEY AUTOINCREMENT,\n  kind TEXT NOT NULL CHECK (kind IN ('APPLY_COMPONENT','DETACH_COMPONENT','SCRAPE_OFF','OPEN_CASE','OPEN_TERMINAL','TRADE_UP')),\n  outcome TEXT NOT NULL CHECK (outcome IN ('TRANSFERRED','LOST')),\n  occurred_at TEXT NOT NULL,\n  note TEXT NULL,\n  undone_at TEXT NULL,\n  created_at TEXT NOT NULL\n, detail_json TEXT NULL, ended_by_operation_id INTEGER NULL REFERENCES item_operations(id)) STRICT"
+    },
+    {
+      "type": "table",
+      "name": "items",
+      "tblName": "items",
+      "sql": "CREATE TABLE \"items\" (\n  id INTEGER PRIMARY KEY AUTOINCREMENT,\n  name TEXT NOT NULL CHECK (length(trim(name)) > 0),\n  category TEXT NOT NULL CHECK (category IN ('SKIN','FACA','LUVA','CAIXA','CAPSULA','STICKER','PINGENTE','PERSONAGEM','PASSE_BATALHA','OUTRO','PATCH')),\n  variant TEXT NULL CHECK (variant IN ('NORMAL','STATTRAK','SOUVENIR')),\n  float_value REAL NULL CHECK (float_value >= 0 AND float_value <= 1),\n  exterior TEXT NULL CHECK (exterior IN ('FN','MW','FT','WW','BS')),\n  paint_seed INTEGER NULL CHECK (paint_seed BETWEEN 0 AND 1000),\n  phase TEXT NULL,\n  inspect_link TEXT NULL,\n  asset_id TEXT NULL,\n  acquisition_type TEXT NOT NULL CHECK (acquisition_type IN ('GANHEI','COMPRA','GERADO')),\n  origin_detail TEXT NULL,\n  purchase_store_id INTEGER NULL REFERENCES stores(id) ON DELETE RESTRICT,\n  purchase_price_cents INTEGER NOT NULL DEFAULT 0 CHECK (purchase_price_cents >= 0),\n  purchase_currency TEXT NOT NULL DEFAULT 'USD' CHECK (length(purchase_currency) = 3 AND purchase_currency = upper(purchase_currency)),\n  fx_rate_at_purchase REAL NULL CHECK (fx_rate_at_purchase > 0),\n  acquired_at TEXT NOT NULL,\n  trade_unlock_at TEXT NULL,\n  status TEXT NOT NULL DEFAULT 'EM_ESTOQUE' CHECK (status IN ('EM_ESTOQUE','VENDIDO','CONSUMIDO')),\n  sale_store_id INTEGER NULL REFERENCES stores(id) ON DELETE RESTRICT,\n  sale_price_cents INTEGER NULL CHECK (sale_price_cents > 0),\n  sale_currency TEXT NULL CHECK (sale_currency IS NULL OR (length(sale_currency) = 3 AND sale_currency = upper(sale_currency))),\n  fx_rate_at_sale REAL NULL CHECK (fx_rate_at_sale > 0),\n  sale_fee_type_applied TEXT NULL CHECK (sale_fee_type_applied IN ('DEDUCTED','ADDED')),\n  sale_fee_rate_applied REAL NULL CHECK (sale_fee_rate_applied >= 0 AND sale_fee_rate_applied < 1),\n  sale_fee_rounding_applied TEXT NULL CHECK (sale_fee_rounding_applied IN ('CEIL','ROUND','FLOOR')),\n  sale_min_fee_cents_applied INTEGER NULL CHECK (sale_min_fee_cents_applied >= 0),\n  sale_fixed_fee_cents_applied INTEGER NULL CHECK (sale_fixed_fee_cents_applied >= 0),\n  net_received_cents INTEGER NULL CHECK (net_received_cents >= 0),\n  sold_at TEXT NULL,\n  created_at TEXT NOT NULL,\n  updated_at TEXT NOT NULL,\n  catalog_id TEXT NULL,\n  net_received_manual INTEGER NOT NULL DEFAULT 0 CHECK (net_received_manual IN (0,1)),\n  sale_hold_days_applied INTEGER NULL\n  CHECK (sale_hold_days_applied IS NULL OR (status = 'VENDIDO' AND sale_hold_days_applied BETWEEN 0 AND 30)),\n  off_sale_at TEXT NULL,\n  for_sale_since TEXT NULL,\n  sale_release_at TEXT NULL,\n  components_imported_at TEXT NULL,\n  consumed_at TEXT NULL,\n  CHECK (acquisition_type <> 'COMPRA' OR purchase_store_id IS NOT NULL),\n  CHECK (acquisition_type <> 'GERADO'\n      OR (purchase_store_id IS NULL AND purchase_price_cents = 0 AND purchase_currency = 'USD' AND fx_rate_at_purchase IS NULL)),\n  CHECK ((purchase_currency = 'USD' AND fx_rate_at_purchase IS NULL)\n      OR (purchase_currency <> 'USD' AND fx_rate_at_purchase IS NOT NULL)),\n  CHECK (category IN ('SKIN','FACA','LUVA')\n      OR (variant IS NULL AND float_value IS NULL AND exterior IS NULL AND paint_seed IS NULL AND phase IS NULL)),\n  CHECK (category NOT IN ('SKIN','FACA','LUVA') OR variant IS NOT NULL),\n  CHECK (category <> 'LUVA' OR variant = 'NORMAL'),\n  CHECK (category <> 'FACA' OR variant <> 'SOUVENIR'),\n  CHECK (\n    (status = 'VENDIDO' AND sale_store_id IS NOT NULL AND sale_price_cents IS NOT NULL\n      AND sale_currency IS NOT NULL AND net_received_cents IS NOT NULL AND sold_at IS NOT NULL\n      AND (\n        (sale_fee_type_applied IS NOT NULL AND sale_fee_rate_applied IS NOT NULL\n          AND sale_fee_rounding_applied IS NOT NULL AND sale_fixed_fee_cents_applied IS NOT NULL)\n        OR\n        (sale_fee_type_applied IS NULL AND sale_fee_rate_applied IS NULL AND sale_fee_rounding_applied IS NULL\n          AND sale_min_fee_cents_applied IS NULL AND sale_fixed_fee_cents_applied IS NULL\n          AND net_received_manual = 1)\n      ))\n    OR\n    (status IN ('EM_ESTOQUE','CONSUMIDO') AND sale_store_id IS NULL AND sale_price_cents IS NULL\n      AND sale_currency IS NULL AND fx_rate_at_sale IS NULL AND sale_fee_type_applied IS NULL\n      AND sale_fee_rate_applied IS NULL AND sale_fee_rounding_applied IS NULL\n      AND sale_min_fee_cents_applied IS NULL AND sale_fixed_fee_cents_applied IS NULL\n      AND net_received_cents IS NULL AND sold_at IS NULL)\n  ),\n  CHECK (status <> 'VENDIDO'\n      OR (sale_currency = 'USD' AND fx_rate_at_sale IS NULL)\n      OR (sale_currency <> 'USD' AND fx_rate_at_sale IS NOT NULL)),\n  CHECK (net_received_manual = 0 OR status = 'VENDIDO'),\n  CHECK ((status = 'CONSUMIDO') = (consumed_at IS NOT NULL))\n) STRICT"
+    },
+    {
+      "type": "table",
+      "name": "market_prices",
+      "tblName": "market_prices",
+      "sql": "CREATE TABLE market_prices (\n  id INTEGER PRIMARY KEY AUTOINCREMENT,\n  source TEXT NOT NULL CHECK (length(source) BETWEEN 1 AND 40),\n  price_key TEXT NOT NULL CHECK (length(price_key) BETWEEN 1 AND 260),\n  market_hash_name TEXT NOT NULL CHECK (length(market_hash_name) BETWEEN 1 AND 200),\n  paint_index INTEGER NULL CHECK (paint_index IS NULL OR paint_index >= 0),\n  currency TEXT NOT NULL DEFAULT 'USD' CHECK (currency = 'USD'),\n  status TEXT NOT NULL CHECK (status IN ('OK','NOT_FOUND')),\n  base_price_cents INTEGER NULL CHECK (base_price_cents IS NULL OR base_price_cents >= 0),\n  reference_quantity INTEGER NULL CHECK (reference_quantity IS NULL OR reference_quantity >= 0),\n  source_updated_at TEXT NULL,\n  priced_at TEXT NULL,\n  fetched_at TEXT NOT NULL,\n  created_at TEXT NOT NULL,\n  updated_at TEXT NOT NULL,\n  CHECK ((base_price_cents IS NULL) = (priced_at IS NULL)),\n  UNIQUE (source, price_key)\n) STRICT"
+    },
+    {
+      "type": "table",
+      "name": "settings",
+      "tblName": "settings",
+      "sql": "CREATE TABLE \"settings\" (\n  id INTEGER PRIMARY KEY CHECK (id = 1),\n  usd_brl_rate REAL NULL CHECK (usd_brl_rate > 0),\n  usd_brl_rate_updated_at TEXT NULL,\n  updated_at TEXT NOT NULL,\n  catalog_updated_at TEXT NULL,\n  theme TEXT NOT NULL DEFAULT 'SYSTEM' CHECK (theme IN ('SYSTEM','LIGHT','DARK')),\n  language TEXT NOT NULL DEFAULT 'en' CHECK (length(language) BETWEEN 2 AND 10),\n  usd_brl_rate_source TEXT NULL CHECK (usd_brl_rate_source IN ('MANUAL','PTAX','AWESOMEAPI')),\n  rate_quoted_at TEXT NULL,\n  slow_item_days INTEGER NULL CHECK (slow_item_days BETWEEN 2 AND 365),\n  fast_turnover_days INTEGER NULL CHECK (fast_turnover_days BETWEEN 1 AND 364),\n  stores_seeded INTEGER NOT NULL DEFAULT 0 CHECK (stores_seeded IN (0,1)),\n  fx_refresh_source TEXT NOT NULL DEFAULT 'AWESOMEAPI' CHECK (fx_refresh_source IN ('AWESOMEAPI','PTAX')),\n  inventory_view TEXT NOT NULL DEFAULT 'GROUPED' CHECK (inventory_view IN ('INDIVIDUAL','GROUPED')),\n  steam_store_id INTEGER NULL REFERENCES stores(id) ON DELETE SET NULL,\n  price_refresh_started_at TEXT NULL,\n  price_refresh_last_at TEXT NULL,\n  price_refresh_last_status TEXT NULL CHECK (price_refresh_last_status IS NULL OR price_refresh_last_status IN ('OK','PARTIAL','FAILED')),\n  price_refresh_last_error_code TEXT NULL\n, display_currency TEXT NOT NULL DEFAULT 'USD' CHECK (length(display_currency) = 3), inventory_density TEXT NOT NULL DEFAULT 'COMPACT'\n  CHECK (inventory_density IN ('COMPACT','COMFORTABLE'))) STRICT"
+    },
+    {
+      "type": "table",
+      "name": "store_balances",
+      "tblName": "store_balances",
+      "sql": "CREATE TABLE \"store_balances\" (\n  id INTEGER PRIMARY KEY AUTOINCREMENT,\n  store_id INTEGER NOT NULL REFERENCES stores(id) ON DELETE RESTRICT,\n  kind TEXT NOT NULL DEFAULT 'CHECK' CHECK (kind = 'CHECK'),\n  balance_cents INTEGER NOT NULL CHECK (balance_cents >= 0),\n  computed_cents INTEGER NULL,\n  adjustment_cents INTEGER NULL CHECK (adjustment_cents <> 0),\n  fx_rate REAL NULL CHECK (fx_rate > 0),\n  note TEXT NULL,\n  recorded_at TEXT NOT NULL,\n  created_at TEXT NOT NULL,\n  CHECK (adjustment_cents IS NULL OR computed_cents IS NOT NULL)\n) STRICT"
+    },
+    {
+      "type": "table",
+      "name": "stores",
+      "tblName": "stores",
+      "sql": "CREATE TABLE \"stores\" (\n  id INTEGER PRIMARY KEY AUTOINCREMENT,\n  name TEXT NOT NULL COLLATE NOCASE UNIQUE CHECK (length(trim(name)) > 0),\n  currency TEXT NOT NULL CHECK (length(currency) = 3 AND currency = upper(currency)),\n  is_active INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0,1)),\n  is_primary INTEGER NOT NULL DEFAULT 0 CHECK (is_primary IN (0,1)),\n  sale_fee_type TEXT NULL CHECK (sale_fee_type IN ('DEDUCTED','ADDED')),\n  sale_fee_rate REAL NULL CHECK (sale_fee_rate >= 0 AND sale_fee_rate < 1),\n  sale_fee_rounding TEXT NOT NULL DEFAULT 'CEIL' CHECK (sale_fee_rounding IN ('CEIL','ROUND','FLOOR')),\n  sale_min_fee_cents INTEGER NULL CHECK (sale_min_fee_cents >= 0),\n  sale_fixed_fee_cents INTEGER NOT NULL DEFAULT 0 CHECK (sale_fixed_fee_cents >= 0),\n  allows_withdrawal INTEGER NOT NULL DEFAULT 0 CHECK (allows_withdrawal IN (0,1)),\n  withdrawal_fee_rate REAL NULL CHECK (withdrawal_fee_rate >= 0 AND withdrawal_fee_rate < 1),\n  withdrawal_fixed_fee_cents INTEGER NOT NULL DEFAULT 0 CHECK (withdrawal_fixed_fee_cents >= 0),\n  created_at TEXT NOT NULL,\n  updated_at TEXT NOT NULL,\n  sale_hold_days INTEGER NOT NULL DEFAULT 0\n  CHECK (sale_hold_days BETWEEN 0 AND 30),\n  CHECK (is_primary = 0 OR is_active = 1)\n) STRICT"
+    },
+    {
+      "type": "table",
+      "name": "withdrawals",
+      "tblName": "withdrawals",
+      "sql": "CREATE TABLE \"withdrawals\" (\n  id INTEGER PRIMARY KEY AUTOINCREMENT,\n  store_id INTEGER NULL REFERENCES stores(id) ON DELETE RESTRICT,\n  amount_store_cents INTEGER NULL CHECK (amount_store_cents > 0),\n  fee_cents INTEGER NULL CHECK (fee_cents >= 0),\n  amount_brl_cents INTEGER NULL CHECK (amount_brl_cents > 0),\n  withdrawn_at TEXT NOT NULL,\n  note TEXT NULL,\n  created_at TEXT NOT NULL,\n  updated_at TEXT NOT NULL, amount_brl_currency TEXT NOT NULL DEFAULT 'BRL' CHECK (length(amount_brl_currency) = 3),\n  CHECK ((store_id IS NULL) = (amount_store_cents IS NULL)),\n  CHECK (store_id IS NOT NULL OR amount_brl_cents IS NOT NULL)\n) STRICT"
+    }
+  ],
+  "migrations": {
+    "v001_initial.js": "18514164a9ad3d10128e6b1c271ce7623d11835a9240fe9bf2f337bfced3eb1f",
+    "v002_catalog.js": "9e0718ac8ad78ee5e48a4bd41f591e3835ed3b1c653e95e6362f6041b56ba22f",
+    "v003_manual_net.js": "a6a480628b4cfbd4acaaab82cd091ca2d865d3c09821104cee243ab011631620",
+    "v004_stores_settings.js": "d8dc15e343e815b01956323e05448684bc948d2c82e17d482187f1bf0febef47",
+    "v005_fx_sources.js": "6892beb82a64b3975a3b169316f30bb2e989a2a7dcb8867108d2ed2f0d572c27",
+    "v006_withdrawal_fee_sale_hold.js": "5ed05352931346dc6dad349701fd42dd1dd0dcd30a325798098428cc12216e24",
+    "v007_store_currency_flows.js": "33458e5a958452fff91811822cbef913fdcfad716e4185f4c9f7f17a38f76d76",
+    "v008_computed_store_balance.js": "6f95ee3c336310fc239742b88a7f6f8507dca7e810d49bcf28c66e17b30ad8c6",
+    "v009_remove_initial_balance.js": "4149b2c79f3d81b586da1afb4b5388782129e9abc4798290e6f6023b2bd4c23f",
+    "v010_off_sale.js": "f14cd14007ddfaec270db04c8d959734b135111c24619349b621ab35d400bec5",
+    "v011_inventory_view.js": "1c0f2b712b6a3b9691054191a5eb6b1f8d278b0171866d42c6a06c383de95766",
+    "v012_integrations.js": "b80728f7b79e2076091911f50157d833d40c3e6948aba3889ea83c20d3ff9be2",
+    "v013_imports.js": "a64e26f329b9cf5edcb292609fa6fd9498d7c04f39e58ac72d98dd4725d5bd59",
+    "v014_sale_release_at.js": "5f6c9a1e0d4a8ba1753b60656f2d733546fc8ba67373851375bac14cbe4b40c6",
+    "v015_batch_previous_cutoff.js": "bfb93d70a6cf25d8b40e3d2b3ae4a94ace46a8b68f1498274908d6313c443527",
+    "v016_deposit_fee.js": "1ec922c0a1ec5350cd2ceed1d03eea4e88b6a4b9012eea5a2c74b8a5fc65e3be",
+    "v017_item_components.js": "da04969a8b8438dd6c3fa707d21196f16bcb231f0875a8ce555cf2dfc9965cbe",
+    "v018_component_slots_and_batch_counts.js": "95c68fe270aba6624d44c55d11ed49368f54cf27d06e0103400607495bb9fa0b",
+    "v019_consumed_generated_patch.js": "93f1fe18bc5dfac5b50131a8e7ca2edaca9e692b79c78863fca7b005ebf9ccf6",
+    "v020_steam_store.js": "59ed5781191636932a999d54108cfab538e53770a109271ad5571cf84fee2caa",
+    "v021_market_prices.js": "c003507bdfd9f99b0572bee0e584153b335c58e57d88d4146e6aed589a54ebd2",
+    "v022_operation_ended_by.js": "fe70a6f959f0af2eef8b269593560336ad6427fcdb1365f9634fc367fdd954ef",
+    "v023_language_format.js": "1b9e22fd739bf1e87fea2dac8d23eb92b3488e10bce83137df2bd0db79463e85",
+    "v024_fx_rates_display_currency.js": "fe2353204f986372a93e4e73378aec2081b0ca7d052ffb59a78da9fc52bda24d",
+    "v025_store_currencies.js": "293e8903bf965197fb72841a7aad47b588a2f61670a4067c4779fe6898962d49",
+    "v026_catalog_item_names.js": "ee5ccb60b5db459d3199cb80cfec3851d78213121f7b97386b2f0200a286a566",
+    "v027_inventory_density.js": "12a1529ce4d8f632af3da8cf123c976d57c01c4f28f8d9101443911d94b0984c"
+  }
+}

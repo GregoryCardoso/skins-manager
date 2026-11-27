@@ -65,7 +65,7 @@ describe('textos da 8.5', () => {
 describe('o frontend não soma nem converte (D74)', () => {
   const root = path.join(__dirname, '..');
   const files = [
-    'components/SummaryCards.tsx', 'components/StoreBalancesPanel.tsx', 'components/DepositsTable.tsx', 'components/WithdrawalsTable.tsx',
+    'components/ProfitEquation.tsx', 'components/ProfitInfoStrip.tsx', 'components/StoreBalancesPanel.tsx', 'components/DepositsTable.tsx', 'components/WithdrawalsTable.tsx',
     'components/MoneyApprox.tsx', 'lib/baseMoney.ts',
   ];
   test.each(files)('%s não usa a cotação nem multiplica/divide valores monetários', (file) => {

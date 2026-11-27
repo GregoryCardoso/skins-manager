@@ -30,6 +30,25 @@ export const needsFx = (store: Store | undefined): boolean => store !== undefine
 
 export const feesConfigured = (store: Store | undefined): boolean => store?.saleFeesConfigured === true;
 
+// "Mais detalhes" da venda (12.6b): com as taxas da loja configuradas, o líquido (calculado pela prévia) e a cotação da venda ficam
+// recolhidos; sem taxa, o líquido é obrigatório e fica à vista (fora do bloco), e só a cotação (loja fora de USD) vai para o bloco.
+export const detailsCollapsedByDefault = (store: Store | undefined): boolean => feesConfigured(store);
+
+export function fieldsInDetails(store: Store | undefined): string[] {
+  const fields: string[] = [];
+  if (feesConfigured(store)) fields.push('netReceivedCents');
+  if (needsFx(store)) fields.push('fxRateAtSale');
+  return fields;
+}
+
+// Unidades do seletor (venda pela linha do grupo): só as em estoque. A inicial é a escolhida (a primeira vendável, na ordem da API);
+// as em trade lock aparecem desabilitadas.
+export function sellableUnitsOf(units: readonly ItemView[] | undefined): ItemView[] {
+  return (units ?? []).filter((unit) => unit.status === 'EM_ESTOQUE');
+}
+
+export const isUnitSellable = (unit: ItemView): boolean => unit.status === 'EM_ESTOQUE' && !unit.tradeLock.isLocked;
+
 export type PriceReference =
   | { kind: 'none' }
   // Loja inativa não vem em `minPrices` (D36).

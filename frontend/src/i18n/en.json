@@ -446,7 +446,8 @@
       "detach": "Separate charm/slab",
       "viewUnits": "Show units",
       "moreFor": "More actions for {name}",
-      "noSellableUnit": "No unit can be sold right now: all of them are in trade lock."
+      "noSellableUnit": "No unit can be sold right now: all of them are in trade lock.",
+      "components": "Components"
     },
     "itemGone": "This item no longer exists. It may have been deleted in another tab. The list was refreshed.",
     "daysForSale": "for sale for {days}",
@@ -773,8 +774,19 @@
       "choosePatch": "Choose patch {n} from the catalog or remove the row.",
       "patchSlot": "Position",
       "appliedTitle": "Applied from stock",
-      "appliedNote": "Their cost is already in this item. Only position, wear and pattern can change here."
-    }
+      "appliedNote": "Their cost is already in this item. Only position, wear and pattern can change here.",
+      "originCameWith": "Came with the item",
+      "originApplied": "Applied from stock on {date}",
+      "saveFirst": "Save or discard your changes first.",
+      "panelHint": "What this unit carries. Applying from stock, separating and undoing are saved right away."
+    },
+    "receivedAt": "Date you received it",
+    "sections": {
+      "item": "Item",
+      "acquisition": "Acquisition",
+      "components": "Components"
+    },
+    "generatedLockedHint": "This unit was created by an operation (opening or separation). Undo the operation to change this field."
   },
   "detachForm": {
     "title": "Separate the charm/slab from {name}",
@@ -904,7 +916,6 @@
     "salePriceAdded": "Price paid by the buyer ({currency})",
     "soldAt": "Sale date and time",
     "fxRateAtSale": "USD→{currency} rate at sale",
-    "minPriceRef": "Break-even price: {value}",
     "useMinPrice": "Use the break-even price",
     "noRefInactive": "No reference price: the store is inactive.",
     "refUsesSavedRate": "The reference price uses the saved rate, not the one you typed here.",
@@ -918,7 +929,11 @@
     "feesNotConfiguredBadge": "no fees set for the store",
     "manualNetNote": "(net typed by you)",
     "chooseStore": "Choose the store.",
-    "priceRequired": "Enter the sale price."
+    "priceRequired": "Enter the sale price.",
+    "unit": "Unit",
+    "minPriceLabel": "Break-even price",
+    "youReceive": "You receive",
+    "feesMissing": "This store has no sale fees set, so the net amount can't be calculated. Enter the amount you received, or set the fees on the Stores page."
   },
   "fields": {
     "catalogId": "Catalog item",
@@ -1033,7 +1048,13 @@
     },
     "daysAfterRelease": "{days} after the trade lock ended",
     "daysHeld": "{days} since purchase",
-    "balanceReleasesAt": "balance released on {date}"
+    "balanceReleasesAt": "balance released on {date}",
+    "turnover": {
+      "header": "Days from the end of the trade lock (or from the return to sale) until the sale. Sales made from holding are not counted."
+    },
+    "expandedFx": "Recorded rates: sale {sale} · purchase {purchase}",
+    "emptyTitle": "No sales yet",
+    "emptyFilteredTitle": "No sales match"
   },
   "salesFilters": {
     "label": "Sales filters",
@@ -1106,7 +1127,8 @@
     "lossCount": {
       "one": "{count} terminal not bought (loss of {value})",
       "other": "{count} terminals not bought (loss of {value})"
-    }
+    },
+    "avgDaysLegend": "Counted from the end of the trade lock, or from the return to sale, until the sale. Sales from holding are not included."
   },
   "stores": {
     "title": "Stores",
@@ -1497,7 +1519,10 @@
     "errorTitle": "Update failed",
     "errorDownload": "The update could not be downloaded. Check your internet connection and try again in Settings, under About.",
     "errorInstall": "Could not restart to install. The app keeps working. Try again in Settings, under About.",
-    "errorDetail": "Technical details"
+    "errorDetail": "Technical details",
+    "badge": "Update available",
+    "badgeDownloading": "Downloading the update {percent}%",
+    "versionChange": "{current} → {version}"
   },
   "profit": {
     "title": "Real profit",
@@ -1559,7 +1584,30 @@
         "other": "{count} with an old price"
       },
       "partial": "(partial)"
-    }
+    },
+    "equation": {
+      "title": "How the real profit is calculated",
+      "hint": "Everything in US dollars (US$): what you withdrew, plus what you have in the stores and in stock, minus what you put in.",
+      "withdrawals": "Withdrawals received",
+      "withdrawalsNote": "Each withdrawal's fee is already deducted",
+      "available": "Available in stores",
+      "pending": "Pending in stores",
+      "pendingBadge": "on hold",
+      "pendingNote": "releases on {date}",
+      "stock": "Stock at cost",
+      "deposited": "Total deposited",
+      "depositedNote": "includes {value} of deposit fees",
+      "result": "Real profit"
+    },
+    "info": {
+      "title": "More numbers",
+      "outsideFormula": "For reference only. It is not part of the real profit formula."
+    },
+    "tabs": {
+      "label": "Deposits and withdrawals"
+    },
+    "staleRate": "Exchange rate quoted on {date}. It may be outdated.",
+    "rowActions": "Actions for the record of {date}"
   },
   "deposits": {
     "title": "Deposits",
@@ -1772,7 +1820,32 @@
     },
     "startHint": "Don't want to enter your old history? Record a deposit with the store's current balance. Real profit will be measured from that date on.",
     "totalsTitle": "Total in stores",
-    "totalPendingDate": "Total pending (first release on {date}): {value}"
+    "totalPendingDate": "Total pending (first release on {date}): {value}",
+    "row": {
+      "deposit": "Record deposit",
+      "withdraw": "Record withdrawal",
+      "more": "More actions for {store}",
+      "currencyTag": "Currency: {currency}",
+      "pendingFoot": "{value} pending · releases on {date}",
+      "noPending": "Nothing pending",
+      "detailsLabel": "Calculation details"
+    },
+    "checkDialog": {
+      "explain": "Check: you enter the balance you see on the site. Adjustment: corrects the app's balance by the difference.",
+      "step1Title": "Balance on the site",
+      "step2Title": "Compare",
+      "stepCount": "Step {current} of {total}",
+      "continue": "Continue",
+      "back": "Back",
+      "computed": "Calculated by the app",
+      "real": "Real balance",
+      "optionsTitle": "What to do with the difference",
+      "optionAdjust": "Adjust the app's balance",
+      "optionAdjustHint": "Records the check and an adjustment that corrects the balance. A note is required.",
+      "optionOnly": "Only record the check",
+      "optionOnlyHint": "Keeps the app's balance as it is and records only the check.",
+      "useCsfloat": "Use this balance"
+    }
   },
   "imports": {
     "button": "Import from CSFloat",
@@ -2429,7 +2502,16 @@
           "one": "Stuck above {count} day",
           "other": "Stuck above {count} days"
         },
-        "lock": "Trade lock"
+        "lock": "Trade lock",
+        "slowSale": {
+          "one": "Slow to sell above {count} day",
+          "other": "Slow to sell above {count} days"
+        },
+        "fromSale": "Days counted from the end of the trade lock or from the return to sale."
+      },
+      "daysAfterRelease": {
+        "one": "{count} d after release",
+        "other": "{count} d after release"
       }
     },
     "balance": {
@@ -2442,5 +2524,21 @@
       "selectAll": "Select all rows",
       "scrollRegion": "{caption}, scrollable"
     }
+  },
+  "unsell": {
+    "effect": {
+      "available": "{value} leaves the available balance of {store}",
+      "pending": "{value} leaves the pending balance of {store} (not released yet)",
+      "none": "The balance of no store changes.",
+      "change": "{before} → {after}",
+      "negative": "The balance will be negative.",
+      "returnsForSale": "The item goes back to stock, for sale.",
+      "returnsHolding": "The item goes back to stock, in holding.",
+      "loadError": "Couldn't work out the effect on the balance. You can still undo the sale.",
+      "currencyMismatch": "This sale is in a different currency from the store, so it was never counted in the store balance."
+    }
+  },
+  "forms": {
+    "moreDetailsInformative": "For reference only, not used in calculations."
   }
 }

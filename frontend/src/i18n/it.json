@@ -446,7 +446,8 @@
       "detach": "Separa ciondolo/slab",
       "viewUnits": "Mostra le unità",
       "moreFor": "Altre azioni per {name}",
-      "noSellableUnit": "Nessuna unità può essere venduta ora: tutte sono in trade lock."
+      "noSellableUnit": "Nessuna unità può essere venduta ora: tutte sono in trade lock.",
+      "components": "Componenti"
     },
     "itemGone": "Questo oggetto non esiste più. Potrebbe essere stato eliminato in un'altra scheda. L'elenco è stato aggiornato.",
     "daysForSale": "in vendita da {days}",
@@ -773,8 +774,19 @@
       "choosePatch": "Scegli la patch {n} dal catalogo o rimuovi la riga.",
       "patchSlot": "Posizione",
       "appliedTitle": "Applicati dal magazzino",
-      "appliedNote": "Il loro costo è già in questo oggetto. Qui possono cambiare solo posizione, usura e pattern."
-    }
+      "appliedNote": "Il loro costo è già in questo oggetto. Qui possono cambiare solo posizione, usura e pattern.",
+      "originCameWith": "Arrivato con l'oggetto",
+      "originApplied": "Applicato dal magazzino il {date}",
+      "saveFirst": "Salva o scarta prima le modifiche.",
+      "panelHint": "Ciò che porta questa unità. Applicare dal magazzino, separare e annullare vengono salvati subito."
+    },
+    "receivedAt": "Data di ricezione",
+    "sections": {
+      "item": "Oggetto",
+      "acquisition": "Acquisizione",
+      "components": "Componenti"
+    },
+    "generatedLockedHint": "Questa unità è stata creata da un'operazione (apertura o separazione). Annulla l'operazione per modificare questo campo."
   },
   "detachForm": {
     "title": "Separa il ciondolo/slab da {name}",
@@ -904,7 +916,6 @@
     "salePriceAdded": "Prezzo pagato dall'acquirente ({currency})",
     "soldAt": "Data e ora della vendita",
     "fxRateAtSale": "Tasso USD→{currency} alla vendita",
-    "minPriceRef": "Prezzo di pareggio: {value}",
     "useMinPrice": "Usa il prezzo di pareggio",
     "noRefInactive": "Nessun prezzo di riferimento: il negozio è inattivo.",
     "refUsesSavedRate": "Il prezzo di riferimento usa il tasso salvato, non quello che hai scritto qui.",
@@ -918,7 +929,11 @@
     "feesNotConfiguredBadge": "nessuna commissione impostata per il negozio",
     "manualNetNote": "(netto inserito da te)",
     "chooseStore": "Scegli il negozio.",
-    "priceRequired": "Inserisci il prezzo di vendita."
+    "priceRequired": "Inserisci il prezzo di vendita.",
+    "unit": "Unità",
+    "minPriceLabel": "Prezzo di pareggio",
+    "youReceive": "Ricevi",
+    "feesMissing": "Questo negozio non ha commissioni di vendita impostate, quindi il netto non può essere calcolato. Inserisci l'importo ricevuto o imposta le commissioni nella pagina Negozi."
   },
   "fields": {
     "catalogId": "Oggetto del catalogo",
@@ -1033,7 +1048,13 @@
     },
     "daysAfterRelease": "{days} dopo la fine del trade lock",
     "daysHeld": "{days} dall'acquisto",
-    "balanceReleasesAt": "saldo disponibile il {date}"
+    "balanceReleasesAt": "saldo disponibile il {date}",
+    "turnover": {
+      "header": "Giorni dalla fine del trade lock (o dal ritorno in vendita) alla vendita. Le vendite fatte dall'holding non vengono conteggiate."
+    },
+    "expandedFx": "Cambi registrati: vendita {sale} · acquisto {purchase}",
+    "emptyTitle": "Ancora nessuna vendita",
+    "emptyFilteredTitle": "Nessuna vendita trovata"
   },
   "salesFilters": {
     "label": "Filtri delle vendite",
@@ -1106,7 +1127,8 @@
     "lossCount": {
       "one": "{count} terminale non comprato (perdita di {value})",
       "other": "{count} terminali non comprati (perdita di {value})"
-    }
+    },
+    "avgDaysLegend": "Contato dalla fine del trade lock, o dal ritorno in vendita, fino alla vendita. Le vendite fatte dal holding non sono incluse."
   },
   "stores": {
     "title": "Negozi",
@@ -1497,7 +1519,10 @@
     "errorTitle": "Aggiornamento non riuscito",
     "errorDownload": "Non è stato possibile scaricare l'aggiornamento. Controlla la connessione a internet e riprova in Impostazioni, sotto Informazioni.",
     "errorInstall": "Non è stato possibile riavviare per installare. L'app continua a funzionare. Riprova in Impostazioni, sotto Informazioni.",
-    "errorDetail": "Dettagli tecnici"
+    "errorDetail": "Dettagli tecnici",
+    "badge": "Aggiornamento disponibile",
+    "badgeDownloading": "Download dell'aggiornamento {percent}%",
+    "versionChange": "{current} → {version}"
   },
   "profit": {
     "title": "Profitto reale",
@@ -1559,7 +1584,30 @@
         "other": "{count} con un prezzo vecchio"
       },
       "partial": "(parziale)"
-    }
+    },
+    "equation": {
+      "title": "Come si calcola il profitto reale",
+      "hint": "Tutto in dollari (US$): quanto hai prelevato, più quello che c'è nei negozi e in magazzino, meno quanto hai depositato.",
+      "withdrawals": "Prelievi ricevuti",
+      "withdrawalsNote": "La commissione di ogni prelievo è già detratta",
+      "available": "Disponibile nei negozi",
+      "pending": "In sospeso nei negozi",
+      "pendingBadge": "trattenuto",
+      "pendingNote": "si rilascia il {date}",
+      "stock": "Magazzino al costo",
+      "deposited": "Totale depositato",
+      "depositedNote": "include {value} di commissioni dei depositi",
+      "result": "Profitto reale"
+    },
+    "info": {
+      "title": "Altri numeri",
+      "outsideFormula": "Solo a titolo informativo. Non fa parte della formula del profitto reale."
+    },
+    "tabs": {
+      "label": "Depositi e prelievi"
+    },
+    "staleRate": "Cambio del {date}. Potrebbe essere superato.",
+    "rowActions": "Azioni per la registrazione del {date}"
   },
   "deposits": {
     "title": "Depositi",
@@ -1772,7 +1820,32 @@
     },
     "startHint": "Non vuoi inserire la tua vecchia cronologia? Registra un deposito con il saldo attuale del negozio. Il profitto reale verrà misurato da quella data in poi.",
     "totalsTitle": "Totale nei negozi",
-    "totalPendingDate": "Totale in sospeso (primo rilascio il {date}): {value}"
+    "totalPendingDate": "Totale in sospeso (primo rilascio il {date}): {value}",
+    "row": {
+      "deposit": "Registra deposito",
+      "withdraw": "Registra prelievo",
+      "more": "Altre azioni per {store}",
+      "currencyTag": "Valuta: {currency}",
+      "pendingFoot": "{value} in sospeso · si rilascia il {date}",
+      "noPending": "Niente in sospeso",
+      "detailsLabel": "Dettagli del calcolo"
+    },
+    "checkDialog": {
+      "explain": "Verifica: inserisci il saldo che vedi sul sito. Rettifica: corregge il saldo dell'app in base alla differenza.",
+      "step1Title": "Saldo sul sito",
+      "step2Title": "Confronta",
+      "stepCount": "Passo {current} di {total}",
+      "continue": "Continua",
+      "back": "Indietro",
+      "computed": "Calcolato dall'app",
+      "real": "Saldo reale",
+      "optionsTitle": "Cosa fare con la differenza",
+      "optionAdjust": "Rettifica il saldo dell'app",
+      "optionAdjustHint": "Registra la verifica e una rettifica che corregge il saldo. La nota è obbligatoria.",
+      "optionOnly": "Registra solo la verifica",
+      "optionOnlyHint": "Lascia il saldo dell'app invariato e registra solo la verifica.",
+      "useCsfloat": "Usa questo saldo"
+    }
   },
   "imports": {
     "button": "Importa da CSFloat",
@@ -2429,7 +2502,16 @@
           "one": "Fermo oltre {count} giorno",
           "other": "Fermo oltre {count} giorni"
         },
-        "lock": "Trade lock"
+        "lock": "Trade lock",
+        "slowSale": {
+          "one": "Lento da vendere oltre {count} giorno",
+          "other": "Lento da vendere oltre {count} giorni"
+        },
+        "fromSale": "Giorni contati dalla fine del trade lock o dal ritorno in vendita."
+      },
+      "daysAfterRelease": {
+        "one": "{count} g dopo lo sblocco",
+        "other": "{count} g dopo lo sblocco"
       }
     },
     "balance": {
@@ -2442,5 +2524,21 @@
       "selectAll": "Seleziona tutte le righe",
       "scrollRegion": "{caption}, scorrevole"
     }
+  },
+  "unsell": {
+    "effect": {
+      "available": "{value} esce dal saldo disponibile di {store}",
+      "pending": "{value} esce dal saldo in sospeso di {store} (non ancora rilasciato)",
+      "none": "Il saldo di nessun negozio cambia.",
+      "change": "{before} → {after}",
+      "negative": "Il saldo diventerà negativo.",
+      "returnsForSale": "L'oggetto torna in magazzino, in vendita.",
+      "returnsHolding": "L'oggetto torna in magazzino, nel holding.",
+      "loadError": "Impossibile calcolare l'effetto sul saldo. Puoi comunque annullare la vendita.",
+      "currencyMismatch": "Questa vendita è in una valuta diversa da quella del negozio, quindi non è mai stata conteggiata nel saldo del negozio."
+    }
+  },
+  "forms": {
+    "moreDetailsInformative": "Solo di riferimento, non usato nei calcoli."
   }
 }

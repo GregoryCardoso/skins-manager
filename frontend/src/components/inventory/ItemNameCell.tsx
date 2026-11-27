@@ -25,7 +25,8 @@ function baseDetails(item: Named, tLoose: (key: string) => string): string[] {
 }
 
 // Imagem + nome da unidade (visão individual e unidades expandidas): detalhes (float, fase, seed), origem, componentes e selos.
-export function ItemNameCell({ item }: { item: ItemView }) {
+// `hideSoldBadge`: na página Vendas todos os itens são vendidos, então o selo "Vendido" só repetiria o óbvio.
+export function ItemNameCell({ item, hideSoldBadge = false }: { item: ItemView; hideSoldBadge?: boolean }) {
   const t = useT();
   const tLoose = useTLoose();
   const locale = useLocale();
@@ -44,7 +45,7 @@ export function ItemNameCell({ item }: { item: ItemView }) {
       <span className={styles.badges}>
         <Badge tone="neutral">{tLoose(`enums.category.${item.category}`)}</Badge>
         {item.isLegacy && <Badge tone="pending">{t('inventory.legacy')}</Badge>}
-        {item.status === 'VENDIDO' && <Badge tone="info">{t('inventory.sold')}</Badge>}
+        {item.status === 'VENDIDO' && !hideSoldBadge && <Badge tone="info">{t('inventory.sold')}</Badge>}
         {item.status === 'CONSUMIDO' && <Badge tone="neutral">{t('operations.consumedBadge')}</Badge>}
         {item.externalSource === 'CSFLOAT' && <Badge tone="info">{t('imports.badge')}</Badge>}
       </span>

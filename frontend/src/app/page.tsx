@@ -134,10 +134,11 @@ function InventoryPageContent() {
   // Mensagens de sucesso e de erro das ações viram avisos rápidos (o de erro fica até ser dispensado).
   const notify = useCallback((message: string, tone: 'success' | 'danger') => toast.show({ tone, message }), [toast]);
   const {
-    openCreate, openEdit, openSell, openUnsell, openDelete, openHistory, openOffSale, openApply, openOpen, openDetach, openRegisterKey, putForSale, forSalePendingId, dialogs,
+    openCreate, openEdit, openComponents, openSell, openUnsell, openDelete, openHistory, openOffSale, openApply, openOpen, openDetach, openRegisterKey, putForSale, forSalePendingId, dialogs,
   } = useItemDialogs(stores, { notify });
   const handlers = {
     onEdit: openEdit,
+    onComponents: openComponents,
     onSell: openSell,
     onUnsell: openUnsell,
     onDelete: openDelete,

@@ -2,8 +2,8 @@
 
 import type { ReactNode } from 'react';
 import { useT, useTPlural } from '@/i18n/I18nProvider';
-import type { AgingBucket } from '@/types/api';
-import { boundaryPercents, pinPercent, ruleSegments, type RuleBucket, type TurnoverLimits } from '@/lib/turnoverRule';
+import type { AgingBucket, TurnaroundBucket } from '@/types/api';
+import { boundaryPercents, pinPercent, ruleSegments, saleRuleBucket, type RuleBucket, type TurnoverLimits } from '@/lib/turnoverRule';
 import { HoldingBadge } from './Badge';
 import styles from './TurnoverRule.module.css';
 
@@ -24,6 +24,8 @@ export type TurnoverRuleProps =
       size?: 'sm' | 'md';
       className?: string;
     }
+  // Venda (12.7a): o tempo até vender na mesma régua. A faixa (`bucket`) vem do backend; `days` = `turnaroundDays` (nulo = sem giro).
+  | { kind: 'sale'; bucket: TurnaroundBucket; days: number | null; limits: TurnoverLimits; size?: 'sm' | 'md'; className?: string }
   // Só as faixas, com os números dos limites (a barra das faixas de giro da tela de configurações, 12.8).
   | { kind: 'scale'; limits: TurnoverLimits; size?: 'sm' | 'md'; className?: string };
 
@@ -37,6 +39,32 @@ function Track({ limits, children }: { limits: TurnoverLimits; children?: ReactN
       <i className={styles.moving} />
       <i className={styles.stuck} />
       {children}
+    </div>
+  );
+}
+
+// Régua das vendas: pino na faixa do bucket e, abaixo, "12 d após liberar · Giro rápido" (forma curta: "12 d · Giro rápido").
+function SaleRule({ bucket, days, limits, size = 'md', className }: Extract<TurnoverRuleProps, { kind: 'sale' }>) {
+  const t = useT();
+  const tPlural = useTPlural();
+  const ruleBucket = saleRuleBucket(bucket);
+  if (ruleBucket === null || days === null || !Number.isFinite(days)) return null;
+  const name = t(`enums.turnaroundBucket.${bucket}` as 'enums.turnaroundBucket.GIRO_RAPIDO');
+  return (
+    <div className={`${styles.rule} ${bucket === 'DEMOROU_VENDER' ? styles.isStuck : ''} ${size === 'sm' ? styles.small : ''} ${className ?? ''}`} data-bucket={bucket}>
+      <Track limits={limits}>
+        <span className={styles.pin} style={{ left: `${pinPercent({ days, bucket: ruleBucket, limits })}%` }} />
+      </Track>
+      <div className={styles.lab}>
+        <span className={styles.full}>
+          <b className={styles.strong}>{tPlural('ui.turnover.daysAfterRelease', days)}</b>
+          <span className={styles.name}>{name}</span>
+        </span>
+        <span className={styles.short}>
+          <b className={styles.strong}>{tPlural('ui.turnover.daysShort', days)}</b>
+          <span className={styles.name}> · {name}</span>
+        </span>
+      </div>
     </div>
   );
 }
@@ -64,6 +92,8 @@ export default function TurnoverRule(props: TurnoverRuleProps) {
       </div>
     );
   }
+
+  if (props.kind === 'sale') return <SaleRule {...props} />;
 
   const { bucket, daysForSale, limits, tradeLockText, offSaleSinceText, size = 'md', className } = props;
   if (bucket === 'CONSUMIDO') return null;
@@ -113,9 +143,28 @@ export default function TurnoverRule(props: TurnoverRuleProps) {
 }
 
 // Legenda do rodapé da tabela: o que cada faixa do trilho significa, com os limites atuais.
-export function TurnoverLegend({ limits, className }: { limits: TurnoverLimits; className?: string }) {
+export function TurnoverLegend({ limits, className, variant = 'item' }: { limits: TurnoverLimits; className?: string; variant?: 'item' | 'sale' }) {
   const t = useT();
   const tPlural = useTPlural();
+  if (variant === 'sale') {
+    return (
+      <ul className={`${styles.legend} ${className ?? ''}`}>
+        <li className={styles.legendItem}>
+          <i className={`${styles.swatch} ${styles.fast}`} aria-hidden="true" />
+          {tPlural('ui.turnover.legend.fast', limits.fastTurnoverDays)}
+        </li>
+        <li className={styles.legendItem}>
+          <i className={`${styles.swatch} ${styles.moving}`} aria-hidden="true" />
+          {t('enums.turnaroundBucket.GIRO_NORMAL')}
+        </li>
+        <li className={styles.legendItem}>
+          <i className={`${styles.swatch} ${styles.stuck}`} aria-hidden="true" />
+          {tPlural('ui.turnover.legend.slowSale', limits.slowItemDays)}
+        </li>
+        <li className={styles.legendItem}>{t('ui.turnover.legend.fromSale')}</li>
+      </ul>
+    );
+  }
   return (
     <ul className={`${styles.legend} ${className ?? ''}`}>
       <li className={styles.legendItem}>

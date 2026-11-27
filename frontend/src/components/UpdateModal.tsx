@@ -1,15 +1,18 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useRef, type ReactNode } from 'react';
 import { useT } from '@/i18n/I18nProvider';
 import type { UpdateAction, UpdatePhase, UpdateState } from '@/lib/desktop';
 import { selectReleaseNotes } from '@/lib/releaseNotes';
-import forms from './forms.module.css';
-import Modal from './Modal';
 import ReleaseNotes from './ReleaseNotes';
+import Badge from './ui/Badge';
+import Banner from './ui/Banner';
+import Button from './ui/Button';
+import Dialog from './ui/Dialog';
+import Disclosure from './ui/Disclosure';
 import styles from './UpdateModal.module.css';
 
-// O que o X/Esc faz em cada fase (D190, V102-Q2):
+// O que o X/Esc faz em cada fase (D190, V102-Q2; inalterado na 12.10, P6):
 //  - available, portable-available, error: responde "agora não" / "fechar" ao processo principal;
 //  - ready e downloading: só esconde o modal (sem escolher nada e sem IPC). Em ready, fechar o app sem escolher não
 //    instala: a atualização é oferecida de novo na próxima abertura;
@@ -52,8 +55,11 @@ interface Props {
   onHide: () => void;
 }
 
+// Janela de atualização (D370, 12.10 parte 3) sobre o Dialog da 12.3. Nada é baixado nem instalado sem o usuário escolher:
+// em cada fase há um caminho principal (à direita, com o foco inicial) e um secundário.
 export default function UpdateModal({ state, language, busy, onAction, onHide }: Props) {
   const t = useT();
+  const primaryRef = useRef<HTMLButtonElement>(null);
   const { phase } = state;
   const version = state.version ?? '';
   const current = state.currentVersion ?? '';
@@ -65,120 +71,141 @@ export default function UpdateModal({ state, language, busy, onAction, onHide }:
     else if (choice !== null) onAction(choice);
   };
 
-  const button = (action: UpdateAction, label: string, primary = false) => (
-    <button
-      key={action}
-      type="button"
-      className={primary ? `${forms.button} ${forms.primary}` : forms.button}
-      onClick={() => onAction(action)}
-      disabled={locked}
-    >
+  const action = (id: UpdateAction, label: string, primary = false) => (
+    <Button key={id} ref={primary ? primaryRef : undefined} variant={primary ? 'primary' : 'secondary'} onClick={() => onAction(id)} disabled={locked}>
       {label}
-    </button>
+    </Button>
   );
+
+  const versionChange =
+    version === '' ? null : (
+      <Badge tone="info" className={styles.versionBadge}>
+        {current === '' ? version : t('desktopUpdate.versionChange', { current, version })}
+      </Badge>
+    );
 
   const notes = selectReleaseNotes(state.notes, language);
   const notesBox: ReactNode = (
-    <section className={styles.notesBox} aria-label={t('desktopUpdate.notes')}>
-      <h3 className={styles.notesTitle}>{t('desktopUpdate.notes')}</h3>
+    <Disclosure label={t('desktopUpdate.notes')} defaultOpen className={styles.notesBox}>
       <div className={styles.notesScroll}>
-        {notes.trim() === '' ? <p className={forms.muted}>{t('desktopUpdate.notesEmpty')}</p> : <ReleaseNotes markdown={notes} />}
+        {notes.trim() === '' ? <p className={styles.muted}>{t('desktopUpdate.notesEmpty')}</p> : <ReleaseNotes markdown={notes} />}
       </div>
-    </section>
+    </Disclosure>
   );
 
   let title = '';
   let body: ReactNode = null;
-  let actions: ReactNode = null;
+  let footer: ReactNode = null;
 
   if (phase === 'available' || phase === 'portable-available') {
     const portable = phase === 'portable-available';
     title = t('desktopUpdate.availableTitle');
     body = (
-      <>
-        <p className={styles.message}>{t('desktopUpdate.availableMessage', { version, current })}</p>
-        <p className={forms.muted}>{t(portable ? 'desktopUpdate.portableDetail' : 'desktopUpdate.availableDetail')}</p>
+      <div className={styles.content}>
+        <div className={styles.versionRow}>
+          <p className={styles.message}>{t('desktopUpdate.availableMessage', { version, current })}</p>
+          {versionChange}
+        </div>
+        <p className={styles.muted}>{t(portable ? 'desktopUpdate.portableDetail' : 'desktopUpdate.availableDetail')}</p>
         {notesBox}
-      </>
+      </div>
     );
-    actions = portable ? (
+    footer = portable ? (
       <>
-        {button('dismiss', t('desktopUpdate.later'))}
-        {button('openDownloadPage', t('desktopUpdate.openDownloadPage'), true)}
+        {action('dismiss', t('desktopUpdate.later'))}
+        {action('openDownloadPage', t('desktopUpdate.openDownloadPage'), true)}
       </>
     ) : (
       <>
-        {button('later', t('desktopUpdate.later'))}
-        {button('download', t('desktopUpdate.download'), true)}
+        {action('later', t('desktopUpdate.later'))}
+        {action('download', t('desktopUpdate.download'), true)}
       </>
     );
   } else if (phase === 'downloading') {
-    const percent = state.percent;
+    // Valor fora de 0 a 100 (ou NaN) não pode estourar a barra nem o aria-valuenow: limita; NaN vira indeterminado.
+    const percent = state.percent === null || Number.isNaN(state.percent) ? null : Math.min(100, Math.max(0, state.percent));
     title = t('desktopUpdate.downloadingTitle');
     body = (
-      <>
+      <div className={styles.content}>
         <p className={styles.message}>{t('desktopUpdate.downloadingMessage', { version })}</p>
         <div className={styles.progressRow}>
-          <progress
-            className={styles.progress}
-            max={100}
-            value={percent ?? undefined}
+          <div
+            className={`${styles.progress} ${percent === null ? styles.indeterminate : ''}`}
+            role="progressbar"
             aria-label={t('desktopUpdate.downloadingTitle')}
-          />
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={percent ?? undefined}
+          >
+            <span className={styles.progressFill} style={percent === null ? undefined : { width: `${percent}%` }} />
+          </div>
           <span className={styles.percent}>{percent === null ? '' : `${percent}%`}</span>
         </div>
-        <p className={forms.muted}>{t('desktopUpdate.downloadingHint')}</p>
-      </>
+        <p className={styles.muted}>{t('desktopUpdate.downloadingHint')}</p>
+      </div>
     );
-    actions = (
-      <button type="button" className={forms.button} onClick={onHide}>
+    footer = (
+      <Button ref={primaryRef} variant="primary" onClick={onHide}>
         {t('desktopUpdate.hide')}
-      </button>
+      </Button>
     );
   } else if (phase === 'ready') {
     title = t('desktopUpdate.readyTitle');
     body = (
-      <>
-        <p className={styles.message}>{t('desktopUpdate.readyMessage', { version })}</p>
-        <p className={forms.muted}>{t('desktopUpdate.readyDetail')}</p>
-      </>
+      <div className={styles.content}>
+        <div className={styles.versionRow}>
+          <p className={styles.message}>{t('desktopUpdate.readyMessage', { version })}</p>
+          {versionChange}
+        </div>
+        <p className={styles.muted}>{t('desktopUpdate.readyDetail')}</p>
+      </div>
     );
-    actions = (
+    footer = (
       <>
-        {button('installOnQuit', t('desktopUpdate.installOnQuit'))}
-        {button('restart', t('desktopUpdate.restartNow'), true)}
+        {action('installOnQuit', t('desktopUpdate.installOnQuit'))}
+        {action('restart', t('desktopUpdate.restartNow'), true)}
       </>
     );
   } else if (phase === 'installing') {
     title = t('desktopUpdate.installingTitle');
-    body = <p className={styles.message} role="status">{t('desktopUpdate.installing')}</p>;
+    body = (
+      <p className={styles.message} role="status">
+        {t('desktopUpdate.installing')}
+      </p>
+    );
   } else if (phase === 'error') {
     const kind = state.error?.kind === 'install' ? 'install' : 'download';
     title = t('desktopUpdate.errorTitle');
     body = (
-      <>
-        <div className={forms.topError} role="alert">
-          {t(kind === 'install' ? 'desktopUpdate.errorInstall' : 'desktopUpdate.errorDownload')}
-        </div>
+      <div className={styles.content}>
+        <Banner tone="danger">{t(kind === 'install' ? 'desktopUpdate.errorInstall' : 'desktopUpdate.errorDownload')}</Banner>
         {state.error && state.error.detail !== '' && (
-          <details className={forms.details}>
-            <summary>{t('desktopUpdate.errorDetail')}</summary>
+          <Disclosure label={t('desktopUpdate.errorDetail')}>
             <pre className={styles.detail}>{state.error.detail}</pre>
-          </details>
+          </Disclosure>
         )}
-      </>
+      </div>
     );
-    actions = button('dismiss', t('common.close'), true);
+    footer = action('dismiss', t('common.close'), true);
   } else {
     return null;
   }
 
   return (
-    <Modal title={title} onClose={onClose} busy={locked} wide={phase === 'available' || phase === 'portable-available'}>
-      <div className={styles.content}>
-        {body}
-        {actions && <div className={forms.actions}>{actions}</div>}
-      </div>
-    </Modal>
+    <Dialog
+      title={title}
+      onClose={onClose}
+      busy={locked}
+      size={phase === 'available' || phase === 'portable-available' ? 'lg' : 'md'}
+      footer={footer}
+      onOpenAutoFocus={(event) => {
+        if (primaryRef.current) {
+          event.preventDefault();
+          primaryRef.current.focus();
+        }
+      }}
+    >
+      {body}
+    </Dialog>
   );
 }

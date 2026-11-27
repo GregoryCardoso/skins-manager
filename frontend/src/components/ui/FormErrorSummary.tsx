@@ -30,8 +30,13 @@ export default function FormErrorSummary({ errors, title, className }: FormError
   const tPlural = useTPlural();
   const ref = useRef<HTMLDivElement>(null);
   const signature = errors.map((error) => `${error.field}:${error.message}`).join('|');
+  const seen = useRef<Set<string>>(new Set());
   useEffect(() => {
-    if (errors.length > 0) ref.current?.focus();
+    // Só pega o foco quando aparece um erro novo (ou ao montar): corrigir um campo e sobrar o resto não tira o foco de quem digita.
+    const current = new Set(errors.map((error) => `${error.field}:${error.message}`));
+    const appeared = [...current].some((key) => !seen.current.has(key));
+    seen.current = current;
+    if (appeared) ref.current?.focus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [signature]);
   if (errors.length === 0) return null;

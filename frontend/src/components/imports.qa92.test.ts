@@ -194,7 +194,8 @@ describe('botão "Importar do CSFloat"', () => {
   });
 
   test('o selo "CSFloat" aparece nas linhas do inventário e das vendas só para itens importados', () => {
-    expect(read('components', 'SalesTable.tsx')).toMatch(/externalSource === 'CSFLOAT'[\s\S]{0,80}<Badge tone="info" title=\{t\('imports\.badgeHint'\)\}>\{t\('imports\.badge'\)\}<\/Badge>/);
+    // 12.7a: a página de vendas usa a mesma célula do inventário (`ItemNameCell`), sem `title` no selo
+    expect(read('components', 'SaleCells.tsx')).toContain('<ItemNameCell item={item}');
     // 12.5a: no inventário o selo não usa `title` (acessibilidade); o texto "CSFloat" continua visível
     expect(read('components', 'inventory', 'ItemNameCell.tsx')).toMatch(/externalSource === 'CSFLOAT'[\s\S]{0,80}<Badge tone="info">\{t\('imports\.badge'\)\}<\/Badge>/);
     expect(translate(ptBR, 'imports.badge')).toBe('CSFloat');

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { firstSellableUnit, groupRowActions, rowActions } from './itemRowActions';
+import { firstSellableUnit, groupRowActions, hasComponentsPanel, rowActions } from './itemRowActions';
 import { makeItem } from './testFixtures';
 import type { ItemGroup, ItemView } from '@/types/api';
 
@@ -11,7 +11,7 @@ describe('rowActions (unidade)', () => {
   test('em estoque, à venda e liberado: Vender e o menu na ordem do plano, com Excluir por último', () => {
     const { primary, menu } = rowActions(makeItem({ canReceiveComponents: true }));
     expect(primary).toEqual({ id: 'sell' });
-    expect(ids(menu)).toEqual(['edit', 'apply', 'offSale', 'history', 'delete']);
+    expect(ids(menu)).toEqual(['edit', 'components', 'apply', 'offSale', 'history', 'delete']);
   });
 
   test('sem canReceiveComponents não há "Aplicar do estoque"', () => {
@@ -21,13 +21,13 @@ describe('rowActions (unidade)', () => {
   test('em trade lock: Vender desabilitado com o motivo, e o menu é o mesmo', () => {
     const { primary, menu } = rowActions(makeItem({ tradeLock: LOCKED }));
     expect(primary).toEqual({ id: 'sell', disabled: true, disabledReason: 'TRADE_LOCK' });
-    expect(ids(menu)).toEqual(['edit', 'apply', 'offSale', 'history', 'delete']);
+    expect(ids(menu)).toEqual(['edit', 'components', 'apply', 'offSale', 'history', 'delete']);
   });
 
   test('no holding: a principal é Voltar para a venda e Vender vai para o menu (desabilitado em trade lock)', () => {
     const open = rowActions(makeItem({ saleState: 'OFF_SALE' }));
     expect(open.primary).toEqual({ id: 'forSale' });
-    expect(ids(open.menu)).toEqual(['sell', 'edit', 'apply', 'history', 'delete']);
+    expect(ids(open.menu)).toEqual(['sell', 'edit', 'components', 'apply', 'history', 'delete']);
     const locked = rowActions(makeItem({ saleState: 'OFF_SALE', tradeLock: LOCKED }));
     expect(locked.menu[0]).toEqual({ id: 'sell', disabled: true, disabledReason: 'TRADE_LOCK' });
   });
@@ -35,13 +35,13 @@ describe('rowActions (unidade)', () => {
   test('vendido: sem principal; Editar, Desfazer venda, Histórico e Excluir', () => {
     const { primary, menu } = rowActions(makeItem({ status: 'VENDIDO', saleState: null }));
     expect(primary).toBeNull();
-    expect(ids(menu)).toEqual(['edit', 'unsell', 'history', 'delete']);
+    expect(ids(menu)).toEqual(['edit', 'components', 'unsell', 'history', 'delete']);
   });
 
   test('consumido: só Editar, Histórico e Excluir', () => {
     const { primary, menu } = rowActions(makeItem({ status: 'CONSUMIDO', saleState: null }));
     expect(primary).toBeNull();
-    expect(ids(menu)).toEqual(['edit', 'history', 'delete']);
+    expect(ids(menu)).toEqual(['edit', 'components', 'history', 'delete']);
   });
 
   test('"Separar" só com pendurado separável; "Inspecionar" só com link seguro', () => {
@@ -120,5 +120,19 @@ describe('groupRowActions', () => {
     ]);
     expect(firstSellableUnit(group)?.id).toBe(3);
     expect(firstSellableUnit(makeGroup([makeItem({ id: 1, tradeLock: LOCKED })]))).toBeNull();
+  });
+});
+
+describe('"Componentes" no menu (12.6a)', () => {
+  test('arma tem a entrada logo depois de Editar; item sem painel (caixa sem componentes) não tem', () => {
+    expect(ids(rowActions(makeItem()).menu).slice(0, 2)).toEqual(['edit', 'components']);
+    const box = makeItem({ category: 'CAIXA', canReceiveComponents: false, components: [] });
+    expect(hasComponentsPanel(box)).toBe(false);
+    expect(ids(rowActions(box).menu)).not.toContain('components');
+  });
+
+  test('qualquer unidade que já tenha componentes ou possa recebê-los mostra a entrada', () => {
+    expect(hasComponentsPanel(makeItem({ category: 'PERSONAGEM', canReceiveComponents: true }))).toBe(true);
+    expect(hasComponentsPanel(makeItem({ category: 'OUTRO', canReceiveComponents: false, components: [COMPONENT] }))).toBe(true);
   });
 });

@@ -28,6 +28,7 @@ import type { Language } from '@/types/api';
 import styles from './design.module.css';
 import { BalanceSection, BannerSection, MoneySection, PanelSection, StatesSection, TableSection, ToastSection, TurnoverSection } from './GallerySectionsData';
 import { Row, Section } from './galleryParts';
+import { UpdateSection } from './UpdateGallery';
 import { CATALOG_OPTIONS, FX, GALLERY_LANGUAGES, STORE_OPTIONS, THEME_OPTIONS, type GalleryLanguage } from './galleryFixtures';
 
 const L = FX.labels;
@@ -383,6 +384,7 @@ function Gallery() {
       <TurnoverSection />
       <BalanceSection />
       <TableSection />
+      <UpdateSection />
     </>
   );
 }

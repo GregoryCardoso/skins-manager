@@ -1,0 +1,6 @@
+/* Equação do lucro real (12.7b). */
+.panel { min-width: 0; }
+.stack { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
+.pendingLabel { display: inline-flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); }
+.warnings { margin: 0; padding-left: 1.1rem; display: flex; flex-direction: column; gap: var(--space-1); }
+.note { margin: 0; font-size: var(--fs-sm); color: var(--muted); }

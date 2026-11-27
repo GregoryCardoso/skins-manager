@@ -41,3 +41,14 @@ export function resolveErrorTarget(error: unknown, formFields: readonly string[]
   }
   return { target: null, topLabelField: error.field ?? null };
 }
+
+// Qual "Mais detalhes" precisa abrir para o campo com erro ficar visível e focável (12.6a). `null` = o campo já está à vista.
+// No formulário do item, a origem e o ID do ativo ficam sempre em "Mais detalhes", e a loja só no item ganho (loja informativa).
+export type DisclosureId = 'details';
+// `detailsFields`: campos que o formulário escondeu em "Mais detalhes" (a venda, 12.6b: `fieldsInDetails(store)`).
+export function revealFor(field: string, options: { informativeStoreInDetails?: boolean; detailsFields?: readonly string[] } = {}): DisclosureId | null {
+  if (field === 'originDetail' || field === 'assetId') return 'details';
+  if (field === 'purchaseStoreId' && options.informativeStoreInDetails) return 'details';
+  if (options.detailsFields?.includes(field)) return 'details';
+  return null;
+}

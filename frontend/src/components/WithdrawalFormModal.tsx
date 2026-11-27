@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useId, useState, type FormEvent } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
-import { moneyErrorParams, moneyInputMode } from '@/lib/currencies';
+import { moneyErrorParams, type CurrencyCode } from '@/lib/currencies';
 import { resolveErrorTarget } from '@/lib/formErrors';
 import {
   applyFeeSuggestion, buildWithdrawalCreateBody, buildWithdrawalPatchBody, editFee, feeSuggestionRequest,
@@ -14,36 +14,56 @@ import { MAX_NOTE_LENGTH } from '@/lib/limits';
 import { useInvalidate } from '@/lib/useInvalidate';
 import { ApiRequestError, createWithdrawal, getWithdrawalFeeSuggestion, updateWithdrawal } from '@/services/api';
 import type { Store, Withdrawal } from '@/types/api';
-import FormField from './FormField';
-import styles from './forms.module.css';
-import Modal from './Modal';
+import styles from './moneyForms.module.css';
 import { usePreferences } from './PreferencesProvider';
+import Banner from './ui/Banner';
+import Button from './ui/Button';
+import Dialog from './ui/Dialog';
+import Disclosure from './ui/Disclosure';
+import FormErrorSummary, { type FormErrorItem } from './ui/FormErrorSummary';
+import NumberField from './ui/NumberField';
+import Select from './ui/Select';
+import TextField from './ui/TextField';
 
 const FORM_FIELDS = ['storeId', 'amountStoreCents', 'feeCents', 'amountBrlCents', 'withdrawnAt', 'note'] as const;
+// Campos em "Mais detalhes" (valor recebido e observação): o resumo de erros abre a seção para poder focá-los.
+const DETAIL_FIELDS = ['amountBrlCents', 'note'] as const;
 const SUGGESTION_DEBOUNCE_MS = 300;
 
 interface Props {
   // Sem `withdrawal` = novo saque.
   withdrawal?: Withdrawal;
   stores: Store[];
+  // Saque aberto pela linha de uma loja: a loja já vem escolhida (e pode ser trocada). Só vale se ela aceita saques.
+  initialStoreId?: number | null;
   onClose: () => void;
   onSaved: (message: string) => void;
   onGone: () => void;
 }
 
-export default function WithdrawalFormModal({ withdrawal, stores, onClose, onSaved, onGone }: Props) {
+// Saque no design system (12.7b): Dialog `md`; loja, valor sacado, taxa paga (sugerida pelo backend) e data à vista; valor recebido
+// (informativo) e observação em "Mais detalhes". As regras continuam em `lib/withdrawalForm`.
+export default function WithdrawalFormModal({ withdrawal, stores, initialStoreId = null, onClose, onSaved, onGone }: Props) {
   const invalidate = useInvalidate();
   const t = useT();
   const tLoose = useTLoose();
   const locale = useLocale();
+  const formId = useId();
   const editing = withdrawal !== undefined;
   const { displayCurrency } = usePreferences();
 
-  const [state, setState] = useState<WithdrawalFormState>(() =>
-    withdrawal ? withdrawalFormFromWithdrawal(withdrawal, locale) : initialWithdrawalState());
+  const storeOptions = withdrawalStoreOptions(stores, withdrawal?.storeId ?? null);
+
+  const [state, setState] = useState<WithdrawalFormState>(() => {
+    if (withdrawal) return withdrawalFormFromWithdrawal(withdrawal, locale);
+    const initial = initialWithdrawalState();
+    return initialStoreId !== null && storeOptions.some((store) => store.id === initialStoreId) ? { ...initial, storeId: initialStoreId } : initial;
+  });
   const [errors, setErrors] = useState<Partial<Record<string, string>>>({});
+  const [attempt, setAttempt] = useState(0);
   const [topError, setTopError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(() => withdrawal !== undefined && (withdrawal.amountBrlCents !== null || (withdrawal.note ?? '') !== ''));
   // Aviso da sugestão (taxa da loja não configurada) e se o valor atual do campo veio da sugestão.
   const [feeWarning, setFeeWarning] = useState<string | null>(null);
   const [feeFromSuggestion, setFeeFromSuggestion] = useState(false);
@@ -92,6 +112,12 @@ export default function WithdrawalFormModal({ withdrawal, stores, onClose, onSav
     };
   }, [requestKey, feeTouched, locale, selectedStore?.currency]);
 
+  const showErrors = (next: Partial<Record<string, string>>) => {
+    setErrors(next);
+    setAttempt((n) => n + 1);
+    if (DETAIL_FIELDS.some((field) => next[field])) setDetailsOpen(true);
+  };
+
   const showApiError = (err: unknown) => {
     if (err instanceof ApiRequestError && err.code === 'WITHDRAWAL_NOT_FOUND') {
       onGone();
@@ -100,7 +126,7 @@ export default function WithdrawalFormModal({ withdrawal, stores, onClose, onSav
     const message = errorMessageFor(err, tLoose, locale);
     const { target, topLabelField } = resolveErrorTarget(err, FORM_FIELDS);
     if (target) {
-      setErrors({ [target]: message });
+      showErrors({ [target]: message });
       setTopError(null);
     } else {
       const label = topLabelField ? tLoose(`fields.${topLabelField}`) : null;
@@ -117,7 +143,7 @@ export default function WithdrawalFormModal({ withdrawal, stores, onClose, onSav
     if (Object.keys(local).length > 0) {
       const translated: Partial<Record<string, string>> = {};
       for (const [field, key] of Object.entries(local)) translated[field] = tLoose(key, moneyErrorParams(locale, field === 'amountBrlCents' ? receivedCurrency : currency));
-      setErrors(translated);
+      showErrors(translated);
       return;
     }
     setErrors({});
@@ -151,122 +177,134 @@ export default function WithdrawalFormModal({ withdrawal, stores, onClose, onSav
       });
   };
 
-  const storeOptions = withdrawalStoreOptions(stores, withdrawal?.storeId ?? null);
   const legacy = withdrawal?.legacyWithoutStore === true;
 
   let feeHint = t('withdrawals.form.feeHint');
   if (feeFromSuggestion && !state.feeTouched) feeHint = t('withdrawals.form.feeSuggested');
   else if (feeWarning === 'FEES_NOT_CONFIGURED' && !state.feeTouched) feeHint = t('withdrawals.form.feeNotConfigured');
 
-  return (
-    <Modal title={editing ? t('withdrawals.form.editTitle') : t('withdrawals.form.createTitle')} onClose={onClose} busy={saving}>
-      <form className={styles.form} onSubmit={submit} noValidate>
-        {topError && <div className={styles.topError} role="alert">{topError}</div>}
-        {legacy && <p className={styles.hint}>{t('withdrawals.form.legacyHint')}</p>}
+  const summaryItems: FormErrorItem[] = FORM_FIELDS
+    .filter((field) => errors[field])
+    .map((field) => {
+      const label = tLoose(`fields.${field}`);
+      return { field, label: label === `fields.${field}` ? field : label, message: errors[field] as string };
+    });
 
-        <FormField label={t('withdrawals.form.store')} error={errors.storeId}>
-          {(c) => (
-            <select
-              {...c}
-              className={styles.select}
-              autoFocus
-              value={state.storeId === null ? '' : String(state.storeId)}
-              onChange={(e) => {
-                patch({ storeId: e.target.value === '' ? null : Number(e.target.value) });
-                clearError('storeId');
-              }}
-            >
-              <option value="">{t('withdrawals.form.chooseStore')}</option>
-              {storeOptions.map((store) => (
-                <option key={store.id} value={store.id}>
-                  {store.isActive ? store.name : t('withdrawals.inactiveStore', { name: store.name })}
-                </option>
-              ))}
-            </select>
-          )}
-        </FormField>
+  return (
+    <Dialog
+      title={editing ? t('withdrawals.form.editTitle') : t('withdrawals.form.createTitle')}
+      size="md"
+      busy={saving}
+      onClose={onClose}
+      footer={
+        <>
+          <Button onClick={onClose} disabled={saving}>{t('common.cancel')}</Button>
+          <Button type="submit" form={formId} variant="primary" loading={saving}>
+            {saving ? t('common.saving') : t('common.save')}
+          </Button>
+        </>
+      }
+    >
+      <form id={formId} className={styles.form} onSubmit={submit} noValidate>
+        <FormErrorSummary key={attempt} errors={summaryItems} />
+        {topError && <Banner tone="danger">{topError}</Banner>}
+        {legacy && <Banner tone="info" announce={false}>{t('withdrawals.form.legacyHint')}</Banner>}
 
         <div className={styles.grid}>
-          <FormField label={t('withdrawals.form.amount', { currency })} error={errors.amountStoreCents}>
-            {(c) => (
-              <input
-                {...c}
-                className={styles.input}
-                inputMode={moneyInputMode(currency)}
-                value={state.amountText}
-                onChange={(e) => {
-                  patch({ amountText: e.target.value });
-                  clearError('amountStoreCents');
-                }}
-              />
-            )}
-          </FormField>
-          <FormField label={t('withdrawals.form.fee', { currency })} error={errors.feeCents} hint={feeHint}>
-            {(c) => (
-              <input
-                {...c}
-                className={styles.input}
-                inputMode={moneyInputMode(currency)}
-                value={state.feeText}
-                onChange={(e) => {
-                  setState((s) => editFee(s, e.target.value));
-                  clearError('feeCents');
-                }}
-              />
-            )}
-          </FormField>
-          <FormField label={t('withdrawals.amountBrlOptional', { currency: receivedCurrency })} error={errors.amountBrlCents}>
-            {(c) => (
-              <input
-                {...c}
-                className={styles.input}
-                inputMode={moneyInputMode(receivedCurrency)}
-                value={state.receivedText}
-                onChange={(e) => {
-                  patch({ receivedText: e.target.value });
-                  clearError('amountBrlCents');
-                }}
-              />
-            )}
-          </FormField>
-          <FormField label={t('withdrawals.form.date')} error={errors.withdrawnAt}>
-            {(c) => (
-              <input
-                {...c}
-                className={styles.input}
-                type="datetime-local"
-                value={state.withdrawnAt}
-                onChange={(e) => {
-                  patch({ withdrawnAt: e.target.value });
-                  clearError('withdrawnAt');
-                }}
-              />
-            )}
-          </FormField>
+          <div className={styles.full}>
+            <Select
+              label={t('withdrawals.form.store')}
+              name="storeId"
+              value={state.storeId === null ? '' : String(state.storeId)}
+              error={errors.storeId}
+              required
+              autoFocus={state.storeId === null}
+              disabled={saving}
+              placeholder={t('withdrawals.form.chooseStore')}
+              onChange={(value) => {
+                patch({ storeId: value === '' ? null : Number(value) });
+                clearError('storeId');
+              }}
+              options={storeOptions.map((store) => ({ value: String(store.id), label: store.isActive ? store.name : t('withdrawals.inactiveStore', { name: store.name }) }))}
+            />
+          </div>
+          <NumberField
+            kind="money"
+            currency={currency}
+            label={t('withdrawals.form.amount', { currency })}
+            name="amountStoreCents"
+            value={state.amountText}
+            error={errors.amountStoreCents}
+            required
+            autoFocus={state.storeId !== null}
+            disabled={saving}
+            onValueChange={(text) => {
+              patch({ amountText: text });
+              clearError('amountStoreCents');
+            }}
+          />
+          <NumberField
+            kind="money"
+            currency={currency}
+            label={t('withdrawals.form.fee', { currency })}
+            name="feeCents"
+            value={state.feeText}
+            error={errors.feeCents}
+            hint={feeHint}
+            disabled={saving}
+            onValueChange={(text) => {
+              setState((s) => editFee(s, text));
+              clearError('feeCents');
+            }}
+          />
+          <div className={styles.full}>
+            <TextField
+              label={t('withdrawals.form.date')}
+              name="withdrawnAt"
+              type="datetime-local"
+              value={state.withdrawnAt}
+              error={errors.withdrawnAt}
+              required
+              disabled={saving}
+              onChange={(value) => {
+                patch({ withdrawnAt: value });
+                clearError('withdrawnAt');
+              }}
+            />
+          </div>
         </div>
 
-        <FormField label={t('withdrawals.form.note')} error={errors.note}>
-          {(c) => (
-            <input
-              {...c}
-              className={styles.input}
-              maxLength={MAX_NOTE_LENGTH}
+        <Disclosure label={t('common.moreDetails')} open={detailsOpen} onOpenChange={setDetailsOpen}>
+          <div className={styles.stack}>
+            <p className={styles.small}>{t('forms.moreDetailsInformative')}</p>
+            <NumberField
+              kind="money"
+              currency={receivedCurrency as CurrencyCode}
+              label={t('withdrawals.amountBrlOptional', { currency: receivedCurrency })}
+              name="amountBrlCents"
+              value={state.receivedText}
+              error={errors.amountBrlCents}
+              disabled={saving}
+              onValueChange={(text) => {
+                patch({ receivedText: text });
+                clearError('amountBrlCents');
+              }}
+            />
+            <TextField
+              label={t('withdrawals.form.note')}
+              name="note"
               value={state.note}
-              onChange={(e) => {
-                patch({ note: e.target.value });
+              error={errors.note}
+              maxLength={MAX_NOTE_LENGTH}
+              disabled={saving}
+              onChange={(value) => {
+                patch({ note: value });
                 clearError('note');
               }}
             />
-          )}
-        </FormField>
-
-        <div className={styles.actions}>
-          <button type="button" className={styles.button} onClick={onClose} disabled={saving}>{t('common.cancel')}</button>
-          <button type="submit" className={`${styles.button} ${styles.primary}`} disabled={saving}>
-            {saving ? t('common.saving') : t('common.save')}
-          </button>
-        </div>
+          </div>
+        </Disclosure>
       </form>
-    </Modal>
+    </Dialog>
   );
 }

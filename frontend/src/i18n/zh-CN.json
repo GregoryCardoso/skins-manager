@@ -446,7 +446,8 @@
       "detach": "拆下挂件/slab",
       "viewUnits": "显示各件物品",
       "moreFor": "{name} 的更多操作",
-      "noSellableUnit": "目前没有可出售的物品：全部处于 Trade lock 中。"
+      "noSellableUnit": "目前没有可出售的物品：全部处于 Trade lock 中。",
+      "components": "组件"
     },
     "itemGone": "这件物品已不存在，可能已在另一个标签页中删除。列表已刷新。",
     "daysForSale": "已在售 {days}",
@@ -773,8 +774,19 @@
       "choosePatch": "请从目录中选择布章 {n}，或删除这一行。",
       "patchSlot": "位置",
       "appliedTitle": "从库存中应用",
-      "appliedNote": "它们的成本已计入这件物品。这里只能修改位置、磨损和 pattern。"
-    }
+      "appliedNote": "它们的成本已计入这件物品。这里只能修改位置、磨损和 pattern。",
+      "originCameWith": "随物品而来",
+      "originApplied": "{date} 从库存中应用",
+      "saveFirst": "请先保存或放弃更改。",
+      "panelHint": "这件物品带有的内容。从库存中应用、分离和撤销会立即保存。"
+    },
+    "receivedAt": "收到日期",
+    "sections": {
+      "item": "物品",
+      "acquisition": "获得方式",
+      "components": "组件"
+    },
+    "generatedLockedHint": "这件物品由一次操作创建（开启或分离）。撤销该操作后才能修改此字段。"
   },
   "detachForm": {
     "title": "从 {name} 上拆下挂件/slab",
@@ -904,7 +916,6 @@
     "salePriceAdded": "买家支付的价格（{currency}）",
     "soldAt": "出售日期和时间",
     "fxRateAtSale": "出售时的 USD→{currency} 汇率",
-    "minPriceRef": "保本价：{value}",
     "useMinPrice": "使用保本价",
     "noRefInactive": "没有参考价：这个商店已停用。",
     "refUsesSavedRate": "参考价使用已保存的汇率，而不是你在这里输入的汇率。",
@@ -918,7 +929,11 @@
     "feesNotConfiguredBadge": "商店未设置手续费",
     "manualNetNote": "（净额由你输入）",
     "chooseStore": "请选择商店。",
-    "priceRequired": "请输入售价。"
+    "priceRequired": "请输入售价。",
+    "unit": "单件",
+    "minPriceLabel": "保本价",
+    "youReceive": "你将收到",
+    "feesMissing": "该商店未设置卖出手续费，无法计算净额。请输入实际收到的金额，或在“商店”页面设置手续费。"
   },
   "fields": {
     "catalogId": "目录物品",
@@ -1033,7 +1048,13 @@
     },
     "daysAfterRelease": "trade lock 结束 {days}后",
     "daysHeld": "购买后 {days}",
-    "balanceReleasesAt": "余额于 {date} 解冻"
+    "balanceReleasesAt": "余额于 {date} 解冻",
+    "turnover": {
+      "header": "从 trade lock 结束（或重新上架）到售出的天数。从 Holding 售出的不计入。"
+    },
+    "expandedFx": "已记录汇率：卖出 {sale} · 买入 {purchase}",
+    "emptyTitle": "还没有销售记录",
+    "emptyFilteredTitle": "没有匹配的销售"
   },
   "salesFilters": {
     "label": "销售筛选",
@@ -1106,7 +1127,8 @@
     "lossCount": {
       "one": "有 {count} 个终端机未购买（损失 {value}）",
       "other": "有 {count} 个终端机未购买（损失 {value}）"
-    }
+    },
+    "avgDaysLegend": "从 trade lock 结束或重新上架起，算到售出为止。从 Holding 售出的不计入。"
   },
   "stores": {
     "title": "商店",
@@ -1489,7 +1511,10 @@
     "errorTitle": "更新失败",
     "errorDownload": "无法下载更新。请检查网络连接，然后在设置的“关于”中重试。",
     "errorInstall": "无法重启来安装。应用仍可正常使用。请在设置的“关于”中重试。",
-    "errorDetail": "技术详情"
+    "errorDetail": "技术详情",
+    "badge": "有可用更新",
+    "badgeDownloading": "正在下载更新 {percent}%",
+    "versionChange": "{current} → {version}"
   },
   "profit": {
     "title": "实际利润",
@@ -1551,7 +1576,30 @@
         "other": "{count} 件价格已过时"
       },
       "partial": "（部分）"
-    }
+    },
+    "equation": {
+      "title": "实际利润的计算方式",
+      "hint": "全部以美元（US$）计算：已提现的金额，加上商店余额和库存，减去存入的金额。",
+      "withdrawals": "已收到的提现",
+      "withdrawalsNote": "每笔提现的手续费已扣除",
+      "available": "商店可用余额",
+      "pending": "商店待结算余额",
+      "pendingBadge": "冻结中",
+      "pendingNote": "{date}解冻",
+      "stock": "库存（按成本）",
+      "deposited": "累计存入",
+      "depositedNote": "包含存入手续费 {value}",
+      "result": "实际利润"
+    },
+    "info": {
+      "title": "更多数据",
+      "outsideFormula": "仅供参考，不计入实际利润公式。"
+    },
+    "tabs": {
+      "label": "存入和提现"
+    },
+    "staleRate": "汇率日期为 {date}，可能已过期。",
+    "rowActions": "{date} 记录的操作"
   },
   "deposits": {
     "title": "存入",
@@ -1764,7 +1812,32 @@
     },
     "startHint": "不想录入以前的历史？请按商店当前的余额记录一笔存入。实际利润会从那天开始计算。",
     "totalsTitle": "商店合计",
-    "totalPendingDate": "待结算合计（首次解冻于 {date}）：{value}"
+    "totalPendingDate": "待结算合计（首次解冻于 {date}）：{value}",
+    "row": {
+      "deposit": "记录存入",
+      "withdraw": "记录提现",
+      "more": "{store} 的更多操作",
+      "currencyTag": "币种：{currency}",
+      "pendingFoot": "待结算 {value} · {date}解冻",
+      "noPending": "没有待结算金额",
+      "detailsLabel": "计算详情"
+    },
+    "checkDialog": {
+      "explain": "核对：由你填写网站上看到的余额。调整：按差额修正应用中的余额。",
+      "step1Title": "网站上的余额",
+      "step2Title": "对比",
+      "stepCount": "第 {current} 步，共 {total} 步",
+      "continue": "继续",
+      "back": "返回",
+      "computed": "应用计算值",
+      "real": "真实余额",
+      "optionsTitle": "如何处理差额",
+      "optionAdjust": "调整应用余额",
+      "optionAdjustHint": "记录核对并生成一条修正余额的调整，必须填写备注。",
+      "optionOnly": "只记录核对",
+      "optionOnlyHint": "保持应用余额不变，只记录这次核对。",
+      "useCsfloat": "使用此余额"
+    }
   },
   "imports": {
     "button": "从 CSFloat 导入",
@@ -2415,7 +2488,14 @@
         "stuck": {
           "other": "滞销，超过 {count} 天"
         },
-        "lock": "Trade lock"
+        "lock": "Trade lock",
+        "slowSale": {
+          "other": "售出较慢，超过 {count} 天"
+        },
+        "fromSale": "天数从 trade lock 结束或重新上架时起计算。"
+      },
+      "daysAfterRelease": {
+        "other": "解除后 {count} 天"
       }
     },
     "balance": {
@@ -2428,5 +2508,21 @@
       "selectAll": "选择所有行",
       "scrollRegion": "{caption}，可滚动"
     }
+  },
+  "unsell": {
+    "effect": {
+      "available": "{value} 将从 {store} 的可用余额中扣除",
+      "pending": "{value} 将从 {store} 的待结算余额中扣除（尚未释放）",
+      "none": "不会改变任何商店的余额。",
+      "change": "{before} → {after}",
+      "negative": "余额将变为负数。",
+      "returnsForSale": "物品回到库存，继续在售。",
+      "returnsHolding": "物品回到库存，放入 Holding。",
+      "loadError": "无法计算对余额的影响。你仍然可以撤销这笔出售。",
+      "currencyMismatch": "这笔出售的货币与商店不同，因此从未计入该商店的余额。"
+    }
+  },
+  "forms": {
+    "moreDetailsInformative": "仅供参考，不参与计算。"
   }
 }

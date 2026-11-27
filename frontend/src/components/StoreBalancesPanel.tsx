@@ -1,244 +1,157 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { useCallback, useState } from 'react';
-import pageStyles from '@/app/profit/page.module.css';
+import { useCallback, useMemo, useState } from 'react';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLocale, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
-import { storeCounterpart } from '@/lib/baseMoney';
-import { formatDate, formatMoney } from '@/lib/format';
+import { balanceBarScale } from '@/lib/balanceBarScale';
+import { depositStoreOptions } from '@/lib/depositForm';
+import { formatDate } from '@/lib/format';
 import { queryKeys } from '@/lib/queryKeys';
+import { withdrawalStoreOptions } from '@/lib/withdrawalForm';
 import { getCsfloatIntegration, getCurrentStoreBalances } from '@/services/api';
-import type { Currency, CurrentStoreBalances, StoreBalanceSummary } from '@/types/api';
-import { Badge } from './badges';
+import type { Store, StoreBalanceSummary } from '@/types/api';
+import BalanceCheckDialog from './BalanceCheckDialog';
 import { useMoneyLine } from './MoneyApprox';
-import CsfloatBalanceCheck from './CsfloatBalanceCheck';
-import StoreBalanceFormModal from './StoreBalanceFormModal';
+import { usePreferences } from './PreferencesProvider';
 import StoreBalanceHistory from './StoreBalanceHistory';
+import StoreBalanceRow from './StoreBalanceRow';
 import styles from './StoreBalancesPanel.module.css';
+import EmptyState from './ui/EmptyState';
+import ErrorState from './ui/ErrorState';
+import Panel from './ui/Panel';
+import Skeleton from './ui/Skeleton';
+import { useToast } from './ui/Toast';
+import { useStaleRateNote } from './useStaleRateNote';
 
 type Dialog =
   | { kind: 'check'; store: StoreBalanceSummary; initialAmountCents?: number }
   | { kind: 'history'; store: StoreBalanceSummary };
 
-// Valor na moeda da loja (2.8) com o aproximado discreto ao lado, calculado no backend (D229): "≈ R$" em loja USD,
-// "≈ US$" em loja BRL. Sem cotação, o aproximado some. Saldo negativo aparece em vermelho.
-function Amount({ cents, currency, usdCents, approxCents, approxCurrency, negative = false }: {
-  cents: number; currency: Currency; usdCents: number | null; approxCents: number | null; approxCurrency: string; negative?: boolean;
-}) {
-  const t = useT();
-  const locale = useLocale();
-  const counterpart = storeCounterpart({ currency, usdCents, approxCents, approxCurrency });
-  const approx = counterpart === null ? null : formatMoney(counterpart.cents, counterpart.currency, locale);
-  return (
-    <span className={styles.amount}>
-      <strong className={negative ? styles.negative : undefined}>{formatMoney(cents, currency, locale)}</strong>
-      {approx !== null && <span className={styles.approx}> {t('common.approx', { value: approx })}</span>}
-    </span>
-  );
+interface Props {
+  // As lojas completas: decidem em qual linha aparecem "Registrar aporte" e "Registrar saque" (as regras de sempre da loja).
+  stores: Store[];
+  onDeposit: (storeId: number) => void;
+  onWithdraw: (storeId: number) => void;
 }
 
-function StoreRow({ store, onCheck, onHistory, csfloat = false, onRegisterCsfloat }: {
-  store: StoreBalanceSummary;
-  onCheck: (store: StoreBalanceSummary) => void;
-  onHistory: (store: StoreBalanceSummary) => void;
-  // A loja da integração CSFloat, com chave salva: ganha "Conferir com o CSFloat" (9.7).
-  csfloat?: boolean;
-  onRegisterCsfloat?: (store: StoreBalanceSummary, balanceCents: number) => void;
-}) {
-  const t = useT();
-  const tLoose = useTLoose();
-  const tPlural = useTPlural();
-  const locale = useLocale();
-  const [showDetails, setShowDetails] = useState(false);
-  const { pending, breakdown, ignored } = store;
-  const fxMissing = store.warningCode === 'FX_NOT_CONFIGURED';
-  const days = store.daysSinceLastCheck;
-  // Texto discreto, sem estilo de alerta: "nunca conferido" não é um problema (D243, D247).
-  const lastCheckText = days === null
-    ? t('storeBalances.neverChecked')
-    : days === 0 ? t('storeBalances.lastCheckToday') : tPlural('storeBalances.lastCheckDays', days);
-  const detailLines = [
-    ['deposits', breakdown.depositsCents],
-    ['purchases', -breakdown.purchasesCents],
-    ['withdrawals', -breakdown.withdrawalsCents],
-    ['salesReleased', breakdown.salesReleasedCents],
-    ['adjustments', breakdown.adjustmentsCents],
-  ] as const;
-
-  return (
-    <li className={`${styles.row} ${store.isActive ? '' : styles.inactive}`}>
-      <div className={styles.head}>
-        <strong className={styles.name}>{store.storeName}</strong>
-        {!store.isActive && <Badge tone="neutral">{t('storeBalances.inactive')}</Badge>}
-        {!store.allowsWithdrawal && <Badge tone="warning" title={t('storeBalances.nonWithdrawableTitle')}>{t('storeBalances.nonWithdrawable')}</Badge>}
-      </div>
-
-      <div className={styles.values}>
-        <span>
-          <Amount
-            cents={store.availableCents}
-            currency={store.currency}
-            usdCents={store.availableUsdCents}
-            approxCents={store.availableApproxCents}
-            approxCurrency={store.approxCurrency}
-            negative={store.negative}
-          />{' '}
-          {t('storeBalances.available')}
-        </span>
-        {pending.cents > 0 && (
-          <span>
-            {'+ '}
-            <Amount cents={pending.cents} currency={store.currency} usdCents={pending.usdCents} approxCents={pending.approxCents} approxCurrency={store.approxCurrency} />{' '}
-            {t('storeBalances.pending', {
-              date: pending.nextReleaseAt ? formatDate(pending.nextReleaseAt, locale) : t('common.none'),
-            })}
-          </span>
-        )}
-      </div>
-
-      <p className={styles.meta}>{lastCheckText}</p>
-
-      {fxMissing && <p className={styles.warning} role="status">{tLoose('warnings.FX_NOT_CONFIGURED')}</p>}
-      {store.negative && <p className={styles.warning} role="status">{tLoose('warnings.COMPUTED_BALANCE_NEGATIVE')}</p>}
-      {ignored.legacyDeposits > 0 && <p className={styles.meta}>{tPlural('storeBalances.legacyDepositsIgnored', ignored.legacyDeposits)}</p>}
-      {ignored.currencyMismatch > 0 && <p className={styles.meta}>{tPlural('storeBalances.currencyMismatchIgnored', ignored.currencyMismatch)}</p>}
-
-      {showDetails && (
-        <dl className={styles.breakdown} aria-label={t('storeBalances.breakdown.title')}>
-          {detailLines.map(([key, cents]) => (
-            <div key={key} className={styles.breakdownLine}>
-              <dt>{t(`storeBalances.breakdown.${key}`)}</dt>
-              <dd>{formatMoney(cents, store.currency, locale)}</dd>
-            </div>
-          ))}
-        </dl>
-      )}
-
-      <div className={styles.actions}>
-        <button type="button" className={pageStyles.retry} onClick={() => onCheck(store)}>{t('storeBalances.check')}</button>
-        <button type="button" className={pageStyles.retry} onClick={() => setShowDetails((v) => !v)} aria-expanded={showDetails}>
-          {t(showDetails ? 'storeBalances.hideDetails' : 'storeBalances.details')}
-        </button>
-        <button type="button" className={pageStyles.retry} onClick={() => onHistory(store)}>{t('storeBalances.history.open')}</button>
-      </div>
-      {csfloat && onRegisterCsfloat && <CsfloatBalanceCheck onRegister={(cents) => onRegisterCsfloat(store, cents)} />}
-    </li>
-  );
-}
-
-// Seção Saldos da página Lucro real (8.6, D246, D247): saldo calculado (disponível + pendente) por loja,
-// "última conferência há X dias", detalhes e histórico, tudo vindo pronto do backend. Os totais ficam no topo (D255). Carrega os próprios dados.
-// A consulta é invalidada por qualquer ação que mude aportes, saques, itens, lojas ou conferências (D259).
-export default function StoreBalancesPanel() {
+// Painel "Saldo nas lojas" da página Lucro real (8.6, D246, D247; 12.7b): uma `StoreBalanceRow` por loja, com os totais embaixo.
+// Saldo calculado (disponível + pendente) e "última conferência há X dias" vêm prontos do backend. Carrega os próprios dados; a consulta
+// é invalidada por qualquer ação que mude aportes, saques, itens, lojas ou conferências (D259).
+export default function StoreBalancesPanel({ stores, onDeposit, onWithdraw }: Props) {
   const t = useT();
   const tLoose = useTLoose();
   const tPlural = useTPlural();
   const locale = useLocale();
   const moneyLine = useMoneyLine();
+  const toast = useToast();
+  const { fxRates, displayCurrency } = usePreferences();
+  const staleRateNote = useStaleRateNote(fxRates.find((entry) => entry.currency === displayCurrency) ?? null);
 
   const query = useQuery({ queryKey: queryKeys.storeBalances.current, queryFn: ({ signal }) => getCurrentStoreBalances(signal) });
   const data = query.data ?? null;
   const error = query.error ?? null;
-  const loading = query.isFetching;
   const [dialog, setDialog] = useState<Dialog | null>(null);
   // A conferência com o CSFloat aparece só na loja da integração, com a chave salva (9.7).
   const integration = useQuery({ queryKey: queryKeys.integrations.csfloat, queryFn: ({ signal }) => getCsfloatIntegration(signal) }).data ?? null;
-  const [notice, setNotice] = useState<string | null>(null);
 
-  const reload = () => {
-    query.refetch();
-  };
   const closeDialog = useCallback(() => setDialog(null), []);
   const saved = useCallback((message: string) => {
     setDialog(null);
-    setNotice(message);
-  }, []);
+    toast.show({ tone: 'success', message });
+  }, [toast]);
+
+  const scaleMax = useMemo(() => (data ? balanceBarScale(data.stores) : 0), [data]);
+  const depositIds = useMemo(() => new Set(depositStoreOptions(stores, null).map((store) => store.id)), [stores]);
+  const withdrawIds = useMemo(() => new Set(withdrawalStoreOptions(stores, null).map((store) => store.id)), [stores]);
 
   const nonWithdrawable = data ? data.totals.nonWithdrawableUsdCents : null;
   const hasNonWithdrawable = data !== null && data.stores.some((store) => !store.allowsWithdrawal);
   // A soma só aparece se for maior que 0 ou nula por falta de cotação (D212).
   const showNonWithdrawable = hasNonWithdrawable && (nonWithdrawable === null || nonWithdrawable > 0);
 
+  const totalsLine = (cents: number | null, estimated: boolean, approx: number | null) =>
+    moneyLine({ cents, estimated, approxCents: approx, approxCurrency: data?.totals.approxCurrency });
+
   return (
-    <section className={pageStyles.section} aria-labelledby="balances-heading">
-      <div className={pageStyles.titleRow}>
-        <h2 id="balances-heading">{t('storeBalances.title')}</h2>
-        {data && <span className={pageStyles.count} aria-live="polite">{tPlural('storeBalances.count', data.stores.length)}</span>}
-      </div>
-      <p className={pageStyles.note}>{t('storeBalances.intro')}</p>
-
-      {notice && (
-        <div className={pageStyles.notice} role="status">
-          <span>{notice}</span>
-          <button type="button" className={pageStyles.retry} onClick={() => setNotice(null)}>{t('common.close')}</button>
-        </div>
-      )}
-
+    <Panel
+      title={t('storeBalances.title')}
+      hint={
+        <>
+          {data && <span aria-live="polite">{tPlural('storeBalances.count', data.stores.length)}</span>}
+          <span className={styles.intro}>{t('storeBalances.intro')}</span>
+        </>
+      }
+    >
       {error !== null && (
-        <div className={pageStyles.error} role="alert">
-          <p>{t('storeBalances.loadError', { reason: errorMessageFor(error, tLoose, locale) })}</p>
-          <button type="button" className={pageStyles.retry} onClick={reload}>{t('common.retry')}</button>
-        </div>
+        <ErrorState
+          message={t('storeBalances.loadError', { reason: errorMessageFor(error, tLoose, locale) })}
+          onRetry={() => query.refetch()}
+          retrying={query.isFetching}
+        />
       )}
 
-      {data === null && error === null && <p className={pageStyles.muted}>{t('common.loading')}</p>}
+      {data === null && error === null && <Skeleton lines={4} />}
 
       {data !== null && error === null && (
-        <div className={loading ? pageStyles.dim : undefined} aria-busy={loading}>
-          {data.stores.length > 0 && (
-            <div className={styles.totalsBar} role="group" aria-label={t('storeBalances.totalsTitle')}>
-              <h3 className={styles.totalsTitle}>{t('storeBalances.totalsTitle')}</h3>
-              <p className={styles.totalLine}>
-                {t('storeBalances.totalAvailable', { value: moneyLine({ cents: data.totals.availableUsdCents, estimated: data.totals.availableEstimated, approxCents: data.totals.approx.available, approxCurrency: data.totals.approxCurrency }) })}
-              </p>
-              <p className={styles.totalLine}>
-                {data.totals.nextReleaseAt
-                  ? t('storeBalances.totalPendingDate', {
-                    value: moneyLine({ cents: data.totals.pendingUsdCents, estimated: data.totals.pendingEstimated, approxCents: data.totals.approx.pending, approxCurrency: data.totals.approxCurrency }),
-                    date: formatDate(data.totals.nextReleaseAt, locale),
-                  })
-                  : t('storeBalances.totalPending', { value: moneyLine({ cents: data.totals.pendingUsdCents, estimated: data.totals.pendingEstimated, approxCents: data.totals.approx.pending, approxCurrency: data.totals.approxCurrency }) })}
-              </p>
-              {showNonWithdrawable && (
-                <p className={styles.totalLine}>
-                  {nonWithdrawable === null
-                    ? `${t('storeBalances.nonWithdrawableTotalLabel')} ${tLoose('warnings.FX_NOT_CONFIGURED')}`
-                    : t('storeBalances.nonWithdrawableTotal', {
-                      value: moneyLine({
-                        cents: nonWithdrawable,
-                        estimated: data.totals.nonWithdrawableEstimated,
-                        approxCents: data.totals.approx.nonWithdrawable, approxCurrency: data.totals.approxCurrency,
-                      }),
-                    })}
-                </p>
-              )}
-            </div>
-          )}
-          <p className={styles.meta}>{t('storeBalances.startHint')}</p>
+        <div aria-busy={query.isFetching}>
           {data.stores.length === 0 ? (
-            <div className={pageStyles.empty}><p><strong>{t('storeBalances.empty')}</strong></p></div>
+            <EmptyState title={t('storeBalances.empty')} />
           ) : (
-            <ul className={styles.list}>
-              {data.stores.map((store) => (
-                <StoreRow
-                  key={store.storeId}
-                  store={store}
-                  onCheck={(target) => setDialog({ kind: 'check', store: target })}
-                  onHistory={(target) => setDialog({ kind: 'history', store: target })}
-                  csfloat={Boolean(integration && integration.hasApiKey && integration.storeId === store.storeId)}
-                  onRegisterCsfloat={(target, cents) => setDialog({ kind: 'check', store: target, initialAmountCents: cents })}
-                />
-              ))}
-            </ul>
+            <>
+              <ul className={styles.list}>
+                {data.stores.map((store) => (
+                  <StoreBalanceRow
+                    key={store.storeId}
+                    store={store}
+                    scaleMaxCents={scaleMax}
+                    canDeposit={depositIds.has(store.storeId)}
+                    canWithdraw={withdrawIds.has(store.storeId)}
+                    onDeposit={(target) => onDeposit(target.storeId)}
+                    onWithdraw={(target) => onWithdraw(target.storeId)}
+                    onCheck={(target) => setDialog({ kind: 'check', store: target })}
+                    onHistory={(target) => setDialog({ kind: 'history', store: target })}
+                    staleRateNote={staleRateNote}
+                  />
+                ))}
+              </ul>
+
+              <div className={styles.totals} role="group" aria-label={t('storeBalances.totalsTitle')}>
+                <p className={styles.totalLine}>
+                  {t('storeBalances.totalAvailable', { value: totalsLine(data.totals.availableUsdCents, data.totals.availableEstimated, data.totals.approx.available) })}
+                </p>
+                <p className={styles.totalLine}>
+                  {data.totals.nextReleaseAt
+                    ? t('storeBalances.totalPendingDate', {
+                      value: totalsLine(data.totals.pendingUsdCents, data.totals.pendingEstimated, data.totals.approx.pending),
+                      date: formatDate(data.totals.nextReleaseAt, locale),
+                    })
+                    : t('storeBalances.totalPending', { value: totalsLine(data.totals.pendingUsdCents, data.totals.pendingEstimated, data.totals.approx.pending) })}
+                </p>
+                {showNonWithdrawable && (
+                  <p className={styles.totalLine}>
+                    {nonWithdrawable === null
+                      ? `${t('storeBalances.nonWithdrawableTotalLabel')} ${tLoose('warnings.FX_NOT_CONFIGURED')}`
+                      : t('storeBalances.nonWithdrawableTotal', { value: totalsLine(nonWithdrawable, data.totals.nonWithdrawableEstimated, data.totals.approx.nonWithdrawable) })}
+                  </p>
+                )}
+                <p className={styles.note}>{t('storeBalances.startHint')}</p>
+              </div>
+            </>
           )}
         </div>
       )}
 
       {dialog?.kind === 'check' && (
-        <StoreBalanceFormModal store={dialog.store} onClose={closeDialog} onSaved={saved} initialAmountCents={dialog.initialAmountCents ?? null} />
+        <BalanceCheckDialog
+          store={dialog.store}
+          onClose={closeDialog}
+          onSaved={saved}
+          initialAmountCents={dialog.initialAmountCents ?? null}
+          csfloat={Boolean(integration && integration.hasApiKey && integration.storeId === dialog.store.storeId)}
+        />
       )}
       {dialog?.kind === 'history' && <StoreBalanceHistory store={dialog.store} onClose={closeDialog} />}
-    </section>
+    </Panel>
   );
 }

@@ -15,7 +15,7 @@ function flatten(node: unknown, prefix = ''): string[] {
   });
 }
 const pick = (dict: unknown, prefix: string) => flatten(dict).filter((k) => k.startsWith(`${prefix}.`)).sort();
-const COMPONENTS = ['StoreBalancesPanel', 'StoreBalanceFormModal', 'StoreBalanceHistory', 'SaleReleaseNote', 'StoreFormModal'];
+const COMPONENTS = ['StoreBalancesPanel', 'BalanceCheckDialog', 'StoreBalanceRow', 'StoreBalanceHistory', 'SaleReleaseNote', 'StoreFormModal'];
 
 describe('Etapa 8.3: chaves e códigos', () => {
   test('paridade pt-BR/en em storeBalances.* e geral', () => {

@@ -1,7 +1,6 @@
 'use client';
 
-import Link from 'next/link';
-import { useMemo, useState, type FormEvent } from 'react';
+import { useId, useMemo, useState, type FormEvent } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
@@ -12,23 +11,28 @@ import {
   applyCatalogChoice, buildCreateBody, effectiveCategory, fieldVisibility, initialCreateState, setTradeUnlockAt, visibleItemFields,
   type CatalogChoice, type FormErrors, type ItemFormState,
 } from '@/lib/itemForm';
-import { invalidMoneyKey, moneyErrorParams, moneyInputMode } from '@/lib/currencies';
+import { invalidMoneyKey, moneyErrorParams } from '@/lib/currencies';
 import { formatDecimalInput, isAmbiguousDecimal, parseDecimalInput, parseMoneyToCents } from '@/lib/numberInput';
 import { queryKeys } from '@/lib/queryKeys';
 import { useInvalidate } from '@/lib/useInvalidate';
 import { ApiRequestError, getCatalogStatus, getOpenOptions, openContainer } from '@/services/api';
-import { englishNameTitle, itemDisplayName, itemEnglishTitle, localizedOrName } from '@/lib/itemName';
+import { itemDisplayName, localizedOrName } from '@/lib/itemName';
 import type { CatalogItem, ItemView, OpenContainerBody, OpenDecision, OpenGeneratedBody, Store } from '@/types/api';
-import { Badge } from './badges';
-import ConfirmDialog from './ConfirmDialog';
-import FormField from './FormField';
-import styles from './forms.module.css';
-import ItemComponentsSection from './ItemComponentsSection';
+import ComponentsPanel from './item/ComponentsPanel';
+import itemStyles from './item/item.module.css';
 import ItemIdentityFields from './ItemIdentityFields';
 import ItemImage from './ItemImage';
-import Modal from './Modal';
-import modalStyles from './ApplyComponentModal.module.css';
 import { usePreferences } from './PreferencesProvider';
+import Banner from './ui/Banner';
+import Button from './ui/Button';
+import ConfirmDialog from './ui/ConfirmDialog';
+import Dialog from './ui/Dialog';
+import FormErrorSummary, { type FormErrorItem } from './ui/FormErrorSummary';
+import NumberField from './ui/NumberField';
+import SegmentedControl from './ui/SegmentedControl';
+import Select from './ui/Select';
+import Spinner from './ui/Spinner';
+import TextField from './ui/TextField';
 
 interface Props {
   // O recipiente em estoque (caixa, cápsula, pacote ou terminal) que será aberto.
@@ -58,11 +62,14 @@ function initialGeneratedState(stores: Store[], usdBrlRate: number | null, local
   };
 }
 
+// Abrir caixa, cápsula, pacote ou terminal (10.4, D363) no design system (12.6b): mesmo fluxo e mesmo contrato da API. A chave é um Select,
+// a decisão do terminal um SegmentedControl e a falta de chave ou de loja Steam um Banner com a ação.
 export default function OpenContainerModal({ item, stores, onClose, onDone, onGone, onRegisterKey }: Props) {
   const t = useT();
   const tLoose = useTLoose();
   const locale = useLocale();
   const invalidate = useInvalidate();
+  const formId = useId();
   const { usdBrlRate } = usePreferences();
 
   const optionsQuery = useQuery({
@@ -85,6 +92,7 @@ export default function OpenContainerModal({ item, stores, onClose, onDone, onGo
   const [components, setComponents] = useState<ComponentsState>(() => emptyComponentsState());
   const [changingItem, setChangingItem] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
+  const [attempt, setAttempt] = useState(0);
   const [topError, setTopError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [confirmDecline, setConfirmDecline] = useState(false);
@@ -126,6 +134,11 @@ export default function OpenContainerModal({ item, stores, onClose, onDone, onGo
     clearError('catalogId');
   };
 
+  const showErrors = (next: FormErrors) => {
+    setErrors(next);
+    setAttempt((n) => n + 1);
+  };
+
   const showApiError = (err: unknown) => {
     if (err instanceof ApiRequestError && err.code === 'ITEM_NOT_FOUND') {
       onGone();
@@ -137,10 +150,10 @@ export default function OpenContainerModal({ item, stores, onClose, onDone, onGo
     const itemVisible = visibleItemFields(ITEM_FIELDS, vis, { showSearch, freeMode: state.freeMode, hasCatalog: !!state.catalog });
     const visible = [...OWN_FIELDS, ...(generates ? itemVisible : [])];
     if (err instanceof ApiRequestError && (err.code === 'CATALOG_ITEM_REQUIRED' || err.code === 'GENERATED_ITEM_REQUIRED')) {
-      setErrors({ catalogId: message });
+      showErrors({ catalogId: message });
       setTopError(null);
     } else if (field && visible.includes(field)) {
-      setErrors({ [field]: message });
+      showErrors({ [field]: message });
       setTopError(null);
     } else {
       setErrors({});
@@ -193,7 +206,7 @@ export default function OpenContainerModal({ item, stores, onClose, onDone, onGo
       }
     }
     if (Object.values(next).some(Boolean)) {
-      setErrors(next);
+      showErrors(next);
       setConfirmDecline(false);
       return;
     }
@@ -229,111 +242,161 @@ export default function OpenContainerModal({ item, stores, onClose, onDone, onGo
   const introKey = isCase ? 'openForm.introCase' : isTerminal ? 'openForm.introTerminal' : 'openForm.introNoKey';
   const canSubmit = !saving && options !== null && (!isCase || keyId !== null) && (!isTerminal || (decision !== null && (decision === 'DECLINE' || steamStore !== null)));
 
+  const fieldLabel = (field: string): string => {
+    switch (field) {
+      case 'keyItemId': return t('openForm.key');
+      case 'decision': return t('openForm.decision');
+      case 'paidPriceCents': return t('openForm.price', { currency: steamStore?.currency ?? 'USD' });
+      case 'fxRateAtPurchase': return t('openForm.fx', { currency: steamStore?.currency ?? '' });
+      case 'openedAt': return t('openForm.openedAt');
+      case 'tradeUnlockAt': return t('openForm.generatedTradeLock');
+      default: {
+        const label = tLoose(`fields.${field}`);
+        return label === `fields.${field}` ? field : label;
+      }
+    }
+  };
+  const summaryItems: FormErrorItem[] = Object.entries(errors)
+    .filter(([, message]) => Boolean(message))
+    .map(([field, message]) => ({ field, label: fieldLabel(field), message: message as string }));
+
+  const keyLabel = (key: NonNullable<typeof options>['keys'][number], index: number) => {
+    const parts = [
+      localizedOrName(key.name, key.localizedName),
+      t('openForm.keyCost', { value: `${key.costEstimated ? '≈ ' : ''}${usd(key.effectiveCostUsdCents)}` }),
+      formatDate(key.acquiredAt, locale),
+    ];
+    if (index === 0 && (options?.keys.length ?? 0) > 1) parts.push(t('openForm.keyOldest'));
+    if (key.tradeLocked) parts.push(t('applyForm.tradeLock'));
+    if (key.offSale) parts.push(t('applyForm.holding'));
+    return parts.join(' · ');
+  };
+
   return (
-    <Modal title={t('openForm.title', { name: itemDisplayName(item) })} onClose={onClose} busy={saving} wide>
-      <form className={styles.form} onSubmit={submit} noValidate>
-        {topError && <div className={styles.topError} role="alert">{topError}</div>}
-        <div className={styles.chosen}>
+    <Dialog
+      title={t('openForm.title', { name: itemDisplayName(item) })}
+      size={options && generates ? 'lg' : 'md'}
+      busy={saving}
+      onClose={onClose}
+      footer={
+        <>
+          <Button onClick={onClose} disabled={saving}>{t('common.cancel')}</Button>
+          <Button type="submit" form={formId} variant="primary" loading={saving} disabled={!canSubmit}>
+            {saving ? t('common.saving') : decision === 'DECLINE' ? t('openForm.submitDecline') : t('openForm.submit')}
+          </Button>
+        </>
+      }
+    >
+      <form id={formId} className={itemStyles.form} onSubmit={submit} noValidate>
+        <FormErrorSummary key={attempt} errors={summaryItems} />
+        {topError && <Banner tone="danger">{topError}</Banner>}
+        <div className={itemStyles.chosen}>
           <ItemImage category={item.category} url={item.catalog?.imageUrl} size={48} />
-          <div className={styles.chosenText}>
-            <strong title={itemEnglishTitle(item)}>{itemDisplayName(item)}</strong>
-            <span className={styles.muted}>{t('openForm.keyCost', { value: usd(containerCost) })}</span>
+          <div className={itemStyles.chosenText}>
+            <strong className={itemStyles.chosenName}>{itemDisplayName(item)}</strong>
+            <span className={itemStyles.muted}>{t('openForm.keyCost', { value: usd(containerCost) })}</span>
           </div>
         </div>
-        <p className={styles.muted}>{t(introKey)}</p>
+        <p className={itemStyles.muted}>{t(introKey)}</p>
 
-        {optionsQuery.isPending && <p className={styles.muted}>{t('common.loading')}</p>}
-        {optionsQuery.error && <div className={styles.topError} role="alert">{errorMessageFor(optionsQuery.error, tLoose, locale)}</div>}
+        {optionsQuery.isPending && <Spinner size="sm" />}
+        {optionsQuery.error && (
+          <Banner tone="danger" onRetry={() => { void optionsQuery.refetch(); }}>{errorMessageFor(optionsQuery.error, tLoose, locale)}</Banner>
+        )}
 
         {options && isCase && (
-          <fieldset className={styles.details} disabled={saving}>
-            <legend className={styles.label}>{t('openForm.key')}</legend>
-            {options.keys.length === 0 ? (
-              <div className={styles.note} role="status">
-                {t('openForm.noKey', { keyName: options.requiredKeyName ?? '' })}
-                {options.otherKeysInStock > 0 && <div>{t('inventory.actions.openNeedsKeyOther', { keyName: options.requiredKeyName ?? '' })}</div>}
-                {options.requiredKeyName && (
-                  <div>
-                    <button type="button" className={`${styles.button} ${styles.small}`} onClick={() => onRegisterKey(options.requiredKeyName ?? '')}>
-                      {t('inventory.actions.registerKey')}
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <ul className={modalStyles.list}>
-                {options.keys.map((key, index) => (
-                  <li key={key.itemId} className={modalStyles.option}>
-                    <label className={modalStyles.optionLabel}>
-                      {options.keys.length > 1 && (
-                        <input type="radio" name="key" checked={key.itemId === keyId} onChange={() => setChosenKey(key.itemId)} />
-                      )}
-                      <span className={modalStyles.optionText}>
-                        <strong title={englishNameTitle(key.name, key.localizedName)}>{localizedOrName(key.name, key.localizedName)}</strong>
-                        <span className={styles.muted}>
-                          {t('openForm.keyCost', { value: `${key.costEstimated ? '≈ ' : ''}${usd(key.effectiveCostUsdCents)}` })} · {formatDate(key.acquiredAt, locale)}
-                          {index === 0 && options.keys.length > 1 ? ` · ${t('openForm.keyOldest')}` : ''}
-                        </span>
-                      </span>
-                      {key.tradeLocked && <Badge tone="info" icon="🔒">{t('applyForm.tradeLock')}</Badge>}
-                      {key.offSale && <Badge>{t('applyForm.holding')}</Badge>}
-                    </label>
-                  </li>
-                ))}
-              </ul>
-            )}
-            {errors.keyItemId && <span className={styles.error} role="alert">{errors.keyItemId}</span>}
-          </fieldset>
+          options.keys.length === 0 ? (
+            <Banner
+              tone="warning"
+              announce={false}
+              action={options.requiredKeyName ? { label: t('inventory.actions.registerKey'), onClick: () => onRegisterKey(options.requiredKeyName ?? '') } : undefined}
+            >
+              <p>{t('openForm.noKey', { keyName: options.requiredKeyName ?? '' })}</p>
+              {options.otherKeysInStock > 0 && <p>{t('inventory.actions.openNeedsKeyOther', { keyName: options.requiredKeyName ?? '' })}</p>}
+            </Banner>
+          ) : options.keys.length === 1 ? (
+            <div className={itemStyles.lockedValue}>
+              <span className={itemStyles.lockedLabel}>{t('openForm.key')}</span>
+              <span>{keyLabel(options.keys[0], 0)}</span>
+            </div>
+          ) : (
+            <Select
+              label={t('openForm.key')}
+              name="keyItemId"
+              value={String(keyId ?? '')}
+              error={errors.keyItemId}
+              disabled={saving}
+              onChange={(value) => setChosenKey(Number(value))}
+              options={options.keys.map((key, index) => ({ value: String(key.itemId), label: keyLabel(key, index) }))}
+            />
+          )
         )}
 
         {options && isTerminal && (
-          <fieldset className={styles.details} disabled={saving}>
-            <legend className={styles.label}>{t('openForm.decision')}</legend>
-            <div className={styles.radioRow}>
-              <label>
-                <input type="radio" name="decision" checked={decision === 'BUY'} onChange={() => setDecision('BUY')} />
-                {t('openForm.buy')}
-              </label>
-              <label>
-                <input type="radio" name="decision" checked={decision === 'DECLINE'} onChange={() => setDecision('DECLINE')} />
-                {t('openForm.decline', { value: usd(containerCost) })}
-              </label>
-            </div>
-            {errors.decision && <span className={styles.error} role="alert">{errors.decision}</span>}
+          <div className={itemStyles.section}>
+            <span className={itemStyles.lockedLabel} id={`${formId}-decision`}>{t('openForm.decision')}</span>
+            <SegmentedControl<OpenDecision>
+              label={t('openForm.decision')}
+              value={(decision ?? '') as OpenDecision}
+              disabled={saving}
+              onChange={(next) => {
+                setDecision(next);
+                clearError('decision');
+              }}
+              options={[
+                { value: 'BUY', label: t('openForm.buy') },
+                { value: 'DECLINE', label: t('openForm.decline', { value: usd(containerCost) }) },
+              ]}
+            />
+            {errors.decision && <span className={itemStyles.fieldError} role="alert" data-field="decision" tabIndex={-1}>{errors.decision}</span>}
             {decision === 'BUY' && !steamStore && (
-              <div className={styles.note} role="status">
-                {t('openForm.noSteamStore')}{' '}
-                <Link href="/stores">{t('openForm.goToStores')}</Link>
-              </div>
+              <Banner tone="warning" announce={false} action={{ label: t('openForm.goToStores'), href: '/stores' }}>
+                {t('openForm.noSteamStore')}
+              </Banner>
             )}
             {buying && steamStore && (
               <>
-                <p className={styles.muted}>{t('openForm.steamStore', { store: steamStore.name, currency: steamStore.currency })}</p>
-                <div className={styles.grid}>
-                  <FormField label={t('openForm.price', { currency: steamStore.currency })} error={errors.paidPriceCents}>
-                    {(c) => (
-                      <input {...c} className={styles.input} inputMode={moneyInputMode(steamStore?.currency)} value={priceText} onChange={(e) => { setPriceText(e.target.value); clearError('paidPriceCents'); }} />
-                    )}
-                  </FormField>
+                <p className={itemStyles.muted}>{t('openForm.steamStore', { store: steamStore.name, currency: steamStore.currency })}</p>
+                <div className={itemStyles.grid}>
+                  <NumberField
+                    kind="money"
+                    currency={steamStore.currency}
+                    label={t('openForm.price', { currency: steamStore.currency })}
+                    name="paidPriceCents"
+                    value={priceText}
+                    error={errors.paidPriceCents}
+                    required
+                    disabled={saving}
+                    onValueChange={(text) => {
+                      setPriceText(text);
+                      clearError('paidPriceCents');
+                    }}
+                  />
                   {fxVisible && (
-                    <FormField
-                      label={t('openForm.fx', { currency: steamStore?.currency ?? '' })}
+                    <NumberField
+                      kind="decimal"
+                      label={t('openForm.fx', { currency: steamStore.currency })}
+                      name="fxRateAtPurchase"
+                      value={fxText}
                       error={errors.fxRateAtPurchase}
+                      disabled={saving}
                       hint={fxDefault !== null ? t('openForm.fxDefault', { rate: formatDecimalInput(fxDefault, locale) }) : null}
-                    >
-                      {(c) => <input {...c} className={styles.input} inputMode="decimal" value={fxText} onChange={(e) => setFxTyped(e.target.value)} />}
-                    </FormField>
+                      onValueChange={(text) => {
+                        setFxTyped(text);
+                        clearError('fxRateAtPurchase');
+                      }}
+                    />
                   )}
                 </div>
               </>
             )}
-          </fieldset>
+          </div>
         )}
 
         {options && generates && (
-          <>
-            <h3 className={styles.label}>{t('openForm.generatedTitle')}</h3>
-            <p className={styles.muted}>{t('openForm.generatedHint')}</p>
+          <section className={itemStyles.section} aria-labelledby={`${formId}-generated`}>
+            <h3 id={`${formId}-generated`} className={itemStyles.sectionTitle}>{t('openForm.generatedTitle')}</h3>
+            <p className={itemStyles.muted}>{t('openForm.generatedHint')}</p>
             <ItemIdentityFields
               state={state}
               patch={patch}
@@ -347,7 +410,7 @@ export default function OpenContainerModal({ item, stores, onClose, onDone, onGo
               onPickCatalog={onPickCatalog}
             />
             {allowComponents && (
-              <ItemComponentsSection
+              <ComponentsPanel
                 category={category}
                 state={components}
                 onChange={(next) => {
@@ -358,55 +421,47 @@ export default function OpenContainerModal({ item, stores, onClose, onDone, onGo
                 disabled={saving}
               />
             )}
-            <FormField label={t('openForm.generatedTradeLock')} error={errors.tradeUnlockAt}>
-              {(c) => (
-                <input
-                  {...c}
-                  className={styles.input}
-                  type="datetime-local"
-                  value={state.tradeUnlockAt}
-                  onChange={(e) => setState((s) => setTradeUnlockAt(s, e.target.value))}
-                />
-              )}
-            </FormField>
-          </>
+            <TextField
+              label={t('openForm.generatedTradeLock')}
+              name="tradeUnlockAt"
+              type="datetime-local"
+              value={state.tradeUnlockAt}
+              error={errors.tradeUnlockAt}
+              disabled={saving}
+              onChange={(value) => setState((s) => setTradeUnlockAt(s, value))}
+            />
+          </section>
         )}
 
         {options && (
-          <FormField label={t('openForm.openedAt')} error={errors.openedAt}>
-            {(c) => (
-              <input
-                {...c}
-                type="datetime-local"
-                className={styles.input}
-                max={dateToLocalInput(new Date())}
-                value={openedAtText}
-                onChange={(e) => setTypedAt(e.target.value)}
-              />
-            )}
-          </FormField>
+          <TextField
+            label={t('openForm.openedAt')}
+            name="openedAt"
+            type="datetime-local"
+            max={dateToLocalInput(new Date())}
+            value={openedAtText}
+            error={errors.openedAt}
+            disabled={saving}
+            onChange={(value) => {
+              setTypedAt(value);
+              clearError('openedAt');
+            }}
+          />
         )}
 
-        {summary && <div className={styles.note} role="status">{summary}</div>}
-
-        <div className={styles.actions}>
-          <button type="button" className={styles.button} onClick={onClose} disabled={saving}>{t('common.cancel')}</button>
-          <button type="submit" className={`${styles.button} ${styles.primary}`} disabled={!canSubmit}>
-            {saving ? t('common.saving') : decision === 'DECLINE' ? t('openForm.submitDecline') : t('openForm.submit')}
-          </button>
-        </div>
+        {summary && <Banner tone="info" announce={false}>{summary}</Banner>}
       </form>
       {confirmDecline && (
         <ConfirmDialog
           title={t('openForm.confirmDeclineTitle')}
           message={t('openForm.confirmDeclineMessage', { value: usd(containerCost) })}
           confirmLabel={t('openForm.confirmDeclineConfirm')}
-          danger
+          tone="danger"
           busy={saving}
           onCancel={() => setConfirmDecline(false)}
           onConfirm={perform}
         />
       )}
-    </Modal>
+    </Dialog>
   );
 }

@@ -62,9 +62,10 @@ describe('confirmação e botões', () => {
   });
 
   test('os botões só aparecem conforme o estado e não existem na página de vendas', () => {
-    const actions = read('components/ItemActions.tsx');
-    expect(actions).toMatch(/item\.saleState === 'FOR_SALE' && onOffSale/);
-    expect(actions).toMatch(/item\.saleState === 'OFF_SALE' && onForSale/);
+    // 12.5a: as ações por situação ficam em `lib/itemRowActions` (holding: voltar à venda; à venda: mover para o holding)
+    const actions = read('lib/itemRowActions.ts');
+    expect(actions).toMatch(/if \(holding\) return \{ primary: act\('forSale'\)/);
+    expect(actions).toMatch(/return \{ primary: sell, menu: \[\.\.\.common, act\('offSale'\)/);
     expect(read('app/sales/page.tsx')).not.toMatch(/openOffSale|putForSale/);
   });
 

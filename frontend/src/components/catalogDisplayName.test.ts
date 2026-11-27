@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { catalogDisplayName } from './CatalogAutocomplete';
+import { catalogDisplayName } from '@/lib/itemName';
 
 // 11.5 (D369): o nome vem do backend já no idioma das configurações (`localizedName`); sem tradução, cai no inglês.
 describe('catalogDisplayName', () => {

@@ -446,7 +446,8 @@
       "detach": "Anhänger/Slab trennen",
       "viewUnits": "Einheiten anzeigen",
       "moreFor": "Weitere Aktionen für {name}",
-      "noSellableUnit": "Derzeit kann keine Einheit verkauft werden: alle sind im Trade lock."
+      "noSellableUnit": "Derzeit kann keine Einheit verkauft werden: alle sind im Trade lock.",
+      "components": "Komponenten"
     },
     "itemGone": "Dieses Item gibt es nicht mehr. Es wurde vielleicht in einem anderen Tab gelöscht. Die Liste wurde aktualisiert.",
     "daysForSale": "seit {days} im Verkauf",
@@ -773,8 +774,19 @@
       "choosePatch": "Wähle Patch {n} aus dem Katalog oder entferne die Zeile.",
       "patchSlot": "Position",
       "appliedTitle": "Aus dem Bestand angebracht",
-      "appliedNote": "Ihre Kosten stecken schon in diesem Item. Hier können nur Position, Abnutzung und Pattern geändert werden."
-    }
+      "appliedNote": "Ihre Kosten stecken schon in diesem Item. Hier können nur Position, Abnutzung und Pattern geändert werden.",
+      "originCameWith": "Kam mit dem Item",
+      "originApplied": "Am {date} aus dem Bestand angebracht",
+      "saveFirst": "Speichere oder verwirf zuerst deine Änderungen.",
+      "panelHint": "Was diese Einheit trägt. Aus dem Bestand anbringen, Trennen und Rückgängigmachen werden sofort gespeichert."
+    },
+    "receivedAt": "Datum des Erhalts",
+    "sections": {
+      "item": "Item",
+      "acquisition": "Erwerb",
+      "components": "Komponenten"
+    },
+    "generatedLockedHint": "Diese Einheit wurde durch eine Operation erstellt (Öffnen oder Trennen). Mach die Operation rückgängig, um dieses Feld zu ändern."
   },
   "detachForm": {
     "title": "Anhänger/Slab von {name} trennen",
@@ -904,7 +916,6 @@
     "salePriceAdded": "Vom Käufer gezahlter Preis ({currency})",
     "soldAt": "Verkaufsdatum und -uhrzeit",
     "fxRateAtSale": "Kurs USD→{currency} beim Verkauf",
-    "minPriceRef": "Preis ohne Verlust: {value}",
     "useMinPrice": "Preis ohne Verlust verwenden",
     "noRefInactive": "Kein Referenzpreis: Der Shop ist inaktiv.",
     "refUsesSavedRate": "Der Referenzpreis nutzt den gespeicherten Kurs, nicht den, den du hier eingegeben hast.",
@@ -918,7 +929,11 @@
     "feesNotConfiguredBadge": "keine Gebühren für den Shop festgelegt",
     "manualNetNote": "(Netto von dir eingegeben)",
     "chooseStore": "Wähle den Shop.",
-    "priceRequired": "Gib den Verkaufspreis ein."
+    "priceRequired": "Gib den Verkaufspreis ein.",
+    "unit": "Einheit",
+    "minPriceLabel": "Preis ohne Verlust",
+    "youReceive": "Du erhältst",
+    "feesMissing": "Für diesen Shop sind keine Verkaufsgebühren eingestellt, daher lässt sich der Nettobetrag nicht berechnen. Gib den erhaltenen Betrag ein oder stelle die Gebühren auf der Seite Shops ein."
   },
   "fields": {
     "catalogId": "Katalog-Item",
@@ -1033,7 +1048,13 @@
     },
     "daysAfterRelease": "{days} nach Ende des Trade lock",
     "daysHeld": "{days} seit dem Kauf",
-    "balanceReleasesAt": "Guthaben frei am {date}"
+    "balanceReleasesAt": "Guthaben frei am {date}",
+    "turnover": {
+      "header": "Tage vom Ende des Trade lock (oder der Rückkehr in den Verkauf) bis zum Verkauf. Verkäufe aus dem Holding werden nicht gezählt."
+    },
+    "expandedFx": "Gespeicherte Kurse: Verkauf {sale} · Kauf {purchase}",
+    "emptyTitle": "Noch keine Verkäufe",
+    "emptyFilteredTitle": "Keine Verkäufe gefunden"
   },
   "salesFilters": {
     "label": "Verkaufsfilter",
@@ -1106,7 +1127,8 @@
     "lossCount": {
       "one": "{count} Terminal nicht gekauft (Verlust von {value})",
       "other": "{count} Terminals nicht gekauft (Verlust von {value})"
-    }
+    },
+    "avgDaysLegend": "Gezählt vom Ende des Trade lock oder von der Rückkehr in den Verkauf bis zum Verkauf. Verkäufe aus dem Holding zählen nicht mit."
   },
   "stores": {
     "title": "Shops",
@@ -1497,7 +1519,10 @@
     "errorTitle": "Update fehlgeschlagen",
     "errorDownload": "Das Update konnte nicht heruntergeladen werden. Prüfe deine Internetverbindung und versuch es in den Einstellungen unter Info nochmal.",
     "errorInstall": "Der Neustart zur Installation ist nicht gelungen. Die App funktioniert weiter. Versuch es in den Einstellungen unter Info nochmal.",
-    "errorDetail": "Technische Details"
+    "errorDetail": "Technische Details",
+    "badge": "Update verfügbar",
+    "badgeDownloading": "Update wird heruntergeladen {percent}%",
+    "versionChange": "{current} → {version}"
   },
   "profit": {
     "title": "Echter Gewinn",
@@ -1559,7 +1584,30 @@
         "other": "{count} mit altem Preis"
       },
       "partial": "(teilweise)"
-    }
+    },
+    "equation": {
+      "title": "So wird der echte Gewinn berechnet",
+      "hint": "Alles in US-Dollar (US$): was Sie ausgezahlt haben, plus was in den Shops und im Bestand ist, minus was Sie eingezahlt haben.",
+      "withdrawals": "Erhaltene Auszahlungen",
+      "withdrawalsNote": "Die Gebühr jeder Auszahlung ist bereits abgezogen",
+      "available": "In den Shops verfügbar",
+      "pending": "In den Shops ausstehend",
+      "pendingBadge": "zurückgehalten",
+      "pendingNote": "frei am {date}",
+      "stock": "Bestand zu Kosten",
+      "deposited": "Insgesamt eingezahlt",
+      "depositedNote": "enthält {value} an Einzahlungsgebühren",
+      "result": "Echter Gewinn"
+    },
+    "info": {
+      "title": "Weitere Zahlen",
+      "outsideFormula": "Nur zur Information. Gehört nicht zur Formel des echten Gewinns."
+    },
+    "tabs": {
+      "label": "Einzahlungen und Auszahlungen"
+    },
+    "staleRate": "Wechselkurs vom {date}. Er könnte veraltet sein.",
+    "rowActions": "Aktionen für den Eintrag vom {date}"
   },
   "deposits": {
     "title": "Einzahlungen",
@@ -1772,7 +1820,32 @@
     },
     "startHint": "Du willst deinen alten Verlauf nicht eingeben? Erfasse eine Einzahlung mit dem aktuellen Guthaben des Shops. Der echte Gewinn wird ab diesem Datum gemessen.",
     "totalsTitle": "Insgesamt in den Shops",
-    "totalPendingDate": "Insgesamt ausstehend (erste Freigabe am {date}): {value}"
+    "totalPendingDate": "Insgesamt ausstehend (erste Freigabe am {date}): {value}",
+    "row": {
+      "deposit": "Einzahlung erfassen",
+      "withdraw": "Auszahlung erfassen",
+      "more": "Weitere Aktionen für {store}",
+      "currencyTag": "Währung: {currency}",
+      "pendingFoot": "{value} ausstehend · frei am {date}",
+      "noPending": "Nichts ausstehend",
+      "detailsLabel": "Details zur Berechnung"
+    },
+    "checkDialog": {
+      "explain": "Prüfung: Sie geben das Guthaben ein, das Sie auf der Website sehen. Korrektur: gleicht das Guthaben der App um die Differenz an.",
+      "step1Title": "Guthaben auf der Website",
+      "step2Title": "Vergleichen",
+      "stepCount": "Schritt {current} von {total}",
+      "continue": "Weiter",
+      "back": "Zurück",
+      "computed": "Von der App berechnet",
+      "real": "Echtes Guthaben",
+      "optionsTitle": "Was mit der Differenz geschehen soll",
+      "optionAdjust": "Guthaben der App korrigieren",
+      "optionAdjustHint": "Erfasst die Prüfung und eine Korrektur, die das Guthaben angleicht. Eine Notiz ist Pflicht.",
+      "optionOnly": "Nur die Prüfung erfassen",
+      "optionOnlyHint": "Lässt das Guthaben der App unverändert und erfasst nur die Prüfung.",
+      "useCsfloat": "Dieses Guthaben verwenden"
+    }
   },
   "imports": {
     "button": "Aus CSFloat importieren",
@@ -2429,7 +2502,16 @@
           "one": "Ladenhüter über {count} Tag",
           "other": "Ladenhüter über {count} Tage"
         },
-        "lock": "Trade lock"
+        "lock": "Trade lock",
+        "slowSale": {
+          "one": "Langsam verkauft über {count} Tag",
+          "other": "Langsam verkauft über {count} Tage"
+        },
+        "fromSale": "Tage gezählt ab dem Ende des Trade lock oder der Rückkehr in den Verkauf."
+      },
+      "daysAfterRelease": {
+        "one": "{count} T nach Freigabe",
+        "other": "{count} T nach Freigabe"
       }
     },
     "balance": {
@@ -2442,5 +2524,21 @@
       "selectAll": "Alle Zeilen auswählen",
       "scrollRegion": "{caption}, scrollbar"
     }
+  },
+  "unsell": {
+    "effect": {
+      "available": "{value} geht vom verfügbaren Guthaben von {store} ab",
+      "pending": "{value} geht vom ausstehenden Guthaben von {store} ab (noch nicht freigegeben)",
+      "none": "Das Guthaben keines Shops ändert sich.",
+      "change": "{before} → {after}",
+      "negative": "Das Guthaben wird negativ.",
+      "returnsForSale": "Das Item kommt zurück in den Bestand, im Verkauf.",
+      "returnsHolding": "Das Item kommt zurück in den Bestand, ins Holding.",
+      "loadError": "Die Auswirkung auf das Guthaben konnte nicht berechnet werden. Du kannst den Verkauf trotzdem rückgängig machen.",
+      "currencyMismatch": "Dieser Verkauf ist in einer anderen Währung als der Shop und wurde daher nie im Guthaben des Shops gezählt."
+    }
+  },
+  "forms": {
+    "moreDetailsInformative": "Nur zur Information, nicht in Berechnungen verwendet."
   }
 }

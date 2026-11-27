@@ -21,3 +21,8 @@ export function englishNameTitle(name: string, localizedName: string | null | un
 export function itemEnglishTitle(item: NamedItem): string | undefined {
   return englishNameTitle(item.name, item.catalog?.localizedName);
 }
+
+// Nome de um item do catálogo para exibição: o do idioma escolhido (`localizedName`) quando existe, senão o canônico em inglês.
+export function catalogDisplayName(item: { name: string; localizedName?: string | null }): string {
+  return item.localizedName?.trim() ? item.localizedName : item.name;
+}

@@ -21,6 +21,8 @@ export interface TextFieldProps {
   autoFocus?: boolean;
   name?: string;
   maxLength?: number;
+  // Limite superior de campos de data (datetime-local), por exemplo "agora" ou a data da venda.
+  max?: string;
   // Campos secretos (chave da API): sem autocompletar, correção nem checagem ortográfica.
   autoComplete?: string;
   autoCorrect?: 'on' | 'off';
@@ -53,6 +55,7 @@ export default function TextField({
   autoFocus,
   name,
   maxLength,
+  max,
   autoComplete,
   autoCorrect,
   autoCapitalize,
@@ -84,6 +87,7 @@ export default function TextField({
             readOnly={readOnly}
             autoFocus={autoFocus}
             maxLength={maxLength}
+            max={max}
             autoComplete={autoComplete}
             autoCorrect={autoCorrect}
             autoCapitalize={autoCapitalize}

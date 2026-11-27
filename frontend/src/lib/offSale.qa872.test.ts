@@ -144,17 +144,17 @@ describe('i18n: paridade e textos', () => {
 });
 
 describe('botões, abas e exibição', () => {
-  test('ItemActions: "Mover para holding" só em FOR_SALE e "Voltar para a venda" só em OFF_SALE; Vender, Editar e Excluir sempre', () => {
-    const code = read('components/ItemActions.tsx');
-    expect(code).toMatch(/item\.saleState === 'FOR_SALE' && onOffSale/);
-    expect(code).toMatch(/item\.saleState === 'OFF_SALE' && onForSale/);
-    expect(code).toContain("t('inventory.actions.edit')");
-    expect(code).toContain("t('inventory.actions.delete')");
-    expect(code).toContain("t('inventory.actions.sell')");
+  test('ações da linha: "Mover para holding" só em FOR_SALE e "Voltar para a venda" só em OFF_SALE; Vender, Editar e Excluir sempre', () => {
+    const code = read('lib/itemRowActions.ts');
+    expect(code).toMatch(/if \(holding\) return \{ primary: act\('forSale'\)/);
+    expect(code).toMatch(/act\('offSale'\)/);
+    expect(code).toContain("act('edit')");
+    expect(code).toContain("act('delete')");
+    expect(code).toContain("act('sell'");
   });
 
   test('Vender fica desabilitado em trade lock também para item fora de venda (a regra do backend é a mesma)', () => {
-    expect(read('components/ItemActions.tsx')).toMatch(/onClick=\{\(\) => onSell\(item\)\} disabled=\{locked\}/);
+    expect(read('lib/itemRowActions.ts')).toMatch(/const sell = act\('sell', locked \? \{ disabled: true, disabledReason: 'TRADE_LOCK' \} : \{\}\);[\s\S]*menu: \[sell, /);
   });
 
   test('as abas mostram as contagens do backend e a aba escolhida zera "só agarrados"', () => {
@@ -167,7 +167,7 @@ describe('botões, abas e exibição', () => {
 
   test('a tabela mostra "no holding desde" só com offSaleAt e a página de vendas mostra SEM_GIRO com tradução', () => {
     expect(read('components/inventory/UnitCells.tsx')).toMatch(/item\.offSaleAt \? /);
-    const sales = read('components/SalesTable.tsx');
+    const sales = read('components/SaleTurnoverCell.tsx');
     expect(sales).toContain('SEM_GIRO');
     expect(sales).toContain('enums.turnaroundBucket.');
   });

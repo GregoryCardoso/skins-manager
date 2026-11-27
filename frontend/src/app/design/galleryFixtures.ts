@@ -33,6 +33,7 @@ export const FX = {
     turnover: 'TurnoverRule, TurnoverLegend',
     balance: 'BalanceBar',
     table: 'DataTable',
+    update: 'UpdateModal (estados simulados)',
   },
   // Rótulos de exemplo (texto fictício, em inglês, igual ao que o app teria).
   labels: {
@@ -114,6 +115,7 @@ export const FX = {
     errorsPriceMessage: 'Invalid amount.',
     errorsStoreMessage: 'Choose a store.',
     noResults: 'Nothing to show',
+    reopen: 'reopen',
   },
 } as const;
 

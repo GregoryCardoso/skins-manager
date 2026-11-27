@@ -1,31 +1,9 @@
-.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.6rem; }
-.row {
-  border: 1px solid var(--border); border-radius: 10px; background: var(--surface); padding: 0.75rem 1rem;
-  display: flex; flex-direction: column; gap: 0.35rem;
+/* Painel "Saldo nas lojas" (12.7b). */
+.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.intro { display: block; }
+.totals {
+  display: flex; flex-direction: column; gap: var(--space-1);
+  margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--line);
 }
-.inactive { opacity: 0.75; }
-.head { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-.name { font-size: 1rem; }
-.values { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; font-variant-numeric: tabular-nums; }
-.amount { white-space: nowrap; }
-.approx { color: var(--text-muted); font-size: 0.82rem; }
-.muted { color: var(--text-muted); }
-.meta { margin: 0; color: var(--text-muted); font-size: 0.82rem; }
-.warning { margin: 0; color: var(--warning); font-size: 0.85rem; }
-.actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.25rem; }
-.nonWithdrawableTotal { margin: 0.75rem 0 0; font-weight: 600; }
-.totals { margin-top: 0.25rem; }
-
-.negative { color: var(--danger, #c0392b); }
-.linkButton {
-  background: none; border: 0; padding: 0; font: inherit; color: var(--accent, inherit);
-  text-decoration: underline; cursor: pointer;
-}
-.breakdown { margin: 0.25rem 0 0; display: flex; flex-direction: column; gap: 0.15rem; font-size: 0.88rem; font-variant-numeric: tabular-nums; }
-.breakdownLine { display: flex; justify-content: space-between; gap: 1rem; max-width: 22rem; }
-.breakdownLine dt { color: var(--text-muted); }
-.breakdownLine dd { margin: 0; }
-
-.totalsBar { border: 1px solid var(--border); border-radius: 10px; background: var(--surface); padding: 0.6rem 1rem; margin-bottom: 0.5rem; display: flex; flex-direction: column; gap: 0.2rem; }
-.totalsTitle { margin: 0 0 0.15rem; font-size: 0.9rem; color: var(--text-muted); font-weight: 600; }
-.totalLine { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+.totalLine { margin: 0; font-weight: var(--fw-bold); }
+.note { margin: var(--space-1) 0 0; font-size: var(--fs-sm); color: var(--muted); }

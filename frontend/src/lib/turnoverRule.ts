@@ -74,3 +74,17 @@ export function boundaryPercents(limits: TurnoverLimits): [number, number] {
   const [first, second] = ruleSegments(limits);
   return [first * 100, (first + second) * 100];
 }
+
+// Régua das vendas (12.7a, P3): a faixa do tempo até vender usa o mesmo trilho do estoque (rápido, normal, demorou). O bucket vem do
+// backend (`turnaroundBucket`); SEM_GIRO (vendido do holding) não tem régua.
+export type SaleTurnaroundBucket = 'GIRO_RAPIDO' | 'GIRO_NORMAL' | 'DEMOROU_VENDER' | 'SEM_GIRO';
+
+const SALE_TO_RULE: Record<Exclude<SaleTurnaroundBucket, 'SEM_GIRO'>, RuleBucket> = {
+  GIRO_RAPIDO: 'RECENTE',
+  GIRO_NORMAL: 'EM_GIRO',
+  DEMOROU_VENDER: 'AGARRADO',
+};
+
+export function saleRuleBucket(bucket: SaleTurnaroundBucket): RuleBucket | null {
+  return bucket === 'SEM_GIRO' ? null : SALE_TO_RULE[bucket];
+}

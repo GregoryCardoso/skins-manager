@@ -52,7 +52,7 @@ describe('chaves usadas nos arquivos alterados da 8.5', () => {
   const root = path.join(__dirname, '..');
   const files = [
     'app/profit/page.tsx', 'components/DepositFormModal.tsx', 'components/DepositsTable.tsx', 'components/StoreBalancesPanel.tsx',
-    'components/SummaryCards.tsx', 'components/WithdrawalFormModal.tsx', 'components/WithdrawalsSection.tsx',
+    'components/ProfitEquation.tsx', 'components/ProfitInfoStrip.tsx', 'components/WithdrawalFormModal.tsx', 'components/WithdrawalsSection.tsx',
     'components/WithdrawalsTable.tsx', 'components/MoneyApprox.tsx', 'lib/depositForm.ts', 'lib/withdrawalForm.ts', 'lib/baseMoney.ts',
   ];
   const NAMESPACES = Object.keys(ptBR).join('|');

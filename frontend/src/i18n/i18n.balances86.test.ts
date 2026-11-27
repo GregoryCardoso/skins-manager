@@ -62,13 +62,13 @@ describe('8.6: chaves do saldo calculado', () => {
     expect(translate(en, 'storeBalances.totalsTitle')).toBe('Total in stores');
   });
 
-  test('o painel e o modal de aporte mostram a orientação; os totais ficam antes da lista de lojas (D255)', () => {
+  test('o painel e o modal de aporte mostram a orientação; os totais ficam embaixo da lista de lojas (12.7b, plano da 12.7)', () => {
     const dir = path.join(__dirname, '..', 'components');
     const panel = readFileSync(path.join(dir, 'StoreBalancesPanel.tsx'), 'utf-8');
     expect(panel).toContain("t('storeBalances.startHint')");
     expect(readFileSync(path.join(dir, 'DepositFormModal.tsx'), 'utf-8')).toContain("t('storeBalances.startHint')");
     expect(panel.indexOf("t('storeBalances.totalsTitle')")).toBeGreaterThan(-1);
-    expect(panel.indexOf("t('storeBalances.totalsTitle')")).toBeLessThan(panel.indexOf('<ul className={styles.list}>'));
+    expect(panel.indexOf("t('storeBalances.totalsTitle')")).toBeGreaterThan(panel.indexOf('<ul className={styles.list}>'));
   });
 
   test('nada no código ou nos textos fala em saldo inicial; os arquivos do saldo inicial foram apagados', () => {
@@ -86,7 +86,7 @@ describe('8.6: chaves do saldo calculado', () => {
     expect(translate(ptBR, key)).toBe(key);
     expect(translate(en, key)).toBe(key);
     const dir = path.join(__dirname, '..', 'components');
-    for (const file of ['StoreBalancesPanel.tsx', 'StoreBalanceFormModal.tsx', 'StoreBalanceHistory.tsx', 'SummaryCards.tsx']) {
+    for (const file of ['StoreBalancesPanel.tsx', 'StoreBalanceRow.tsx', 'BalanceCheckDialog.tsx', 'StoreBalanceHistory.tsx', 'ProfitEquation.tsx', 'ProfitInfoStrip.tsx']) {
       expect(readFileSync(path.join(dir, file), 'utf-8'), `${file} ${key}`).not.toContain(`'${key}'`);
     }
   });

@@ -54,8 +54,8 @@ describe('chaves novas da 10.1', () => {
   test('toda chave estática t("...") usada nos componentes da 10.1 existe nos dois idiomas', () => {
     const root = path.join(__dirname, '..');
     const files = [
-      'components/ItemComponentsSection.tsx', 'components/ComponentThumbs.tsx', 'components/ItemFormModal.tsx',
-      'components/InventoryGroupTable.tsx', 'components/inventory/ItemNameCell.tsx', 'components/inventory/ItemRowActions.tsx', 'components/inventory/UnitCells.tsx', 'components/SalesTable.tsx', 'components/CatalogAutocomplete.tsx',
+      'components/item/ComponentsPanel.tsx', 'components/item/AcquisitionFields.tsx', 'components/item/CatalogCombobox.tsx', 'components/ItemIdentityFields.tsx', 'components/ComponentThumbs.tsx', 'components/ItemFormModal.tsx',
+      'components/InventoryGroupTable.tsx', 'components/inventory/ItemNameCell.tsx', 'components/inventory/ItemRowActions.tsx', 'components/inventory/UnitCells.tsx', 'components/SalesTable.tsx',
     ];
     const missing: string[] = [];
     for (const file of files) {

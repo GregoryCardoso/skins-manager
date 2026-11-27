@@ -13,7 +13,6 @@ const { CURRENCIES, AWESOMEAPI_PAIRS, FX_REFRESH_SOURCES, FX_MANUAL_RATE_BOUNDS 
 const { isValidFxRate } = require('./currencyService');
 const { getProvider } = require('./fxRates');
 
-const isNil = (v) => v === null || v === undefined;
 
 // A moeda precisa ser uma das 42 e diferente de USD (a base não tem cotação).
 function assertQuotableCurrency(currency) {
@@ -51,7 +50,7 @@ function requiredCurrencies() {
   const settings = Setting.get();
   if (settings && settings.displayCurrency) set.add(settings.displayCurrency);
   for (const store of Store.findAll()) set.add(store.currency);
-  if (Deposit.findAll().some((d) => isNil(d.amountStoreCents)) || Withdrawal.findAll().some((w) => isNil(w.storeId))) set.add('BRL');
+  if (Deposit.existsWithoutStoreAmount() || Withdrawal.existsWithoutStore()) set.add('BRL');
   set.delete('USD');
   return [...set].sort();
 }

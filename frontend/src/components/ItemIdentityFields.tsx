@@ -4,13 +4,18 @@ import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
 import {
   ALL_EXTERIORS, FREE_NAME_CATEGORIES, effectiveCategory, variantOptions, type FieldVisibility, type FormErrors, type ItemFormState,
 } from '@/lib/itemForm';
+import { catalogDisplayName } from '@/lib/itemName';
 import { formatFloat } from '@/lib/format';
 import type { CatalogItem, Category, Exterior, ItemView, Variant } from '@/types/api';
-import CatalogAutocomplete, { catalogDisplayName } from './CatalogAutocomplete';
-import FormField from './FormField';
-import styles from './forms.module.css';
 import ItemImage from './ItemImage';
-import { Badge } from './badges';
+import CatalogCombobox from './item/CatalogCombobox';
+import itemStyles from './item/item.module.css';
+import Banner from './ui/Banner';
+import Button from './ui/Button';
+import NumberField from './ui/NumberField';
+import Select from './ui/Select';
+import TextField from './ui/TextField';
+import Badge from './ui/Badge';
 
 interface Props {
   state: ItemFormState;
@@ -27,6 +32,8 @@ interface Props {
   onPickCatalog: (picked: CatalogItem) => void;
 }
 
+const NO_EXTERIOR = '__none__';
+
 // Identidade do item (busca no catálogo, nome livre) e atributos de arma. Compartilhado pelo cadastro/edição (ItemFormModal) e pelo item
 // obtido na abertura de uma caixa (OpenContainerModal, 10.4), para a regra visual de identidade e atributos ficar num lugar só.
 export default function ItemIdentityFields({ state, patch, errors, clearError, vis, showSearch, changingItem, setChangingItem, isLegacy, item, onPickCatalog }: Props) {
@@ -41,158 +48,151 @@ export default function ItemIdentityFields({ state, patch, errors, clearError, v
 
   return (
     <>
-    {/* Identidade */}
-    {state.catalog && !changingItem && (
-      <div className={styles.chosen}>
-        <ItemImage category={state.catalog.category} url={state.catalog.imageUrl} size={48} />
-        <div className={styles.chosenText}>
-          <strong>{catalogDisplayName(state.catalog)}</strong>
-          <span className={styles.muted}>
-            {categoryText(state.catalog.category)}{state.catalog.phase ? ` · ${state.catalog.phase}` : ''}
-          </span>
+      {/* Identidade */}
+      {state.catalog && !changingItem && (
+        <div className={itemStyles.chosen}>
+          <ItemImage category={state.catalog.category} url={state.catalog.imageUrl} size={48} />
+          <div className={itemStyles.chosenText}>
+            <strong className={itemStyles.chosenName}>{catalogDisplayName(state.catalog)}</strong>
+            <span className={itemStyles.muted}>
+              {categoryText(state.catalog.category)}{state.catalog.phase ? ` · ${state.catalog.phase}` : ''}
+            </span>
+          </div>
+          <Button size="sm" onClick={() => setChangingItem(true)}>
+            {t('itemForm.changeItem')}
+          </Button>
         </div>
-        <button type="button" className={`${styles.button} ${styles.small}`} onClick={() => setChangingItem(true)}>
-          {t('itemForm.changeItem')}
-        </button>
-      </div>
-    )}
+      )}
 
-    {isLegacy && !changingItem && (
-      <div className={styles.note}>
-        <Badge tone="warning">{t('inventory.legacy')}</Badge> <strong>{item?.name}</strong> · {categoryText(item?.category ?? '')}
-        <div>{t('itemForm.legacyNote')}</div>
-      </div>
-    )}
+      {isLegacy && !changingItem && (
+        <Banner tone="warning" announce={false}>
+          <Badge tone="neutral">{t('inventory.legacy')}</Badge> <strong>{item?.name}</strong> · {categoryText(item?.category ?? '')}
+          <div>{t('itemForm.legacyNote')}</div>
+        </Banner>
+      )}
 
-    {showSearch && (
-      <div>
-        <CatalogAutocomplete
-          label={isLegacy ? t('itemForm.legacyLink') : t('itemForm.catalogSearch')}
-          fixedCategory={isLegacy ? item?.category : undefined}
-          error={errors.catalogId}
-          autoFocus
-          onSelect={onPickCatalog}
-        />
-        <div className={styles.row}>
-          {changingItem && (
-            <button type="button" className={`${styles.button} ${styles.small}`} onClick={() => setChangingItem(false)}>
-              {t('common.cancel')}
-            </button>
-          )}
-          {!isLegacy && !state.catalog && (
-            <button
-              type="button"
-              className={`${styles.button} ${styles.small}`}
-              onClick={() => patch({ freeMode: true, category: state.category === '' ? 'OUTRO' : state.category })}
-            >
-              {t('itemForm.freeName')}
-            </button>
-          )}
-        </div>
-      </div>
-    )}
-
-    {state.freeMode && !state.catalog && (
-      <div className={styles.grid}>
-        <FormField label={t('itemForm.category')} error={errors.category}>
-          {(c) => (
-            <select
-              {...c}
-              className={styles.select}
-              value={state.category}
-              onChange={(e) => patch({ category: e.target.value as Category })}
-            >
-              {FREE_NAME_CATEGORIES.map((cat) => <option key={cat} value={cat}>{categoryText(cat)}</option>)}
-            </select>
-          )}
-        </FormField>
-        <FormField label={t('itemForm.name')} error={errors.name}>
-          {(c) => (
-            <input {...c} className={styles.input} value={state.name} onChange={(e) => patch({ name: e.target.value })} />
-          )}
-        </FormField>
-        <div className={styles.full}>
-          <button type="button" className={`${styles.button} ${styles.small}`} onClick={() => patch({ freeMode: false })}>
-            {t('itemForm.backToCatalog')}
-          </button>
-        </div>
-      </div>
-    )}
-
-    {/* Atributos de arma */}
-    {vis.weapon && (
-      <div className={styles.grid}>
-        <FormField label={t('itemForm.variant')} error={errors.variant}>
-          {(c) => (
-            <select
-              {...c}
-              className={styles.select}
-              value={state.variant}
-              onChange={(e) => patch({ variant: e.target.value as Variant })}
-            >
-              {variantOptions(category, state.catalog, state.variant).map((v) => (
-                <option key={v} value={v}>{tLoose(`enums.variant.${v}`)}</option>
-              ))}
-            </select>
-          )}
-        </FormField>
-        <FormField label={t('itemForm.floatValue')} error={errors.floatValue} hint={floatHint}>
-          {(c) => (
-            <input
-              {...c}
-              className={styles.input}
-              inputMode="decimal"
-              value={state.floatText}
-              onChange={(e) => {
-                patch({ floatText: e.target.value });
-                clearError('floatValue');
-              }}
-            />
-          )}
-        </FormField>
-        {vis.exteriorInput ? (
-          <FormField label={t('itemForm.exterior')} error={errors.exterior}>
-            {(c) => (
-              <select
-                {...c}
-                className={styles.select}
-                value={state.exterior}
-                onChange={(e) => patch({ exterior: e.target.value as Exterior | '' })}
-              >
-                <option value="">{t('common.none')}</option>
-                {ALL_EXTERIORS.map((x) => <option key={x} value={x}>{tLoose(`enums.exterior.${x}`)}</option>)}
-              </select>
+      {showSearch && (
+        <div className={itemStyles.search}>
+          <CatalogCombobox
+            label={isLegacy ? t('itemForm.legacyLink') : t('itemForm.catalogSearch')}
+            name="catalogId"
+            fixedCategory={isLegacy ? item?.category : undefined}
+            error={errors.catalogId}
+            autoFocus
+            onSelect={onPickCatalog}
+          />
+          <div className={itemStyles.row}>
+            {changingItem && (
+              <Button size="sm" onClick={() => setChangingItem(false)}>
+                {t('common.cancel')}
+              </Button>
             )}
-          </FormField>
-        ) : (
-          <FormField label={t('itemForm.exterior')} error={errors.exterior} hint={t('itemForm.exteriorDerived')}>
-            {(c) => <input {...c} className={styles.input} value="" disabled readOnly />}
-          </FormField>
-        )}
-        <FormField label={t('itemForm.paintSeed')} error={errors.paintSeed}>
-          {(c) => (
-            <input
-              {...c}
-              className={styles.input}
-              inputMode="numeric"
-              value={state.paintSeedText}
-              onChange={(e) => patch({ paintSeedText: e.target.value })}
+            {!isLegacy && !state.catalog && (
+              <Button size="sm" variant="ghost" onClick={() => patch({ freeMode: true, category: state.category === '' ? 'OUTRO' : state.category })}>
+                {t('itemForm.freeName')}
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {state.freeMode && !state.catalog && (
+        <div className={itemStyles.grid}>
+          <Select
+            label={t('itemForm.category')}
+            name="category"
+            value={state.category}
+            error={errors.category}
+            onChange={(value) => patch({ category: value as Category })}
+            options={FREE_NAME_CATEGORIES.map((cat) => ({ value: cat, label: categoryText(cat) }))}
+          />
+          <TextField
+            label={t('itemForm.name')}
+            name="name"
+            value={state.name}
+            error={errors.name}
+            onChange={(value) => {
+              patch({ name: value });
+              clearError('name');
+            }}
+          />
+          <div className={itemStyles.full}>
+            <Button size="sm" variant="ghost" onClick={() => patch({ freeMode: false })}>
+              {t('itemForm.backToCatalog')}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Atributos de arma */}
+      {vis.weapon && (
+        <div className={itemStyles.grid}>
+          <Select
+            label={t('itemForm.variant')}
+            name="variant"
+            value={state.variant === '' ? 'NORMAL' : state.variant}
+            error={errors.variant}
+            onChange={(value) => patch({ variant: value as Variant })}
+            options={variantOptions(category, state.catalog, state.variant).map((v) => ({ value: v, label: tLoose(`enums.variant.${v}`) }))}
+          />
+          <NumberField
+            kind="float"
+            label={t('itemForm.floatValue')}
+            name="floatValue"
+            value={state.floatText}
+            error={errors.floatValue}
+            hint={floatHint}
+            onValueChange={(text) => {
+              patch({ floatText: text });
+              clearError('floatValue');
+            }}
+          />
+          {vis.exteriorInput ? (
+            <Select
+              label={t('itemForm.exterior')}
+              name="exterior"
+              value={state.exterior === '' ? NO_EXTERIOR : state.exterior}
+              error={errors.exterior}
+              onChange={(value) => patch({ exterior: value === NO_EXTERIOR ? '' : (value as Exterior) })}
+              options={[
+                { value: NO_EXTERIOR, label: t('common.none') },
+                ...ALL_EXTERIORS.map((x) => ({ value: x, label: tLoose(`enums.exterior.${x}`) })),
+              ]}
+            />
+          ) : (
+            <TextField
+              label={t('itemForm.exterior')}
+              name="exterior"
+              value=""
+              disabled
+              readOnly
+              error={errors.exterior}
+              hint={t('itemForm.exteriorDerived')}
+              onChange={() => undefined}
             />
           )}
-        </FormField>
-        <FormField label={t('itemForm.phase')} error={errors.phase} hint={vis.phaseLocked ? t('itemForm.phaseFromCatalog') : null}>
-          {(c) => (
-            <input
-              {...c}
-              className={styles.input}
-              value={vis.phaseLocked ? state.catalog?.phase ?? '' : state.phase}
-              disabled={vis.phaseLocked}
-              onChange={(e) => patch({ phase: e.target.value })}
-            />
-          )}
-        </FormField>
-      </div>
-    )}
+          <NumberField
+            kind="integer"
+            label={t('itemForm.paintSeed')}
+            name="paintSeed"
+            value={state.paintSeedText}
+            error={errors.paintSeed}
+            onValueChange={(text) => {
+              patch({ paintSeedText: text });
+              clearError('paintSeed');
+            }}
+          />
+          <TextField
+            label={t('itemForm.phase')}
+            name="phase"
+            value={vis.phaseLocked ? state.catalog?.phase ?? '' : state.phase}
+            disabled={vis.phaseLocked}
+            error={errors.phase}
+            hint={vis.phaseLocked ? t('itemForm.phaseFromCatalog') : null}
+            onChange={(value) => patch({ phase: value })}
+          />
+        </div>
+      )}
     </>
   );
 }

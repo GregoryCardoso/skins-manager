@@ -10,6 +10,7 @@ import {
   type UpdateBridge,
   type UpdateState,
 } from '@/lib/desktop';
+import { clearUpdateUi, onUpdateReopen, publishUpdateUi } from '@/lib/updateUiStore';
 import UpdateModal, { isModalHidden, type HiddenMarker } from './UpdateModal';
 
 // Liga o modal de atualização ao processo principal (D188, D194): busca o estado ao montar (o aviso pode ter chegado
@@ -75,6 +76,20 @@ export default function DesktopUpdateHost() {
   if (staleHidden) setHidden(null);
   const activeHidden = staleHidden ? null : hidden;
 
-  if (!state || state.phase === 'idle' || isModalHidden(activeHidden, state)) return null;
+  const modalHidden = state !== null && isModalHidden(activeHidden, state);
+
+  // O selo do menu lê o estado por aqui e pode pedir para reabrir o modal escondido (12.10, parte 3).
+  useEffect(() => {
+    publishUpdateUi({ state, hidden: modalHidden });
+  }, [state, modalHidden]);
+  useEffect(() => {
+    const unsubscribe = onUpdateReopen(() => setHidden(null));
+    return () => {
+      unsubscribe();
+      clearUpdateUi();
+    };
+  }, []);
+
+  if (!state || state.phase === 'idle' || modalHidden) return null;
   return <UpdateModal state={state} language={language} busy={busy} onAction={onAction} onHide={onHide} />;
 }

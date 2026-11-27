@@ -4,7 +4,7 @@ import { QueryClient } from '@tanstack/react-query';
 import { describe, expect, test } from 'vitest';
 import { invalidateAfter } from '@/lib/queryInvalidation';
 import { queryKeys } from '@/lib/queryKeys';
-import { catalogDisplayName } from './CatalogAutocomplete';
+import { catalogDisplayName } from '@/lib/itemName';
 
 // QA 11.5 (D369): bordas do nome exibido, ausência de restos do nome pt-BR fixo e a invalidação da troca de idioma.
 

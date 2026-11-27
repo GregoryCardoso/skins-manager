@@ -504,22 +504,23 @@ describe('célula de grupo, resumo da aba e cards', () => {
 // ---------------------------------------------------------------------------------------------------------------------------------
 describe('os cards do Lucro real (ligação pelo código-fonte, Adendo 1 da D365)', () => {
   const cards = code('components/MarketValueCards.tsx');
-  const summaryCards = code('components/SummaryCards.tsx');
+  const strip = code('components/ProfitInfoStrip.tsx');
 
-  test('os dois cards entram logo depois de "Estoque (pelo custo)" e antes dos cards de estoque à venda e em holding', () => {
-    const stock = summaryCards.indexOf("t('profit.summary.stock')");
-    const market = summaryCards.indexOf('<MarketValueCards />');
-    const forSale = summaryCards.indexOf("t('profit.summary.stockForSale')");
-    expect(stock).toBeGreaterThan(-1);
-    expect(market).toBeGreaterThan(stock);
-    expect(forSale).toBeGreaterThan(market);
-    expect((summaryCards.match(/<MarketValueCards \/>/g) ?? []).length).toBe(1);
+  test('os dois cards entram na faixa informativa (12.7b), depois dos cards de estoque à venda e em holding, e não na equação', () => {
+    const market = strip.indexOf('<MarketValueCards />');
+    const forSale = strip.indexOf("t('profit.summary.stockForSale')");
+    const offSale = strip.indexOf("t('profit.summary.stockOffSale')");
+    expect(forSale).toBeGreaterThan(-1);
+    expect(offSale).toBeGreaterThan(forSale);
+    expect(market).toBeGreaterThan(offSale);
+    expect((strip.match(/<MarketValueCards \/>/g) ?? []).length).toBe(1);
+    expect(code('components/ProfitEquation.tsx')).not.toMatch(/MarketValue/);
   });
 
   test('só dois cards (valor e PnL), cada um com a legenda "estimado — não entra no lucro real"', () => {
-    expect((cards.match(/className=\{styles\.card\}/g) ?? []).length).toBe(2);
-    expect(cards).toContain('data-testid="market-value-card"');
-    expect(cards).toContain('data-testid="market-pnl-card"');
+    expect((cards.match(/<StatCard$/gm) ?? []).length).toBe(2);
+    expect(cards).toContain('testId="market-value-card"');
+    expect(cards).toContain('testId="market-pnl-card"');
     expect((cards.match(/t\('profit\.market\.badge'\)/g) ?? []).length).toBe(2);
     expect(translate(ptBR, 'profit.market.badge')).toBe('estimado — não entra no lucro real');
     expect(translate(en, 'profit.market.badge')).toMatch(/estimated/i);
@@ -531,10 +532,8 @@ describe('os cards do Lucro real (ligação pelo código-fonte, Adendo 1 da D365
     expect(cards).toMatch(/profitUnrealizedCard\(totals\)/);
     expect(cards).toContain('byState.forSale.marketValueUsdCents');
     expect(cards).toContain('byState.holding.marketValueUsdCents');
-    expect(cards).toMatch(/title=\{valueHint\}/);
-    expect(cards).toMatch(/<span className=\{styles\.srOnly\}>\{valueHint\}<\/span>/);
-    expect(cards).toMatch(/title=\{pnlHint\}/);
-    expect(cards).toMatch(/<span className=\{styles\.srOnly\}>\{pnlHint\}<\/span>/);
+    expect(cards).toMatch(/help=\{`\$\{valueHint\} \$\{outside\}`\}/);
+    expect(cards).toMatch(/help=\{`\$\{pnlHint\} \$\{outside\}`\}/);
   });
 
   test('dica da divisão: valor de cada lado, ou "sem preço" (nunca US$ 0,00 inventado)', () => {
@@ -551,12 +550,12 @@ describe('os cards do Lucro real (ligação pelo código-fonte, Adendo 1 da D365
 
   test('cor e sinal: o sinal "+" ou "−" vem no texto (não depende só da cor)', () => {
     expect(cards).toMatch(/cents > 0 \? `\+\$\{abs\}` : cents < 0 \? `−\$\{abs\}` : abs/);
-    expect(cards).toMatch(/pnl\.kind === 'NET' \? signClass\(pnl\.sign\) : ''/);
+    expect(cards).toMatch(/pnl\.kind === 'NET' \? \(pnl\.sign === 'POSITIVE' \? 'profit'/);
   });
 
   test('"≈" no card de valor (MoneyApprox estimado) e no PnL só com cotação (approxCents não nulo), na moeda que veio', () => {
-    expect(cards).toMatch(/<MoneyApprox cents=\{value\.usdCents\} estimated approxCents=\{value\.approxCents\} approxCurrency=\{value\.approxCurrency\} \/>/);
-    expect(cards).toMatch(/pnl\.approxCents !== null &&/);
+    expect(cards).toMatch(/<Money [^>]*estimated [^>]*cents=\{value\.usdCents\} approxCents=\{value\.approxCents\} approxCurrency=\{value\.approxCurrency\} \/>/);
+    expect(cards).toMatch(/<Money [^>]*cents=\{pnl\.cents\} approxCents=\{pnl\.approxCents\} approxCurrency=\{pnl\.approxCurrency\} \/>/);
   });
 });
 
@@ -564,25 +563,25 @@ describe('invariante forte: o valor de mercado nunca interfere no lucro real (te
   const IMPORT_LINES = (rel: string) => code(rel).split(/\r?\n/).filter((line) => /^\s*import\b/.test(line) || /^\s*\}\s*from\s/.test(line)).map((line) => line.trim()).join('\n');
   const MARKET = /marketValue|MarketValue|valuation|useMarketSummary|PriceStatus|priceStatus|priceRefresh|market-values|Market/;
 
-  test('SummaryCards importa do valor de mercado só o componente filho MarketValueCards (nenhuma função de cálculo, consulta ou tipo)', () => {
-    const imports = IMPORT_LINES('components/SummaryCards.tsx');
+  test('ProfitInfoStrip importa do valor de mercado só o componente filho MarketValueCards (nenhuma função de cálculo, consulta ou tipo)', () => {
+    const imports = IMPORT_LINES('components/ProfitInfoStrip.tsx');
     const marketImports = imports.split('\n').filter((l) => MARKET.test(l));
     expect(marketImports).toEqual(["import MarketValueCards from './MarketValueCards';"]);
   });
 
-  test('SummaryCards não usa nenhuma chave, consulta nem campo do valor de mercado fora do componente filho', () => {
-    const body = code('components/SummaryCards.tsx').replace("import MarketValueCards from './MarketValueCards';", '').replace('<MarketValueCards />', '');
+  test('ProfitInfoStrip não usa nenhuma chave, consulta nem campo do valor de mercado fora do componente filho', () => {
+    const body = code('components/ProfitInfoStrip.tsx').replace("import MarketValueCards from './MarketValueCards';", '').replace('<MarketValueCards />', '');
     expect(body).not.toMatch(/marketValue|MarketValue|unrealized|queryKeys\.marketValues|getMarketValueSummary|netUnits|approx\.marketValue/);
   });
 
   test('a consulta do resumo do lucro real continua a mesma (profitSummary) e a do valor de mercado é separada (marketValues.summary)', () => {
-    expect(code('components/SummaryCards.tsx')).toMatch(/queryKeys\.profitSummary/);
+    expect(code('app/profit/page.tsx')).toMatch(/queryKeys\.profitSummary/);
     expect(code('components/useMarketSummary.ts')).toMatch(/queryKeys\.marketValues\.summary/);
     expect(code('components/MarketValueCards.tsx')).not.toMatch(/profitSummary|getProfitSummary|ProfitSummary/);
   });
 
   test('nenhuma outra tela do lucro real (page, cards de saldo, aportes, saques) importa valor de mercado', () => {
-    const files = ['app/profit/page.tsx', 'components/SummaryCards.tsx'];
+    const files = ['app/profit/page.tsx', 'components/ProfitEquation.tsx'];
     for (const rel of ['components/DepositsSection.tsx', 'components/WithdrawalsSection.tsx', 'components/StoreBalancesPanel.tsx']) {
       if (fs.existsSync(path.join(SRC, rel))) files.push(rel);
     }

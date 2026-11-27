@@ -89,7 +89,7 @@ describe('modal da troca', () => {
 
 describe('"≈" na moeda escolhida: nenhum componente fixa BRL', () => {
   const FILES = [
-    'components/MoneyWithApprox.tsx', 'components/SummaryCards.tsx', 'components/SalesTable.tsx', 'components/SalesSummary.tsx',
+    'components/MoneyWithApprox.tsx', 'components/ProfitEquation.tsx', 'components/ProfitInfoStrip.tsx', 'components/SalesTable.tsx', 'components/SaleCells.tsx', 'components/SalesSummary.tsx',
     'components/StoreBalancesPanel.tsx', 'components/InventoryGroupTable.tsx', 'components/MarketValueCell.tsx',
     'components/MarketValueCards.tsx', 'components/MoneyApprox.tsx', 'lib/marketValueDisplay.ts', 'lib/baseMoney.ts',
     'components/DepositsTable.tsx', 'components/WithdrawalsSection.tsx', 'components/WithdrawalsTable.tsx',
@@ -103,11 +103,12 @@ describe('"≈" na moeda escolhida: nenhum componente fixa BRL', () => {
 
   test('os "≈" usam o approxCurrency da resposta', () => {
     expect(read('components/SalesSummary.tsx')).toMatch(/summary\.approxCurrency/);
+    expect(read('components/SalesSummary.tsx')).toMatch(/approxCurrency=\{approxCurrency\}/);
     expect(read('lib/inventoryColumns.tsx')).toMatch(/group\.approxCurrency/);
     expect(read('components/MoneyWithApprox.tsx')).toMatch(/formatMoney\(approxCents, approxCurrency, locale\)/);
     expect(read('components/SalesTable.tsx')).toMatch(/approxCurrency=\{info\.approxCurrency\}/);
-    expect(read('components/StoreBalancesPanel.tsx')).toMatch(/approxCurrency: data\.totals\.approxCurrency/);
-    expect(read('components/SummaryCards.tsx')).toMatch(/approxCurrency=\{data\.approxCurrency\}/);
+    expect(read('components/StoreBalancesPanel.tsx')).toMatch(/approxCurrency: data\?\.totals\.approxCurrency/);
+    expect(read('components/ProfitEquation.tsx')).toMatch(/approxCurrency=\{data\.approxCurrency\}/);
     expect(read('components/MarketValueCell.tsx')).toMatch(/currency=\{view\.approxCurrency\}/);
     expect(read('components/MarketValueCards.tsx')).toMatch(/pnl\.approxCurrency/);
   });

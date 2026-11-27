@@ -5,23 +5,26 @@ import { useInvalidate } from '@/lib/useInvalidate';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
 import { ApiRequestError, deleteItem, markItemForSale, markItemOffSale, unsellItem } from '@/services/api';
-import { itemDisplayName, itemEnglishTitle } from '@/lib/itemName';
+import { itemDisplayName } from '@/lib/itemName';
 import type { ItemView, Store } from '@/types/api';
 import ConfirmDialog from './ui/ConfirmDialog';
 import ItemFormModal from './ItemFormModal';
 import ApplyComponentModal from './ApplyComponentModal';
 import DetachComponentModal from './DetachComponentModal';
 import OpenContainerModal from './OpenContainerModal';
+import itemStyles from './item/item.module.css';
 import ItemHistoryBox from './ItemHistoryBox';
 import ItemOperationsList from './ItemOperationsList';
 import SaleReleaseNote from './SaleReleaseNote';
-import Modal from './Modal';
 import SellItemModal from './SellItemModal';
+import UnsellDialog from './item/UnsellDialog';
+import UiDialog from './ui/Dialog';
+import Button from './ui/Button';
 
 type Dialog =
   | { kind: 'create' }
-  | { kind: 'edit'; item: ItemView }
-  | { kind: 'sell'; item: ItemView }
+  | { kind: 'edit'; item: ItemView; focusComponents?: boolean }
+  | { kind: 'sell'; item: ItemView; units?: ItemView[] }
   | { kind: 'delete'; item: ItemView }
   | { kind: 'unsell'; item: ItemView }
   | { kind: 'offSale'; item: ItemView }
@@ -34,7 +37,10 @@ type Dialog =
 export interface ItemDialogsApi {
   openCreate: () => void;
   openEdit: (item: ItemView) => void;
-  openSell: (item: ItemView) => void;
+  // Abre a edição já no painel "Componentes" (12.6a).
+  openComponents: (item: ItemView) => void;
+  // `units`: venda pela linha do grupo; o diálogo mostra o seletor de unidade (12.6b).
+  openSell: (item: ItemView, units?: ItemView[]) => void;
   openUnsell: (item: ItemView) => void;
   openDelete: (item: ItemView) => void;
   // "Não está à venda" pede confirmação (o giro recomeça ao voltar); "Colocar à venda" age direto (D266).
@@ -160,21 +166,30 @@ export function useItemDialogs(stores: Store[], options: ItemDialogsOptions = {}
         <ItemFormModal
           item={dialog.item}
           stores={stores}
+          focusComponents={dialog.focusComponents}
           onClose={closeDialog}
           onSaved={finish}
           onGone={itemGone}
           onDetach={(item, componentId) => setDialog({ kind: 'detach', item, componentId })}
+          onApply={(item) => setDialog({ kind: 'apply', item })}
         />
       )}
       {dialog?.kind === 'sell' && (
-        <SellItemModal item={dialog.item} stores={stores} onClose={closeDialog} onSold={finish} onGone={itemGone} />
+        <SellItemModal item={dialog.item} units={dialog.units} stores={stores} onClose={closeDialog} onSold={finish} onGone={itemGone} />
       )}
       {dialog?.kind === 'history' && (
-        <Modal title={t('history.title', { name: itemDisplayName(dialog.item) })} onClose={closeDialog}>
-          <SaleReleaseNote item={dialog.item} />
-          <ItemHistoryBox stats={dialog.item.stats} />
-          <ItemOperationsList item={dialog.item} />
-        </Modal>
+        <UiDialog
+          title={t('history.title', { name: itemDisplayName(dialog.item) })}
+          size="md"
+          onClose={closeDialog}
+          footer={<Button onClick={closeDialog}>{t('common.close')}</Button>}
+        >
+          <div className={itemStyles.historyStack}>
+            <SaleReleaseNote item={dialog.item} />
+            <ItemHistoryBox stats={dialog.item.stats} />
+            <ItemOperationsList item={dialog.item} />
+          </div>
+        </UiDialog>
       )}
       {dialog?.kind === 'registerKey' && (
         <ItemFormModal preset={{ name: dialog.keyName }} stores={stores} onClose={closeDialog} onSaved={finish} onGone={itemGone} />
@@ -225,13 +240,12 @@ export function useItemDialogs(stores: Store[], options: ItemDialogsOptions = {}
         />
       )}
       {dialog?.kind === 'unsell' && (
-        <ConfirmDialog
-          title={t('confirm.unsellTitle')}
-          message={t('confirm.unsellMessage')}
-          confirmLabel={t('confirm.confirmUnsell')}
+        <UnsellDialog
+          item={dialog.item}
           busy={confirmBusy}
           error={confirmError}
           onCancel={closeDialog}
+          onGone={itemGone}
           onConfirm={() => runConfirm(unsellItem(dialog.item.id), t('confirm.unsold'), 'item.unsell')}
         />
       )}
@@ -241,7 +255,8 @@ export function useItemDialogs(stores: Store[], options: ItemDialogsOptions = {}
   return {
     openCreate: () => setDialog({ kind: 'create' }),
     openEdit: (item) => setDialog({ kind: 'edit', item }),
-    openSell: (item) => setDialog({ kind: 'sell', item }),
+    openComponents: (item) => setDialog({ kind: 'edit', item, focusComponents: true }),
+    openSell: (item, units) => setDialog({ kind: 'sell', item, units }),
     openUnsell: (item) => setDialog({ kind: 'unsell', item }),
     openDelete: (item) => setDialog({ kind: 'delete', item }),
     openOffSale: (item) => setDialog({ kind: 'offSale', item }),

@@ -106,10 +106,10 @@ describe('orientação e totais na tela', () => {
     }
   });
 
-  test('a barra de totais vem antes da lista de lojas e não há rodapé de totais', () => {
+  test('os totais vêm embaixo da lista de lojas (12.7b) e não há rodapé de totais', () => {
     const code = read('StoreBalancesPanel.tsx');
-    expect(code.indexOf('totalsBar')).toBeGreaterThan(-1);
-    expect(code.indexOf("t('storeBalances.totalsTitle')")).toBeLessThan(code.indexOf('styles.list'));
+    expect(code.indexOf('styles.totals')).toBeGreaterThan(-1);
+    expect(code.indexOf("t('storeBalances.totalsTitle')")).toBeGreaterThan(code.indexOf('styles.list'));
     expect(code.match(/storeBalances\.totalAvailable/g)).toHaveLength(1);
     expect(code).not.toMatch(/<footer/);
   });

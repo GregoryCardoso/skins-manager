@@ -18,7 +18,7 @@ const flatten = (node: unknown, prefix = ''): Record<string, string> => {
 };
 const dicts = { 'pt-BR': flatten(ptBR), en: flatten(en) };
 const COMPONENT_DIR = path.resolve(__dirname, '../components');
-const FILES = ['ApplyComponentModal.tsx', 'ItemOperationsList.tsx', 'AppliedComponentsEditor.tsx', 'CostCell.tsx', 'ItemActions.tsx', 'ItemHistoryBox.tsx'];
+const FILES = ['ApplyComponentModal.tsx', 'ItemOperationsList.tsx', 'item/ComponentsPanel.tsx', 'inventory/UnitCells.tsx', 'inventory/ItemRowActions.tsx', 'ItemHistoryBox.tsx'];
 
 describe('chaves de tradução dos componentes novos', () => {
   test('toda chave literal t(\'...\') existe em pt-BR e en', () => {

@@ -16,12 +16,14 @@ export interface StatCardProps {
   // Explicação (vira um HelpTip, acessível no teclado e no toque).
   help?: ReactNode;
   className?: string;
+  // Para os testes e a automação (data-testid).
+  testId?: string;
 }
 
 // Um número da faixa de posição: <div><dt/><dd/></div>. A cor do valor é reforço: o sentido está no rótulo.
-export function StatCard({ label, value, note, tone = 'neutral', help, className }: StatCardProps) {
+export function StatCard({ label, value, note, tone = 'neutral', help, className, testId }: StatCardProps) {
   return (
-    <div className={`${styles.card} ${className ?? ''}`}>
+    <div className={`${styles.card} ${className ?? ''}`} data-testid={testId}>
       <dt className={styles.label}>
         <span className={styles.labelText}>{label}</span>
         {help && <HelpTip topic={label}>{help}</HelpTip>}

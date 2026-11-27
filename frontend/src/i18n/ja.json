@@ -439,7 +439,8 @@
       "detach": "チャーム／slabを分離",
       "viewUnits": "個別を表示",
       "moreFor": "{name} のその他の操作",
-      "noSellableUnit": "今は売却できるアイテムがありません。すべて Trade lock 中です。"
+      "noSellableUnit": "今は売却できるアイテムがありません。すべて Trade lock 中です。",
+      "components": "コンポーネント"
     },
     "itemGone": "このアイテムはもう存在しません。別のタブで削除された可能性があります。一覧を更新しました。",
     "daysForSale": "販売中：{days}",
@@ -763,8 +764,19 @@
       "choosePatch": "カタログからパッチ {n}を選ぶか、その行を削除してください。",
       "patchSlot": "位置",
       "appliedTitle": "在庫から適用",
-      "appliedNote": "これらの原価はすでにこのアイテムに含まれています。ここで変更できるのは、位置、摩耗、patternだけです。"
-    }
+      "appliedNote": "これらの原価はすでにこのアイテムに含まれています。ここで変更できるのは、位置、摩耗、patternだけです。",
+      "originCameWith": "アイテムに付いていた",
+      "originApplied": "{date} に在庫から適用",
+      "saveFirst": "先に変更を保存するか破棄してください。",
+      "panelHint": "このユニットに付いているもの。在庫から適用、分離、取り消しはすぐに保存されます。"
+    },
+    "receivedAt": "受け取った日",
+    "sections": {
+      "item": "アイテム",
+      "acquisition": "入手",
+      "components": "コンポーネント"
+    },
+    "generatedLockedHint": "このユニットは操作（開封または分離）で作成されました。この項目を変えるには、操作を取り消してください。"
   },
   "detachForm": {
     "title": "{name}からチャーム／slabを分離",
@@ -894,7 +906,6 @@
     "salePriceAdded": "購入者が支払った価格（{currency}）",
     "soldAt": "販売日時",
     "fxRateAtSale": "販売時のUSD→{currency}レート",
-    "minPriceRef": "損益分岐価格：{value}",
     "useMinPrice": "損益分岐価格を使う",
     "noRefInactive": "参考価格なし：このストアは無効です。",
     "refUsesSavedRate": "参考価格は、ここに入力したレートではなく、保存済みのレートを使っています。",
@@ -908,7 +919,11 @@
     "feesNotConfiguredBadge": "ストアに手数料が未設定",
     "manualNetNote": "（純額は手入力）",
     "chooseStore": "ストアを選んでください。",
-    "priceRequired": "販売価格を入力してください。"
+    "priceRequired": "販売価格を入力してください。",
+    "unit": "個体",
+    "minPriceLabel": "損益分岐価格",
+    "youReceive": "受取額",
+    "feesMissing": "このストアには販売手数料が設定されていないため、純額を計算できません。受け取った金額を入力するか、「ストア」ページで手数料を設定してください。"
   },
   "fields": {
     "catalogId": "カタログのアイテム",
@@ -1022,7 +1037,13 @@
     },
     "daysAfterRelease": "trade lock終了から{days}",
     "daysHeld": "購入から{days}",
-    "balanceReleasesAt": "残高は{date}に解除"
+    "balanceReleasesAt": "残高は{date}に解除",
+    "turnover": {
+      "header": "trade lockの終了（または販売に戻した時点）から販売までの日数。Holdingからの販売は集計されません。"
+    },
+    "expandedFx": "記録した為替レート：販売 {sale} · 購入 {purchase}",
+    "emptyTitle": "販売はまだありません",
+    "emptyFilteredTitle": "該当する販売はありません"
   },
   "salesFilters": {
     "label": "販売のフィルター",
@@ -1089,7 +1110,8 @@
     },
     "lossCount": {
       "other": "未購入のターミナル{count}個（損失{value}）"
-    }
+    },
+    "avgDaysLegend": "trade lockの終了、または販売に戻した時点から販売までを数えます。Holdingからの販売は含まれません。"
   },
   "stores": {
     "title": "ストア",
@@ -1468,7 +1490,10 @@
     "errorTitle": "更新に失敗しました",
     "errorDownload": "更新をダウンロードできませんでした。インターネット接続を確認して、設定の「アプリについて」からもう一度お試しください。",
     "errorInstall": "インストールのために再起動できませんでした。アプリはそのまま使えます。設定の「アプリについて」からもう一度お試しください。",
-    "errorDetail": "技術的な詳細"
+    "errorDetail": "技術的な詳細",
+    "badge": "更新があります",
+    "badgeDownloading": "更新をダウンロード中 {percent}%",
+    "versionChange": "{current} → {version}"
   },
   "profit": {
     "title": "実利益",
@@ -1526,7 +1551,30 @@
         "other": "古い価格{count}件"
       },
       "partial": "（一部）"
-    }
+    },
+    "equation": {
+      "title": "実利益の計算方法",
+      "hint": "すべて米ドル（US$）：出金した額に、ストアと在庫にある額を足し、入金した額を引きます。",
+      "withdrawals": "受け取った出金",
+      "withdrawalsNote": "各出金の手数料は差し引き済みです",
+      "available": "ストアの利用可能額",
+      "pending": "ストアの保留中の額",
+      "pendingBadge": "保留",
+      "pendingNote": "{date}に解除",
+      "stock": "在庫（原価）",
+      "deposited": "入金の合計",
+      "depositedNote": "入金手数料{value}を含みます",
+      "result": "実利益"
+    },
+    "info": {
+      "title": "その他の数値",
+      "outsideFormula": "参考情報です。実利益の計算式には含まれません。"
+    },
+    "tabs": {
+      "label": "入金と出金"
+    },
+    "staleRate": "為替レートは{date}時点のものです。古い可能性があります。",
+    "rowActions": "{date}の記録の操作"
   },
   "deposits": {
     "title": "入金",
@@ -1733,7 +1781,32 @@
     },
     "startHint": "古い履歴を入力したくない場合は、ストアの現在の残高で入金を記録してください。実利益は、その日から測定されます。",
     "totalsTitle": "ストアの合計",
-    "totalPendingDate": "保留中の合計（最初の解除日：{date}）：{value}"
+    "totalPendingDate": "保留中の合計（最初の解除日：{date}）：{value}",
+    "row": {
+      "deposit": "入金を記録",
+      "withdraw": "出金を記録",
+      "more": "{store}のその他の操作",
+      "currencyTag": "通貨：{currency}",
+      "pendingFoot": "保留中 {value} ・{date}に解除",
+      "noPending": "保留中はありません",
+      "detailsLabel": "計算の詳細"
+    },
+    "checkDialog": {
+      "explain": "確認：サイトに表示されている残高を入力します。調整：差額の分だけアプリの残高を修正します。",
+      "step1Title": "サイトの残高",
+      "step2Title": "比較",
+      "stepCount": "ステップ {current}/{total}",
+      "continue": "続ける",
+      "back": "戻る",
+      "computed": "アプリの計算値",
+      "real": "実際の残高",
+      "optionsTitle": "差額の扱い",
+      "optionAdjust": "アプリの残高を調整",
+      "optionAdjustHint": "確認と、残高を修正する調整を記録します。メモは必須です。",
+      "optionOnly": "確認のみ記録",
+      "optionOnlyHint": "アプリの残高はそのままにして、確認だけを記録します。",
+      "useCsfloat": "この残高を使う"
+    }
   },
   "imports": {
     "button": "CSFloatからインポート",
@@ -2340,7 +2413,14 @@
         "stuck": {
           "other": "滞留（{count}日超）"
         },
-        "lock": "trade lock"
+        "lock": "trade lock",
+        "slowSale": {
+          "other": "販売に時間がかかった（{count}日超）"
+        },
+        "fromSale": "日数は、trade lockの終了または販売に戻した時点から数えます。"
+      },
+      "daysAfterRelease": {
+        "other": "解除から{count}日"
       }
     },
     "balance": {
@@ -2353,5 +2433,21 @@
       "selectAll": "すべての行を選択",
       "scrollRegion": "{caption}（スクロール可能）"
     }
+  },
+  "unsell": {
+    "effect": {
+      "available": "{value}が{store}の利用可能残高から引かれます",
+      "pending": "{value}が{store}の保留中の残高から引かれます（未解放）",
+      "none": "どのストアの残高も変わりません。",
+      "change": "{before} → {after}",
+      "negative": "残高がマイナスになります。",
+      "returnsForSale": "アイテムは在庫に戻り、販売中になります。",
+      "returnsHolding": "アイテムは在庫に戻り、Holdingに入ります。",
+      "loadError": "残高への影響を計算できませんでした。販売の取り消しはそのまま行えます。",
+      "currencyMismatch": "この販売はストアと異なる通貨のため、ストアの残高には一度も含まれていません。"
+    }
+  },
+  "forms": {
+    "moreDetailsInformative": "参考用で、計算には使われません。"
   }
 }

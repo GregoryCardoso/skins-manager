@@ -181,7 +181,7 @@ describe('INVALIDATION_MAP (D259)', () => {
     const root = path.join(__dirname, '..');
     const files = [
       'app/page.tsx', 'app/sales/page.tsx', 'app/profit/page.tsx', 'app/stores/page.tsx', 'app/settings/page.tsx',
-      'components/ItemDialogs.tsx', 'components/SummaryCards.tsx', 'components/StoreBalancesPanel.tsx',
+      'components/ItemDialogs.tsx', 'components/ProfitEquation.tsx', 'components/StoreBalancesPanel.tsx',
       'components/StoreBalanceHistory.tsx', 'components/WithdrawalsSection.tsx', 'components/PreferencesProvider.tsx',
       'components/CatalogSettings.tsx', 'components/AboutSettings.tsx', 'components/BackupSettings.tsx',
     ];

@@ -56,7 +56,7 @@ export default function InventoryGroupTable({
       onToggle,
       onSellGroup: (group) => {
         const unit = firstSellableUnit(group);
-        if (unit) handlers.onSell(unit);
+        if (unit) handlers.onSell(unit, group.units);
       },
       onBulk: (group, direction) => {
         const bulk = groupBulkAction(group, saleState);

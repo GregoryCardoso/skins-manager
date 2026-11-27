@@ -5,6 +5,9 @@
 const Item = require('../models/Item');
 const Store = require('../models/Store');
 const Setting = require('../models/Setting');
+const Deposit = require('../models/Deposit');
+const Withdrawal = require('../models/Withdrawal');
+const StoreBalance = require('../models/StoreBalance');
 const ItemComponent = require('../models/ItemComponent');
 const ItemOperation = require('../models/ItemOperation');
 const { runInTransaction } = require('../models/modelHelpers');
@@ -27,6 +30,7 @@ const { computeSaleProfitUsdCents, buildSaleInfo } = require('./profitService');
 const { buildStatsIndex, buildStatsKey, computeStats, computeSalesSummary } = require('./itemStatsService');
 const { groupByStatsKey, summarizeGroupCost, summarizeStockStates, countStagnant, pickUnitsForSaleState } = require('./inventoryGroupService');
 const { getStoreOrFail } = require('./storeService');
+const { buildUnsellEffect } = require('./storeBalanceService');
 const { normalizeInventorySearch, matchesInventorySearch, buildPosition } = require('./inventoryPositionService');
 const { getAgingThresholds } = require('./settingsService');
 const externalLinkService = require('./externalLinkService');
@@ -948,6 +952,26 @@ function unsellItem(id, ctx = {}) {
   });
 }
 
+// Efeito de desfazer a venda no saldo da loja (12.6b, D370): só leitura, nada é gravado. A regra está em
+// `storeBalanceService.buildUnsellEffect`; aqui só se carregam os dados.
+function previewUnsell(id, ctx = {}) {
+  const { now = new Date() } = ctx;
+  const item = findOrFail(id);
+  assertNotConsumed(item);
+  if (item.status !== 'VENDIDO') throw new ConflictError('Item não está vendido.', 'ITEM_NOT_SOLD');
+  return buildUnsellEffect({
+    item,
+    unsoldItem: { ...item, ...buildUnsellPatch() },
+    store: item.saleStoreId === null || item.saleStoreId === undefined ? null : Store.findById(item.saleStoreId),
+    checks: StoreBalance.findAllEntries(),
+    deposits: Deposit.findAll(),
+    withdrawals: Withdrawal.findAll(),
+    items: Item.findAll(),
+    settings: Setting.get(),
+    now,
+  });
+}
+
 // Atualiza a liberação real de uma venda importada (D312): o CSFloat mudou o `verify_sale_at` ou chegou o `trade_verified`.
 // Só para itens vendidos; devolve o item gravado (ou o mesmo, se nada mudou).
 function updateImportedSaleRelease(id, saleReleaseAt, ctx = {}) {
@@ -1002,6 +1026,7 @@ module.exports = {
   deleteItem,
   sellItem,
   unsellItem,
+  previewUnsell,
   updateImportedSaleRelease,
   markOffSale,
   markForSale,

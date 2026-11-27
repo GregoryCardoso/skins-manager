@@ -20,5 +20,7 @@
 .profit { color: var(--profit); background: var(--profit-soft); }
 .loss { color: var(--loss); background: var(--loss-soft); }
 .estimated { color: var(--stuck); background: transparent; border: 1px dashed var(--line); }
-.pending { color: var(--muted); background: var(--surface-2); border: 1px solid var(--line); background-image: var(--pattern-pending); }
+/* As listras ficam numa amostra à esquerda (como na legenda da barra de saldo): atrás do texto, ele ficava ilegível. */
+.pending { color: var(--text); background: var(--surface-2); border: 1px solid var(--line); }
+.pending::before { content: ""; flex: none; width: 10px; height: 10px; border-radius: 2px; background-image: var(--pattern-pending); box-shadow: inset 0 0 0 1px var(--line); }
 .info { color: var(--text); background: var(--surface-2); }

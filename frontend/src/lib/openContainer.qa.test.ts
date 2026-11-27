@@ -69,16 +69,16 @@ describe('ligação dos botões', () => {
   });
 
   test('"Aplicar do estoque" só aparece com canReceiveComponents; "Abrir" só com item.openable', () => {
-    const actions = read('components', 'ItemActions.tsx');
-    expect(actions).toMatch(/item\.canReceiveComponents && onApply/);
-    expect(actions).toMatch(/item\.openable && onOpen/);
+    const actions = read('lib', 'itemRowActions.ts');
+    expect(actions).toMatch(/if \(item\.canReceiveComponents\) common\.push\(act\('apply'\)\)/);
+    expect(actions).toMatch(/if \(item\.openable\) \{/);
   });
 
   test('caixa sem chave compatível: botão desabilitado com o motivo (title) e o atalho "Cadastrar chave"; só a caixa exige chave', () => {
-    const actions = read('components', 'ItemActions.tsx');
-    expect(actions).toMatch(/const needsKey = kind === 'CASE' && compatibleKeys === 0;/);
-    expect(actions).toMatch(/disabled=\{needsKey\} title=\{reason\}/);
-    expect(actions).toMatch(/needsKey && onRegisterKey && requiredKeyName/);
+    const actions = read('lib', 'itemRowActions.ts');
+    expect(actions).toMatch(/const needsKey = item\.openable\.kind === 'CASE' && item\.openable\.compatibleKeys === 0;/);
+    expect(actions).toMatch(/disabledReason: item\.openable\.otherKeysInStock > 0 \? 'NEEDS_KEY_OTHER' : 'NEEDS_KEY'/);
+    expect(actions).toMatch(/needsKey && item\.openable\.requiredKeyName\) common\.push\(act\('registerKey'\)\)/);
     expect(pt['inventory.actions.openNeedsKey']).toContain('{keyName}');
   });
 

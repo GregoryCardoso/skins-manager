@@ -24,7 +24,7 @@ describe('códigos do backend de saldos têm texto nos dois idiomas', () => {
   for (const file of sources) {
     for (const m of backend(file).matchAll(/'([A-Z][A-Z0-9_]{3,})'/g)) {
       // só literais usados como código de erro (segundo argumento de ValidationError/NotFoundError ou RECORDED_AT_...)
-      if (/^(INITIAL|CHECK|USD|BRL|COMPRA|GANHEI|VENDIDO|EM_ESTOQUE)$/.test(m[1])) continue;
+      if (/^(INITIAL|CHECK|USD|BRL|COMPRA|GANHEI|VENDIDO|EM_ESTOQUE|FOR_SALE|OFF_SALE)$/.test(m[1])) continue;
       codes.add(m[1]);
     }
   }
@@ -129,7 +129,7 @@ describe('formulários do saldo: bordas', () => {
 describe('o frontend não calcula o saldo (D74)', () => {
   test('os componentes do painel não somam o breakdown nem as parcelas', () => {
     const dir = path.join(__dirname, '..', 'components');
-    for (const file of ['StoreBalancesPanel.tsx', 'StoreBalanceFormModal.tsx', 'StoreBalanceHistory.tsx']) {
+    for (const file of ['StoreBalancesPanel.tsx', 'StoreBalanceRow.tsx', 'BalanceCheckDialog.tsx', 'StoreBalanceHistory.tsx']) {
       const source = readFileSync(path.join(dir, file), 'utf-8');
       expect(source, file).not.toMatch(/breakdown\.\w+\s*[-+]\s*\w*\.?breakdown/);
       expect(source, file).not.toMatch(/\.reduce\(/);

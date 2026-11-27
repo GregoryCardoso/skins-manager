@@ -273,7 +273,8 @@ describe('InventoryGroupTable (visão agrupada)', () => {
     const units = [makeItem({ id: 1, tradeLock: LOCKED }), makeItem({ id: 2 })];
     renderUi(<InventoryGroupTable {...baseProps} groups={[makeGroup(units)]} handlers={handlers} />);
     await user.click(screen.getAllByRole('button', { name: 'Sell' })[0]);
-    expect(handlers.onSell).toHaveBeenCalledWith(expect.objectContaining({ id: 2 }));
+    // A venda pela linha do grupo recebe também as unidades, para o seletor de unidade (12.6b).
+    expect(handlers.onSell).toHaveBeenCalledWith(expect.objectContaining({ id: 2 }), expect.arrayContaining([expect.objectContaining({ id: 1 }), expect.objectContaining({ id: 2 })]));
   });
 
   test('aba Holding: a principal do grupo é Put back on sale (lote)', () => {

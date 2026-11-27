@@ -5,6 +5,7 @@ import type {
   DetachBody,
   DetachPreview,
   DetachResult,
+  UnsellPreview,
   ItemOperation,
   UndoOperationResult,
   BulkSaleStateBody,
@@ -403,6 +404,9 @@ export const deleteItem = (id: number) => request<{ id: number }>('DELETE', `/it
 export const sellItem = (id: number, body: SellBody) => request<SellResult>('POST', `/items/${id}/sell`, { body });
 
 export const unsellItem = (id: number) => request<ItemView>('POST', `/items/${id}/unsell`, { body: {} });
+
+// Efeito de desfazer a venda no saldo da loja (12.6b, D370): só leitura, nada é gravado.
+export const getUnsellPreview = (id: number, signal?: AbortSignal) => request<UnsellPreview>('GET', `/items/${id}/unsell-preview`, { signal });
 
 // Prévia do líquido da venda (D122): só calcula, não grava.
 export const getSaleQuote = (storeId: number, salePriceCents: number, signal?: AbortSignal) =>

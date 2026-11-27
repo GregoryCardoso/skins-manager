@@ -96,7 +96,7 @@ describe('rowActions: matriz de situações', () => {
     const item = makeItem({
       canReceiveComponents: true, components: [comp(true)], openable: openable('CASE', { requiredKeyName: 'K' }), inspectLink: 'https://a.b/c',
     });
-    expect(ids(rowActions(item).menu)).toEqual(['edit', 'apply', 'detach', 'open', 'registerKey', 'offSale', 'inspect', 'history', 'delete']);
+    expect(ids(rowActions(item).menu)).toEqual(['edit', 'components', 'apply', 'detach', 'open', 'registerKey', 'offSale', 'inspect', 'history', 'delete']);
   });
 
   test('no holding a principal é forSale e o Vender é o primeiro do menu, sem offSale', () => {

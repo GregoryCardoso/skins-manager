@@ -11,12 +11,16 @@ import { useInvalidate } from '@/lib/useInvalidate';
 import { listItemOperations, undoOperation } from '@/services/api';
 import { localizedOrName } from '@/lib/itemName';
 import type { ItemOperation, ItemView } from '@/types/api';
-import ConfirmDialog from './ConfirmDialog';
-import forms from './forms.module.css';
 import styles from './ItemHistoryBox.module.css';
+import Banner from './ui/Banner';
+import Button from './ui/Button';
+import ConfirmDialog from './ui/ConfirmDialog';
+import Spinner from './ui/Spinner';
 
 interface Props {
   item: ItemView;
+  // Com valor, o "Desfazer" fica desabilitado (alteração pendente no formulário; 12.6a). O motivo é mostrado por quem passa.
+  disabledReason?: string | null;
 }
 
 // Abertura de caixa, cápsula, pacote ou terminal (10.4, D363): o desfazer e os textos mudam.
@@ -24,7 +28,7 @@ const isOpening = (operation: { kind: string }) => operation.kind === 'OPEN_CASE
 
 // Operações da unidade (10.3, D362): aplicações do estoque e remoções, da mais nova para a mais antiga, com as desfeitas. Só a
 // operação que o backend diz que pode ser desfeita mostra o botão; as demais mostram o motivo.
-export default function ItemOperationsList({ item }: Props) {
+export default function ItemOperationsList({ item, disabledReason = null }: Props) {
   const t = useT();
   const tLoose = useTLoose();
   const locale = useLocale();
@@ -74,7 +78,7 @@ export default function ItemOperationsList({ item }: Props) {
   return (
     <section className={styles.box} aria-label={t('operations.title')}>
       <h3 className={styles.title}>{t('operations.title')}</h3>
-      {notice && <p className={styles.note} role="status">{notice}</p>}
+      {notice && <Banner tone="success" announce={false}>{notice}</Banner>}
       {consumed && (
         <p className={styles.note}>
           {consumed.lost
@@ -84,11 +88,11 @@ export default function ItemOperationsList({ item }: Props) {
               : t('operations.consumedIn', { date: formatDate(consumed.occurredAt, locale), target: consumed.targetName ?? t('common.none') })}
         </p>
       )}
-      {query.isPending && <p className={styles.note}>{t('common.loading')}</p>}
-      {query.error && <p className={styles.note} role="alert">{errorMessageFor(query.error, tLoose, locale)}</p>}
+      {query.isPending && <Spinner size="sm" />}
+      {query.error && <Banner tone="danger" onRetry={() => { void query.refetch(); }}>{errorMessageFor(query.error, tLoose, locale)}</Banner>}
       <ul className={styles.operations}>
         {operations.map((operation) => (
-          <li key={operation.id} className={operation.undoneAt ? styles.undone : undefined}>
+          <li key={operation.id} className={`${styles.operation} ${operation.undoneAt ? styles.undone : ''}`}>
             <strong>{t('operations.line', { kind: kindLabel(operation), date: formatDate(operation.occurredAt, locale) })}</strong>
             {operation.counterparts.map((c) => (
               <span key={c.itemId} className={styles.sub}>
@@ -109,9 +113,9 @@ export default function ItemOperationsList({ item }: Props) {
               <span className={styles.sub}>{' · '}{t('operations.undoneGenerated', { name: operation.detail.undoneGenerated.name })}</span>
             )}
             {operation.undoable && (
-              <button type="button" className={`${forms.button} ${forms.small}`} onClick={() => { setError(null); setUndoing(operation); }}>
+              <Button size="sm" disabled={disabledReason !== null} onClick={() => { setError(null); setUndoing(operation); }}>
                 {t(isOpening(operation) ? 'operations.undoOpen' : 'operations.undo')}
-              </button>
+              </Button>
             )}
             {blocked(operation) && <span className={styles.sub}>{' · '}{blocked(operation)}</span>}
           </li>

@@ -379,7 +379,7 @@ describe('paridade de textos e varredura do "≈"', () => {
   });
 
   // Formulários de loja só conhecem US$ e R$ até a 11.4 (lojas nas 42 moedas): o "R$" fixo deles não é "≈" e fica fora desta varredura.
-  const UNTIL_11_4 = ['components/StoreBalanceFormModal.tsx', 'components/StoreFormModal.tsx'];
+  const UNTIL_11_4 = ['components/BalanceCheckDialog.tsx', 'components/StoreFormModal.tsx'];
 
   test.each(prod.filter((f) => !UNTIL_11_4.includes(f)))('%s: sem BRL fixo em linha com approx e sem "R$" literal em texto de tela', (file) => {
     const lines = read(file).split('\n').filter((line) => !/^\s*(\/\/|\*|\/\*|\{\/\*)/.test(line));

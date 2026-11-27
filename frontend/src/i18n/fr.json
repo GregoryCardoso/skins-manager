@@ -446,7 +446,8 @@
       "detach": "Séparer la breloque/le slab",
       "viewUnits": "Voir les unités",
       "moreFor": "Plus d'actions pour {name}",
-      "noSellableUnit": "Aucune unité ne peut être vendue maintenant : toutes sont en trade lock."
+      "noSellableUnit": "Aucune unité ne peut être vendue maintenant : toutes sont en trade lock.",
+      "components": "Composants"
     },
     "itemGone": "Cet objet n'existe plus. Il a peut-être été supprimé dans un autre onglet. La liste a été actualisée.",
     "daysForSale": "en vente depuis {days}",
@@ -773,8 +774,19 @@
       "choosePatch": "Choisissez l'écusson {n} dans le catalogue ou retirez la ligne.",
       "patchSlot": "Position",
       "appliedTitle": "Appliqués depuis le stock",
-      "appliedNote": "Leur coût est déjà inclus dans cet objet. Seuls la position, l'usure et le pattern peuvent changer ici."
-    }
+      "appliedNote": "Leur coût est déjà inclus dans cet objet. Seuls la position, l'usure et le pattern peuvent changer ici.",
+      "originCameWith": "Venu avec l'objet",
+      "originApplied": "Appliqué depuis le stock le {date}",
+      "saveFirst": "Enregistrez ou annulez d'abord vos modifications.",
+      "panelHint": "Ce que porte cette unité. Appliquer depuis le stock, séparer et annuler sont enregistrés immédiatement."
+    },
+    "receivedAt": "Date de réception",
+    "sections": {
+      "item": "Objet",
+      "acquisition": "Obtention",
+      "components": "Composants"
+    },
+    "generatedLockedHint": "Cette unité a été créée par une opération (ouverture ou séparation). Annulez l'opération pour modifier ce champ."
   },
   "detachForm": {
     "title": "Séparer la breloque/le slab de {name}",
@@ -904,7 +916,6 @@
     "salePriceAdded": "Prix payé par l'acheteur ({currency})",
     "soldAt": "Date et heure de la vente",
     "fxRateAtSale": "Taux USD→{currency} à la vente",
-    "minPriceRef": "Prix d'équilibre : {value}",
     "useMinPrice": "Utiliser le prix d'équilibre",
     "noRefInactive": "Pas de prix de référence : la boutique est inactive.",
     "refUsesSavedRate": "Le prix de référence utilise le taux enregistré, pas celui que vous avez saisi ici.",
@@ -918,7 +929,11 @@
     "feesNotConfiguredBadge": "aucuns frais définis pour la boutique",
     "manualNetNote": "(net saisi par vous)",
     "chooseStore": "Choisissez la boutique.",
-    "priceRequired": "Saisissez le prix de vente."
+    "priceRequired": "Saisissez le prix de vente.",
+    "unit": "Unité",
+    "minPriceLabel": "Prix d'équilibre",
+    "youReceive": "Vous recevez",
+    "feesMissing": "Cette boutique n'a pas de frais de vente configurés, donc le net ne peut pas être calculé. Saisissez le montant reçu ou configurez les frais dans la page Boutiques."
   },
   "fields": {
     "catalogId": "Objet du catalogue",
@@ -1033,7 +1048,13 @@
     },
     "daysAfterRelease": "{days} après la fin du trade lock",
     "daysHeld": "{days} depuis l'achat",
-    "balanceReleasesAt": "solde libéré le {date}"
+    "balanceReleasesAt": "solde libéré le {date}",
+    "turnover": {
+      "header": "Jours entre la fin du trade lock (ou la remise en vente) et la vente. Les ventes faites depuis le holding ne sont pas comptées."
+    },
+    "expandedFx": "Taux enregistrés : vente {sale} · achat {purchase}",
+    "emptyTitle": "Aucune vente pour l'instant",
+    "emptyFilteredTitle": "Aucune vente trouvée"
   },
   "salesFilters": {
     "label": "Filtres des ventes",
@@ -1106,7 +1127,8 @@
     "lossCount": {
       "one": "{count} terminal non acheté (perte de {value})",
       "other": "{count} terminaux non achetés (perte de {value})"
-    }
+    },
+    "avgDaysLegend": "Compté depuis la fin du trade lock, ou depuis la remise en vente, jusqu'à la vente. Les ventes faites depuis le holding ne sont pas incluses."
   },
   "stores": {
     "title": "Boutiques",
@@ -1497,7 +1519,10 @@
     "errorTitle": "Échec de la mise à jour",
     "errorDownload": "La mise à jour n'a pas pu être téléchargée. Vérifiez votre connexion internet et réessayez dans les Réglages, sous À propos.",
     "errorInstall": "Impossible de redémarrer pour installer. L'app continue de fonctionner. Réessayez dans les Réglages, sous À propos.",
-    "errorDetail": "Détails techniques"
+    "errorDetail": "Détails techniques",
+    "badge": "Mise à jour disponible",
+    "badgeDownloading": "Téléchargement de la mise à jour {percent}%",
+    "versionChange": "{current} → {version}"
   },
   "profit": {
     "title": "Bénéfice réel",
@@ -1559,7 +1584,30 @@
         "other": "{count} avec un prix ancien"
       },
       "partial": "(partiel)"
-    }
+    },
+    "equation": {
+      "title": "Comment le bénéfice réel est calculé",
+      "hint": "Tout en dollars américains (US$) : ce que vous avez retiré, plus ce qui est dans les boutiques et en stock, moins ce que vous avez déposé.",
+      "withdrawals": "Retraits reçus",
+      "withdrawalsNote": "Les frais de chaque retrait sont déjà déduits",
+      "available": "Disponible dans les boutiques",
+      "pending": "En attente dans les boutiques",
+      "pendingBadge": "retenu",
+      "pendingNote": "libération le {date}",
+      "stock": "Stock au coût",
+      "deposited": "Total déposé",
+      "depositedNote": "inclut {value} de frais de dépôt",
+      "result": "Bénéfice réel"
+    },
+    "info": {
+      "title": "Autres chiffres",
+      "outsideFormula": "À titre indicatif. Ne fait pas partie de la formule du bénéfice réel."
+    },
+    "tabs": {
+      "label": "Dépôts et retraits"
+    },
+    "staleRate": "Taux du {date}. Il peut être périmé.",
+    "rowActions": "Actions pour l'enregistrement du {date}"
   },
   "deposits": {
     "title": "Dépôts",
@@ -1772,7 +1820,32 @@
     },
     "startHint": "Vous ne voulez pas saisir votre ancien historique ? Enregistrez un dépôt avec le solde actuel de la boutique. Le bénéfice réel sera mesuré à partir de cette date.",
     "totalsTitle": "Total dans les boutiques",
-    "totalPendingDate": "Total en attente (première libération le {date}) : {value}"
+    "totalPendingDate": "Total en attente (première libération le {date}) : {value}",
+    "row": {
+      "deposit": "Enregistrer un dépôt",
+      "withdraw": "Enregistrer un retrait",
+      "more": "Autres actions pour {store}",
+      "currencyTag": "Devise : {currency}",
+      "pendingFoot": "{value} en attente · libération le {date}",
+      "noPending": "Rien en attente",
+      "detailsLabel": "Détails du calcul"
+    },
+    "checkDialog": {
+      "explain": "Vérification : vous indiquez le solde affiché sur le site. Ajustement : corrige le solde de l'application selon la différence.",
+      "step1Title": "Solde sur le site",
+      "step2Title": "Comparer",
+      "stepCount": "Étape {current} sur {total}",
+      "continue": "Continuer",
+      "back": "Retour",
+      "computed": "Calculé par l'application",
+      "real": "Solde réel",
+      "optionsTitle": "Que faire de la différence",
+      "optionAdjust": "Ajuster le solde de l'application",
+      "optionAdjustHint": "Enregistre la vérification et un ajustement qui corrige le solde. Une note est obligatoire.",
+      "optionOnly": "Enregistrer seulement la vérification",
+      "optionOnlyHint": "Laisse le solde de l'application tel quel et enregistre seulement la vérification.",
+      "useCsfloat": "Utiliser ce solde"
+    }
   },
   "imports": {
     "button": "Importer depuis CSFloat",
@@ -2429,7 +2502,16 @@
           "one": "Invendu au-delà de {count} jour",
           "other": "Invendu au-delà de {count} jours"
         },
-        "lock": "Trade lock"
+        "lock": "Trade lock",
+        "slowSale": {
+          "one": "Long à vendre au-delà de {count} jour",
+          "other": "Long à vendre au-delà de {count} jours"
+        },
+        "fromSale": "Jours comptés depuis la fin du trade lock ou la remise en vente."
+      },
+      "daysAfterRelease": {
+        "one": "{count} j après le déblocage",
+        "other": "{count} j après le déblocage"
       }
     },
     "balance": {
@@ -2442,5 +2524,21 @@
       "selectAll": "Sélectionner toutes les lignes",
       "scrollRegion": "{caption}, défilable"
     }
+  },
+  "unsell": {
+    "effect": {
+      "available": "{value} sort du solde disponible de {store}",
+      "pending": "{value} sort du solde en attente de {store} (pas encore débloqué)",
+      "none": "Le solde d'aucune boutique ne change.",
+      "change": "{before} → {after}",
+      "negative": "Le solde deviendra négatif.",
+      "returnsForSale": "L'objet retourne en stock, en vente.",
+      "returnsHolding": "L'objet retourne en stock, dans le holding.",
+      "loadError": "Impossible de calculer l'effet sur le solde. Vous pouvez quand même annuler la vente.",
+      "currencyMismatch": "Cette vente est dans une autre devise que celle de la boutique ; elle n'a donc jamais compté dans le solde de la boutique."
+    }
+  },
+  "forms": {
+    "moreDetailsInformative": "À titre indicatif, non utilisé dans les calculs."
   }
 }

@@ -446,7 +446,8 @@
       "detach": "Separar llavero/slab",
       "viewUnits": "Ver unidades",
       "moreFor": "Más acciones para {name}",
-      "noSellableUnit": "Ninguna unidad se puede vender ahora: todas están en trade lock."
+      "noSellableUnit": "Ninguna unidad se puede vender ahora: todas están en trade lock.",
+      "components": "Componentes"
     },
     "itemGone": "Este ítem ya no existe. Puede que se haya eliminado en otra pestaña. La lista se actualizó.",
     "daysForSale": "a la venta hace {days}",
@@ -773,8 +774,19 @@
       "choosePatch": "Elige el parche {n} en el catálogo o quita la fila.",
       "patchSlot": "Posición",
       "appliedTitle": "Aplicados desde el stock",
-      "appliedNote": "Su costo ya está en este ítem. Aquí solo se pueden cambiar la posición, el desgaste y el pattern."
-    }
+      "appliedNote": "Su costo ya está en este ítem. Aquí solo se pueden cambiar la posición, el desgaste y el pattern.",
+      "originCameWith": "Vino con el ítem",
+      "originApplied": "Aplicado desde el stock el {date}",
+      "saveFirst": "Guarda o descarta los cambios antes.",
+      "panelHint": "Lo que lleva esta unidad. Aplicar desde el stock, separar y deshacer se guardan al instante."
+    },
+    "receivedAt": "Fecha en que lo recibiste",
+    "sections": {
+      "item": "Ítem",
+      "acquisition": "Adquisición",
+      "components": "Componentes"
+    },
+    "generatedLockedHint": "Esta unidad se creó con una operación (apertura o separación). Deshaz la operación para cambiar este campo."
   },
   "detachForm": {
     "title": "Separar el llavero/slab de {name}",
@@ -904,7 +916,6 @@
     "salePriceAdded": "Precio pagado por el comprador ({currency})",
     "soldAt": "Fecha y hora de la venta",
     "fxRateAtSale": "Tipo de cambio USD→{currency} en la venta",
-    "minPriceRef": "Precio mínimo (sin pérdida): {value}",
     "useMinPrice": "Usar el precio mínimo (sin pérdida)",
     "noRefInactive": "Sin precio de referencia: la tienda está inactiva.",
     "refUsesSavedRate": "El precio de referencia usa el tipo de cambio guardado, no el que escribiste aquí.",
@@ -918,7 +929,11 @@
     "feesNotConfiguredBadge": "sin comisiones definidas en la tienda",
     "manualNetNote": "(neto escrito por ti)",
     "chooseStore": "Elige la tienda.",
-    "priceRequired": "Escribe el precio de venta."
+    "priceRequired": "Escribe el precio de venta.",
+    "unit": "Unidad",
+    "minPriceLabel": "Precio mínimo (sin pérdida)",
+    "youReceive": "Recibes",
+    "feesMissing": "Esta tienda no tiene comisión de venta configurada, así que no se puede calcular el neto. Escribe el importe que recibiste o configura las comisiones en la página Tiendas."
   },
   "fields": {
     "catalogId": "Ítem del catálogo",
@@ -1033,7 +1048,13 @@
     },
     "daysAfterRelease": "{days} después de terminar el trade lock",
     "daysHeld": "{days} desde la compra",
-    "balanceReleasesAt": "saldo liberado el {date}"
+    "balanceReleasesAt": "saldo liberado el {date}",
+    "turnover": {
+      "header": "Días desde el fin del trade lock (o la vuelta a la venta) hasta la venta. Las ventas hechas desde el holding no cuentan."
+    },
+    "expandedFx": "Cotizaciones registradas: venta {sale} · compra {purchase}",
+    "emptyTitle": "Aún no hay ventas",
+    "emptyFilteredTitle": "Ninguna venta coincide"
   },
   "salesFilters": {
     "label": "Filtros de ventas",
@@ -1106,7 +1127,8 @@
     "lossCount": {
       "one": "{count} terminal no comprada (pérdida de {value})",
       "other": "{count} terminales no compradas (pérdida de {value})"
-    }
+    },
+    "avgDaysLegend": "Se cuenta desde el fin del trade lock, o desde la vuelta a la venta, hasta la venta. Las ventas hechas desde el holding no entran."
   },
   "stores": {
     "title": "Tiendas",
@@ -1497,7 +1519,10 @@
     "errorTitle": "Falló la actualización",
     "errorDownload": "No se pudo descargar la actualización. Revisa tu conexión a internet e intenta de nuevo en Configuración, en Acerca de.",
     "errorInstall": "No se pudo reiniciar para instalar. La app sigue funcionando. Intenta de nuevo en Configuración, en Acerca de.",
-    "errorDetail": "Detalles técnicos"
+    "errorDetail": "Detalles técnicos",
+    "badge": "Actualización disponible",
+    "badgeDownloading": "Descargando la actualización {percent}%",
+    "versionChange": "{current} → {version}"
   },
   "profit": {
     "title": "Ganancia real",
@@ -1559,7 +1584,30 @@
         "other": "{count} con precio antiguo"
       },
       "partial": "(parcial)"
-    }
+    },
+    "equation": {
+      "title": "Cómo se calcula la ganancia real",
+      "hint": "Todo en dólares (US$): lo que retiraste, más lo que hay en las tiendas y en el stock, menos lo que aportaste.",
+      "withdrawals": "Retiros recibidos",
+      "withdrawalsNote": "La comisión de cada retiro ya está descontada",
+      "available": "Disponible en las tiendas",
+      "pending": "Pendiente en las tiendas",
+      "pendingBadge": "retenido",
+      "pendingNote": "se libera el {date}",
+      "stock": "Stock al costo",
+      "deposited": "Total aportado",
+      "depositedNote": "incluye {value} en comisiones de aportes",
+      "result": "Ganancia real"
+    },
+    "info": {
+      "title": "Más números",
+      "outsideFormula": "Solo de referencia. No forma parte de la fórmula de la ganancia real."
+    },
+    "tabs": {
+      "label": "Aportes y retiros"
+    },
+    "staleRate": "Cotización del {date}. Puede estar desactualizada.",
+    "rowActions": "Acciones del registro del {date}"
   },
   "deposits": {
     "title": "Aportes",
@@ -1772,7 +1820,32 @@
     },
     "startHint": "¿No quieres escribir tu historial antiguo? Registra un aporte con el saldo actual de la tienda. La ganancia real se medirá desde esa fecha.",
     "totalsTitle": "Total en las tiendas",
-    "totalPendingDate": "Total pendiente (primera liberación el {date}): {value}"
+    "totalPendingDate": "Total pendiente (primera liberación el {date}): {value}",
+    "row": {
+      "deposit": "Registrar aporte",
+      "withdraw": "Registrar retiro",
+      "more": "Más acciones de {store}",
+      "currencyTag": "Moneda: {currency}",
+      "pendingFoot": "{value} pendiente · se libera el {date}",
+      "noPending": "Nada pendiente",
+      "detailsLabel": "Detalles del cálculo"
+    },
+    "checkDialog": {
+      "explain": "Verificación: tú indicas el saldo que ves en el sitio. Ajuste: corrige el saldo de la app según la diferencia.",
+      "step1Title": "Saldo en el sitio",
+      "step2Title": "Comparar",
+      "stepCount": "Paso {current} de {total}",
+      "continue": "Continuar",
+      "back": "Volver",
+      "computed": "Calculado por la app",
+      "real": "Saldo real",
+      "optionsTitle": "Qué hacer con la diferencia",
+      "optionAdjust": "Ajustar el saldo de la app",
+      "optionAdjustHint": "Registra la verificación y un ajuste que corrige el saldo. La nota es obligatoria.",
+      "optionOnly": "Registrar solo la verificación",
+      "optionOnlyHint": "Mantiene el saldo de la app como está y registra solo la verificación.",
+      "useCsfloat": "Usar este saldo"
+    }
   },
   "imports": {
     "button": "Importar desde CSFloat",
@@ -2429,7 +2502,16 @@
           "one": "Estancado por encima de {count} día",
           "other": "Estancado por encima de {count} días"
         },
-        "lock": "Trade lock"
+        "lock": "Trade lock",
+        "slowSale": {
+          "one": "Tardó en venderse por encima de {count} día",
+          "other": "Tardó en venderse por encima de {count} días"
+        },
+        "fromSale": "Días contados desde el fin del trade lock o desde la vuelta a la venta."
+      },
+      "daysAfterRelease": {
+        "one": "{count} d tras liberar",
+        "other": "{count} d tras liberar"
       }
     },
     "balance": {
@@ -2442,5 +2524,21 @@
       "selectAll": "Seleccionar todas las filas",
       "scrollRegion": "{caption}, desplazable"
     }
+  },
+  "unsell": {
+    "effect": {
+      "available": "{value} sale del saldo disponible de {store}",
+      "pending": "{value} sale del saldo pendiente de {store} (aún no liberado)",
+      "none": "El saldo de ninguna tienda cambia.",
+      "change": "{before} → {after}",
+      "negative": "El saldo quedará en negativo.",
+      "returnsForSale": "El ítem vuelve al stock, a la venta.",
+      "returnsHolding": "El ítem vuelve al stock, en el holding.",
+      "loadError": "No se pudo calcular el efecto en el saldo. Aún puedes deshacer la venta.",
+      "currencyMismatch": "Esta venta está en una moneda distinta a la de la tienda, así que nunca entró en el saldo de la tienda."
+    }
+  },
+  "forms": {
+    "moreDetailsInformative": "Solo de referencia, no se usa en los cálculos."
   }
 }

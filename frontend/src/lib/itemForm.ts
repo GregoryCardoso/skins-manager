@@ -6,6 +6,7 @@ import { formatFloat } from '@/lib/format';
 import {
   formatCentsInput, formatDecimalInput, isAmbiguousDecimal, parseDecimalInput, parseFloatInput, parseIntegerInput, parseMoneyToCents,
 } from '@/lib/numberInput';
+import { buildComponentsBody, componentsBodyFromItem, sameComponents, type ComponentsState } from '@/lib/itemComponents';
 import type {
   AcquisitionType, CatalogSummary, Category, Exterior, ItemCreateBody, ItemPatchBody, ItemView, Store, Variant,
 } from '@/types/api';
@@ -71,6 +72,9 @@ export interface FieldVisibility {
   price: boolean;
   fx: boolean;
   informativeStore: boolean;
+  // GANHEI (12.6a): a data se chama "Data em que recebeu" e a loja informativa vai para "Mais detalhes".
+  receivedDateLabel: boolean;
+  informativeStoreInDetails: boolean;
 }
 
 export function fieldVisibility(state: ItemFormState, stores: Store[]): FieldVisibility {
@@ -86,6 +90,8 @@ export function fieldVisibility(state: ItemFormState, stores: Store[]): FieldVis
     price: isCompra,
     fx: isCompra && store !== undefined && store.currency !== 'USD',
     informativeStore: !isCompra,
+    receivedDateLabel: state.acquisitionType === 'GANHEI',
+    informativeStoreInDetails: state.acquisitionType === 'GANHEI',
   };
 }
 
@@ -409,4 +415,23 @@ export function buildPatchBody(state: ItemFormState, item: ItemView, ctx: FormCo
   const asset = trimOrNull(state.assetId);
   if (asset !== item.assetId) body.assetId = asset;
   return { ok: true, body };
+}
+
+// A unidade nasceu de uma operação (abertura ou separação): tipo, loja e data de aquisição ficam só para leitura (2.1). O backend
+// continua decidindo (`GENERATED_FIELD_LOCKED`); aqui só se evita oferecer o campo.
+export const isGeneratedUnit = (item: ItemView | undefined): boolean =>
+  item !== undefined && (item.acquisitionType === 'GERADO' || item.generatedFrom !== null || item.detachedFrom !== null);
+
+// Há alteração ainda não salva na edição? Vale para as ações do painel de componentes que gravam na hora (aplicar, separar, desfazer):
+// com alteração pendente elas ficam desabilitadas, para nenhuma edição se perder ao trocar de diálogo. Texto inválido conta como
+// alteração. No cadastro não há o que proteger. `components` nulo = a categoria não tem painel.
+export function isDirty(state: ItemFormState, item: ItemView | undefined, components: ComponentsState | null, ctx: FormContext): boolean {
+  if (!item) return false;
+  const built = buildPatchBody(state, item, ctx);
+  if (!built.ok || Object.keys(built.body).length > 0) return true;
+  if (components) {
+    const comp = buildComponentsBody(components, ctx.language);
+    if (!comp.ok || !sameComponents(comp.body, componentsBodyFromItem(item))) return true;
+  }
+  return false;
 }

@@ -43,6 +43,10 @@ function unsell(req, res) {
   ok(res, itemService.unsellItem(req.params.id, ctx(req)));
 }
 
+function unsellPreview(req, res) {
+  ok(res, itemService.previewUnsell(req.params.id, ctx(req)));
+}
+
 function offSale(req, res) {
   ok(res, itemService.markOffSale(req.params.id, ctx(req)));
 }
@@ -60,4 +64,4 @@ function bulkForSale(req, res) {
   ok(res, itemService.bulkMarkForSale(req.body, ctx(req)));
 }
 
-module.exports = { list, groups, sales, stats, getById, create, update, remove, sell, unsell, offSale, forSale, bulkOffSale, bulkForSale };
+module.exports = { list, groups, sales, stats, getById, create, update, remove, sell, unsell, unsellPreview, offSale, forSale, bulkOffSale, bulkForSale };

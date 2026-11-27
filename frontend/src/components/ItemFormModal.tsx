@@ -1,35 +1,36 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useId, useRef, useState, type FormEvent } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
-import { resolveErrorTarget } from '@/lib/formErrors';
+import { resolveErrorTarget, revealFor } from '@/lib/formErrors';
 import {
   buildComponentsBody, componentsAllowedFor, componentsBodyFromItem, componentsStateFromItem, emptyComponentsState, sameComponents,
   type ComponentsState,
 } from '@/lib/itemComponents';
 import {
-  addSevenDays, applyCatalogChoice, applyPurchaseStore, buildCreateBody,
-  setAcquiredAt, setAcquisitionType, setTradeUnlockAt,
-  buildPatchBody, defaultRateFor, effectiveCategory, fieldVisibility, findStore, initialCreateState, stateFromItem,
+  applyCatalogChoice, applyPurchaseStore, buildCreateBody,
+  buildPatchBody, defaultRateFor, effectiveCategory, fieldVisibility, findStore, initialCreateState, isDirty, isGeneratedUnit, stateFromItem,
   visibleItemFields,
   type CatalogChoice, type FormContext, type FormErrors, type ItemFormState,
 } from '@/lib/itemForm';
-import { moneyErrorParams, moneyInputMode } from '@/lib/currencies';
+import { moneyErrorParams } from '@/lib/currencies';
 import { ratesRecord } from '@/lib/fxRates';
-import { formatDecimalInput } from '@/lib/numberInput';
 import { queryKeys } from '@/lib/queryKeys';
 import { useInvalidate } from '@/lib/useInvalidate';
 import { ApiRequestError, createItem, getCatalogStatus, updateItem } from '@/services/api';
-import { launchStoreOptions } from '@/lib/storeOptions';
-import type { AcquisitionType, CatalogItem, Currency, ItemPatchBody, ItemView, Store } from '@/types/api';
-import FormField from './FormField';
-import styles from './forms.module.css';
-import ItemComponentsSection from './ItemComponentsSection';
+import type { CatalogItem, Currency, ItemPatchBody, ItemView, Store } from '@/types/api';
+import AcquisitionFields, { AcquisitionDetails } from './item/AcquisitionFields';
+import ComponentsPanel from './item/ComponentsPanel';
+import itemStyles from './item/item.module.css';
 import ItemIdentityFields from './ItemIdentityFields';
-import Modal from './Modal';
 import { usePreferences } from './PreferencesProvider';
+import Banner from './ui/Banner';
+import Button from './ui/Button';
+import Dialog from './ui/Dialog';
+import FormErrorSummary, { type FormErrorItem } from './ui/FormErrorSummary';
+import TextField from './ui/TextField';
 
 export const ITEM_FORM_FIELDS = [
   'catalogId', 'name', 'category', 'variant', 'floatValue', 'exterior', 'paintSeed', 'phase', 'acquisitionType',
@@ -45,19 +46,25 @@ interface Props {
   stores: Store[];
   onClose: () => void;
   onSaved: (message: string) => void;
-  // "Separar" o pendurado pela seção de componentes (M7): o host abre o modal de separação com o id do componente.
+  // "Separar" o pendurado pelo painel de componentes (M7): o host abre o modal de separação com o id do componente.
   onDetach?: (item: ItemView, componentId: number) => void;
+  // "Aplicar do estoque" pelo painel de componentes: o host abre o modal de aplicação.
+  onApply?: (item: ItemView) => void;
+  // Entrada "Componentes" do menu da linha: a edição abre rolada e com o foco no painel.
+  focusComponents?: boolean;
   // Item excluído em outra aba (ITEM_NOT_FOUND na edição).
   onGone: () => void;
 }
 
-const storeLabel = (store: Store, inactive: string) => (store.isActive ? store.name : `${store.name} (${inactive})`);
-
-export default function ItemFormModal({ item, preset, stores, onClose, onSaved, onDetach, onGone }: Props) {
+// Cadastro e edição do item (12.6a): Dialog `lg` com as seções Item, Aquisição, Componentes e "Mais detalhes", validação na digitação
+// (NumberField) e `FormErrorSummary` ao enviar. Nenhuma regra nova: o backend continua sendo a fonte e `lib/itemForm` monta o corpo.
+export default function ItemFormModal({ item, preset, stores, onClose, onSaved, onDetach, onApply, focusComponents = false, onGone }: Props) {
   const t = useT();
   const tLoose = useTLoose();
   const locale = useLocale();
   const invalidate = useInvalidate();
+  const formId = useId();
+  const panelRef = useRef<HTMLElement>(null);
   const { usdBrlRate, fxRates } = usePreferences();
   const editing = item !== undefined;
   const rates = ratesRecord(fxRates);
@@ -68,13 +75,15 @@ export default function ItemFormModal({ item, preset, stores, onClose, onSaved, 
     const base = initialCreateState(ctx);
     return preset ? { ...base, freeMode: true, category: 'OUTRO', name: preset.name } : base;
   });
-  // Componentes aplicados (10.1): só SKIN; ficam fora do ItemFormState e entram no corpo no envio.
+  // Componentes aplicados (10.1): só SKIN (e agente com patches); ficam fora do ItemFormState e entram no corpo no envio.
   const [components, setComponents] = useState<ComponentsState>(() => (item ? componentsStateFromItem(item, locale) : emptyComponentsState()));
   const [errors, setErrors] = useState<FormErrors>({});
+  const [attempt, setAttempt] = useState(0);
   const [topError, setTopError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [changingItem, setChangingItem] = useState(false);
   const [currencyChangedTo, setCurrencyChangedTo] = useState<Currency | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   const patch = (partial: Partial<ItemFormState>) => setState((s) => ({ ...s, ...partial }));
   const clearError = (field: string) => setErrors((e) => (e[field] ? { ...e, [field]: undefined } : e));
@@ -83,13 +92,25 @@ export default function ItemFormModal({ item, preset, stores, onClose, onSaved, 
   const vis = fieldVisibility(state, stores);
   const store = findStore(stores, state.purchaseStoreId);
   const isLegacy = editing && item.isLegacy && !state.catalog;
+  const generated = isGeneratedUnit(item);
   const showSearch = !state.catalog && !state.freeMode ? true : changingItem;
-  // Agente: a seção de patches só aparece quando o catálogo tem patches (ou o agente já tem algum; 10.3, D362).
+  // Agente: o painel de patches só aparece quando o catálogo tem patches (ou o agente já tem algum; 10.3, D362).
   const catalogStatus = useQuery({ queryKey: queryKeys.catalog.status, queryFn: ({ signal }) => getCatalogStatus(signal) });
   const patchesAvailable = (catalogStatus.data?.countsBySource.PATCHES ?? 0) > 0 || (editing && item.components.some((c) => c.kind === 'PATCH'));
   const allowComponents = componentsAllowedFor(category, patchesAvailable);
   // Trocar para uma categoria sem componentes remove os gravados que vieram junto (aviso no formulário; o backend recusa o resto).
   const willRemoveComponents = !allowComponents && editing && item.components.some((c) => c.origin !== 'APPLIED_FROM_STOCK');
+
+  const priceCurrency: Currency = store?.currency ?? 'USD';
+  const defaultFx = defaultRateFor(ctx, priceCurrency);
+  const dirty = editing && isDirty(state, item, allowComponents ? components : null, ctx);
+
+  // Mostra os erros e abre o "Mais detalhes" se algum campo com erro estiver lá dentro (o resumo precisa focá-lo).
+  const showErrors = (next: FormErrors) => {
+    setErrors(next);
+    const hidden = Object.entries(next).some(([field, message]) => message && revealFor(field, vis) === 'details');
+    if (hidden) setDetailsOpen(true);
+  };
 
   const onPickCatalog = (picked: CatalogItem) => {
     setState((s) => applyCatalogChoice(s, picked as CatalogChoice));
@@ -121,8 +142,9 @@ export default function ItemFormModal({ item, preset, stores, onClose, onSaved, 
       if (!visible.includes('catalogId')) visible = [...visible, 'catalogId'];
     }
     const { target, topLabelField } = resolveErrorTarget(err, visible);
+    setAttempt((n) => n + 1);
     if (target) {
-      setErrors({ [target]: message });
+      showErrors({ [target]: message });
       setTopError(null);
     } else {
       const label = topLabelField ? tLoose(`fields.${topLabelField}`) : null;
@@ -137,21 +159,24 @@ export default function ItemFormModal({ item, preset, stores, onClose, onSaved, 
     setTopError(null);
 
     if (!editing && !state.catalog && !state.freeMode) {
-      setErrors({ catalogId: t('itemForm.chooseItem') });
+      setAttempt((n) => n + 1);
+      showErrors({ catalogId: t('itemForm.chooseItem') });
       return;
     }
     const built = editing ? buildPatchBody(state, item, ctx) : buildCreateBody(state, ctx);
     if (!built.ok) {
       const translated: FormErrors = {};
       for (const [field, key] of Object.entries(built.errors)) translated[field] = key ? tLoose(key, moneyErrorParams(locale, priceCurrency)) : undefined;
-      setErrors(translated);
+      setAttempt((n) => n + 1);
+      showErrors(translated);
       return;
     }
     const body: ItemPatchBody = { ...built.body };
     if (allowComponents) {
       const comp = buildComponentsBody(components, locale);
       if (!comp.ok) {
-        setErrors({ components: tLoose(comp.errorKey, comp.params) });
+        setAttempt((n) => n + 1);
+        showErrors({ components: tLoose(comp.errorKey, comp.params) });
         return;
       }
       // Presente = substitui a lista; no cadastro só vai se houver algo; na edição só se mudou.
@@ -178,37 +203,95 @@ export default function ItemFormModal({ item, preset, stores, onClose, onSaved, 
       });
   };
 
-  const priceCurrency = store?.currency ?? 'USD';
-  const defaultFx = defaultRateFor(ctx, priceCurrency);
+  const summaryItems: FormErrorItem[] = ITEM_FORM_FIELDS
+    .filter((field) => errors[field])
+    .map((field) => {
+      const label = tLoose(`fields.${field}`);
+      return { field, label: label === `fields.${field}` ? field : label, message: errors[field] as string };
+    });
 
   return (
-    <Modal title={editing ? t('itemForm.titleEdit') : t('itemForm.titleCreate')} onClose={onClose} busy={saving} wide>
-      <form className={styles.form} onSubmit={submit} noValidate>
-        {topError && <div className={styles.topError} role="alert">{topError}</div>}
-        {editing && item.status === 'VENDIDO' && <div className={styles.note}>{t('itemForm.soldNote')}</div>}
+    <Dialog
+      title={editing ? t('itemForm.titleEdit') : t('itemForm.titleCreate')}
+      size="lg"
+      busy={saving}
+      onClose={onClose}
+      onOpenAutoFocus={focusComponents && allowComponents
+        ? (event) => {
+          event.preventDefault();
+          panelRef.current?.focus();
+          panelRef.current?.scrollIntoView?.({ block: 'start' });
+        }
+        : undefined}
+      footer={
+        <>
+          <Button onClick={onClose} disabled={saving}>{t('common.cancel')}</Button>
+          <Button type="submit" form={formId} variant="primary" loading={saving}>
+            {saving ? t('common.saving') : t('common.save')}
+          </Button>
+        </>
+      }
+    >
+      <form id={formId} className={itemStyles.form} onSubmit={submit} noValidate>
+        <FormErrorSummary key={attempt} errors={summaryItems} />
+        {topError && <Banner tone="danger">{topError}</Banner>}
+        {editing && item.status === 'VENDIDO' && <Banner tone="info" announce={false}>{t('itemForm.soldNote')}</Banner>}
 
-        <ItemIdentityFields
-          state={state}
-          patch={patch}
-          errors={errors}
-          clearError={clearError}
-          vis={vis}
-          showSearch={showSearch}
-          changingItem={changingItem}
-          setChangingItem={setChangingItem}
-          isLegacy={isLegacy}
-          item={item}
-          onPickCatalog={onPickCatalog}
-        />
+        <section className={itemStyles.section} aria-labelledby={`${formId}-item`}>
+          <h3 id={`${formId}-item`} className={itemStyles.sectionTitle}>{t('itemForm.sections.item')}</h3>
+          <ItemIdentityFields
+            state={state}
+            patch={patch}
+            errors={errors}
+            clearError={clearError}
+            vis={vis}
+            showSearch={showSearch}
+            changingItem={changingItem}
+            setChangingItem={setChangingItem}
+            isLegacy={isLegacy}
+            item={item}
+            onPickCatalog={onPickCatalog}
+          />
+          <TextField
+            label={t('itemForm.inspectLink')}
+            name="inspectLink"
+            value={state.inspectLink}
+            error={errors.inspectLink}
+            hint={t('itemForm.inspectLinkHint')}
+            disabled={saving}
+            onChange={(value) => {
+              patch({ inspectLink: value });
+              clearError('inspectLink');
+            }}
+          />
+        </section>
 
-        {/* Componentes aplicados (stickers e chaveiro): só SKIN, não mudam o custo */}
+        <section className={itemStyles.section} aria-labelledby={`${formId}-acq`}>
+          <h3 id={`${formId}-acq`} className={itemStyles.sectionTitle}>{t('itemForm.sections.acquisition')}</h3>
+          <AcquisitionFields
+            state={state}
+            setState={setState}
+            patch={patch}
+            errors={errors}
+            clearError={clearError}
+            vis={vis}
+            stores={stores}
+            item={item}
+            priceCurrency={priceCurrency}
+            defaultFx={defaultFx}
+            currencyChangedTo={currencyChangedTo}
+            onStoreChange={onStoreChange}
+            generated={generated}
+            disabled={saving}
+          />
+        </section>
+
+        {/* Componentes (stickers, chaveiro e patches): não mudam o custo */}
         {allowComponents && (
-          <ItemComponentsSection
-            itemId={editing ? item.id : undefined}
+          <ComponentsPanel
+            panelRef={panelRef}
+            item={item}
             category={category}
-            onItemChanged={onSaved}
-            onDetach={editing && item && onDetach ? (componentId) => onDetach(item, componentId) : undefined}
-            cameWithHangingId={editing && item ? item.components.find((c) => c.detachable && c.origin === 'CAME_WITH')?.id ?? null : null}
             state={components}
             onChange={(next) => {
               setComponents(next);
@@ -216,161 +299,28 @@ export default function ItemFormModal({ item, preset, stores, onClose, onSaved, 
             }}
             error={errors.components}
             disabled={saving}
+            dirty={dirty}
+            onItemChanged={onSaved}
+            onApply={onApply}
+            onDetach={onDetach}
           />
         )}
-        {willRemoveComponents && <div className={styles.note} role="status">{t('itemForm.components.willRemove')}</div>}
+        {willRemoveComponents && <Banner tone="warning" announce={false}>{t('itemForm.components.willRemove')}</Banner>}
 
-        {/* Aquisição */}
-        <fieldset className={styles.details} disabled={saving}>
-          <legend className={styles.label}>{t('itemForm.acquisitionType')}</legend>
-          <div className={styles.radioRow}>
-            {(['COMPRA', 'GANHEI'] as AcquisitionType[]).map((type) => (
-              <label key={type}>
-                <input
-                  type="radio"
-                  name="acquisitionType"
-                  checked={state.acquisitionType === type}
-                  onChange={() => setState((s) => setAcquisitionType(s, type))}
-                />
-                {tLoose(`enums.acquisitionType.${type}`)}
-              </label>
-            ))}
-          </div>
-        </fieldset>
-
-        <div className={styles.grid}>
-          <FormField
-            label={vis.informativeStore ? t('itemForm.purchaseStoreInformative') : t('itemForm.purchaseStore')}
-            error={errors.purchaseStoreId}
-          >
-            {(c) => (
-              <select
-                {...c}
-                className={styles.select}
-                value={state.purchaseStoreId ?? ''}
-                onChange={(e) => onStoreChange(e.target.value)}
-              >
-                {(vis.informativeStore || state.purchaseStoreId === null) && <option value="">{t('common.select')}</option>}
-                {launchStoreOptions(stores, [item?.purchaseStoreId, state.purchaseStoreId]).map((s) => <option key={s.id} value={s.id}>{storeLabel(s, t('itemForm.storeInactive'))}</option>)}
-              </select>
-            )}
-          </FormField>
-
-          {vis.price ? (
-            <FormField
-              label={t('itemForm.purchasePrice', { currency: priceCurrency })}
-              error={errors.purchasePriceCents}
-              hint={currencyChangedTo && state.priceText === '' ? t('itemForm.priceReenter', { currency: currencyChangedTo }) : null}
-            >
-              {(c) => (
-                <input
-                  {...c}
-                  className={styles.input}
-                  inputMode={moneyInputMode(priceCurrency)}
-                  value={state.priceText}
-                  onChange={(e) => {
-                    patch({ priceText: e.target.value });
-                    clearError('purchasePriceCents');
-                  }}
-                />
-              )}
-            </FormField>
-          ) : (
-            <div className={styles.field}>
-              <span className={styles.label}>{t('itemForm.purchasePrice', { currency: 'USD' })}</span>
-              <span className={styles.muted}>{t('itemForm.ganheiCost')}</span>
-            </div>
-          )}
-
-          {vis.fx && (
-            <FormField
-              label={t('itemForm.fxRateAtPurchase', { currency: priceCurrency })}
-              error={errors.fxRateAtPurchase}
-              hint={defaultFx !== null ? t('itemForm.fxRateDefault', { rate: formatDecimalInput(defaultFx, locale) }) : null}
-            >
-              {(c) => (
-                <input
-                  {...c}
-                  className={styles.input}
-                  inputMode="decimal"
-                  value={state.fxText}
-                  onChange={(e) => patch({ fxText: e.target.value })}
-                />
-              )}
-            </FormField>
-          )}
-
-          <FormField label={t('itemForm.acquiredAt')} error={errors.acquiredAt}>
-            {(c) => (
-              <input
-                {...c}
-                className={styles.input}
-                type="datetime-local"
-                value={state.acquiredAt}
-                onChange={(e) => setState((s) => setAcquiredAt(s, e.target.value))}
-              />
-            )}
-          </FormField>
-
-          <FormField label={t('itemForm.tradeUnlockAt')} error={errors.tradeUnlockAt}>
-            {(c) => (
-              <div className={styles.row}>
-                <input
-                  {...c}
-                  className={styles.input}
-                  type="datetime-local"
-                  value={state.tradeUnlockAt}
-                  onChange={(e) => setState((s) => setTradeUnlockAt(s, e.target.value))}
-                />
-                <button
-                  type="button"
-                  className={`${styles.button} ${styles.small}`}
-                  onClick={() => setState((s) => addSevenDays(s))}
-                >
-                  {t('itemForm.plus7Days')}
-                </button>
-              </div>
-            )}
-          </FormField>
-
-          <FormField label={t('itemForm.inspectLink')} error={errors.inspectLink} hint={t('itemForm.inspectLinkHint')} full>
-            {(c) => (
-              <input
-                {...c}
-                className={styles.input}
-                value={state.inspectLink}
-                onChange={(e) => {
-                  patch({ inspectLink: e.target.value });
-                  clearError('inspectLink');
-                }}
-              />
-            )}
-          </FormField>
-        </div>
-
-        <details className={styles.details}>
-          <summary>{t('common.moreDetails')}</summary>
-          <div className={styles.grid}>
-            <FormField label={`${t('itemForm.originDetail')} ${t('common.optional')}`} error={errors.originDetail}>
-              {(c) => (
-                <input {...c} className={styles.input} value={state.originDetail} onChange={(e) => patch({ originDetail: e.target.value })} />
-              )}
-            </FormField>
-            <FormField label={`${t('itemForm.assetId')} ${t('common.optional')}`} error={errors.assetId}>
-              {(c) => (
-                <input {...c} className={styles.input} value={state.assetId} onChange={(e) => patch({ assetId: e.target.value })} />
-              )}
-            </FormField>
-          </div>
-        </details>
-
-        <div className={styles.actions}>
-          <button type="button" className={styles.button} onClick={onClose} disabled={saving}>{t('common.cancel')}</button>
-          <button type="submit" className={`${styles.button} ${styles.primary}`} disabled={saving}>
-            {saving ? t('common.saving') : t('common.save')}
-          </button>
-        </div>
+        <AcquisitionDetails
+          state={state}
+          patch={patch}
+          errors={errors}
+          vis={vis}
+          stores={stores}
+          item={item}
+          onStoreChange={onStoreChange}
+          generated={generated}
+          disabled={saving}
+          open={detailsOpen}
+          onOpenChange={setDetailsOpen}
+        />
       </form>
-    </Modal>
+    </Dialog>
   );
 }

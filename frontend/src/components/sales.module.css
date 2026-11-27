@@ -1,0 +1,13 @@
+/* Página Vendas (12.7a). Só tokens; sem cor fixa. */
+.itemRow { display: flex; align-items: flex-start; gap: var(--space-3); min-width: 0; }
+.itemRow > :last-child { min-width: 0; }
+.stack { display: flex; flex-direction: column; gap: var(--space-1); align-items: flex-start; }
+.muted { color: var(--muted); font-size: var(--fs-sm); }
+.nowrap { white-space: nowrap; }
+.expanded { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); margin: 0; padding: 0; list-style: none; color: var(--muted); font-size: var(--fs-sm); }
+.footer { display: flex; flex-direction: column; gap: var(--space-1); }
+.footerNote { margin: 0; padding: 0 var(--space-3) var(--space-2); color: var(--muted); font-size: var(--fs-sm); }
+.filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-3) var(--space-4); margin-bottom: var(--space-4); }
+.filterActions { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-2); margin-left: auto; }
+.summary { margin-bottom: var(--space-4); }
+.usdNote { margin: var(--space-2) 0 0; color: var(--muted); font-size: var(--fs-sm); }

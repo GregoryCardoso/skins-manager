@@ -43,7 +43,7 @@ test('as duas buscas correm juntas: o host da importação fica no layout e a fa
 
 test('"Importar automaticamente" nos lugares de lançar e o passo a passo nas configurações', () => {
   expect(read('components/ImportButton.tsx')).toMatch(/ImportSetupModal/);
-  expect(read('app/profit/page.tsx')).toMatch(/<ImportButton \/>/);
+  expect(read('components/DepositsSection.tsx')).toMatch(/<ImportButton \/>/);
   expect(read('components/WithdrawalsSection.tsx')).toMatch(/<ImportButton \/>/);
   expect(read('components/ImportSetupModal.tsx')).toMatch(/\/settings\/#csfloat/);
   expect(read('components/CsfloatIntegrationCard.tsx')).toMatch(/integration\.hasApiKey \? \([\s\S]*<CsfloatSetupGuide \/>[\s\S]*\) : \(\s*<CsfloatSetupGuide \/>/);

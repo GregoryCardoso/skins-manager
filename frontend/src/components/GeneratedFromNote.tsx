@@ -2,7 +2,7 @@
 
 import { useT, useTLoose } from '@/i18n/I18nProvider';
 import type { ItemView } from '@/types/api';
-import styles from './InventoryTable.module.css';
+import styles from './inventory/inventory.module.css';
 
 // "aberto de <caixa>" / "comprado no terminal <x>" sob o nome da unidade gerada por uma abertura (10.4, D363). O `originDetail` do
 // usuário continua separado; este texto vem da operação e é traduzido aqui.

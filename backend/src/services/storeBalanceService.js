@@ -15,7 +15,7 @@ const { maxAmountCents, MAX_NOTE_LENGTH } = require('../config/constants');
 const { parseDate } = require('./dateUtils');
 const { assertNotFutureDay } = require('./inventoryAgingService');
 const { isValidFxRate, toUsdBase, approxOf, fxFromSettings, displayCurrencyOf, rateOf, assertAmountPrecision } = require('./currencyService');
-const { splitStoreSales } = require('./saleHoldService');
+const { splitStoreSales, computeSaleRelease } = require('./saleHoldService');
 const { WARNINGS } = require('./warnings');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -255,6 +255,53 @@ function buildCurrentBalances({
   };
 }
 
+// --- Efeito de desfazer uma venda (12.6b, D370; só leitura, nada é gravado) --------------------------------------
+
+// Efeito no saldo da loja de venda se `item` (vendido) voltasse ao estoque. É o MESMO cálculo do saldo (`computeStoreBalance`)
+// feito duas vezes, com o item vendido e com `unsoldItem` (o item já sem os dados da venda, montado pelo chamador), então
+// nunca diverge do saldo real: retenção, liberação real do CSFloat, moeda divergente (ignorada) e venda com `soldAt > now`
+// (fora do saldo, efeito 0) seguem as mesmas regras. Valores na moeda da loja; o "≈" vem de `toUsdBase` (2.11).
+// `store` nulo (defensivo) = efeito 0 e loja nula.
+function buildUnsellEffect({
+  item, unsoldItem, store = null, checks = [], deposits = [], withdrawals = [], items = [], settings = null, now = new Date(),
+}) {
+  const fx = fxFromSettings(settings);
+  const release = computeSaleRelease(item, now);
+  const soldInFuture = Date.parse(item.soldAt) > msOf(now);
+  let available = { before: 0, after: 0 };
+  let pending = { before: 0, after: 0 };
+  let currencyMismatch = false;
+  if (store) {
+    const compute = (list) => computeStoreBalance({ store, checks, deposits, withdrawals, items: list, at: now });
+    const before = compute(items);
+    const after = compute(items.map((entry) => (entry.id === item.id ? unsoldItem : entry)));
+    available = { before: before.availableCents, after: after.availableCents };
+    pending = { before: before.pending.cents, after: after.pending.cents };
+    currencyMismatch = item.saleCurrency !== store.currency;
+  }
+  const balanceEffectCents = (available.after - available.before) + (pending.after - pending.before) + 0;
+  const converted = toUsdBase(balanceEffectCents, store ? store.currency : 'USD', fx);
+  return {
+    itemId: item.id,
+    storeId: store ? store.id : null,
+    storeName: store ? store.name : null,
+    storeCurrency: store ? store.currency : null,
+    balanceEffectCents,
+    wasReleased: Boolean(release) && !release.isHeld && !soldInFuture,
+    releasesAt: release ? release.releasesAt : null,
+    availableBeforeCents: available.before,
+    availableAfterCents: available.after,
+    pendingBeforeCents: pending.before,
+    pendingAfterCents: pending.after,
+    effectUsdCents: converted.usdCents,
+    approxCents: converted.approxCents,
+    approxCurrency: converted.approxCurrency,
+    estimated: converted.estimated,
+    currencyMismatch,
+    returnsTo: isNil(item.offSaleAt) ? 'FOR_SALE' : 'OFF_SALE',
+  };
+}
+
 // --- Orquestração -------------------------------------------------------------------------------
 
 const storesMap = () => new Map(Store.findAll().map((store) => [store.id, store]));
@@ -336,6 +383,6 @@ function deleteEntry(id) {
 }
 
 module.exports = {
-  computeStoreBalance, daysSince, buildCheckRecord, buildCurrentBalances, toEntryView,
+  computeStoreBalance, buildUnsellEffect, daysSince, buildCheckRecord, buildCurrentBalances, toEntryView,
   listHistory, listCurrent, previewCheck, createCheck, deleteEntry,
 };

@@ -65,7 +65,7 @@ describe('i18n da separação: chaves e marcadores iguais em pt-BR e en', () => 
   });
 
   test('toda chave literal usada nos componentes da separação existe nos dois idiomas', () => {
-    const files = ['DetachComponentModal.tsx', 'ItemActions.tsx', 'ItemOperationsList.tsx', 'GeneratedFromNote.tsx'];
+    const files = ['DetachComponentModal.tsx', 'inventory/ItemRowActions.tsx', 'ItemOperationsList.tsx', 'GeneratedFromNote.tsx'];
     const keys = new Set<string>();
     for (const file of files) {
       const source = readFileSync(resolve(__dirname, '../components', file), 'utf8');

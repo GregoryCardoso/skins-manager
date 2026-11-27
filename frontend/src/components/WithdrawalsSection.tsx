@@ -1,11 +1,9 @@
 'use client';
 
-import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
-import styles from '@/app/profit/page.module.css';
 import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLocale, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
+import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
 import { formatDate } from '@/lib/format';
 import { queryKeys } from '@/lib/queryKeys';
 import { useInvalidate } from '@/lib/useInvalidate';
@@ -13,34 +11,40 @@ import { withdrawalAmountText, withdrawalStoreOptions } from '@/lib/withdrawalFo
 import { ApiRequestError, deleteWithdrawal, listStores, listWithdrawals } from '@/services/api';
 import type { Withdrawal } from '@/types/api';
 import ImportButton from './ImportButton';
-import ConfirmDialog from './ConfirmDialog';
 import { useMoneyLine } from './MoneyApprox';
+import styles from './moneySection.module.css';
 import WithdrawalFormModal from './WithdrawalFormModal';
 import WithdrawalsTable from './WithdrawalsTable';
+import Banner from './ui/Banner';
+import Button from './ui/Button';
+import ConfirmDialog from './ui/ConfirmDialog';
+import EmptyState from './ui/EmptyState';
+import ErrorState from './ui/ErrorState';
+import Skeleton from './ui/Skeleton';
+import { useToast } from './ui/Toast';
 
-type Dialog = { kind: 'create' } | { kind: 'edit'; withdrawal: Withdrawal } | { kind: 'delete'; withdrawal: Withdrawal };
+type Dialog = { kind: 'edit'; withdrawal: Withdrawal } | { kind: 'delete'; withdrawal: Withdrawal };
 
-// Seção Saques da página Lucro real (8.2): lista, cadastro, edição e exclusão. Carrega os próprios dados.
-export default function WithdrawalsSection() {
+interface Props {
+  // Abre o formulário de novo saque (que fica na página, junto do cabeçalho e das linhas das lojas).
+  onCreate: () => void;
+}
+
+// Aba Saques da página Lucro real (8.2; 12.7b): lista, total, edição e exclusão. Carrega os próprios dados (cache compartilhado).
+export default function WithdrawalsSection({ onCreate }: Props) {
   const t = useT();
   const tLoose = useTLoose();
-  const tPlural = useTPlural();
   const locale = useLocale();
   const moneyLine = useMoneyLine();
-
+  const toast = useToast();
   const invalidate = useInvalidate();
+
   const withdrawalsQuery = useQuery({ queryKey: queryKeys.withdrawals.all, queryFn: ({ signal }) => listWithdrawals(signal) });
   const storesQuery = useQuery({ queryKey: queryKeys.stores.all, queryFn: ({ signal }) => listStores(signal) });
   const data = withdrawalsQuery.data ?? null;
   const stores = storesQuery.data ?? null;
   const error = withdrawalsQuery.error ?? storesQuery.error;
-  const loading = withdrawalsQuery.isFetching || storesQuery.isFetching;
-  const reload = () => {
-    withdrawalsQuery.refetch();
-    storesQuery.refetch();
-  };
   const [dialog, setDialog] = useState<Dialog | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
   const [confirmBusy, setConfirmBusy] = useState(false);
   const [confirmError, setConfirmError] = useState<string | null>(null);
 
@@ -49,20 +53,16 @@ export default function WithdrawalsSection() {
     setConfirmBusy(false);
     setConfirmError(null);
   }, []);
-
-  const finish = useCallback(
-    (message: string) => {
-      closeDialog();
-      setNotice(message);
-    },
-    [closeDialog],
-  );
-
+  const finish = useCallback((message: string) => {
+    closeDialog();
+    toast.show({ tone: 'success', message });
+  }, [closeDialog, toast]);
   // Já excluído em outro lugar: só atualiza as telas.
   const gone = useCallback(() => {
     invalidate('withdrawal.delete');
-    finish(t('withdrawals.gone'));
-  }, [finish, invalidate, t]);
+    closeDialog();
+    toast.show({ tone: 'info', message: t('withdrawals.gone') });
+  }, [closeDialog, invalidate, toast, t]);
 
   const confirmDelete = (withdrawal: Withdrawal) => {
     setConfirmBusy(true);
@@ -82,29 +82,24 @@ export default function WithdrawalsSection() {
       });
   };
 
-  const storeList = stores ?? [];
+  const onEdit = useCallback((withdrawal: Withdrawal) => setDialog({ kind: 'edit', withdrawal }), []);
+  const onDelete = useCallback((withdrawal: Withdrawal) => setDialog({ kind: 'delete', withdrawal }), []);
   const noWithdrawalStores = stores !== null && withdrawalStoreOptions(stores, null).length === 0;
 
   return (
-    <section className={styles.section} aria-labelledby="withdrawals-heading">
-      <div className={styles.titleRow}>
-        <h2 id="withdrawals-heading">{t('withdrawals.title')}</h2>
-        {data && <span className={styles.count} aria-live="polite">{tPlural('withdrawals.count', data.totals.count)}</span>}
-      </div>
+    <div className={styles.section}>
       <div className={styles.toolbar}>
         <p className={styles.note}>{t('withdrawals.intro')}</p>
-        <span className={styles.toolbarActions}>
+        <span className={styles.actions}>
           <ImportButton />
-          <button type="button" className={styles.primaryButton} onClick={() => setDialog({ kind: 'create' })} disabled={noWithdrawalStores}>
-            {t('withdrawals.new')}
-          </button>
+          <Button variant="primary" icon="plus" onClick={onCreate} disabled={noWithdrawalStores}>{t('withdrawals.new')}</Button>
         </span>
       </div>
 
       {noWithdrawalStores && (
-        <p className={styles.note} role="status">
-          {t('withdrawals.noWithdrawalStores')} <Link href="/stores/">{t('withdrawals.goToStores')}</Link>
-        </p>
+        <Banner tone="warning" announce={false} action={{ label: t('withdrawals.goToStores'), href: '/stores/' }}>
+          {t('withdrawals.noWithdrawalStores')}
+        </Banner>
       )}
 
       {data && data.totals.count > 0 && (
@@ -115,58 +110,42 @@ export default function WithdrawalsSection() {
         </p>
       )}
 
-      {notice && (
-        <div className={styles.notice} role="status">
-          <span>{notice}</span>
-          <button type="button" className={styles.retry} onClick={() => setNotice(null)}>{t('common.close')}</button>
-        </div>
-      )}
-
       {error !== null && (
-        <div className={styles.error} role="alert">
-          <p>{t('withdrawals.loadError', { reason: errorMessageFor(error, tLoose, locale) })}</p>
-          <button type="button" className={styles.retry} onClick={reload}>{t('common.retry')}</button>
-        </div>
+        <ErrorState
+          message={t('withdrawals.loadError', { reason: errorMessageFor(error, tLoose, locale) })}
+          onRetry={() => {
+            withdrawalsQuery.refetch();
+            storesQuery.refetch();
+          }}
+          retrying={withdrawalsQuery.isFetching || storesQuery.isFetching}
+        />
       )}
 
-      {data === null && error === null && <p className={styles.muted}>{t('common.loading')}</p>}
+      {data === null && error === null && <Skeleton width="100%" height="6rem" />}
 
       {data !== null && error === null && (
-        <div className={loading ? styles.dim : undefined} aria-busy={loading}>
-          {data.withdrawals.length === 0 ? (
-            <div className={styles.empty}>
-              <p><strong>{t('withdrawals.empty')}</strong></p>
-              <p>{t('withdrawals.emptyHint')}</p>
-            </div>
-          ) : (
-            <WithdrawalsTable
-              withdrawals={data.withdrawals}
-              onEdit={(withdrawal) => setDialog({ kind: 'edit', withdrawal })}
-              onDelete={(withdrawal) => setDialog({ kind: 'delete', withdrawal })}
-            />
-          )}
-        </div>
+        data.withdrawals.length === 0 ? (
+          <EmptyState title={t('withdrawals.empty')} description={t('withdrawals.emptyHint')} />
+        ) : (
+          <WithdrawalsTable withdrawals={data.withdrawals} onEdit={onEdit} onDelete={onDelete} />
+        )
       )}
 
-      {dialog?.kind === 'create' && <WithdrawalFormModal stores={storeList} onClose={closeDialog} onSaved={finish} onGone={gone} />}
       {dialog?.kind === 'edit' && (
-        <WithdrawalFormModal withdrawal={dialog.withdrawal} stores={storeList} onClose={closeDialog} onSaved={finish} onGone={gone} />
+        <WithdrawalFormModal withdrawal={dialog.withdrawal} stores={stores ?? []} onClose={closeDialog} onSaved={finish} onGone={gone} />
       )}
       {dialog?.kind === 'delete' && (
         <ConfirmDialog
           title={t('withdrawals.deleteTitle')}
-          message={t('withdrawals.deleteMessage', {
-            value: withdrawalAmountText(dialog.withdrawal, locale),
-            date: formatDate(dialog.withdrawal.withdrawnAt, locale),
-          })}
+          message={t('withdrawals.deleteMessage', { value: withdrawalAmountText(dialog.withdrawal, locale), date: formatDate(dialog.withdrawal.withdrawnAt, locale) })}
           confirmLabel={t('withdrawals.confirmDelete')}
-          danger
+          tone="danger"
           busy={confirmBusy}
           error={confirmError}
           onCancel={closeDialog}
           onConfirm={() => confirmDelete(dialog.withdrawal)}
         />
       )}
-    </section>
+    </div>
   );
 }

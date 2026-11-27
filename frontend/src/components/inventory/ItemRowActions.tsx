@@ -13,13 +13,16 @@ import styles from './inventory.module.css';
 
 export interface UnitRowHandlers {
   onEdit: (item: ItemView) => void;
-  onSell: (item: ItemView) => void;
+  // `units`: só a linha do grupo passa (a venda mostra o seletor de unidade, 12.6b).
+  onSell: (item: ItemView, units?: ItemView[]) => void;
   onUnsell: (item: ItemView) => void;
   onDelete: (item: ItemView) => void;
   onHistory: (item: ItemView) => void;
   onOffSale: (item: ItemView) => void;
   onForSale: (item: ItemView) => void;
   onApply?: (item: ItemView) => void;
+  // Abre a edição já no painel "Componentes" (12.6a).
+  onComponents?: (item: ItemView) => void;
   onOpen?: (item: ItemView) => void;
   onRegisterKey?: (keyName: string) => void;
   onDetach?: (item: ItemView) => void;
@@ -63,6 +66,7 @@ export default function ItemRowActions({ item, handlers, forSalePendingId = null
       case 'forSale': return t('inventory.actions.forSale');
       case 'offSale': return t('inventory.actions.offSale');
       case 'edit': return t('inventory.actions.edit');
+      case 'components': return t('inventory.actions.components');
       case 'apply': return t('inventory.actions.apply');
       case 'detach': return t('inventory.actions.detach');
       case 'open': return tLoose(openLabelKey(item));
@@ -81,6 +85,7 @@ export default function ItemRowActions({ item, handlers, forSalePendingId = null
       case 'forSale': return handlers.onForSale(item);
       case 'offSale': return handlers.onOffSale(item);
       case 'edit': return handlers.onEdit(item);
+      case 'components': return handlers.onComponents?.(item);
       case 'apply': return handlers.onApply?.(item);
       case 'detach': return handlers.onDetach?.(item);
       case 'open': return handlers.onOpen?.(item);
@@ -94,6 +99,7 @@ export default function ItemRowActions({ item, handlers, forSalePendingId = null
 
   // Só mostra o que o inventário sabe tratar (alguns manipuladores são opcionais).
   const supported = (action: RowAction): boolean => {
+    if (action.id === 'components') return handlers.onComponents !== undefined;
     if (action.id === 'apply') return handlers.onApply !== undefined;
     if (action.id === 'detach') return handlers.onDetach !== undefined;
     if (action.id === 'open') return handlers.onOpen !== undefined;

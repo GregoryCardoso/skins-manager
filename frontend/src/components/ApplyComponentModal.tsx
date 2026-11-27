@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, type FormEvent } from 'react';
+import { useId, useMemo, useState, type FormEvent } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
@@ -12,12 +12,17 @@ import { queryKeys } from '@/lib/queryKeys';
 import { useInvalidate } from '@/lib/useInvalidate';
 import { ApiRequestError, applyComponent, getApplyCandidates, getItem, resolveImportEntry } from '@/services/api';
 import type { ApplyCandidate, ApplyCandidates, ComponentKind, ImportResolveBody } from '@/types/api';
-import { Badge } from './badges';
-import FormField from './FormField';
-import styles from './forms.module.css';
+import itemStyles from './item/item.module.css';
 import ItemImage from './ItemImage';
-import Modal from './Modal';
-import modalStyles from './ApplyComponentModal.module.css';
+import Banner from './ui/Banner';
+import Button from './ui/Button';
+import Dialog from './ui/Dialog';
+import FormErrorSummary, { type FormErrorItem } from './ui/FormErrorSummary';
+import { HoldingBadge, TradeLockBadge } from './ui/Badge';
+import NumberField from './ui/NumberField';
+import Select from './ui/Select';
+import Spinner from './ui/Spinner';
+import TextField from './ui/TextField';
 
 // `stock`: o botão "Aplicar do estoque" de uma arma/agente em estoque. `retro`: a ação "Aplicar e registrar" da importação (E-P2-Q47),
 // numa arma já vendida, com a unidade sugerida pelo aviso e a data limitada à da venda.
@@ -34,6 +39,7 @@ interface Props {
 }
 
 const FIELDS = ['sourceItemId', 'slot', 'wear', 'pattern', 'appliedAt'] as const;
+const NO_SLOT = '__none__';
 const KIND_ORDER: ComponentKind[] = ['STICKER', 'CHARM', 'STICKER_SLAB', 'PATCH'];
 const REMAINING_KEY: Record<ComponentKind, 'stickers' | 'hanging' | 'patches'> = {
   STICKER: 'stickers', CHARM: 'hanging', STICKER_SLAB: 'hanging', PATCH: 'patches',
@@ -103,12 +109,16 @@ export default function ApplyComponentModal({ target, mode, onClose, onDone, onG
   const appliedAtText = typedAt ?? (retro ? isoToLocalInput(soldAt) : nowLocalInput());
   const [errors, setErrors] = useState<Partial<Record<string, string>>>({});
   const [topError, setTopError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
   const [saving, setSaving] = useState(false);
+  const formId = useId();
 
   const full = data && kind ? data.remaining[REMAINING_KEY[kind]] <= 0 : false;
   const limitKey = kind === 'STICKER' ? 'STICKER' : kind === 'PATCH' ? 'PATCH' : 'HANGING';
   const chosen = options.find((c) => c.itemId === sourceId) ?? null;
   const displayName = (c: ApplyCandidate) => (c.localizedName ?? c.name);
+
+  const clearError = (field: string) => setErrors((e) => (e[field] ? { ...e, [field]: undefined } : e));
 
   const showApiError = (err: unknown) => {
     if (err instanceof ApiRequestError && err.code === 'ITEM_NOT_FOUND') {
@@ -120,6 +130,7 @@ export default function ApplyComponentModal({ target, mode, onClose, onDone, onG
     const mapped = field === 'components' ? 'wear' : field;
     if (mapped && (FIELDS as readonly string[]).includes(mapped)) {
       setErrors({ [mapped]: message });
+      setAttempt((n) => n + 1);
       setTopError(null);
     } else {
       setErrors({});
@@ -150,6 +161,7 @@ export default function ApplyComponentModal({ target, mode, onClose, onDone, onG
     }
     if (Object.keys(next).length > 0 || appliedAt === null) {
       setErrors(next);
+      setAttempt((n) => n + 1);
       return;
     }
     setErrors({});
@@ -173,103 +185,157 @@ export default function ApplyComponentModal({ target, mode, onClose, onDone, onG
   const loadError = retro ? retroSourceQuery.error ?? retroTargetQuery.error : candidatesQuery.error;
   const slots = kind === 'PATCH' ? PATCH_SLOTS : STICKER_SLOTS;
   const costText = (c: ApplyCandidate) => `${c.costEstimated ? '≈ ' : ''}${formatMoney(c.effectiveCostUsdCents, 'USD', locale)}`;
+  const candidateImageCategory = (c: ApplyCandidate) => (c.kind === 'CHARM' ? 'PINGENTE' : c.kind === 'PATCH' ? 'PATCH' : 'STICKER');
+  const candidateLabel = (c: ApplyCandidate) => {
+    const parts = [displayName(c), t('applyForm.cost', { value: costText(c) }), formatDate(c.acquiredAt, locale)];
+    if (c.tradeLocked) parts.push(t('applyForm.tradeLock'));
+    if (c.offSale) parts.push(t('applyForm.holding'));
+    return parts.join(' · ');
+  };
+  const fieldLabel = (field: string): string => {
+    switch (field) {
+      case 'sourceItemId': return t('applyForm.pick');
+      case 'slot': return kind === 'PATCH' ? t('itemForm.components.patchSlot') : t('applyForm.slot');
+      case 'wear': return t('applyForm.wear');
+      case 'pattern': return t('applyForm.pattern');
+      default: return t('applyForm.appliedAt');
+    }
+  };
+  const summaryItems: FormErrorItem[] = FIELDS
+    .filter((field) => errors[field])
+    .map((field) => ({ field, label: fieldLabel(field), message: errors[field] as string }));
 
   return (
-    <Modal title={t('applyForm.title', { name: target.name })} onClose={onClose} busy={saving}>
-      <form className={styles.form} onSubmit={submit} noValidate>
-        {topError && <div className={styles.topError} role="alert">{topError}</div>}
-        <p className={styles.muted}>{retro ? t('applyForm.retroIntro') : t('applyForm.intro')}</p>
+    <Dialog
+      title={t('applyForm.title', { name: target.name })}
+      size="md"
+      busy={saving}
+      onClose={onClose}
+      footer={
+        <>
+          <Button onClick={onClose} disabled={saving}>{t('common.cancel')}</Button>
+          <Button type="submit" form={formId} variant="primary" loading={saving} disabled={sourceId === null || full || !kind}>
+            {saving ? t('common.saving') : retro ? t('applyForm.submitRetro') : t('applyForm.submit')}
+          </Button>
+        </>
+      }
+    >
+      <form id={formId} className={itemStyles.form} onSubmit={submit} noValidate>
+        <FormErrorSummary key={attempt} errors={summaryItems} />
+        {topError && <Banner tone="danger">{topError}</Banner>}
+        <p className={itemStyles.muted}>{retro ? t('applyForm.retroIntro') : t('applyForm.intro')}</p>
 
-        {loading && <p className={styles.muted}>{t('common.loading')}</p>}
-        {loadError && <div className={styles.topError} role="alert">{errorMessageFor(loadError, tLoose, locale)}</div>}
+        {loading && <Spinner size="sm" />}
+        {loadError && (
+          <Banner tone="danger" onRetry={() => { void (retro ? retroSourceQuery.refetch() : candidatesQuery.refetch()); }}>
+            {errorMessageFor(loadError, tLoose, locale)}
+          </Banner>
+        )}
         {!loading && !loadError && available.length === 0 && (
-          <div className={styles.note} role="status">{retro ? t('applyForm.unitGone') : t('applyForm.noCandidates')}</div>
+          <Banner tone="info" announce={false}>{retro ? t('applyForm.unitGone') : t('applyForm.noCandidates')}</Banner>
         )}
 
         {kind && (
           <>
             {!retro && available.length > 1 && (
-              <FormField label={t('applyForm.kind')}>
-                {(c) => (
-                  <select {...c} className={styles.select} value={kind} onChange={(e) => { setChosenKind(e.target.value as ComponentKind); setChosenId(null); }}>
-                    {available.map((k) => <option key={k} value={k}>{t(`applyForm.kinds.${k}`)}</option>)}
-                  </select>
-                )}
-              </FormField>
+              <Select
+                label={t('applyForm.kind')}
+                name="kind"
+                value={kind}
+                disabled={saving}
+                onChange={(value) => {
+                  setChosenKind(value as ComponentKind);
+                  setChosenId(null);
+                }}
+                options={available.map((k) => ({ value: k, label: t(`applyForm.kinds.${k}`) }))}
+              />
             )}
-            {full && <div className={styles.note} role="status">{t(`applyForm.limit.${limitKey}`)}</div>}
+            {full && <Banner tone="warning" announce={false}>{t(`applyForm.limit.${limitKey}`)}</Banner>}
 
-            <fieldset className={styles.details} disabled={saving}>
-              <legend className={styles.label}>{t('applyForm.pick')}</legend>
-              <ul className={modalStyles.list}>
-                {options.map((c) => (
-                  <li key={c.itemId} className={modalStyles.option}>
-                    <label className={modalStyles.optionLabel}>
-                      {options.length > 1 && (
-                        <input type="radio" name="source" checked={c.itemId === sourceId} onChange={() => setChosenId(c.itemId)} />
-                      )}
-                      <ItemImage category={c.kind === 'CHARM' ? 'PINGENTE' : c.kind === 'PATCH' ? 'PATCH' : 'STICKER'} url={c.imageUrl} size={36} />
-                      <span className={modalStyles.optionText}>
-                        <strong>{displayName(c)}</strong>
-                        <span className={styles.muted}>
-                          {t('applyForm.cost', { value: costText(c) })} · {formatDate(c.acquiredAt, locale)}
-                        </span>
-                      </span>
-                      {c.tradeLocked && <Badge tone="info" icon="🔒">{t('applyForm.tradeLock')}</Badge>}
-                      {c.offSale && <Badge>{t('applyForm.holding')}</Badge>}
-                    </label>
-                  </li>
-                ))}
-              </ul>
-              {errors.sourceItemId && <span className={styles.error} role="alert">{errors.sourceItemId}</span>}
-            </fieldset>
+            {options.length > 1 && (
+              <Select
+                label={t('applyForm.pick')}
+                name="sourceItemId"
+                value={String(sourceId ?? '')}
+                error={errors.sourceItemId}
+                disabled={saving}
+                onChange={(value) => setChosenId(Number(value))}
+                options={options.map((c) => ({ value: String(c.itemId), label: candidateLabel(c) }))}
+              />
+            )}
+            {chosen && (
+              <div className={itemStyles.chosen}>
+                <ItemImage category={candidateImageCategory(chosen)} url={chosen.imageUrl} size={36} />
+                <div className={itemStyles.chosenText}>
+                  <strong className={itemStyles.chosenName}>{displayName(chosen)}</strong>
+                  <span className={itemStyles.muted}>{t('applyForm.cost', { value: costText(chosen) })} · {formatDate(chosen.acquiredAt, locale)}</span>
+                </div>
+                {chosen.tradeLocked && <TradeLockBadge />}
+                {chosen.offSale && <HoldingBadge />}
+              </div>
+            )}
+            {options.length <= 1 && errors.sourceItemId && <span className={itemStyles.fieldError} role="alert" data-field="sourceItemId" tabIndex={-1}>{errors.sourceItemId}</span>}
 
-            <div className={styles.grid}>
+            <div className={itemStyles.grid}>
               {kind !== 'CHARM' && kind !== 'STICKER_SLAB' && (
-                <FormField label={kind === 'PATCH' ? t('itemForm.components.patchSlot') : t('applyForm.slot')} error={errors.slot}>
-                  {(c) => (
-                    <select {...c} className={styles.select} value={slot} onChange={(e) => setSlot(e.target.value)}>
-                      <option value="">{t('common.none')}</option>
-                      {slots.map((value) => <option key={value} value={value}>{value}</option>)}
-                    </select>
-                  )}
-                </FormField>
+                <Select
+                  label={kind === 'PATCH' ? t('itemForm.components.patchSlot') : t('applyForm.slot')}
+                  name="slot"
+                  value={slot === '' ? NO_SLOT : slot}
+                  error={errors.slot}
+                  disabled={saving}
+                  onChange={(value) => setSlot(value === NO_SLOT ? '' : value)}
+                  options={[{ value: NO_SLOT, label: t('common.none') }, ...slots.map((value) => ({ value: String(value), label: String(value) }))]}
+                />
               )}
               {kind === 'STICKER' && (
-                <FormField label={t('applyForm.wear')} error={errors.wear}>
-                  {(c) => (
-                    <input {...c} className={styles.input} inputMode="decimal" placeholder={t('itemForm.components.wearPlaceholder')} value={wearText} onChange={(e) => setWearText(e.target.value)} />
-                  )}
-                </FormField>
+                <NumberField
+                  kind="decimal"
+                  label={t('applyForm.wear')}
+                  name="wear"
+                  placeholder={t('itemForm.components.wearPlaceholder')}
+                  suggestAmbiguous={false}
+                  value={wearText}
+                  error={errors.wear}
+                  disabled={saving}
+                  onValueChange={(text) => {
+                    setWearText(text);
+                    clearError('wear');
+                  }}
+                />
               )}
               {(kind === 'CHARM' || kind === 'STICKER_SLAB') && (
-                <FormField label={t('applyForm.pattern')} error={errors.pattern}>
-                  {(c) => <input {...c} className={styles.input} inputMode="numeric" value={patternText} onChange={(e) => setPatternText(e.target.value)} />}
-                </FormField>
+                <NumberField
+                  kind="integer"
+                  label={t('applyForm.pattern')}
+                  name="pattern"
+                  value={patternText}
+                  error={errors.pattern}
+                  disabled={saving}
+                  onValueChange={(text) => {
+                    setPatternText(text);
+                    clearError('pattern');
+                  }}
+                />
               )}
-              <FormField label={t('applyForm.appliedAt')} error={errors.appliedAt} hint={retro && soldAt ? t('applyForm.retroLimit', { date: formatDate(soldAt, locale) }) : null}>
-                {(c) => (
-                  <input
-                    {...c}
-                    type="datetime-local"
-                    className={styles.input}
-                    max={maxLocal || dateToLocalInput(new Date())}
-                    value={appliedAtText}
-                    onChange={(e) => setAppliedAtText(e.target.value)}
-                  />
-                )}
-              </FormField>
+              <TextField
+                label={t('applyForm.appliedAt')}
+                name="appliedAt"
+                type="datetime-local"
+                max={maxLocal || dateToLocalInput(new Date())}
+                value={appliedAtText}
+                error={errors.appliedAt}
+                hint={retro && soldAt ? t('applyForm.retroLimit', { date: formatDate(soldAt, locale) }) : null}
+                disabled={saving}
+                onChange={(value) => {
+                  setAppliedAtText(value);
+                  clearError('appliedAt');
+                }}
+              />
             </div>
           </>
         )}
-
-        <div className={styles.actions}>
-          <button type="button" className={styles.button} onClick={onClose} disabled={saving}>{t('common.cancel')}</button>
-          <button type="submit" className={`${styles.button} ${styles.primary}`} disabled={saving || sourceId === null || full || !kind}>
-            {saving ? t('common.saving') : retro ? t('applyForm.submitRetro') : t('applyForm.submit')}
-          </button>
-        </div>
       </form>
-    </Modal>
+    </Dialog>
   );
 }

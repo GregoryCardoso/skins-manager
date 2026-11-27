@@ -9,10 +9,11 @@ const read = (rel: string) => fs.readFileSync(path.join(__dirname, '..', rel), '
 
 test('o botão fica só na loja da integração com chave salva e "Registrar" abre a conferência da 8.6 preenchida', () => {
   const panel = read('components/StoreBalancesPanel.tsx');
-  expect(panel).toMatch(/integration\.hasApiKey && integration\.storeId === store\.storeId/);
+  expect(panel).toMatch(/integration\.hasApiKey && integration\.storeId === dialog\.store\.storeId/);
   expect(panel).toMatch(/initialAmountCents/);
-  const form = read('components/StoreBalanceFormModal.tsx');
+  const form = read('components/BalanceCheckDialog.tsx');
   expect(form).toMatch(/initialAmountCents === null \? initial/);
+  expect(form).toMatch(/onUseBalance/);
 });
 
 test('a conferência é só leitura: nenhuma chamada de escrita no componente', () => {

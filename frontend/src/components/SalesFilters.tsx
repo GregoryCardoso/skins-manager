@@ -1,13 +1,16 @@
 'use client';
 
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useT, useTLoose } from '@/i18n/I18nProvider';
 import {
   SALES_PERIODS, SALES_SORT_OPTIONS, hasActiveSalesFilters, parseDayString,
   type SalesFilters as Filters, type SalesPeriod,
 } from '@/lib/salesQuery';
 import type { Store } from '@/types/api';
-import styles from './SalesFilters.module.css';
+import Button from './ui/Button';
+import Select from './ui/Select';
+import TextField from './ui/TextField';
+import styles from './sales.module.css';
 
 interface Props {
   filters: Filters;
@@ -21,7 +24,6 @@ interface Props {
 export default function SalesFilters({ filters, stores, loading, onChange, onClear, onRefresh }: Props) {
   const t = useT();
   const tLoose = useTLoose();
-  const id = useId();
 
   // Datas do período personalizado: rascunho local; só intervalos válidos vão para a URL.
   const [draftFrom, setDraftFrom] = useState(filters.from ?? '');
@@ -43,79 +45,42 @@ export default function SalesFilters({ filters, stores, loading, onChange, onCle
   };
 
   return (
-    <form className={styles.bar} onSubmit={(event) => event.preventDefault()} aria-label={t('salesFilters.label')}>
-      <label className={styles.field} htmlFor={`${id}-store`}>
-        <span>{t('salesFilters.store')}</span>
-        <select
-          id={`${id}-store`}
-          value={filters.storeId ?? ''}
-          onChange={(e) => onChange({ ...filters, storeId: e.target.value === '' ? null : Number(e.target.value) })}
-        >
-          <option value="">{t('salesFilters.storeAll')}</option>
-          {stores.map((s) => (
-            <option key={s.id} value={s.id}>{s.isActive ? s.name : `${s.name} (${t('salesFilters.inactive')})`}</option>
-          ))}
-        </select>
-      </label>
-
-      <label className={styles.field} htmlFor={`${id}-period`}>
-        <span>{t('salesFilters.period')}</span>
-        <select
-          id={`${id}-period`}
-          value={filters.period}
-          onChange={(e) => onChange({ ...filters, period: e.target.value as SalesPeriod })}
-        >
-          {SALES_PERIODS.map((p) => <option key={p} value={p}>{tLoose(`salesFilters.periods.${p}`)}</option>)}
-        </select>
-      </label>
-
+    <form className={styles.filters} onSubmit={(event) => event.preventDefault()} aria-label={t('salesFilters.label')}>
+      <Select
+        label={t('salesFilters.store')}
+        value={filters.storeId === null ? 'ALL' : String(filters.storeId)}
+        onChange={(value) => onChange({ ...filters, storeId: value === 'ALL' ? null : Number(value) })}
+        options={[
+          { value: 'ALL', label: t('salesFilters.storeAll') },
+          ...stores.map((s) => ({ value: String(s.id), label: s.isActive ? s.name : `${s.name} (${t('salesFilters.inactive')})` })),
+        ]}
+      />
+      <Select
+        label={t('salesFilters.period')}
+        value={filters.period}
+        onChange={(value) => onChange({ ...filters, period: value as SalesPeriod })}
+        options={SALES_PERIODS.map((p) => ({ value: p, label: tLoose(`salesFilters.periods.${p}`) }))}
+      />
       {filters.period === 'CUSTOM' && (
         <>
-          <label className={styles.field} htmlFor={`${id}-from`}>
-            <span>{t('salesFilters.from')}</span>
-            <input
-              id={`${id}-from`}
-              type="date"
-              value={draftFrom}
-              aria-invalid={invalidRange}
-              onChange={(e) => changeDate('from', e.target.value)}
-            />
-          </label>
-          <label className={styles.field} htmlFor={`${id}-to`}>
-            <span>{t('salesFilters.to')}</span>
-            <input
-              id={`${id}-to`}
-              type="date"
-              value={draftTo}
-              aria-invalid={invalidRange}
-              onChange={(e) => changeDate('to', e.target.value)}
-            />
-          </label>
-          {invalidRange && <span className={styles.invalid} role="alert">{t('salesFilters.invalidRange')}</span>}
+          <TextField label={t('salesFilters.from')} type="date" value={draftFrom} onChange={(value) => changeDate('from', value)} />
+          <TextField label={t('salesFilters.to')} type="date" value={draftTo} onChange={(value) => changeDate('to', value)} error={invalidRange ? t('salesFilters.invalidRange') : null} />
         </>
       )}
-
-      <label className={styles.field} htmlFor={`${id}-sort`}>
-        <span>{t('salesFilters.sort')}</span>
-        <select
-          id={`${id}-sort`}
-          value={`${filters.sort}:${filters.order}`}
-          onChange={(e) => {
-            const option = SALES_SORT_OPTIONS.find((o) => o.value === e.target.value);
-            if (option) onChange({ ...filters, sort: option.sort, order: option.order });
-          }}
-        >
-          {SALES_SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{tLoose(o.key)}</option>)}
-        </select>
-      </label>
-
-      <div className={styles.actions}>
+      <Select
+        label={t('salesFilters.sort')}
+        value={`${filters.sort}:${filters.order}`}
+        onChange={(value) => {
+          const option = SALES_SORT_OPTIONS.find((o) => o.value === value);
+          if (option) onChange({ ...filters, sort: option.sort, order: option.order });
+        }}
+        options={SALES_SORT_OPTIONS.map((o) => ({ value: o.value, label: tLoose(o.key) }))}
+      />
+      <div className={styles.filterActions}>
         {hasActiveSalesFilters(filters) && (
-          <button type="button" className={styles.button} onClick={onClear}>{t('sales.clearFilters')}</button>
+          <Button size="sm" variant="ghost" onClick={onClear}>{t('sales.clearFilters')}</Button>
         )}
-        <button type="button" className={styles.button} onClick={onRefresh} disabled={loading}>
-          {t('sales.refresh')}
-        </button>
+        <Button icon="refresh" loading={loading} onClick={onRefresh}>{t('sales.refresh')}</Button>
       </div>
     </form>
   );

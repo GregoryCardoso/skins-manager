@@ -8,8 +8,13 @@ import { useItemDialogs } from '@/components/ItemDialogs';
 import SalesFilters from '@/components/SalesFilters';
 import SalesSummary from '@/components/SalesSummary';
 import SalesTable from '@/components/SalesTable';
+import { usePreferences } from '@/components/PreferencesProvider';
 import PageSkeleton from '@/components/layout/PageSkeleton';
+import Button from '@/components/ui/Button';
+import EmptyState from '@/components/ui/EmptyState';
+import ErrorState from '@/components/ui/ErrorState';
 import PageHeader from '@/components/ui/PageHeader';
+import { useToast } from '@/components/ui/Toast';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLocale, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import {
@@ -29,7 +34,8 @@ function SalesView() {
   const router = useRouter();
   const pathname = usePathname() ?? '/sales';
   const searchParams = useSearchParams();
-  
+  const toast = useToast();
+  const { inventoryDensity } = usePreferences();
   const searchKey = searchParams.toString();
   const filters = useMemo(() => parseSalesFilters(new URLSearchParams(searchKey)), [searchKey]);
 
@@ -49,7 +55,9 @@ function SalesView() {
     salesQuery.refetch();
     storesQuery.refetch();
   }, [salesQuery, storesQuery]);
-  const { openEdit, openUnsell, openDelete, openHistory, notice, dismissNotice, dialogs } = useItemDialogs(stores);
+  // Sucesso e erro das ações viram avisos rápidos (o de erro fica até ser dispensado). O desfazer venda mostra o efeito no saldo (12.6b).
+  const notify = useCallback((message: string, tone: 'success' | 'danger') => toast.show({ tone, message }), [toast]);
+  const { openEdit, openComponents, openUnsell, openDelete, openHistory, dialogs } = useItemDialogs(stores, { notify });
 
   // `?item=<id>` (link "Ver nas vendas" do resumo da importação): não é filtro. Rola até a linha uma vez e a destaca.
   const focusItemId = parseItemParam(searchParams.get('item'));
@@ -60,7 +68,7 @@ function SalesView() {
       return;
     }
     if (scrolledFor.current === focusItemId) return;
-    const row = document.getElementById(`item-row-${focusItemId}`);
+    const row = document.querySelector(`tr[data-row-id="${focusItemId}"]`);
     if (row) {
       scrolledFor.current = focusItemId;
       row.scrollIntoView({ block: 'center' });
@@ -76,6 +84,18 @@ function SalesView() {
   );
 
   const filtered = hasActiveSalesFilters(filters);
+  const limits = { fastTurnoverDays: data?.meta.fastTurnoverDays ?? 7, slowItemDays: data?.meta.slowItemDays ?? 21 };
+  const firstLoad = data === null && error === null;
+  const empty = filtered ? (
+    <EmptyState
+      icon="search"
+      title={t('sales.emptyFilteredTitle')}
+      description={t('sales.emptyFiltered')}
+      action={<Button onClick={() => setFilters(DEFAULT_SALES_FILTERS)}>{t('sales.clearFilters')}</Button>}
+    />
+  ) : (
+    <EmptyState icon="sales" title={t('sales.emptyTitle')} description={t('sales.empty')} />
+  );
 
   return (
     <>
@@ -86,13 +106,6 @@ function SalesView() {
         actions={<ImportButton />}
       />
 
-      {notice && (
-        <div className={styles.notice} role="status">
-          <span>{notice}</span>
-          <button type="button" className={styles.retry} onClick={dismissNotice}>{t('common.close')}</button>
-        </div>
-      )}
-
       <SalesFilters
         filters={filters}
         stores={stores}
@@ -102,38 +115,24 @@ function SalesView() {
         onRefresh={reload}
       />
 
-      {error !== null && (
-        <div className={styles.error} role="alert">
-          <p>{t('sales.loadError', { reason: errorMessageFor(error, tLoose, locale) })}</p>
-          <button type="button" className={styles.retry} onClick={reload}>{t('common.retry')}</button>
-        </div>
-      )}
+      {error !== null && <ErrorState message={t('sales.loadError', { reason: errorMessageFor(error, tLoose, locale) })} onRetry={reload} retrying={loading} />}
 
-      {data === null && error === null && <p className={styles.muted}>{t('common.loading')}</p>}
-
-      {data !== null && error === null && (
-        <div className={loading ? styles.dim : undefined} aria-busy={loading}>
-          <SalesSummary summary={data.summary} />
-          {data.items.length === 0 ? (
-            <div className={styles.empty}>
-              <p>{filtered ? t('sales.emptyFiltered') : t('sales.empty')}</p>
-              {filtered && (
-                <button type="button" className={styles.retry} onClick={() => setFilters(DEFAULT_SALES_FILTERS)}>
-                  {t('sales.clearFilters')}
-                </button>
-              )}
-            </div>
-          ) : (
-            <SalesTable
-              items={data.items}
-              stores={stores}
-              onEdit={openEdit}
-              onUnsell={openUnsell}
-              onDelete={openDelete}
-              onHistory={openHistory}
-              highlightedItemId={focusItemId}
-            />
-          )}
+      {error === null && (
+        <div className={loading && !firstLoad ? styles.dim : undefined} aria-busy={loading}>
+          {data !== null && <SalesSummary summary={data.summary} />}
+          <SalesTable
+            items={data?.items ?? []}
+            stores={stores}
+            limits={limits}
+            handlers={{ onEdit: openEdit, onComponents: openComponents, onUnsell: openUnsell, onDelete: openDelete, onHistory: openHistory }}
+            sort={filters.sort}
+            order={filters.order}
+            onSortChange={(sort, order) => setFilters({ ...filters, sort, order })}
+            highlightedItemId={focusItemId}
+            density={inventoryDensity === 'COMFORTABLE' ? 'comfortable' : 'compact'}
+            loading={firstLoad}
+            empty={empty}
+          />
         </div>
       )}
 

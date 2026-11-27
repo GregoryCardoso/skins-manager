@@ -94,7 +94,7 @@ describe('formulário de lojas nas 42 moedas', () => {
 });
 
 describe('rótulos e campos de valor seguem a moeda da loja', () => {
-  const files = ['StoreBalanceFormModal', 'StoreFormModal'];
+  const files = ['BalanceCheckDialog', 'StoreFormModal'];
   test.each(files)('%s não tem "R$"/"US$" fixos', (name) => {
     expect(read(`components/${name}.tsx`)).not.toMatch(/'US\$'|'R\$'/);
   });
@@ -208,7 +208,7 @@ describe('saques e aportes: moeda da loja e moeda do valor informativo', () => {
   });
 
   test('as tabelas e a página do lucro mostram o valor informativo na moeda gravada', () => {
-    for (const file of ['components/DepositsTable.tsx', 'components/WithdrawalsTable.tsx', 'app/profit/page.tsx']) {
+    for (const file of ['components/DepositsTable.tsx', 'components/WithdrawalsTable.tsx', 'components/DepositFormModal.tsx', 'components/WithdrawalFormModal.tsx']) {
       expect(read(file)).not.toMatch(/AmountBrl[^\n]*'BRL'|amountBrlCents, 'BRL'|\.amountBrlCents, 'BRL'/);
       expect(read(file)).toMatch(/amountBrlCurrency \?\? 'BRL'/);
     }

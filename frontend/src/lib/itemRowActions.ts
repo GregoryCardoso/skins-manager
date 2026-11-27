@@ -9,6 +9,7 @@ export type ItemActionId =
   | 'forSale'
   | 'offSale'
   | 'edit'
+  | 'components'
   | 'apply'
   | 'detach'
   | 'open'
@@ -38,19 +39,25 @@ export interface RowActions {
 
 const act = (id: ItemActionId, extra: Partial<RowAction> = {}): RowAction => ({ id, ...extra });
 
+// A unidade tem o painel "Componentes" (12.6a): arma (stickers e pendurado), agente com patches, ou qualquer unidade que já tenha
+// componentes. É só a entrada do menu: o formulário decide o que mostra (o patch de agente depende do catálogo).
+export const hasComponentsPanel = (item: ItemView): boolean =>
+  item.category === 'SKIN' || item.canReceiveComponents || item.components.length > 0;
+
 // Unidade (linha da visão individual ou unidade expandida de um grupo).
 export function rowActions(item: ItemView): RowActions {
+  const editActions = hasComponentsPanel(item) ? [act('edit'), act('components')] : [act('edit')];
   if (item.status === 'VENDIDO') {
-    return { primary: null, menu: [act('edit'), act('unsell'), act('history'), act('delete')] };
+    return { primary: null, menu: [...editActions, act('unsell'), act('history'), act('delete')] };
   }
   if (item.status !== 'EM_ESTOQUE') {
-    return { primary: null, menu: [act('edit'), act('history'), act('delete')] };
+    return { primary: null, menu: [...editActions, act('history'), act('delete')] };
   }
   const locked = item.tradeLock.isLocked;
   const holding = item.saleState === 'OFF_SALE';
   const sell = act('sell', locked ? { disabled: true, disabledReason: 'TRADE_LOCK' } : {});
 
-  const common: RowAction[] = [act('edit')];
+  const common: RowAction[] = [...editActions];
   if (item.canReceiveComponents) common.push(act('apply'));
   if (item.components.some((component) => component.detachable)) common.push(act('detach'));
   if (item.openable) {

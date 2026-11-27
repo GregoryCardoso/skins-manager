@@ -21,7 +21,7 @@ const markers = (text: string) => [...text.matchAll(/\{(\w+)\}/g)].map((m) => m[
 
 const FILES = [
   'components/MarketValueCell.tsx', 'components/MarketValueCards.tsx', 'components/PriceStatusIndicator.tsx', 'components/PriceAutoRefreshHost.tsx',
-  'components/InventoryUnitRow.tsx', 'components/InventoryTable.tsx', 'components/InventoryGroupTable.tsx', 'components/SummaryCards.tsx',
+  'components/InventoryUnitRow.tsx', 'components/InventoryTable.tsx', 'components/InventoryGroupTable.tsx', 'components/ProfitEquation.tsx', 'components/ProfitInfoStrip.tsx',
   'lib/priceStatus.ts', 'lib/marketValueDisplay.ts', 'lib/format.ts',
 ];
 

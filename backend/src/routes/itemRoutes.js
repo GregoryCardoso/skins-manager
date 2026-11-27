@@ -22,6 +22,7 @@ router.patch('/:id', validateIdParam, v.validateUpdateItemBody, controller.updat
 router.delete('/:id', validateIdParam, controller.remove);
 router.post('/:id/sell', validateIdParam, v.validateSellBody, controller.sell);
 router.post('/:id/unsell', validateIdParam, v.validateUnsellBody, controller.unsell);
+router.get('/:id/unsell-preview', validateIdParam, controller.unsellPreview);
 router.post('/:id/off-sale', validateIdParam, v.validateSaleStateBody, controller.offSale);
 router.post('/:id/for-sale', validateIdParam, v.validateSaleStateBody, controller.forSale);
 // Aplicar do estoque e operações da unidade (10.3, D362).

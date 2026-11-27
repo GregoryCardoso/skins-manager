@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, type FormEvent } from 'react';
+import { useId, useMemo, useState, type FormEvent } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { errorMessageFor } from '@/i18n/errorMessage';
 import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
@@ -12,10 +12,15 @@ import { useInvalidate } from '@/lib/useInvalidate';
 import { ApiRequestError, detachComponent, getDetachPreview } from '@/services/api';
 import { itemDisplayName, itemEnglishTitle } from '@/lib/itemName';
 import type { DetachBody, ItemView } from '@/types/api';
-import FormField from './FormField';
-import styles from './forms.module.css';
+import itemStyles from './item/item.module.css';
 import ItemImage from './ItemImage';
-import Modal from './Modal';
+import Banner from './ui/Banner';
+import Button from './ui/Button';
+import Dialog from './ui/Dialog';
+import FormErrorSummary, { type FormErrorItem } from './ui/FormErrorSummary';
+import NumberField from './ui/NumberField';
+import Spinner from './ui/Spinner';
+import TextField from './ui/TextField';
 
 interface Props {
   item: ItemView;
@@ -65,7 +70,9 @@ export default function DetachComponentModal({ item, componentId, onClose, onDon
   const [note, setNote] = useState('');
   const [errors, setErrors] = useState<Partial<Record<string, string>>>({});
   const [topError, setTopError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
   const [saving, setSaving] = useState(false);
+  const formId = useId();
 
   const split = preview?.mode === 'SPLIT';
   const suggestion = preview?.suggestion ?? null;
@@ -74,6 +81,8 @@ export default function DetachComponentModal({ item, componentId, onClose, onDon
   const shownShare = shareText ?? (suggestion ? formatCentsInput(suggestion.hangingShareBp, locale) : '');
   const usd = (cents: number | null) => (cents === null ? t('common.none') : formatMoney(cents, 'USD', locale));
   const hangingName = component ? (component.localizedName ?? component.name) : '';
+
+  const clearError = (field: string) => setErrors((e) => (e[field] ? { ...e, [field]: undefined } : e));
 
   const showApiError = (err: unknown) => {
     if (err instanceof ApiRequestError && err.code === 'ITEM_NOT_FOUND') {
@@ -84,6 +93,7 @@ export default function DetachComponentModal({ item, componentId, onClose, onDon
     const field = err instanceof ApiRequestError && err.field ? err.field : null;
     if (field && (FIELDS as readonly string[]).includes(field)) {
       setErrors({ [field]: message });
+      setAttempt((n) => n + 1);
       setTopError(null);
     } else {
       setErrors({});
@@ -113,6 +123,7 @@ export default function DetachComponentModal({ item, componentId, onClose, onDon
     }
     if (Object.keys(next).length > 0 || detachedAt === null) {
       setErrors(next);
+      setAttempt((n) => n + 1);
       return;
     }
     setErrors({});
@@ -137,110 +148,151 @@ export default function DetachComponentModal({ item, componentId, onClose, onDon
     [preview, t],
   );
 
+  const fieldLabel = (field: string): string => {
+    switch (field) {
+      case 'hangingShareBp': return t('detachForm.share');
+      case 'tradeUnlockAt': return t('detachForm.tradeLock');
+      case 'note': return t('detachForm.note');
+      default: return t('detachForm.detachedAt');
+    }
+  };
+  const summaryItems: FormErrorItem[] = FIELDS
+    .filter((field) => errors[field])
+    .map((field) => ({ field, label: fieldLabel(field), message: errors[field] as string }));
+
   return (
-    <Modal title={t('detachForm.title', { name: itemDisplayName(item) })} onClose={onClose} busy={saving}>
-      <form className={styles.form} onSubmit={submit} noValidate>
-        {topError && <div className={styles.topError} role="alert">{topError}</div>}
-        {!component && <div className={styles.note} role="status">{t('detachForm.nothing')}</div>}
+    <Dialog
+      title={t('detachForm.title', { name: itemDisplayName(item) })}
+      size="md"
+      busy={saving}
+      onClose={onClose}
+      footer={
+        <>
+          <Button onClick={onClose} disabled={saving}>{t('common.cancel')}</Button>
+          <Button type="submit" form={formId} variant="primary" loading={saving} disabled={!component || !preview || shareInvalid}>
+            {saving ? t('common.saving') : t('detachForm.submit')}
+          </Button>
+        </>
+      }
+    >
+      <form id={formId} className={itemStyles.form} onSubmit={submit} noValidate>
+        <FormErrorSummary key={attempt} errors={summaryItems} />
+        {topError && <Banner tone="danger">{topError}</Banner>}
+        {!component && <Banner tone="info" announce={false}>{t('detachForm.nothing')}</Banner>}
         {component && (
           <>
-            <div className={styles.row}>
+            <div className={itemStyles.chosen}>
               <ItemImage category={component.kind === 'CHARM' ? 'PINGENTE' : 'STICKER'} url={component.imageUrl} size={40} />
-              <strong>{hangingName}</strong>
-              {component.pattern !== null && <span className={styles.muted}>{t('detachForm.pattern', { n: component.pattern })}</span>}
+              <div className={itemStyles.chosenText}>
+                <strong className={itemStyles.chosenName}>{hangingName}</strong>
+                {component.pattern !== null && <span className={itemStyles.muted}>{t('detachForm.pattern', { n: component.pattern })}</span>}
+              </div>
             </div>
-            {previewQuery.isPending && <p className={styles.muted}>{t('common.loading')}</p>}
-            {previewQuery.error && <div className={styles.topError} role="alert">{errorMessageFor(previewQuery.error, tLoose, locale)}</div>}
+            {previewQuery.isPending && <Spinner size="sm" />}
+            {previewQuery.error && (
+              <Banner tone="danger" onRetry={() => { void previewQuery.refetch(); }}>{errorMessageFor(previewQuery.error, tLoose, locale)}</Banner>
+            )}
 
             {preview && preview.mode === 'RETURN' && (
-              <div className={styles.note} role="status">
-                <p>{t('detachForm.returnIntro', { name: preview.detached.name })}</p>
-                {preview.result && (
-                  <p>{t('detachForm.returnResult', { unit: usd(preview.result.detachedUsdCents), weapon: usd(preview.result.weaponUsdCents) })}</p>
-                )}
-              </div>
+              <Banner tone="info" announce={false}>
+                <span className={itemStyles.noteBlock}>
+                  <span>{t('detachForm.returnIntro', { name: preview.detached.name })}</span>
+                  {preview.result && (
+                    <span>{t('detachForm.returnResult', { unit: usd(preview.result.detachedUsdCents), weapon: usd(preview.result.weaponUsdCents) })}</span>
+                  )}
+                </span>
+              </Banner>
             )}
 
             {preview && split && (
               <>
-                <p className={styles.muted}>{t('detachForm.splitIntro')}</p>
-                <div className={styles.note} role="status">
-                  <p>{t('detachForm.cost', { value: `${preview.weapon.estimated ? '≈ ' : ''}${usd(preview.weapon.effectiveUsdCents)}` })}</p>
-                  {suggestion ? (
-                    <>
-                      <p>
-                        {t('detachForm.valued', {
-                          date: suggestion.pricedAt ? formatDate(suggestion.pricedAt, locale) : '',
-                          weapon: usd(suggestion.basePriceCents),
-                          hanging: usd(suggestion.hangingPriceCents),
-                          total: usd(preview.valuedTotalUsdCents),
-                          share: formatCentsInput(suggestion.hangingShareBp, locale),
-                        })}
-                      </p>
-                      {suggestion.isStale && <p>{t('detachForm.stale')}</p>}
-                    </>
-                  ) : (
-                    unavailable && <p>{unavailable}</p>
-                  )}
-                </div>
-                <FormField
+                <p className={itemStyles.muted}>{t('detachForm.splitIntro')}</p>
+                <Banner tone="info" announce={false}>
+                  <span className={itemStyles.noteBlock}>
+                    <span>{t('detachForm.cost', { value: `${preview.weapon.estimated ? '≈ ' : ''}${usd(preview.weapon.effectiveUsdCents)}` })}</span>
+                    {suggestion ? (
+                      <>
+                        <span>
+                          {t('detachForm.valued', {
+                            date: suggestion.pricedAt ? formatDate(suggestion.pricedAt, locale) : '',
+                            weapon: usd(suggestion.basePriceCents),
+                            hanging: usd(suggestion.hangingPriceCents),
+                            total: usd(preview.valuedTotalUsdCents),
+                            share: formatCentsInput(suggestion.hangingShareBp, locale),
+                          })}
+                        </span>
+                        {suggestion.isStale && <span>{t('detachForm.stale')}</span>}
+                      </>
+                    ) : (
+                      unavailable && <span>{unavailable}</span>
+                    )}
+                  </span>
+                </Banner>
+                <NumberField
+                  kind="decimal"
                   label={t('detachForm.share')}
+                  name="hangingShareBp"
+                  suggestAmbiguous={false}
+                  value={shownShare}
                   error={errors.hangingShareBp}
+                  required={needsShare}
                   hint={needsShare ? t('detachForm.shareRequiredHint') : t('detachForm.shareHint')}
-                >
-                  {(c) => (
-                    <input
-                      {...c}
-                      className={styles.input}
-                      inputMode="decimal"
-                      value={shownShare}
-                      onChange={(e) => setShareText(e.target.value)}
-                      disabled={saving}
-                    />
-                  )}
-                </FormField>
+                  disabled={saving}
+                  onValueChange={(text) => {
+                    setShareText(text);
+                    clearError('hangingShareBp');
+                  }}
+                />
                 {preview.result && (
-                  <div className={styles.note} role="status">
+                  <Banner tone="success" announce={false}>
                     {t('detachForm.result', { weapon: usd(preview.result.weaponUsdCents), unit: usd(preview.result.detachedUsdCents) })}
-                  </div>
+                  </Banner>
                 )}
               </>
             )}
 
-            <div className={styles.grid}>
-              <FormField label={t('detachForm.detachedAt')} error={errors.detachedAt}>
-                {(c) => (
-                  <input
-                    {...c}
-                    type="datetime-local"
-                    className={styles.input}
-                    max={dateToLocalInput(new Date())}
-                    value={detachedAtText}
-                    onChange={(e) => setTypedAt(e.target.value)}
-                    disabled={saving}
-                  />
-                )}
-              </FormField>
-              <FormField label={t('detachForm.tradeLock')} error={errors.tradeUnlockAt} hint={t('detachForm.tradeLockHint')}>
-                {(c) => (
-                  <input {...c} type="datetime-local" className={styles.input} value={tradeLockText} onChange={(e) => setTradeLockText(e.target.value)} disabled={saving} />
-                )}
-              </FormField>
+            <div className={itemStyles.grid}>
+              <TextField
+                label={t('detachForm.detachedAt')}
+                name="detachedAt"
+                type="datetime-local"
+                max={dateToLocalInput(new Date())}
+                value={detachedAtText}
+                error={errors.detachedAt}
+                disabled={saving}
+                onChange={(value) => {
+                  setTypedAt(value);
+                  clearError('detachedAt');
+                }}
+              />
+              <TextField
+                label={t('detachForm.tradeLock')}
+                name="tradeUnlockAt"
+                type="datetime-local"
+                value={tradeLockText}
+                error={errors.tradeUnlockAt}
+                hint={t('detachForm.tradeLockHint')}
+                disabled={saving}
+                onChange={(value) => {
+                  setTradeLockText(value);
+                  clearError('tradeUnlockAt');
+                }}
+              />
             </div>
-            <FormField label={t('detachForm.note')} error={errors.note}>
-              {(c) => <input {...c} className={styles.input} value={note} maxLength={500} onChange={(e) => setNote(e.target.value)} disabled={saving} />}
-            </FormField>
-            <p className={styles.muted}>{t('detachForm.profitUnchanged')}</p>
+            <TextField
+              label={t('detachForm.note')}
+              name="note"
+              optional
+              value={note}
+              maxLength={500}
+              error={errors.note}
+              disabled={saving}
+              onChange={setNote}
+            />
+            <p className={itemStyles.muted}>{t('detachForm.profitUnchanged')}</p>
           </>
         )}
-
-        <div className={styles.actions}>
-          <button type="button" className={styles.button} onClick={onClose} disabled={saving}>{t('common.cancel')}</button>
-          <button type="submit" className={`${styles.button} ${styles.primary}`} disabled={saving || !component || !preview || shareInvalid}>
-            {saving ? t('common.saving') : t('detachForm.submit')}
-          </button>
-        </div>
       </form>
-    </Modal>
+    </Dialog>
   );
 }

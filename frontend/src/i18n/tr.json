@@ -446,7 +446,8 @@
       "detach": "Anahtarlığı/slab'ı ayır",
       "viewUnits": "Birimleri göster",
       "moreFor": "{name} için diğer işlemler",
-      "noSellableUnit": "Şu anda hiçbir birim satılamaz: hepsi trade lock altında."
+      "noSellableUnit": "Şu anda hiçbir birim satılamaz: hepsi trade lock altında.",
+      "components": "Bileşenler"
     },
     "itemGone": "Bu eşya artık yok. Başka bir sekmede silinmiş olabilir. Liste yenilendi.",
     "daysForSale": "satışta: {days}",
@@ -773,8 +774,19 @@
       "choosePatch": "{n}. yamayı katalogdan seçin veya satırı kaldırın.",
       "patchSlot": "Konum",
       "appliedTitle": "Stoktan uygulananlar",
-      "appliedNote": "Maliyetleri zaten bu eşyada. Burada yalnızca konum, aşınma ve pattern değiştirilebilir."
-    }
+      "appliedNote": "Maliyetleri zaten bu eşyada. Burada yalnızca konum, aşınma ve pattern değiştirilebilir.",
+      "originCameWith": "Eşyayla birlikte geldi",
+      "originApplied": "{date} tarihinde stoktan uygulandı",
+      "saveFirst": "Önce değişiklikleri kaydedin veya iptal edin.",
+      "panelHint": "Bu birimin taşıdıkları. Stoktan uygulama, ayırma ve geri alma hemen kaydedilir."
+    },
+    "receivedAt": "Aldığınız tarih",
+    "sections": {
+      "item": "Eşya",
+      "acquisition": "Edinme",
+      "components": "Bileşenler"
+    },
+    "generatedLockedHint": "Bu birim bir işlemle oluşturuldu (açma veya ayırma). Bu alanı değiştirmek için işlemi geri alın."
   },
   "detachForm": {
     "title": "Anahtarlığı/slab'ı ayır: {name}",
@@ -904,7 +916,6 @@
     "salePriceAdded": "Alıcının ödediği fiyat ({currency})",
     "soldAt": "Satış tarihi ve saati",
     "fxRateAtSale": "Satış anındaki USD→{currency} kuru",
-    "minPriceRef": "Başabaş fiyatı: {value}",
     "useMinPrice": "Başabaş fiyatını kullan",
     "noRefInactive": "Referans fiyat yok: mağaza devre dışı.",
     "refUsesSavedRate": "Referans fiyat, burada yazdığınız kuru değil, kayıtlı kuru kullanır.",
@@ -918,7 +929,11 @@
     "feesNotConfiguredBadge": "mağaza için ücret tanımlı değil",
     "manualNetNote": "(net tutarı siz girdiniz)",
     "chooseStore": "Mağazayı seçin.",
-    "priceRequired": "Satış fiyatını girin."
+    "priceRequired": "Satış fiyatını girin.",
+    "unit": "Birim",
+    "minPriceLabel": "Başabaş fiyatı",
+    "youReceive": "Eline geçen",
+    "feesMissing": "Bu mağaza için satış ücreti ayarlanmamış, bu yüzden net tutar hesaplanamıyor. Aldığın tutarı gir ya da ücretleri Mağazalar sayfasından ayarla."
   },
   "fields": {
     "catalogId": "Katalog eşyası",
@@ -1033,7 +1048,13 @@
     },
     "daysAfterRelease": "Trade lock bittikten {days} sonra",
     "daysHeld": "alımdan beri {days}",
-    "balanceReleasesAt": "bakiye serbest kalma tarihi: {date}"
+    "balanceReleasesAt": "bakiye serbest kalma tarihi: {date}",
+    "turnover": {
+      "header": "Trade lock bitişinden (veya satışa geri dönüşten) satışa kadar geçen gün. Holding'den yapılan satışlar sayılmaz."
+    },
+    "expandedFx": "Kaydedilen kurlar: satış {sale} · alış {purchase}",
+    "emptyTitle": "Henüz satış yok",
+    "emptyFilteredTitle": "Eşleşen satış yok"
   },
   "salesFilters": {
     "label": "Satış filtreleri",
@@ -1106,7 +1127,8 @@
     "lossCount": {
       "one": "{count} terminal eşyası satın alınmadı (kayıp: {value})",
       "other": "{count} terminal eşyası satın alınmadı (kayıp: {value})"
-    }
+    },
+    "avgDaysLegend": "Trade lock bitişinden veya satışa geri dönüşten satışa kadar sayılır. Holding'den yapılan satışlar dahil değildir."
   },
   "stores": {
     "title": "Mağazalar",
@@ -1497,7 +1519,10 @@
     "errorTitle": "Güncelleme başarısız oldu",
     "errorDownload": "Güncelleme indirilemedi. İnternet bağlantınızı kontrol edip Ayarlar'da Hakkında bölümünden tekrar deneyin.",
     "errorInstall": "Yüklemek için yeniden başlatılamadı. Uygulama çalışmaya devam ediyor. Ayarlar'da Hakkında bölümünden tekrar deneyin.",
-    "errorDetail": "Teknik ayrıntılar"
+    "errorDetail": "Teknik ayrıntılar",
+    "badge": "Güncelleme var",
+    "badgeDownloading": "Güncelleme indiriliyor {percent}%",
+    "versionChange": "{current} → {version}"
   },
   "profit": {
     "title": "Gerçek kâr",
@@ -1559,7 +1584,30 @@
         "other": "{count} birimin fiyatı eski"
       },
       "partial": "(kısmi)"
-    }
+    },
+    "equation": {
+      "title": "Gerçek kâr nasıl hesaplanır",
+      "hint": "Her şey ABD doları (US$) cinsinden: çektiğiniz tutar, artı mağazalardaki ve stoktaki değer, eksi yatırdığınız tutar.",
+      "withdrawals": "Alınan çekimler",
+      "withdrawalsNote": "Her çekimin ücreti zaten düşülmüştür",
+      "available": "Mağazalarda kullanılabilir",
+      "pending": "Mağazalarda bekleyen",
+      "pendingBadge": "bekletiliyor",
+      "pendingNote": "serbest kalma: {date}",
+      "stock": "Maliyetle stok",
+      "deposited": "Toplam yatırılan",
+      "depositedNote": "para yatırma ücretlerinden {value} dahil",
+      "result": "Gerçek kâr"
+    },
+    "info": {
+      "title": "Diğer rakamlar",
+      "outsideFormula": "Yalnızca bilgi amaçlıdır. Gerçek kâr formülüne dahil değildir."
+    },
+    "tabs": {
+      "label": "Para yatırma ve çekimler"
+    },
+    "staleRate": "Kur {date} tarihli. Güncel olmayabilir.",
+    "rowActions": "{date} tarihli kaydın işlemleri"
   },
   "deposits": {
     "title": "Para yatırmalar",
@@ -1772,7 +1820,32 @@
     },
     "startHint": "Eski geçmişinizi girmek istemiyor musunuz? Mağazanın güncel bakiyesiyle bir para yatırma kaydedin. Gerçek kâr o tarihten itibaren ölçülür.",
     "totalsTitle": "Mağazalardaki toplam",
-    "totalPendingDate": "Toplam bekleyen (ilk serbest kalma: {date}): {value}"
+    "totalPendingDate": "Toplam bekleyen (ilk serbest kalma: {date}): {value}",
+    "row": {
+      "deposit": "Para yatırmayı kaydet",
+      "withdraw": "Çekimi kaydet",
+      "more": "{store} için diğer işlemler",
+      "currencyTag": "Para birimi: {currency}",
+      "pendingFoot": "{value} bekleyen · serbest kalma: {date}",
+      "noPending": "Bekleyen yok",
+      "detailsLabel": "Hesaplama ayrıntıları"
+    },
+    "checkDialog": {
+      "explain": "Kontrol: sitede gördüğünüz bakiyeyi girersiniz. Düzeltme: uygulamadaki bakiyeyi farka göre düzeltir.",
+      "step1Title": "Sitedeki bakiye",
+      "step2Title": "Karşılaştır",
+      "stepCount": "Adım {current} / {total}",
+      "continue": "Devam",
+      "back": "Geri",
+      "computed": "Uygulamanın hesapladığı",
+      "real": "Gerçek bakiye",
+      "optionsTitle": "Farkla ne yapılsın",
+      "optionAdjust": "Uygulamanın bakiyesini düzelt",
+      "optionAdjustHint": "Kontrolü ve bakiyeyi düzelten bir düzeltmeyi kaydeder. Not zorunludur.",
+      "optionOnly": "Yalnızca kontrolü kaydet",
+      "optionOnlyHint": "Uygulamanın bakiyesini olduğu gibi bırakır ve yalnızca kontrolü kaydeder.",
+      "useCsfloat": "Bu bakiyeyi kullan"
+    }
   },
   "imports": {
     "button": "CSFloat'tan içe aktar",
@@ -2429,7 +2502,16 @@
           "one": "{count} günden uzun süre takılı",
           "other": "{count} günden uzun süre takılı"
         },
-        "lock": "Trade lock"
+        "lock": "Trade lock",
+        "slowSale": {
+          "one": "{count} günden uzun sürede satıldı",
+          "other": "{count} günden uzun sürede satıldı"
+        },
+        "fromSale": "Günler, trade lock bitişinden veya satışa geri dönüşten itibaren sayılır."
+      },
+      "daysAfterRelease": {
+        "one": "Açılıştan {count} g sonra",
+        "other": "Açılıştan {count} g sonra"
       }
     },
     "balance": {
@@ -2442,5 +2524,21 @@
       "selectAll": "Tüm satırları seç",
       "scrollRegion": "{caption}, kaydırılabilir"
     }
+  },
+  "unsell": {
+    "effect": {
+      "available": "{value}, {store} mağazasının kullanılabilir bakiyesinden düşer",
+      "pending": "{value}, {store} mağazasının bekleyen bakiyesinden düşer (henüz serbest bırakılmadı)",
+      "none": "Hiçbir mağazanın bakiyesi değişmez.",
+      "change": "{before} → {after}",
+      "negative": "Bakiye eksiye düşecek.",
+      "returnsForSale": "Eşya stoğa, satışa geri döner.",
+      "returnsHolding": "Eşya stoğa, Holding'e geri döner.",
+      "loadError": "Bakiyeye etkisi hesaplanamadı. Satışı yine de geri alabilirsin.",
+      "currencyMismatch": "Bu satış mağazadan farklı bir para biriminde olduğu için mağaza bakiyesine hiç sayılmadı."
+    }
+  },
+  "forms": {
+    "moreDetailsInformative": "Yalnızca bilgi amaçlıdır, hesaplamalarda kullanılmaz."
   }
 }

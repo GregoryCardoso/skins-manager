@@ -439,7 +439,8 @@
       "detach": "키체인/slab 분리",
       "viewUnits": "개별 보기",
       "moreFor": "{name}의 다른 작업",
-      "noSellableUnit": "지금은 판매할 수 있는 아이템이 없습니다. 모두 Trade lock 상태입니다."
+      "noSellableUnit": "지금은 판매할 수 있는 아이템이 없습니다. 모두 Trade lock 상태입니다.",
+      "components": "구성 요소"
     },
     "itemGone": "이 아이템은 더 이상 존재하지 않아요. 다른 탭에서 삭제되었을 수 있어요. 목록을 새로고침했어요.",
     "daysForSale": "판매 중 {days}",
@@ -763,8 +764,19 @@
       "choosePatch": "패치 {n}: 카탈로그에서 선택하거나 해당 줄을 제거해 주세요.",
       "patchSlot": "위치",
       "appliedTitle": "재고에서 적용됨",
-      "appliedNote": "이 비용은 이미 이 아이템에 포함되어 있어요. 여기서는 위치, 마모도, pattern만 바꿀 수 있어요."
-    }
+      "appliedNote": "이 비용은 이미 이 아이템에 포함되어 있어요. 여기서는 위치, 마모도, pattern만 바꿀 수 있어요.",
+      "originCameWith": "아이템에 원래 붙어 있음",
+      "originApplied": "{date}에 재고에서 적용됨",
+      "saveFirst": "먼저 변경 사항을 저장하거나 취소해 주세요.",
+      "panelHint": "이 유닛에 붙어 있는 것들이에요. 재고에서 적용, 분리, 취소는 바로 저장돼요."
+    },
+    "receivedAt": "받은 날짜",
+    "sections": {
+      "item": "아이템",
+      "acquisition": "획득",
+      "components": "구성 요소"
+    },
+    "generatedLockedHint": "이 유닛은 작업(열기 또는 분리)으로 만들어졌어요. 이 항목을 바꾸려면 작업을 취소해 주세요."
   },
   "detachForm": {
     "title": "{name}에서 키체인/slab 분리",
@@ -894,7 +906,6 @@
     "salePriceAdded": "구매자가 지불한 가격 ({currency})",
     "soldAt": "판매 날짜 및 시간",
     "fxRateAtSale": "판매 시점의 USD→{currency} 환율",
-    "minPriceRef": "손익분기 가격: {value}",
     "useMinPrice": "손익분기 가격 사용",
     "noRefInactive": "기준 가격 없음: 비활성 상점이에요.",
     "refUsesSavedRate": "기준 가격에는 여기에 입력한 환율이 아니라 저장된 환율이 사용돼요.",
@@ -908,7 +919,11 @@
     "feesNotConfiguredBadge": "상점에 수수료가 설정되지 않음",
     "manualNetNote": "(직접 입력한 순액)",
     "chooseStore": "상점을 선택해 주세요.",
-    "priceRequired": "판매 가격을 입력해 주세요."
+    "priceRequired": "판매 가격을 입력해 주세요.",
+    "unit": "개체",
+    "minPriceLabel": "손익분기 가격",
+    "youReceive": "받는 금액",
+    "feesMissing": "이 상점에는 판매 수수료가 설정되어 있지 않아 순액을 계산할 수 없어요. 받은 금액을 입력하거나 '상점' 페이지에서 수수료를 설정하세요."
   },
   "fields": {
     "catalogId": "카탈로그 아이템",
@@ -1022,7 +1037,13 @@
     },
     "daysAfterRelease": "trade lock이 끝나고 {days} 만에",
     "daysHeld": "구매 후 {days}",
-    "balanceReleasesAt": "{date}에 잔액 반영"
+    "balanceReleasesAt": "{date}에 잔액 반영",
+    "turnover": {
+      "header": "trade lock이 끝난 시점(또는 다시 판매 중으로 돌린 시점)부터 판매까지의 일수입니다. Holding에서 판매한 건 집계하지 않습니다."
+    },
+    "expandedFx": "기록된 환율: 판매 {sale} · 구매 {purchase}",
+    "emptyTitle": "아직 판매 내역이 없습니다",
+    "emptyFilteredTitle": "일치하는 판매가 없습니다"
   },
   "salesFilters": {
     "label": "판매 필터",
@@ -1089,7 +1110,8 @@
     },
     "lossCount": {
       "other": "터미널 아이템 미구매 {count}건 ({value} 손실)"
-    }
+    },
+    "avgDaysLegend": "trade lock이 끝난 때 또는 판매로 되돌린 때부터 판매까지 셉니다. Holding에서 판매한 건은 포함되지 않아요."
   },
   "stores": {
     "title": "상점",
@@ -1468,7 +1490,10 @@
     "errorTitle": "업데이트 실패",
     "errorDownload": "업데이트를 내려받지 못했어요. 인터넷 연결을 확인하고 설정의 정보 항목에서 다시 시도해 주세요.",
     "errorInstall": "설치를 위해 다시 시작하지 못했어요. 앱은 계속 작동해요. 설정의 정보 항목에서 다시 시도해 주세요.",
-    "errorDetail": "기술 정보"
+    "errorDetail": "기술 정보",
+    "badge": "업데이트 사용 가능",
+    "badgeDownloading": "업데이트 내려받는 중 {percent}%",
+    "versionChange": "{current} → {version}"
   },
   "profit": {
     "title": "실제 수익",
@@ -1526,7 +1551,30 @@
         "other": "오래된 가격 {count}개"
       },
       "partial": "(일부)"
-    }
+    },
+    "equation": {
+      "title": "실제 수익 계산 방법",
+      "hint": "모두 미국 달러(US$) 기준: 출금한 금액에 상점과 재고에 있는 금액을 더하고, 입금한 금액을 뺍니다.",
+      "withdrawals": "받은 출금",
+      "withdrawalsNote": "각 출금의 수수료는 이미 차감되었습니다",
+      "available": "상점 사용 가능 잔액",
+      "pending": "상점 보류 잔액",
+      "pendingBadge": "보류 중",
+      "pendingNote": "{date}에 반영",
+      "stock": "재고(원가 기준)",
+      "deposited": "총 입금",
+      "depositedNote": "입금 수수료 {value} 포함",
+      "result": "실제 수익"
+    },
+    "info": {
+      "title": "기타 수치",
+      "outsideFormula": "참고용입니다. 실제 수익 계산식에는 포함되지 않습니다."
+    },
+    "tabs": {
+      "label": "입금과 출금"
+    },
+    "staleRate": "{date} 기준 환율입니다. 오래되었을 수 있습니다.",
+    "rowActions": "{date} 기록 작업"
   },
   "deposits": {
     "title": "입금",
@@ -1733,7 +1781,32 @@
     },
     "startHint": "예전 내역을 입력하고 싶지 않나요? 상점의 현재 잔액으로 입금을 한 건 기록해 주세요. 실제 수익은 그 날짜부터 계산돼요.",
     "totalsTitle": "상점 합계",
-    "totalPendingDate": "총 보류 ({date}부터 순차 반영): {value}"
+    "totalPendingDate": "총 보류 ({date}부터 순차 반영): {value}",
+    "row": {
+      "deposit": "입금 기록",
+      "withdraw": "출금 기록",
+      "more": "{store} 추가 작업",
+      "currencyTag": "통화: {currency}",
+      "pendingFoot": "보류 {value} · {date}에 반영",
+      "noPending": "보류 없음",
+      "detailsLabel": "계산 상세"
+    },
+    "checkDialog": {
+      "explain": "확인: 사이트에 표시된 잔액을 입력합니다. 조정: 차이만큼 앱의 잔액을 바로잡습니다.",
+      "step1Title": "사이트의 잔액",
+      "step2Title": "비교",
+      "stepCount": "{total}단계 중 {current}단계",
+      "continue": "계속",
+      "back": "뒤로",
+      "computed": "앱 계산값",
+      "real": "실제 잔액",
+      "optionsTitle": "차이 처리 방법",
+      "optionAdjust": "앱 잔액 조정",
+      "optionAdjustHint": "확인과 잔액을 바로잡는 조정을 기록합니다. 메모가 필요합니다.",
+      "optionOnly": "확인만 기록",
+      "optionOnlyHint": "앱 잔액은 그대로 두고 확인만 기록합니다.",
+      "useCsfloat": "이 잔액 사용"
+    }
   },
   "imports": {
     "button": "CSFloat에서 가져오기",
@@ -2340,7 +2413,14 @@
         "stuck": {
           "other": "정체 {count}일 초과"
         },
-        "lock": "Trade lock"
+        "lock": "Trade lock",
+        "slowSale": {
+          "other": "판매 지연 {count}일 초과"
+        },
+        "fromSale": "일수는 trade lock이 끝났거나 다시 판매 중으로 돌린 시점부터 셉니다."
+      },
+      "daysAfterRelease": {
+        "other": "해제 후 {count}일"
       }
     },
     "balance": {
@@ -2353,5 +2433,21 @@
       "selectAll": "모든 행 선택",
       "scrollRegion": "{caption}, 스크롤 가능"
     }
+  },
+  "unsell": {
+    "effect": {
+      "available": "{value}이(가) {store}의 사용 가능 잔액에서 빠져요",
+      "pending": "{value}이(가) {store}의 보류 잔액에서 빠져요 (아직 해제 전)",
+      "none": "어떤 상점의 잔액도 바뀌지 않아요.",
+      "change": "{before} → {after}",
+      "negative": "잔액이 마이너스가 돼요.",
+      "returnsForSale": "아이템이 재고로 돌아가 판매 중이 돼요.",
+      "returnsHolding": "아이템이 재고로 돌아가 Holding에 들어가요.",
+      "loadError": "잔액에 미치는 영향을 계산하지 못했어요. 그래도 판매 취소는 할 수 있어요.",
+      "currencyMismatch": "이 판매는 상점과 다른 통화여서 상점 잔액에 한 번도 반영되지 않았어요."
+    }
+  },
+  "forms": {
+    "moreDetailsInformative": "참고용이며 계산에는 사용되지 않습니다."
   }
 }

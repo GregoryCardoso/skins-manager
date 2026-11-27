@@ -17,6 +17,7 @@ import { useLocale, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
 import { formatInteger } from '@/lib/format';
 import { activeNavId, NAV_ITEMS, SETTINGS_ITEM, type NavId, type NavItem } from '@/lib/routes';
 import NavPreferences from './NavPreferences';
+import UpdateBadge from './UpdateBadge';
 import styles from './SideNav.module.css';
 import type { NavMode } from './useNavMode';
 import { useReviewCount } from './useReviewCount';
@@ -104,6 +105,7 @@ function NavBody({ variant, mode, short, active, reviewCount, onToggle, onPickCu
         ))}
       </ul>
       <div className={styles.foot}>
+        <UpdateBadge compact={!wideLook} />
         <NavLink item={SETTINGS_ITEM} active={active === 'settings'} withTooltip={!wideLook} reviewCount={0} />
         <NavPreferences compact={compactPrefs} onPickCurrency={onPickCurrency} />
         <div className={styles.toggleRow}>

@@ -1,181 +1,121 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { useCallback, useState } from 'react';
-import ImportButton from '@/components/ImportButton';
-import ConfirmDialog from '@/components/ConfirmDialog';
+import { useCallback, useEffect, useState } from 'react';
 import DepositFormModal from '@/components/DepositFormModal';
-import DepositsTable from '@/components/DepositsTable';
+import DepositsSection from '@/components/DepositsSection';
+import ProfitEquation from '@/components/ProfitEquation';
+import ProfitInfoStrip from '@/components/ProfitInfoStrip';
 import StoreBalancesPanel from '@/components/StoreBalancesPanel';
-import SummaryCards from '@/components/SummaryCards';
+import WithdrawalFormModal from '@/components/WithdrawalFormModal';
 import WithdrawalsSection from '@/components/WithdrawalsSection';
-import { errorMessageFor } from '@/i18n/errorMessage';
-import { useLocale, useT, useTLoose, useTPlural } from '@/i18n/I18nProvider';
-import { useMoneyLine } from '@/components/MoneyApprox';
-import { formatDate, formatMoney } from '@/lib/format';
-import { queryKeys } from '@/lib/queryKeys';
-import { useInvalidate } from '@/lib/useInvalidate';
-import { ApiRequestError, deleteDeposit, listDeposits, listStores } from '@/services/api';
-import type { Deposit } from '@/types/api';
+import Button from '@/components/ui/Button';
+import ErrorState from '@/components/ui/ErrorState';
 import PageHeader from '@/components/ui/PageHeader';
+import Skeleton from '@/components/ui/Skeleton';
+import Tabs, { TabPanel } from '@/components/ui/Tabs';
+import { useToast } from '@/components/ui/Toast';
+import { errorMessageFor } from '@/i18n/errorMessage';
+import { useLocale, useT, useTLoose } from '@/i18n/I18nProvider';
+import { profitTabFromSearch, searchWithProfitTab, type ProfitTabId } from '@/lib/profitTabs';
+import { queryKeys } from '@/lib/queryKeys';
+import { getProfitSummary, listDeposits, listStores, listWithdrawals } from '@/services/api';
 import styles from './page.module.css';
 
-type Dialog = { kind: 'create' } | { kind: 'edit'; deposit: Deposit } | { kind: 'delete'; deposit: Deposit };
+type Create = { kind: 'deposit' | 'withdrawal'; storeId: number | null };
 
-// 8.1: Aportes; 8.2: Saques; 8.3: Saldos; 8.4: resumo (SummaryCards) no topo.
+// Lucro real (8.1 a 8.9; layout novo na 12.7b): a equação do lucro e o painel de saldos lado a lado, a faixa informativa e as abas
+// Aportes e Saques. O formulário de novo aporte/saque abre pelo cabeçalho ou pela linha da loja (com a loja já escolhida).
 export default function ProfitPage() {
   const t = useT();
   const tLoose = useTLoose();
-  const tPlural = useTPlural();
   const locale = useLocale();
-  const moneyLine = useMoneyLine();
-  // Valor creditado do aporte para mensagens (US$); aporte legado: o R$ gravado. Só formata.
-  const depositValueText = (deposit: Deposit) => {
-    if (deposit.amountStoreCents !== null) return formatMoney(deposit.amountStoreCents, 'USD', locale);
-    return deposit.amountBrlCents === null ? '' : formatMoney(deposit.amountBrlCents, deposit.amountBrlCurrency ?? 'BRL', locale);
-  };
+  const toast = useToast();
 
-  const invalidate = useInvalidate();
-  // Aportes e lojas vêm do cache compartilhado; o que muda (aportes, saques, saldos, itens) o invalida (D259, D260).
-  const depositsQuery = useQuery({ queryKey: queryKeys.deposits.all, queryFn: ({ signal }) => listDeposits(signal) });
+  const summaryQuery = useQuery({ queryKey: queryKeys.profitSummary.all, queryFn: ({ signal }) => getProfitSummary(signal) });
   const storesQuery = useQuery({ queryKey: queryKeys.stores.all, queryFn: ({ signal }) => listStores(signal) });
-  const data = depositsQuery.data ?? null;
+  // As abas mostram a contagem: as mesmas consultas das seções (cache compartilhado).
+  const depositsQuery = useQuery({ queryKey: queryKeys.deposits.all, queryFn: ({ signal }) => listDeposits(signal) });
+  const withdrawalsQuery = useQuery({ queryKey: queryKeys.withdrawals.all, queryFn: ({ signal }) => listWithdrawals(signal) });
   const stores = storesQuery.data ?? [];
-  const error = depositsQuery.error ?? storesQuery.error;
-  const loading = depositsQuery.isFetching || storesQuery.isFetching;
-  const reload = () => {
-    depositsQuery.refetch();
-    storesQuery.refetch();
-  };
-  const [dialog, setDialog] = useState<Dialog | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
-  const [confirmBusy, setConfirmBusy] = useState(false);
-  const [confirmError, setConfirmError] = useState<string | null>(null);
+  const summary = summaryQuery.data ?? null;
 
-  const closeDialog = useCallback(() => {
-    setDialog(null);
-    setConfirmBusy(false);
-    setConfirmError(null);
+  const [create, setCreate] = useState<Create | null>(null);
+  const [tab, setTab] = useState<ProfitTabId>('deposits');
+  // A aba vem da URL (`?tab=withdrawals`), lida no navegador (exportação estática, sem useSearchParams).
+  useEffect(() => {
+    setTab(profitTabFromSearch(window.location.search));
   }, []);
-
-  const finish = useCallback(
-    (message: string) => {
-      closeDialog();
-      setNotice(message);
-    },
-    [closeDialog],
-  );
-
-  // Já excluído em outro lugar: só atualiza as telas.
-  const depositGone = useCallback(() => {
-    invalidate('deposit.delete');
-    finish(t('deposits.gone'));
-  }, [finish, invalidate, t]);
-
-  const confirmDelete = (deposit: Deposit) => {
-    setConfirmBusy(true);
-    setConfirmError(null);
-    deleteDeposit(deposit.id)
-      .then(() => {
-        invalidate('deposit.delete');
-        finish(t('deposits.deleted', { value: depositValueText(deposit) }));
-      })
-      .catch((err: unknown) => {
-        if (err instanceof ApiRequestError && err.code === 'DEPOSIT_NOT_FOUND') {
-          depositGone();
-          return;
-        }
-        setConfirmBusy(false);
-        setConfirmError(errorMessageFor(err, tLoose, locale));
-      });
+  const changeTab = (value: string) => {
+    const next: ProfitTabId = value === 'withdrawals' ? 'withdrawals' : 'deposits';
+    setTab(next);
+    window.history.replaceState(window.history.state, '', `${window.location.pathname}${searchWithProfitTab(window.location.search, next)}${window.location.hash}`);
   };
+
+  const closeCreate = useCallback(() => setCreate(null), []);
+  const saved = useCallback((message: string) => {
+    setCreate(null);
+    toast.show({ tone: 'success', message });
+  }, [toast]);
+  const gone = useCallback(() => setCreate(null), []);
+
+  const openDeposit = useCallback((storeId: number | null) => setCreate({ kind: 'deposit', storeId }), []);
+  const openWithdrawal = useCallback((storeId: number | null) => setCreate({ kind: 'withdrawal', storeId }), []);
 
   return (
     <>
-      <PageHeader title={t('profit.title')} subtitle={t('profit.subtitle')} />
+      <PageHeader
+        title={t('profit.title')}
+        subtitle={t('profit.subtitle')}
+        actions={
+          <>
+            <Button icon="plus" onClick={() => openDeposit(null)}>{t('deposits.new')}</Button>
+            <Button icon="wallet" onClick={() => openWithdrawal(null)}>{t('withdrawals.new')}</Button>
+          </>
+        }
+      />
 
-      <SummaryCards />
-
-      <section className={styles.section} aria-labelledby="deposits-heading">
-        <div className={styles.titleRow}>
-          <h2 id="deposits-heading">{t('deposits.title')}</h2>
-          {data && <span className={styles.count} aria-live="polite">{tPlural('deposits.count', data.totals.count)}</span>}
-        </div>
-        <div className={styles.toolbar}>
-          <p className={styles.note}>{t('deposits.intro')}</p>
-          <span className={styles.toolbarActions}>
-            <ImportButton />
-            <button type="button" className={styles.primaryButton} onClick={() => setDialog({ kind: 'create' })}>
-              {t('deposits.new')}
-            </button>
-          </span>
-        </div>
-
-        {data && data.totals.count > 0 && (
-          <p className={styles.total}>
-            {t('deposits.total', {
-              value: moneyLine({ cents: data.totals.amountUsdCents, estimated: data.totals.estimated, approxCents: data.totals.approxCents, approxCurrency: data.totals.approxCurrency }),
-            })}
-            {(data.totals.feeCents ?? 0) > 0 && ` ${t('deposits.totalFees', { value: formatMoney(data.totals.feeCents ?? 0, 'USD', locale) })}`}
-          </p>
-        )}
-
-        {notice && (
-          <div className={styles.notice} role="status">
-            <span>{notice}</span>
-            <button type="button" className={styles.retry} onClick={() => setNotice(null)}>{t('common.close')}</button>
-          </div>
-        )}
-
-        {error !== null && (
-          <div className={styles.error} role="alert">
-            <p>{t('deposits.loadError', { reason: errorMessageFor(error, tLoose, locale) })}</p>
-            <button type="button" className={styles.retry} onClick={reload}>{t('common.retry')}</button>
-          </div>
-        )}
-
-        {data === null && error === null && <p className={styles.muted}>{t('common.loading')}</p>}
-
-        {data !== null && error === null && (
-          <div className={loading ? styles.dim : undefined} aria-busy={loading}>
-            {data.deposits.length === 0 ? (
-              <div className={styles.empty}>
-                <p><strong>{t('deposits.empty')}</strong></p>
-                <p>{t('deposits.emptyHint')}</p>
-              </div>
-            ) : (
-              <DepositsTable
-                deposits={data.deposits}
-                onEdit={(deposit) => setDialog({ kind: 'edit', deposit })}
-                onDelete={(deposit) => setDialog({ kind: 'delete', deposit })}
+      <div className={styles.page}>
+        <div className={styles.grid}>
+          <div className={styles.cell}>
+            {summaryQuery.error ? (
+              <ErrorState
+                message={t('profit.summary.loadError', { reason: errorMessageFor(summaryQuery.error, tLoose, locale) })}
+                onRetry={() => summaryQuery.refetch()}
+                retrying={summaryQuery.isFetching}
               />
+            ) : summary === null ? (
+              <Skeleton lines={6} />
+            ) : (
+              <ProfitEquation data={summary} depositFeeCents={depositsQuery.data?.totals.feeCents ?? 0} />
             )}
           </div>
-        )}
-      </section>
+          <div className={styles.cell}>
+            <StoreBalancesPanel stores={stores} onDeposit={openDeposit} onWithdraw={openWithdrawal} />
+          </div>
+        </div>
 
-      <WithdrawalsSection />
+        {summary !== null && <ProfitInfoStrip data={summary} />}
 
-      <StoreBalancesPanel />
+        <Tabs
+          label={t('profit.tabs.label')}
+          value={tab}
+          onChange={changeTab}
+          items={[
+            { value: 'deposits', label: t('deposits.title'), count: depositsQuery.data?.totals.count },
+            { value: 'withdrawals', label: t('withdrawals.title'), count: withdrawalsQuery.data?.totals.count },
+          ]}
+        >
+          <TabPanel value="deposits"><DepositsSection onCreate={() => openDeposit(null)} /></TabPanel>
+          <TabPanel value="withdrawals"><WithdrawalsSection onCreate={() => openWithdrawal(null)} /></TabPanel>
+        </Tabs>
+      </div>
 
-      {dialog?.kind === 'create' && <DepositFormModal stores={stores} onClose={closeDialog} onSaved={finish} onGone={depositGone} />}
-      {dialog?.kind === 'edit' && (
-        <DepositFormModal deposit={dialog.deposit} stores={stores} onClose={closeDialog} onSaved={finish} onGone={depositGone} />
+      {create?.kind === 'deposit' && (
+        <DepositFormModal stores={stores} initialStoreId={create.storeId} onClose={closeCreate} onSaved={saved} onGone={gone} />
       )}
-      {dialog?.kind === 'delete' && (
-        <ConfirmDialog
-          title={t('deposits.deleteTitle')}
-          message={t('deposits.deleteMessage', {
-            value: depositValueText(dialog.deposit),
-            date: formatDate(dialog.deposit.depositedAt, locale),
-          })}
-          confirmLabel={t('deposits.confirmDelete')}
-          danger
-          busy={confirmBusy}
-          error={confirmError}
-          onCancel={closeDialog}
-          onConfirm={() => confirmDelete(dialog.deposit)}
-        />
+      {create?.kind === 'withdrawal' && (
+        <WithdrawalFormModal stores={stores} initialStoreId={create.storeId} onClose={closeCreate} onSaved={saved} onGone={gone} />
       )}
     </>
   );

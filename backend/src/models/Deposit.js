@@ -20,6 +20,11 @@ function findAll() {
     .map((r) => mapRow(r));
 }
 
+// Há aporte legado (sem valor na moeda da loja)? EXISTS para não carregar a tabela inteira (S2, 12.10).
+function existsWithoutStoreAmount() {
+  return getDb().prepare('SELECT EXISTS(SELECT 1 FROM deposits WHERE amount_store_cents IS NULL) AS found').get().found === 1;
+}
+
 function update(id, partial = {}, { now = new Date() } = {}) {
   const changes = updateRow(getDb(), 'deposits', id, partial, FIELDS, { updated_at: now.toISOString() });
   return changes === 0 ? null : findById(id);
@@ -35,4 +40,4 @@ function maxDepositedAt(storeId) {
   return row ? row.latest : null;
 }
 
-module.exports = { maxDepositedAt, create, findById, findAll, update, remove };
+module.exports = { existsWithoutStoreAmount, maxDepositedAt, create, findById, findAll, update, remove };

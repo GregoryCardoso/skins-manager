@@ -1488,6 +1488,29 @@ export interface DetachSuggestion {
   pricedAt: string | null;
   isStale: boolean;
 }
+// Efeito de desfazer a venda no saldo da loja de venda (12.6b, D370). Valores na moeda da loja; só leitura.
+export interface UnsellPreview {
+  itemId: number;
+  storeId: number | null;
+  storeName: string | null;
+  storeCurrency: Currency | null;
+  // Sempre <= 0: o que sai do saldo da loja (soma do disponível e do pendente). 0 = não muda nada.
+  balanceEffectCents: number;
+  // true = sai do disponível; false = sai do pendente (ou a venda ainda não conta no saldo).
+  wasReleased: boolean;
+  releasesAt: string | null;
+  availableBeforeCents: number;
+  availableAfterCents: number;
+  pendingBeforeCents: number;
+  pendingAfterCents: number;
+  effectUsdCents: number | null;
+  approxCents: number | null;
+  approxCurrency: Currency | null;
+  estimated: boolean;
+  // Venda numa moeda diferente da loja: ignorada no saldo (efeito 0).
+  currencyMismatch: boolean;
+  returnsTo: 'FOR_SALE' | 'OFF_SALE';
+}
 export interface DetachPreview {
   mode: DetachMode;
   component: { id: number; kind: ComponentKind; catalogId: string | null; name: string; slot: number | null; pattern: number | null; source: ComponentSource; origin: 'CAME_WITH' | 'APPLIED_FROM_STOCK' };
