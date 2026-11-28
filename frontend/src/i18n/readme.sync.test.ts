@@ -10,7 +10,7 @@ import { LANGUAGE_REGISTRY } from './languages';
 // sem arquivo. Cada lote REMOVE os seus códigos desta lista ao criar os arquivos (o teste "a lista de pendentes só tem arquivos que
 // ainda faltam" falha se um pendente já tiver arquivo). Ao fim da 13.5 a lista fica vazia e a regra "um arquivo por idioma" vale inteira.
 // A linha de idiomas (linha 1) já traz os 13 links desde a 13.2, mesmo para arquivos que ainda não existem.
-const PENDING_TRANSLATIONS: readonly string[] = ['de', 'es', 'fr', 'it', 'pl', 'tr', 'ru', 'uk', 'ja', 'zh-CN', 'ko'];
+const PENDING_TRANSLATIONS: readonly string[] = ['pl', 'tr', 'ru', 'uk', 'ja', 'zh-CN', 'ko'];
 
 const root = path.join(__dirname, '..', '..', '..');
 const readmeDir = path.join(root, 'readme');
