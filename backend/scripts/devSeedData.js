@@ -148,7 +148,7 @@ const EXTRA_IMPORT = {
   daysAgo: 1,
   entries: [
     {
-      outcome: 'POSSIBLE_DUPLICATE', reasonCode: 'POSSIBLE_DUPLICATE', externalId: 'demo-trade-1001', direction: 'BUY', amountCents: 4200,
+      outcome: 'POSSIBLE_DUPLICATE', reasonCode: null, externalId: 'demo-trade-1001', direction: 'BUY', amountCents: 4200,
       display: { direction: 'BUY', catalog: { name: 'AK-47 | Asiimov', category: 'SKIN' }, variant: 'NORMAL', floatValue: 0.28, priceCents: 4200, state: 'ACCEPTED' },
     },
     {
@@ -156,13 +156,46 @@ const EXTRA_IMPORT = {
       display: { direction: 'SELL', catalog: { name: 'AWP | Asiimov', category: 'SKIN' }, variant: 'NORMAL', floatValue: 0.41, priceCents: 2600, state: 'ACCEPTED' },
     },
     {
-      outcome: 'REVERTED', reasonCode: 'TRADE_REVERTED', externalId: 'demo-trade-1003', direction: 'SELL', amountCents: 1100,
+      outcome: 'REVERTED', reasonCode: 'REVERTED_REFUND', externalId: 'demo-trade-1003', direction: 'SELL', amountCents: 1100,
       display: { direction: 'SELL', catalog: { name: 'MP9 | Bee-Tron', category: 'SKIN' }, variant: 'NORMAL', floatValue: 0.22, priceCents: 1100, state: 'REVERTED' },
     },
   ],
 };
 
+// Preços fictícios de valor de mercado em USD (centavos), por `priceKey` ("nome de mercado|paint_index"), gravados no cache `market_prices`
+// pelo seed (E13-Q1). Não são cotações reais; alguns ficam abaixo do custo de propósito, para mostrar também a perda não realizada.
+const MARKET_PRICES = {
+  'AK-47 | Redline (Field-Tested)|': 4900,
+  'AWP | Asiimov (Field-Tested)|': 3600,
+  'Glock-18 | Fade (Factory New)|': 13500,
+  'StatTrak™ USP-S | Kill Confirmed (Minimal Wear)|': 6500,
+  '★ StatTrak™ Karambit | Doppler (Factory New)|419': 92000,
+  '★ Sport Gloves | Vice (Field-Tested)|': 118000,
+  'Kilowatt Case|': 210,
+  'Revolution Case|': 55,
+  'Sticker | Shooter|': 320,
+  'Berlin 2019 Legends (Holo/Foil)|': 410,
+  "Charm | Lil' Ava|": 150,
+  'Bloody Darryl The Strapped | The Professionals|': 1100,
+  'Chave de exemplo|': 240,
+  'AK-47 | Asiimov (Field-Tested)|': 4600,
+  'Sticker | Crown (Foil)|': 3900,
+  'Sticker | Natus Vincere (Holo) | MLG Columbus 2016|': 1800,
+  "Charm | Lil' Teacup|": 260,
+  'M4A1-S | Printstream (Minimal Wear)|': 12400,
+  "Charm | Lil' SAS|": 310,
+  'Desert Eagle | Blaze (Factory New)|': 56000,
+  'Sticker Slab | Crown (Foil)|': 4200,
+  'MP9 | Bee-Tron (Field-Tested)|': 850,
+  'USP-S | Kill Confirmed (Field-Tested)|': 5200,
+  'StatTrak™ M4A4 | Howl (Field-Tested)|': 310000,
+  'AWP | Dragon Lore (Factory New)|': 520000,
+  'Fracture Case|': 62,
+  'Fracture Case Key|': 245,
+  'Dreams & Nightmares Case|': 38,
+};
 module.exports = {
+  MARKET_PRICES,
   DAY_MS, HOUR_MS, STOCK_ITEMS, SOLD_ITEMS, acquiredAtFor, inFuture, DEV_FX_RATE: 5.4,
   EXTRA_STORES, EXTRA_FX_RATES, EXTRA_STOCK_ITEMS, EXTRA_SOLD_ITEMS, EXTRA_DEPOSITS, EXTRA_WITHDRAWALS, EXTRA_BALANCE_CHECKS, EXTRA_IMPORT,
 };

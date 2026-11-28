@@ -82,6 +82,34 @@ function seedImport(def, { now, deps }) {
   return def.entries.length;
 }
 
+// Preços fictícios de valor de mercado (E13-Q1): grava direto no cache `market_prices`, sem rede e sem chave da API. Cada item em estoque e
+// cada componente precisa ter preço em `data.MARKET_PRICES` (chave = `priceKey`, "nome de mercado|paint_index"); faltando, o seed falha
+// listando as chaves, para o exemplo nunca ficar com buracos sem querer.
+function seedMarketPrices({ now }) {
+  const Item = require('../src/models/Item');
+  const ItemComponent = require('../src/models/ItemComponent');
+  const MarketPrice = require('../src/models/MarketPrice');
+  const catalogService = require('../src/services/catalogService');
+  const { collectTargets } = require('../src/services/valuation/marketValueService');
+  const { ACTIVE_VALUATION_SOURCE } = require('../src/services/valuation/valuationSources');
+  const items = Item.findAll({ status: 'EM_ESTOQUE' });
+  const componentsByItemId = ItemComponent.listAll();
+  const isSet = (v) => v !== null && v !== undefined;
+  const ids = new Set(items.map((i) => i.catalogId).filter(isSet));
+  for (const rows of componentsByItemId.values()) for (const row of rows) if (isSet(row.catalogId)) ids.add(row.catalogId);
+  const catalogById = new Map(catalogService.getCatalogItemsByIds([...ids]).map((c) => [c.id, c]));
+  const { targets } = collectTargets({ items, componentsByItemId, catalogById });
+  const missing = targets.filter((t) => data.MARKET_PRICES[t.priceKey] === undefined).map((t) => t.priceKey);
+  if (missing.length > 0) throw fail(`Faltam preços de exemplo em MARKET_PRICES (scripts/devSeedData.js) para: ${missing.join(' ; ')}`);
+  for (const t of targets) {
+    MarketPrice.upsertResult({
+      source: ACTIVE_VALUATION_SOURCE, priceKey: t.priceKey, marketHashName: t.marketHashName, paintIndex: t.paintIndex, status: 'OK',
+      basePriceCents: data.MARKET_PRICES[t.priceKey], referenceQuantity: 25, sourceUpdatedAt: now.toISOString(),
+    }, now);
+  }
+  return targets.length;
+}
+
 // Recria o conteúdo do banco já configurado no app (env.dbPath). Usa os services: todas as regras de negócio valem.
 // `allowMemory` só é aceito em testes (NODE_ENV === 'test').
 function runDevSeed({ now = new Date(), allowMemory = false, realDbPaths = devDb.resolveRealDbPaths({ env: {} }) } = {}) {
@@ -164,8 +192,9 @@ function runDevSeed({ now = new Date(), allowMemory = false, realDbPaths = devDb
     storeBalanceService.createCheck({ storeId, recordedAt, balanceCents, adjust: c.adjust, ...(c.note ? { note: c.note } : {}) }, { now });
   }
   const importedPending = seedImport(data.EXTRA_IMPORT, { now, deps: ctx.deps });
+  const marketPrices = seedMarketPrices({ now });
 
-  return { inStock: created.length, sold, total: created.length + sold, importPending: importedPending, catalogImported: sync.imported, dbPath: env.dbPath };
+  return { inStock: created.length, sold, total: created.length + sold, importPending: importedPending, marketPrices, catalogImported: sync.imported, dbPath: env.dbPath };
 }
 
 function main() {

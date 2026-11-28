@@ -466,8 +466,23 @@ describe('banco de exemplo ampliado (12.11)', () => {
     for (const s of stores) expect(s.negative).toBe(false);
   });
 
+  test('preços fictícios de valor de mercado: todo item em estoque tem preço e o resumo soma o estoque, sem chave da API', async () => {
+    const { app, stock } = await seeded();
+    const MarketPrice = require('../../src/models/MarketPrice');
+    const rows = MarketPrice.listBySource('CSFLOAT_LISTINGS');
+    expect(rows.length).toBe(Object.keys(data.MARKET_PRICES).length);
+    expect(rows.every((r) => r.status === 'OK' && r.currency === 'USD' && r.basePriceCents > 0)).toBe(true);
+    const summary = (await request(app).get('/api/market-values/summary')).body.data;
+    expect(summary.configured).toBe(false);
+    expect(summary.totals.unpricedUnits).toBe(0);
+    expect(summary.totals.pricedUnits).toBe(stock.length);
+    expect(summary.totals.marketValueUsdCents).toBeGreaterThan(0);
+    expect(summary.byState.holding.pricedUnits).toBeGreaterThan(0);
+    expect(summary.byState.forSale.pricedUnits).toBeGreaterThan(0);
+  });
+
   test('os dados de exemplo não trazem e-mails, chaves nem caminhos pessoais', () => {
-    const text = JSON.stringify([data.EXTRA_STORES, data.EXTRA_STOCK_ITEMS, data.EXTRA_SOLD_ITEMS, data.EXTRA_DEPOSITS, data.EXTRA_WITHDRAWALS, data.EXTRA_BALANCE_CHECKS, data.EXTRA_IMPORT]);
+    const text = JSON.stringify([data.MARKET_PRICES, data.EXTRA_STORES, data.EXTRA_STOCK_ITEMS, data.EXTRA_SOLD_ITEMS, data.EXTRA_DEPOSITS, data.EXTRA_WITHDRAWALS, data.EXTRA_BALANCE_CHECKS, data.EXTRA_IMPORT]);
     expect(text).not.toMatch(/@|https?:\/\/|AppData|Users\\/i);
   });
 });
